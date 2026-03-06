@@ -1,10 +1,11 @@
 ---
+name: commit
 description: "Commits Git changes following Conventional Commits rules. Triggered by 'commit', 'commit this', '/commit', '커밋', '커밋해줘' requests."
 model: haiku
 allowed-tools: Bash, Read, Glob, AskUserQuestion
 ---
 
-<Command_Guide>
+<Skill_Guide>
 <Purpose>
 Check Git status and commit staged changes following Conventional Commits rules.
 </Purpose>
@@ -77,4 +78,4 @@ Recent commits: !`git log -3 --oneline`
 - **Final step:** Yes
 
 </Instructions>
-</Command_Guide>
+</Skill_Guide>
