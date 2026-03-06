@@ -2,12 +2,14 @@
 /**
  * extract_structure.mjs - Next.js routes and Prisma schema pre-extraction.
  *
- * Reads changes.json (from the same directory as this script) and for each
+ * Reads changes.json (from output directory, default: .claude/try-claude/codemaps/) and for each
  * changed/added file:
  *   - Detects Next.js page/layout/route files and extracts route from path
  *   - Detects Prisma schema files and parses model names and fields
  *
- * Outputs extracted_structure.json to the same directory as this script.
+ * Outputs extracted_structure.json to the output directory.
+ *
+ * Usage: node extract_structure.mjs [--output-dir <path>]
  */
 
 import fs from "fs";
@@ -15,8 +17,19 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const CHANGES_FILE = path.join(SCRIPT_DIR, "changes.json");
-const OUTPUT_FILE = path.join(SCRIPT_DIR, "extracted_structure.json");
+const PROJECT_ROOT = path.resolve(SCRIPT_DIR, "..", "..", "..");
+
+function resolveOutputDir() {
+  const idx = process.argv.indexOf("--output-dir");
+  if (idx !== -1 && process.argv[idx + 1]) {
+    return path.resolve(process.argv[idx + 1]);
+  }
+  return path.join(PROJECT_ROOT, ".claude", "try-claude", "codemaps");
+}
+
+const OUTPUT_DIR = resolveOutputDir();
+const CHANGES_FILE = path.join(OUTPUT_DIR, "changes.json");
+const OUTPUT_FILE = path.join(OUTPUT_DIR, "extracted_structure.json");
 const NEXTJS_ROUTE_FILES = new Set([
   "page.tsx",
   "page.ts",
@@ -198,7 +211,7 @@ function main() {
     }
   }
 
-  const projectRoot = path.resolve(SCRIPT_DIR, "..", "..", "..");
+  const projectRoot = PROJECT_ROOT;
   const nextjsRoutes = [];
   const prismaModels = [];
   const fallbackFiles = [];

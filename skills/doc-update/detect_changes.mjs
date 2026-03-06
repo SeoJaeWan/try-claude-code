@@ -7,8 +7,10 @@
  * against a stored hash database.
  *
  * Outputs:
- *   - changes.json      (same directory as this script)
- *   - .doc-hashes.json  (same directory as this script, persisted between runs)
+ *   - changes.json      (output directory, default: .claude/try-claude/codemaps/)
+ *   - .doc-hashes.json  (output directory, persisted between runs)
+ *
+ * Usage: node detect_changes.mjs [--output-dir <path>]
  */
 
 import crypto from "crypto";
@@ -55,9 +57,19 @@ const EXCLUDE_DIRS = new Set([
   "vendor",
 ]);
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const HASHES_FILE = path.join(SCRIPT_DIR, ".doc-hashes.json");
-const CHANGES_FILE = path.join(SCRIPT_DIR, "changes.json");
 const PROJECT_ROOT = path.resolve(SCRIPT_DIR, "..", "..", "..");
+
+function resolveOutputDir() {
+  const idx = process.argv.indexOf("--output-dir");
+  if (idx !== -1 && process.argv[idx + 1]) {
+    return path.resolve(process.argv[idx + 1]);
+  }
+  return path.join(PROJECT_ROOT, ".claude", "try-claude", "codemaps");
+}
+
+const OUTPUT_DIR = resolveOutputDir();
+const HASHES_FILE = path.join(OUTPUT_DIR, ".doc-hashes.json");
+const CHANGES_FILE = path.join(OUTPUT_DIR, "changes.json");
 
 function nowTimestamp() {
   const d = new Date();
@@ -252,7 +264,14 @@ function detectChanges(storedHashes, currentHashes) {
   return [changed, added, deleted, unchangedCount];
 }
 
+function ensureOutputDir() {
+  if (!fs.existsSync(OUTPUT_DIR)) {
+    fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  }
+}
+
 function main() {
+  ensureOutputDir();
   const existingScanDirs = discoverScanDirectories();
   const scanRoots = existingScanDirs.map((dirPath) =>
     normalizePosixPath(path.relative(PROJECT_ROOT, dirPath))

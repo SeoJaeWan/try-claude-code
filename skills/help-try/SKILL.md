@@ -20,7 +20,7 @@ try-claude 플러그인 운영 방법을 FAQ 형식으로 안내한다.
 
 ## 우선 참조
 
-이 스킬 디렉터리의 `./README.md`를 먼저 읽고 사람용 FAQ를 기준으로 답한다.
+이 스킬 디렉터리의 `references/faq.md`를 먼저 읽고 사람용 FAQ를 기준으로 답한다.
 
 ## 반드시 유지할 핵심 답변
 
@@ -46,7 +46,7 @@ try-claude 플러그인 운영 방법을 FAQ 형식으로 안내한다.
 
 추가로 아래도 필요하면 함께 설명한다.
 
-- Windows / macOS / Linux 템플릿 위치: `README.md`
+- Windows / macOS / Linux 템플릿 위치: `references/faq.md`
 - 인증 또는 환경변수 전제
   - `GITHUB_PERSONAL_ACCESS_TOKEN`
 
