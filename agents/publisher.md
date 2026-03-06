@@ -6,7 +6,6 @@ tools: Read, Edit, Write, Glob, Grep, Bash, WebFetch, Task, Skill
 model: sonnet
 mcpServers:
   - github
-  - filesystem
 background: true
 ---
 

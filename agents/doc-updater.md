@@ -5,8 +5,7 @@ skills: doc-update
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: opus
 mcpServers:
-    - github
-    - filesystem
+  - github
 background: true
 ---
 

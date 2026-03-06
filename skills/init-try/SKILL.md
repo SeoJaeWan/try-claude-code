@@ -22,7 +22,6 @@ Bootstrap the repo-local runtime state used by try-claude.
 - `.claude/try-claude/logs/`
 - `.claude/try-claude/codemaps/`
 - `.claude/try-claude/humanmaps/`
-- `.claude/try-claude/jira-review/`
 
 ## Execution
 

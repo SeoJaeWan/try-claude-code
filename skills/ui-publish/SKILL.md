@@ -43,8 +43,6 @@ Expert UI publisher for production-ready React components (visual only, no logic
 ## MCP Integration
 
 - **GitHub**: PR/issue management
-- **Filesystem**: Safe file operations
-- **Sequential-Thinking**: Structured UI planning
 
 ---
 

@@ -43,15 +43,12 @@ try-claude 플러그인 운영 방법을 FAQ 형식으로 안내한다.
 - `context7`
 - `sequential-thinking`
 - `playwright-test`
-- `postgres`
 
 추가로 아래도 필요하면 함께 설명한다.
 
 - Windows / macOS / Linux 템플릿 위치: `README.md`
 - 인증 또는 환경변수 전제
   - `GITHUB_PERSONAL_ACCESS_TOKEN`
-  - `DATABASE_URL`
-  - Supabase / Jira 로그인 흐름
 
 ## 응답 스타일
 

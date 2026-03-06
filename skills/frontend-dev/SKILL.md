@@ -43,9 +43,7 @@ Expert frontend development workflow for React, Next.js, and React Native.
 
 ## MCP Integration
 
-- **Supabase**: Client operations, auth, storage
 - **GitHub**: PR/issue management, branch operations
-- **Filesystem**: Safe file operations
 
 ---
 

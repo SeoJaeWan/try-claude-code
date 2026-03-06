@@ -35,7 +35,6 @@
 - `.claude/try-claude/logs/`
 - `.claude/try-claude/codemaps/`
 - `.claude/try-claude/humanmaps/`
-- `.claude/try-claude/jira-review/`
 
 추가로 플러그인 기본 `references/**`를 소비자 저장소 런타임으로 시드하고,
 `project.json`에 관리 대상 reference 메타데이터를 기록합니다.
@@ -79,24 +78,20 @@
 - `context7`
 - `sequential-thinking`
 - `playwright-test`
-- `postgres`
 
 이유:
 
 - `filesystem`은 실제 프로젝트 절대 경로가 필요함
 - `context7`, `sequential-thinking`은 `npx` 기반 stdio launcher임
 - `playwright-test`는 로컬 브라우저/테스트 런타임에 의존함
-- `postgres`는 `DATABASE_URL`에 의존함
 
 ### 7. 그럼 공유 `.mcp.json`에는 무엇을 남겨야 하나?
 
 가능하면 OS 중립적인 HTTP endpoint나 공유 서비스만 남기는 편이 좋습니다.
 
 - `github`
-- `supabase`
-- `atlassian-rovo`
 
-이 항목들도 인증은 필요할 수 있지만, 공유 프로젝트 파일에서 OS별 프로세스
+이 항목도 인증은 필요할 수 있지만, 공유 프로젝트 파일에서 OS별 프로세스
 실행 래퍼를 직접 박아둘 필요는 없습니다.
 
 ### 8. OS 의존 MCP 설정은 어디에 두는 게 좋나?
@@ -133,13 +128,6 @@
     "playwright-test": {
       "command": "cmd",
       "args": ["/c", "npx", "playwright", "run-test-mcp-server"]
-    },
-    "postgres": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-postgres"],
-      "env": {
-        "DATABASE_URL": "${DATABASE_URL}"
-      }
     }
   }
 }
@@ -165,13 +153,6 @@
     "playwright-test": {
       "command": "npx",
       "args": ["playwright", "run-test-mcp-server"]
-    },
-    "postgres": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-postgres"],
-      "env": {
-        "DATABASE_URL": "${DATABASE_URL}"
-      }
     }
   }
 }
