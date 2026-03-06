@@ -25,6 +25,6 @@ For detailed workflow, see `skills/frontend-dev/SKILL.md`.
 
 - **coding-conventions**: 구현 전 보일러플레이트 생성에 사용
 
-**완료 조건:** `.claude/try-claude/references/coding-rules/completion.md` 참조
+**Completion criteria:** See `.claude/try-claude/references/coding-rules/completion.md`
 </Instructions>
 </Agent_Prompt>

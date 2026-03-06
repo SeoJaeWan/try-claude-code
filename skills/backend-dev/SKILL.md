@@ -1,6 +1,6 @@
 ---
 name: backend-dev
-description: NestJS API development, database integration, and authentication. Use for API endpoints, DB operations, RLS policies, and server logic.
+description: Backend API development, database integration, and authentication. Auto-detects framework and language from project files. Use for API endpoints, DB operations, server logic, and backend testing.
 model: opus
 context: fork
 agent: backend-developer
@@ -8,13 +8,32 @@ agent: backend-developer
 
 <Skill_Guide>
 <Purpose>
-NestJS API development, database integration, and authentication. Use for API endpoints, DB operations, RLS policies, and server logic.
+Backend API development, database integration, and authentication. Auto-detects framework and language from project files. Use for API endpoints, DB operations, server logic, and backend testing.
 </Purpose>
 
 <Instructions>
 # backend-dev
 
-Expert backend development workflow for NestJS APIs and database systems.
+Expert backend development workflow. Framework and language are auto-detected from project files.
+
+---
+
+## Step 0. Detect Project Stack
+
+Scan project root for framework signals before any implementation:
+
+| Signal file | Framework | Language | Package manager | Test command |
+|---|---|---|---|---|
+| `package.json` + `@nestjs/core` | NestJS | TypeScript | pnpm/npm/yarn | `pnpm test` |
+| `package.json` + `express` | Express | JS/TS | pnpm/npm/yarn | `pnpm test` |
+| `package.json` + `fastify` | Fastify | JS/TS | pnpm/npm/yarn | `pnpm test` |
+| `build.gradle` or `build.gradle.kts` | Spring Boot | Java/Kotlin | gradle | `./gradlew test` |
+| `pom.xml` | Spring Boot | Java | maven | `mvn test` |
+| `requirements.txt` or `pyproject.toml` | Django/FastAPI/Flask | Python | pip/poetry | `pytest` |
+| `go.mod` | Go (Gin/Echo/Fiber) | Go | go mod | `go test ./...` |
+| `Gemfile` + `rails` | Rails | Ruby | bundler | `bundle exec rspec` |
+
+If ambiguous, read the main entry file or config to confirm. Use the detected stack for all subsequent commands.
 
 ---
 
@@ -22,13 +41,9 @@ Expert backend development workflow for NestJS APIs and database systems.
 
 **Read first:**
 
-- `.claude/try-claude/references/coding-rules/naming.md` - DB naming (snake_case)
-- `.claude/try-claude/references/coding-rules/folder-structure.md` - Folder structure
-- `.claude/try-claude/references/coding-rules/code-style.md` - Code style
-- `.claude/try-claude/references/coding-rules/typescript.md` - TypeScript rules
-- `.claude/try-claude/references/coding-rules/package-manager.md` - pnpm only
+- `.claude/try-claude/references/coding-rules/` - Project coding rules (if present)
 - `.claude/try-claude/codemaps/backend.md` - Existing API endpoints (if present)
-- `.claude/try-claude/codemaps/database.md` - DB schema, tables, RLS (if present)
+- `.claude/try-claude/codemaps/database.md` - DB schema, tables (if present)
 - `.claude/try-claude/references/domain.md` - Business logic and requirements
 
 **Read plan:**
@@ -47,11 +62,11 @@ Expert backend development workflow for NestJS APIs and database systems.
 
 ## Key Responsibilities
 
-- NestJS 10 API development (Controllers, Services, Modules)
-- Supabase/PostgreSQL database integration
-- Upstash Redis caching
-- JWT authentication and OAuth (Google)
-- Row Level Security (RLS) implementation
+- API endpoint implementation (routing, validation, error handling)
+- Database integration (ORM/query builder, migrations, schema)
+- Authentication and authorization
+- Caching strategy (where applicable)
+- Backend testing (unit, integration)
 
 ---
 
@@ -60,64 +75,41 @@ Expert backend development workflow for NestJS APIs and database systems.
 1. **Copy test files** from `.claude/try-claude/plans/{task-name}/tests/` to source tree
    - Read `tests/manifest.md` for file list and destination paths
    - Strip `tests/` prefix to get destination path
-2. **Red verification**: `pnpm test` — tests must FAIL
+2. **Red verification**: run test command — tests must FAIL
 3. **Implement** API/services to pass tests
-4. **Green verification**: `pnpm test` — ALL pass
-5. No E2E tests for backend (unit tests sufficient)
+4. **Green verification**: run test command — ALL pass
 
 ---
 
 ## Implementation Steps
 
-1. Read plan from `.claude/try-claude/plans/{task-name}/plan.md`
-2. Copy test files from `.claude/try-claude/plans/{task-name}/tests/` to source tree (read `manifest.md` for paths)
-3. Red verification: `pnpm test` — confirm tests FAIL (no implementation yet)
-4. Read domain.md (business logic)
-5. Read CODEMAPS/backend.md, database.md (if present)
-6. Read coding-rules/ (conventions)
-7. Use WebSearch/WebFetch if needed (NestJS, Supabase, TypeORM)
-8. Confirm the current branch matches plan header (`**Branch:**`)
-9. Implement:
-    - Controllers (routing, validation)
-    - Services (business logic)
-    - Modules (dependency injection)
-    - Database migrations (if schema changes)
-    - RLS policies (if needed)
-10. Run tests: `pnpm test` — confirm ALL pass (Green)
-11. Run typecheck:
-    - `pnpm run typecheck` (if no script exists, use `pnpm exec tsc --noEmit`)
-    - No type errors allowed before proceeding to the next step
-12. Verify and auto-fix lint:
-
-```bash
-pnpm lint --fix
-```
-
-- Manually fix any errors that cannot be auto-fixed
-- Repeat until lint is clean
-
-13. Commit changes
-14. Return results based on plan.md
+1. **Detect stack** (Step 0 above)
+2. Read plan from `.claude/try-claude/plans/{task-name}/plan.md`
+3. Copy test files from `.claude/try-claude/plans/{task-name}/tests/` to source tree (read `manifest.md` for paths)
+4. Red verification: run test command — confirm tests FAIL
+5. Read domain.md (business logic)
+6. Read CODEMAPS/backend.md, database.md (if present)
+7. Read coding-rules/ (conventions, if present)
+8. Use WebSearch/WebFetch if needed (framework docs, ORM docs)
+9. Confirm the current branch matches plan header (`**Branch:**`)
+10. Implement according to detected framework's conventions
+11. Run tests — confirm ALL pass (Green)
+12. Run type/compile check:
+    - TypeScript: `pnpm run typecheck` or `pnpm exec tsc --noEmit`
+    - Java/Kotlin: build includes compilation
+    - Python: `mypy` (if configured)
+    - Go: `go build ./...`
+13. Verify and auto-fix lint (use project's configured linter)
+14. Commit changes
+15. Return results based on plan.md
 
 ---
 
 ## Database Guidelines
 
-**Naming (snake_case):**
-
-- Tables: `users`, `user_problems`
-- Columns: `user_id`, `created_at`
-- Indexes: `idx_{table}_{columns}`
-
-**Frontend conversion:**
-
-- Use humps library: `camelizeKeys(data)`
-- DB: snake_case ↔ Frontend: camelCase
-
-**Migrations:**
-
-- Always create migration files
-- Test locally before applying
+- Follow project's naming conventions (refer to coding-rules if present)
+- Always create migration files for schema changes
+- Test migrations locally before applying
 - Document schema changes
   </Instructions>
   </Skill_Guide>
