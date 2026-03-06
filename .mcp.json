@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      },
+      "description": "GitHub MCP endpoint for PR, issue, and repository workflows. Requires GITHUB_PERSONAL_ACCESS_TOKEN.",
+      "scope": "user"
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp",
+      "description": "Supabase MCP endpoint for project inspection, schema access, and managed service operations",
+      "scope": "user"
+    },
+    "atlassian-rovo": {
+      "type": "http",
+      "url": "https://mcp.atlassian.com/v1/mcp",
+      "description": "Atlassian Rovo MCP endpoint for Jira project discovery and issue registration workflows",
+      "scope": "user"
+    }
+  }
+}
