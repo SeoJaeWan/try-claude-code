@@ -1,10 +1,11 @@
 ---
+name: pr
 description: "Creates a GitHub Pull Request. Triggered by 'PR', 'open a PR', 'pull request', 'PR 올려줘', '풀리퀘' requests."
 model: haiku
 allowed-tools: Bash, Read, Glob, AskUserQuestion
 ---
 
-<Command_Guide>
+<Skill_Guide>
 <Purpose>
 Analyze the current branch's changes and create a Pull Request on GitHub.
 </Purpose>
@@ -69,4 +70,4 @@ Commit history: !`git log main..HEAD --oneline`
 - **Final step:** Yes
 
 </Instructions>
-</Command_Guide>
+</Skill_Guide>
