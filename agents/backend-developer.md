@@ -6,9 +6,6 @@ tools: Read, Edit, Write, Glob, Grep, Bash, Task, Skill
 model: opus
 mcpServers:
   - github
-  - filesystem
-  - supabase
-  - postgres
 background: true
 ---
 

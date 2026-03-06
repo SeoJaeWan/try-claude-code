@@ -41,11 +41,7 @@ Expert backend development workflow for NestJS APIs and database systems.
 
 ## MCP Integration
 
-- **Supabase**: Database tables, migrations, RLS policies, logs
-- **PostgreSQL**: SQL queries, schema inspection, performance tuning
 - **GitHub**: PR/issue management, branch operations
-- **Filesystem**: Safe file operations with sandbox
-- **Sequential-Thinking**: Structured problem-solving for complex API design
 
 ---
 
