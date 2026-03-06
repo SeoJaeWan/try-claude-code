@@ -54,9 +54,16 @@ If ambiguous, read the main entry file or config to confirm. Use the detected st
 
 ---
 
-## MCP Integration
+## Boilerplate Generation
 
-- **GitHub**: PR/issue management, branch operations
+For NestJS projects, generate module structure using coding-rules scripts:
+
+```bash
+# NestJS module structure
+node .claude/try-claude/references/coding-rules/scripts/generate.mjs structure <moduleName> [--create]
+```
+
+> If scripts are not found (init-try not run), skip boilerplate generation and implement manually.
 
 ---
 

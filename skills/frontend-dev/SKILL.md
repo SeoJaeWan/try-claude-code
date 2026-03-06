@@ -41,9 +41,25 @@ Expert frontend development workflow for React, Next.js, and React Native.
 
 ---
 
-## MCP Integration
+## Boilerplate Generation
 
-- **GitHub**: PR/issue management, branch operations
+Before implementing hooks, generate boilerplate using coding-rules scripts:
+
+```bash
+# Custom hook boilerplate
+node .claude/try-claude/references/coding-rules/scripts/generate.mjs hook <hookName> [--form]
+
+# API hook boilerplate (query)
+node .claude/try-claude/references/coding-rules/scripts/generate.mjs api-hook <hookName> --method query
+
+# API hook boilerplate (mutation)
+node .claude/try-claude/references/coding-rules/scripts/generate.mjs api-hook <hookName> --method mutation
+
+# Test suite boilerplate
+node .claude/try-claude/references/coding-rules/scripts/generate.mjs test-suite <targetName> --type hook
+```
+
+> If scripts are not found (init-try not run), skip boilerplate generation and implement manually.
 
 ---
 

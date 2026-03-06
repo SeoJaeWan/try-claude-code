@@ -40,9 +40,19 @@ Expert UI publisher for production-ready React components (visual only, no logic
 
 ---
 
-## MCP Integration
+## Boilerplate Generation
 
-- **GitHub**: PR/issue management
+Before creating components, generate boilerplate using coding-rules scripts:
+
+```bash
+# Component boilerplate
+node .claude/try-claude/references/coding-rules/scripts/generate.mjs component <ComponentName>
+
+# Next.js page structure
+node .claude/try-claude/references/coding-rules/scripts/generate.mjs structure <pagePath> [--create]
+```
+
+> If scripts are not found (init-try not run), skip boilerplate generation and implement manually.
 
 ---
 
