@@ -1,9 +1,0 @@
-{
-  "tool_calls": {
-    "ToolSearch": 3,
-    "Read": 2,
-    "Bash": 1,
-    "Write": 2,
-    "total": 8
-  }
-}
