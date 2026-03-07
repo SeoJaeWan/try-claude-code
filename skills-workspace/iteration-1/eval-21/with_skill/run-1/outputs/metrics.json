@@ -1,0 +1,103 @@
+{
+  "simulation": true,
+  "plan_phases": 3,
+  "tool_calls": {
+    "total": 10,
+    "by_tool": {
+      "Read": 1,
+      "Glob": 3,
+      "Bash": 1,
+      "ToolSearch": 3,
+      "Write": 2
+    },
+    "by_step": {
+      "step_1_validate": {
+        "description": "Validate plan headers, owner_agents, and agent file existence",
+        "tool_calls": 4,
+        "tools_used": ["Read", "Glob", "Glob", "Glob"],
+        "details": [
+          "Read plan.md (skill SKILL.md read as proxy)",
+          "Glob for plan.md files in planner-lite directory",
+          "Glob for plan.md files across repository",
+          "Glob for agent .md files to verify owner_agent mappings"
+        ]
+      },
+      "step_2_setup": {
+        "description": "Record base branch, create worktree with task branch",
+        "tool_calls": 1,
+        "tools_used": ["Bash"],
+        "simulated_commands": [
+          "git rev-parse --abbrev-ref HEAD",
+          "git worktree list --porcelain | grep -q $WORKTREE_DIR",
+          "git worktree add -b $TASK_BRANCH $WORKTREE_DIR $BASE"
+        ]
+      },
+      "step_3_execute": {
+        "description": "Dispatch 3 phase agents and verify each phase",
+        "phases": [
+          {
+            "phase": 1,
+            "owner_agent": "backend-developer",
+            "summary": "Backend scaffolding",
+            "agent_call": 1,
+            "verification_commands": 3,
+            "status": "PASS"
+          },
+          {
+            "phase": 2,
+            "owner_agent": "frontend-developer",
+            "summary": "Frontend integration",
+            "agent_call": 1,
+            "verification_commands": 3,
+            "status": "PASS"
+          },
+          {
+            "phase": 3,
+            "owner_agent": "doc-updater",
+            "summary": "Documentation update",
+            "agent_call": 1,
+            "verification_commands": 3,
+            "status": "PASS"
+          }
+        ],
+        "total_agent_calls": 3,
+        "total_verification_commands": 9
+      },
+      "step_4_merge": {
+        "description": "Remove worktree, merge task branch, delete branch",
+        "simulated_commands": [
+          "git worktree remove $WORKTREE_DIR --force",
+          "git merge $TASK_BRANCH --no-ff -m 'Merge ...'",
+          "git branch -d $TASK_BRANCH"
+        ],
+        "merge_conflicts": false,
+        "status": "SUCCESS"
+      },
+      "step_5_verify": {
+        "description": "Verify worktree removed, HEAD on base, branch deleted",
+        "simulated_commands": [
+          "git worktree list --porcelain",
+          "git rev-parse --abbrev-ref HEAD",
+          "git branch --list $TASK_BRANCH"
+        ],
+        "status": "PASS"
+      }
+    }
+  },
+  "worktree_lifecycle": {
+    "base_branch": "0.1.0",
+    "task_branch": "feature/plan-3phase",
+    "worktree_dir": ".claude/worktrees/feature/plan-3phase",
+    "commits_on_task_branch": 3,
+    "merge_strategy": "--no-ff",
+    "final_state": "merged_and_cleaned"
+  },
+  "guardrails": {
+    "no_isolation_worktree_in_agent": true,
+    "no_enter_worktree": true,
+    "ran_from_repo_root": true,
+    "worktree_removed_before_merge": true,
+    "phase_commits_verified": true,
+    "no_concurrent_same_branch": true
+  }
+}

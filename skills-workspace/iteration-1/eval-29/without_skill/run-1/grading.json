@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Covers CRP, image, JS, font areas",
+      "passed": true,
+      "evidence": "Table covers: 'Render-blocking 리소스' (CRP), '이미지 최적화 (lazy loading, WebP/AVIF, width/height)' (image), 'JavaScript 번들 크기 / 코드 스플리팅' (JS), '폰트 최적화 (font-display, preload)' (font). Also covers CSS Critical Path, Core Web Vitals, layout thrashing, re-renders, API calls, and memory leaks."
+    },
+    {
+      "text": "Lists PERF items or equivalent",
+      "passed": true,
+      "evidence": "Lists 10 equivalent performance checklist items in a structured table including render-blocking resources, image optimization, JS bundle size/code splitting, CSS critical path, font optimization, CWV, layout thrashing, unnecessary re-renders, API optimization, and memory leak patterns."
+    },
+    {
+      "text": "Provides results per item",
+      "passed": true,
+      "evidence": "Each item in the checklist table has a result column (all marked N/A) and a reason column explaining why the item is not applicable (e.g., 'HTML/JS 소스 코드 변경 없음')."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {},
+  "timing": {
+    "total_duration_seconds": 102.8
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Without-skill run produced a comprehensive performance review with an equivalent checklist covering all four required areas. Output is well-organized with file analysis, project structure context, and per-item results. Comparable quality to with-skill run despite not using the PERF-01 to PERF-11 naming convention."
+  }
+}

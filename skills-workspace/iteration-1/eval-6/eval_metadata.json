@@ -1,0 +1,11 @@
+{
+  "eval_id": 6,
+  "eval_name": "help-try-mcp",
+  "prompt": "MCP 설정을 팀원들과 공유하려면 어떻게 해야 하나요?",
+  "assertions": [
+    "Answers in Korean",
+    "Mentions .claude/try-claude/ path",
+    "Explains init-try or MCP configuration"
+  ],
+  "skill": "help-try"
+}

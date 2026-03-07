@@ -1,0 +1,11 @@
+{
+  "eval_id": 16,
+  "eval_name": "frontend-dev-english",
+  "prompt": "create a custom hook for fetching user profile data with TanStack Query",
+  "assertions": [
+    "Creates custom hook with proper naming (useXxx)",
+    "References TDD workflow or testing",
+    "Mentions API integration pattern (TanStack Query, fetch, mutation)"
+  ],
+  "skill": "frontend-dev"
+}

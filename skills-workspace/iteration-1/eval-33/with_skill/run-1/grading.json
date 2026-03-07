@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Covers all 5 areas (accessibility, best-practices, SEO, performance, CWV)",
+      "passed": true,
+      "evidence": "All 5 areas explicitly covered: A. Accessibility (KWCAG2.2), B. Best Practices (BP-01~BP-14), C. SEO (SEO-01~SEO-10), D. Performance (PERF-01~PERF-11), E. Core Web Vitals (CWV-01~CWV-11)"
+    },
+    {
+      "text": "Mentions unified report generation",
+      "passed": true,
+      "evidence": "Step 7 titled '통합 리포트' mentions 'HTML + CSV 리포트 생성 (시뮬레이션)' with output path '.claude/try-claude/reports/web-quality/YYYYMMDD-HHmm/'"
+    },
+    {
+      "text": "Follows structured audit workflow",
+      "passed": true,
+      "evidence": "Follows an explicit 8-step workflow: Step 1 (Review Scope), Steps 2-6 (Five Area Review with delegation to sub-skills), Step 7 (Unified Report), Step 8 (Verification with 5-area summary grid)"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {},
+  "timing": {
+    "total_duration_seconds": 250.7
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "The with_skill run for the Korean prompt demonstrates full adherence to the web-quality-audit skill structure, covering all 5 audit areas with specific checklist item counts, unified report generation, and a clear multi-step workflow with verification."
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Covers LCP, INP, CLS metrics",
+      "passed": true,
+      "evidence": "Output includes CWV-01 to CWV-03 for LCP, CWV-04 to CWV-06 for INP, CWV-07 to CWV-11 for CLS. Each metric is explicitly named with target thresholds (LCP 2.5s, INP 200ms, CLS 0.1)."
+    },
+    {
+      "text": "Lists CWV items or equivalent",
+      "passed": true,
+      "evidence": "All 11 CWV items (CWV-01 through CWV-11) are listed in a structured table with code, metric, item name, result, and findings columns."
+    },
+    {
+      "text": "Provides impact analysis or results",
+      "passed": true,
+      "evidence": "Each item is evaluated as N/A with explanation that no web source files were changed. Summary confirms all 11 items evaluated with no CWV impact."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {},
+  "timing": {
+    "total_duration_seconds": 67.5
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "The with_skill run produced a comprehensive, structured CWV analysis with all 11 checklist items in a table, metric thresholds, and clear N/A reasoning for non-web files."
+  }
+}

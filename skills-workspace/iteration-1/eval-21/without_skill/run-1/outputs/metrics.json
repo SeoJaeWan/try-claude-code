@@ -1,0 +1,18 @@
+{
+  "tool_calls": {
+    "total": 14,
+    "by_tool": {
+      "ToolSearch": 2,
+      "Glob": 6,
+      "Read": 2,
+      "Bash": 4,
+      "Write": 2
+    }
+  },
+  "task_completed": false,
+  "failure_reason": "plan.md file not found in repository; Bash tool permission denied preventing git worktree operations",
+  "phases_executed": 0,
+  "phases_expected": 3,
+  "worktree_created": false,
+  "merge_completed": false
+}

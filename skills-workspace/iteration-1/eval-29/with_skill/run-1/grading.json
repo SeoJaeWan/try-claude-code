@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Covers CRP, image, JS, font areas",
+      "passed": true,
+      "evidence": "Table explicitly covers CRP area (PERF-01 render-blocking script, PERF-02 LCP fetchpriority+preload, PERF-03 Critical CSS), image area (PERF-04 width/height, PERF-05 loading=lazy, PERF-06 WebP/AVIF), JS area (PERF-07 code splitting, PERF-08 tree shaking, PERF-09 layout thrashing), font area (PERF-10 font-display, PERF-11 font preload)."
+    },
+    {
+      "text": "Lists PERF items or equivalent",
+      "passed": true,
+      "evidence": "Lists all 11 items from PERF-01 through PERF-11 in a structured table with code, area, item name, result, and findings columns."
+    },
+    {
+      "text": "Provides results per item",
+      "passed": true,
+      "evidence": "Each PERF item has individual result (all marked N/A with dash) and per-item explanation of why no issue was found (e.g., 'no HTML/JSX script loading code in changed files')."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {},
+  "timing": {
+    "total_duration_seconds": 61.0
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "With-skill run produced a well-structured output that follows the PERF-01 to PERF-11 checklist format, covering all four required areas (CRP, image, JS, font). Correctly identified that no web source files were changed and marked all items as N/A with appropriate reasoning."
+  }
+}

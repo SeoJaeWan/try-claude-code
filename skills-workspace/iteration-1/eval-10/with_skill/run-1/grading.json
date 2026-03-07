@@ -1,0 +1,37 @@
+{
+  "expectations": [
+    {
+      "text": "Explains section-aware merge behavior",
+      "passed": true,
+      "evidence": "Detailed explanation under 'Migration Behavior Summary': 'Markdown-sections merge: compare section-level hashes to update unchanged sections, preserve user-edited sections, append new plugin sections, and keep local-only sections.' Also lists all 15 files with their merge modes."
+    },
+    {
+      "text": "References project.json tracking",
+      "passed": true,
+      "evidence": "States 'project.json exists with schemaVersion: 1.0.0, pluginId: try-claude, pluginVersion: 0.1.0', '15 managed reference entries are tracked', and 'Updates project.json with new hashes, timestamps, and managed reference metadata.' Shows projectJsonPath in simulated output."
+    },
+    {
+      "text": "Mentions managed references sync",
+      "passed": true,
+      "evidence": "Describes the full sync workflow: 'Reads project.json to get the current tracked reference state. Iterates over all plugin reference files. For each file, applies one of these strategies...' Shows trackedCount: 15 in simulated output and lists all 15 managed references."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0
+  },
+  "timing": {
+    "total_duration_seconds": 72.5
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Excellent result. Thorough coverage of all migration behavior including section-aware merge, project.json tracking, and managed references sync. Clear structured output with simulated execution details."
+  }
+}

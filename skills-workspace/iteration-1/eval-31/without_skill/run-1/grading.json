@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Covers LCP, INP, CLS metrics",
+      "passed": true,
+      "evidence": "Output includes dedicated sections for LCP (Largest Contentful Paint), INP (Interaction to Next Paint), and CLS (Cumulative Layout Shift), each stating no impact."
+    },
+    {
+      "text": "Lists CWV items or equivalent",
+      "passed": true,
+      "evidence": "The three CWV metrics are listed as separate sections. No detailed checklist items (CWV-01 through CWV-11), but the three core metrics serve as equivalent coverage."
+    },
+    {
+      "text": "Provides impact analysis or results",
+      "passed": true,
+      "evidence": "States 'Core Web Vitals impact: NONE' with per-metric reasoning that no frontend code was changed. Notes the project has no web page files."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {},
+  "timing": {
+    "total_duration_seconds": 151.9
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "The without_skill run covers all three metrics and provides correct impact analysis, but lacks the structured 11-item checklist that the with_skill run produced. The output is shorter and less detailed."
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "expectations": [
+    {
+      "text": "References KWCAG2.2 standard",
+      "passed": true,
+      "evidence": "Line 6: '기준: KWCAG2.2 (한국지능정보사회진흥원, 2024.10) 33개 항목 + 시맨틱 HTML 7개 항목'"
+    },
+    {
+      "text": "Evaluates or lists 33 items",
+      "passed": true,
+      "evidence": "All 33 KWCAG2.2 items are listed in tables organized by 4 principles: Perceivable (9 items, #1-9), Operable (15 items, #10-24), Understandable (7 items, #25-31), Robust (2 items, #32-33). Distribution summary at lines 106-110 confirms 4+21+8=33 items."
+    },
+    {
+      "text": "Uses O/X/triangle classification",
+      "passed": true,
+      "evidence": "Lines 106-110 show auto-detection levels: O (4 items), Triangle (21 items), X (8 items). Lines 166-173 define result classification: O=합격, X=불합격, Triangle=권고, -=해당없음, 판정불가."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {},
+  "timing": {
+    "total_tokens": 92,
+    "duration_ms": 132127,
+    "total_duration_seconds": 132.1
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [
+      "Output is a simulation/methodology description rather than an actual audit of changed files. The skill correctly identified no web files but produced a lengthy procedural walkthrough instead of a concise N/A report."
+    ],
+    "overall": "All 3 assertions pass. The output thoroughly references KWCAG2.2, lists all 33 items with detailed evaluation approaches, and uses O/X/Triangle classification throughout. However, the output is more of a methodology simulation than an actual audit result."
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "tool_calls": {
+    "Glob": 3,
+    "Grep": 1,
+    "Read": 3,
+    "Write": 2,
+    "Bash": 1,
+    "ToolSearch": 1
+  },
+  "total_tool_calls": 11,
+  "notes": "Bash was attempted once but permission was denied. All file discovery was done via Glob and Grep instead."
+}

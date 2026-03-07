@@ -1,0 +1,11 @@
+{
+  "eval_id": 15,
+  "eval_name": "frontend-dev-korean",
+  "prompt": "로그인 페이지에 useAuth 커스텀 훅을 만들고 API 연동해줘",
+  "assertions": [
+    "Creates custom hook with proper naming (useXxx)",
+    "References TDD workflow or testing",
+    "Mentions API integration pattern (TanStack Query, fetch, mutation)"
+  ],
+  "skill": "frontend-dev"
+}

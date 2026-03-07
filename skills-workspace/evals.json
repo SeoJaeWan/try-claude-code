@@ -1,0 +1,243 @@
+{
+  "skill_name": "all-skills",
+  "evals": [
+    {
+      "id": 1,
+      "skill": "commit",
+      "prompt": "현재 변경사항을 커밋해줘",
+      "expected_output": "Conventional Commits 규칙에 따른 커밋 메시지 생성 및 커밋 실행",
+      "files": []
+    },
+    {
+      "id": 2,
+      "skill": "commit",
+      "prompt": "commit this with a proper message",
+      "expected_output": "Analyzes changes and commits with proper conventional commit type",
+      "files": []
+    },
+    {
+      "id": 3,
+      "skill": "pr",
+      "prompt": "PR 올려줘",
+      "expected_output": "Branch 분석 후 PR title/body 생성 및 gh pr create 실행",
+      "files": []
+    },
+    {
+      "id": 4,
+      "skill": "pr",
+      "prompt": "open a pull request for the current changes",
+      "expected_output": "Generates PR with summary, changes, test plan sections",
+      "files": []
+    },
+    {
+      "id": 5,
+      "skill": "help-try",
+      "prompt": "try-claude 설정은 어떻게 하나요? init-try랑 migration 차이가 뭐예요?",
+      "expected_output": "FAQ 형식으로 init-try와 migration 차이를 한국어로 설명",
+      "files": []
+    },
+    {
+      "id": 6,
+      "skill": "help-try",
+      "prompt": "MCP 설정을 팀원들과 공유하려면 어떻게 해야 하나요?",
+      "expected_output": "shared vs machine-local config 분리 설명, OS별 템플릿 위치 안내",
+      "files": []
+    },
+    {
+      "id": 7,
+      "skill": "init-try",
+      "prompt": "이 프로젝트에 try-claude를 초기화해줘",
+      "expected_output": ".claude/try-claude/ 디렉토리 구조 생성 및 reference 시딩",
+      "files": []
+    },
+    {
+      "id": 8,
+      "skill": "init-try",
+      "prompt": "bootstrap the try-claude runtime for this repo",
+      "expected_output": "Creates project.json, references/, plans/, reports/, logs/, codemaps/, humanmaps/",
+      "files": []
+    },
+    {
+      "id": 9,
+      "skill": "migration",
+      "prompt": "try-claude 레퍼런스를 최신 플러그인 기본값과 동기화해줘",
+      "expected_output": "Unchanged sections updated, edited sections preserved",
+      "files": []
+    },
+    {
+      "id": 10,
+      "skill": "migration",
+      "prompt": "sync my local references with the latest plugin defaults",
+      "expected_output": "Runs migration script, reports updated/skipped/reseeded counts",
+      "files": []
+    },
+    {
+      "id": 11,
+      "skill": "doc-update",
+      "prompt": "프로젝트 문서를 업데이트해줘. CODEMAPS랑 HUMANMAPS 둘 다 갱신해줘.",
+      "expected_output": "CODEMAPS .md 파일과 HUMANMAPS .html 파일 생성/업데이트",
+      "files": []
+    },
+    {
+      "id": 12,
+      "skill": "doc-update",
+      "prompt": "generate project documentation for the current codebase",
+      "expected_output": "Runs detect_changes.mjs, extract_structure.mjs, generates INDEX.md and related docs",
+      "files": []
+    },
+    {
+      "id": 13,
+      "skill": "init-coding-rules",
+      "prompt": "이 프로젝트에 ESLint, commitlint, husky 설정을 coding-rules 기반으로 생성해줘",
+      "expected_output": "Framework detection, coding-rules 읽기, ESLint/commitlint/husky config 생성 계획 제시",
+      "files": []
+    },
+    {
+      "id": 14,
+      "skill": "init-coding-rules",
+      "prompt": "set up linting and commit hooks based on our coding conventions",
+      "expected_output": "Detects framework, audits existing configs, presents per-group approval plan",
+      "files": []
+    },
+    {
+      "id": 15,
+      "skill": "frontend-dev",
+      "prompt": "로그인 페이지에 useAuth 커스텀 훅을 만들고 API 연동해줘",
+      "expected_output": "Custom hook 생성, API integration, TDD workflow 실행",
+      "files": []
+    },
+    {
+      "id": 16,
+      "skill": "frontend-dev",
+      "prompt": "create a custom hook for fetching user profile data with TanStack Query",
+      "expected_output": "useUserProfile hook with TanStack Query, proper error handling",
+      "files": []
+    },
+    {
+      "id": 17,
+      "skill": "backend-dev",
+      "prompt": "사용자 인증 API 엔드포인트를 NestJS로 구현해줘",
+      "expected_output": "NestJS controller/service/module 생성, JWT auth 구현",
+      "files": []
+    },
+    {
+      "id": 18,
+      "skill": "backend-dev",
+      "prompt": "implement a REST API endpoint for CRUD operations on products",
+      "expected_output": "Auto-detect framework, create controller/service with CRUD endpoints",
+      "files": []
+    },
+    {
+      "id": 19,
+      "skill": "ui-publish",
+      "prompt": "대시보드 레이아웃 컴포넌트를 만들어줘. 사이드바, 헤더, 메인 콘텐츠 영역 포함",
+      "expected_output": "React component with Tailwind CSS, responsive layout, no business logic",
+      "files": []
+    },
+    {
+      "id": 20,
+      "skill": "ui-publish",
+      "prompt": "create a responsive card grid component with shadcn/ui styling",
+      "expected_output": "Layout-first React component with shadcn/ui, mobile-first responsive design",
+      "files": []
+    },
+    {
+      "id": 21,
+      "skill": "planner-lite",
+      "prompt": "plan.md에 정의된 3개 Phase를 worktree 격리 방식으로 실행해줘",
+      "expected_output": "Worktree creation, sequential phase execution, merge, cleanup",
+      "files": []
+    },
+    {
+      "id": 22,
+      "skill": "planner-lite",
+      "prompt": "execute the plan at .claude/try-claude/plans/auth-feature/plan.md with worktree isolation",
+      "expected_output": "Validates plan headers, creates worktree, dispatches phase agents, merges",
+      "files": []
+    },
+    {
+      "id": 23,
+      "skill": "accessibility-review",
+      "prompt": "변경된 웹 코드의 접근성을 KWCAG2.2 기준으로 검토해줘",
+      "expected_output": "33 KWCAG items evaluated, HTML+CSV report generated",
+      "files": []
+    },
+    {
+      "id": 24,
+      "skill": "accessibility-review",
+      "prompt": "run an accessibility audit on the changed files",
+      "expected_output": "Static analysis + Playwright checks, O/X/triangle results for all 33 items",
+      "files": []
+    },
+    {
+      "id": 25,
+      "skill": "best-practices",
+      "prompt": "변경된 코드의 보안, 호환성, 코드 품질을 검토해줘",
+      "expected_output": "BP-01 through BP-14 evaluated, markdown checklist output",
+      "files": []
+    },
+    {
+      "id": 26,
+      "skill": "best-practices",
+      "prompt": "check the changed files for web best practices compliance",
+      "expected_output": "Security, compatibility, code quality items evaluated",
+      "files": []
+    },
+    {
+      "id": 27,
+      "skill": "seo",
+      "prompt": "변경된 페이지의 SEO 최적화 상태를 검토해줘",
+      "expected_output": "SEO-01 through SEO-10 evaluated, markdown checklist output",
+      "files": []
+    },
+    {
+      "id": 28,
+      "skill": "seo",
+      "prompt": "review the SEO status of the changed HTML files",
+      "expected_output": "Critical/High/Medium SEO items evaluated",
+      "files": []
+    },
+    {
+      "id": 29,
+      "skill": "performance",
+      "prompt": "변경된 코드의 웹 성능 이슈를 검토해줘",
+      "expected_output": "PERF-01 through PERF-11 evaluated, markdown checklist output",
+      "files": []
+    },
+    {
+      "id": 30,
+      "skill": "performance",
+      "prompt": "check the changed files for performance anti-patterns",
+      "expected_output": "CRP, image, JS, font performance items evaluated",
+      "files": []
+    },
+    {
+      "id": 31,
+      "skill": "core-web-vitals",
+      "prompt": "변경된 코드의 Core Web Vitals 영향을 분석해줘",
+      "expected_output": "CWV-01 through CWV-11 evaluated, markdown checklist output",
+      "files": []
+    },
+    {
+      "id": 32,
+      "skill": "core-web-vitals",
+      "prompt": "analyze the impact on LCP, INP, and CLS for the changed files",
+      "expected_output": "LCP/INP/CLS items evaluated with specific recommendations",
+      "files": []
+    },
+    {
+      "id": 33,
+      "skill": "web-quality-audit",
+      "prompt": "변경된 코드에 대해 종합 웹 품질 검토를 실행해줘",
+      "expected_output": "5-area unified HTML+CSV report (a11y, BP, SEO, perf, CWV)",
+      "files": []
+    },
+    {
+      "id": 34,
+      "skill": "web-quality-audit",
+      "prompt": "run a full web quality audit on the current changes",
+      "expected_output": "Orchestrates all 5 sub-skills, generates unified report",
+      "files": []
+    }
+  ]
+}

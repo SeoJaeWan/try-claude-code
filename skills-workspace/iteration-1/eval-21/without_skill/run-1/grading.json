@@ -1,0 +1,36 @@
+{
+  "expectations": [
+    {
+      "text": "Describes worktree creation and lifecycle",
+      "passed": true,
+      "evidence": "The 'What Would Have Been Done' section describes creating a worktree with 'git worktree add -b <task-branch> .claude/worktrees/<task-branch> <base>' and removing it after execution."
+    },
+    {
+      "text": "Sequential phase execution pattern",
+      "passed": true,
+      "evidence": "Section 2 'Phase Execution (3 Phases)' describes 'For each phase (1, 2, 3)' working within the worktree, implementing tasks, committing with 'Phase N: <summary>', and verifying the commit landed on the correct branch."
+    },
+    {
+      "text": "Merge and cleanup steps",
+      "passed": true,
+      "evidence": "Section 3 'Merge and Cleanup' describes 'git worktree remove <dir> --force', 'git merge <task-branch> --no-ff', 'git branch -d <task-branch>', and verifying HEAD is on base branch."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {},
+  "timing": {
+    "total_duration_seconds": 68.6
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [
+      "The without-skill run still managed to describe the workflow correctly, likely by reading the planner-lite SKILL.md. However, the output is much less detailed than the with-skill version - it is a brief outline rather than a step-by-step simulation."
+    ],
+    "overall": "Without-skill run described all three expected patterns (worktree lifecycle, sequential phases, merge/cleanup) but in a condensed 'what would have been done' format rather than a full simulation. The Bash tool was denied, which prevented actual execution."
+  }
+}

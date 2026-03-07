@@ -1,0 +1,11 @@
+{
+  "eval_id": 30,
+  "eval_name": "performance-english",
+  "prompt": "check the changed files for performance anti-patterns",
+  "assertions": [
+    "Covers CRP, image, JS, font areas",
+    "Lists PERF items or equivalent",
+    "Provides results per item"
+  ],
+  "skill": "performance"
+}

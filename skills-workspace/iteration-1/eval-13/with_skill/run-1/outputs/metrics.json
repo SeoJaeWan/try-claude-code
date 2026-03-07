@@ -1,0 +1,40 @@
+{
+  "tool_calls": {
+    "total": 18,
+    "breakdown": {
+      "ToolSearch": 1,
+      "Read": 10,
+      "Glob": 9,
+      "Bash": 2,
+      "Write": 2
+    }
+  },
+  "skill_path": "C:/Users/sjw73/Desktop/dev/try-claude-code/skills/init-coding-rules/SKILL.md",
+  "coding_rules_read": 9,
+  "framework_detected": "Base TypeScript",
+  "existing_configs_found": 0,
+  "generation_groups": {
+    "eslint": {
+      "action": "create",
+      "files": ["eslint.config.mjs"],
+      "rules_count": 14
+    },
+    "tsconfig": {
+      "action": "create",
+      "files": ["tsconfig.json"],
+      "strict_options_count": 9
+    },
+    "commitlint": {
+      "action": "create",
+      "files": ["commitlint.config.mjs"],
+      "source": "git.md"
+    },
+    "husky_lint_staged": {
+      "action": "create",
+      "files": [".husky/pre-commit", ".husky/commit-msg", ".lintstagedrc.mjs"],
+      "source": "git.md, package-manager.md"
+    }
+  },
+  "dev_dependencies_count": 12,
+  "non_toolable_rules_count": 10
+}

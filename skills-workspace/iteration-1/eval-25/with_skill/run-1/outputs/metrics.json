@@ -1,0 +1,31 @@
+{
+  "tool_calls": {
+    "total": 9,
+    "by_tool": {
+      "Read": 4,
+      "Bash": 3,
+      "Glob": 3,
+      "Grep": 0,
+      "Write": 2
+    },
+    "notes": {
+      "Bash_denied": "3 Bash calls were attempted but denied by sandbox; analysis proceeded using Read/Glob tools",
+      "successful_calls": 6,
+      "denied_calls": 3
+    }
+  },
+  "evaluation_summary": {
+    "total_items_evaluated": 14,
+    "pass": 0,
+    "fail": 0,
+    "advisory": 0,
+    "na": 14,
+    "reason": "Changed files are Markdown (.md) skill configuration files, not web code files targeted by BP-01 through BP-14"
+  },
+  "files_reviewed": [
+    "skills/accessibility-review/SKILL.md",
+    "skills/web-quality-audit/SKILL.md"
+  ],
+  "skill_used": "skills/best-practices/SKILL.md",
+  "reference_loaded": "skills/best-practices/references/guide.md"
+}

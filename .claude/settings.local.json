@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(pip install:*)",
+      "Bash(do python:*)",
+      "Bash(python:*)",
+      "Bash(PYTHONUTF8=1 python:*)"
     ]
   }
 }

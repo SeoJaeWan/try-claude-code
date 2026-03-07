@@ -1,0 +1,11 @@
+{
+  "eval_id": 2,
+  "eval_name": "commit-english",
+  "prompt": "commit this with a proper message",
+  "assertions": [
+    "Follows Conventional Commits format (type: description)",
+    "Analyzes git status/diff before committing",
+    "Generates subject-only commit message (no body)"
+  ],
+  "skill": "commit"
+}

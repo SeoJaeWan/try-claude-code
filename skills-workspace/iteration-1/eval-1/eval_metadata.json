@@ -1,0 +1,11 @@
+{
+  "eval_id": 1,
+  "eval_name": "commit-korean",
+  "prompt": "현재 변경사항을 커밋해줘",
+  "assertions": [
+    "Follows Conventional Commits format (type: description)",
+    "Analyzes git status/diff before committing",
+    "Generates subject-only commit message (no body)"
+  ],
+  "skill": "commit"
+}

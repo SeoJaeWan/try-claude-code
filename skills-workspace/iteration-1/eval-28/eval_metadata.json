@@ -1,0 +1,11 @@
+{
+  "eval_id": 28,
+  "eval_name": "seo-english",
+  "prompt": "review the SEO status of the changed HTML files",
+  "assertions": [
+    "Covers SEO items (title, meta, h1, canonical)",
+    "Lists SEO-coded items or equivalent",
+    "Provides results per item"
+  ],
+  "skill": "seo"
+}

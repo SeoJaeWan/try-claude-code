@@ -1,0 +1,29 @@
+{
+  "tool_calls": {
+    "Read": 3,
+    "Glob": 4,
+    "Grep": 0,
+    "Write": 2,
+    "Bash": 2,
+    "ToolSearch": 1,
+    "total": 12
+  },
+  "simulation": true,
+  "reason": "Bash execution was denied; workflow simulated via code analysis",
+  "skill_path": "skills/migration/SKILL.md",
+  "task": "Sync try-claude references with latest plugin defaults",
+  "files_analyzed": {
+    "skill_definition": "skills/migration/SKILL.md",
+    "migration_script": "skills/migration/scripts/run.mjs",
+    "project_state": ".claude/try-claude/project.json",
+    "plugin_references": 15,
+    "repo_local_references": 15,
+    "tracked_entries": 15
+  },
+  "expected_outcome": {
+    "updatedCount": 0,
+    "reseededCount": 0,
+    "skippedCount": 0,
+    "trackedCount": 15
+  }
+}

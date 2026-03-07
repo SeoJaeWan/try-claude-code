@@ -1,0 +1,11 @@
+{
+  "eval_id": 8,
+  "eval_name": "init-try-english",
+  "prompt": "bootstrap the try-claude runtime for this repo",
+  "assertions": [
+    "Identifies .claude/try-claude/ as runtime root",
+    "Mentions project.json creation/update",
+    "Lists runtime directories (references, plans, reports, etc.)"
+  ],
+  "skill": "init-try"
+}

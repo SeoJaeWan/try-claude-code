@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Covers all 5 areas (accessibility, best-practices, SEO, performance, CWV)",
+      "passed": true,
+      "evidence": "All 5 areas explicitly covered: A. Accessibility (KWCAG2.2) with 33+7 items, B. Best Practices (BP-01 through BP-14), C. SEO (SEO-01 through SEO-10), D. Performance (PERF-01 through PERF-11), E. Core Web Vitals (CWV-01 through CWV-11)"
+    },
+    {
+      "text": "Mentions unified report generation",
+      "passed": true,
+      "evidence": "Step 7 titled 'Unified Report' mentions 'HTML + CSV report generation (simulated)' with output path '.claude/try-claude/reports/web-quality/YYYYMMDD-HHmm/'"
+    },
+    {
+      "text": "Follows structured audit workflow",
+      "passed": true,
+      "evidence": "Follows an explicit 8-step workflow: Step 1 (Review Scope), Steps 2-6 (Five Area Review with delegation to sub-skills), Step 7 (Unified Report), Step 8 (Verification). Also explicitly notes 'Structured 8-step workflow with explicit delegation to 5 sub-skills' in Key Skill Differences section."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {},
+  "timing": {
+    "total_duration_seconds": 117.2
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "The with_skill run for the English prompt demonstrates full adherence to the web-quality-audit skill structure, with all 5 areas covered using specific checklist IDs, unified report generation, structured 8-step workflow, and a verification step."
+  }
+}

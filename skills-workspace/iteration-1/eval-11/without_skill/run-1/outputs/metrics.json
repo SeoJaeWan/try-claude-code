@@ -1,0 +1,1 @@
+{"tool_calls": {"ToolSearch": 1, "Glob": 8, "Bash": 1, "Read": 5, "Write": 0}, "total_tool_calls": 15}

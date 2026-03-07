@@ -1,0 +1,11 @@
+{
+  "eval_id": 23,
+  "eval_name": "a11y-korean",
+  "prompt": "변경된 웹 코드의 접근성을 KWCAG2.2 기준으로 검토해줘",
+  "assertions": [
+    "References KWCAG2.2 standard",
+    "Evaluates or lists 33 items",
+    "Uses O/X/triangle classification"
+  ],
+  "skill": "accessibility-review"
+}

@@ -1,0 +1,13 @@
+{
+  "tool_calls": {
+    "total": 7,
+    "by_tool": {
+      "ToolSearch": 2,
+      "Bash": 3,
+      "Read": 3,
+      "Glob": 1,
+      "Write": 2
+    },
+    "notes": "3 Bash calls were attempted but denied; Read was used instead to inspect file contents"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "expectations": [
+    {
+      "text": "Checks current branch status",
+      "passed": true,
+      "evidence": "Step 1 explicitly checks branch: 'Current branch: 0.1.0' and identifies it as main branch, correctly blocking PR creation."
+    },
+    {
+      "text": "Generates PR title and body",
+      "passed": true,
+      "evidence": "Hypothetical PR generated with title 'refactor: migrate commands to skills and streamline conventions' and full body with Summary, Changes, and Test plan sections."
+    },
+    {
+      "text": "Uses gh pr create or equivalent",
+      "passed": true,
+      "evidence": "Shows 'gh pr create --title \"...\" --body \"...\"' in Step 6 and in the Git Commands section."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "ToolSearch": 2,
+      "Read": 1,
+      "Bash": 3,
+      "Glob": 3,
+      "Write": 2
+    },
+    "total_tool_calls": 8
+  },
+  "timing": {
+    "total_duration_seconds": 45.3
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "All assertions passed. The skill correctly identified the main branch issue and still demonstrated the full PR workflow hypothetically. Well-structured output with clear step-by-step documentation."
+  }
+}
