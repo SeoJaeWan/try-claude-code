@@ -1,0 +1,43 @@
+{
+  "expectations": [
+    {
+      "text": "Follows Conventional Commits format (type: description)",
+      "passed": true,
+      "evidence": "Commit message is 'chore: update skill docs and local settings' which follows the 'type: description' format."
+    },
+    {
+      "text": "Analyzes git status/diff before committing",
+      "passed": true,
+      "evidence": "Step 2 shows detailed analysis of git status with file-by-file breakdown: '.claude/settings.local.json (staged)', 'skills/accessibility-review/SKILL.md (unstaged)', 'skills/web-quality-audit/SKILL.md (unstaged)' with nature-of-changes analysis."
+    },
+    {
+      "text": "Generates subject-only commit message (no body)",
+      "passed": true,
+      "evidence": "Final commit message is a single line: 'chore: update skill docs and local settings'. The git commit command uses -m with only a subject line. No body or footer present."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 4,
+      "Bash": 2,
+      "Glob": 1,
+      "Write": 2,
+      "ToolSearch": 1
+    },
+    "total_tool_calls": 10
+  },
+  "timing": {
+    "total_duration_seconds": 56.7
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "With skill: all 3 assertions pass. The skill correctly guided the agent to produce a subject-only conventional commit message and analyze changes before committing."
+  }
+}

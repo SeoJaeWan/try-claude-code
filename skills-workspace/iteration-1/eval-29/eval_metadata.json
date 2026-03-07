@@ -1,0 +1,11 @@
+{
+  "eval_id": 29,
+  "eval_name": "performance-korean",
+  "prompt": "변경된 코드의 웹 성능 이슈를 검토해줘",
+  "assertions": [
+    "Covers CRP, image, JS, font areas",
+    "Lists PERF items or equivalent",
+    "Provides results per item"
+  ],
+  "skill": "performance"
+}

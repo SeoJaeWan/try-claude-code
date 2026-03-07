@@ -1,0 +1,42 @@
+{
+  "tool_calls": {
+    "total": 9,
+    "by_tool": {
+      "ToolSearch": 2,
+      "Read": 4,
+      "Glob": 3,
+      "Write": 2,
+      "Bash": 0,
+      "Grep": 0
+    }
+  },
+  "evaluation": {
+    "skill_path": "C:/Users/sjw73/Desktop/dev/try-claude-code/skills/performance/SKILL.md",
+    "changed_files": [
+      ".claude/settings.local.json",
+      "skills/accessibility-review/SKILL.md",
+      "skills/web-quality-audit/SKILL.md"
+    ],
+    "web_files_found": 0,
+    "items_evaluated": 11,
+    "results": {
+      "pass": 0,
+      "fail": 0,
+      "advisory": 0,
+      "na": 11
+    },
+    "perf_items": {
+      "PERF-01": "N/A",
+      "PERF-02": "N/A",
+      "PERF-03": "N/A",
+      "PERF-04": "N/A",
+      "PERF-05": "N/A",
+      "PERF-06": "N/A",
+      "PERF-07": "N/A",
+      "PERF-08": "N/A",
+      "PERF-09": "N/A",
+      "PERF-10": "N/A",
+      "PERF-11": "N/A"
+    }
+  }
+}

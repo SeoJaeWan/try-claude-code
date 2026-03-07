@@ -1,0 +1,42 @@
+{
+  "expectations": [
+    {
+      "text": "Answers in Korean",
+      "passed": true,
+      "evidence": "Entire output is written in Korean, including headings like '# try-claude 설정 방법 및 init-try / migration 차이' and body text."
+    },
+    {
+      "text": "Mentions .claude/try-claude/ path",
+      "passed": true,
+      "evidence": "Line 11: '.claude/try-claude/ 런타임이 생성됩니다' and multiple subdirectory references like '.claude/try-claude/project.json', '.claude/try-claude/references/' etc."
+    },
+    {
+      "text": "Explains init-try or MCP configuration",
+      "passed": true,
+      "evidence": "Detailed comparison table of init-try vs migration with purpose, timing, and behavior. Also includes MCP configuration section explaining local vs shared settings."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "ToolSearch": 3,
+      "Read": 2,
+      "Bash": 1,
+      "Write": 2
+    },
+    "total_tool_calls": 8
+  },
+  "timing": {
+    "total_duration_seconds": 42.5
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "All assertions pass. Output is comprehensive, well-structured in Korean, covers .claude/try-claude/ path, and explains both init-try and migration clearly with a comparison table."
+  }
+}

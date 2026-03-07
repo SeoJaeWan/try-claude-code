@@ -1,0 +1,12 @@
+{
+  "tool_calls": {
+    "ToolSearch": 1,
+    "Glob": 6,
+    "Read": 12,
+    "Grep": 0,
+    "Bash": 2,
+    "Write": 2,
+    "Edit": 0,
+    "total": 23
+  }
+}

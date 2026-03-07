@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Creates custom hook with proper naming (useXxx)",
+      "passed": true,
+      "evidence": "Creates a useAuth custom hook in hooks/useAuth.ts that wraps AuthContext. The hook follows the useXxx naming convention."
+    },
+    {
+      "text": "References TDD workflow or testing",
+      "passed": false,
+      "evidence": "No mention of TDD, testing, test files, or any testing workflow anywhere in the output. The result focuses solely on implementation without any testing considerations."
+    },
+    {
+      "text": "Mentions API integration pattern (TanStack Query, fetch, mutation)",
+      "passed": true,
+      "evidence": "Uses fetch-based API integration via AuthApiService class (services/authApi.ts) with endpoints for login, logout, refresh, and get-me. However, does not use TanStack Query - relies on plain fetch with Context/Provider pattern instead."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 1,
+    "total": 3,
+    "pass_rate": 0.67
+  },
+  "execution_metrics": {},
+  "timing": {
+    "total_duration_seconds": 93.1
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "The without_skill run for eval-15 produced a functional useAuth hook with fetch-based API integration, but completely omitted any testing or TDD workflow. It also used a Context/Provider pattern rather than TanStack Query, which is a less modern approach for this use case."
+  }
+}

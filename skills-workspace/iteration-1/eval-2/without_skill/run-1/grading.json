@@ -1,0 +1,45 @@
+{
+  "expectations": [
+    {
+      "text": "Follows Conventional Commits format (type: description)",
+      "passed": true,
+      "evidence": "Commit message starts with 'refactor: update skill definitions and local settings' which follows the 'type: description' format."
+    },
+    {
+      "text": "Analyzes git status/diff before committing",
+      "passed": true,
+      "evidence": "Step 1 'Inspected git status' lists 3 changed files with staging status. Step 2 reviews recent commit history for style. Step 3 analyzes each file's content and nature of changes."
+    },
+    {
+      "text": "Generates subject-only commit message (no body)",
+      "passed": false,
+      "evidence": "The commit message includes a body and footer: 'refactor: update skill definitions and local settings\\n\\nUpdate accessibility-review and web-quality-audit SKILL.md files\\nand adjust local CLI permission settings.\\n\\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>'"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 1,
+    "total": 3,
+    "pass_rate": 0.67
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "ToolSearch": 2,
+      "Bash": 3,
+      "Read": 3,
+      "Glob": 1,
+      "Write": 2
+    },
+    "total_tool_calls": 7
+  },
+  "timing": {
+    "total_duration_seconds": 44.8
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [
+      "Without the skill, the agent defaults to a multi-line commit message with body and Co-Authored-By footer. The skill is needed to enforce subject-only messages."
+    ],
+    "overall": "Without skill: 2 of 3 assertions pass. The agent followed conventional commits and analyzed changes, but produced a multi-line commit message with body and Co-Authored-By footer instead of subject-only."
+  }
+}

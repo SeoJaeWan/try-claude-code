@@ -1,0 +1,37 @@
+{
+  "expectations": [
+    {
+      "text": "Mentions CODEMAPS and HUMANMAPS",
+      "passed": true,
+      "evidence": "Extensively mentions both throughout: 'CODEMAPS and HUMANMAPS auto-generation', 'Step 4: Generate CODEMAPS', 'Step 5: Generate HUMANMAPS (HTML)', and detailed file listings for both."
+    },
+    {
+      "text": "References detect_changes or extract_structure scripts",
+      "passed": true,
+      "evidence": "Explicitly references both: 'Run detect_changes.mjs' (Step 0a) and 'Run extract_structure.mjs' (Step 0b) with full paths and detailed behavioral descriptions."
+    },
+    {
+      "text": "Identifies service root detection logic",
+      "passed": true,
+      "evidence": "Describes discoverScanDirectories() looking for 'app', 'apps', 'src', 'pages' directories; notes 'No service root directories found'; explains writeEmptyChanges with reason 'no_service_dirs_found'."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0
+  },
+  "timing": {
+    "total_duration_seconds": 97.0
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Excellent result. The with_skill run produced a thorough simulation of the doc-update workflow, correctly identifying CODEMAPS/HUMANMAPS, both Node.js scripts, and the service root detection logic with detailed behavioral analysis."
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "expectations": [
+    {
+      "text": "Follows Conventional Commits format (type: description)",
+      "passed": true,
+      "evidence": "Commit message is 'docs: update skill descriptions and local settings' which follows the 'type: description' format."
+    },
+    {
+      "text": "Analyzes git status/diff before committing",
+      "passed": true,
+      "evidence": "Step 2 shows detailed analysis: 'Git status snapshot' listing 3 files with staging status, 'Nature of changes' describing each file, and 'Commit type determination' reasoning through docs vs chore types."
+    },
+    {
+      "text": "Generates subject-only commit message (no body)",
+      "passed": true,
+      "evidence": "Commit message is a single line: 'docs: update skill descriptions and local settings'. The result explicitly states: 'Per the skill instructions, -m flag is used with a single subject line. No body, no footer is added. The Co-Authored-By trailer specified in the system prompt is omitted because the skill explicitly says Subject line only. No body, no footer.'"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 4,
+      "Bash": 2,
+      "Write": 2,
+      "Glob": 0,
+      "Grep": 0,
+      "ToolSearch": 1
+    },
+    "total_tool_calls": 9
+  },
+  "timing": {
+    "total_duration_seconds": 52.9
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "With skill: all 3 assertions pass. The agent explicitly cited the skill's 'subject line only, no body, no footer' rule and correctly omitted the Co-Authored-By trailer."
+  }
+}

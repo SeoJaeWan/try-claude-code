@@ -1,0 +1,39 @@
+{
+  "expectations": [
+    {
+      "text": "Explains section-aware merge behavior",
+      "passed": true,
+      "evidence": "States 'mergeMode settings: 14 files use markdown-sections, 1 (package-manager.md) uses whole-file' and mentions 'per-section granularity' via section hashes. However, the explanation is shallow compared to the with_skill run - it names the modes but does not deeply explain section-level merge logic."
+    },
+    {
+      "text": "References project.json tracking",
+      "passed": true,
+      "evidence": "References 'project.json managedReferences: 15 entries', 'project.json tracks all 15 references with hashes and section hashes', and 'lastSyncedAt: 2026-03-06T14:10:45.567Z'."
+    },
+    {
+      "text": "Mentions managed references sync",
+      "passed": true,
+      "evidence": "The entire report is about syncing managed references. States 'All references are already in sync between the plugin defaults (references/) and the deployed copy (.claude/try-claude/references/)' and lists all 15 managed reference files."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0
+  },
+  "timing": {
+    "total_duration_seconds": 100.6
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [
+      "The without_skill run took significantly longer (100.6s vs 76.9s) and used nearly 3x the tokens (67,557 vs 24,943). It also provided a shallower explanation of the section-aware merge behavior."
+    ],
+    "overall": "Passed all assertions but with less depth on merge behavior compared to the with_skill run, and at significantly higher token and time cost."
+  }
+}

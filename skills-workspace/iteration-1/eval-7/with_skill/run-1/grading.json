@@ -1,0 +1,43 @@
+{
+  "expectations": [
+    {
+      "text": "Identifies .claude/try-claude/ as runtime root",
+      "passed": true,
+      "evidence": "Output explicitly states '.claude/try-claude/' as runtime root in multiple places including 'runtimeRoot' field and directory listings."
+    },
+    {
+      "text": "Mentions project.json creation/update",
+      "passed": true,
+      "evidence": "Step 7 states 'Write project.json' and output shows projectJsonPath. Also notes 'project.json would be rewritten with a fresh lastSyncedAt timestamp'."
+    },
+    {
+      "text": "Lists runtime directories (references, plans, reports, etc.)",
+      "passed": true,
+      "evidence": "Lines 42-48 list all runtime directories: references/, plans/, reports/, logs/, codemaps/, humanmaps/, jira-review/."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 4,
+      "Glob": 2,
+      "Bash": 1,
+      "Write": 2,
+      "ToolSearch": 1
+    },
+    "total_tool_calls": 10
+  },
+  "timing": {
+    "total_duration_seconds": 51.0
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Comprehensive output covering all aspects of the init-try skill. Correctly identified runtime root, project.json, and all runtime directories with detailed simulation of the run.mjs script."
+  }
+}

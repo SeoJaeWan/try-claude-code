@@ -1,0 +1,61 @@
+{
+  "simulation": true,
+  "plan_file_exists": false,
+  "plan_path": ".claude/try-claude/plans/auth-feature/plan.md",
+  "skill_path": "skills/planner-lite/SKILL.md",
+  "total_tool_calls": 22,
+  "tool_calls_breakdown": {
+    "step_1_validate": {
+      "Read": 1,
+      "Glob": 1,
+      "Bash": 1,
+      "subtotal": 3
+    },
+    "step_2_setup_worktree": {
+      "Bash": 3,
+      "subtotal": 3
+    },
+    "step_3_execute_phases": {
+      "phase_1": {
+        "Agent": 1,
+        "Bash": 3,
+        "subtotal": 4
+      },
+      "phase_2": {
+        "Agent": 1,
+        "Bash": 3,
+        "subtotal": 4
+      },
+      "phase_3": {
+        "Agent": 1,
+        "Bash": 3,
+        "subtotal": 4
+      },
+      "subtotal": 12
+    },
+    "step_4_merge": {
+      "Bash": 3,
+      "subtotal": 3
+    },
+    "step_5_verify": {
+      "Bash": 3,
+      "subtotal": 3
+    }
+  },
+  "tool_calls_by_type": {
+    "Read": 1,
+    "Glob": 1,
+    "Bash": 16,
+    "Agent": 3
+  },
+  "phases_executed": 3,
+  "agents_dispatched": [
+    "backend-developer",
+    "frontend-developer",
+    "doc-updater"
+  ],
+  "worktree_path": ".claude/worktrees/auth-feature",
+  "task_branch": "auth-feature",
+  "base_branch": "0.1.0",
+  "merge_strategy": "--no-ff"
+}

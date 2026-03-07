@@ -1,0 +1,11 @@
+{
+  "eval_id": 19,
+  "eval_name": "ui-publish-korean",
+  "prompt": "대시보드 레이아웃 컴포넌트를 만들어줘. 사이드바, 헤더, 메인 콘텐츠 영역 포함",
+  "assertions": [
+    "Creates layout-first React component",
+    "Uses Tailwind CSS or shadcn/ui",
+    "Follows no-logic principle (layout only, placeholders)"
+  ],
+  "skill": "ui-publish"
+}

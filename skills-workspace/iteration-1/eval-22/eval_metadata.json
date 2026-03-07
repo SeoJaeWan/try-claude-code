@@ -1,0 +1,11 @@
+{
+  "eval_id": 22,
+  "eval_name": "planner-lite-english",
+  "prompt": "execute the plan at .claude/try-claude/plans/auth-feature/plan.md with worktree isolation",
+  "assertions": [
+    "Describes worktree creation and lifecycle",
+    "Sequential phase execution pattern",
+    "Merge and cleanup steps"
+  ],
+  "skill": "planner-lite"
+}

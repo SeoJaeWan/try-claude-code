@@ -1,0 +1,31 @@
+{
+  "tool_calls": {
+    "Read": 3,
+    "Glob": 4,
+    "Bash": 1,
+    "Write": 2,
+    "ToolSearch": 1,
+    "total": 11
+  },
+  "simulation": {
+    "skill_path": "skills/migration/SKILL.md",
+    "script_path": "skills/migration/scripts/run.mjs",
+    "task": "sync local references with latest plugin defaults",
+    "bash_denied": true,
+    "simulated_output": {
+      "status": "ok",
+      "updatedCount": 0,
+      "reseededCount": 0,
+      "skippedCount": 0,
+      "trackedCount": 15,
+      "projectJsonPath": ".claude/try-claude/project.json"
+    },
+    "files_analyzed": {
+      "plugin_references": 15,
+      "runtime_references": 15,
+      "managed_entries_in_project_json": 15,
+      "markdown_sections_mode": 14,
+      "whole_file_mode": 1
+    }
+  }
+}

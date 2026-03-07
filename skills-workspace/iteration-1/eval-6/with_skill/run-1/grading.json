@@ -1,0 +1,44 @@
+{
+  "expectations": [
+    {
+      "text": "Answers in Korean",
+      "passed": true,
+      "evidence": "Entire output is written in Korean, including headings like '# MCP 설정을 팀원들과 공유하는 방법' and all body text."
+    },
+    {
+      "text": "Mentions .claude/try-claude/ path",
+      "passed": false,
+      "evidence": "The string '.claude/try-claude/' does not appear anywhere in the output. The output focuses on .mcp.json and ~/.claude.json paths instead."
+    },
+    {
+      "text": "Explains init-try or MCP configuration",
+      "passed": true,
+      "evidence": "Extensive explanation of MCP configuration including shared vs local settings, OS-specific templates for Windows and macOS/Linux, and specific MCP servers (filesystem, context7, sequential-thinking, playwright-test)."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 1,
+    "total": 3,
+    "pass_rate": 0.67
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 2,
+      "Write": 2,
+      "Bash": 1,
+      "ToolSearch": 2
+    },
+    "total_tool_calls": 7
+  },
+  "timing": {
+    "total_duration_seconds": 44.3
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [
+      "The help-try skill FAQ should mention .claude/try-claude/ path when discussing MCP sharing, since the runtime directory is part of the try-claude ecosystem context."
+    ],
+    "overall": "2 of 3 assertions pass. The output provides excellent MCP sharing guidance in Korean but does not mention the .claude/try-claude/ path, which the eval expects as contextual grounding for try-claude answers."
+  }
+}

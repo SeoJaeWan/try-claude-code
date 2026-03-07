@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Covers SEO items (title, meta, h1, canonical)",
+      "passed": true,
+      "evidence": "Table includes SEO-02 (title tag), SEO-05 (meta description), SEO-03 (h1), and SEO-06 (canonical URL) explicitly as named rows."
+    },
+    {
+      "text": "Lists SEO-coded items or equivalent",
+      "passed": true,
+      "evidence": "Output lists SEO-01 through SEO-10 as coded items in a structured table with code, priority, item name, result, and findings columns."
+    },
+    {
+      "text": "Provides results per item",
+      "passed": true,
+      "evidence": "Each of the 10 SEO items has its own row with a result designation (all N/A due to no web files) and an explanation of why it is not applicable."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {},
+  "timing": {
+    "total_duration_seconds": 76.9
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Excellent structured output with all 10 SEO-coded items evaluated per-item. Correctly identified no web files were changed and marked all items as N/A with clear reasoning in Korean."
+  }
+}

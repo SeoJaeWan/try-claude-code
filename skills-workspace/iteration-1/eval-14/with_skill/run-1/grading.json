@@ -1,0 +1,36 @@
+{
+  "expectations": [
+    {
+      "text": "Reads coding-rules references",
+      "passed": true,
+      "evidence": "Step 1 explicitly lists all 9 coding-rules documents read from '.claude/try-claude/references/coding-rules/' with key rules extracted: typescript.md, naming.md, code-style.md, folder-structure.md, comments.md, git.md, testing.md, package-manager.md, completion.md."
+    },
+    {
+      "text": "Detects framework or identifies Base TypeScript",
+      "passed": true,
+      "evidence": "Step 2 states: 'No package.json was found in the repository root' and 'we assume Base TypeScript as the framework target.'"
+    },
+    {
+      "text": "Maps coding rules to ESLint rules",
+      "passed": true,
+      "evidence": "Step 4 Group 1 provides a detailed 14-row ESLint rule mapping table with source tracing: @typescript-eslint/no-explicit-any from typescript.md, no-restricted-syntax (FunctionDeclaration) from code-style.md, simple-import-sort/imports from folder-structure.md, jsdoc/require-jsdoc from comments.md, etc."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {},
+  "timing": {
+    "total_tokens": 26754,
+    "duration_ms": 101271,
+    "total_duration_seconds": 101.3
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "All assertions passed. The with_skill run produced a well-structured 6-step simulation with comprehensive rule mapping, framework detection, per-group approval, and guardrails documentation."
+  }
+}

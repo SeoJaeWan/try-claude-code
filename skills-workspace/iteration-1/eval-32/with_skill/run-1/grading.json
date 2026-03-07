@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Covers LCP, INP, CLS metrics",
+      "passed": true,
+      "evidence": "Output includes CWV-01 to CWV-03 for LCP, CWV-04 to CWV-06 for INP, CWV-07 to CWV-11 for CLS in a structured table. Summary section explicitly states LCP Impact, INP Impact, and CLS Impact."
+    },
+    {
+      "text": "Lists CWV items or equivalent",
+      "passed": true,
+      "evidence": "All 11 CWV items (CWV-01 through CWV-11) are listed in a table with code, metric, item name, result, and findings. Confirms 'All 11 CWV items have been evaluated.'"
+    },
+    {
+      "text": "Provides impact analysis or results",
+      "passed": true,
+      "evidence": "Each item marked N/A with specific reasoning. Summary provides per-metric impact statements. Concludes all items N/A because changed files are Markdown skill configuration files."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {},
+  "timing": {
+    "total_duration_seconds": 58.8
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "The with_skill run produced a thorough, structured CWV analysis with all 11 checklist items, bilingual scope assessment, and clear per-metric impact summary."
+  }
+}

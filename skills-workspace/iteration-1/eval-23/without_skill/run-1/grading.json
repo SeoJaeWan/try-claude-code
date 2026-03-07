@@ -1,0 +1,38 @@
+{
+  "expectations": [
+    {
+      "text": "References KWCAG2.2 standard",
+      "passed": true,
+      "evidence": "Line 6: '검토 기준: KWCAG2.2 (한국 웹 콘텐츠 접근성 지침 2.2)'"
+    },
+    {
+      "text": "Evaluates or lists 33 items",
+      "passed": true,
+      "evidence": "All 33 items listed across 4 principle tables: Perceivable #1-9 (9 items), Operable #10-24 (15 items), Understandable #25-31 (7 items), Robust #32-33 (2 items). Line 122 confirms '해당없음(-): 33개 (KWCAG2.2) + 7개 (시맨틱 HTML) = 40개'."
+    },
+    {
+      "text": "Uses O/X/triangle classification",
+      "passed": true,
+      "evidence": "Lines 119-122 show classification system in use: '합격(O): 0개', '불합격(X): 0개', '권고(triangle): 0개', '해당없음(-): 33개'. All 33 items in the tables use '-' (해당없음) result classification."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {},
+  "timing": {
+    "total_tokens": 44581,
+    "duration_ms": 78241,
+    "total_duration_seconds": 78.2
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [
+      "Without the skill, this run still produced a correct KWCAG2.2-based review with all 33 items and O/X/Triangle classification. The Korean prompt likely triggered domain knowledge about KWCAG2.2. Output was more concise and practical than the with_skill run."
+    ],
+    "overall": "All 3 assertions pass. The output correctly references KWCAG2.2, lists all 33 items by principle, and uses the O/X/Triangle classification system. Notably, this without_skill run performed comparably to the with_skill run for this Korean-language prompt."
+  }
+}

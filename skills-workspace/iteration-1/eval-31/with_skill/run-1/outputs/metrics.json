@@ -1,0 +1,44 @@
+{
+  "tool_calls": {
+    "total": 10,
+    "breakdown": {
+      "ToolSearch": 2,
+      "Read": 5,
+      "Glob": 3,
+      "Bash": 2,
+      "Write": 2
+    }
+  },
+  "skill": {
+    "name": "core-web-vitals",
+    "path": "C:/Users/sjw73/Desktop/dev/try-claude-code/skills/core-web-vitals/SKILL.md"
+  },
+  "evaluation": {
+    "items_evaluated": 11,
+    "results": {
+      "pass": 0,
+      "fail": 0,
+      "advisory": 0,
+      "na": 11
+    },
+    "items": {
+      "CWV-01": { "metric": "LCP", "item": "LCP 요소 초기 HTML 존재", "result": "N/A", "reason": "변경된 웹 소스 파일 없음" },
+      "CWV-02": { "metric": "LCP", "item": "fetchpriority=high", "result": "N/A", "reason": "변경된 웹 소스 파일 없음" },
+      "CWV-03": { "metric": "LCP", "item": "폰트 렌더 차단 없음", "result": "N/A", "reason": "변경된 웹 소스 파일 없음" },
+      "CWV-04": { "metric": "INP", "item": "이벤트 핸들러 즉각 피드백", "result": "N/A", "reason": "변경된 웹 소스 파일 없음" },
+      "CWV-05": { "metric": "INP", "item": "무거운 연산 지연 처리", "result": "N/A", "reason": "변경된 웹 소스 파일 없음" },
+      "CWV-06": { "metric": "INP", "item": "React memo 활용", "result": "N/A", "reason": "변경된 웹 소스 파일 없음" },
+      "CWV-07": { "metric": "CLS", "item": "img width/height", "result": "N/A", "reason": "변경된 웹 소스 파일 없음" },
+      "CWV-08": { "metric": "CLS", "item": "뷰포트 위 동적 삽입 금지", "result": "N/A", "reason": "변경된 웹 소스 파일 없음" },
+      "CWV-09": { "metric": "CLS", "item": "애니메이션 transform/opacity", "result": "N/A", "reason": "변경된 웹 소스 파일 없음" },
+      "CWV-10": { "metric": "CLS", "item": "폰트 교체 시프트 방지", "result": "N/A", "reason": "변경된 웹 소스 파일 없음" },
+      "CWV-11": { "metric": "CLS", "item": "동적 콘텐츠 공간 예약", "result": "N/A", "reason": "변경된 웹 소스 파일 없음" }
+    }
+  },
+  "changed_files": [
+    ".claude/settings.local.json",
+    "skills/accessibility-review/SKILL.md",
+    "skills/web-quality-audit/SKILL.md"
+  ],
+  "web_files_changed": 0
+}

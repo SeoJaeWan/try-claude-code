@@ -1,0 +1,36 @@
+{
+  "expectations": [
+    {
+      "text": "Describes worktree creation and lifecycle",
+      "passed": true,
+      "evidence": "Output states worktree was created at '.claude/worktrees/auth-feature' on branch 'worktree-auth-feature' based on '0.1.0'. Also mentions 'The worktree was successfully created, demonstrating that worktree isolation works correctly.' However, no worktree removal/lifecycle completion is described."
+    },
+    {
+      "text": "Sequential phase execution pattern",
+      "passed": false,
+      "evidence": "No phase execution is described. The output reports 'FAILED - Plan file not found' and lists steps taken as searching for the file. No Phase 1/2/3 execution pattern is present."
+    },
+    {
+      "text": "Merge and cleanup steps",
+      "passed": false,
+      "evidence": "No merge or cleanup steps are described. The execution stopped after determining the plan file did not exist. The 'What Would Be Needed' section only describes plan file format requirements, not merge/cleanup workflow."
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 2,
+    "total": 3,
+    "pass_rate": 0.33
+  },
+  "execution_metrics": {},
+  "timing": {
+    "total_duration_seconds": 64.7
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [
+      "Without the skill, the agent stopped at the missing plan file rather than simulating or describing the expected workflow. The with-skill runs handled this gracefully by constructing representative plans and simulating the full workflow."
+    ],
+    "overall": "Without-skill run failed to describe sequential phase execution or merge/cleanup steps. It correctly identified the missing plan file and created a worktree, but did not attempt to describe or simulate the full planner-lite workflow. This demonstrates the skill's value in guiding the agent through the complete pattern even when input artifacts are missing."
+  }
+}

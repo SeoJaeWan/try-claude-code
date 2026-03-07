@@ -1,0 +1,42 @@
+{
+  "expectations": [
+    {
+      "text": "Checks current branch status",
+      "passed": true,
+      "evidence": "Step 1 shows 'Current branch: 0.1.0 (also the main branch)' and correctly identifies BLOCKED status."
+    },
+    {
+      "text": "Generates PR title and body",
+      "passed": true,
+      "evidence": "PR title 'refactor: update accessibility-review skill and local settings' and body with Summary, Changes, and Test plan sections generated under Step 4."
+    },
+    {
+      "text": "Uses gh pr create or equivalent",
+      "passed": true,
+      "evidence": "Step 6 shows 'gh pr create --title \"...\" --body \"$(cat <<'EOF' ... EOF)\"' command."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 3,
+      "Glob": 3,
+      "Bash": 4,
+      "Write": 2
+    },
+    "total_tool_calls": 12
+  },
+  "timing": {
+    "total_duration_seconds": 141.5
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "All assertions passed. The skill-guided run followed the structured workflow, correctly detected the main branch block, and still demonstrated the full PR creation process. Notably higher duration (141.5s) compared to other runs."
+  }
+}

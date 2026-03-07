@@ -1,0 +1,43 @@
+{
+  "expectations": [
+    {
+      "text": "Identifies .claude/try-claude/ as runtime root",
+      "passed": true,
+      "evidence": "Output identifies '.claude/try-claude/' as the runtime root directory throughout, including '런타임 디렉토리 생성' section and JSON output showing runtimeRoot."
+    },
+    {
+      "text": "Mentions project.json creation/update",
+      "passed": true,
+      "evidence": "Step 3 explicitly describes 'project.json 생성' with details about schemaVersion, pluginId, pluginVersion, lastSyncedAt, and managedReferences fields."
+    },
+    {
+      "text": "Lists runtime directories (references, plans, reports, etc.)",
+      "passed": true,
+      "evidence": "Step 1 lists runtime directories: references/, plans/, reports/, logs/, codemaps/, humanmaps/. Also confirmed in 'Current State' section listing all directories."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "ToolSearch": 1,
+      "Glob": 3,
+      "Bash": 4,
+      "Read": 4,
+      "Write": 2
+    },
+    "total_tool_calls": 14
+  },
+  "timing": {
+    "total_duration_seconds": 63.5
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Without the skill, the agent still produced a thorough Korean-language result covering all assertions. Used more tool calls (14 vs 10) and took longer (63.5s vs 51s) compared to the with_skill run."
+  }
+}

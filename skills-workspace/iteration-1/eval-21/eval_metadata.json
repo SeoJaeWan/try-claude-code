@@ -1,0 +1,11 @@
+{
+  "eval_id": 21,
+  "eval_name": "planner-lite-korean",
+  "prompt": "plan.md에 정의된 3개 Phase를 worktree 격리 방식으로 실행해줘",
+  "assertions": [
+    "Describes worktree creation and lifecycle",
+    "Sequential phase execution pattern",
+    "Merge and cleanup steps"
+  ],
+  "skill": "planner-lite"
+}

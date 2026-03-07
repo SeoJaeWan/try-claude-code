@@ -1,0 +1,11 @@
+{
+  "tool_calls": {
+    "Read": 4,
+    "Bash": 2,
+    "Glob": 1,
+    "Write": 2,
+    "ToolSearch": 1,
+    "total": 10
+  },
+  "notes": "Bash calls were attempted but 3 out of 4 were denied/cancelled. Git status was obtained from the conversation context snapshot instead."
+}

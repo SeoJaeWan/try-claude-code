@@ -1,0 +1,37 @@
+{
+  "expectations": [
+    {
+      "text": "Explains section-aware merge behavior",
+      "passed": true,
+      "evidence": "Detailed explanation of mergeMarkdownSections(): 'Unchanged sections (matching sectionHashes) are updated to latest plugin content; Edited sections (hash mismatch) are preserved as-is; New plugin sections are appended; Local-only sections are kept.' 14 of 15 files use markdown-sections mode."
+    },
+    {
+      "text": "References project.json tracking",
+      "passed": true,
+      "evidence": "Explains loading project.json from '.claude/try-claude/project.json', reading managedReferences into a Map, writing updated project.json with new timestamps and hashes. Shows projectJsonPath in simulated output."
+    },
+    {
+      "text": "Mentions managed references sync",
+      "passed": true,
+      "evidence": "States '15 managedReferences entries tracked', describes the full sync workflow comparing plugin reference files against repo-local copies, and shows simulated output with trackedCount: 15 and all 15 file actions."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0
+  },
+  "timing": {
+    "total_duration_seconds": 76.9
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Excellent result. The with_skill run provided a thorough, structured analysis of the migration skill behavior including detailed merge mode explanations, project.json tracking, and a complete simulated output. Responded well to the Korean-language prompt."
+  }
+}

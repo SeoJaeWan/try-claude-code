@@ -1,0 +1,36 @@
+{
+  "expectations": [
+    {
+      "text": "Detects or specifies NestJS/Express framework",
+      "passed": true,
+      "evidence": "Step 0 documents scanning for signal files and falling back to Express + TypeScript based on project coding rules. States: 'we assume Express + TypeScript as the target framework, with pnpm as the package manager'."
+    },
+    {
+      "text": "Defines API endpoints (POST/GET/PUT/DELETE)",
+      "passed": true,
+      "evidence": "Defines 5 endpoints in a table: GET /api/products (list), GET /api/products/:id, POST /api/products, PUT /api/products/:id, DELETE /api/products/:id with status codes."
+    },
+    {
+      "text": "Includes authentication or CRUD implementation",
+      "passed": true,
+      "evidence": "Full CRUD implementation with product model (TypeScript interfaces), route definitions with Express Router, controller/service architecture, validation, error handling, pagination, and type safety details."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {},
+  "timing": {
+    "total_tokens": 19498,
+    "duration_ms": 80945,
+    "total_duration_seconds": 80.9
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "The with_skill run produced a well-structured output following the 15-step skill workflow. It documents each step (stack detection, reference reading, plan reading, TDD phases, implementation, verification). Includes code snippets for model and routes, a workflow adherence summary table, and clear documentation of what was checked and found/not found."
+  }
+}

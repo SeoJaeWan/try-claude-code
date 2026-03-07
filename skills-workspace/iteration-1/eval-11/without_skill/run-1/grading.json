@@ -1,0 +1,37 @@
+{
+  "expectations": [
+    {
+      "text": "Mentions CODEMAPS and HUMANMAPS",
+      "passed": true,
+      "evidence": "Section header 'CODEMAPS/HUMANMAPS 발견' and detailed descriptions of both: CODEMAPS as English Markdown for AI agents, HUMANMAPS as Korean HTML for humans."
+    },
+    {
+      "text": "References detect_changes or extract_structure scripts",
+      "passed": true,
+      "evidence": "Workflow step 1: 'detect_changes.mjs 실행 — SHA256 기반 변경 감지' and step 2: 'extract_structure.mjs 실행 — Next.js 라우트/Prisma 스키마 사전 추출'."
+    },
+    {
+      "text": "Identifies service root detection logic",
+      "passed": true,
+      "evidence": "States '서비스 루트(app/, apps/, src/, pages/) 없음' and 'detect_changes.mjs는 no_service_dirs_found 결과를 반환할 것', demonstrating understanding of service root detection."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0
+  },
+  "timing": {
+    "total_duration_seconds": 133.0
+  },
+  "claims": [],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Solid result. Even without the skill, the agent discovered the doc-update system through project exploration and correctly identified all three key aspects. Output is more concise than the with_skill variant but covers all assertions."
+  }
+}
