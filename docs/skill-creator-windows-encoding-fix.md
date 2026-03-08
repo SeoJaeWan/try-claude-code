@@ -52,23 +52,38 @@ Python의 `open()`과 `Path.read_text()`는 인코딩을 명시하지 않으면 
 
 skill-creator의 데이터 파일(JSON, Markdown)은 모두 UTF-8로 작성되므로, `encoding="utf-8"`을 명시적으로 지정하는 것이 올바른 접근이다.
 
+## 기존 관련 이슈/PR (anthropics/skills)
+
+레포: https://github.com/anthropics/skills
+
+| # | 제목 | 상태 | 범위 |
+|---|------|------|------|
+| #255 | Specify UTF-8 encoding when reading skill_md | Open PR | SKILL.md 읽기 |
+| #284 | Fix(skill-creator): specify utf-8 encoding when reading SKILL.md | Open PR | SKILL.md 읽기 |
+| #224 | Set the default encoding to utf8 when skill initialization | Open PR | 스킬 초기화 |
+| #187 | Fix GBK encoding issues on Windows | Closed (merged) | Windows GBK 인코딩 |
+
+**기존 PR들과의 차이점**: 위 PR들은 SKILL.md 읽기 또는 스킬 초기화 시점의 인코딩만 다룬다. 본 문서가 다루는 14개 지점은 **skill-creator의 eval 파이프라인** (`generate_review.py` 9개, `aggregate_benchmark.py` 5개)으로, 기존 PR과 중복되지 않는 별도 수정 범위이다.
+
 ## 기여 방법
 
-이 수정은 [anthropic-agent-skills](https://github.com/anthropics/anthropic-agent-skills) 레포에 PR로 제출할 수 있다.
+이 수정은 [anthropics/skills](https://github.com/anthropics/skills) 레포에 PR로 제출할 수 있다.
 
 ```bash
 # 1. 레포 포크 및 클론
-gh repo fork anthropics/anthropic-agent-skills --clone
+gh repo fork anthropics/skills --clone
 
 # 2. 브랜치 생성
-git checkout -b fix/windows-utf8-encoding
+git checkout -b fix/skill-creator-eval-utf8-encoding
 
 # 3. 위 테이블의 14개 지점 수정
+# - skills/skill-creator/eval-viewer/generate_review.py (9개)
+# - skills/skill-creator/scripts/aggregate_benchmark.py (5개)
 
 # 4. PR 제출
 gh pr create \
-  --title "fix: add explicit UTF-8 encoding for Windows compatibility" \
-  --body "Fixes UnicodeDecodeError on Windows when eval data contains non-ASCII characters (Korean, Japanese, Chinese, etc.)"
+  --title "fix(skill-creator): add UTF-8 encoding to eval pipeline for Windows" \
+  --body "Fixes UnicodeDecodeError in generate_review.py and aggregate_benchmark.py on Windows when eval_metadata.json contains non-ASCII characters (Korean, Japanese, Chinese, etc.). Related: #255, #284, #224, #187"
 ```
 
 ## 로컬 임시 해결
