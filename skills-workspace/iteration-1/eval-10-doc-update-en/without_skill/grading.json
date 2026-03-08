@@ -1,0 +1,39 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for doc-update",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Mentions detect_changes.mjs and extract_structure.mjs in sequence",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Describes codemaps/ directory with INDEX.md",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Mentions humanmaps/ with HTML output",
+      "passed": true,
+      "evidence": "Found in summary: '# doc-update Evaluation (English prompt, without_skill)'"
+    },
+    {
+      "text": "Mentions service root detection (app/, apps/, src/)",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 4,
+    "total": 5,
+    "pass_rate": 0.2
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

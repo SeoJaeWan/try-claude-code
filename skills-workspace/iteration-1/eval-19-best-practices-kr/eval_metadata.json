@@ -1,0 +1,15 @@
+{
+  "eval_id": 19,
+  "eval_name": "eval-19-best-practices-kr",
+  "prompt": "변경된 코드의 보안, 호환성, 코드 품질을 검토해줘",
+  "skill": "best-practices",
+  "tier": "T3",
+  "expected_output": "BP-01~BP-14 전수 평가: 보안(BP-01 HTTPS, BP-02 취약의존성, BP-03 CSP, BP-04 보안헤더, BP-05 innerHTML), 호환성(BP-06 DOCTYPE, BP-07 charset, BP-08 viewport, BP-09 deprecated, BP-10 passive), 코드품질(BP-11 콘솔에러, BP-12 중복id, BP-13 시맨틱, BP-14 에러처리)",
+  "assertions": [
+    "Summary mentions reading SKILL.md for best-practices",
+    "Lists all 14 BP items (BP-01 through BP-14)",
+    "Covers Security area (5 items)",
+    "Covers Compatibility area (5 items)",
+    "Covers Code Quality area (4 items)"
+  ]
+}

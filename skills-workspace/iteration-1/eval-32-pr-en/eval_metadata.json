@@ -1,0 +1,14 @@
+{
+  "eval_id": 32,
+  "eval_name": "eval-32-pr-en",
+  "prompt": "open a pull request for the current changes",
+  "skill": "pr",
+  "tier": "T4",
+  "expected_output": "Analyzes branch diff, generates PR with Summary and Test plan sections, executes gh pr create",
+  "assertions": [
+    "Summary mentions reading SKILL.md for pr",
+    "Analyzes branch diff",
+    "Generates PR with Summary and Test plan sections",
+    "Mentions gh pr create execution"
+  ]
+}

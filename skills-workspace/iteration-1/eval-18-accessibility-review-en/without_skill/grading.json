@@ -1,0 +1,39 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for accessibility-review",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Mentions kwcag22.md reference",
+      "passed": true,
+      "evidence": "Found in summary: '- Missing KWCAG 2.2 specific 33-item structure'"
+    },
+    {
+      "text": "Evaluates all 33 items with auto-detection levels",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Describes semantic HTML review (7 items)",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Mentions report output in .claude/try-claude/reports/accessibility/",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 4,
+    "total": 5,
+    "pass_rate": 0.2
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

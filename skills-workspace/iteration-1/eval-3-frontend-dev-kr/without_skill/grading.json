@@ -1,0 +1,39 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for frontend-dev",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "References use{Verb}{Resource} naming convention",
+      "passed": true,
+      "evidence": "Found in summary: '- use{Verb}{Resource} 네이밍 규칙 미적용'"
+    },
+    {
+      "text": "Mentions TDD RED->GREEN workflow or test-first approach",
+      "passed": true,
+      "evidence": "Pattern matched in summary content"
+    },
+    {
+      "text": "References coding-rules documents",
+      "passed": true,
+      "evidence": "Pattern matched in summary content"
+    },
+    {
+      "text": "Mentions generate.mjs or coding-rules-based implementation",
+      "passed": true,
+      "evidence": "Found in summary: '- generate.mjs 사용 없음'"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 1,
+    "total": 5,
+    "pass_rate": 0.8
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

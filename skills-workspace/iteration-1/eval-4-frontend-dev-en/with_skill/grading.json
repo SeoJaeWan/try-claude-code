@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for frontend-dev",
+      "passed": true,
+      "evidence": "Found in summary: '## Skill Read: skills/frontend-dev/SKILL.md'"
+    },
+    {
+      "text": "Uses useGetUserProfile or similar use{Verb}{Resource} naming",
+      "passed": true,
+      "evidence": "Found in summary: '- useGetUserProfile following use{Verb}{Resource} pattern'"
+    },
+    {
+      "text": "Mentions TDD RED->GREEN or test-first workflow",
+      "passed": true,
+      "evidence": "Found in summary: '## TDD RED->GREEN Workflow'"
+    },
+    {
+      "text": "References coding-rules/code-style.md or design/ docs",
+      "passed": true,
+      "evidence": "Found in summary: '## References'"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

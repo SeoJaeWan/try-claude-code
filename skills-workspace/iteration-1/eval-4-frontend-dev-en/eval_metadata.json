@@ -1,0 +1,14 @@
+{
+  "eval_id": 4,
+  "eval_name": "eval-4-frontend-dev-en",
+  "prompt": "create a custom hook for fetching user profile data with TanStack Query",
+  "skill": "frontend-dev",
+  "tier": "T1",
+  "expected_output": "useGetUserProfile hook following use{Verb}{Resource} naming, test-first workflow with RED verification, references to coding-rules/code-style.md and design/ docs",
+  "assertions": [
+    "Summary mentions reading SKILL.md for frontend-dev",
+    "Uses useGetUserProfile or similar use{Verb}{Resource} naming",
+    "Mentions TDD RED->GREEN or test-first workflow",
+    "References coding-rules/code-style.md or design/ docs"
+  ]
+}

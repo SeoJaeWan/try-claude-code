@@ -1,0 +1,39 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for accessibility-review",
+      "passed": true,
+      "evidence": "Found in summary: '## Skill Read: skills/accessibility-review/SKILL.md'"
+    },
+    {
+      "text": "Mentions kwcag22.md reference",
+      "passed": true,
+      "evidence": "Found in summary: '## kwcag22.md Reference'"
+    },
+    {
+      "text": "Evaluates all 33 items with auto-detection levels",
+      "passed": true,
+      "evidence": "Found in summary: '## All 33 Items with Auto-detection Levels'"
+    },
+    {
+      "text": "Describes semantic HTML review (7 items)",
+      "passed": true,
+      "evidence": "Found in summary: '## Semantic HTML Review (7 items)'"
+    },
+    {
+      "text": "Mentions report output in .claude/try-claude/reports/accessibility/",
+      "passed": true,
+      "evidence": "Found in summary: '## Report Output'"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for ui-publish",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "References design/theme-tokens.md and tailwind.config.js",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Mentions mobile-first breakpoints (sm: md: lg:)",
+      "passed": true,
+      "evidence": "Found in summary: '- Mobile-first breakpoint conventions'"
+    },
+    {
+      "text": "Mentions shadcn/ui component reuse or CODEMAPS check",
+      "passed": true,
+      "evidence": "Found in summary: '- shadcn/ui component reuse checks via CODEMAPS'"
+    },
+    {
+      "text": "Mentions Pretendard font-family",
+      "passed": true,
+      "evidence": "Found in summary: '- Pretendard font-family requirement'"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 2,
+    "total": 5,
+    "pass_rate": 0.6
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

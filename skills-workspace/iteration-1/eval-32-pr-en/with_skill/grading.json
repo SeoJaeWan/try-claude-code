@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for pr",
+      "passed": true,
+      "evidence": "Found in summary: '## Skill Read: skills/pr/SKILL.md'"
+    },
+    {
+      "text": "Analyzes branch diff",
+      "passed": true,
+      "evidence": "Found in summary: '## Branch Diff Analysis'"
+    },
+    {
+      "text": "Generates PR with Summary and Test plan sections",
+      "passed": true,
+      "evidence": "Found in summary: '# pr Skill Evaluation (English prompt, with_skill)'"
+    },
+    {
+      "text": "Mentions gh pr create execution",
+      "passed": true,
+      "evidence": "Found in summary: '- HEREDOC format for gh pr create'"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

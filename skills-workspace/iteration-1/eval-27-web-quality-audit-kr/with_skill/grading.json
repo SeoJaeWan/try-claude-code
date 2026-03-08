@@ -1,0 +1,54 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for web-quality-audit",
+      "passed": true,
+      "evidence": "Found in summary: '## 읽은 스킬: skills/web-quality-audit/SKILL.md'"
+    },
+    {
+      "text": "Describes 5-area sequential execution",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Mentions Accessibility (33 items)",
+      "passed": true,
+      "evidence": "Found in summary: '| 1 | Accessibility (KWCAG2.2) | #6c8ebf | 33 |'"
+    },
+    {
+      "text": "Mentions Best Practices (14 items)",
+      "passed": true,
+      "evidence": "Found in summary: '| 2 | Best Practices | #82c882 | 14 |'"
+    },
+    {
+      "text": "Mentions SEO (10 items)",
+      "passed": true,
+      "evidence": "Pattern matched in summary content"
+    },
+    {
+      "text": "Mentions Performance (11 items)",
+      "passed": true,
+      "evidence": "Found in summary: '| 4 | Performance | #e05c5c | 11 |'"
+    },
+    {
+      "text": "Mentions CWV (11 items)",
+      "passed": true,
+      "evidence": "Pattern matched in summary content"
+    },
+    {
+      "text": "Mentions unified HTML+CSV report generation",
+      "passed": true,
+      "evidence": "Found in summary: '## 통합 HTML+CSV 리포트'"
+    }
+  ],
+  "summary": {
+    "passed": 7,
+    "failed": 1,
+    "total": 8,
+    "pass_rate": 0.88
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

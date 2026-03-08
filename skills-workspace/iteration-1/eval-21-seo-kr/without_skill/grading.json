@@ -1,0 +1,44 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for seo",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Lists all 10 SEO items (SEO-01 through SEO-10)",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Classifies items by Critical/High/Medium priority",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Covers Critical items (SEO-01 through SEO-04)",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Covers High items (SEO-05 through SEO-08)",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Covers Medium items (SEO-09 through SEO-10)",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 6,
+    "total": 6,
+    "pass_rate": 0.0
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

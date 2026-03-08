@@ -1,0 +1,15 @@
+{
+  "eval_id": 2,
+  "eval_name": "eval-2-init-try-en",
+  "prompt": "bootstrap the try-claude runtime for this repo",
+  "skill": "init-try",
+  "tier": "T1",
+  "expected_output": "run.mjs script execution, project.json with managedReferences array containing path/hash/mergeMode fields, SHA256 hash tracking per reference file",
+  "assertions": [
+    "Summary mentions reading SKILL.md for init-try",
+    "Mentions run.mjs script execution",
+    "Describes project.json with managedReferences array",
+    "Mentions path/hash/mergeMode fields in managedReferences",
+    "Mentions SHA256 hash tracking per reference file"
+  ]
+}

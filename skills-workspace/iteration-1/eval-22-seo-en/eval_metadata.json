@@ -1,0 +1,14 @@
+{
+  "eval_id": 22,
+  "eval_name": "eval-22-seo-en",
+  "prompt": "review the SEO status of the changed HTML files",
+  "skill": "seo",
+  "tier": "T3",
+  "expected_output": "All 10 SEO items: SEO-01 through SEO-10 with Critical/High/Medium priority classification, structured checklist with pass/fail/N/A per item",
+  "assertions": [
+    "Summary mentions reading SKILL.md for seo",
+    "Evaluates all 10 SEO items",
+    "Uses Critical/High/Medium priority classification",
+    "Provides structured checklist with pass/fail/N/A"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "eval_id": 31,
+  "eval_name": "eval-31-pr-kr",
+  "prompt": "PR 올려줘",
+  "skill": "pr",
+  "tier": "T4",
+  "expected_output": "Branch 분석, commit history 요약, gh pr create --title --body 실행, Summary/Test plan 섹션 포함",
+  "assertions": [
+    "Summary mentions reading SKILL.md for pr",
+    "Describes branch analysis",
+    "Mentions commit history summary",
+    "Mentions gh pr create --title --body execution",
+    "Includes Summary section in PR body",
+    "Includes Test plan section in PR body"
+  ]
+}

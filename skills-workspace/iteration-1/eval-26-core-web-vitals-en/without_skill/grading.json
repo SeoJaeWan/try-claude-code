@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for core-web-vitals",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Evaluates all 11 CWV items",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Classifies by LCP/INP/CLS metric",
+      "passed": true,
+      "evidence": "Pattern matched in summary content"
+    },
+    {
+      "text": "Provides impact analysis per item",
+      "passed": true,
+      "evidence": "Found in summary: '- LCP: No impact'"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

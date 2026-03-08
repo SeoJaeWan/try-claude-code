@@ -1,0 +1,15 @@
+{
+  "eval_id": 5,
+  "eval_name": "eval-5-backend-dev-kr",
+  "prompt": "사용자 인증 API 엔드포인트를 NestJS로 구현해줘",
+  "skill": "backend-dev",
+  "tier": "T1",
+  "expected_output": "generate.mjs structure auth 실행 또는 수동으로 auth.controller.ts, auth.service.ts, auth.module.ts 생성. coding-rules/folder-structure.md 준수, DB snake_case 네이밍",
+  "assertions": [
+    "Summary mentions reading SKILL.md for backend-dev",
+    "Mentions NestJS module structure (controller, service, module)",
+    "References coding-rules/folder-structure.md",
+    "Mentions DB snake_case naming convention",
+    "Mentions generate.mjs or manual file generation"
+  ]
+}

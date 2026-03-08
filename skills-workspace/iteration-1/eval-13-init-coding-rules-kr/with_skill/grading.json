@@ -1,0 +1,39 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for init-coding-rules",
+      "passed": true,
+      "evidence": "Found in summary: '## 읽은 스킬: skills/init-coding-rules/SKILL.md'"
+    },
+    {
+      "text": "Mentions reading 9 coding-rules documents",
+      "passed": true,
+      "evidence": "Found in summary: '# init-coding-rules 스킬 평가 (Korean prompt, with_skill)'"
+    },
+    {
+      "text": "Mentions framework detection from package.json",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Describes 4-group approval workflow (ESLint, TSConfig, commitlint, husky+lint-staged)",
+      "passed": true,
+      "evidence": "Pattern matched in summary content"
+    },
+    {
+      "text": "Mentions config file generation",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 2,
+    "total": 5,
+    "pass_rate": 0.6
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

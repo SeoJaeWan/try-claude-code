@@ -1,0 +1,14 @@
+{
+  "eval_id": 20,
+  "eval_name": "eval-20-best-practices-en",
+  "prompt": "check the changed files for web best practices compliance",
+  "skill": "best-practices",
+  "tier": "T3",
+  "expected_output": "All 14 BP items evaluated: BP-01 through BP-14 covering Security (5), Compatibility (5), Code Quality (4). Each item with pass/fail/N/A result and specific evidence",
+  "assertions": [
+    "Summary mentions reading SKILL.md for best-practices",
+    "Evaluates all 14 BP items",
+    "Each item has pass/fail/N/A result",
+    "Provides specific evidence per item"
+  ]
+}

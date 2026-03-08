@@ -1,0 +1,39 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for backend-dev",
+      "passed": true,
+      "evidence": "Found in summary: '## 읽은 스킬: skills/backend-dev/SKILL.md'"
+    },
+    {
+      "text": "Mentions NestJS module structure (controller, service, module)",
+      "passed": true,
+      "evidence": "Found in summary: '## NestJS 모듈 구조 (generate.mjs 활용)'"
+    },
+    {
+      "text": "References coding-rules/folder-structure.md",
+      "passed": true,
+      "evidence": "Found in summary: '- `node references/coding-rules/scripts/generate.mjs structure auth --type module --framework nestjs --create`'"
+    },
+    {
+      "text": "Mentions DB snake_case naming convention",
+      "passed": true,
+      "evidence": "Found in summary: '## DB snake_case 네이밍'"
+    },
+    {
+      "text": "Mentions generate.mjs or manual file generation",
+      "passed": true,
+      "evidence": "Found in summary: '## NestJS 모듈 구조 (generate.mjs 활용)'"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

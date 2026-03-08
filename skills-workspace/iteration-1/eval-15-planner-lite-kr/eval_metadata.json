@@ -1,0 +1,17 @@
+{
+  "eval_id": 15,
+  "eval_name": "eval-15-planner-lite-kr",
+  "prompt": "plan.md에 정의된 3개 Phase를 worktree 격리 방식으로 실행해줘",
+  "skill": "planner-lite",
+  "tier": "T2",
+  "expected_output": "plan.md의 Branch: 헤더 검증, owner_agent: 별 agents/*.md 존재 확인, git worktree add -b {branch} .claude/worktrees/{branch}, phase별 Agent 호출 (isolation: worktree 금지), phase 완료 후 git merge --no-ff, worktree 정리",
+  "assertions": [
+    "Summary mentions reading SKILL.md for planner-lite",
+    "Mentions Branch: header validation in plan.md",
+    "Mentions owner_agent agents/*.md existence check",
+    "Describes git worktree add command",
+    "States isolation: worktree is forbidden in Agent calls",
+    "Mentions git merge --no-ff after phase completion",
+    "Mentions worktree cleanup"
+  ]
+}

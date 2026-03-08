@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for performance",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Evaluates all 11 PERF items",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Focuses on web performance (not general code efficiency)",
+      "passed": true,
+      "evidence": "Found in summary: '# performance Evaluation (English prompt, without_skill)'"
+    },
+    {
+      "text": "Covers CRP/Image/JS/Font areas",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

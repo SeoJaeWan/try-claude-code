@@ -1,0 +1,14 @@
+{
+  "eval_id": 33,
+  "eval_name": "eval-33-help-try-kr",
+  "prompt": "try-claude 설정은 어떻게 하나요? init-try랑 migration 차이가 뭐예요?",
+  "skill": "help-try",
+  "tier": "T4",
+  "expected_output": ".claude/try-claude/ 경로 안내, init-try(초기 설치)와 migration(동기화) 차이 설명, FAQ 기반 답변",
+  "assertions": [
+    "Summary mentions reading SKILL.md for help-try",
+    "Mentions .claude/try-claude/ path",
+    "Explains init-try vs migration difference",
+    "Provides FAQ-based answers"
+  ]
+}

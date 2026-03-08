@@ -1,0 +1,49 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for init-try",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Lists .claude/try-claude/ as target directory",
+      "passed": true,
+      "evidence": "Found in summary: '3. `.claude/try-claude/` 기본 디렉토리 생성 시도'"
+    },
+    {
+      "text": "Mentions references/coding-rules/ with 9 documents",
+      "passed": true,
+      "evidence": "Found in summary: '# init-try 평가 (Korean prompt, without_skill)'"
+    },
+    {
+      "text": "Mentions scripts/generate.mjs",
+      "passed": true,
+      "evidence": "Found in summary: '- scripts/generate.mjs'"
+    },
+    {
+      "text": "Mentions references/design/ with design documents",
+      "passed": true,
+      "evidence": "Found in summary: '# init-try 평가 (Korean prompt, without_skill)'"
+    },
+    {
+      "text": "Mentions project.json creation",
+      "passed": true,
+      "evidence": "Found in summary: '- project.json 및 올바른 스키마'"
+    },
+    {
+      "text": "Lists 7 directories (plans, reports, logs, codemaps, humanmaps, jira-review, references)",
+      "passed": true,
+      "evidence": "Found in summary: '- 7개 하위 디렉토리 (plans, reports, logs, codemaps, humanmaps, jira-review, references)'"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 1,
+    "total": 7,
+    "pass_rate": 0.86
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

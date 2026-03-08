@@ -1,0 +1,39 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for frontend-dev",
+      "passed": true,
+      "evidence": "Found in summary: '## 읽은 스킬: skills/frontend-dev/SKILL.md'"
+    },
+    {
+      "text": "References use{Verb}{Resource} naming convention",
+      "passed": true,
+      "evidence": "Found in summary: '- use{Verb}{Resource} 패턴: useAuth 또는 useGetAuth'"
+    },
+    {
+      "text": "Mentions TDD RED->GREEN workflow or test-first approach",
+      "passed": true,
+      "evidence": "Found in summary: '## TDD RED->GREEN 워크플로우'"
+    },
+    {
+      "text": "References coding-rules documents",
+      "passed": true,
+      "evidence": "Found in summary: '- coding-rules/code-style.md 참조'"
+    },
+    {
+      "text": "Mentions generate.mjs or coding-rules-based implementation",
+      "passed": true,
+      "evidence": "Found in summary: '## generate.mjs 사용'"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

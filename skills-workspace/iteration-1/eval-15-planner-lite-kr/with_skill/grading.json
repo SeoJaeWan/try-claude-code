@@ -1,0 +1,49 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for planner-lite",
+      "passed": true,
+      "evidence": "Found in summary: '## 읽은 스킬: skills/planner-lite/SKILL.md'"
+    },
+    {
+      "text": "Mentions Branch: header validation in plan.md",
+      "passed": true,
+      "evidence": "Found in summary: '## Branch: 헤더 검증'"
+    },
+    {
+      "text": "Mentions owner_agent agents/*.md existence check",
+      "passed": true,
+      "evidence": "Found in summary: '## owner_agent agents/*.md 존재 확인'"
+    },
+    {
+      "text": "Describes git worktree add command",
+      "passed": true,
+      "evidence": "Found in summary: '## git worktree 라이프사이클'"
+    },
+    {
+      "text": "States isolation: worktree is forbidden in Agent calls",
+      "passed": true,
+      "evidence": "Found in summary: '## Agent 호출 시 isolation: worktree 금지'"
+    },
+    {
+      "text": "Mentions git merge --no-ff after phase completion",
+      "passed": true,
+      "evidence": "Found in summary: '- `git worktree remove --force` -> merge -> branch delete'"
+    },
+    {
+      "text": "Mentions worktree cleanup",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 1,
+    "total": 7,
+    "pass_rate": 0.86
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

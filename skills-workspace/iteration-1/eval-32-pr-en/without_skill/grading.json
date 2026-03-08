@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for pr",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Analyzes branch diff",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Generates PR with Summary and Test plan sections",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Mentions gh pr create execution",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 4,
+    "total": 4,
+    "pass_rate": 0.0
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}
