@@ -5,7 +5,13 @@
       "Bash(pip install:*)",
       "Bash(do python:*)",
       "Bash(python:*)",
-      "Bash(PYTHONUTF8=1 python:*)"
+      "Bash(PYTHONUTF8=1 python:*)",
+      "WebSearch",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
     ]
   }
 }

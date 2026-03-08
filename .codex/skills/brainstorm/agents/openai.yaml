@@ -1,0 +1,7 @@
+﻿interface:
+  display_name: "Brainstorm"
+  short_description: "Clarify ambiguous requests with options and confirmation questions before planning."
+  default_prompt: "Use $brainstorm to compare 2-3 approaches, ask confirmation-focused questions, and return a concise decision snapshot."
+
+policy:
+  allow_implicit_invocation: true

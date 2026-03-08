@@ -1,0 +1,7 @@
+interface:
+  display_name: "Architect"
+  short_description: "Create gated implementation plans and Claude execution handoff under plans/."
+  default_prompt: "Use $architect to produce a decision-complete plan under ./plans, include self-review gate, and provide Claude handoff instructions."
+
+policy:
+  allow_implicit_invocation: true
