@@ -1,0 +1,39 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for migration",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Mentions SHA256 hash comparison",
+      "passed": true,
+      "evidence": "Found in summary: '- Identified SHA256 hash comparison and section-level merge'"
+    },
+    {
+      "text": "Describes section-level merge preserving user edits",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Reports updated/skipped/reseeded file counts",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Mentions managedReferences hash updates",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 4,
+    "total": 5,
+    "pass_rate": 0.2
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

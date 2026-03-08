@@ -1,0 +1,39 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for ui-publish",
+      "passed": true,
+      "evidence": "Found in summary: '## Skill Read: skills/ui-publish/SKILL.md'"
+    },
+    {
+      "text": "References design/theme-tokens.md and tailwind.config.js",
+      "passed": true,
+      "evidence": "Found in summary: '## design/theme-tokens.md and tailwind.config.js'"
+    },
+    {
+      "text": "Mentions mobile-first breakpoints (sm: md: lg:)",
+      "passed": true,
+      "evidence": "Found in summary: '## Mobile-first Breakpoints'"
+    },
+    {
+      "text": "Mentions shadcn/ui component reuse or CODEMAPS check",
+      "passed": true,
+      "evidence": "Found in summary: '## shadcn/ui + CODEMAPS'"
+    },
+    {
+      "text": "Mentions Pretendard font-family",
+      "passed": true,
+      "evidence": "Found in summary: '## Pretendard Font-family'"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

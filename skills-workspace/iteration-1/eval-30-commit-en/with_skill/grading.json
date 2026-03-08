@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for commit",
+      "passed": true,
+      "evidence": "Found in summary: '## Skill Read: skills/commit/SKILL.md'"
+    },
+    {
+      "text": "Mentions type: subject format (max 72 chars)",
+      "passed": true,
+      "evidence": "Found in summary: '## type: subject Format (max 72 chars)'"
+    },
+    {
+      "text": "Mentions commitlint validation attempt",
+      "passed": true,
+      "evidence": "Found in summary: '## commitlint Validation'"
+    },
+    {
+      "text": "Enforces subject-only format (no body unless complex)",
+      "passed": true,
+      "evidence": "Found in summary: '## Subject-only Format'"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

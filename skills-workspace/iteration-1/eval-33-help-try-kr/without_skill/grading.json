@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for help-try",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Mentions .claude/try-claude/ path",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Explains init-try vs migration difference",
+      "passed": true,
+      "evidence": "Found in summary: '- init-try: 런타임 구조 생성 + reference 시드'"
+    },
+    {
+      "text": "Provides FAQ-based answers",
+      "passed": true,
+      "evidence": "Pattern matched in summary content"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

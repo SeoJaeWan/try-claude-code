@@ -1,0 +1,14 @@
+{
+  "eval_id": 26,
+  "eval_name": "eval-26-core-web-vitals-en",
+  "prompt": "analyze the impact on LCP, INP, and CLS for the changed files",
+  "skill": "core-web-vitals",
+  "tier": "T3",
+  "expected_output": "All 11 CWV items: CWV-01 through CWV-11 with LCP/INP/CLS metric classification, impact analysis per item",
+  "assertions": [
+    "Summary mentions reading SKILL.md for core-web-vitals",
+    "Evaluates all 11 CWV items",
+    "Classifies by LCP/INP/CLS metric",
+    "Provides impact analysis per item"
+  ]
+}

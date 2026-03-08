@@ -1,0 +1,29 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for help-try",
+      "passed": true,
+      "evidence": "Found in summary: '## Skill Read: skills/help-try/SKILL.md + references/faq.md'"
+    },
+    {
+      "text": "Explains shared (.mcp.json in repo) vs machine-local (~/.claude/.mcp.json) config",
+      "passed": true,
+      "evidence": "Found in summary: '## Shared vs Machine-local MCP Config'"
+    },
+    {
+      "text": "Mentions OS-specific template paths",
+      "passed": true,
+      "evidence": "Found in summary: '1. **Shared**: .mcp.json committed to repo root. Cross-platform. No OS-specific launchers.'"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

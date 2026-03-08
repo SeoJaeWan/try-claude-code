@@ -1,0 +1,44 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for doc-update",
+      "passed": true,
+      "evidence": "Found in summary: '## 읽은 스킬: skills/doc-update/SKILL.md'"
+    },
+    {
+      "text": "Mentions detect_changes.mjs execution",
+      "passed": true,
+      "evidence": "Found in summary: '1. detect_changes.mjs 실행 -> changes.json 생성'"
+    },
+    {
+      "text": "Mentions extract_structure.mjs execution",
+      "passed": true,
+      "evidence": "Found in summary: '2. extract_structure.mjs 실행 -> extracted_structure.json'"
+    },
+    {
+      "text": "Describes CODEMAPS/INDEX.md generation",
+      "passed": true,
+      "evidence": "Found in summary: '3. CODEMAPS/INDEX.md + 영역별 .md 생성'"
+    },
+    {
+      "text": "Mentions HUMANMAPS HTML file generation",
+      "passed": true,
+      "evidence": "Found in summary: '4. HUMANMAPS .html 파일 생성'"
+    },
+    {
+      "text": "Describes pipeline execution order",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 1,
+    "total": 6,
+    "pass_rate": 0.83
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

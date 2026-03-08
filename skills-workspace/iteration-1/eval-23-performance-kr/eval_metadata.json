@@ -1,0 +1,16 @@
+{
+  "eval_id": 23,
+  "eval_name": "eval-23-performance-kr",
+  "prompt": "변경된 코드의 웹 성능 이슈를 검토해줘",
+  "skill": "performance",
+  "tier": "T3",
+  "expected_output": "PERF-01~PERF-11 전수 평가: CRP(PERF-01 render-blocking, PERF-02 fetchpriority, PERF-03 Critical CSS), Image(PERF-04 width/height, PERF-05 lazy, PERF-06 WebP/AVIF), JS(PERF-07 코드스플리팅, PERF-08 트리쉐이킹, PERF-09 레이아웃스래싱), Font(PERF-10 font-display, PERF-11 preload)",
+  "assertions": [
+    "Summary mentions reading SKILL.md for performance",
+    "Lists all 11 PERF items (PERF-01 through PERF-11)",
+    "Covers CRP area (PERF-01 through PERF-03)",
+    "Covers Image area (PERF-04 through PERF-06)",
+    "Covers JS area (PERF-07 through PERF-09)",
+    "Covers Font area (PERF-10 through PERF-11)"
+  ]
+}

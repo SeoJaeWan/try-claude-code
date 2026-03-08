@@ -1,0 +1,39 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for best-practices",
+      "passed": true,
+      "evidence": "Found in summary: '## 읽은 스킬: skills/best-practices/SKILL.md'"
+    },
+    {
+      "text": "Lists all 14 BP items (BP-01 through BP-14)",
+      "passed": true,
+      "evidence": "Pattern matched in summary content"
+    },
+    {
+      "text": "Covers Security area (5 items)",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Covers Compatibility area (5 items)",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Covers Code Quality area (4 items)",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 3,
+    "total": 5,
+    "pass_rate": 0.4
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

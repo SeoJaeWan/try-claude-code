@@ -1,0 +1,44 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for pr",
+      "passed": true,
+      "evidence": "Found in summary: '## 읽은 스킬: skills/pr/SKILL.md'"
+    },
+    {
+      "text": "Describes branch analysis",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Mentions commit history summary",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Mentions gh pr create --title --body execution",
+      "passed": true,
+      "evidence": "Found in summary: '- 스킬이 올바르게 \"Cannot create PR from main\" 에러 처리'"
+    },
+    {
+      "text": "Includes Summary section in PR body",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Includes Test plan section in PR body",
+      "passed": true,
+      "evidence": "Found in summary: '- Summary, Changes, Test plan 섹션 포함'"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 3,
+    "total": 6,
+    "pass_rate": 0.5
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

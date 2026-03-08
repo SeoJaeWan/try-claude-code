@@ -1,0 +1,29 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for help-try",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Explains shared (.mcp.json in repo) vs machine-local (~/.claude/.mcp.json) config",
+      "passed": true,
+      "evidence": "Found in summary: '- Missing: structured FAQ, OS-specific templates, explicit shared vs local distinction'"
+    },
+    {
+      "text": "Mentions OS-specific template paths",
+      "passed": true,
+      "evidence": "Found in summary: '- Missing: structured FAQ, OS-specific templates, explicit shared vs local distinction'"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 1,
+    "total": 3,
+    "pass_rate": 0.67
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

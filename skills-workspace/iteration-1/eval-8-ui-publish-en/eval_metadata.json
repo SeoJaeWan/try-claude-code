@@ -1,0 +1,15 @@
+{
+  "eval_id": 8,
+  "eval_name": "eval-8-ui-publish-en",
+  "prompt": "create a responsive card grid component with shadcn/ui styling",
+  "skill": "ui-publish",
+  "tier": "T1",
+  "expected_output": "References design/theme-tokens.md and tailwind.config.js for actual token values, mobile-first breakpoints (sm: md: lg:), shadcn/ui component reuse check via CODEMAPS, Pretendard font-family",
+  "assertions": [
+    "Summary mentions reading SKILL.md for ui-publish",
+    "References design/theme-tokens.md and tailwind.config.js",
+    "Mentions mobile-first breakpoints (sm: md: lg:)",
+    "Mentions shadcn/ui component reuse or CODEMAPS check",
+    "Mentions Pretendard font-family"
+  ]
+}

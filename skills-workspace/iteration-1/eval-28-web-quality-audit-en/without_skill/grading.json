@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for web-quality-audit",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Orchestrates 5 sub-skills in sequence",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Mentions section colors (#6c8ebf, #82c882, #f0a830, #e05c5c, #9b59b6)",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Generates unified HTML report and CSV",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 4,
+    "total": 4,
+    "pass_rate": 0.0
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for planner-lite",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Validates Branch: header and owner_agent: fields",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Checks agents/*.md existence",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Prevents nested worktree (no isolation: worktree in Agent calls)",
+      "passed": true,
+      "evidence": "Pattern matched in summary content"
+    },
+    {
+      "text": "Describes sequential phase execution",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    },
+    {
+      "text": "Mentions merge and cleanup steps",
+      "passed": false,
+      "evidence": "No matching content found in summary"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 5,
+    "total": 6,
+    "pass_rate": 0.17
+  },
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Automated keyword-based grading"
+  }
+}

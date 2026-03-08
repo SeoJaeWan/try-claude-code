@@ -16,7 +16,16 @@
       "prompt": "이 프로젝트에 try-claude를 초기화해줘",
       "expected_output": ".claude/try-claude/ 하위에 references/coding-rules/ 9개 문서 + scripts/generate.mjs, references/design/ 5개 문서, project.json, 7개 디렉토리(plans, reports, logs, codemaps, humanmaps, jira-review, references) 생성",
       "focus": "reference seeding completeness",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for init-try",
+        "Lists .claude/try-claude/ as target directory",
+        "Mentions references/coding-rules/ with 9 documents",
+        "Mentions scripts/generate.mjs",
+        "Mentions references/design/ with design documents",
+        "Mentions project.json creation",
+        "Lists 7 directories (plans, reports, logs, codemaps, humanmaps, jira-review, references)"
+      ]
     },
     {
       "id": 2,
@@ -25,7 +34,14 @@
       "prompt": "bootstrap the try-claude runtime for this repo",
       "expected_output": "run.mjs script execution, project.json with managedReferences array containing path/hash/mergeMode fields, SHA256 hash tracking per reference file",
       "focus": "project.json structure and hash tracking",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for init-try",
+        "Mentions run.mjs script execution",
+        "Describes project.json with managedReferences array",
+        "Mentions path/hash/mergeMode fields in managedReferences",
+        "Mentions SHA256 hash tracking per reference file"
+      ]
     },
     {
       "id": 3,
@@ -34,7 +50,14 @@
       "prompt": "로그인 페이지에 useAuth 커스텀 훅을 만들고 API 연동해줘",
       "expected_output": "generate.mjs hook 명령 실행 또는 coding-rules 기반 수동 구현. use{Verb}{Resource} 네이밍, props destructuring in function body, TDD RED->GREEN 사이클, design/ 참조",
       "focus": "coding-rules compliance + generate.mjs usage",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for frontend-dev",
+        "References use{Verb}{Resource} naming convention",
+        "Mentions TDD RED->GREEN workflow or test-first approach",
+        "References coding-rules documents",
+        "Mentions generate.mjs or coding-rules-based implementation"
+      ]
     },
     {
       "id": 4,
@@ -43,7 +66,13 @@
       "prompt": "create a custom hook for fetching user profile data with TanStack Query",
       "expected_output": "useGetUserProfile hook following use{Verb}{Resource} naming, test-first workflow with RED verification, references to coding-rules/code-style.md and design/ docs",
       "focus": "naming convention + TDD workflow fidelity",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for frontend-dev",
+        "Uses useGetUserProfile or similar use{Verb}{Resource} naming",
+        "Mentions TDD RED->GREEN or test-first workflow",
+        "References coding-rules/code-style.md or design/ docs"
+      ]
     },
     {
       "id": 5,
@@ -52,7 +81,14 @@
       "prompt": "사용자 인증 API 엔드포인트를 NestJS로 구현해줘",
       "expected_output": "generate.mjs structure auth 실행 또는 수동으로 auth.controller.ts, auth.service.ts, auth.module.ts 생성. coding-rules/folder-structure.md 준수, DB snake_case 네이밍",
       "focus": "NestJS module structure + coding-rules compliance",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for backend-dev",
+        "Mentions NestJS module structure (controller, service, module)",
+        "References coding-rules/folder-structure.md",
+        "Mentions DB snake_case naming convention",
+        "Mentions generate.mjs or manual file generation"
+      ]
     },
     {
       "id": 6,
@@ -61,7 +97,14 @@
       "prompt": "implement a REST API endpoint for CRUD operations on products",
       "expected_output": "Framework auto-detection from package.json, stack-specific test command selection (pnpm test / pytest / go test), controller+service+module file generation, TDD RED->GREEN",
       "focus": "framework detection + TDD workflow",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for backend-dev",
+        "Mentions framework auto-detection from package.json",
+        "Mentions stack-specific test command selection",
+        "Describes controller+service+module file generation",
+        "Mentions TDD RED->GREEN workflow"
+      ]
     },
     {
       "id": 7,
@@ -70,7 +113,15 @@
       "prompt": "대시보드 레이아웃 컴포넌트를 만들어줘. 사이드바, 헤더, 메인 콘텐츠 영역 포함",
       "expected_output": "generate.mjs component 실행 또는 수동 구현. Pretendard 폰트 사용, theme-tokens.md 참조, Tailwind CSS, no useState/useEffect/fetch (no-logic), layout-only props (className, children)",
       "focus": "design system compliance + no-logic enforcement",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for ui-publish",
+        "Mentions Pretendard font",
+        "References theme-tokens.md",
+        "Mentions Tailwind CSS usage",
+        "Enforces no-logic rule (no useState/useEffect/fetch)",
+        "Describes layout-only props (className, children)"
+      ]
     },
     {
       "id": 8,
@@ -79,7 +130,14 @@
       "prompt": "create a responsive card grid component with shadcn/ui styling",
       "expected_output": "References design/theme-tokens.md and tailwind.config.js for actual token values, mobile-first breakpoints (sm: md: lg:), shadcn/ui component reuse check via CODEMAPS, Pretendard font-family",
       "focus": "design token resolution + responsive pattern",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for ui-publish",
+        "References design/theme-tokens.md and tailwind.config.js",
+        "Mentions mobile-first breakpoints (sm: md: lg:)",
+        "Mentions shadcn/ui component reuse or CODEMAPS check",
+        "Mentions Pretendard font-family"
+      ]
     },
     {
       "id": 9,
@@ -88,7 +146,15 @@
       "prompt": "프로젝트 문서를 업데이트해줘. CODEMAPS랑 HUMANMAPS 둘 다 갱신해줘.",
       "expected_output": "detect_changes.mjs 실행 -> changes.json 생성, extract_structure.mjs 실행 -> extracted_structure.json, CODEMAPS/INDEX.md + 영역별 .md, HUMANMAPS .html 파일 생성",
       "focus": "script pipeline execution and output files",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for doc-update",
+        "Mentions detect_changes.mjs execution",
+        "Mentions extract_structure.mjs execution",
+        "Describes CODEMAPS/INDEX.md generation",
+        "Mentions HUMANMAPS HTML file generation",
+        "Describes pipeline execution order"
+      ]
     },
     {
       "id": 10,
@@ -97,7 +163,14 @@
       "prompt": "generate project documentation for the current codebase",
       "expected_output": "detect_changes.mjs and extract_structure.mjs executed in sequence, codemaps/ directory with INDEX.md, humanmaps/ with HTML output, proper service root detection (app/, apps/, src/)",
       "focus": "script pipeline + service root detection",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for doc-update",
+        "Mentions detect_changes.mjs and extract_structure.mjs in sequence",
+        "Describes codemaps/ directory with INDEX.md",
+        "Mentions humanmaps/ with HTML output",
+        "Mentions service root detection (app/, apps/, src/)"
+      ]
     },
     {
       "id": 11,
@@ -106,7 +179,14 @@
       "prompt": "try-claude 레퍼런스를 최신 플러그인 기본값과 동기화해줘",
       "expected_output": "section-aware merge: unchanged sections updated, edited sections preserved. project.json hash comparison (SHA256), managedReferences 배열 업데이트, updated/skipped/reseeded 카운트 보고",
       "focus": "merge logic + hash tracking",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for migration",
+        "Describes section-aware merge logic",
+        "Mentions project.json hash comparison using SHA256",
+        "Mentions managedReferences array update",
+        "Reports updated/skipped/reseeded counts"
+      ]
     },
     {
       "id": 12,
@@ -115,7 +195,14 @@
       "prompt": "sync my local references with the latest plugin defaults",
       "expected_output": "Compares SHA256 hashes in project.json, section-level merge preserving user edits, reports counts of updated/skipped/reseeded files, updates managedReferences hashes",
       "focus": "SHA256 hash comparison + section preservation",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for migration",
+        "Mentions SHA256 hash comparison",
+        "Describes section-level merge preserving user edits",
+        "Reports updated/skipped/reseeded file counts",
+        "Mentions managedReferences hash updates"
+      ]
     },
     {
       "id": 13,
@@ -124,7 +211,14 @@
       "prompt": "이 프로젝트에 ESLint, commitlint, husky 설정을 coding-rules 기반으로 생성해줘",
       "expected_output": "9개 coding-rules 문서 읽기, package.json 기반 프레임워크 감지 (Next.js/NestJS/Vite React/React Native/Base TypeScript), 4개 그룹별 승인 워크플로우 (ESLint, TSConfig, commitlint, husky+lint-staged), config 파일 생성",
       "focus": "framework detection + group approval workflow",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for init-coding-rules",
+        "Mentions reading 9 coding-rules documents",
+        "Mentions framework detection from package.json",
+        "Describes 4-group approval workflow (ESLint, TSConfig, commitlint, husky+lint-staged)",
+        "Mentions config file generation"
+      ]
     },
     {
       "id": 14,
@@ -133,7 +227,14 @@
       "prompt": "set up linting and commit hooks based on our coding conventions",
       "expected_output": "Reads all 9 coding-rules docs, detects framework from package.json devDependencies, presents per-group approval (ESLint rules, TSConfig strict, commitlint config, husky hooks), outputs install command without auto-running pnpm add",
       "focus": "coding-rules reading + safe install pattern",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for init-coding-rules",
+        "Mentions reading all 9 coding-rules docs",
+        "Mentions framework detection from package.json devDependencies",
+        "Describes per-group approval workflow",
+        "Mentions safe install pattern (no auto-run pnpm add)"
+      ]
     },
     {
       "id": 15,
@@ -142,7 +243,16 @@
       "prompt": "plan.md에 정의된 3개 Phase를 worktree 격리 방식으로 실행해줘",
       "expected_output": "plan.md의 Branch: 헤더 검증, owner_agent: 별 agents/*.md 존재 확인, git worktree add -b {branch} .claude/worktrees/{branch}, phase별 Agent 호출 (isolation: worktree 금지), phase 완료 후 git merge --no-ff, worktree 정리",
       "focus": "worktree lifecycle + agent dispatch rules",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for planner-lite",
+        "Mentions Branch: header validation in plan.md",
+        "Mentions owner_agent agents/*.md existence check",
+        "Describes git worktree add command",
+        "States isolation: worktree is forbidden in Agent calls",
+        "Mentions git merge --no-ff after phase completion",
+        "Mentions worktree cleanup"
+      ]
     },
     {
       "id": 16,
@@ -151,7 +261,15 @@
       "prompt": "execute the plan at .claude/try-claude/plans/auth-feature/plan.md with worktree isolation",
       "expected_output": "Validates Branch: header and owner_agent: fields, checks agents/*.md exist, creates worktree without nesting (no isolation: worktree in Agent calls), sequential phase execution, merge and cleanup",
       "focus": "nested worktree prevention + merge workflow",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for planner-lite",
+        "Validates Branch: header and owner_agent: fields",
+        "Checks agents/*.md existence",
+        "Prevents nested worktree (no isolation: worktree in Agent calls)",
+        "Describes sequential phase execution",
+        "Mentions merge and cleanup steps"
+      ]
     },
     {
       "id": 17,
@@ -160,7 +278,15 @@
       "prompt": "변경된 웹 코드의 접근성을 KWCAG2.2 기준으로 검토해줘",
       "expected_output": "kwcag22.md 읽기, 33개 항목 전수 평가 (KWCAG-01~33 또는 항목 1~33), O/X/triangle/N/A 분류, Playwright 환경 감지 (config/CLI/browser/server 4단계), HTML+CSV 리포트 생성",
       "focus": "33-item full coverage + classification",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for accessibility-review",
+        "Mentions kwcag22.md reference reading",
+        "Mentions evaluating 33 KWCAG items",
+        "Describes O/X/triangle/N/A classification system",
+        "Mentions Playwright environment detection",
+        "Mentions HTML+CSV report generation"
+      ]
     },
     {
       "id": 18,
@@ -169,7 +295,14 @@
       "prompt": "run an accessibility audit on the changed files following KWCAG2.2",
       "expected_output": "Reads kwcag22.md reference, evaluates all 33 items with auto-detection levels (O/triangle/X), semantic HTML review (7 items: landmarks, sections, interactive, lists, presentational, form grouping, quotations), generates report in .claude/try-claude/reports/accessibility/",
       "focus": "auto-detection levels + semantic HTML review",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for accessibility-review",
+        "Mentions kwcag22.md reference",
+        "Evaluates all 33 items with auto-detection levels",
+        "Describes semantic HTML review (7 items)",
+        "Mentions report output in .claude/try-claude/reports/accessibility/"
+      ]
     },
     {
       "id": 19,
@@ -178,7 +311,14 @@
       "prompt": "변경된 코드의 보안, 호환성, 코드 품질을 검토해줘",
       "expected_output": "BP-01~BP-14 전수 평가: 보안(BP-01 HTTPS, BP-02 취약의존성, BP-03 CSP, BP-04 보안헤더, BP-05 innerHTML), 호환성(BP-06 DOCTYPE, BP-07 charset, BP-08 viewport, BP-09 deprecated, BP-10 passive), 코드품질(BP-11 콘솔에러, BP-12 중복id, BP-13 시맨틱, BP-14 에러처리)",
       "focus": "all 14 BP items with 3-area coverage",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for best-practices",
+        "Lists all 14 BP items (BP-01 through BP-14)",
+        "Covers Security area (5 items)",
+        "Covers Compatibility area (5 items)",
+        "Covers Code Quality area (4 items)"
+      ]
     },
     {
       "id": 20,
@@ -187,7 +327,13 @@
       "prompt": "check the changed files for web best practices compliance",
       "expected_output": "All 14 BP items evaluated: BP-01 through BP-14 covering Security (5), Compatibility (5), Code Quality (4). Each item with pass/fail/N/A result and specific evidence",
       "focus": "complete BP coverage with evidence",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for best-practices",
+        "Evaluates all 14 BP items",
+        "Each item has pass/fail/N/A result",
+        "Provides specific evidence per item"
+      ]
     },
     {
       "id": 21,
@@ -196,7 +342,15 @@
       "prompt": "변경된 페이지의 SEO 최적화 상태를 검토해줘",
       "expected_output": "SEO-01~SEO-10 전수 평가: Critical(SEO-01 noindex, SEO-02 title 50-60자, SEO-03 h1, SEO-04 HTTPS), High(SEO-05 meta description 150-160, SEO-06 canonical, SEO-07 JSON-LD, SEO-08 alt), Medium(SEO-09 URL구조, SEO-10 anchor text)",
       "focus": "all 10 SEO items with priority levels",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for seo",
+        "Lists all 10 SEO items (SEO-01 through SEO-10)",
+        "Classifies items by Critical/High/Medium priority",
+        "Covers Critical items (SEO-01 through SEO-04)",
+        "Covers High items (SEO-05 through SEO-08)",
+        "Covers Medium items (SEO-09 through SEO-10)"
+      ]
     },
     {
       "id": 22,
@@ -205,7 +359,13 @@
       "prompt": "review the SEO status of the changed HTML files",
       "expected_output": "All 10 SEO items: SEO-01 through SEO-10 with Critical/High/Medium priority classification, structured checklist with pass/fail/N/A per item",
       "focus": "complete SEO coverage with priority",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for seo",
+        "Evaluates all 10 SEO items",
+        "Uses Critical/High/Medium priority classification",
+        "Provides structured checklist with pass/fail/N/A"
+      ]
     },
     {
       "id": 23,
@@ -214,7 +374,15 @@
       "prompt": "변경된 코드의 웹 성능 이슈를 검토해줘",
       "expected_output": "PERF-01~PERF-11 전수 평가: CRP(PERF-01 render-blocking, PERF-02 fetchpriority, PERF-03 Critical CSS), Image(PERF-04 width/height, PERF-05 lazy, PERF-06 WebP/AVIF), JS(PERF-07 코드스플리팅, PERF-08 트리쉐이킹, PERF-09 레이아웃스래싱), Font(PERF-10 font-display, PERF-11 preload)",
       "focus": "all 11 PERF items across 4 areas",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for performance",
+        "Lists all 11 PERF items (PERF-01 through PERF-11)",
+        "Covers CRP area (PERF-01 through PERF-03)",
+        "Covers Image area (PERF-04 through PERF-06)",
+        "Covers JS area (PERF-07 through PERF-09)",
+        "Covers Font area (PERF-10 through PERF-11)"
+      ]
     },
     {
       "id": 24,
@@ -223,7 +391,13 @@
       "prompt": "check the changed files for web performance anti-patterns",
       "expected_output": "All 11 PERF items: PERF-01 through PERF-11 across CRP/Image/JS/Font areas. Each with specific web performance recommendation, not general code efficiency",
       "focus": "web performance (not code efficiency)",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for performance",
+        "Evaluates all 11 PERF items",
+        "Focuses on web performance (not general code efficiency)",
+        "Covers CRP/Image/JS/Font areas"
+      ]
     },
     {
       "id": 25,
@@ -232,7 +406,14 @@
       "prompt": "변경된 코드의 Core Web Vitals 영향을 분석해줘",
       "expected_output": "CWV-01~CWV-11 전수 평가: LCP(CWV-01 초기HTML, CWV-02 fetchpriority, CWV-03 폰트차단), INP(CWV-04 시각피드백, CWV-05 지연처리, CWV-06 React.memo), CLS(CWV-07 width/height, CWV-08 동적삽입금지, CWV-09 transform/opacity, CWV-10 폰트교체, CWV-11 공간예약)",
       "focus": "all 11 CWV items across LCP/INP/CLS",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for core-web-vitals",
+        "Lists all 11 CWV items (CWV-01 through CWV-11)",
+        "Covers LCP items (CWV-01 through CWV-03)",
+        "Covers INP items (CWV-04 through CWV-06)",
+        "Covers CLS items (CWV-07 through CWV-11)"
+      ]
     },
     {
       "id": 26,
@@ -241,7 +422,13 @@
       "prompt": "analyze the impact on LCP, INP, and CLS for the changed files",
       "expected_output": "All 11 CWV items: CWV-01 through CWV-11 with LCP/INP/CLS metric classification, impact analysis per item",
       "focus": "metric-specific CWV analysis",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for core-web-vitals",
+        "Evaluates all 11 CWV items",
+        "Classifies by LCP/INP/CLS metric",
+        "Provides impact analysis per item"
+      ]
     },
     {
       "id": 27,
@@ -250,7 +437,17 @@
       "prompt": "변경된 코드에 대해 종합 웹 품질 검토를 실행해줘",
       "expected_output": "5개 하위 영역 순차 실행: A-접근성(33항목), B-BP(14항목), C-SEO(10항목), D-성능(11항목), E-CWV(11항목). 통합 HTML+CSV 리포트 생성, output-format.md 준수, 영역별 색상 코딩",
       "focus": "5-area orchestration + unified report",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for web-quality-audit",
+        "Describes 5-area sequential execution",
+        "Mentions Accessibility (33 items)",
+        "Mentions Best Practices (14 items)",
+        "Mentions SEO (10 items)",
+        "Mentions Performance (11 items)",
+        "Mentions CWV (11 items)",
+        "Mentions unified HTML+CSV report generation"
+      ]
     },
     {
       "id": 28,
@@ -259,7 +456,13 @@
       "prompt": "run a full web quality audit on the current changes",
       "expected_output": "Orchestrates 5 sub-skills in sequence: Accessibility (33), Best Practices (14), SEO (10), Performance (11), CWV (11). Generates unified HTML report with section colors (#6c8ebf, #82c882, #f0a830, #e05c5c, #9b59b6) and CSV",
       "focus": "orchestration + report format compliance",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for web-quality-audit",
+        "Orchestrates 5 sub-skills in sequence",
+        "Mentions section colors (#6c8ebf, #82c882, #f0a830, #e05c5c, #9b59b6)",
+        "Generates unified HTML report and CSV"
+      ]
     },
     {
       "id": 29,
@@ -268,7 +471,14 @@
       "prompt": "현재 변경사항을 커밋해줘",
       "expected_output": "git status/diff 분석, Conventional Commits type(feat/fix/refactor/docs/chore/test/style): subject-only 포맷, commitlint 검증 시도, 실패 시 amend 루프",
       "focus": "Conventional Commits format + commitlint integration",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for commit",
+        "Describes git status/diff analysis",
+        "Mentions Conventional Commits format (type: subject)",
+        "Mentions commitlint verification",
+        "Describes amend loop on validation failure"
+      ]
     },
     {
       "id": 30,
@@ -277,7 +487,13 @@
       "prompt": "commit this with a proper message following our conventions",
       "expected_output": "Analyzes staged changes, generates type: subject format (max 72 chars), attempts commitlint validation, subject-only (no body unless complex)",
       "focus": "subject-only format + validation loop",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for commit",
+        "Mentions type: subject format (max 72 chars)",
+        "Mentions commitlint validation attempt",
+        "Enforces subject-only format (no body unless complex)"
+      ]
     },
     {
       "id": 31,
@@ -286,7 +502,15 @@
       "prompt": "PR 올려줘",
       "expected_output": "Branch 분석, commit history 요약, gh pr create --title --body 실행, Summary/Test plan 섹션 포함",
       "focus": "gh CLI execution + PR body structure",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for pr",
+        "Describes branch analysis",
+        "Mentions commit history summary",
+        "Mentions gh pr create --title --body execution",
+        "Includes Summary section in PR body",
+        "Includes Test plan section in PR body"
+      ]
     },
     {
       "id": 32,
@@ -295,7 +519,13 @@
       "prompt": "open a pull request for the current changes",
       "expected_output": "Analyzes branch diff, generates PR with Summary and Test plan sections, executes gh pr create",
       "focus": "PR content quality",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for pr",
+        "Analyzes branch diff",
+        "Generates PR with Summary and Test plan sections",
+        "Mentions gh pr create execution"
+      ]
     },
     {
       "id": 33,
@@ -304,7 +534,13 @@
       "prompt": "try-claude 설정은 어떻게 하나요? init-try랑 migration 차이가 뭐예요?",
       "expected_output": ".claude/try-claude/ 경로 안내, init-try(초기 설치)와 migration(동기화) 차이 설명, FAQ 기반 답변",
       "focus": "FAQ accuracy + path guidance",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for help-try",
+        "Mentions .claude/try-claude/ path",
+        "Explains init-try vs migration difference",
+        "Provides FAQ-based answers"
+      ]
     },
     {
       "id": 34,
@@ -313,7 +549,12 @@
       "prompt": "How do I share MCP settings with my team?",
       "expected_output": "Explains shared (.mcp.json in repo) vs machine-local (~/.claude/.mcp.json) config, OS-specific template paths",
       "focus": "MCP config sharing guidance",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for help-try",
+        "Explains shared (.mcp.json in repo) vs machine-local (~/.claude/.mcp.json) config",
+        "Mentions OS-specific template paths"
+      ]
     }
   ]
 }

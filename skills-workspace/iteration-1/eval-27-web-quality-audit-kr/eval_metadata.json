@@ -1,0 +1,18 @@
+{
+  "eval_id": 27,
+  "eval_name": "eval-27-web-quality-audit-kr",
+  "prompt": "변경된 코드에 대해 종합 웹 품질 검토를 실행해줘",
+  "skill": "web-quality-audit",
+  "tier": "T3",
+  "expected_output": "5개 하위 영역 순차 실행: A-접근성(33항목), B-BP(14항목), C-SEO(10항목), D-성능(11항목), E-CWV(11항목). 통합 HTML+CSV 리포트 생성, output-format.md 준수, 영역별 색상 코딩",
+  "assertions": [
+    "Summary mentions reading SKILL.md for web-quality-audit",
+    "Describes 5-area sequential execution",
+    "Mentions Accessibility (33 items)",
+    "Mentions Best Practices (14 items)",
+    "Mentions SEO (10 items)",
+    "Mentions Performance (11 items)",
+    "Mentions CWV (11 items)",
+    "Mentions unified HTML+CSV report generation"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "eval_id": 30,
+  "eval_name": "eval-30-commit-en",
+  "prompt": "commit this with a proper message following our conventions",
+  "skill": "commit",
+  "tier": "T4",
+  "expected_output": "Analyzes staged changes, generates type: subject format (max 72 chars), attempts commitlint validation, subject-only (no body unless complex)",
+  "assertions": [
+    "Summary mentions reading SKILL.md for commit",
+    "Mentions type: subject format (max 72 chars)",
+    "Mentions commitlint validation attempt",
+    "Enforces subject-only format (no body unless complex)"
+  ]
+}
