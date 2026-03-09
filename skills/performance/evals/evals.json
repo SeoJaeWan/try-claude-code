@@ -4,15 +4,41 @@
     {
       "id": 1,
       "prompt": "변경된 코드의 웹 성능 이슈를 검토해줘",
-      "expected_output": "PERF-01~PERF-11 전수 평가: CRP(3), Image(3), JS(3), Font(2)",
+      "expected_output": "PERF-01~11 기준으로 대상 파일 분석, 구체적 이슈 식별",
       "files": ["../../features/web-sample/pages/index.html", "../../features/web-sample/pages/dashboard.tsx", "../../features/web-sample/components/Card.tsx"],
       "expectations": [
-        "Summary mentions reading SKILL.md for performance",
-        "Lists all 11 PERF items (PERF-01 through PERF-11)",
-        "Covers CRP area (PERF-01 through PERF-03)",
-        "Covers Image area (PERF-04 through PERF-06)",
-        "Covers JS area (PERF-07 through PERF-09)",
-        "Covers Font area (PERF-10 through PERF-11)"
+        "Reads skills/performance/SKILL.md via Read tool",
+        "Analyzes target files for performance issues (not just lists items)",
+        "Identifies CRP issues (render-blocking CSS/JS, inline critical CSS)",
+        "Identifies image optimization issues (format, lazy loading, dimensions)",
+        "References PERF item IDs in findings",
+        "Provides specific optimization recommendations with code examples"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "index.html의 이미지 최적화와 리소스 로딩 성능을 점검해줘",
+      "expected_output": "PERF-04~06 이미지 항목과 PERF-01~03 CRP 항목 중심 분석",
+      "files": ["../../features/web-sample/pages/index.html"],
+      "expectations": [
+        "Reads skills/performance/SKILL.md via Read tool",
+        "Checks image format optimization (WebP/AVIF usage)",
+        "Checks lazy loading implementation for below-fold images",
+        "Evaluates resource loading order (preload, defer, async)",
+        "Identifies render-blocking resources"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "dashboard.tsx의 JavaScript 번들 크기와 실행 성능을 분석해줘",
+      "expected_output": "PERF-07~09 JS 항목 중심 분석, 번들/코드 스플리팅 제안",
+      "files": ["../../features/web-sample/pages/dashboard.tsx"],
+      "expectations": [
+        "Reads skills/performance/SKILL.md via Read tool",
+        "Evaluates JavaScript bundle impact (PERF-07 through PERF-09)",
+        "Checks for code splitting opportunities (dynamic import)",
+        "Identifies heavy computations that could block main thread",
+        "Suggests tree-shaking or lazy loading strategies"
       ]
     }
   ]

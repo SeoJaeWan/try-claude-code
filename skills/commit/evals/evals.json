@@ -4,14 +4,41 @@
     {
       "id": 1,
       "prompt": "현재 변경사항을 커밋해줘",
-      "expected_output": "git status/diff 분석, Conventional Commits type: subject-only 포맷, commitlint 검증 시도, 실패 시 amend 루프",
-      "files": ["../../features/next-app/package.json"],
+      "expected_output": "git status/diff 분석, Conventional Commits 포맷, commitlint 검증",
+      "files": [],
       "expectations": [
-        "Summary mentions reading SKILL.md for commit",
-        "Describes git status/diff analysis",
-        "Mentions Conventional Commits format (type: subject)",
-        "Mentions commitlint verification",
-        "Describes amend loop on validation failure"
+        "Reads skills/commit/SKILL.md via Read tool",
+        "Runs git status to check current changes",
+        "Runs git diff to analyze change content",
+        "Uses Conventional Commits format (type: subject)",
+        "Runs commitlint to validate commit message before committing",
+        "Executes git commit command"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "로그인 기능 구현한 코드를 feat 타입으로 커밋해줘",
+      "expected_output": "feat: 타입 사용, 변경 내용 분석 기반 메시지",
+      "files": [],
+      "expectations": [
+        "Reads skills/commit/SKILL.md via Read tool",
+        "Uses feat type in commit message",
+        "Analyzes actual diff content to write descriptive subject",
+        "Keeps subject line concise (under 50 chars)",
+        "Validates with commitlint before final commit"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "버그 수정 커밋 만들어줘. 수정 내용을 자동으로 파악해서 메시지 작성해줘",
+      "expected_output": "fix: 타입 사용, diff 분석 기반 자동 메시지 생성",
+      "files": [],
+      "expectations": [
+        "Reads skills/commit/SKILL.md via Read tool",
+        "Runs git diff to understand what was changed",
+        "Uses fix type in commit message",
+        "Generates descriptive message based on actual changes",
+        "Checks current branch before committing"
       ]
     }
   ]

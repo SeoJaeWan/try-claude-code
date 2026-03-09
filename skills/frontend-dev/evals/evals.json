@@ -4,40 +4,40 @@
     {
       "id": 1,
       "prompt": "로그인 페이지에 useAuth 커스텀 훅을 만들고 API 연동해줘",
-      "expected_output": "use{Verb}{Resource} 네이밍, TDD RED->GREEN 사이클, coding-rules 참조, generate.mjs 활용",
+      "expected_output": "useAuth 훅 생성, API 연동, 테스트 파일 포함",
       "files": ["../../features/next-app/package.json", "../../features/next-app/app/page.tsx", "../../features/next-app/app/layout.tsx"],
       "expectations": [
-        "Summary mentions reading SKILL.md for frontend-dev",
-        "References use{Verb}{Resource} naming convention",
-        "Mentions TDD RED->GREEN workflow or test-first approach",
-        "References coding-rules documents",
-        "Mentions generate.mjs or coding-rules-based implementation"
+        "Reads skills/frontend-dev/SKILL.md via Read tool",
+        "Creates hook file following use{Verb}{Resource} naming pattern",
+        "Implements API call logic within the hook",
+        "Creates test file for the hook (TDD approach)",
+        "Reads coding-rules reference documents for conventions"
       ]
     },
     {
       "id": 2,
       "prompt": "상품 목록 페이지에 무한스크롤과 필터 기능을 추가해줘. 상태관리는 zustand 써줘",
-      "expected_output": "useFetchProducts 훅, zustand store, IntersectionObserver 기반 무한스크롤, 필터 상태 연동",
+      "expected_output": "useFetchProducts 훅, zustand store, IntersectionObserver 무한스크롤",
       "files": ["../../features/next-app/package.json", "../../features/next-app/app/page.tsx", "../../features/next-app/app/layout.tsx"],
       "expectations": [
-        "Summary mentions reading SKILL.md for frontend-dev",
-        "Creates custom hook with use{Verb}{Resource} pattern",
-        "Mentions zustand or external state management setup",
-        "Implements infinite scroll with IntersectionObserver or similar",
-        "Mentions TDD or test-first approach"
+        "Reads skills/frontend-dev/SKILL.md via Read tool",
+        "Creates custom hook with use{Verb}{Resource} naming (e.g., useFetchProducts)",
+        "Creates zustand store for state management",
+        "Implements IntersectionObserver or scroll-based infinite loading",
+        "Creates test files for hook and/or store"
       ]
     },
     {
       "id": 3,
       "prompt": "useFetchOrder라는 API 훅을 만들어줘. query 방식으로 주문 데이터를 가져오는 훅이야",
-      "expected_output": "generate.mjs api-hook 명령어로 보일러플레이트 생성 후 구현, 또는 스크립트 없을 시 수동 구현",
+      "expected_output": "generate.mjs api-hook으로 보일러플레이트 또는 수동 구현",
       "files": ["../../features/next-app/package.json", "../../features/next-app/app/page.tsx"],
       "expectations": [
-        "Summary mentions reading SKILL.md for frontend-dev",
-        "Runs generate.mjs api-hook command with --method query",
-        "Falls back to manual implementation if scripts not found",
-        "Generates test-suite boilerplate with generate.mjs test-suite or writes tests manually",
-        "References coding-rules scripts path"
+        "Reads skills/frontend-dev/SKILL.md via Read tool",
+        "Attempts generate.mjs api-hook command for boilerplate",
+        "Creates useFetchOrder hook file with query logic",
+        "Includes error handling and loading state in the hook",
+        "Creates corresponding test file"
       ]
     }
   ]

@@ -4,16 +4,41 @@
     {
       "id": 1,
       "prompt": "이 프로젝트에 try-claude를 초기화해줘",
-      "expected_output": ".claude/try-claude/ 하위에 references/coding-rules/ 9개 문서 + scripts/generate.mjs, references/design/ 5개 문서, project.json, 7개 디렉토리 생성",
+      "expected_output": ".claude/try-claude/ 구조 생성, references, scripts, project.json",
       "files": [],
       "expectations": [
-        "Summary mentions reading SKILL.md for init-try",
-        "Lists .claude/try-claude/ as target directory",
-        "Mentions references/coding-rules/ with 9 documents",
-        "Mentions scripts/generate.mjs",
-        "Mentions references/design/ with design documents",
-        "Mentions project.json creation",
-        "Lists 7 directories (plans, reports, logs, codemaps, humanmaps, jira-review, references)"
+        "Reads skills/init-try/SKILL.md via Read tool",
+        "Runs init-try script (node scripts/run.mjs) or creates structure manually",
+        "Creates .claude/try-claude/ directory",
+        "Creates references/coding-rules/ with documents",
+        "Creates project.json configuration file",
+        "Creates required subdirectories (plans, reports, logs, codemaps, humanmaps)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "try-claude 초기화를 해야 하는데 이미 .claude/try-claude 폴더가 있어. 어떻게 해?",
+      "expected_output": "기존 디렉토리 감지, 덮어쓰기 확인, 또는 migration 안내",
+      "files": [],
+      "expectations": [
+        "Reads skills/init-try/SKILL.md via Read tool",
+        "Checks for existing .claude/try-claude/ directory",
+        "Warns about existing installation",
+        "Suggests migration skill for updating existing setup",
+        "Does not blindly overwrite existing files"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "try-claude를 초기화하고 어떤 파일이 생성되는지 상세히 알려줘",
+      "expected_output": "생성되는 디렉토리/파일 목록과 각 역할 설명",
+      "files": [],
+      "expectations": [
+        "Reads skills/init-try/SKILL.md via Read tool",
+        "Runs initialization process",
+        "Lists all created directories and files",
+        "Explains the purpose of each directory (codemaps, humanmaps, references, etc.)",
+        "Explains project.json structure and role"
       ]
     }
   ]

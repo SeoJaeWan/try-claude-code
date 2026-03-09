@@ -4,40 +4,42 @@
     {
       "id": 1,
       "prompt": "사용자 인증 API 엔드포인트를 NestJS로 구현해줘",
-      "expected_output": "auth.controller.ts, auth.service.ts, auth.module.ts 생성. coding-rules/folder-structure.md 준수, DB snake_case 네이밍",
+      "expected_output": "auth.controller.ts, auth.service.ts, auth.module.ts 생성. coding-rules 준수",
       "files": ["../../features/nest-api/package.json", "../../features/nest-api/src/app.module.ts", "../../features/nest-api/src/main.ts"],
       "expectations": [
-        "Summary mentions reading SKILL.md for backend-dev",
-        "Mentions NestJS module structure (controller, service, module)",
-        "References coding-rules/folder-structure.md",
-        "Mentions DB snake_case naming convention",
-        "Mentions generate.mjs or manual file generation"
+        "Reads skills/backend-dev/SKILL.md via Read tool",
+        "Detects NestJS framework from package.json",
+        "Creates controller file with @Controller decorator",
+        "Creates service file with @Injectable decorator",
+        "Creates module file with @Module decorator",
+        "Reads coding-rules/folder-structure.md for project conventions"
       ]
     },
     {
       "id": 2,
       "prompt": "상품 CRUD API를 만들어줘. TypeORM으로 DB 연동하고 DTO 검증도 포함해줘",
-      "expected_output": "products module/controller/service, CreateProductDto with class-validator, TypeORM Entity, Repository 패턴",
+      "expected_output": "products CRUD endpoints, CreateProductDto with class-validator, TypeORM Entity",
       "files": ["../../features/nest-api/package.json", "../../features/nest-api/src/app.module.ts", "../../features/nest-api/src/main.ts"],
       "expectations": [
-        "Summary mentions reading SKILL.md for backend-dev",
-        "Creates CRUD endpoints (GET/POST/PUT/DELETE)",
-        "Mentions DTO with class-validator decorators",
-        "Mentions TypeORM Entity or DB schema definition",
-        "References coding-rules/folder-structure.md"
+        "Reads skills/backend-dev/SKILL.md via Read tool",
+        "Creates all 4 CRUD endpoints (GET, POST, PUT/PATCH, DELETE)",
+        "Creates DTO class with class-validator decorators (@IsString, @IsNumber, etc.)",
+        "Creates TypeORM Entity with @Entity and @Column decorators",
+        "Uses snake_case for DB column naming",
+        "Reads coding-rules reference for conventions"
       ]
     },
     {
       "id": 3,
       "prompt": "주문 관리 모듈을 새로 만들어줘. orders 모듈 구조를 생성하고 기본 CRUD 넣어줘",
-      "expected_output": "generate.mjs structure orders --create로 모듈 보일러플레이트 생성 후 CRUD 구현",
+      "expected_output": "generate.mjs로 모듈 스캐폴딩 또는 수동 생성, CRUD 구현",
       "files": ["../../features/nest-api/package.json", "../../features/nest-api/src/app.module.ts"],
       "expectations": [
-        "Summary mentions reading SKILL.md for backend-dev",
-        "Runs generate.mjs structure command for module scaffolding",
-        "Falls back to manual creation if scripts not found",
-        "Creates controller, service, module files",
-        "References coding-rules scripts path"
+        "Reads skills/backend-dev/SKILL.md via Read tool",
+        "Attempts generate.mjs structure command for scaffolding",
+        "Creates controller, service, module files for orders",
+        "Implements CRUD endpoints in the controller",
+        "Registers OrdersModule in app.module.ts imports"
       ]
     }
   ]

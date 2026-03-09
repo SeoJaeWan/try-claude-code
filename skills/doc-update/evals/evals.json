@@ -4,28 +4,41 @@
     {
       "id": 1,
       "prompt": "프로젝트 문서를 업데이트해줘. CODEMAPS랑 HUMANMAPS 둘 다 갱신해줘.",
-      "expected_output": "detect_changes.mjs -> changes.json, extract_structure.mjs -> extracted_structure.json, CODEMAPS/INDEX.md, HUMANMAPS .html 생성",
+      "expected_output": "파이프라인 실행: detect_changes → extract_structure → CODEMAPS/HUMANMAPS 생성",
       "files": ["../../features/next-app/package.json", "../../features/next-app/app/page.tsx", "../../features/next-app/app/layout.tsx"],
       "expectations": [
-        "Summary mentions reading SKILL.md for doc-update",
-        "Mentions detect_changes.mjs execution",
-        "Mentions extract_structure.mjs execution",
-        "Describes CODEMAPS/INDEX.md generation",
-        "Mentions HUMANMAPS HTML file generation",
-        "Describes pipeline execution order"
+        "Reads skills/doc-update/SKILL.md via Read tool",
+        "Runs detect_changes.mjs script or equivalent change detection",
+        "Runs extract_structure.mjs script or equivalent structure extraction",
+        "Creates or updates CODEMAPS INDEX.md file",
+        "Creates or updates HUMANMAPS HTML file",
+        "Follows pipeline order: detect → extract → generate"
       ]
     },
     {
       "id": 2,
       "prompt": "백엔드 API 코드가 변경됐어. CODEMAPS만 부분 업데이트해줘",
-      "expected_output": "detect_changes.mjs로 변경 감지, 변경된 모듈만 extract_structure.mjs, CODEMAPS 부분 갱신",
+      "expected_output": "변경 감지 후 해당 모듈만 갱신, HUMANMAPS 스킵",
       "files": ["../../features/nest-api/package.json", "../../features/nest-api/src/app.module.ts", "../../features/nest-api/src/main.ts"],
       "expectations": [
-        "Summary mentions reading SKILL.md for doc-update",
-        "Mentions detect_changes.mjs for change detection",
-        "Performs partial update (not full regeneration)",
-        "Describes CODEMAPS/INDEX.md update",
-        "Mentions extract_structure.mjs execution"
+        "Reads skills/doc-update/SKILL.md via Read tool",
+        "Detects changes scoped to backend API files",
+        "Updates only CODEMAPS (skips HUMANMAPS generation)",
+        "Extracts structure from nest-api source files",
+        "Preserves existing documentation for unchanged modules"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "전체 프로젝트 구조를 스캔하고 HUMANMAPS 문서만 새로 생성해줘",
+      "expected_output": "전체 스캔 후 HUMANMAPS HTML만 생성",
+      "files": ["../../features/next-app/package.json", "../../features/next-app/app/page.tsx", "../../features/nest-api/package.json", "../../features/nest-api/src/app.module.ts"],
+      "expectations": [
+        "Reads skills/doc-update/SKILL.md via Read tool",
+        "Scans multiple service directories (next-app, nest-api)",
+        "Extracts structure from all scanned services",
+        "Generates HUMANMAPS HTML documentation",
+        "Skips CODEMAPS generation as not requested"
       ]
     }
   ]

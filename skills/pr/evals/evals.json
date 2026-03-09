@@ -4,15 +4,41 @@
     {
       "id": 1,
       "prompt": "PR 올려줘",
-      "expected_output": "Branch 분석, commit history 요약, gh pr create --title --body 실행, Summary/Test plan 섹션 포함",
-      "files": ["../../features/next-app/package.json"],
+      "expected_output": "Branch 분석, commit history 요약, gh pr create 실행",
+      "files": [],
       "expectations": [
-        "Summary mentions reading SKILL.md for pr",
-        "Describes branch analysis",
-        "Mentions commit history summary",
-        "Mentions gh pr create --title --body execution",
-        "Includes Summary section in PR body",
-        "Includes Test plan section in PR body"
+        "Reads skills/pr/SKILL.md via Read tool",
+        "Runs git status and git log to analyze changes",
+        "Checks if current branch has remote tracking",
+        "Checks for PR template file (.github/pull_request_template.md)",
+        "Writes PR body with Summary and Test plan sections",
+        "Runs gh pr create command"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "현재 브랜치의 변경사항으로 PR을 만들어줘. 리뷰어는 팀원 kim으로 지정해줘",
+      "expected_output": "PR 생성 + 리뷰어 지정, commit 기반 설명",
+      "files": [],
+      "expectations": [
+        "Reads skills/pr/SKILL.md via Read tool",
+        "Analyzes commit history for PR description",
+        "Includes reviewer assignment (--reviewer flag)",
+        "Writes PR body with Summary and Test plan sections",
+        "Pushes branch if not already pushed"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "main 브랜치에서 PR을 만들어줘",
+      "expected_output": "main 브랜치에서는 PR 생성 불가 경고, 새 브랜치 생성 안내",
+      "files": [],
+      "expectations": [
+        "Reads skills/pr/SKILL.md via Read tool",
+        "Detects current branch is main/master",
+        "Warns user about creating PR from main branch",
+        "Suggests creating a feature branch first",
+        "Does not proceed with PR creation on main"
       ]
     }
   ]
