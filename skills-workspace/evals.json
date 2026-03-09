@@ -1,7 +1,7 @@
 {
   "skill_name": "all-skills-v2",
-  "version": "2.1",
-  "description": "Deep evaluation with fixture environments, severity/category expectations, and playwright skills",
+  "version": "2.2",
+  "description": "Korean-only eval set with fixture environments, severity/category expectations, and playwright skills",
   "tiers": {
     "T1": "Dependency Chain — init-try -> coding-rules -> dev skills",
     "T2": "Script Execution & File Generation",
@@ -22,7 +22,7 @@
       "skill": "init-try",
       "fixture": "none",
       "prompt": "이 프로젝트에 try-claude를 초기화해줘",
-      "expected_output": ".claude/try-claude/ 하위에 references/coding-rules/ 9개 문서 + scripts/generate.mjs, references/design/ 5개 문서, project.json, 7개 디렉토리(plans, reports, logs, codemaps, humanmaps, jira-review, references) 생성",
+      "expected_output": ".claude/try-claude/ 하위에 references/coding-rules/ 9개 문서 + scripts/generate.mjs, references/design/ 5개 문서, project.json, 7개 디렉토리 생성",
       "focus": "reference seeding completeness",
       "files": [],
       "expectations": [
@@ -38,27 +38,10 @@
     {
       "id": 2,
       "tier": "T1",
-      "skill": "init-try",
-      "fixture": "none",
-      "prompt": "bootstrap the try-claude runtime for this repo",
-      "expected_output": "run.mjs script execution, project.json with managedReferences array containing path/hash/mergeMode fields, SHA256 hash tracking per reference file",
-      "focus": "project.json structure and hash tracking",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for init-try", "severity": "critical", "category": "trigger" },
-        { "text": "Mentions run.mjs script execution", "severity": "high", "category": "tooling" },
-        { "text": "Describes project.json with managedReferences array", "severity": "high", "category": "output" },
-        { "text": "Mentions path/hash/mergeMode fields in managedReferences", "severity": "medium", "category": "output" },
-        { "text": "Mentions SHA256 hash tracking per reference file", "severity": "medium", "category": "compliance" }
-      ]
-    },
-    {
-      "id": 3,
-      "tier": "T1",
       "skill": "frontend-dev",
       "fixture": "next-app",
       "prompt": "로그인 페이지에 useAuth 커스텀 훅을 만들고 API 연동해줘",
-      "expected_output": "generate.mjs hook 명령 실행 또는 coding-rules 기반 수동 구현. use{Verb}{Resource} 네이밍, props destructuring in function body, TDD RED->GREEN 사이클, design/ 참조",
+      "expected_output": "generate.mjs hook 명령 실행 또는 coding-rules 기반 수동 구현. use{Verb}{Resource} 네이밍, TDD RED->GREEN 사이클, design/ 참조",
       "focus": "coding-rules compliance + generate.mjs usage",
       "files": [],
       "expectations": [
@@ -70,23 +53,7 @@
       ]
     },
     {
-      "id": 4,
-      "tier": "T1",
-      "skill": "frontend-dev",
-      "fixture": "next-app",
-      "prompt": "create a custom hook for fetching user profile data with TanStack Query",
-      "expected_output": "useGetUserProfile hook following use{Verb}{Resource} naming, test-first workflow with RED verification, references to coding-rules/code-style.md and design/ docs",
-      "focus": "naming convention + TDD workflow fidelity",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for frontend-dev", "severity": "critical", "category": "trigger" },
-        { "text": "Uses useGetUserProfile or similar use{Verb}{Resource} naming", "severity": "high", "category": "compliance" },
-        { "text": "Mentions TDD RED->GREEN or test-first workflow", "severity": "high", "category": "compliance" },
-        { "text": "References coding-rules/code-style.md or design/ docs", "severity": "medium", "category": "compliance" }
-      ]
-    },
-    {
-      "id": 5,
+      "id": 3,
       "tier": "T1",
       "skill": "backend-dev",
       "fixture": "nest-api",
@@ -103,29 +70,12 @@
       ]
     },
     {
-      "id": 6,
-      "tier": "T1",
-      "skill": "backend-dev",
-      "fixture": "nest-api",
-      "prompt": "implement a REST API endpoint for CRUD operations on products",
-      "expected_output": "Framework auto-detection from package.json, stack-specific test command selection (pnpm test / pytest / go test), controller+service+module file generation, TDD RED->GREEN",
-      "focus": "framework detection + TDD workflow",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for backend-dev", "severity": "critical", "category": "trigger" },
-        { "text": "Mentions framework auto-detection from package.json", "severity": "high", "category": "compliance" },
-        { "text": "Mentions stack-specific test command selection", "severity": "medium", "category": "tooling" },
-        { "text": "Describes controller+service+module file generation", "severity": "high", "category": "output" },
-        { "text": "Mentions TDD RED->GREEN workflow", "severity": "high", "category": "compliance" }
-      ]
-    },
-    {
-      "id": 7,
+      "id": 4,
       "tier": "T1",
       "skill": "ui-publish",
       "fixture": "next-app",
       "prompt": "대시보드 레이아웃 컴포넌트를 만들어줘. 사이드바, 헤더, 메인 콘텐츠 영역 포함",
-      "expected_output": "generate.mjs component 실행 또는 수동 구현. Pretendard 폰트 사용, theme-tokens.md 참조, Tailwind CSS, no useState/useEffect/fetch (no-logic), layout-only props (className, children)",
+      "expected_output": "generate.mjs component 실행 또는 수동 구현. Pretendard 폰트, theme-tokens.md 참조, Tailwind CSS, no-logic, layout-only props",
       "focus": "design system compliance + no-logic enforcement",
       "files": [],
       "expectations": [
@@ -138,29 +88,12 @@
       ]
     },
     {
-      "id": 8,
-      "tier": "T1",
-      "skill": "ui-publish",
-      "fixture": "next-app",
-      "prompt": "create a responsive card grid component with shadcn/ui styling",
-      "expected_output": "References design/theme-tokens.md and tailwind.config.js for actual token values, mobile-first breakpoints (sm: md: lg:), shadcn/ui component reuse check via CODEMAPS, Pretendard font-family",
-      "focus": "design token resolution + responsive pattern",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for ui-publish", "severity": "critical", "category": "trigger" },
-        { "text": "References design/theme-tokens.md and tailwind.config.js", "severity": "high", "category": "compliance" },
-        { "text": "Mentions mobile-first breakpoints (sm: md: lg:)", "severity": "high", "category": "output" },
-        { "text": "Mentions shadcn/ui component reuse or CODEMAPS check", "severity": "medium", "category": "tooling" },
-        { "text": "Mentions Pretendard font-family", "severity": "medium", "category": "compliance" }
-      ]
-    },
-    {
-      "id": 9,
+      "id": 5,
       "tier": "T2",
       "skill": "doc-update",
       "fixture": "next-app",
       "prompt": "프로젝트 문서를 업데이트해줘. CODEMAPS랑 HUMANMAPS 둘 다 갱신해줘.",
-      "expected_output": "detect_changes.mjs 실행 -> changes.json 생성, extract_structure.mjs 실행 -> extracted_structure.json, CODEMAPS/INDEX.md + 영역별 .md, HUMANMAPS .html 파일 생성",
+      "expected_output": "detect_changes.mjs -> changes.json, extract_structure.mjs -> extracted_structure.json, CODEMAPS/INDEX.md + 영역별 .md, HUMANMAPS .html 생성",
       "focus": "script pipeline execution and output files",
       "files": [],
       "expectations": [
@@ -173,29 +106,12 @@
       ]
     },
     {
-      "id": 10,
-      "tier": "T2",
-      "skill": "doc-update",
-      "fixture": "nest-api",
-      "prompt": "generate project documentation for the current codebase",
-      "expected_output": "detect_changes.mjs and extract_structure.mjs executed in sequence, codemaps/ directory with INDEX.md, humanmaps/ with HTML output, proper service root detection (app/, apps/, src/)",
-      "focus": "script pipeline + service root detection",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for doc-update", "severity": "critical", "category": "trigger" },
-        { "text": "Mentions detect_changes.mjs and extract_structure.mjs in sequence", "severity": "high", "category": "tooling" },
-        { "text": "Describes codemaps/ directory with INDEX.md", "severity": "high", "category": "output" },
-        { "text": "Mentions humanmaps/ with HTML output", "severity": "high", "category": "output" },
-        { "text": "Mentions service root detection (app/, apps/, src/)", "severity": "medium", "category": "compliance" }
-      ]
-    },
-    {
-      "id": 11,
+      "id": 6,
       "tier": "T2",
       "skill": "migration",
       "fixture": "none",
       "prompt": "try-claude 레퍼런스를 최신 플러그인 기본값과 동기화해줘",
-      "expected_output": "section-aware merge: unchanged sections updated, edited sections preserved. project.json hash comparison (SHA256), managedReferences 배열 업데이트, updated/skipped/reseeded 카운트 보고",
+      "expected_output": "section-aware merge, project.json hash comparison (SHA256), managedReferences 배열 업데이트, updated/skipped/reseeded 카운트 보고",
       "focus": "merge logic + hash tracking",
       "files": [],
       "expectations": [
@@ -207,29 +123,12 @@
       ]
     },
     {
-      "id": 12,
-      "tier": "T2",
-      "skill": "migration",
-      "fixture": "none",
-      "prompt": "sync my local references with the latest plugin defaults",
-      "expected_output": "Compares SHA256 hashes in project.json, section-level merge preserving user edits, reports counts of updated/skipped/reseeded files, updates managedReferences hashes",
-      "focus": "SHA256 hash comparison + section preservation",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for migration", "severity": "critical", "category": "trigger" },
-        { "text": "Mentions SHA256 hash comparison", "severity": "high", "category": "compliance" },
-        { "text": "Describes section-level merge preserving user edits", "severity": "high", "category": "compliance" },
-        { "text": "Reports updated/skipped/reseeded file counts", "severity": "medium", "category": "output" },
-        { "text": "Mentions managedReferences hash updates", "severity": "medium", "category": "output" }
-      ]
-    },
-    {
-      "id": 13,
+      "id": 7,
       "tier": "T2",
       "skill": "init-coding-rules",
       "fixture": "next-app",
       "prompt": "이 프로젝트에 ESLint, commitlint, husky 설정을 coding-rules 기반으로 생성해줘",
-      "expected_output": "9개 coding-rules 문서 읽기, package.json 기반 프레임워크 감지 (Next.js/NestJS/Vite React/React Native/Base TypeScript), 4개 그룹별 승인 워크플로우 (ESLint, TSConfig, commitlint, husky+lint-staged), config 파일 생성",
+      "expected_output": "9개 coding-rules 문서 읽기, package.json 기반 프레임워크 감지, 4개 그룹별 승인 워크플로우, config 파일 생성",
       "focus": "framework detection + group approval workflow",
       "files": [],
       "expectations": [
@@ -241,29 +140,12 @@
       ]
     },
     {
-      "id": 14,
-      "tier": "T2",
-      "skill": "init-coding-rules",
-      "fixture": "nest-api",
-      "prompt": "set up linting and commit hooks based on our coding conventions",
-      "expected_output": "Reads all 9 coding-rules docs, detects framework from package.json devDependencies, presents per-group approval (ESLint rules, TSConfig strict, commitlint config, husky hooks), outputs install command without auto-running pnpm add",
-      "focus": "coding-rules reading + safe install pattern",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for init-coding-rules", "severity": "critical", "category": "trigger" },
-        { "text": "Mentions reading all 9 coding-rules docs", "severity": "high", "category": "compliance" },
-        { "text": "Mentions framework detection from package.json devDependencies", "severity": "high", "category": "compliance" },
-        { "text": "Describes per-group approval workflow", "severity": "high", "category": "output" },
-        { "text": "Mentions safe install pattern (no auto-run pnpm add)", "severity": "medium", "category": "compliance" }
-      ]
-    },
-    {
-      "id": 15,
+      "id": 8,
       "tier": "T2",
       "skill": "planner-lite",
       "fixture": "next-app",
       "prompt": "plan.md에 정의된 3개 Phase를 worktree 격리 방식으로 실행해줘",
-      "expected_output": "plan.md의 Branch: 헤더 검증, owner_agent: 별 agents/*.md 존재 확인, git worktree add -b {branch} .claude/worktrees/{branch}, phase별 Agent 호출 (isolation: worktree 금지), phase 완료 후 git merge --no-ff, worktree 정리",
+      "expected_output": "Branch: 헤더 검증, owner_agent: 별 agents/*.md 존재 확인, git worktree add, isolation: worktree 금지, git merge --no-ff, worktree 정리",
       "focus": "worktree lifecycle + agent dispatch rules",
       "files": [],
       "expectations": [
@@ -277,30 +159,12 @@
       ]
     },
     {
-      "id": 16,
-      "tier": "T2",
-      "skill": "planner-lite",
-      "fixture": "next-app",
-      "prompt": "execute the plan at .claude/try-claude/plans/auth-feature/plan.md with worktree isolation",
-      "expected_output": "Validates Branch: header and owner_agent: fields, checks agents/*.md exist, creates worktree without nesting (no isolation: worktree in Agent calls), sequential phase execution, merge and cleanup",
-      "focus": "nested worktree prevention + merge workflow",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for planner-lite", "severity": "critical", "category": "trigger" },
-        { "text": "Validates Branch: header and owner_agent: fields", "severity": "high", "category": "compliance" },
-        { "text": "Checks agents/*.md existence", "severity": "high", "category": "compliance" },
-        { "text": "Prevents nested worktree (no isolation: worktree in Agent calls)", "severity": "critical", "category": "compliance" },
-        { "text": "Describes sequential phase execution", "severity": "medium", "category": "output" },
-        { "text": "Mentions merge and cleanup steps", "severity": "medium", "category": "tooling" }
-      ]
-    },
-    {
-      "id": 17,
+      "id": 9,
       "tier": "T3",
       "skill": "accessibility-review",
       "fixture": "web-sample",
       "prompt": "변경된 웹 코드의 접근성을 KWCAG2.2 기준으로 검토해줘",
-      "expected_output": "kwcag22.md 읽기, 33개 항목 전수 평가 (KWCAG-01~33 또는 항목 1~33), O/X/triangle/N/A 분류, Playwright 환경 감지 (config/CLI/browser/server 4단계), HTML+CSV 리포트 생성",
+      "expected_output": "kwcag22.md 읽기, 33개 항목 전수 평가, O/X/triangle/N/A 분류, Playwright 환경 감지, HTML+CSV 리포트 생성",
       "focus": "33-item full coverage + classification",
       "files": [],
       "expectations": [
@@ -313,29 +177,12 @@
       ]
     },
     {
-      "id": 18,
-      "tier": "T3",
-      "skill": "accessibility-review",
-      "fixture": "web-sample",
-      "prompt": "run an accessibility audit on the changed files following KWCAG2.2",
-      "expected_output": "Reads kwcag22.md reference, evaluates all 33 items with auto-detection levels (O/triangle/X), semantic HTML review (7 items: landmarks, sections, interactive, lists, presentational, form grouping, quotations), generates report in .claude/try-claude/reports/accessibility/",
-      "focus": "auto-detection levels + semantic HTML review",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for accessibility-review", "severity": "critical", "category": "trigger" },
-        { "text": "Mentions kwcag22.md reference", "severity": "high", "category": "compliance" },
-        { "text": "Evaluates all 33 items with auto-detection levels", "severity": "critical", "category": "output" },
-        { "text": "Describes semantic HTML review (7 items)", "severity": "medium", "category": "output" },
-        { "text": "Mentions report output in .claude/try-claude/reports/accessibility/", "severity": "high", "category": "output" }
-      ]
-    },
-    {
-      "id": 19,
+      "id": 10,
       "tier": "T3",
       "skill": "best-practices",
       "fixture": "web-sample",
       "prompt": "변경된 코드의 보안, 호환성, 코드 품질을 검토해줘",
-      "expected_output": "BP-01~BP-14 전수 평가: 보안(BP-01 HTTPS, BP-02 취약의존성, BP-03 CSP, BP-04 보안헤더, BP-05 innerHTML), 호환성(BP-06 DOCTYPE, BP-07 charset, BP-08 viewport, BP-09 deprecated, BP-10 passive), 코드품질(BP-11 콘솔에러, BP-12 중복id, BP-13 시맨틱, BP-14 에러처리)",
+      "expected_output": "BP-01~BP-14 전수 평가: 보안(5), 호환성(5), 코드품질(4)",
       "focus": "all 14 BP items with 3-area coverage",
       "files": [],
       "expectations": [
@@ -347,28 +194,12 @@
       ]
     },
     {
-      "id": 20,
-      "tier": "T3",
-      "skill": "best-practices",
-      "fixture": "web-sample",
-      "prompt": "check the changed files for web best practices compliance",
-      "expected_output": "All 14 BP items evaluated: BP-01 through BP-14 covering Security (5), Compatibility (5), Code Quality (4). Each item with pass/fail/N/A result and specific evidence",
-      "focus": "complete BP coverage with evidence",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for best-practices", "severity": "critical", "category": "trigger" },
-        { "text": "Evaluates all 14 BP items", "severity": "critical", "category": "output" },
-        { "text": "Each item has pass/fail/N/A result", "severity": "high", "category": "output" },
-        { "text": "Provides specific evidence per item", "severity": "medium", "category": "output" }
-      ]
-    },
-    {
-      "id": 21,
+      "id": 11,
       "tier": "T3",
       "skill": "seo",
       "fixture": "web-sample",
       "prompt": "변경된 페이지의 SEO 최적화 상태를 검토해줘",
-      "expected_output": "SEO-01~SEO-10 전수 평가: Critical(SEO-01 noindex, SEO-02 title 50-60자, SEO-03 h1, SEO-04 HTTPS), High(SEO-05 meta description 150-160, SEO-06 canonical, SEO-07 JSON-LD, SEO-08 alt), Medium(SEO-09 URL구조, SEO-10 anchor text)",
+      "expected_output": "SEO-01~SEO-10 전수 평가: Critical(4), High(4), Medium(2) 우선순위별 분류",
       "focus": "all 10 SEO items with priority levels",
       "files": [],
       "expectations": [
@@ -381,28 +212,12 @@
       ]
     },
     {
-      "id": 22,
-      "tier": "T3",
-      "skill": "seo",
-      "fixture": "web-sample",
-      "prompt": "review the SEO status of the changed HTML files",
-      "expected_output": "All 10 SEO items: SEO-01 through SEO-10 with Critical/High/Medium priority classification, structured checklist with pass/fail/N/A per item",
-      "focus": "complete SEO coverage with priority",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for seo", "severity": "critical", "category": "trigger" },
-        { "text": "Evaluates all 10 SEO items", "severity": "critical", "category": "output" },
-        { "text": "Uses Critical/High/Medium priority classification", "severity": "high", "category": "output" },
-        { "text": "Provides structured checklist with pass/fail/N/A", "severity": "medium", "category": "output" }
-      ]
-    },
-    {
-      "id": 23,
+      "id": 12,
       "tier": "T3",
       "skill": "performance",
       "fixture": "web-sample",
       "prompt": "변경된 코드의 웹 성능 이슈를 검토해줘",
-      "expected_output": "PERF-01~PERF-11 전수 평가: CRP(PERF-01 render-blocking, PERF-02 fetchpriority, PERF-03 Critical CSS), Image(PERF-04 width/height, PERF-05 lazy, PERF-06 WebP/AVIF), JS(PERF-07 코드스플리팅, PERF-08 트리쉐이킹, PERF-09 레이아웃스래싱), Font(PERF-10 font-display, PERF-11 preload)",
+      "expected_output": "PERF-01~PERF-11 전수 평가: CRP(3), Image(3), JS(3), Font(2)",
       "focus": "all 11 PERF items across 4 areas",
       "files": [],
       "expectations": [
@@ -415,28 +230,12 @@
       ]
     },
     {
-      "id": 24,
-      "tier": "T3",
-      "skill": "performance",
-      "fixture": "web-sample",
-      "prompt": "check the changed files for web performance anti-patterns",
-      "expected_output": "All 11 PERF items: PERF-01 through PERF-11 across CRP/Image/JS/Font areas. Each with specific web performance recommendation, not general code efficiency",
-      "focus": "web performance (not code efficiency)",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for performance", "severity": "critical", "category": "trigger" },
-        { "text": "Evaluates all 11 PERF items", "severity": "critical", "category": "output" },
-        { "text": "Focuses on web performance (not general code efficiency)", "severity": "high", "category": "compliance" },
-        { "text": "Covers CRP/Image/JS/Font areas", "severity": "high", "category": "output" }
-      ]
-    },
-    {
-      "id": 25,
+      "id": 13,
       "tier": "T3",
       "skill": "core-web-vitals",
       "fixture": "web-sample",
       "prompt": "변경된 코드의 Core Web Vitals 영향을 분석해줘",
-      "expected_output": "CWV-01~CWV-11 전수 평가: LCP(CWV-01 초기HTML, CWV-02 fetchpriority, CWV-03 폰트차단), INP(CWV-04 시각피드백, CWV-05 지연처리, CWV-06 React.memo), CLS(CWV-07 width/height, CWV-08 동적삽입금지, CWV-09 transform/opacity, CWV-10 폰트교체, CWV-11 공간예약)",
+      "expected_output": "CWV-01~CWV-11 전수 평가: LCP(3), INP(3), CLS(5)",
       "focus": "all 11 CWV items across LCP/INP/CLS",
       "files": [],
       "expectations": [
@@ -448,28 +247,12 @@
       ]
     },
     {
-      "id": 26,
-      "tier": "T3",
-      "skill": "core-web-vitals",
-      "fixture": "web-sample",
-      "prompt": "analyze the impact on LCP, INP, and CLS for the changed files",
-      "expected_output": "All 11 CWV items: CWV-01 through CWV-11 with LCP/INP/CLS metric classification, impact analysis per item",
-      "focus": "metric-specific CWV analysis",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for core-web-vitals", "severity": "critical", "category": "trigger" },
-        { "text": "Evaluates all 11 CWV items", "severity": "critical", "category": "output" },
-        { "text": "Classifies by LCP/INP/CLS metric", "severity": "high", "category": "output" },
-        { "text": "Provides impact analysis per item", "severity": "medium", "category": "output" }
-      ]
-    },
-    {
-      "id": 27,
+      "id": 14,
       "tier": "T3",
       "skill": "web-quality-audit",
       "fixture": "web-sample",
       "prompt": "변경된 코드에 대해 종합 웹 품질 검토를 실행해줘",
-      "expected_output": "5개 하위 영역 순차 실행: A-접근성(33항목), B-BP(14항목), C-SEO(10항목), D-성능(11항목), E-CWV(11항목). 통합 HTML+CSV 리포트 생성, output-format.md 준수, 영역별 색상 코딩",
+      "expected_output": "5개 하위 영역 순차 실행: A-접근성(33), B-BP(14), C-SEO(10), D-성능(11), E-CWV(11). 통합 HTML+CSV 리포트",
       "focus": "5-area orchestration + unified report",
       "files": [],
       "expectations": [
@@ -484,28 +267,12 @@
       ]
     },
     {
-      "id": 28,
-      "tier": "T3",
-      "skill": "web-quality-audit",
-      "fixture": "web-sample",
-      "prompt": "run a full web quality audit on the current changes",
-      "expected_output": "Orchestrates 5 sub-skills in sequence: Accessibility (33), Best Practices (14), SEO (10), Performance (11), CWV (11). Generates unified HTML report with section colors (#6c8ebf, #82c882, #f0a830, #e05c5c, #9b59b6) and CSV",
-      "focus": "orchestration + report format compliance",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for web-quality-audit", "severity": "critical", "category": "trigger" },
-        { "text": "Orchestrates 5 sub-skills in sequence", "severity": "critical", "category": "compliance" },
-        { "text": "Mentions section colors (#6c8ebf, #82c882, #f0a830, #e05c5c, #9b59b6)", "severity": "medium", "category": "compliance" },
-        { "text": "Generates unified HTML report and CSV", "severity": "high", "category": "output" }
-      ]
-    },
-    {
-      "id": 29,
+      "id": 15,
       "tier": "T4",
       "skill": "commit",
       "fixture": "next-app",
       "prompt": "현재 변경사항을 커밋해줘",
-      "expected_output": "git status/diff 분석, Conventional Commits type(feat/fix/refactor/docs/chore/test/style): subject-only 포맷, commitlint 검증 시도, 실패 시 amend 루프",
+      "expected_output": "git status/diff 분석, Conventional Commits type: subject-only 포맷, commitlint 검증 시도, 실패 시 amend 루프",
       "focus": "Conventional Commits format + commitlint integration",
       "files": [],
       "expectations": [
@@ -517,23 +284,7 @@
       ]
     },
     {
-      "id": 30,
-      "tier": "T4",
-      "skill": "commit",
-      "fixture": "nest-api",
-      "prompt": "commit this with a proper message following our conventions",
-      "expected_output": "Analyzes staged changes, generates type: subject format (max 72 chars), attempts commitlint validation, subject-only (no body unless complex)",
-      "focus": "subject-only format + validation loop",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for commit", "severity": "critical", "category": "trigger" },
-        { "text": "Mentions type: subject format (max 72 chars)", "severity": "critical", "category": "compliance" },
-        { "text": "Mentions commitlint validation attempt", "severity": "high", "category": "compliance" },
-        { "text": "Enforces subject-only format (no body unless complex)", "severity": "medium", "category": "compliance" }
-      ]
-    },
-    {
-      "id": 31,
+      "id": 16,
       "tier": "T4",
       "skill": "pr",
       "fixture": "next-app",
@@ -551,23 +302,7 @@
       ]
     },
     {
-      "id": 32,
-      "tier": "T4",
-      "skill": "pr",
-      "fixture": "nest-api",
-      "prompt": "open a pull request for the current changes",
-      "expected_output": "Analyzes branch diff, generates PR with Summary and Test plan sections, executes gh pr create",
-      "focus": "PR content quality",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for pr", "severity": "critical", "category": "trigger" },
-        { "text": "Analyzes branch diff", "severity": "high", "category": "tooling" },
-        { "text": "Generates PR with Summary and Test plan sections", "severity": "critical", "category": "output" },
-        { "text": "Mentions gh pr create execution", "severity": "high", "category": "tooling" }
-      ]
-    },
-    {
-      "id": 33,
+      "id": 17,
       "tier": "T4",
       "skill": "help-try",
       "fixture": "none",
@@ -583,27 +318,12 @@
       ]
     },
     {
-      "id": 34,
-      "tier": "T4",
-      "skill": "help-try",
-      "fixture": "none",
-      "prompt": "How do I share MCP settings with my team?",
-      "expected_output": "Explains shared (.mcp.json in repo) vs machine-local (~/.claude/.mcp.json) config, OS-specific template paths",
-      "focus": "MCP config sharing guidance",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for help-try", "severity": "critical", "category": "trigger" },
-        { "text": "Explains shared (.mcp.json in repo) vs machine-local (~/.claude/.mcp.json) config", "severity": "critical", "category": "output" },
-        { "text": "Mentions OS-specific template paths", "severity": "medium", "category": "output" }
-      ]
-    },
-    {
-      "id": 35,
+      "id": 18,
       "tier": "T5",
       "skill": "playwright-test-planner",
       "fixture": "next-app",
       "prompt": "현재 웹 앱을 탐색해서 E2E 테스트 플랜을 작성해줘",
-      "expected_output": "planner_setup_page로 브라우저 초기화, browser_snapshot으로 페이지 구조 탐색, 사용자 흐름 매핑, 시나리오별 steps/expected outcomes/success criteria 포함, planner_save_plan으로 specs/ 저장",
+      "expected_output": "planner_setup_page로 브라우저 초기화, browser_snapshot으로 페이지 구조 탐색, 사용자 흐름 매핑, planner_save_plan으로 specs/ 저장",
       "focus": "browser exploration + structured test plan output",
       "files": [],
       "expectations": [
@@ -616,29 +336,12 @@
       ]
     },
     {
-      "id": 36,
-      "tier": "T5",
-      "skill": "playwright-test-planner",
-      "fixture": "next-app",
-      "prompt": "explore the running app and create a comprehensive test plan covering all user flows",
-      "expected_output": "Browser-based exploration via snapshot/click/navigate, test scenarios with clear titles, step-by-step instructions, expected outcomes, categorized by happy path/edge case/error handling/negative testing, output saved to specs/ as markdown",
-      "focus": "scenario coverage breadth + independence",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for playwright-test-planner", "severity": "critical", "category": "trigger" },
-        { "text": "Uses browser tools (snapshot, click, navigate) for exploration", "severity": "high", "category": "tooling" },
-        { "text": "Categorizes scenarios (happy path, edge case, error handling, negative)", "severity": "high", "category": "output" },
-        { "text": "Scenarios are independent and can run in any order", "severity": "medium", "category": "compliance" },
-        { "text": "Output saved to specs/ as markdown", "severity": "high", "category": "output" }
-      ]
-    },
-    {
-      "id": 37,
+      "id": 19,
       "tier": "T5",
       "skill": "playwright-test-generator",
       "fixture": "next-app",
       "prompt": "specs/ 폴더의 테스트 플랜을 기반으로 Playwright 테스트 코드를 생성해줘",
-      "expected_output": "generator_setup_page로 브라우저 초기화, 각 시나리오별 실시간 step 실행, generator_read_log로 실행 로그 확인, generator_write_test로 .spec.ts 생성, describe/test 블록 구조, step별 주석 포함",
+      "expected_output": "generator_setup_page로 브라우저 초기화, 실시간 step 실행, generator_read_log로 로그 확인, generator_write_test로 .spec.ts 생성",
       "focus": "live execution + code generation fidelity",
       "files": [],
       "expectations": [
@@ -652,29 +355,12 @@
       ]
     },
     {
-      "id": 38,
-      "tier": "T5",
-      "skill": "playwright-test-generator",
-      "fixture": "next-app",
-      "prompt": "convert the test plan in specs/ into executable Playwright .spec.ts files",
-      "expected_output": "Reads specs/ markdown, sets up browser per scenario, executes steps live, reads execution log for best practices, writes single-test-per-file .spec.ts with filesystem-friendly names, spec/seed comments at top",
-      "focus": "file naming + spec reference + best practices from log",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for playwright-test-generator", "severity": "critical", "category": "trigger" },
-        { "text": "Reads test plan from specs/ markdown", "severity": "high", "category": "compliance" },
-        { "text": "Single test per file with filesystem-friendly name", "severity": "high", "category": "compliance" },
-        { "text": "Includes spec and seed comments at file top", "severity": "medium", "category": "output" },
-        { "text": "Applies best practices from execution log", "severity": "medium", "category": "compliance" }
-      ]
-    },
-    {
-      "id": 39,
+      "id": 20,
       "tier": "T5",
       "skill": "playwright-test-healer",
       "fixture": "next-app",
       "prompt": "Playwright 테스트가 실패하고 있어. 디버깅하고 고쳐줘",
-      "expected_output": "test_run으로 전체 테스트 실행, 실패 테스트별 test_debug 실행, browser_snapshot/console_messages/network_requests로 에러 조사, 근본 원인 분석 (셀렉터/타이밍/데이터), 코드 수정 후 test_run 재검증",
+      "expected_output": "test_run으로 전체 테스트 실행, 실패별 test_debug, browser tools로 에러 조사, 근본 원인 분석, 코드 수정 후 재검증",
       "focus": "systematic debug loop + root cause analysis",
       "files": [],
       "expectations": [
@@ -684,24 +370,6 @@
         { "text": "Uses browser tools (snapshot, console_messages, network_requests) for investigation", "severity": "high", "category": "tooling" },
         { "text": "Performs root cause analysis (selectors, timing, data)", "severity": "high", "category": "compliance" },
         { "text": "Fixes code and re-runs test_run to verify", "severity": "high", "category": "compliance" }
-      ]
-    },
-    {
-      "id": 40,
-      "tier": "T5",
-      "skill": "playwright-test-healer",
-      "fixture": "next-app",
-      "prompt": "some E2E tests are failing after a UI update, fix them",
-      "expected_output": "Runs test suite to identify failures, debugs each failure with browser inspection, uses browser_generate_locator for updated selectors, fixes one error at a time and retests, uses test.fixme() for genuine app bugs, sequential MCP tool calls only",
-      "focus": "incremental fix + genuine bug detection",
-      "files": [],
-      "expectations": [
-        { "text": "Summary mentions reading SKILL.md for playwright-test-healer", "severity": "critical", "category": "trigger" },
-        { "text": "Identifies failures via test_run first", "severity": "high", "category": "compliance" },
-        { "text": "Mentions browser_generate_locator for updated selectors", "severity": "medium", "category": "tooling" },
-        { "text": "Fixes one error at a time and retests", "severity": "high", "category": "compliance" },
-        { "text": "Mentions test.fixme() for genuine application bugs", "severity": "medium", "category": "compliance" },
-        { "text": "Sequential MCP tool calls (single browser instance)", "severity": "medium", "category": "compliance" }
       ]
     }
   ]
