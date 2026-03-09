@@ -1,0 +1,18 @@
+{
+  "skill_name": "best-practices",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "변경된 코드의 보안, 호환성, 코드 품질을 검토해줘",
+      "expected_output": "BP-01~BP-14 전수 평가: 보안(5), 호환성(5), 코드품질(4)",
+      "files": ["../../features/web-sample/pages/index.html", "../../features/web-sample/pages/dashboard.tsx", "../../features/web-sample/components/Card.tsx"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for best-practices",
+        "Lists all 14 BP items (BP-01 through BP-14)",
+        "Covers Security area (5 items)",
+        "Covers Compatibility area (5 items)",
+        "Covers Code Quality area (4 items)"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "skill_name": "core-web-vitals",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "변경된 코드의 Core Web Vitals 영향을 분석해줘",
+      "expected_output": "CWV-01~CWV-11 전수 평가: LCP(3), INP(3), CLS(5)",
+      "files": ["../../features/web-sample/pages/index.html", "../../features/web-sample/pages/dashboard.tsx", "../../features/web-sample/components/Card.tsx"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for core-web-vitals",
+        "Lists all 11 CWV items (CWV-01 through CWV-11)",
+        "Covers LCP items (CWV-01 through CWV-03)",
+        "Covers INP items (CWV-04 through CWV-06)",
+        "Covers CLS items (CWV-07 through CWV-11)"
+      ]
+    }
+  ]
+}

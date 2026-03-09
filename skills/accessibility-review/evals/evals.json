@@ -1,0 +1,19 @@
+{
+  "skill_name": "accessibility-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "변경된 웹 코드의 접근성을 KWCAG2.2 기준으로 검토해줘",
+      "expected_output": "kwcag22.md 읽기, 33개 항목 전수 평가, O/X/triangle/N/A 분류, Playwright 환경 감지, HTML+CSV 리포트 생성",
+      "files": ["../../features/web-sample/pages/index.html", "../../features/web-sample/pages/dashboard.tsx", "../../features/web-sample/components/Card.tsx"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for accessibility-review",
+        "Mentions kwcag22.md reference reading",
+        "Mentions evaluating 33 KWCAG items",
+        "Describes O/X/triangle/N/A classification system",
+        "Mentions Playwright environment detection",
+        "Mentions HTML+CSV report generation"
+      ]
+    }
+  ]
+}

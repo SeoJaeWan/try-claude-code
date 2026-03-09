@@ -1,0 +1,21 @@
+{
+  "skill_name": "web-quality-audit",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "변경된 코드에 대해 종합 웹 품질 검토를 실행해줘",
+      "expected_output": "5개 하위 영역 순차 실행: A-접근성(33), B-BP(14), C-SEO(10), D-성능(11), E-CWV(11). 통합 HTML+CSV 리포트",
+      "files": ["../../features/web-sample/pages/index.html", "../../features/web-sample/pages/dashboard.tsx", "../../features/web-sample/components/Card.tsx"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for web-quality-audit",
+        "Describes 5-area sequential execution",
+        "Mentions Accessibility (33 items)",
+        "Mentions Best Practices (14 items)",
+        "Mentions SEO (10 items)",
+        "Mentions Performance (11 items)",
+        "Mentions CWV (11 items)",
+        "Mentions unified HTML+CSV report generation"
+      ]
+    }
+  ]
+}

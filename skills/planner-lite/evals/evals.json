@@ -1,0 +1,20 @@
+{
+  "skill_name": "planner-lite",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "plan.md에 정의된 3개 Phase를 worktree 격리 방식으로 실행해줘",
+      "expected_output": "Branch: 헤더 검증, owner_agent: 별 agents/*.md 존재 확인, git worktree add, isolation: worktree 금지, git merge --no-ff, worktree 정리",
+      "files": ["../../features/next-app/package.json"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for planner-lite",
+        "Mentions Branch: header validation in plan.md",
+        "Mentions owner_agent agents/*.md existence check",
+        "Describes git worktree add command",
+        "States isolation: worktree is forbidden in Agent calls",
+        "Mentions git merge --no-ff after phase completion",
+        "Mentions worktree cleanup"
+      ]
+    }
+  ]
+}

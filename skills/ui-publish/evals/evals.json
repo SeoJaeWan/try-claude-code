@@ -1,0 +1,19 @@
+{
+  "skill_name": "ui-publish",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "대시보드 레이아웃 컴포넌트를 만들어줘. 사이드바, 헤더, 메인 콘텐츠 영역 포함",
+      "expected_output": "Pretendard 폰트, theme-tokens.md 참조, Tailwind CSS, no-logic(no useState/useEffect/fetch), layout-only props",
+      "files": ["../../features/next-app/package.json", "../../features/next-app/app/page.tsx", "../../features/next-app/app/globals.css"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for ui-publish",
+        "Mentions Pretendard font",
+        "References theme-tokens.md",
+        "Mentions Tailwind CSS usage",
+        "Enforces no-logic rule (no useState/useEffect/fetch)",
+        "Describes layout-only props (className, children)"
+      ]
+    }
+  ]
+}

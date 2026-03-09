@@ -1,0 +1,20 @@
+{
+  "skill_name": "playwright-test-generator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "specs/ 폴더의 테스트 플랜을 기반으로 Playwright 테스트 코드를 생성해줘",
+      "expected_output": "generator_setup_page로 브라우저 초기화, 실시간 step 실행, generator_read_log로 로그 확인, generator_write_test로 .spec.ts 생성",
+      "files": ["../../features/next-app/package.json", "../../specs/README.md", "../../seed.spec.ts"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for playwright-test-generator",
+        "Mentions generator_setup_page for browser initialization",
+        "Executes each step live in browser before generating code",
+        "Mentions generator_read_log to retrieve execution log",
+        "Mentions generator_write_test for .spec.ts output",
+        "Generated code uses describe/test block structure",
+        "Includes step comments before each action"
+      ]
+    }
+  ]
+}

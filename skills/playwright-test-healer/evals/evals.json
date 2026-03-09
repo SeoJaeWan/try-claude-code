@@ -1,0 +1,19 @@
+{
+  "skill_name": "playwright-test-healer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Playwright 테스트가 실패하고 있어. 디버깅하고 고쳐줘",
+      "expected_output": "test_run으로 전체 테스트 실행, 실패별 test_debug, browser tools로 에러 조사, 근본 원인 분석, 코드 수정 후 재검증",
+      "files": ["../../features/next-app/package.json", "../../seed.spec.ts"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for playwright-test-healer",
+        "Mentions test_run to execute full test suite",
+        "Mentions test_debug for each failing test",
+        "Uses browser tools (snapshot, console_messages, network_requests) for investigation",
+        "Performs root cause analysis (selectors, timing, data)",
+        "Fixes code and re-runs test_run to verify"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "skill_name": "seo",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "변경된 페이지의 SEO 최적화 상태를 검토해줘",
+      "expected_output": "SEO-01~SEO-10 전수 평가: Critical(4), High(4), Medium(2) 우선순위별 분류",
+      "files": ["../../features/web-sample/pages/index.html", "../../features/web-sample/pages/dashboard.tsx"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for seo",
+        "Lists all 10 SEO items (SEO-01 through SEO-10)",
+        "Classifies items by Critical/High/Medium priority",
+        "Covers Critical items (SEO-01 through SEO-04)",
+        "Covers High items (SEO-05 through SEO-08)",
+        "Covers Medium items (SEO-09 through SEO-10)"
+      ]
+    }
+  ]
+}

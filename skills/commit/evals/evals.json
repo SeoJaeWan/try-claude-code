@@ -1,0 +1,18 @@
+{
+  "skill_name": "commit",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "현재 변경사항을 커밋해줘",
+      "expected_output": "git status/diff 분석, Conventional Commits type: subject-only 포맷, commitlint 검증 시도, 실패 시 amend 루프",
+      "files": ["../../features/next-app/package.json"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for commit",
+        "Describes git status/diff analysis",
+        "Mentions Conventional Commits format (type: subject)",
+        "Mentions commitlint verification",
+        "Describes amend loop on validation failure"
+      ]
+    }
+  ]
+}

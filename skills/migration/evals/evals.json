@@ -1,0 +1,18 @@
+{
+  "skill_name": "migration",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "try-claude 레퍼런스를 최신 플러그인 기본값과 동기화해줘",
+      "expected_output": "section-aware merge, project.json hash comparison (SHA256), managedReferences 배열 업데이트, updated/skipped/reseeded 카운트 보고",
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for migration",
+        "Describes section-aware merge logic",
+        "Mentions project.json hash comparison using SHA256",
+        "Mentions managedReferences array update",
+        "Reports updated/skipped/reseeded counts"
+      ]
+    }
+  ]
+}
