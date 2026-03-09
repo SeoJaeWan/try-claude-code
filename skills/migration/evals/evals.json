@@ -4,14 +4,41 @@
     {
       "id": 1,
       "prompt": "try-claude 레퍼런스를 최신 플러그인 기본값과 동기화해줘",
-      "expected_output": "section-aware merge, project.json hash comparison (SHA256), managedReferences 배열 업데이트, updated/skipped/reseeded 카운트 보고",
+      "expected_output": "SHA256 해시 비교, section-aware merge, 카운트 보고",
       "files": [],
       "expectations": [
-        "Summary mentions reading SKILL.md for migration",
-        "Describes section-aware merge logic",
-        "Mentions project.json hash comparison using SHA256",
-        "Mentions managedReferences array update",
-        "Reports updated/skipped/reseeded counts"
+        "Reads skills/migration/SKILL.md via Read tool",
+        "Runs migration script (node scripts/run.mjs) or equivalent",
+        "Compares file hashes (SHA256) to detect changes",
+        "Performs section-aware merge preserving user edits",
+        "Reports updated/skipped/reseeded counts",
+        "Updates managedReferences in project.json"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "coding-rules 문서를 최신 버전으로 업데이트해줘. 내가 수정한 부분은 유지해줘",
+      "expected_output": "사용자 편집 섹션 보존, 플러그인 기본값 섹션만 업데이트",
+      "files": [],
+      "expectations": [
+        "Reads skills/migration/SKILL.md via Read tool",
+        "Identifies user-edited sections in existing documents",
+        "Preserves user-modified content during merge",
+        "Updates only plugin-managed sections",
+        "Reports which files were updated vs preserved"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "try-claude에 새로운 레퍼런스 문서가 추가됐는지 확인하고 동기화해줘",
+      "expected_output": "새 문서 감지, reseeded 처리, 기존 문서는 hash 비교",
+      "files": [],
+      "expectations": [
+        "Reads skills/migration/SKILL.md via Read tool",
+        "Detects new reference files not present locally",
+        "Seeds new files from plugin defaults (reseeded)",
+        "Skips unchanged files (hash match)",
+        "Reports final counts distinguishing new vs updated vs unchanged"
       ]
     }
   ]

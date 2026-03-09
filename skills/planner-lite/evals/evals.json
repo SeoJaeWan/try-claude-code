@@ -4,29 +4,43 @@
     {
       "id": 1,
       "prompt": "plan.md에 정의된 3개 Phase를 worktree 격리 방식으로 실행해줘",
-      "expected_output": "Branch: 헤더 검증, owner_agent: 별 agents/*.md 존재 확인, git worktree add, isolation: worktree 금지, git merge --no-ff, worktree 정리",
+      "expected_output": "Branch 헤더 검증, worktree 생성, phase별 실행, merge, 정리",
       "files": ["../../features/next-app/package.json"],
       "expectations": [
-        "Summary mentions reading SKILL.md for planner-lite",
-        "Mentions Branch: header validation in plan.md",
-        "Mentions owner_agent agents/*.md existence check",
-        "Describes git worktree add command",
-        "States isolation: worktree is forbidden in Agent calls",
-        "Mentions git merge --no-ff after phase completion",
-        "Mentions worktree cleanup"
+        "Reads skills/planner-lite/SKILL.md via Read tool",
+        "Validates Branch: header in plan.md",
+        "Validates owner_agent references exist in agents/*.md",
+        "Creates git worktree for task isolation",
+        "Executes phases in sequential order",
+        "Runs git merge --no-ff after each phase completion",
+        "Cleans up worktrees after merge"
       ]
     },
     {
       "id": 2,
       "prompt": "plan.md에 Phase 2개가 있는데, Phase-1은 병렬 태스크 3개야. 실행해줘",
-      "expected_output": "병렬 태스크 동시 실행, 각 worktree 격리, Phase-1 완료 후 Phase-2 순차 진행",
+      "expected_output": "Phase-1 병렬 실행, Phase-2 순차, worktree 격리",
       "files": ["../../features/next-app/package.json"],
       "expectations": [
-        "Summary mentions reading SKILL.md for planner-lite",
-        "Identifies parallel tasks within a phase",
+        "Reads skills/planner-lite/SKILL.md via Read tool",
+        "Identifies parallel tasks within Phase-1",
         "Spawns multiple agents concurrently for parallel tasks",
-        "Maintains sequential ordering between phases",
-        "Mentions git merge --no-ff for each completed task"
+        "Creates separate worktree for each parallel task",
+        "Waits for all Phase-1 tasks before starting Phase-2",
+        "Uses git merge --no-ff for each completed task"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "plan.md를 실행하는데 Branch 헤더가 빠져있어. 어떻게 처리해?",
+      "expected_output": "Branch 헤더 누락 감지, 사용자에게 확인, 자동 생성 또는 에러",
+      "files": ["../../features/next-app/package.json"],
+      "expectations": [
+        "Reads skills/planner-lite/SKILL.md via Read tool",
+        "Detects missing Branch: header in plan.md",
+        "Reports validation error to user",
+        "Does not proceed without valid plan headers",
+        "Suggests adding required Branch: header"
       ]
     }
   ]

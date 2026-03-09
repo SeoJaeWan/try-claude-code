@@ -4,41 +4,42 @@
     {
       "id": 1,
       "prompt": "대시보드 레이아웃 컴포넌트를 만들어줘. 사이드바, 헤더, 메인 콘텐츠 영역 포함",
-      "expected_output": "Pretendard 폰트, theme-tokens.md 참조, Tailwind CSS, no-logic(no useState/useEffect/fetch), layout-only props",
+      "expected_output": "Tailwind CSS 레이아웃 컴포넌트, Pretendard 폰트, 로직 없음",
       "files": ["../../features/next-app/package.json", "../../features/next-app/app/page.tsx", "../../features/next-app/app/globals.css"],
       "expectations": [
-        "Summary mentions reading SKILL.md for ui-publish",
-        "Mentions Pretendard font",
-        "References theme-tokens.md",
-        "Mentions Tailwind CSS usage",
-        "Enforces no-logic rule (no useState/useEffect/fetch)",
-        "Describes layout-only props (className, children)"
+        "Reads skills/ui-publish/SKILL.md via Read tool",
+        "Creates layout component file with sidebar, header, and main areas",
+        "Uses Tailwind CSS classes for styling (not inline styles or CSS modules)",
+        "Reads theme-tokens.md for design token values",
+        "Output component contains no useState, useEffect, or fetch calls",
+        "Component accepts layout-only props (className, children)"
       ]
     },
     {
       "id": 2,
       "prompt": "회원가입 폼 UI를 만들어줘. 이름, 이메일, 비밀번호 필드와 제출 버튼 포함",
-      "expected_output": "Pretendard 폰트, Tailwind CSS, no-logic, form 레이아웃만 구성, 비즈니스 로직 없음",
+      "expected_output": "Tailwind CSS 폼 레이아웃, 입력 필드 3개 + 버튼, 로직 없음",
       "files": ["../../features/next-app/package.json", "../../features/next-app/app/page.tsx", "../../features/next-app/app/globals.css"],
       "expectations": [
-        "Summary mentions reading SKILL.md for ui-publish",
-        "Creates form with input fields (name, email, password)",
-        "Mentions Tailwind CSS for styling",
-        "Enforces no-logic rule (no useState/useEffect/fetch)",
-        "References theme-tokens.md for design tokens"
+        "Reads skills/ui-publish/SKILL.md via Read tool",
+        "Creates form component with name, email, password input fields",
+        "Includes submit button element",
+        "Uses Tailwind CSS for all styling",
+        "Output component contains no useState, useEffect, or fetch calls",
+        "Reads theme-tokens.md for color and spacing values"
       ]
     },
     {
       "id": 3,
       "prompt": "ProductCard 컴포넌트를 만들어줘. 이미지, 상품명, 가격 표시하는 카드야",
-      "expected_output": "generate.mjs component ProductCard로 보일러플레이트 생성 후 레이아웃 구현",
+      "expected_output": "generate.mjs로 보일러플레이트 또는 수동 생성, Tailwind 카드 레이아웃",
       "files": ["../../features/next-app/package.json", "../../features/next-app/app/page.tsx", "../../features/next-app/app/globals.css"],
       "expectations": [
-        "Summary mentions reading SKILL.md for ui-publish",
-        "Runs generate.mjs component command for boilerplate",
-        "Falls back to manual creation if scripts not found",
-        "Enforces no-logic rule (no useState/useEffect/fetch)",
-        "References coding-rules scripts path"
+        "Reads skills/ui-publish/SKILL.md via Read tool",
+        "Attempts generate.mjs component command for boilerplate",
+        "Creates ProductCard component with image, name, price sections",
+        "Uses Tailwind CSS for card layout and styling",
+        "Output component contains no useState, useEffect, or fetch calls"
       ]
     }
   ]

@@ -4,13 +4,40 @@
     {
       "id": 1,
       "prompt": "try-claude 설정은 어떻게 하나요? init-try랑 migration 차이가 뭐예요?",
-      "expected_output": ".claude/try-claude/ 경로 안내, init-try(초기 설치)와 migration(동기화) 차이 설명, FAQ 기반 답변",
+      "expected_output": "init-try는 초기 설치, migration은 동기화. .claude/try-claude/ 경로 설명",
       "files": [],
       "expectations": [
-        "Summary mentions reading SKILL.md for help-try",
-        "Mentions .claude/try-claude/ path",
-        "Explains init-try vs migration difference",
-        "Provides FAQ-based answers"
+        "Reads skills/help-try/SKILL.md via Read tool",
+        "Reads references/faq.md for FAQ answers",
+        "Explains init-try creates .claude/try-claude/ directory structure",
+        "Explains migration syncs existing references with latest defaults",
+        "Answers in Korean"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "MCP 서버 설정은 어떻게 해? playwright-test 사용하려면 뭘 해야 해?",
+      "expected_output": "MCP 정책, settings.json 설정, playwright-test 서버 구성 설명",
+      "files": [],
+      "expectations": [
+        "Reads skills/help-try/SKILL.md via Read tool",
+        "Reads references/faq.md for MCP-related answers",
+        "Explains MCP server configuration in settings.json",
+        "Provides specific playwright-test MCP setup steps",
+        "Answers in Korean"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "coding-rules 문서는 어떤 것들이 있어? 각각 뭘 설정하는 거야?",
+      "expected_output": "9개 coding-rules 문서 목록과 역할 설명",
+      "files": [],
+      "expectations": [
+        "Reads skills/help-try/SKILL.md via Read tool",
+        "Reads references/faq.md for coding-rules information",
+        "Lists coding-rules documents (folder-structure, naming, etc.)",
+        "Explains the purpose of each document",
+        "Answers in Korean"
       ]
     }
   ]

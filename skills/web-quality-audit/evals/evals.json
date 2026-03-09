@@ -4,31 +4,43 @@
     {
       "id": 1,
       "prompt": "변경된 코드에 대해 종합 웹 품질 검토를 실행해줘",
-      "expected_output": "5개 하위 영역 순차 실행: A-접근성(33), B-BP(14), C-SEO(10), D-성능(11), E-CWV(11). 통합 HTML+CSV 리포트",
+      "expected_output": "5개 영역 순차 실행, 통합 리포트 생성",
       "files": ["../../features/web-sample/pages/index.html", "../../features/web-sample/pages/dashboard.tsx", "../../features/web-sample/components/Card.tsx"],
       "expectations": [
-        "Summary mentions reading SKILL.md for web-quality-audit",
-        "Describes 5-area sequential execution",
-        "Mentions Accessibility (33 items)",
-        "Mentions Best Practices (14 items)",
-        "Mentions SEO (10 items)",
-        "Mentions Performance (11 items)",
-        "Mentions CWV (11 items)",
-        "Mentions unified HTML+CSV report generation"
+        "Reads skills/web-quality-audit/SKILL.md via Read tool",
+        "Executes all 5 review areas (Accessibility, BP, SEO, Performance, CWV)",
+        "Analyzes actual target files in each area",
+        "Identifies specific issues per area with item IDs",
+        "Generates unified report combining all areas",
+        "Follows sequential execution order (A→B→C→D→E)"
       ]
     },
     {
       "id": 2,
       "prompt": "접근성이랑 SEO만 검토해줘. 나머지는 안 해도 돼",
-      "expected_output": "A-접근성(33)과 C-SEO(10)만 선택 실행, B/D/E 스킵, 부분 리포트 생성",
+      "expected_output": "접근성(33항목)과 SEO(10항목)만 실행, 나머지 스킵",
       "files": ["../../features/web-sample/pages/index.html", "../../features/web-sample/pages/dashboard.tsx"],
       "expectations": [
-        "Summary mentions reading SKILL.md for web-quality-audit",
-        "Executes only Accessibility and SEO reviews",
-        "Skips Best Practices, Performance, and CWV",
-        "Mentions Accessibility (33 items) checklist",
-        "Mentions SEO (10 items) checklist",
-        "Generates partial HTML+CSV report"
+        "Reads skills/web-quality-audit/SKILL.md via Read tool",
+        "Executes only Accessibility and SEO review areas",
+        "Skips Best Practices, Performance, and CWV areas",
+        "Analyzes target files for accessibility issues",
+        "Analyzes target files for SEO issues",
+        "Generates partial report for selected areas only"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "성능과 Core Web Vitals만 집중 분석해줘. 특히 이미지 최적화 관련해서",
+      "expected_output": "Performance(11항목)과 CWV(11항목) 실행, 이미지 항목 강조",
+      "files": ["../../features/web-sample/pages/index.html", "../../features/web-sample/components/Card.tsx"],
+      "expectations": [
+        "Reads skills/web-quality-audit/SKILL.md via Read tool",
+        "Executes Performance and CWV review areas",
+        "Skips Accessibility, Best Practices, and SEO areas",
+        "Emphasizes image-related items (PERF-04~06, CWV-07~11)",
+        "Identifies specific image optimization issues in target files",
+        "Provides image-focused optimization recommendations"
       ]
     }
   ]

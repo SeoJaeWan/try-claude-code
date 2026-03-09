@@ -4,15 +4,41 @@
     {
       "id": 1,
       "prompt": "변경된 웹 코드의 접근성을 KWCAG2.2 기준으로 검토해줘",
-      "expected_output": "kwcag22.md 읽기, 33개 항목 전수 평가, O/X/triangle/N/A 분류, Playwright 환경 감지, HTML+CSV 리포트 생성",
+      "expected_output": "kwcag22.md 참조하여 33개 항목 평가, O/X/△/N/A 분류표 생성, HTML+CSV 리포트 출력",
       "files": ["../../features/web-sample/pages/index.html", "../../features/web-sample/pages/dashboard.tsx", "../../features/web-sample/components/Card.tsx"],
       "expectations": [
-        "Summary mentions reading SKILL.md for accessibility-review",
-        "Mentions kwcag22.md reference reading",
-        "Mentions evaluating 33 KWCAG items",
-        "Describes O/X/triangle/N/A classification system",
-        "Mentions Playwright environment detection",
-        "Mentions HTML+CSV report generation"
+        "Reads skills/accessibility-review/SKILL.md via Read tool",
+        "Reads kwcag22.md reference file for evaluation criteria",
+        "Analyzes actual target files (index.html, dashboard.tsx, Card.tsx)",
+        "Produces evaluation table with O/X/△/N/A classifications",
+        "Identifies specific accessibility issues with code line references",
+        "Generates HTML or CSV report file in outputs"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Card.tsx 컴포넌트의 접근성 문제를 KWCAG2.2 기준으로 찾아줘",
+      "expected_output": "Card.tsx에서 img alt 누락, 키보드 접근성, 색상 대비 등 구체적 이슈 식별",
+      "files": ["../../features/web-sample/components/Card.tsx"],
+      "expectations": [
+        "Reads kwcag22.md reference file",
+        "Focuses analysis on Card.tsx specifically",
+        "Identifies concrete issues (e.g., missing alt text, keyboard accessibility, color contrast)",
+        "Maps each issue to specific KWCAG item ID",
+        "Provides fix recommendations for each issue"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "index.html 페이지의 시맨틱 HTML 준수 여부와 접근성을 검토해줘",
+      "expected_output": "시맨틱 태그 사용 평가, ARIA 속성 검토, 폼 라벨링 확인",
+      "files": ["../../features/web-sample/pages/index.html"],
+      "expectations": [
+        "Reads kwcag22.md reference file",
+        "Evaluates semantic HTML usage (header, nav, main, footer)",
+        "Checks ARIA attributes and landmark roles",
+        "Evaluates form input labeling and association",
+        "Classifies findings using O/X/△/N/A system"
       ]
     }
   ]
