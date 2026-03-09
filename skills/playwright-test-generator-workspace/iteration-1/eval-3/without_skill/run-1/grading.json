@@ -1,0 +1,116 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for playwright-test-generator",
+      "passed": false,
+      "evidence": "This is a 'without_skill' run. The transcript shows no reading of any SKILL.md file. The agent read package.json, README.md, seed.spec.ts, page.tsx, and layout.tsx only."
+    },
+    {
+      "text": "Mentions generator_setup_page for browser initialization",
+      "passed": false,
+      "evidence": "No mention of generator_setup_page anywhere in the transcript or output files. The agent never launched a browser; it only read files and wrote the spec."
+    },
+    {
+      "text": "Executes search/filter steps live in the browser",
+      "passed": false,
+      "evidence": "No browser tools (browser_navigate, browser_click, browser_fill_form, etc.) were used. The Tools Used Summary shows only Read (5), Glob (6), Grep (1), Write (3). The agent generated tests purely from code inspection without live browser interaction."
+    },
+    {
+      "text": "Includes no-results scenario verification",
+      "passed": true,
+      "evidence": "The spec file contains two dedicated no-results tests: 'should show no results message when search yields no matches' (line 79, searches for 'xyznonexistentquery12345' and asserts no-results text is visible and listitem count is 0) and 'should show no results when filter combination yields empty set' (line 102)."
+    },
+    {
+      "text": "Mentions generator_read_log to retrieve execution log",
+      "passed": false,
+      "evidence": "No mention of generator_read_log in the transcript or any output file. The agent did not use any generator-specific MCP tools."
+    },
+    {
+      "text": "Mentions generator_write_test for .spec.ts output",
+      "passed": false,
+      "evidence": "No mention of generator_write_test. The agent used the generic Write tool to create search-filter.spec.ts directly, bypassing the skill's dedicated test-writing tool."
+    },
+    {
+      "text": "Uses resilient selectors (getByRole, getByText, getByLabel) over raw CSS",
+      "passed": true,
+      "evidence": "The spec file consistently uses resilient selectors: getByRole('searchbox'), getByRole('combobox'), getByRole('listitem'), getByRole('checkbox'), getByRole('radio'), getByRole('button'), getByPlaceholder(/search/i), getByText(/no results/i), getByText(/nothing found/i). Raw CSS selectors like '[data-testid=\"search-results\"]' appear only as .or() fallbacks, not primary locators."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 5,
+    "total": 7,
+    "pass_rate": 0.29
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 5,
+      "Glob": 6,
+      "Grep": 1,
+      "Write": 3
+    },
+    "total_tool_calls": 15,
+    "total_steps": 7,
+    "errors_encountered": 0,
+    "output_chars": 5164,
+    "transcript_chars": 2768
+  },
+  "timing": {
+    "total_tokens": 26057,
+    "executor_duration_seconds": 108.3,
+    "total_duration_seconds": 108.3
+  },
+  "claims": [
+    {
+      "claim": "Tests use resilient locator strategies with .or() chains",
+      "type": "quality",
+      "verified": true,
+      "evidence": "The spec file uses .or() fallback chains extensively, e.g., page.getByRole('searchbox').or(page.getByPlaceholder(/search/i))"
+    },
+    {
+      "claim": "The specs/ directory had no specific search/filter test plans",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Transcript Step 2 shows Grep found no files matching search/filter patterns in specs/. The directory only contained README.md."
+    },
+    {
+      "claim": "The Next.js app is a default starter without search/filter features",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Transcript Step 3 confirms only layout.tsx and page.tsx exist, described as 'Default Next.js homepage (no search/filter UI)'"
+    },
+    {
+      "claim": "9 tests were generated",
+      "type": "factual",
+      "verified": true,
+      "evidence": "The spec file contains exactly 9 test() blocks within the describe block"
+    },
+    {
+      "claim": "Tests were generated based on common search/filter UI patterns",
+      "type": "process",
+      "verified": true,
+      "evidence": "With no actual search/filter UI in the app and no browser interaction, the tests are indeed generic patterns rather than based on observed behavior. This means they may not match any real implementation."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "Includes no-results scenario verification",
+        "reason": "This assertion passes for a spec file that was written speculatively without ever testing against a real app. The tests look correct structurally but were never validated in a browser. Consider requiring that the no-results scenario was actually executed and observed to pass, not just that test code for it exists."
+      },
+      {
+        "assertion": "Uses resilient selectors (getByRole, getByText, getByLabel) over raw CSS",
+        "reason": "This assertion is easy to satisfy without the skill — any agent familiar with Playwright best practices will use these selectors. It doesn't discriminate between skill-guided and non-skill runs. Consider checking that selectors were derived from actual page inspection rather than generic patterns."
+      },
+      {
+        "reason": "No assertion checks whether the generated tests actually run successfully against the target application. The agent produced tests for a default Next.js starter that has no search/filter UI, so all 9 tests would fail if executed. An assertion like 'at least one generated test passes when run' would catch this critical gap."
+      }
+    ],
+    "overall": "Five of seven assertions are skill-specific (SKILL.md, generator_setup_page, generator_read_log, generator_write_test, live browser execution) and correctly fail for this without_skill baseline. The two passing assertions (no-results scenario, resilient selectors) are relatively weak — they test code structure rather than functional correctness. The most important missing assertion is whether the generated tests actually work against the target app."
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for playwright-test-healer",
+      "passed": true,
+      "evidence": "Step 4 states: 'Found skills/playwright-test-healer/SKILL.md - Read the healer skill documentation'. The agent did read the SKILL.md file and referenced the recommended workflow from it."
+    },
+    {
+      "text": "Mentions test_run to execute full test suite",
+      "passed": false,
+      "evidence": "The transcript mentions test_run only in the 'What the Skill Would Have Provided' section as something the skill would have enabled, but the agent never actually used or attempted to use test_run. It ran tests via 'npx playwright test seed.spec.ts --reporter=list' in Step 5 instead. The expectation is about actually using test_run, not merely mentioning it as unavailable."
+    },
+    {
+      "text": "Mentions test_debug for each failing test",
+      "passed": false,
+      "evidence": "test_debug is only mentioned in the 'What the Skill Would Have Provided' section as a capability that was unavailable. The agent never used test_debug for any failing test. It performed static analysis instead."
+    },
+    {
+      "text": "Uses browser tools (snapshot, console_messages, network_requests) for investigation",
+      "passed": false,
+      "evidence": "No browser tools were used at any point. The transcript explicitly notes these tools were unavailable without the skill: 'Without the skill, debugging was limited to static code analysis, running tests via CLI, and inferring expected page content from source code.'"
+    },
+    {
+      "text": "Performs root cause analysis (selectors, timing, data)",
+      "passed": false,
+      "evidence": "The agent identified three root causes (missing dependency, no config, empty test body) but these are infrastructure setup issues, not the kind of root cause analysis expected by the healer skill (analyzing selector mismatches, timing issues, or data problems in actual failing tests). The tests never actually ran against a live app, so no selector/timing/data analysis was possible."
+    },
+    {
+      "text": "Fixes code and re-runs test_run to verify",
+      "passed": false,
+      "evidence": "The agent wrote a new seed.spec.ts file but never re-ran any tests to verify the fix. The transcript shows no verification step after creating the fixed test file. The agent noted the tests still couldn't run because @playwright/test wasn't installed."
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 5,
+    "total": 6,
+    "pass_rate": 0.17
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 6,
+      "Glob": 2,
+      "Grep": 1,
+      "Bash": 3,
+      "Write": 4
+    },
+    "total_tool_calls": 16,
+    "total_steps": 10,
+    "errors_encountered": 1,
+    "output_chars": 4850,
+    "transcript_chars": 4200
+  },
+  "timing": {},
+  "claims": [
+    {
+      "claim": "Playwright is available via npx but not as a local dependency",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Step 6 shows 'npx playwright --version returned Version 1.58.2' but 'features/next-app/node_modules/@playwright/ - does not exist'"
+    },
+    {
+      "claim": "The test file is a stub with only a placeholder comment",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Step 1 confirms: 'Found stub test file importing @playwright/test with empty test body (// generate code here.)'"
+    },
+    {
+      "claim": "Wrote actual test assertions matching page.tsx content",
+      "type": "quality",
+      "verified": true,
+      "evidence": "The output seed.spec.ts contains meaningful assertions checking heading, logo, links, href attributes, and page title - all corresponding to elements described from reading page.tsx"
+    },
+    {
+      "claim": "Used semantic Playwright locators per best practices",
+      "type": "quality",
+      "verified": true,
+      "evidence": "seed.spec.ts uses getByRole, getByAltText, and regex matchers rather than CSS selectors"
+    },
+    {
+      "claim": "Tests were never verified to actually pass",
+      "type": "process",
+      "verified": true,
+      "evidence": "No re-run step exists in the transcript after writing the fixed test file. The agent acknowledged the dependency wasn't installed."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "Summary mentions reading SKILL.md for playwright-test-healer",
+        "reason": "This passed because the agent happened to discover and read the SKILL.md while exploring the project, but reading it didn't lead to actually following the skill's workflow. A stronger assertion would check that the SKILL.md workflow was followed, not just that the file was read."
+      },
+      {
+        "assertion": "Mentions test_run to execute full test suite",
+        "reason": "The word 'mentions' is ambiguous - the agent does mention test_run in the transcript, just not as something it actually used. Consider rephrasing to 'Uses test_run to execute full test suite' if the intent is actual usage."
+      },
+      {
+        "reason": "No assertion checks whether the fixed test file is actually correct or runnable. The agent wrote tests but never verified them. An assertion like 'Fixed tests pass when run with test_run' would be more discriminating."
+      }
+    ],
+    "overall": "The expectations are well-suited for evaluating the healer skill workflow, but the 'mentions' wording on some assertions creates ambiguity about whether citing a tool name counts vs. actually using it. For a without-skill baseline run, these expectations correctly demonstrate that the agent cannot perform the expected workflow."
+  }
+}

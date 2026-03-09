@@ -1,0 +1,119 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for playwright-test-generator",
+      "passed": true,
+      "evidence": "Step 1 in transcript: 'Read the SKILL.md file' with Tool: Read, File: skills/playwright-test-generator/SKILL.md. Summary does not explicitly re-state this, but Step 1 heading and body clearly document reading SKILL.md. The workflow requirements listed in Step 1 confirm the file was read and understood."
+    },
+    {
+      "text": "Mentions generator_setup_page for browser initialization",
+      "passed": true,
+      "evidence": "Step 1 states the workflow requires 'Set up the page with generator_setup_page'. Step 5 shows: 'Tool: mcp__playwright-test__generator_setup_page'. metrics.json confirms 1 call to this tool."
+    },
+    {
+      "text": "Executes each step live in browser before generating code",
+      "passed": false,
+      "evidence": "Step 5 shows generator_setup_page was attempted but returned 'Permission denied. The Playwright MCP server was not available for live browser execution.' Step 6 explicitly states: 'Since the browser tools were unavailable, test code was generated directly from the application source code analysis.' metrics.json confirms execute_steps_live: false. No live browser steps were executed."
+    },
+    {
+      "text": "Mentions generator_read_log to retrieve execution log",
+      "passed": true,
+      "evidence": "Step 1 lists the workflow requirement: 'Read the execution log via generator_read_log'. However, this tool was never actually called — metrics.json shows no call to generator_read_log, and the skill_workflow_steps_completed shows read_execution_log: false. The tool is mentioned but not used."
+    },
+    {
+      "text": "Mentions generator_write_test for .spec.ts output",
+      "passed": true,
+      "evidence": "Step 1 lists: 'Write the test file via generator_write_test'. However, similar to generator_read_log, this specific MCP tool does not appear in the metrics.json tool_calls — the executor used Write (4 calls) instead. The tool name is mentioned in the transcript but was not actually invoked via the MCP tool."
+    },
+    {
+      "text": "Generated code uses describe/test block structure",
+      "passed": true,
+      "evidence": "Both output files use test.describe('Next.js Home Page Verification', () => { test('Verify Home Page Content', ...) }) and test.describe('Next.js Home Page Verification', () => { test('Verify External Links', ...) }) respectively. Clear describe/test block structure."
+    },
+    {
+      "text": "Includes step comments before each action",
+      "passed": true,
+      "evidence": "Both spec files contain numbered step comments before each action. verify-home-page-content.spec.ts has comments like '// 1. Navigate to the home page', '// 2. Verify the Next.js logo image is visible', etc. verify-external-links.spec.ts follows the same pattern."
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 1,
+    "total": 7,
+    "pass_rate": 0.86
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 6,
+      "Glob": 4,
+      "Write": 4,
+      "ToolSearch": 2,
+      "mcp__playwright-test__generator_setup_page": 1
+    },
+    "total_tool_calls": 17,
+    "total_steps": 6,
+    "errors_encountered": 1,
+    "output_chars": 2548,
+    "transcript_chars": 3182
+  },
+  "timing": {
+    "total_duration_seconds": 115.3
+  },
+  "claims": [
+    {
+      "claim": "specs/ had no actual test plan documents",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Step 3 shows Glob of specs/**/* only found specs/README.md, which contains only 'This is a directory for test plans.' — no actual plans."
+    },
+    {
+      "claim": "generator_setup_page was denied due to permissions",
+      "type": "process",
+      "verified": true,
+      "evidence": "metrics.json error_details: 'mcp__playwright-test__generator_setup_page: Permission denied - Playwright MCP server unavailable for live browser execution'"
+    },
+    {
+      "claim": "Used Playwright best practices: getByRole, toBeVisible(), toHaveAttribute()",
+      "type": "quality",
+      "verified": true,
+      "evidence": "Both generated spec files exclusively use getByRole selectors, toBeVisible() assertions, and toHaveAttribute() for link verification. No CSS selectors or non-web-first assertions found."
+    },
+    {
+      "claim": "Generated 2 Playwright test files",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Two spec files exist in outputs: verify-home-page-content.spec.ts and verify-external-links.spec.ts"
+    },
+    {
+      "claim": "Test code was generated from source code analysis rather than live DOM inspection",
+      "type": "process",
+      "verified": true,
+      "evidence": "No browser interaction tools were successfully called after the failed generator_setup_page. Selectors are based on JSX analysis (e.g., alt text from img tag, link text from JSX content)."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "Mentions generator_read_log to retrieve execution log",
+        "reason": "This assertion passes when the tool is merely named in the transcript (e.g., when listing SKILL.md workflow steps), even though it was never actually invoked. The expectation should distinguish between 'mentioned the tool exists' and 'actually called the tool'. Consider: 'Calls generator_read_log to retrieve execution log after browser steps'."
+      },
+      {
+        "assertion": "Mentions generator_write_test for .spec.ts output",
+        "reason": "Same issue — the tool name appears in the SKILL.md summary but was never actually called. The executor used generic Write calls instead. If the intent is to verify the MCP tool was used, the assertion should say 'Calls generator_write_test' not 'Mentions'."
+      },
+      {
+        "assertion": "Executes each step live in browser before generating code",
+        "reason": "This is a strong, discriminating assertion — it correctly failed because the core skill workflow was not followed. Good assertion."
+      },
+      {
+        "reason": "No assertion checks whether the generated test files would actually compile or run. The selectors are inferred from JSX rather than verified against the DOM, so they may be incorrect (e.g., heading text may not match the accessible name). An assertion like 'Generated tests pass when run against the application' would catch this."
+      }
+    ],
+    "overall": "The 'Mentions' assertions (expectations 4 and 5) are too weak — they pass when the tool name appears anywhere in the transcript, including in a summary of SKILL.md instructions. The critical failure (no live browser execution) was correctly caught. Consider tightening 'Mentions X' to 'Calls X' for tool-usage assertions."
+  }
+}

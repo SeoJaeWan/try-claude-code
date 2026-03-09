@@ -1,0 +1,121 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for playwright-test-generator",
+      "passed": true,
+      "evidence": "Transcript Step 1: 'Read the skill file at skills/playwright-test-generator/SKILL.md' and 'Identified the workflow: read test plan -> generator_setup_page -> execute steps live in browser -> generator_read_log -> generator_write_test'"
+    },
+    {
+      "text": "Mentions generator_setup_page for browser initialization",
+      "passed": true,
+      "evidence": "Transcript Step 3: 'Tool used: generator_setup_page' with parameters described. Also confirmed in metrics.json: 'mcp__playwright-test__generator_setup_page': 1. However, the tool call was denied due to MCP permission, so it was attempted but not successfully executed."
+    },
+    {
+      "text": "Executes search/filter steps live in the browser",
+      "passed": false,
+      "evidence": "Transcript Step 4 states: 'Result: Could not execute live due to MCP tool permission denial'. The executor planned browser interactions but never actually executed them. No browser snapshots, clicks, or type actions were performed."
+    },
+    {
+      "text": "Includes no-results scenario verification",
+      "passed": true,
+      "evidence": "The file search-with-no-results.spec.ts contains explicit no-results verification: 'page.getByText(/no results|결과 없음|nothing found|0 results/i)' and 'await expect(resultItems).toHaveCount(0)'. The transcript also documents this as Scenario 2."
+    },
+    {
+      "text": "Mentions generator_read_log to retrieve execution log",
+      "passed": true,
+      "evidence": "Transcript Step 5: 'Tool: generator_read_log' and 'Intent: Retrieve recorded Playwright actions, selectors, and best practices from live execution'. However, it was not actually executed ('Result: Could not execute (dependent on Step 4)')."
+    },
+    {
+      "text": "Mentions generator_write_test for .spec.ts output",
+      "passed": true,
+      "evidence": "Transcript Step 6: 'Tool: generator_write_test' and 'Intent: Write generated .spec.ts files based on execution log'. However, it was not actually used; files were written with Write tool instead due to MCP denial."
+    },
+    {
+      "text": "Uses resilient selectors (getByRole, getByText, getByLabel) over raw CSS",
+      "passed": true,
+      "evidence": "All three .spec.ts files use resilient selectors exclusively: getByRole('searchbox'), getByLabel(/search/i), getByPlaceholder(), getByText(), getByRole('heading'), getByRole('link'), getByRole('listitem'). The only CSS-like selector is data-testid which is used as a fallback via .or() chains. No raw CSS selectors like '.class' or '#id' are used."
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 1,
+    "total": 7,
+    "pass_rate": 0.86
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 6,
+      "Glob": 5,
+      "Grep": 1,
+      "Bash": 2,
+      "ToolSearch": 2,
+      "Write": 5,
+      "mcp__playwright-test__generator_setup_page": 1
+    },
+    "total_tool_calls": 22,
+    "total_steps": 8,
+    "errors_encountered": 2,
+    "output_chars": 3842,
+    "transcript_chars": 3180
+  },
+  "timing": {
+    "total_duration_seconds": 147.1
+  },
+  "claims": [
+    {
+      "claim": "Read SKILL.md and identified the correct workflow",
+      "type": "process",
+      "verified": true,
+      "evidence": "Transcript Step 1 describes the workflow accurately matching the generator skill pattern"
+    },
+    {
+      "claim": "generator_setup_page was called with full test plan and seed file",
+      "type": "process",
+      "verified": true,
+      "evidence": "metrics.json confirms 1 call to mcp__playwright-test__generator_setup_page, though it was denied"
+    },
+    {
+      "claim": "The Next.js app is a default boilerplate without actual search/filter UI",
+      "type": "factual",
+      "verified": true,
+      "evidence": "The transcript notes package.json shows Next.js 16.1.6 default app. Tests are written speculatively for a search UI that doesn't exist yet."
+    },
+    {
+      "claim": "All tests follow Playwright best practices: web-first assertions, auto-waiting, no networkidle",
+      "type": "quality",
+      "verified": true,
+      "evidence": "All three spec files use expect().toBeVisible() and expect().toHaveCount() which are web-first assertions. No waitForLoadState('networkidle') or explicit waits appear."
+    },
+    {
+      "claim": "Tests would work once search/filter features are implemented",
+      "type": "quality",
+      "verified": false,
+      "evidence": "Since the tests were never executed in a browser (MCP denied), there is no evidence they would actually work. The selectors are guesses not validated against real DOM."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "Executes search/filter steps live in the browser",
+        "reason": "This is the most discriminating assertion and correctly caught the core failure: the executor could not actually run browser interactions due to MCP permission denial. The entire generator workflow depends on live browser execution to produce validated selectors."
+      },
+      {
+        "assertion": "Mentions generator_read_log to retrieve execution log",
+        "reason": "This assertion passes based on a mere mention in the transcript, but generator_read_log was never actually called. Consider tightening to 'Successfully calls generator_read_log and retrieves an execution log' to distinguish mention from execution."
+      },
+      {
+        "assertion": "Mentions generator_write_test for .spec.ts output",
+        "reason": "Same issue — the tool was mentioned but never called. The executor fell back to the Write tool. Consider requiring actual tool invocation rather than just a mention."
+      },
+      {
+        "reason": "No assertion checks whether the generated tests are runnable or syntactically valid. A quick `npx tsc --noEmit` or `npx playwright test --list` would catch import errors or syntax issues."
+      }
+    ],
+    "overall": "The 'mentions' assertions (expectations 2, 5, 6) are too weak — they pass when the executor merely describes what it intended to do rather than what it actually did. The executor failed to complete the core workflow (live browser execution) due to MCP permission denial, yet 6 of 7 assertions pass. This suggests the eval set doesn't sufficiently discriminate between a successful run and a failed-but-well-documented run."
+  }
+}

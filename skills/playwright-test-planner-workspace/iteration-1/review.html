@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "playwright-test-planner", "runs": [{"id": "eval-1-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "test-plan.md", "type": "text", "content": "# E2E \ufffd\ub012\ufffd\ub4aa\ufffd\ub4c3 \ufffd\ubd46\ufffd\uc616: Next.js \u6e72\uacd5\ub0af \ufffd\ube4b\n\n## \u5a9b\uc496\uc282\n\nNext.js 16 \u6e72\uacd5\ub0af \ufffd\ub4aa\ufffd\ufffd\ufffd\ufffd\uaf63 \ufffd\ube37\ufffd\ubd46\u7531\u044a\ufffd\ufffd\ufffd\uc520\ufffd\ub021\ufffd\ubfc9 \ufffd\ufffd\ufffd\ufffd\ube33 E2E \ufffd\ub012\ufffd\ub4aa\ufffd\ub4c3 \ufffd\ubd46\ufffd\uc616\ufffd\uc5ef\ufffd\ub572\ufffd\ub58e. \ufffd\uc520 \ufffd\ube4b\ufffd\ufffd\ufffd \ufffd\ub592\ufffd\uc52a \ufffd\uc616\ufffd\ubd6b \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u6fe1\ufffd \u63f4\u044a\uaf66\ufffd\ub9ba\ufffd\ubf31 \ufffd\uc5f3\ufffd\uc45d\uf9ce\ufffd, Next.js \u6fe1\uc493\ud02c, \ufffd\ube1e\ufffd\uada1 \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3, \u6d39\uba83\u2501\u6028\ufffd \ufffd\uc1c5\u907a\ufffd \uf9cd\uacf9\uac95(Templates, Learning, Deploy Now, Documentation)\u745c\ufffd \ufffd\ub8f7\ufffd\ube3f\ufffd\ube40\ufffd\ub572\ufffd\ub58e.\n\n**\ufffd\ufffd\ufffd\ufffd\uae3d URL:** `http://localhost:3000`\n**\u6e72\uacd7\ub2e0 \ufffd\ub4aa\ufffd\uae6e:** Next.js 16.1.6, React 19.2.3, Tailwind CSS v4, TypeScript\n\n---\n\n### 1. \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd \u6fe1\uc495\ubd6b \u8adb\ufffd \u6e72\uacd5\ub0af \ufffd\uc80b\ufffd\ub711\uf9cd\ufffd\n\n#### 1.1 \uf9ce\ubdbf\uc524 \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd \ufffd\uc819\ufffd\uae3d \u6fe1\uc495\ubd6b\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `http://localhost:3000` \ufffd\uc45d\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u5a9b\ufffd \ufffd\uc17f\ufffd\uc7fe\ufffd\uc5f3 \u6fe1\uc495\ubc76\ufffd\ub9c6 \ufffd\ube23\u6e90\ub6af\ufffd\ufffd \ufffd\ufffd\ufffd\u6e72\uace0\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u5a9b\ufffd HTTP 200 \ufffd\uae3d\ufffd\uae6d\u6fe1\ufffd \ufffd\uc4f3\ufffd\ub59f\ufffd\ube33\ufffd\ub58e.\n- \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd \ufffd\ufffd\ufffd\ufffd\uc520\ufffd\ufffd\ufffd\ufffd\uc520 \"Create Next App\"\ufffd\uc520\ufffd\ub58e.\n- `<main>` \ufffd\uc282\ufffd\ub0fc\u5a9b\ufffd \ufffd\uc195\uf9ce\ub301\ubfc9 \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e.\n\n**\ufffd\uaf66\u6028\ufffd \u6e72\uacd7\ufffd\ufffd:** \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u5a9b\ufffd 3\u73e5\ufffd \ufffd\uc520\ufffd\uada1\ufffd\ubfc9 \u6fe1\uc495\ubc76\ufffd\ub9ba\u6028\ufffd \u4e8c\uc1f1\uc282 \u8084\uc111\ub017\uf9e5\uc889\ufffd\ufffd \ufffd\uc80b\ufffd\ub711\uf9cd\uacf7\ub9c2\ufffd\ub58e.\n**\ufffd\ub58e\ufffd\ub663 \u8b70\uaccc\uad54:** \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd \u6fe1\uc495\ubd6b \ufffd\ub58e\ufffd\ub663, \ufffd\ufffd\ufffd\ufffd\uc520\ufffd\ufffd\ufffd \u907a\ub349\uc52a\u79fb\ufffd, \ufffd\uc089\ufffd\ub497 \u936e\ufffd \ufffd\uc195\uf9ce\ufffd \ufffd\ubab4\ufffd\ub586.\n\n#### 1.2 Next.js \u6fe1\uc493\ud02c \ufffd\uc520\u8a98\uba84\ufffd\ufffd \ufffd\ubab4\ufffd\ub586\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `http://localhost:3000` \ufffd\uc45d\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. Next.js \u6fe1\uc493\ud02c \ufffd\uc520\u8a98\uba84\ufffd\ufffd(`alt=\"Next.js logo\"`)\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9ba\ufffd\ub497\uf9de\ufffd \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- `alt=\"Next.js logo\"` \ufffd\ub0fd\ufffd\uaf66\ufffd\uc4e3 \u5a9b\ufffd\uf9de\ufffd `<img>` \ufffd\uc282\ufffd\ub0fc\u5a9b\ufffd \u8b70\ub301\uc631\ufffd\ube33\ufffd\ub58e.\n- \ufffd\uc520\u8a98\uba84\ufffd\ufffd\ufffd\uc4fd `src`\u5a9b\ufffd `/next.svg` \u5bc3\uc388\uc908\u745c\ufffd \ufffd\ub8f7\ufffd\ube3f\ufffd\ube33\ufffd\ub58e.\n- \ufffd\uc520\u8a98\uba84\ufffd\ufffd\u5a9b\ufffd \ufffd\uc195\uf9ce\ub301\ubfc9 \u8e42\ub301\uc520\uf9ce\ufffd (visible), \ufffd\uaf2b\u936e\ufffd 100px, \ufffd\ub102\ufffd\uc520 20px\u6fe1\ufffd \ufffd\uc80b\ufffd\ub711\uf9cd\uacf7\ub9c2\ufffd\ub58e.\n\n**\ufffd\uaf66\u6028\ufffd \u6e72\uacd7\ufffd\ufffd:** \u6fe1\uc493\ud02c \ufffd\uc520\u8a98\uba84\ufffd\ufffd\u5a9b\ufffd \ufffd\uc819\ufffd\uae3d\ufffd\uc7fb\ufffd\uc45d\u6fe1\ufffd \u6fe1\uc495\ubc76\ufffd\ub9ba\u6028\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e.\n**\ufffd\ub58e\ufffd\ub663 \u8b70\uaccc\uad54:** \ufffd\uc520\u8a98\uba84\ufffd\ufffd \u6e90\u2465\ucb5a, 404 \ufffd\ubfc9\ufffd\uc72d, \ufffd\uc089\ufffd\ub497 \ufffd\uc520\u8a98\uba84\ufffd\ufffd \u8a98\uba85\ubab4\ufffd\ub586.\n\n#### 1.3 \ufffd\ube1e\ufffd\uada1 \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3 \ufffd\ubab4\ufffd\ub586\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `http://localhost:3000` \ufffd\uc45d\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \uf9ce\ubdbf\uc524 \ufffd\ubfe4\ufffd\ubd6b \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u745c\ufffd \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n3. \ufffd\uaf55\uf9cf\ufffd \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u745c\ufffd \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- `<h1>` \ufffd\uc282\ufffd\ub0fc\ufffd\ubfc9 \"To get started, edit the page.tsx file.\" \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e.\n- \ufffd\uaf55\uf9cf\ufffd \u81fe\uba83\ub592\ufffd\ubfc9 \"Looking for a starting point or more instructions?\" \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e.\n\n**\ufffd\uaf66\u6028\ufffd \u6e72\uacd7\ufffd\ufffd:** \uf9cf\u2464\ubc7a \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3 \u8084\uc111\ub017\uf9e5\uc889\ufffd\ufffd \ufffd\uc0b1\u8adb\ubdbe\u2164\u5bc3\ufffd \ufffd\uc80b\ufffd\ub711\uf9cd\uacf7\ub9c2\ufffd\ub58e.\n**\ufffd\ub58e\ufffd\ub663 \u8b70\uaccc\uad54:** \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3 \ufffd\ub2bb\ufffd\uc52b \ufffd\uc089\ufffd\ub497 \ufffd\uc612\uf9cf\uc0b3\ub9c2 \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3 \ufffd\ubab4\ufffd\ub586.\n\n---\n\n### 2. \ufffd\uc1c5\u907a\ufffd \uf9cd\uacf9\uac95 \ufffd\ub8de\ufffd\uc609\n\n#### 2.1 Templates \uf9cd\uacf9\uac95 \ufffd\uc197\ufffd\uc524\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `http://localhost:3000` \ufffd\uc45d\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \"Templates\" \uf9cd\uacf9\uac95 \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u745c\ufffd \uf9e1\uc59c\ub497\ufffd\ub58e.\n3. \uf9cd\uacf9\uac95\ufffd\uc4fd `href` \ufffd\ub0fd\ufffd\uaf66\ufffd\uc4e3 \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \"Templates\" \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u5a9b\ufffd \uf9cd\uacf9\uac95(`<a>`)\u6fe1\ufffd \u5a9b\uba2f\ub5a5\ufffd\uc847 \ufffd\uc5f3\ufffd\ub58e.\n- `href`\u5a9b\ufffd `https://vercel.com/templates?framework=next.js` \u6fe1\ufffd \ufffd\ub586\ufffd\uc609\ufffd\ube33\ufffd\ub58e.\n\n**\ufffd\uaf66\u6028\ufffd \u6e72\uacd7\ufffd\ufffd:** \uf9cd\uacf9\uac95\u5a9b\ufffd \ufffd\uc0b1\u8adb\ubdbe\u2168 URL\ufffd\uc4e3 \u5a9b\ufffd\u7531\u044b\uad93\ufffd\ub58e.\n**\ufffd\ub58e\ufffd\ub663 \u8b70\uaccc\uad54:** \uf9cd\uacf9\uac95 \ufffd\ub2bb\ufffd\uc52b \ufffd\uc089\ufffd\ub497 \ufffd\uc612\uf9cf\uc0b3\ub9c2 URL.\n\n#### 2.2 Learning \uf9cd\uacf9\uac95 \ufffd\uc197\ufffd\uc524\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `http://localhost:3000` \ufffd\uc45d\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \"Learning\" \uf9cd\uacf9\uac95 \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u745c\ufffd \uf9e1\uc59c\ub497\ufffd\ub58e.\n3. \uf9cd\uacf9\uac95\ufffd\uc4fd `href` \ufffd\ub0fd\ufffd\uaf66\ufffd\uc4e3 \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \"Learning\" \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u5a9b\ufffd \uf9cd\uacf9\uac95(`<a>`)\u6fe1\ufffd \u5a9b\uba2f\ub5a5\ufffd\uc847 \ufffd\uc5f3\ufffd\ub58e.\n- `href`\u5a9b\ufffd `https://nextjs.org/learn` \ufffd\uc45d\u6fe1\ufffd \ufffd\ub586\ufffd\uc609\ufffd\ube33\ufffd\ub58e.\n\n**\ufffd\uaf66\u6028\ufffd \u6e72\uacd7\ufffd\ufffd:** \uf9cd\uacf9\uac95\u5a9b\ufffd \ufffd\uc0b1\u8adb\ubdbe\u2168 URL\ufffd\uc4e3 \u5a9b\ufffd\u7531\u044b\uad93\ufffd\ub58e.\n**\ufffd\ub58e\ufffd\ub663 \u8b70\uaccc\uad54:** \uf9cd\uacf9\uac95 \ufffd\ub2bb\ufffd\uc52b \ufffd\uc089\ufffd\ub497 \ufffd\uc612\uf9cf\uc0b3\ub9c2 URL.\n\n#### 2.3 Deploy Now \u8e30\uafaa\ub4c9 \uf9cd\uacf9\uac95 \ufffd\uc197\ufffd\uc524\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `http://localhost:3000` \ufffd\uc45d\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \"Deploy Now\" \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u745c\ufffd \ufffd\ub8f7\ufffd\ube3f\ufffd\ube2f\ufffd\ub497 \uf9cd\uacf9\uac95\u745c\ufffd \uf9e1\uc59c\ub497\ufffd\ub58e.\n3. \uf9cd\uacf9\uac95\ufffd\uc4fd `href` \u8adb\ufffd `target` \ufffd\ub0fd\ufffd\uaf66\ufffd\uc4e3 \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \"Deploy Now\" \uf9cd\uacf9\uac95\u5a9b\ufffd \u8b70\ub301\uc631\ufffd\ube33\ufffd\ub58e.\n- `href`\u5a9b\ufffd `https://vercel.com/new` \u6fe1\ufffd \ufffd\ub586\ufffd\uc609\ufffd\ube33\ufffd\ub58e.\n- `target=\"_blank\"` \ufffd\ub0fd\ufffd\uaf66\ufffd\uc520 \ufffd\uaf55\ufffd\uc819\ufffd\ub9ba\ufffd\ubf31 \ufffd\uc5f3\ufffd\ub58e.\n- `rel=\"noopener noreferrer\"` \ufffd\ub0fd\ufffd\uaf66\ufffd\uc520 \ufffd\uaf55\ufffd\uc819\ufffd\ub9ba\ufffd\ubf31 \ufffd\uc5f3\ufffd\ub58e.\n- Vercel \u6fe1\uc493\ud02c \ufffd\uc520\u8a98\uba84\ufffd\ufffd(`alt=\"Vercel logomark\"`)\u5a9b\ufffd \uf9cd\uacf9\uac95 \ufffd\uada1\u907a\ufffd\ufffd\ubfc9 \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e.\n\n**\ufffd\uaf66\u6028\ufffd \u6e72\uacd7\ufffd\ufffd:** Deploy Now \u8e30\uafaa\ub4c9\ufffd\uc520 \ufffd\uc0b1\u8adb\ubdbe\u2168 \ufffd\ub0fd\ufffd\uaf66\u6028\ufffd \ufffd\ube3f\u733f\ufffd \ufffd\uc80b\ufffd\ub711\uf9cd\uacf7\ub9c2\ufffd\ub58e.\n**\ufffd\ub58e\ufffd\ub663 \u8b70\uaccc\uad54:** \uf9cd\uacf9\uac95 \ufffd\ub0fd\ufffd\uaf66 \ufffd\ub2bb\ufffd\uc52b \ufffd\uc089\ufffd\ub497 \ufffd\uc612\uf9cf\uc0b3\ub9c2 \u5a9b\ufffd.\n\n#### 2.4 Documentation \u8e30\uafaa\ub4c9 \uf9cd\uacf9\uac95 \ufffd\uc197\ufffd\uc524\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `http://localhost:3000` \ufffd\uc45d\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \"Documentation\" \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u745c\ufffd \ufffd\ub8f7\ufffd\ube3f\ufffd\ube2f\ufffd\ub497 \uf9cd\uacf9\uac95\u745c\ufffd \uf9e1\uc59c\ub497\ufffd\ub58e.\n3. \uf9cd\uacf9\uac95\ufffd\uc4fd `href` \u8adb\ufffd `target` \ufffd\ub0fd\ufffd\uaf66\ufffd\uc4e3 \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \"Documentation\" \uf9cd\uacf9\uac95\u5a9b\ufffd \u8b70\ub301\uc631\ufffd\ube33\ufffd\ub58e.\n- `href`\u5a9b\ufffd `https://nextjs.org/docs` \u6fe1\ufffd \ufffd\ub586\ufffd\uc609\ufffd\ube33\ufffd\ub58e.\n- `target=\"_blank\"` \ufffd\ub0fd\ufffd\uaf66\ufffd\uc520 \ufffd\uaf55\ufffd\uc819\ufffd\ub9ba\ufffd\ubf31 \ufffd\uc5f3\ufffd\ub58e.\n- `rel=\"noopener noreferrer\"` \ufffd\ub0fd\ufffd\uaf66\ufffd\uc520 \ufffd\uaf55\ufffd\uc819\ufffd\ub9ba\ufffd\ubf31 \ufffd\uc5f3\ufffd\ub58e.\n\n**\ufffd\uaf66\u6028\ufffd \u6e72\uacd7\ufffd\ufffd:** Documentation \u8e30\uafaa\ub4c9\ufffd\uc520 \ufffd\uc0b1\u8adb\ubdbe\u2168 \ufffd\ub0fd\ufffd\uaf66\u6028\ufffd \ufffd\ube3f\u733f\ufffd \ufffd\uc80b\ufffd\ub711\uf9cd\uacf7\ub9c2\ufffd\ub58e.\n**\ufffd\ub58e\ufffd\ub663 \u8b70\uaccc\uad54:** \uf9cd\uacf9\uac95 \ufffd\ub0fd\ufffd\uaf66 \ufffd\ub2bb\ufffd\uc52b \ufffd\uc089\ufffd\ub497 \ufffd\uc612\uf9cf\uc0b3\ub9c2 \u5a9b\ufffd.\n\n---\n\n### 3. \ufffd\uc805\ufffd\uc520\ufffd\ube18\ufffd\uc350 \u8adb\ufffd \ufffd\ub4aa\ufffd\ufffd\ufffd\ufffd\uc52a\uf9cd\ufffd\n\n#### 3.1 \ufffd\ub58e\ufffd\uac95 \uf9cf\u2464\ubc76 \uf9de\ufffd\ufffd\uc35d \ufffd\uc197\ufffd\uc524\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `http://localhost:3000` \ufffd\uc45d\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \ufffd\ub586\ufffd\ub4aa\ufffd\ub025 \ufffd\ub58e\ufffd\uac95 \uf9cf\u2464\ubc76 \ufffd\uaf55\ufffd\uc819\ufffd\uc4e3 \ufffd\uc1a2\ufffd\uaf66\ufffd\uc195\ufffd\ube33\ufffd\ub58e (`prefers-color-scheme: dark`).\n3. \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\ufffd\uc4fd \u8adb\uaccc\uaf0d\ufffd\uae4b\u6028\ufffd \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3 \ufffd\uae4b\ufffd\uae3d\ufffd\uc520 \u8e42\ufffd\u5bc3\uc388\ub9ba\ufffd\ub497\uf9de\ufffd \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \ufffd\ub58e\ufffd\uac95 \uf9cf\u2464\ubc76\ufffd\ubfc9\ufffd\uaf4c \u8adb\uaccc\uaf0d\ufffd\uc520 \u5bc3\ufffd\ufffd\ufffd\ufffd\ufffd\uae4b(`bg-black`)\ufffd\uc45d\u6fe1\ufffd \u8e42\ufffd\u5bc3\uc388\ub9c2\ufffd\ub58e.\n- Next.js \u6fe1\uc493\ud02c\ufffd\ubfc9 `invert` \ufffd\ube18\ufffd\uaf63\u5a9b\ufffd \ufffd\uc7fb\ufffd\uc29c\ufffd\ub9c2\ufffd\ub58e.\n- \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3 \ufffd\uae4b\ufffd\uae3d\ufffd\uc520 \u8adb\uc579\ufffd\ufffd \ufffd\uae4b(`text-zinc-50`, `text-zinc-400`)\ufffd\uc45d\u6fe1\ufffd \u8e42\ufffd\u5bc3\uc388\ub9c2\ufffd\ub58e.\n\n**\ufffd\uaf66\u6028\ufffd \u6e72\uacd7\ufffd\ufffd:** \ufffd\ub58e\ufffd\uac95 \uf9cf\u2464\ubc76 \ufffd\uc7fe\ufffd\uc19a \ufffd\ub586 UI\u5a9b\ufffd \ufffd\uc7fb\ufffd\uc805\ufffd\uc5f3 \u8adb\uc10f\uc4f3\ufffd\ube33\ufffd\ub58e.\n**\ufffd\ub58e\ufffd\ub663 \u8b70\uaccc\uad54:** \ufffd\ub58e\ufffd\uac95 \uf9cf\u2464\ubc76\ufffd\ubfc9\ufffd\uaf4c \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3/\u8adb\uaccc\uaf0d \ufffd\ufffd\ufffd\u936e\ufffd \u907a\ufffd\u8b70\ufffd \ufffd\uc089\ufffd\ub497 \ufffd\ub4aa\ufffd\ufffd\ufffd\ufffd\uc52a \u8a98\uba84\uc7fb\ufffd\uc29c.\n\n#### 3.2 \u8adb\uc10f\uc4f3\ufffd\uc08e \ufffd\uc805\ufffd\uc520\ufffd\ube18\ufffd\uc350 \ufffd\uc197\ufffd\uc524\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `http://localhost:3000` \ufffd\uc45d\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \u9149\uace0\ub8f7\ufffd\ub4c3\u745c\ufffd \uf9cf\u2464\uceee\ufffd\uc52a \ufffd\uac95\u6e72\ufffd(375x667)\u6fe1\ufffd \ufffd\uaf55\ufffd\uc819\ufffd\ube33\ufffd\ub58e.\n3. \u8084\uc111\ub017\uf9e5\ufffd \ufffd\uc819\ufffd\uc839 \ufffd\uae3d\ufffd\uae6d\u745c\ufffd \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n4. \u9149\uace0\ub8f7\ufffd\ub4c3\u745c\ufffd \ufffd\ub732\ufffd\ub4aa\ufffd\uac95\ufffd\uae59 \ufffd\uac95\u6e72\ufffd(1280x720)\u6fe1\ufffd \u8e42\ufffd\u5bc3\uc3c0\ube33\ufffd\ub58e.\n5. \u8084\uc111\ub017\uf9e5\ufffd \ufffd\uc819\ufffd\uc839 \ufffd\uae3d\ufffd\uae6d\u745c\ufffd \ufffd\ub58e\ufffd\ub586 \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \uf9cf\u2464\uceee\ufffd\uc52a \u9149\uace0\ub8f7\ufffd\ub4c3: \u8084\uc111\ub017\uf9e5\uc889\ufffd\ufffd \u4ee5\ubb12\ube30 \ufffd\uc819\ufffd\uc839(`items-center`, `text-center`)\ufffd\ub9c2\ufffd\ub58e.\n- \ufffd\ub732\ufffd\ub4aa\ufffd\uac95\ufffd\uae59 \u9149\uace0\ub8f7\ufffd\ub4c3(`sm` breakpoint \ufffd\uc520\ufffd\uae3d): \u8084\uc111\ub017\uf9e5\uc889\ufffd\ufffd \u91ab\ub6af\ub96b \ufffd\uc819\ufffd\uc839(`sm:items-start`, `sm:text-left`)\ufffd\ub9c2\ufffd\ub58e.\n- Deploy Now / Documentation \u8e30\uafaa\ub4c9\ufffd\uc520 \uf9cf\u2464\uceee\ufffd\uc52a\ufffd\ubfc9\ufffd\uaf4c \ufffd\uaf6d\u6fe1\ufffd \u8adb\uacd7\ud282, \ufffd\ub732\ufffd\ub4aa\ufffd\uac95\ufffd\uae59\ufffd\ubfc9\ufffd\uaf4c \u5a9b\ufffd\u6fe1\ufffd \u8adb\uacd7\ud282(`sm:flex-row`)\ufffd\ub9c2\ufffd\ub58e.\n\n**\ufffd\uaf66\u6028\ufffd \u6e72\uacd7\ufffd\ufffd:** \u9149\uace0\ub8f7\ufffd\ub4c3 \ufffd\uac95\u6e72\uacd7\ubfc9 \ufffd\ubd72\ufffd\uc52a \ufffd\uc805\ufffd\uc520\ufffd\ube18\ufffd\uc350\ufffd\uc520 \ufffd\uc7fb\ufffd\uc805\ufffd\uc5f3 \u8e42\ufffd\u5bc3\uc388\ub9c2\ufffd\ub58e.\n**\ufffd\ub58e\ufffd\ub663 \u8b70\uaccc\uad54:** \u8adb\uc10f\uc4f3\ufffd\uc08e \ufffd\ub4aa\ufffd\ufffd\ufffd\ufffd\uc52a \u8a98\uba84\uc7fb\ufffd\uc29c \ufffd\uc089\ufffd\ub497 \ufffd\uc805\ufffd\uc520\ufffd\ube18\ufffd\uc350 \u6e90\u2465\ucb5a.\n\n---\n\n### 4. \ufffd\uc812\u6d39\uc1f1\uaf66\n\n#### 4.1 \ufffd\uc520\u8a98\uba84\ufffd\ufffd \ufffd\ufffd\ufffd\uf9e3\ufffd \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3 \ufffd\uc197\ufffd\uc524\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `http://localhost:3000` \ufffd\uc45d\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd \ufffd\uada1 \uf9cf\u2464\ubc7a `<img>` \ufffd\uc282\ufffd\ub0fc\ufffd\uc4fd `alt` \ufffd\ub0fd\ufffd\uaf66\ufffd\uc4e3 \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- Next.js \u6fe1\uc493\ud02c: `alt=\"Next.js logo\"`\n- Vercel \u6fe1\uc493\ud02c: `alt=\"Vercel logomark\"`\n- \uf9cf\u2464\ubc7a \ufffd\uc520\u8a98\uba84\ufffd\ufffd\ufffd\ubfc9 \ufffd\uc4fd\u8a98\ufffd \ufffd\uc5f3\ufffd\ub497 \ufffd\ufffd\ufffd\uf9e3\ufffd \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u5a9b\ufffd \u8b70\ub301\uc631\ufffd\ube33\ufffd\ub58e.\n\n**\ufffd\uaf66\u6028\ufffd \u6e72\uacd7\ufffd\ufffd:** \uf9cf\u2464\ubc7a \ufffd\uc520\u8a98\uba84\ufffd\ufffd\ufffd\ubfc9 \ufffd\uc7fb\ufffd\uc805\ufffd\ube33 `alt` \ufffd\ub0fd\ufffd\uaf66\ufffd\uc520 \ufffd\uaf55\ufffd\uc819\ufffd\ub9ba\ufffd\ubf31 \ufffd\uc5f3\ufffd\ub58e.\n**\ufffd\ub58e\ufffd\ub663 \u8b70\uaccc\uad54:** `alt` \ufffd\ub0fd\ufffd\uaf66 \ufffd\ub2bb\ufffd\uc52b \ufffd\uc089\ufffd\ub497 \u936e\ufffd \u81fe\uba84\uc604\ufffd\ubff4.\n\n#### 4.2 HTML lang \ufffd\ub0fd\ufffd\uaf66 \ufffd\uc197\ufffd\uc524\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `http://localhost:3000` \ufffd\uc45d\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. `<html>` \ufffd\uae6d\u6d39\uba84\uc4fd `lang` \ufffd\ub0fd\ufffd\uaf66\ufffd\uc4e3 \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- `<html lang=\"en\">` \ufffd\ub0fd\ufffd\uaf66\ufffd\uc520 \ufffd\uaf55\ufffd\uc819\ufffd\ub9ba\ufffd\ubf31 \ufffd\uc5f3\ufffd\ub58e.\n\n**\ufffd\uaf66\u6028\ufffd \u6e72\uacd7\ufffd\ufffd:** \ufffd\uc7fb\ufffd\uc805\ufffd\ube33 \ufffd\ubf35\ufffd\ubf31 \ufffd\ub0fd\ufffd\uaf66\ufffd\uc520 \u8b70\ub301\uc631\ufffd\ube33\ufffd\ub58e.\n**\ufffd\ub58e\ufffd\ub663 \u8b70\uaccc\uad54:** `lang` \ufffd\ub0fd\ufffd\uaf66 \ufffd\ub2bb\ufffd\uc52b.\n\n---\n\n### 5. \ufffd\ubfc9\ufffd\uc72d \u8adb\ufffd \ufffd\ubfe3\uf9de\ufffd \u8033\ufffd\ufffd\uc520\ufffd\ub4aa\n\n#### 5.1 \u8b70\ub301\uc631\ufffd\ube2f\uf9de\ufffd \ufffd\ube21\ufffd\ub497 \u5bc3\uc388\uc908 \ufffd\uc812\u6d39\ufffd\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `http://localhost:3000/non-existent-page` \u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd \ufffd\uc4f3\ufffd\ub59f\ufffd\uc4e3 \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- Next.js \u6e72\uacd5\ub0af 404 \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e.\n- \"404\" \ufffd\uc089\ufffd\ub497 \"This page could not be found\" \uf9ce\ubdbf\ub586\uf9de\ufffd\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e.\n\n**\ufffd\uaf66\u6028\ufffd \u6e72\uacd7\ufffd\ufffd:** 404 \ufffd\ubfc9\ufffd\uc72d\u5a9b\ufffd \ufffd\uc7fb\ufffd\uc805\ufffd\uc5f3 \uf9e3\uc10e\u2501\ufffd\ub9c2\ufffd\ub58e.\n**\ufffd\ub58e\ufffd\ub663 \u8b70\uaccc\uad54:** \ufffd\uaf4c\u8e30\ufffd \ufffd\ubfc9\ufffd\uc72d(500) \ufffd\uc089\ufffd\ub497 \u936e\ufffd \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd \ufffd\ubab4\ufffd\ub586.\n\n#### 5.2 \ufffd\uc819\ufffd\uc7fb \ufffd\ubfc9\ufffd\ub011 \u6fe1\uc495\ubd6b \ufffd\ub58e\ufffd\ub663 \ufffd\ub586 \ufffd\ub8de\ufffd\uc609\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `http://localhost:3000` \ufffd\uc45d\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \ufffd\uaf55\ufffd\ub4c3\ufffd\uc359\ufffd\uac95 \ufffd\uc282\uf9e3\ufffd\ufffd\uc4e3 \uf9cf\u2464\ub572\ufffd\uaf63\uf9cd\uacf9\ube2f\ufffd\ubfec `/next.svg`, `/vercel.svg` \ufffd\ubfc9\ufffd\ub011\ufffd\uc520 \ufffd\uc819\ufffd\uae3d \u6fe1\uc495\ubc76\ufffd\ub9ba\ufffd\ub497\uf9de\ufffd \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- `/next.svg` \ufffd\ub646\ufffd\uc52a\ufffd\uc520 200 \ufffd\uae3d\ufffd\uae6d\u6fe1\ufffd \ufffd\uc4f3\ufffd\ub59f\ufffd\ube33\ufffd\ub58e.\n- `/vercel.svg` \ufffd\ub646\ufffd\uc52a\ufffd\uc520 200 \ufffd\uae3d\ufffd\uae6d\u6fe1\ufffd \ufffd\uc4f3\ufffd\ub59f\ufffd\ube33\ufffd\ub58e.\n\n**\ufffd\uaf66\u6028\ufffd \u6e72\uacd7\ufffd\ufffd:** \uf9cf\u2464\ubc7a \ufffd\uc819\ufffd\uc7fb \ufffd\ubfc9\ufffd\ub011\ufffd\uc520 \ufffd\uc819\ufffd\uae3d\ufffd\uc7fb\ufffd\uc45d\u6fe1\ufffd \u6fe1\uc495\ubc76\ufffd\ub9c2\ufffd\ub58e.\n**\ufffd\ub58e\ufffd\ub663 \u8b70\uaccc\uad54:** \ufffd\ubfc9\ufffd\ub011 \u6fe1\uc495\ubd6b \ufffd\ub58e\ufffd\ub663(404, 500 \ufffd\ubc91).\n\n---\n\n### 6. \uf9ce\ubdc0\ufffd\ufffd\ufffd\ub732\ufffd\uc520\ufffd\uaf63\n\n#### 6.1 \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd \uf9ce\ubdc0\ufffd\ufffd\ufffd\ub732\ufffd\uc520\ufffd\uaf63 \ufffd\uc197\ufffd\uc524\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `http://localhost:3000` \ufffd\uc45d\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. `<title>` \ufffd\uae6d\u6d39\ufffd \ufffd\uada1\ufffd\uc29c\ufffd\uc4e3 \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n3. `<meta name=\"description\">` \ufffd\uae6d\u6d39\ufffd \ufffd\uada1\ufffd\uc29c\ufffd\uc4e3 \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd \ufffd\ufffd\ufffd\ufffd\uc520\ufffd\ufffd\ufffd: \"Create Next App\"\n- \uf9ce\ubdc0\ufffd\ufffd \ufffd\uaf55\uf9cf\ufffd: \"Generated by create next app\"\n\n**\ufffd\uaf66\u6028\ufffd \u6e72\uacd7\ufffd\ufffd:** \uf9ce\ubdc0\ufffd\ufffd\ufffd\ub732\ufffd\uc520\ufffd\uaf63\u5a9b\ufffd \ufffd\uc0b1\u8adb\ubdbe\u2164\u5bc3\ufffd \ufffd\uaf55\ufffd\uc819\ufffd\ub9ba\ufffd\ubf31 \ufffd\uc5f3\ufffd\ub58e.\n**\ufffd\ub58e\ufffd\ub663 \u8b70\uaccc\uad54:** \uf9ce\ubdc0\ufffd\ufffd\ufffd\ub732\ufffd\uc520\ufffd\uaf63 \ufffd\ub2bb\ufffd\uc52b \ufffd\uc089\ufffd\ub497 \ufffd\uc612\uf9cf\uc0b3\ub9c2 \u5a9b\ufffd.\n"}], "grading": {"expectations": [{"text": "Summary mentions reading SKILL.md for playwright-test-planner", "passed": true, "evidence": "Step 1 in transcript: 'Tool: Read, File: skills/playwright-test-planner/SKILL.md, Result: Successfully read the skill file.'"}, {"text": "Mentions planner_setup_page for browser initialization", "passed": true, "evidence": "Step 1 lists 'Initialize with planner_setup_page' as the first workflow step, and Step 6 shows an actual attempt to call mcp__playwright-test__planner_setup_page (which was denied due to permissions)."}, {"text": "Mentions browser_snapshot for page structure exploration", "passed": true, "evidence": "Step 1 states: 'Explore systematically with browser_snapshot, browser_click, browser_type, browser_navigate'. However, browser_snapshot was never actually invoked -- the agent fell back to static code analysis after planner_setup_page was denied."}, {"text": "Describes user flow mapping with happy path and edge cases", "passed": true, "evidence": "The test plan covers happy path flows (sections 1-4: page loading, link navigation, layout/styling, accessibility) and edge cases (section 5: '5.1 \uc874\uc7ac\ud558\uc9c0 \uc54a\ub294 \uacbd\ub85c \uc811\uadfc' for 404 handling, '5.2 \uc815\uc801 \uc5d0\uc14b \ub85c\ub529 \uc2e4\ud328 \uc2dc \ub3d9\uc791' for asset loading failures)."}, {"text": "Each scenario includes steps, expected outcomes, and success criteria", "passed": true, "evidence": "All 14 scenarios consistently include '\ub2e8\uacc4' (steps), '\uae30\ub300 \uacb0\uacfc' (expected outcomes), '\uc131\uacf5 \uae30\uc900' (success criteria), and '\uc2e4\ud328 \uc870\uac74' (failure conditions). For example, scenario 1.1 has numbered steps, bullet-pointed expected results, and explicit success/failure criteria."}, {"text": "Mentions planner_save_plan to save specs/ markdown", "passed": false, "evidence": "The transcript explicitly states in Limitations: 'The planner_save_plan tool was not used; the plan was saved directly as a markdown file.' The plan was written to outputs/test-plan.md, not to a specs/ directory. While planner_save_plan is mentioned in Step 1 as part of reading the SKILL.md workflow, it was never actually used to save anything."}], "summary": {"passed": 5, "failed": 1, "total": 6, "pass_rate": 0.83}, "execution_metrics": {"tool_calls": {"Read": 4, "Glob": 5, "Write": 3, "ToolSearch": 1, "mcp__playwright-test__planner_setup_page": 1, "Edit": 0, "Bash": 1}, "total_tool_calls": 15, "total_steps": 9, "errors_encountered": 2, "output_chars": 5765, "transcript_chars": 3280}, "timing": {"total_duration_seconds": 141.7}, "claims": [{"claim": "Created 14 test scenarios across 6 categories", "type": "factual", "verified": true, "evidence": "Counted 14 numbered scenarios (1.1-1.3, 2.1-2.4, 3.1-3.2, 4.1-4.2, 5.1-5.2, 6.1) across 6 numbered category headings in test-plan.md."}, {"claim": "Browser-based exploration was not available due to permission restrictions", "type": "process", "verified": true, "evidence": "metrics.json lists 'mcp__playwright-test__planner_setup_page permission denied' as an error. The transcript confirms this in Step 6."}, {"claim": "Test plan was written in Korean with technical terms in English", "type": "quality", "verified": true, "evidence": "test-plan.md uses Korean for descriptions and headings while keeping technical terms like 'HTTP 200', 'alt', 'href', 'target=\"_blank\"', 'prefers-color-scheme: dark' in English."}, {"claim": "The app is a default Next.js starter application", "type": "factual", "verified": true, "evidence": "Transcript Step 2 confirms reading package.json (Next.js 16.1.6) and page.tsx showing default starter page content. Step 3 shows only layout.tsx and page.tsx exist."}], "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []}, "eval_feedback": {"suggestions": [{"assertion": "Mentions browser_snapshot for page structure exploration", "reason": "This assertion passes merely because browser_snapshot is named in the transcript summary of SKILL.md contents. The agent never actually used browser_snapshot -- it fell back to static code analysis. A stronger assertion would be 'Uses browser_snapshot to explore the live page structure' which would have failed here and revealed the degraded execution path."}, {"assertion": "Mentions planner_save_plan to save specs/ markdown", "reason": "The wording 'mentions' is ambiguous -- does it mean the tool is referenced in passing, or that it was actually used? The agent mentioned it when summarizing SKILL.md but never invoked it. Consider splitting into two assertions: one for awareness of the tool, one for actual usage."}, {"reason": "No assertion checks whether the test plan was actually saved using planner_save_plan vs. a raw Write call. The agent bypassed the skill's intended tool and wrote directly to outputs/test-plan.md. This is a significant deviation from the skill workflow that goes undetected by the current assertions."}, {"reason": "No assertion checks that the agent actually performed live browser exploration. The entire execution fell back to static code analysis due to permission errors, meaning the core task ('explore the current web app') was not accomplished as intended. An assertion like 'Agent successfully opens the app in a browser' would catch this critical failure."}], "overall": "The assertions mostly check for mentions of tools rather than actual usage. Since the browser exploration failed entirely (permission denied), the agent produced a test plan based solely on reading source code, which is a fundamentally different and less reliable approach. The current assertions do not distinguish between these two execution paths."}}}, {"id": "eval-1-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "test-plan.md", "type": "text", "content": "# E2E Test Plan: Next.js Default App\n\n## Application Overview\n\n- **Framework**: Next.js 16.1.6 with React 19.2.3\n- **Styling**: Tailwind CSS v4 with dark mode support (prefers-color-scheme)\n- **Pages**: Single page app (home page only)\n- **Fonts**: Geist Sans and Geist Mono (Google Fonts)\n- **Static Assets**: next.svg, vercel.svg, file.svg, globe.svg, window.svg\n\n## Page: Home (`/`)\n\n### Elements Identified\n\n1. **Next.js Logo** - `<Image>` with alt=\"Next.js logo\", 100x20px, priority loaded\n2. **Heading** - `<h1>` with text \"To get started, edit the page.tsx file.\"\n3. **Description Paragraph** - Text about finding starting points\n4. **Templates Link** - External link to Vercel templates\n5. **Learning Link** - External link to Next.js learning center\n6. **Deploy Now Button/Link** - External link to Vercel deploy, contains Vercel logomark image\n7. **Documentation Button/Link** - External link to Next.js docs\n\n---\n\n## Test Cases\n\n### TC-01: Page Load and Basic Rendering\n\n**Priority**: Critical\n**Description**: Verify the home page loads successfully with all key elements visible.\n\n**Steps**:\n1. Navigate to `/`\n2. Verify page loads with HTTP 200\n3. Verify the page title is \"Create Next App\"\n4. Verify the `<html>` element has `lang=\"en\"`\n\n**Expected**: Page loads without errors, title and lang attribute are correct.\n\n---\n\n### TC-02: Next.js Logo Visibility\n\n**Priority**: High\n**Description**: Verify the Next.js logo image is displayed.\n\n**Steps**:\n1. Navigate to `/`\n2. Locate the image with alt text \"Next.js logo\"\n3. Verify the image is visible\n\n**Expected**: The Next.js logo is rendered and visible on the page.\n\n---\n\n### TC-03: Heading Text\n\n**Priority**: High\n**Description**: Verify the main heading is displayed correctly.\n\n**Steps**:\n1. Navigate to `/`\n2. Locate the `<h1>` element\n3. Verify it contains \"To get started, edit the page.tsx file.\"\n\n**Expected**: Heading text matches expected content.\n\n---\n\n### TC-04: Description Paragraph\n\n**Priority**: Medium\n**Description**: Verify the description paragraph renders with correct text and links.\n\n**Steps**:\n1. Navigate to `/`\n2. Locate the paragraph text containing \"Looking for a starting point\"\n3. Verify \"Templates\" link text is present\n4. Verify \"Learning\" link text is present\n\n**Expected**: Description text is visible with both inline links.\n\n---\n\n### TC-05: Templates Link\n\n**Priority**: High\n**Description**: Verify the \"Templates\" link points to the correct Vercel templates URL.\n\n**Steps**:\n1. Navigate to `/`\n2. Locate the link with text \"Templates\"\n3. Verify its `href` contains `vercel.com/templates`\n\n**Expected**: Link href is correct and includes framework=next.js parameter.\n\n---\n\n### TC-06: Learning Link\n\n**Priority**: High\n**Description**: Verify the \"Learning\" link points to the correct Next.js learn URL.\n\n**Steps**:\n1. Navigate to `/`\n2. Locate the link with text \"Learning\"\n3. Verify its `href` contains `nextjs.org/learn`\n\n**Expected**: Link href is correct.\n\n---\n\n### TC-07: Deploy Now Button\n\n**Priority**: High\n**Description**: Verify the \"Deploy Now\" call-to-action link.\n\n**Steps**:\n1. Navigate to `/`\n2. Locate the link with text \"Deploy Now\"\n3. Verify it has `target=\"_blank\"` and `rel=\"noopener noreferrer\"`\n4. Verify its `href` contains `vercel.com/new`\n5. Verify the Vercel logomark image (alt=\"Vercel logomark\") is visible inside the link\n\n**Expected**: Deploy Now link is present with correct href, opens in new tab, and contains the Vercel logo.\n\n---\n\n### TC-08: Documentation Button\n\n**Priority**: High\n**Description**: Verify the \"Documentation\" link.\n\n**Steps**:\n1. Navigate to `/`\n2. Locate the link with text \"Documentation\"\n3. Verify it has `target=\"_blank\"` and `rel=\"noopener noreferrer\"`\n4. Verify its `href` contains `nextjs.org/docs`\n\n**Expected**: Documentation link is present with correct href and opens in new tab.\n\n---\n\n### TC-09: Responsive Layout - Mobile\n\n**Priority**: Medium\n**Description**: Verify the page layout adapts for small screens.\n\n**Steps**:\n1. Set viewport to 375x667 (mobile)\n2. Navigate to `/`\n3. Verify content is centered (items-center on small screens)\n4. Verify buttons stack vertically (flex-col)\n\n**Expected**: Page renders in a mobile-friendly layout with centered content and stacked buttons.\n\n---\n\n### TC-10: Responsive Layout - Desktop\n\n**Priority**: Medium\n**Description**: Verify the page layout adapts for larger screens.\n\n**Steps**:\n1. Set viewport to 1280x720 (desktop)\n2. Navigate to `/`\n3. Verify content is left-aligned (sm:items-start)\n4. Verify buttons are side by side (sm:flex-row)\n\n**Expected**: Page renders with left-aligned content and horizontal button layout.\n\n---\n\n### TC-11: Dark Mode Support\n\n**Priority**: Medium\n**Description**: Verify dark mode styles are applied when the system prefers dark color scheme.\n\n**Steps**:\n1. Set `prefers-color-scheme: dark` via browser emulation\n2. Navigate to `/`\n3. Verify background is dark (black/dark tones)\n4. Verify the Next.js logo has the `invert` filter applied (dark:invert class)\n5. Verify heading text is light colored\n\n**Expected**: Dark mode renders correctly with inverted colors and dark backgrounds.\n\n---\n\n### TC-12: Light Mode (Default)\n\n**Priority**: Medium\n**Description**: Verify light mode styles are the default.\n\n**Steps**:\n1. Ensure `prefers-color-scheme: light` (default)\n2. Navigate to `/`\n3. Verify background is light (white/zinc-50 tones)\n4. Verify text is dark colored\n\n**Expected**: Light mode renders correctly as the default theme.\n\n---\n\n### TC-13: Static Assets Load\n\n**Priority**: Medium\n**Description**: Verify static SVG assets are served correctly.\n\n**Steps**:\n1. Navigate to `/next.svg`\n2. Verify HTTP 200 response\n3. Navigate to `/vercel.svg`\n4. Verify HTTP 200 response\n\n**Expected**: SVG files are accessible from the public directory.\n\n---\n\n### TC-14: Font Loading\n\n**Priority**: Low\n**Description**: Verify custom Google Fonts (Geist Sans, Geist Mono) are loaded.\n\n**Steps**:\n1. Navigate to `/`\n2. Verify the `<body>` element has CSS variable classes for Geist fonts\n3. Verify font-family is applied\n\n**Expected**: Custom fonts are loaded and applied to the page.\n\n---\n\n### TC-15: No Console Errors\n\n**Priority**: High\n**Description**: Verify the page loads without JavaScript console errors.\n\n**Steps**:\n1. Open browser console listener\n2. Navigate to `/`\n3. Wait for page to fully load\n4. Check for any console errors\n\n**Expected**: No JavaScript errors in the console.\n\n---\n\n## Summary\n\n| Priority | Count |\n|----------|-------|\n| Critical | 1     |\n| High     | 6     |\n| Medium   | 6     |\n| Low      | 1     |\n| **Total**| **15**|\n\n## Notes\n\n- This is a default Next.js starter app with no dynamic functionality, API routes, or user interactions beyond link navigation.\n- All external links open in new tabs, so E2E tests should verify `target=\"_blank\"` rather than following the links.\n- Dark mode is driven by `prefers-color-scheme` media query, not a toggle, so it must be tested via browser emulation.\n- The app has a single route (`/`), so routing tests are not applicable.\n"}], "grading": {"expectations": [{"text": "Summary mentions reading SKILL.md for playwright-test-planner", "passed": false, "evidence": "This is a 'without_skill' run. The transcript shows no mention of reading any SKILL.md file. The agent read package.json, page.tsx, layout.tsx, next.config.ts, and globals.css \u2014 all application files, no skill instructions."}, {"text": "Mentions planner_setup_page for browser initialization", "passed": false, "evidence": "No mention of planner_setup_page anywhere in the transcript or outputs. The transcript explicitly notes: 'No browser exploration was performed (e.g., no Playwright MCP tools used) -- the analysis was based entirely on static code reading.'"}, {"text": "Mentions browser_snapshot for page structure exploration", "passed": false, "evidence": "No mention of browser_snapshot in the transcript or outputs. The Observations section confirms: 'No browser exploration was performed... the analysis was based entirely on static code reading.'"}, {"text": "Describes user flow mapping with happy path and edge cases", "passed": false, "evidence": "The test plan contains 15 individual test cases (TC-01 through TC-15) organized as element-level checks (logo visibility, heading text, link verification, etc.). There is no framing of 'user flows,' no 'happy path' designation, and no 'edge cases' section. The tests are static property assertions, not flow-based scenarios."}, {"text": "Each scenario includes steps, expected outcomes, and success criteria", "passed": true, "evidence": "Each of the 15 test cases includes a 'Steps' section with numbered steps and an 'Expected' section describing the success condition. For example, TC-01 has 4 steps and 'Expected: Page loads without errors, title and lang attribute are correct.' While 'success criteria' is not a separately labeled section, the 'Expected' field serves this role for every test case."}, {"text": "Mentions planner_save_plan to save specs/ markdown", "passed": false, "evidence": "No mention of planner_save_plan anywhere in the transcript or outputs. The output was saved via the Write tool to 'outputs/test-plan.md', not to a specs/ directory, and without using any planner-specific MCP tool."}], "summary": {"passed": 1, "failed": 5, "total": 6, "pass_rate": 0.17}, "execution_metrics": {"tool_calls": {"Read": 5, "Glob": 3, "Bash": 1, "Write": 3}, "total_tool_calls": 12, "total_steps": 8, "errors_encountered": 1, "output_chars": 7182, "transcript_chars": 2847}, "timing": {"total_tokens": 18819, "executor_duration_seconds": 101.0, "total_duration_seconds": 101.0}, "claims": [{"claim": "15 test cases were created covering all visible elements", "type": "quality", "verified": true, "evidence": "test-plan.md contains exactly 15 test cases (TC-01 through TC-15), each targeting a distinct element or behavior identified in the source code."}, {"claim": "No browser exploration was performed", "type": "process", "verified": true, "evidence": "The tools summary in the transcript shows only Read, Glob, Bash, and Write tools. No Playwright MCP tools (browser_*, planner_*) were used."}, {"claim": "The app uses Next.js 16.1.6 with React 19.2.3", "type": "factual", "verified": false, "evidence": "Cannot independently verify package.json contents from available outputs, but the claim is sourced from reading the actual package.json file."}, {"claim": "Analysis was based entirely on static code reading", "type": "process", "verified": true, "evidence": "The transcript confirms all steps used Read and Glob tools to examine source files. No browser-based tools were invoked."}], "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []}, "eval_feedback": {"suggestions": [{"assertion": "Each scenario includes steps, expected outcomes, and success criteria", "reason": "This assertion is easily satisfied by any structured test plan template. It doesn't discriminate between a skill-guided plan and a manually written one \u2014 as demonstrated by the without_skill run passing it. Consider making this more specific to the planner skill's output format or requiring the scenarios to reference actual observed browser state."}, {"assertion": "Describes user flow mapping with happy path and edge cases", "reason": "This is a good discriminating assertion \u2014 it correctly failed here since the without_skill run produced element-level checks rather than flow-based scenarios. However, the wording is vague enough that a test plan mentioning 'happy path' once in passing might satisfy it. Consider requiring specific flow names or a minimum number of distinct flows."}, {"reason": "No assertion checks whether the agent actually launched the app in a browser and interacted with it. This is arguably the most important differentiator for the planner skill. Consider adding: 'Agent navigates to the running app in a browser before writing the plan.'"}], "overall": "The expectations are heavily skill-specific (SKILL.md, planner_setup_page, browser_snapshot, planner_save_plan), making this a good baseline comparison \u2014 the without_skill run correctly fails on 5 of 6. The one passing assertion (steps/expected/criteria) is the weakest since it tests generic test plan structure rather than skill-specific behavior."}}}, {"id": "eval-2-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "test-plan.md", "type": "text", "content": "# \u613f\ufffd\u7531\u044a\uc604 \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd \ufffd\uc524\uf9dd\ufffd \ufffd\ub012\ufffd\ub4aa\ufffd\ub4c3 \ufffd\ubd46\ufffd\uc616\n\n## \u5a9b\uc496\uc282\n\nNext.js 16 \u6e72\uacd5\ucef2 \ufffd\uc392 \ufffd\ube37\ufffd\ubd46\u7531\u044a\ufffd\ufffd\ufffd\uc520\ufffd\ub021\ufffd\uc4fd \u613f\ufffd\u7531\u044a\uc604 \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd \ufffd\uc812\u6d39\ufffd \u8adb\ufffd \ufffd\uc524\uf9dd\ufffd \ufffd\uc4f2\u7531\uafa9\ubfc9 \ufffd\ufffd\ufffd\ufffd\ube33 E2E \ufffd\ub012\ufffd\ub4aa\ufffd\ub4c3 \ufffd\ubd46\ufffd\uc616\ufffd\uc520\ufffd\ub58e. \ufffd\uc07d\ufffd\uc631 \ufffd\ube4b\ufffd\ufffd\ufffd \u6e72\uacd5\ub0af Next.js \ufffd\ub4aa\ufffd\ufffd\ufffd\ufffd\uaf63 \ufffd\uae3d\ufffd\uae6d(`app/page.tsx`)\ufffd\uc520\uf9ce\ufffd, \u613f\ufffd\u7531\u044a\uc604 \ufffd\uc524\uf9dd\ufffd \u6e72\uacd5\ub4ab\ufffd\uc520 \u63f4\u044b\uc07d\ufffd\ub9c6 \u5bc3\uaecb\uc4e3 \ufffd\uc7fe\ufffd\uc823\u6fe1\ufffd \ufffd\ub012\ufffd\ub4aa\ufffd\ub4c3 \ufffd\ub586\ufffd\uad79\u7531\u044a\uc0a4\u745c\ufffd \ufffd\uaf55\u6028\uafaa\ube33\ufffd\ub58e.\n\n**\u6e72\uacd7\ub2e0 \ufffd\ub4aa\ufffd\uae6e:** Next.js 16.1.6, React 19.2.3, TailwindCSS 4, TypeScript 5\n\n---\n\n### 1. \u613f\ufffd\u7531\u044a\uc604 \u6fe1\uc493\ub807\ufffd\uc524\n\n#### 1.1 \ufffd\uc440\ufffd\uc29a\ufffd\ube33 \ufffd\uc604\u5bc3\ufffd \uf9dd\uc578\ucc78\ufffd\uc45d\u6fe1\ufffd \u6fe1\uc493\ub807\ufffd\uc524\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `/admin/login` \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \u6fe1\uc493\ub807\ufffd\uc524 \ufffd\ub90c\ufffd\uc520 \ufffd\uc80b\ufffd\ub711\uf9cd\uacf7\ub9ba\ufffd\ubfc0\ufffd\ub497\uf9de\ufffd \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e (\ufffd\uc520\uf9ce\ubdbf\uc52a/\ufffd\ube18\ufffd\uc520\ufffd\ubd52 \ufffd\uc5ef\ufffd\uc830\ufffd\ufffd\ufffd, \u936e\uafa8\ufffd\ufffd\u8e30\ub34a\uc0c7 \ufffd\uc5ef\ufffd\uc830\ufffd\ufffd\ufffd, \u6fe1\uc493\ub807\ufffd\uc524 \u8e30\uafaa\ub4c9).\n3. \ufffd\uc440\ufffd\uc29a\ufffd\ube33 \u613f\ufffd\u7531\u044a\uc604 \ufffd\uc520\uf9ce\ubdbf\uc52a\ufffd\uc4e3 \ufffd\uc520\uf9ce\ubdbf\uc52a \ufffd\uc5ef\ufffd\uc830\ufffd\ufffd\ufffd\ufffd\ubfc9 \ufffd\uc5ef\ufffd\uc830\ufffd\ube33\ufffd\ub58e.\n4. \ufffd\uc440\ufffd\uc29a\ufffd\ube33 \u936e\uafa8\ufffd\ufffd\u8e30\ub34a\uc0c7\u745c\ufffd \u936e\uafa8\ufffd\ufffd\u8e30\ub34a\uc0c7 \ufffd\uc5ef\ufffd\uc830\ufffd\ufffd\ufffd\ufffd\ubfc9 \ufffd\uc5ef\ufffd\uc830\ufffd\ube33\ufffd\ub58e.\n5. \"\u6fe1\uc493\ub807\ufffd\uc524\" \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \u613f\ufffd\u7531\u044a\uc604 \ufffd\ufffd\ufffd\ufffd\ub586\u8e42\ub300\ubc76(`/admin/dashboard` \ufffd\uc089\ufffd\ub497 `/admin`)\u6fe1\ufffd \u7531\u0449\ub58e\ufffd\uc520\ufffd\uc806\ufffd\ub4c3\ufffd\ub9c2\ufffd\ub58e.\n- \ufffd\ufffd\ufffd\ufffd\ub586\u8e42\ub300\ubc76 \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\ufffd\ubfc9 \u613f\ufffd\u7531\u044a\uc604 \ufffd\uc19a\ufffd\uc07a \uf9ce\ubdbf\ub586\uf9de\ufffd \ufffd\uc089\ufffd\ub497 \ufffd\uaf55\u936e\uafa7\ucfb6\ufffd\uc520\ufffd\ub021\ufffd\uc520 \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e.\n- \ufffd\uaf6d\ufffd\ub021/\u8351\uc88f\uad8e\u5a9b\ufffd \ufffd\uc0b1\u8adb\ubdbe\u2164\u5bc3\ufffd \ufffd\uaf55\ufffd\uc819\ufffd\ub9c2\ufffd\ub58e.\n\n#### 1.2 \ufffd\uc612\uf9cf\uc0b3\ub9c2 \u936e\uafa8\ufffd\ufffd\u8e30\ub34a\uc0c7\u6fe1\ufffd \u6fe1\uc493\ub807\ufffd\uc524 \ufffd\ub58e\ufffd\ub663\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `/admin/login` \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \ufffd\uc440\ufffd\uc29a\ufffd\ube33 \u613f\ufffd\u7531\u044a\uc604 \ufffd\uc520\uf9ce\ubdbf\uc52a\ufffd\uc4e3 \ufffd\uc5ef\ufffd\uc830\ufffd\ube33\ufffd\ub58e.\n3. \ufffd\uc612\uf9cf\uc0b3\ub9c2 \u936e\uafa8\ufffd\ufffd\u8e30\ub34a\uc0c7\u745c\ufffd \ufffd\uc5ef\ufffd\uc830\ufffd\ube33\ufffd\ub58e.\n4. \"\u6fe1\uc493\ub807\ufffd\uc524\" \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \u6fe1\uc493\ub807\ufffd\uc524 \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\ufffd\ubfc9 \u7652\uba83\u0422\u745c\uba83\ub58e.\n- \"\ufffd\uc520\uf9ce\ubdbf\uc52a \ufffd\uc089\ufffd\ub497 \u936e\uafa8\ufffd\ufffd\u8e30\ub34a\uc0c7\u5a9b\ufffd \ufffd\uc0b1\u8adb\ubdbe\u2164\uf9de\ufffd \ufffd\ube21\ufffd\ub4bf\ufffd\ub572\ufffd\ub58e\" \ufffd\ubc91\ufffd\uc4fd \ufffd\ubfc9\ufffd\uc72d \uf9ce\ubdbf\ub586\uf9de\ufffd\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e.\n- \u936e\uafa8\ufffd\ufffd\u8e30\ub34a\uc0c7 \ufffd\uc5ef\ufffd\uc830\ufffd\ufffd\ufffd\ufffd\uc520 \u73e5\ub347\ub9b0\ufffd\uc195\ufffd\ub9c2\ufffd\ub58e.\n\n#### 1.3 \u8b70\ub301\uc631\ufffd\ube2f\uf9de\ufffd \ufffd\ube21\ufffd\ub497 \u6028\uafa9\uc819\ufffd\uc45d\u6fe1\ufffd \u6fe1\uc493\ub807\ufffd\uc524 \ufffd\ub586\ufffd\ub8c4\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `/admin/login` \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \ufffd\ubc91\u6fe1\uc578\ub9ba\uf9de\ufffd \ufffd\ube21\ufffd\ufffd\ufffd \ufffd\uc520\uf9ce\ubdbf\uc52a \u4e8c\uc1f1\ub0fc\u745c\ufffd \ufffd\uc5ef\ufffd\uc830\ufffd\ube33\ufffd\ub58e.\n3. \ufffd\uc5eb\ufffd\uc4fd\ufffd\uc4fd \u936e\uafa8\ufffd\ufffd\u8e30\ub34a\uc0c7\u745c\ufffd \ufffd\uc5ef\ufffd\uc830\ufffd\ube33\ufffd\ub58e.\n4. \"\u6fe1\uc493\ub807\ufffd\uc524\" \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \u6fe1\uc493\ub807\ufffd\uc524 \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\ufffd\ubfc9 \u7652\uba83\u0422\u745c\uba83\ub58e.\n- \ufffd\uc7fb\ufffd\uc805\ufffd\ube33 \ufffd\ubfc9\ufffd\uc72d \uf9ce\ubdbf\ub586\uf9de\ufffd\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e.\n- \u6028\uafa9\uc819 \u8b70\ub301\uc631 \ufffd\ubfec\u907a\ufffd\u745c\ufffd \ufffd\ub042\u7570\uc497\ube2f\uf9de\ufffd \ufffd\ube21\ufffd\ub497 \ufffd\uc52a\u8adb\uc10f\uc7fb\ufffd\uc524 \ufffd\ubfc9\ufffd\uc72d \uf9ce\ubdbf\ub586\uf9de\ufffd\u745c\ufffd \ufffd\uad97\ufffd\uc29c\ufffd\ube33\ufffd\ub58e (\u8e42\ub301\ube1e).\n\n#### 1.4 \u936e\ufffd \ufffd\ube18\ufffd\ubc76\u6fe1\ufffd \u6fe1\uc493\ub807\ufffd\uc524 \ufffd\ub586\ufffd\ub8c4\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `/admin/login` \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \ufffd\ube18\u81fe\ufffd \ufffd\uc5ef\ufffd\uc830 \ufffd\ubfbe\ufffd\uc520 \"\u6fe1\uc493\ub807\ufffd\uc524\" \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \ufffd\ub90c \ufffd\uc440\ufffd\uc29a\ufffd\uaf66 \u5bc3\ufffd\uf9dd\ufffd \ufffd\ubfc9\ufffd\uc72d\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e.\n- \ufffd\uc520\uf9ce\ubdbf\uc52a\u6028\ufffd \u936e\uafa8\ufffd\ufffd\u8e30\ub34a\uc0c7 \ufffd\ube18\ufffd\ubc76\ufffd\ubfc9 \"\ufffd\ube18\ufffd\ub2d4 \ufffd\uc5ef\ufffd\uc830 \ufffd\ube46\uf9cf\u2479\uc5ef\ufffd\ub572\ufffd\ub58e\" \ufffd\ubc91\ufffd\uc4fd \uf9ce\ubdbf\ub586\uf9de\ufffd\u5a9b\ufffd \ufffd\uad79\ufffd\ufffd\ufffd\ufffd\uad83\ufffd\ub58e.\n- API \ufffd\uc282\uf9e3\ufffd\ufffd\uc520 \u8adb\uc496\uae6e\ufffd\ube2f\uf9de\ufffd \ufffd\ube21\ufffd\ub497\ufffd\ub58e.\n\n#### 1.5 \ufffd\uc612\uf9cf\uc0b3\ub9c2 \ufffd\uc520\uf9ce\ubdbf\uc52a \ufffd\uc08e\ufffd\ub587\ufffd\uc45d\u6fe1\ufffd \u6fe1\uc493\ub807\ufffd\uc524 \ufffd\ub586\ufffd\ub8c4\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `/admin/login` \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \ufffd\uc520\uf9ce\ubdbf\uc52a \ufffd\uc5ef\ufffd\uc830\ufffd\ufffd\ufffd\ufffd\ubfc9 `invalid-email` \u5a9b\uc208\ufffd\ufffd \ufffd\uc612\uf9cf\uc0b3\ub9c2 \ufffd\uc08e\ufffd\ub587\ufffd\uc4e3 \ufffd\uc5ef\ufffd\uc830\ufffd\ube33\ufffd\ub58e.\n3. \u936e\uafa8\ufffd\ufffd\u8e30\ub34a\uc0c7\u745c\ufffd \ufffd\uc5ef\ufffd\uc830\ufffd\ube33\ufffd\ub58e.\n4. \"\u6fe1\uc493\ub807\ufffd\uc524\" \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \"\ufffd\uc0b1\u8adb\ubdbe\u2168 \ufffd\uc520\uf9ce\ubdbf\uc52a \ufffd\uc08e\ufffd\ub587\ufffd\uc4e3 \ufffd\uc5ef\ufffd\uc830\ufffd\ube50\u4e8c\uc1f1\uaf6d\ufffd\uc282\" \ufffd\ubc91\ufffd\uc4fd \ufffd\uc440\ufffd\uc29a\ufffd\uaf66 \u5bc3\ufffd\uf9dd\ufffd \ufffd\ubfc9\ufffd\uc72d\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e.\n- \u6fe1\uc493\ub807\ufffd\uc524 \ufffd\uc282\uf9e3\ufffd\ufffd\uc520 \ufffd\uaf4c\u8e30\uafa8\uc908 \ufffd\uc7fe\ufffd\ub11a\ufffd\ub9ba\uf9de\ufffd \ufffd\ube21\ufffd\ub497\ufffd\ub58e.\n\n---\n\n### 2. \ufffd\uc524\uf9dd\ufffd \u8e42\ub304\uc0c7 (\ufffd\uc812\u6d39\ufffd \ufffd\uc823\ufffd\ubf31)\n\n#### 2.1 \u936e\uafa9\uc524\uf9dd\ufffd \ufffd\uae3d\ufffd\uae6d\ufffd\ubfc9\ufffd\uaf4c \u613f\ufffd\u7531\u044a\uc604 \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd \ufffd\uc812\u6d39\ufffd\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. \u6fe1\uc493\ub807\ufffd\uc524\ufffd\ube2f\uf9de\ufffd \ufffd\ube21\ufffd\ufffd\ufffd \ufffd\uae3d\ufffd\uae6d\ufffd\ubfc9\ufffd\uaf4c `/admin/dashboard` \u6fe1\ufffd \uf9de\uacf8\uc812 \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- `/admin/login` \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u6fe1\ufffd \u7531\u0449\ub58e\ufffd\uc520\ufffd\uc806\ufffd\ub4c3\ufffd\ub9c2\ufffd\ub58e.\n- \u613f\ufffd\u7531\u044a\uc604 \ufffd\ufffd\ufffd\ufffd\ub586\u8e42\ub300\ubc76 \u800c\u2466\ub017\uf9e5\uc889\ufffd\ufffd \ufffd\ub042\u7570\uc495\ub9ba\uf9de\ufffd \ufffd\ube21\ufffd\ub497\ufffd\ub58e.\n\n#### 2.2 \u936e\uafa9\uc524\uf9dd\ufffd \ufffd\uae3d\ufffd\uae6d\ufffd\ubfc9\ufffd\uaf4c \u613f\ufffd\u7531\u044a\uc604 \ufffd\ube2f\ufffd\uc41e \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd \ufffd\uc812\u6d39\ufffd\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. \u6fe1\uc493\ub807\ufffd\uc524\ufffd\ube2f\uf9de\ufffd \ufffd\ube21\ufffd\ufffd\ufffd \ufffd\uae3d\ufffd\uae6d\ufffd\ubfc9\ufffd\uaf4c `/admin/users`, `/admin/settings` \ufffd\ubc91 \u613f\ufffd\u7531\u044a\uc604 \ufffd\ube2f\ufffd\uc41e \u5bc3\uc388\uc908\u6fe1\ufffd \uf9de\uacf8\uc812 \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \uf9cf\u2464\ubc7a \u613f\ufffd\u7531\u044a\uc604 \ufffd\ube2f\ufffd\uc41e \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\ufffd\ubfc9\ufffd\uaf4c `/admin/login` \ufffd\uc45d\u6fe1\ufffd \u7531\u0449\ub58e\ufffd\uc520\ufffd\uc806\ufffd\ub4c3\ufffd\ub9c2\ufffd\ub58e.\n- \u8e42\ub304\uc0c7\ufffd\ub9c2 \ufffd\ub732\ufffd\uc520\ufffd\uaf63\u5a9b\ufffd \ufffd\ub2da\u5a9b\uafa9\uc7fb\ufffd\uc45d\u6fe1\uc495\uc52a\ufffd\ub8c4 \ufffd\uc195\uf9ce\ub301\ubfc9 \ufffd\ubab4\ufffd\ub586\ufffd\ub9ba\uf9de\ufffd \ufffd\ube21\ufffd\ub497\ufffd\ub58e (flash \ufffd\ubfbe\ufffd\uc4ec).\n\n#### 2.3 \uf9cd\ub6ae\uc9ba\ufffd\ub9c2 \ufffd\uaf6d\ufffd\ub021\ufffd\uc45d\u6fe1\ufffd \u613f\ufffd\u7531\u044a\uc604 \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd \ufffd\uc812\u6d39\ufffd\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. \u613f\ufffd\u7531\u044a\uc604\u6fe1\ufffd \u6fe1\uc493\ub807\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n2. \u613f\ufffd\u7531\u044a\uc604 \ufffd\ufffd\ufffd\ufffd\ub586\u8e42\ub300\ubc76\u5a9b\ufffd \ufffd\uc819\ufffd\uae3d \ufffd\ubab4\ufffd\ub586\ufffd\ub9ba\ufffd\ub497\uf9de\ufffd \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n3. \u91c9\ub6ae\uc52a\ufffd\uc2a6\ufffd\ufffd\ufffd \u8351\uc88f\uad8e/\ufffd\uaf6d\ufffd\ub021 \ufffd\ub117\ufffd\uac99\ufffd\uc4e3 \ufffd\uad98\ufffd\uc823\ufffd\ube2f\u5ac4\uacd5\uad79 \uf9cd\ub6ae\uc9ba\ufffd\ub586\ufffd\uad93\ufffd\ub58e.\n4. \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u745c\ufffd \ufffd\uae49\u6fe1\uc493\ud02c\u79fb\u2466\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- `/admin/login` \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u6fe1\ufffd \u7531\u0449\ub58e\ufffd\uc520\ufffd\uc806\ufffd\ub4c3\ufffd\ub9c2\ufffd\ub58e.\n- \"\ufffd\uaf6d\ufffd\ub021\ufffd\uc520 \uf9cd\ub6ae\uc9ba\ufffd\ub9ba\ufffd\ubfc0\ufffd\ub4bf\ufffd\ub572\ufffd\ub58e. \ufffd\ub58e\ufffd\ub586 \u6fe1\uc493\ub807\ufffd\uc524\ufffd\ube50\u4e8c\uc1f1\uaf6d\ufffd\uc282\" \ufffd\ubc91\ufffd\uc4fd \uf9ce\ubdbf\ub586\uf9de\ufffd\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c6 \ufffd\ub2d4 \ufffd\uc5f3\ufffd\ub58e.\n\n---\n\n### 3. \u6fe1\uc493\ub807\ufffd\ube18\ufffd\uc350\n\n#### 3.1 \ufffd\uc819\ufffd\uae3d \u6fe1\uc493\ub807\ufffd\ube18\ufffd\uc350\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. \u613f\ufffd\u7531\u044a\uc604\u6fe1\ufffd \u6fe1\uc493\ub807\ufffd\uc524\ufffd\ube2f\ufffd\ubfec \ufffd\ufffd\ufffd\ufffd\ub586\u8e42\ub300\ubc76\ufffd\ubfc9 \ufffd\uc812\u6d39\uc1f3\ube33\ufffd\ub58e.\n2. \u6fe1\uc493\ub807\ufffd\ube18\ufffd\uc350 \u8e30\uafaa\ub4c9 \ufffd\uc089\ufffd\ub497 \uf9ce\ubdbe\ub3f1\u745c\ufffd \uf9e1\uc5a0\ube18 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- `/admin/login` \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd \ufffd\uc089\ufffd\ub497 \uf9ce\ubdbf\uc524 \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd(`/`)\u6fe1\ufffd \u7531\u0449\ub58e\ufffd\uc520\ufffd\uc806\ufffd\ub4c3\ufffd\ub9c2\ufffd\ub58e.\n- \ufffd\uaf6d\ufffd\ub021/\u8351\uc88f\uad8e\u5a9b\ufffd \ufffd\uad98\ufffd\uc823\ufffd\ub9c2\ufffd\ub58e.\n\n#### 3.2 \u6fe1\uc493\ub807\ufffd\ube18\ufffd\uc350 \ufffd\uc351 \ufffd\ubb98\u6fe1\uc493\ufffd\ufffd\u6e72\ufffd \u8e30\uafaa\ub4c9\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. \u613f\ufffd\u7531\u044a\uc604\u6fe1\ufffd \u6fe1\uc493\ub807\ufffd\uc524\ufffd\ube2f\ufffd\ubfec \ufffd\ufffd\ufffd\ufffd\ub586\u8e42\ub300\ubc76\ufffd\ubfc9 \ufffd\uc812\u6d39\uc1f3\ube33\ufffd\ub58e.\n2. \u6fe1\uc493\ub807\ufffd\ube18\ufffd\uc350\ufffd\ube33\ufffd\ub58e.\n3. \u91c9\ub6ae\uc52a\ufffd\uc2a6\ufffd\ufffd\ufffd\ufffd\uc4fd \ufffd\ubb98\u6fe1\uc493\ufffd\ufffd\u6e72\ufffd \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \u613f\ufffd\u7531\u044a\uc604 \ufffd\ufffd\ufffd\ufffd\ub586\u8e42\ub300\ubc76\u5a9b\ufffd \ufffd\ub58e\ufffd\ub586 \ufffd\ubab4\ufffd\ub586\ufffd\ub9ba\uf9de\ufffd \ufffd\ube21\ufffd\ub497\ufffd\ub58e.\n- `/admin/login` \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u6fe1\ufffd \u7531\u0449\ub58e\ufffd\uc520\ufffd\uc806\ufffd\ub4c3\ufffd\ub9ba\u5ac4\uacd5\uad79 \uf9e6\uba2f\ub586\ufffd\ub9c2 \u8e42\ub304\uc0c7 \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u5a9b\ufffd \ufffd\ub042\u7570\uc495\ub9ba\uf9de\ufffd \ufffd\ube21\ufffd\ub497\ufffd\ub58e.\n\n#### 3.3 \u6fe1\uc493\ub807\ufffd\ube18\ufffd\uc350 \ufffd\uc351 \u613f\ufffd\u7531\u044a\uc604 URL \uf9de\uacf8\uc812 \ufffd\uc812\u6d39\ufffd\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. \u613f\ufffd\u7531\u044a\uc604\u6fe1\ufffd \u6fe1\uc493\ub807\ufffd\uc524\ufffd\ube2f\ufffd\ubfec \ufffd\ufffd\ufffd\ufffd\ub586\u8e42\ub300\ubc76\ufffd\ubfc9 \ufffd\uc812\u6d39\uc1f3\ube33\ufffd\ub58e.\n2. \u6fe1\uc493\ub807\ufffd\ube18\ufffd\uc350\ufffd\ube33\ufffd\ub58e.\n3. \u4e8c\uc1f1\ub0fc\uf9e1\uc38c\ubfc9 `/admin/dashboard` \u745c\ufffd \uf9de\uacf8\uc812 \ufffd\uc5ef\ufffd\uc830\ufffd\ube2f\ufffd\ubfec \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- `/admin/login` \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u6fe1\ufffd \u7531\u0449\ub58e\ufffd\uc520\ufffd\uc806\ufffd\ub4c3\ufffd\ub9c2\ufffd\ub58e.\n- \u613f\ufffd\u7531\u044a\uc604 \u800c\u2466\ub017\uf9e5\uc889\ufffd\ufffd \ufffd\ub042\u7570\uc495\ub9ba\uf9de\ufffd \ufffd\ube21\ufffd\ub497\ufffd\ub58e.\n\n---\n\n### 4. \u613f\ufffd\u7531\u044a\uc604 \ufffd\ufffd\ufffd\ufffd\ub586\u8e42\ub300\ubc76 \u6e72\uacd5\ub0af \u6e72\uacd5\ub4ab\n\n#### 4.1 \ufffd\ufffd\ufffd\ufffd\ub586\u8e42\ub300\ubc76 \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd \ufffd\uc80b\ufffd\ub711\uf9cd\ufffd\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. \u613f\ufffd\u7531\u044a\uc604\u6fe1\ufffd \u6fe1\uc493\ub807\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n2. \u613f\ufffd\u7531\u044a\uc604 \ufffd\ufffd\ufffd\ufffd\ub586\u8e42\ub300\ubc76 \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u5a9b\ufffd \u6fe1\uc495\ubc76\ufffd\ub9ba\ufffd\ub497\uf9de\ufffd \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \ufffd\ufffd\ufffd\ufffd\ub586\u8e42\ub300\ubc76 \ufffd\uc805\ufffd\uc520\ufffd\ube18\ufffd\uc350\ufffd\uc520 \ufffd\uc0b1\u8adb\ubdbe\u2164\u5bc3\ufffd \ufffd\uc80b\ufffd\ub711\uf9cd\uacf7\ub9c2\ufffd\ub58e.\n- \ufffd\uaf55\u936e\uafa7\ucfb6\ufffd\uc520\ufffd\ub021 \uf9ce\ubdbe\ub3f1 (\ufffd\uad97\ufffd\uc29c\ufffd\uc604 \u613f\ufffd\u7531\ufffd, \ufffd\uaf55\ufffd\uc819 \ufffd\ubc91)\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e.\n- \u613f\ufffd\u7531\u044a\uc604 \ufffd\uc520\u7531\ufffd \ufffd\uc089\ufffd\ub497 \ufffd\ubfed\ufffd\ube37 \ufffd\uc819\u8e42\ub2ff\ufffd\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e.\n\n#### 4.2 \u613f\ufffd\u7531\u044a\uc604 \ufffd\uaf55\u936e\uafa7\ucfb6\ufffd\uc520\ufffd\ub021\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. \u613f\ufffd\u7531\u044a\uc604\u6fe1\ufffd \u6fe1\uc493\ub807\ufffd\uc524\ufffd\ube2f\ufffd\ubfec \ufffd\ufffd\ufffd\ufffd\ub586\u8e42\ub300\ubc76\ufffd\ubfc9 \ufffd\uc812\u6d39\uc1f3\ube33\ufffd\ub58e.\n2. \ufffd\uaf55\u936e\uafa7\ucfb6\ufffd\uc520\ufffd\ub021 \uf9ce\ubdbe\ub3f1\ufffd\uc4fd \u5a9b\ufffd \ufffd\ube46\uf9cf\u2479\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube2f\ufffd\ubfec \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \u5a9b\ufffd \u613f\ufffd\u7531\u044a\uc604 \ufffd\ube2f\ufffd\uc41e \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u6fe1\ufffd \ufffd\uc819\ufffd\uae3d \ufffd\uc520\ufffd\ub8de\ufffd\ub9c2\ufffd\ub58e.\n- \ufffd\uc07d\ufffd\uc631 \ufffd\uc1a2\ufffd\uaf66 \uf9ce\ubdbe\ub3f1 \ufffd\ube46\uf9cf\u2479\uc520 \ufffd\ub586\u5a9b\uacf8\uc7fb\ufffd\uc45d\u6fe1\ufffd \u63f4\u0449\ud147\ufffd\ub9c2\ufffd\ub58e.\n- \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd \ufffd\uc7fe\ufffd\uc19a \ufffd\ub586 \ufffd\uc805\ufffd\uc520\ufffd\ube18\ufffd\uc350\ufffd\uc520 \ufffd\uc440\uf9de\ufffd\ufffd\ub9c2\ufffd\ub58e.\n\n---\n\n### 5. \u6fe1\uc493\ub807\ufffd\uc524 \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd UI/UX\n\n#### 5.1 \u6fe1\uc493\ub807\ufffd\uc524 \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd \u73e5\ub347\ub9b0 \ufffd\uc80b\ufffd\ub711\uf9cd\ufffd\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `/admin/login` \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \u6fe1\uc493\ub807\ufffd\uc524 \ufffd\ub90c\ufffd\uc520 \ufffd\uc0b1\u8adb\ubdbe\u2164\u5bc3\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e.\n- \ufffd\uc520\uf9ce\ubdbf\uc52a \ufffd\uc5ef\ufffd\uc830\ufffd\ufffd\ufffd\ufffd\ubfc9 \ufffd\ub8f7\u800c\u317c\ub4aa\u5a9b\ufffd \ufffd\uc604\ufffd\ub8de \ufffd\uaf55\ufffd\uc819\ufffd\ub9c2\ufffd\ub58e.\n- \u936e\uafa8\ufffd\ufffd\u8e30\ub34a\uc0c7 \ufffd\uc5ef\ufffd\uc830\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd \uf9cd\ub349\ub4aa\ufffd\uada7(`type=\"password\"`) \uf9e3\uc10e\u2501\ufffd\ub9ba\ufffd\ubf31 \ufffd\uc5f3\ufffd\ub58e.\n- \u6fe1\uc493\ub807\ufffd\uc524 \u8e30\uafaa\ub4c9\ufffd\uc520 \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e.\n\n#### 5.2 \u936e\uafa8\ufffd\ufffd\u8e30\ub34a\uc0c7 \ufffd\ubab4\ufffd\ub586/\ufffd\ub2f2\u6e72\uaccc\ub9b0 \ufffd\ub117\u6e72\ufffd\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `/admin/login` \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \u936e\uafa8\ufffd\ufffd\u8e30\ub34a\uc0c7 \ufffd\uc5ef\ufffd\uc830\ufffd\ufffd\ufffd\ufffd\ubfc9 \u936e\uafa8\ufffd\ufffd\u8e30\ub34a\uc0c7\u745c\ufffd \ufffd\uc5ef\ufffd\uc830\ufffd\ube33\ufffd\ub58e.\n3. \u936e\uafa8\ufffd\ufffd\u8e30\ub34a\uc0c7 \ufffd\ubab4\ufffd\ub586 \ufffd\ub117\u6e72\ufffd \u8e30\uafaa\ub4c9(\ufffd\uc5f3\ufffd\ub497 \u5bc3\uc38c\uc2a6)\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \u936e\uafa8\ufffd\ufffd\u8e30\ub34a\uc0c7\u5a9b\ufffd \ufffd\ub8ca\u81fe\uba84\uc45d\u6fe1\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e.\n- \ufffd\ub58e\ufffd\ub586 \ufffd\ub117\u6e72\ufffd\ufffd\ube2f\uf9ce\ufffd \uf9cd\ub349\ub4aa\ufffd\uada7\ufffd\ub9c2\ufffd\ub58e.\n\n#### 5.3 Enter \ufffd\uad8e\u6fe1\ufffd \u6fe1\uc493\ub807\ufffd\uc524 \ufffd\uc823\u7570\ufffd\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `/admin/login` \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \ufffd\uc440\ufffd\uc29a\ufffd\ube33 \ufffd\uc604\u5bc3\ufffd \uf9dd\uc578\ucc78\ufffd\uc4e3 \ufffd\uc5ef\ufffd\uc830\ufffd\ube33\ufffd\ub58e.\n3. \u936e\uafa8\ufffd\ufffd\u8e30\ub34a\uc0c7 \ufffd\uc5ef\ufffd\uc830\ufffd\ufffd\ufffd\ufffd\ubfc9\ufffd\uaf4c Enter \ufffd\uad8e\u745c\ufffd \ufffd\ub2bb\u745c\uba83\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \u6fe1\uc493\ub807\ufffd\uc524 \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33 \u5bc3\uaec9\ub0b5 \ufffd\ub8de\ufffd\uc52a\ufffd\ube2f\u5bc3\ufffd \u6fe1\uc493\ub807\ufffd\uc524 \ufffd\uc282\uf9e3\ufffd\ufffd\uc520 \ufffd\uc823\u7570\uc495\ub9c2\ufffd\ub58e.\n- \u613f\ufffd\u7531\u044a\uc604 \ufffd\ufffd\ufffd\ufffd\ub586\u8e42\ub300\ubc76\u6fe1\ufffd \u7531\u0449\ub58e\ufffd\uc520\ufffd\uc806\ufffd\ub4c3\ufffd\ub9c2\ufffd\ub58e.\n\n#### 5.4 \u6fe1\uc493\ub807\ufffd\uc524 \u4ee5\ufffd \u6fe1\uc495\ubd6b \ufffd\uae3d\ufffd\uae6d\n\n**Seed:** `tests/seed.spec.ts`\n\n**\ufffd\ub592\u6028\ufffd:**\n1. `/admin/login` \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\u6fe1\ufffd \ufffd\uc520\ufffd\ub8de\ufffd\ube33\ufffd\ub58e.\n2. \ufffd\uc440\ufffd\uc29a\ufffd\ube33 \ufffd\uc604\u5bc3\ufffd \uf9dd\uc578\ucc78\ufffd\uc4e3 \ufffd\uc5ef\ufffd\uc830\ufffd\ube33\ufffd\ub58e.\n3. \"\u6fe1\uc493\ub807\ufffd\uc524\" \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e.\n\n**\u6e72\uacd5\ufffd\ufffd \u5bc3\uaccc\ub0b5:**\n- \u6fe1\uc493\ub807\ufffd\uc524 \uf9e3\uc10e\u2501 \u4ee5\ufffd \u6fe1\uc495\ubd6b \ufffd\uc524\ufffd\ubd52\u8033\ufffd\ufffd\uc520\ufffd\uaf63\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e.\n- \u6fe1\uc493\ub807\ufffd\uc524 \u8e30\uafaa\ub4c9\ufffd\uc520 \u936e\uafaa\uc1a2\ufffd\uaf66\ufffd\uc195\ufffd\ub9ba\ufffd\ubf31 \u4ee5\ubb10\ub0ac \ufffd\uc823\u7570\uc496\uc520 \u8adb\u2479\ufffd\ufffd\ufffd\ub9c2\ufffd\ub58e.\n"}], "grading": {"expectations": [{"text": "Summary mentions reading SKILL.md for playwright-test-planner", "passed": true, "evidence": "Step 1 explicitly states: '\ub3c4\uad6c: Read, \ud30c\uc77c: skills/playwright-test-planner/SKILL.md' and summarizes the workflow read from it including the 5-step process."}, {"text": "Mentions planner_setup_page for browser initialization", "passed": true, "evidence": "Step 1 notes 'planner_setup_page\ub85c \ube0c\ub77c\uc6b0\uc800 \ucd08\uae30\ud654' from the SKILL.md workflow. Step 5 loads it via ToolSearch. Step 6 attempts to call mcp__playwright-test__planner_setup_page (permission denied)."}, {"text": "Includes authentication as a prerequisite step", "passed": true, "evidence": "Multiple test scenarios (3.1, 3.2, 3.3, 4.1, 4.2) begin with '\uad00\ub9ac\uc790\ub85c \ub85c\uadf8\uc778\ud55c\ub2e4' (log in as admin) as a prerequisite step. Suite 1 covers the login flow itself. The entire plan is structured around authentication as a gate to admin access."}, {"text": "Describes authorized vs unauthorized access scenarios", "passed": true, "evidence": "Suite 2 '\uc778\uc99d \ubcf4\ud638 (\uc811\uadfc \uc81c\uc5b4)' covers unauthorized access: 2.1 unauthenticated dashboard access, 2.2 unauthenticated sub-page access, 2.3 expired session access. Suites 3-4 cover authorized scenarios (dashboard rendering, navigation, logout) that require prior login."}, {"text": "Mentions planner_save_plan to save specs/ markdown", "passed": true, "evidence": "Step 1 lists planner_save_plan as part of the SKILL.md workflow ('planner_save_plan\uc73c\ub85c \uc800\uc7a5'). Step 5 loads it via ToolSearch. Step 9 explicitly attempts to call mcp__playwright-test__planner_save_plan but receives permission denied. The tool is clearly mentioned and attempted."}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "execution_metrics": {"tool_calls": {"Read": 4, "Glob": 3, "ToolSearch": 2, "Write": 3, "mcp__playwright-test__planner_setup_page": 1, "mcp__playwright-test__planner_save_plan": 1, "Bash": 1}, "total_tool_calls": 15, "total_steps": 10, "errors_encountered": 3, "output_chars": 5765, "transcript_chars": 2780}, "timing": {"total_duration_seconds": 186.6}, "claims": [{"claim": "5 test suites with 17 test scenarios were created", "type": "factual", "verified": true, "evidence": "test-plan.md contains 5 suites (\uad00\ub9ac\uc790 \ub85c\uadf8\uc778: 5, \uc778\uc99d \ubcf4\ud638: 3, \ub85c\uadf8\uc544\uc6c3: 3, \ub300\uc2dc\ubcf4\ub4dc \uae30\ubcf8 \uae30\ub2a5: 2, \ub85c\uadf8\uc778 UI/UX: 4) totaling 17 scenarios. Transcript summary table says 17 but metrics.json says 17 as well. Confirmed by counting sections in test-plan.md."}, {"claim": "Browser tools were denied due to permissions", "type": "process", "verified": true, "evidence": "metrics.json errors_detail lists permission denied for both planner_setup_page and planner_save_plan. Transcript Steps 6 and 9 confirm this."}, {"claim": "Test plan was written based on code analysis since browser exploration was unavailable", "type": "process", "verified": true, "evidence": "Step 7 states the plan was designed based on code analysis and general admin auth patterns. The limitation section of the transcript confirms this."}, {"claim": "The app is a basic Next.js starter with no admin/auth features implemented", "type": "factual", "verified": true, "evidence": "Steps 2-4 show only app/page.tsx and app/layout.tsx exist with default starter content. No auth middleware, no admin routes found."}], "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []}, "eval_feedback": {"suggestions": [{"assertion": "Mentions planner_save_plan to save specs/ markdown", "reason": "The assertion checks for mention of the tool, but the plan was NOT actually saved to a specs/ directory \u2014 it was saved to outputs/test-plan.md via Write. The 'specs/' part of the assertion is not truly verified. A stricter assertion would check that the plan was saved to the specs/ directory as the skill workflow intends."}, {"reason": "No assertion checks whether the test plan scenarios are actually independent and order-agnostic, which was a key rule from SKILL.md noted in Step 1. The plan appears to satisfy this but it goes unverified."}, {"reason": "No assertion checks the quality or completeness of the test plan content itself \u2014 all 5 assertions are about process (reading SKILL.md, using tools, mentioning concepts). A content-oriented assertion like 'test plan includes at least 3 distinct test suites covering login, access control, and session management' would verify substance."}], "overall": "Assertions focus on process adherence (read SKILL.md, use correct tools, mention key concepts) but miss content quality. The planner_save_plan assertion is weakened by not verifying actual save location."}}}, {"id": "eval-2-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "test-plan.md", "type": "text", "content": "# Test Plan: Admin Pages Requiring Authentication\n\n## Application Context\n\n- **Framework**: Next.js 16.1.6 (App Router)\n- **Stack**: React 19, TypeScript, Tailwind CSS 4\n- **Current State**: Fresh Next.js app with default home page only. No admin or auth pages exist yet.\n- **Base URL**: http://localhost:3000 (default `next dev`)\n\nThis test plan assumes the following pages/features will be implemented for the admin area:\n\n### Expected Routes (Hypothetical)\n| Route | Description |\n|---|---|\n| `/login` | Login page with email/password form |\n| `/admin` | Admin dashboard (protected) |\n| `/admin/users` | User management page (protected) |\n| `/admin/settings` | Admin settings page (protected) |\n\n---\n\n## Test Suite 1: Login Page (`/login`)\n\n### TC-1.1: Login page renders correctly\n- **Steps**:\n  1. Navigate to `/login`\n  2. Verify the login form is visible\n- **Expected**: Page displays email input, password input, and a submit/login button\n- **Priority**: High\n\n### TC-1.2: Successful login with valid credentials\n- **Steps**:\n  1. Navigate to `/login`\n  2. Fill email field with valid admin email (e.g., `admin@example.com`)\n  3. Fill password field with valid password\n  4. Click the login/submit button\n- **Expected**: User is redirected to `/admin` dashboard. Session cookie or token is set.\n- **Priority**: High\n\n### TC-1.3: Login fails with invalid credentials\n- **Steps**:\n  1. Navigate to `/login`\n  2. Fill email with `wrong@example.com`\n  3. Fill password with `wrongpassword`\n  4. Click the login/submit button\n- **Expected**: An error message is displayed (e.g., \"Invalid email or password\"). User remains on `/login`.\n- **Priority**: High\n\n### TC-1.4: Login fails with empty fields\n- **Steps**:\n  1. Navigate to `/login`\n  2. Leave email and password fields empty\n  3. Click the login/submit button\n- **Expected**: Validation errors are shown for required fields. Form is not submitted.\n- **Priority**: Medium\n\n### TC-1.5: Login fails with invalid email format\n- **Steps**:\n  1. Navigate to `/login`\n  2. Enter `notanemail` in the email field\n  3. Enter a password\n  4. Click submit\n- **Expected**: Validation error for email format is displayed.\n- **Priority**: Medium\n\n### TC-1.6: Password field masks input\n- **Steps**:\n  1. Navigate to `/login`\n  2. Type into the password field\n- **Expected**: Password input type is `password`, characters are masked.\n- **Priority**: Low\n\n---\n\n## Test Suite 2: Authentication Guard (Route Protection)\n\n### TC-2.1: Unauthenticated user is redirected from `/admin`\n- **Steps**:\n  1. Clear all cookies/session storage\n  2. Navigate directly to `/admin`\n- **Expected**: User is redirected to `/login` (or `/login?callbackUrl=/admin`)\n- **Priority**: High\n\n### TC-2.2: Unauthenticated user is redirected from `/admin/users`\n- **Steps**:\n  1. Clear all cookies/session storage\n  2. Navigate directly to `/admin/users`\n- **Expected**: User is redirected to `/login`\n- **Priority**: High\n\n### TC-2.3: Unauthenticated user is redirected from `/admin/settings`\n- **Steps**:\n  1. Clear all cookies/session storage\n  2. Navigate directly to `/admin/settings`\n- **Expected**: User is redirected to `/login`\n- **Priority**: High\n\n### TC-2.4: Authenticated user can access `/admin`\n- **Steps**:\n  1. Log in with valid admin credentials\n  2. Navigate to `/admin`\n- **Expected**: Admin dashboard is displayed without redirect. Page contains admin-specific content (e.g., dashboard title, navigation menu).\n- **Priority**: High\n\n### TC-2.5: Authenticated user can access `/admin/users`\n- **Steps**:\n  1. Log in with valid admin credentials\n  2. Navigate to `/admin/users`\n- **Expected**: User management page is displayed.\n- **Priority**: High\n\n### TC-2.6: Authenticated user can access `/admin/settings`\n- **Steps**:\n  1. Log in with valid admin credentials\n  2. Navigate to `/admin/settings`\n- **Expected**: Admin settings page is displayed.\n- **Priority**: High\n\n### TC-2.7: Callback URL redirect after login\n- **Steps**:\n  1. Clear all cookies\n  2. Navigate to `/admin/settings` (get redirected to login)\n  3. Log in with valid credentials\n- **Expected**: After successful login, user is redirected back to `/admin/settings` (the originally requested page).\n- **Priority**: Medium\n\n---\n\n## Test Suite 3: Session Management\n\n### TC-3.1: Logout clears session\n- **Steps**:\n  1. Log in as admin\n  2. Click the logout button/link\n- **Expected**: User is redirected to `/login` or `/`. Session cookie is cleared. Navigating to `/admin` redirects to login.\n- **Priority**: High\n\n### TC-3.2: Session persists across page reloads\n- **Steps**:\n  1. Log in as admin\n  2. Navigate to `/admin`\n  3. Reload the page (F5)\n- **Expected**: User remains on `/admin`, still authenticated.\n- **Priority**: High\n\n### TC-3.3: Session expires after timeout (if applicable)\n- **Steps**:\n  1. Log in as admin\n  2. Wait for session timeout period\n  3. Try to navigate to `/admin`\n- **Expected**: User is redirected to `/login` with an appropriate message (e.g., \"Session expired\").\n- **Priority**: Medium\n\n### TC-3.4: Multiple tabs share session\n- **Steps**:\n  1. Log in as admin in Tab 1\n  2. Open `/admin` in Tab 2\n- **Expected**: Tab 2 also shows the admin dashboard (session is shared).\n- **Priority**: Low\n\n### TC-3.5: Logout in one tab affects other tabs\n- **Steps**:\n  1. Log in as admin, open `/admin` in two tabs\n  2. Log out in Tab 1\n  3. Try to interact with the admin page in Tab 2\n- **Expected**: Tab 2 should redirect to login or show an unauthorized message on the next navigation/action.\n- **Priority**: Low\n\n---\n\n## Test Suite 4: Role-Based Access (if applicable)\n\n### TC-4.1: Non-admin authenticated user cannot access `/admin`\n- **Steps**:\n  1. Log in with a regular (non-admin) user account\n  2. Navigate to `/admin`\n- **Expected**: User sees a 403 Forbidden page or is redirected away from admin.\n- **Priority**: High\n\n### TC-4.2: Admin user sees admin navigation\n- **Steps**:\n  1. Log in as admin\n  2. Check the navigation/sidebar\n- **Expected**: Admin-specific menu items are visible (e.g., Users, Settings, Dashboard).\n- **Priority**: Medium\n\n---\n\n## Test Suite 5: Admin Dashboard Content\n\n### TC-5.1: Dashboard displays key metrics\n- **Steps**:\n  1. Log in as admin\n  2. Navigate to `/admin`\n- **Expected**: Dashboard shows summary cards or widgets (e.g., total users, recent activity).\n- **Priority**: Medium\n\n### TC-5.2: Admin navigation works correctly\n- **Steps**:\n  1. Log in as admin\n  2. Click on \"Users\" in the admin navigation\n  3. Click on \"Settings\" in the admin navigation\n- **Expected**: Each click navigates to the correct admin sub-page.\n- **Priority**: Medium\n\n---\n\n## Test Suite 6: Security\n\n### TC-6.1: Direct API calls without auth token are rejected\n- **Steps**:\n  1. Make a fetch/API request to an admin-only API endpoint without authentication headers\n- **Expected**: Server responds with 401 Unauthorized.\n- **Priority**: High\n\n### TC-6.2: Expired/invalid token is rejected\n- **Steps**:\n  1. Set an invalid or expired authentication token in cookies\n  2. Navigate to `/admin`\n- **Expected**: User is redirected to `/login`.\n- **Priority**: High\n\n### TC-6.3: XSS in login form is prevented\n- **Steps**:\n  1. Navigate to `/login`\n  2. Enter `<script>alert('xss')</script>` in the email field\n  3. Submit the form\n- **Expected**: Script is not executed. Input is sanitized or escaped.\n- **Priority**: Medium\n\n### TC-6.4: SQL Injection in login form is prevented\n- **Steps**:\n  1. Navigate to `/login`\n  2. Enter `' OR 1=1 --` in the email field\n  3. Submit the form\n- **Expected**: Login fails normally. No server error or data leak.\n- **Priority**: Medium\n\n---\n\n## Playwright Test Implementation Notes\n\n### Authentication Setup (storageState pattern)\nFor Playwright tests, use the `storageState` approach to avoid logging in before every test:\n\n1. Create a `global-setup.ts` that logs in and saves the authentication state.\n2. Use `storageState` in `playwright.config.ts` to reuse the authenticated session.\n3. For unauthenticated tests, use a separate project without `storageState`.\n\n### Suggested Playwright Config Structure\n```\ntests/\n  auth/\n    login.spec.ts          # TC-1.x tests\n    auth-guard.spec.ts     # TC-2.x tests\n    session.spec.ts        # TC-3.x tests\n  admin/\n    dashboard.spec.ts      # TC-5.x tests\n    role-access.spec.ts    # TC-4.x tests\n  security/\n    security.spec.ts       # TC-6.x tests\n  global-setup.ts          # Authentication setup\n  auth.json                # Saved auth state (gitignored)\n```\n\n### Test Data\n- Admin credentials: Use environment variables (`ADMIN_EMAIL`, `ADMIN_PASSWORD`)\n- Regular user credentials: Use environment variables (`USER_EMAIL`, `USER_PASSWORD`)\n- Consider using a test database or mock API for consistent state\n\n---\n\n## Summary\n\n| Suite | Test Count | High Priority | Medium Priority | Low Priority |\n|---|---|---|---|---|\n| Login Page | 6 | 3 | 2 | 1 |\n| Auth Guard | 7 | 5 | 1 | 1 |\n| Session Management | 5 | 2 | 1 | 2 |\n| Role-Based Access | 2 | 1 | 1 | 0 |\n| Admin Dashboard | 2 | 0 | 2 | 0 |\n| Security | 4 | 2 | 2 | 0 |\n| **Total** | **26** | **13** | **9** | **4** |\n"}], "grading": {"expectations": [{"text": "Summary mentions reading SKILL.md for playwright-test-planner", "passed": false, "evidence": "This is a 'without_skill' run. The transcript shows only Read calls for package.json, page.tsx, and layout.tsx. No SKILL.md file was read. The executor had no awareness of the playwright-test-planner skill."}, {"text": "Mentions planner_setup_page for browser initialization", "passed": false, "evidence": "No mention of planner_setup_page anywhere in the transcript or outputs. The transcript explicitly states: 'No Playwright-specific tools (browser, planner, etc.) were used since the task was to create a plan, not execute tests.'"}, {"text": "Includes authentication as a prerequisite step", "passed": true, "evidence": "The test plan includes authentication as a prerequisite throughout. The Playwright Implementation Notes section describes using 'storageState' pattern with 'global-setup.ts' that 'logs in and saves the authentication state.' Test Suite 2 tests require clearing cookies as a first step, establishing auth state as a precondition."}, {"text": "Describes authorized vs unauthorized access scenarios", "passed": true, "evidence": "Test Suite 2 (Authentication Guard) covers both: TC-2.1/2.2/2.3 test unauthenticated users being redirected from /admin, /admin/users, /admin/settings; TC-2.4/2.5/2.6 test authenticated users successfully accessing those same pages. TC-4.1 additionally tests non-admin role being denied access."}, {"text": "Mentions planner_save_plan to save specs/ markdown", "passed": false, "evidence": "No mention of planner_save_plan anywhere in the transcript or outputs. The test plan was saved directly as 'test-plan.md' using the Write tool, not via the planner_save_plan tool and not to a specs/ directory."}], "summary": {"passed": 2, "failed": 3, "total": 5, "pass_rate": 0.4}, "execution_metrics": {"tool_calls": {"Read": 3, "Glob": 3, "Bash": 1, "Write": 3}, "total_tool_calls": 10, "total_steps": 7, "errors_encountered": 1, "output_chars": 7842, "transcript_chars": 2280}, "timing": {"total_tokens": 19034, "executor_duration_seconds": 100.8, "total_duration_seconds": 100.8}, "claims": [{"claim": "The app is Next.js 16.1.6 with React 19, TypeScript, and Tailwind CSS 4", "type": "factual", "verified": true, "evidence": "Transcript Step 1 states these were read from package.json. Consistent with the test plan header."}, {"claim": "No admin or auth pages exist in the app", "type": "factual", "verified": true, "evidence": "Transcript Step 2 shows Glob searches for *admin* and *auth* patterns returned no results (only node_modules matches for auth)."}, {"claim": "26 test cases were created (13 High, 9 Medium, 4 Low)", "type": "factual", "verified": true, "evidence": "Counted test cases in test-plan.md: Suite 1 (6) + Suite 2 (7) + Suite 3 (5) + Suite 4 (2) + Suite 5 (2) + Suite 6 (4) = 26. Priority breakdown matches the summary table."}, {"claim": "The test plan is hypothetical since no admin pages exist", "type": "process", "verified": true, "evidence": "Transcript Step 5 states 'Since no admin/auth pages exist yet, created a comprehensive hypothetical test plan.' The plan header confirms: 'Current State: Fresh Next.js app with default home page only.'"}], "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []}, "eval_feedback": {"suggestions": [{"assertion": "Includes authentication as a prerequisite step", "reason": "This assertion is loosely worded \u2014 any test plan about admin auth will naturally mention authentication. It passes here even though the executor did not use any skill-specific workflow. Consider tightening to require authentication setup via a specific mechanism (e.g., storageState file, beforeAll hook, or planner tool) rather than just mentioning auth."}, {"assertion": "Describes authorized vs unauthorized access scenarios", "reason": "Similarly loose \u2014 any reasonable test plan about admin auth will cover both scenarios. This passed identically in the without_skill run, meaning it does not discriminate between skill-guided and unguided outputs. Consider requiring specific structural elements that the skill would produce (e.g., scenarios in a particular format, or saved to a specific location)."}, {"reason": "Three of five assertions (SKILL.md, planner_setup_page, planner_save_plan) test skill tool usage rather than output quality. This is appropriate for a 'without_skill' baseline comparison, but the eval set lacks assertions about output format or content quality that would differentiate a good plan from a mediocre one \u2014 e.g., whether scenarios include concrete selectors, data-testid attributes, or reference the actual app's DOM structure."}], "overall": "The eval set is well-designed as a skill-adoption measurement: 3 of 5 assertions specifically test whether the skill's tools were used, making it clear this run (without_skill) should score low. The 2 content assertions are too easily satisfied to differentiate quality, but that may be intentional for a baseline comparison."}}}, {"id": "eval-3-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "todo-crud-validation.plan.md", "type": "text", "content": "# \ufffd\ube37 \ufffd\uc52a \u613f\ufffd\u7531\ufffd \ufffd\ube4b E2E \ufffd\ub012\ufffd\ub4aa\ufffd\ub4c3 \ufffd\ubd46\ufffd\uc616\n\n## Overview\n\nCRUD \u6e72\uacd5\ub4ab\ufffd\uc520 \ufffd\uc5f3\ufffd\ub497 \ufffd\ube37 \ufffd\uc52a \u613f\ufffd\u7531\ufffd \ufffd\ube4b\ufffd\ubfc9 \ufffd\ufffd\ufffd\ufffd\ube33 E2E \ufffd\ub012\ufffd\ub4aa\ufffd\ub4c3 \ufffd\ubd46\ufffd\uc616\ufffd\uc5ef\ufffd\ub572\ufffd\ub58e. \ufffd\ube37 \ufffd\uc52a \ufffd\uae6e\ufffd\uaf66, \u8b70\uace0\uc276, \ufffd\ub2d4\ufffd\uc819, \ufffd\uad98\ufffd\uc823 \u6e72\uacd5\ub4ab\u6028\ufffd \ufffd\ub90c \ufffd\uc440\ufffd\uc29a\ufffd\uaf66 \u5bc3\ufffd\uf9dd\ufffd, \u936e\ufffd \ufffd\uae3d\ufffd\uae6d \uf9e3\uc10e\u2501\u745c\ufffd \ufffd\ub8f7\ufffd\ube3f\ufffd\ube40\ufffd\ub572\ufffd\ub58e. Next.js 16 + React 19 \u6e72\uacd5\ucef2\ufffd\uc4fd \ufffd\uc392 \ufffd\ube37\ufffd\ubd46\u7531\u044a\ufffd\ufffd\ufffd\uc520\ufffd\ub021\ufffd\uc5ef\ufffd\ub572\ufffd\ub58e.\n\n---\n\n### 1. \u936e\ufffd \ufffd\uae3d\ufffd\uae6d \uf9e3\uc10e\u2501\n\n#### 1.1 \u73e5\ub347\ub9b0 \u936e\ufffd \ufffd\uae3d\ufffd\uae6d \ufffd\ubab4\ufffd\ub586 \ufffd\uc197\ufffd\uc524\n\n**Seed:** `seed.spec.ts`\n**File:** `tests/empty-state/initial-empty-state.spec.ts`\n\n| Step | Action | Expected Result |\n|------|--------|----------------|\n| 1 | \ufffd\ub7f9\ufffd\uc520\uf9de\ufffd\ufffd\ubfc9 \ufffd\uc812\ufffd\ub0fd\ufffd\ube33\ufffd\ub58e (http://localhost:3000) | \ufffd\ube37 \ufffd\uc52a \uf9cf\u2478\uc909\ufffd\uc520 \u936e\uafa9\ubf31\ufffd\uc5f3\ufffd\ub497 \ufffd\uae3d\ufffd\uae6d\ufffd\uc4fd \ufffd\ube1e\ufffd\uada1 \uf9ce\ubdbf\ub586\uf9de\ufffd\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e (\ufffd\uc081: '\ufffd\ube37 \ufffd\uc52a\ufffd\uc520 \ufffd\ubfbe\ufffd\ub4bf\ufffd\ub572\ufffd\ub58e' \ufffd\uc089\ufffd\ub497 \ufffd\uc440\ufffd\uad97\ufffd\ube33 \u936e\ufffd \ufffd\uae3d\ufffd\uae6d \uf9ce\ubdbf\ub586\uf9de\ufffd). \ufffd\ube37 \ufffd\uc52a \uf9cf\u2478\uc909 \ufffd\uc07a\ufffd\ubfed\ufffd\ubfc9 \ufffd\ube18\ufffd\uc520\ufffd\ub025\ufffd\uc520 \ufffd\ube2f\ufffd\uad79\ufffd\ub8c4 \ufffd\ubfbe\ufffd\ub58e. |\n| 2 | \u936e\ufffd \ufffd\uae3d\ufffd\uae6d UI \ufffd\uc282\ufffd\ub0fc\u745c\ufffd \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e | \u936e\ufffd \ufffd\uae3d\ufffd\uae6d \ufffd\ube18\ufffd\uc520\u8084\ufffd \ufffd\uc089\ufffd\ub497 \ufffd\uc52a\ufffd\uc72d\ufffd\ub4aa\ufffd\ub4c3\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. \ufffd\ube37 \ufffd\uc52a \u7570\ubdbd\ufffd\ufffd\u745c\ufffd \ufffd\uc440\ufffd\ub8c4\ufffd\ube2f\ufffd\ub497 \ufffd\ube1e\ufffd\uada1 \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. |\n\n#### 1.2 \uf9cf\u2464\ubc7a \ufffd\ube37 \ufffd\uc52a \ufffd\uad98\ufffd\uc823 \ufffd\uc351 \u936e\ufffd \ufffd\uae3d\ufffd\uae6d \u8e42\ub4e6\ufffd\ufffd\n\n**Seed:** `seed.spec.ts`\n**File:** `tests/empty-state/empty-after-delete-all.spec.ts`\n\n| Step | Action | Expected Result |\n|------|--------|----------------|\n| 1 | \ufffd\ube37 \ufffd\uc52a \ufffd\uc5ef\ufffd\uc830 \ufffd\ube18\ufffd\ubc76\ufffd\ubfc9 '\ufffd\ub012\ufffd\ub4aa\ufffd\ub4c3 \ufffd\ube37 \ufffd\uc52a'\ufffd\uc4e3 \ufffd\uc5ef\ufffd\uc830\ufffd\ube2f\u6028\ufffd \u7570\ubdbd\ufffd\ufffd \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e | \ufffd\ube37 \ufffd\uc52a '\ufffd\ub012\ufffd\ub4aa\ufffd\ub4c3 \ufffd\ube37 \ufffd\uc52a'\ufffd\uc520 \uf9cf\u2478\uc909\ufffd\ubfc9 \u7570\ubdbd\ufffd\ufffd\ufffd\ub9c2\ufffd\ub58e. |\n| 2 | \u7570\ubdbd\ufffd\ufffd\ufffd\ub9c2 \ufffd\ube37 \ufffd\uc52a\ufffd\uc4fd \ufffd\uad98\ufffd\uc823 \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e | \ufffd\ube37 \ufffd\uc52a\ufffd\uc520 \uf9cf\u2478\uc909\ufffd\ubfc9\ufffd\uaf4c \ufffd\uc823\u5ac4\uacd5\ub9c2\ufffd\ub58e. \u936e\ufffd \ufffd\uae3d\ufffd\uae6d \uf9ce\ubdbf\ub586\uf9de\ufffd\u5a9b\ufffd \ufffd\ub58e\ufffd\ub586 \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. |\n\n---\n\n### 2. \ufffd\ube37 \ufffd\uc52a \ufffd\uae6e\ufffd\uaf66 (Create)\n\n#### 2.1 \ufffd\uae49 \ufffd\ube37 \ufffd\uc52a \u7570\ubdbd\ufffd\ufffd - \ufffd\uc819\ufffd\uae3d \ufffd\uc5ef\ufffd\uc830\n\n**Seed:** `seed.spec.ts`\n**File:** `tests/create/add-todo-normal.spec.ts`\n\n| Step | Action | Expected Result |\n|------|--------|----------------|\n| 1 | \ufffd\ube37 \ufffd\uc52a \ufffd\uc5ef\ufffd\uc830 \ufffd\ube18\ufffd\ubc76\ufffd\ubfc9 '\ufffd\uc623\u8e42\ub2ff\ub9b0'\u745c\ufffd \ufffd\uc5ef\ufffd\uc830\ufffd\ube33\ufffd\ub58e | \ufffd\uc5ef\ufffd\uc830 \ufffd\ube18\ufffd\ubc76\ufffd\ubfc9 '\ufffd\uc623\u8e42\ub2ff\ub9b0' \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. |\n| 2 | \u7570\ubdbd\ufffd\ufffd \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e | \ufffd\ube37 \ufffd\uc52a \uf9cf\u2478\uc909\ufffd\ubfc9 '\ufffd\uc623\u8e42\ub2ff\ub9b0' \ufffd\ube46\uf9cf\u2479\uc520 \u7570\ubdbd\ufffd\ufffd\ufffd\ub9c2\ufffd\ub58e. \ufffd\uc5ef\ufffd\uc830 \ufffd\ube18\ufffd\ubc76\u5a9b\ufffd \u936e\uafa9\uc359\uf9de\uafa8\ub58e. \u936e\ufffd \ufffd\uae3d\ufffd\uae6d \uf9ce\ubdbf\ub586\uf9de\ufffd\u5a9b\ufffd \ufffd\uad97\ufffd\uc52a\uf9de\uafa8\ub58e. |\n\n#### 2.2 \ufffd\ubfec\ufffd\uc72d \ufffd\ube37 \ufffd\uc52a \ufffd\ubff0\ufffd\ub0fd \u7570\ubdbd\ufffd\ufffd\n\n**Seed:** `seed.spec.ts`\n**File:** `tests/create/add-multiple-todos.spec.ts`\n\n| Step | Action | Expected Result |\n|------|--------|----------------|\n| 1 | \ufffd\ube37 \ufffd\uc52a \ufffd\uc5ef\ufffd\uc830 \ufffd\ube18\ufffd\ubc76\ufffd\ubfc9 '\uf9e3\ufffd \u8e30\ub349\u338f \ufffd\ube37 \ufffd\uc52a'\ufffd\uc4e3 \ufffd\uc5ef\ufffd\uc830\ufffd\ube2f\u6028\ufffd \u7570\ubdbd\ufffd\ufffd \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e | '\uf9e3\ufffd \u8e30\ub349\u338f \ufffd\ube37 \ufffd\uc52a'\ufffd\uc520 \uf9cf\u2478\uc909\ufffd\ubfc9 \u7570\ubdbd\ufffd\ufffd\ufffd\ub9c2\ufffd\ub58e. |\n| 2 | \ufffd\ube37 \ufffd\uc52a \ufffd\uc5ef\ufffd\uc830 \ufffd\ube18\ufffd\ubc76\ufffd\ubfc9 '\ufffd\ubaa2 \u8e30\ub349\u338f \ufffd\ube37 \ufffd\uc52a'\ufffd\uc4e3 \ufffd\uc5ef\ufffd\uc830\ufffd\ube2f\u6028\ufffd \u7570\ubdbd\ufffd\ufffd \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e | '\ufffd\ubaa2 \u8e30\ub349\u338f \ufffd\ube37 \ufffd\uc52a'\ufffd\uc520 \uf9cf\u2478\uc909\ufffd\ubfc9 \u7570\ubdbd\ufffd\ufffd\ufffd\ub9c2\ufffd\ub58e. \uf9cf\u2478\uc909\ufffd\ubfc9 \u73e5\ufffd 2\u5a9b\uc496\uc4fd \ufffd\ube37 \ufffd\uc52a\ufffd\uc520 \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. |\n| 3 | \ufffd\ube37 \ufffd\uc52a \ufffd\uc5ef\ufffd\uc830 \ufffd\ube18\ufffd\ubc76\ufffd\ubfc9 '\ufffd\uaf6d \u8e30\ub349\u338f \ufffd\ube37 \ufffd\uc52a'\ufffd\uc4e3 \ufffd\uc5ef\ufffd\uc830\ufffd\ube2f\u6028\ufffd \u7570\ubdbd\ufffd\ufffd \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e | '\ufffd\uaf6d \u8e30\ub349\u338f \ufffd\ube37 \ufffd\uc52a'\ufffd\uc520 \uf9cf\u2478\uc909\ufffd\ubfc9 \u7570\ubdbd\ufffd\ufffd\ufffd\ub9c2\ufffd\ub58e. \uf9cf\u2478\uc909\ufffd\ubfc9 \u73e5\ufffd 3\u5a9b\uc496\uc4fd \ufffd\ube37 \ufffd\uc52a\ufffd\uc520 \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. \uf9cf\u2464\ubc7a \ufffd\ube37 \ufffd\uc52a\ufffd\uc520 \ufffd\uc0b1\u8adb\ubdbe\u2168 \ufffd\ub2da\ufffd\uaf4c\u6fe1\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. |\n\n#### 2.3 Enter \ufffd\uad8e\u6fe1\ufffd \ufffd\ube37 \ufffd\uc52a \u7570\ubdbd\ufffd\ufffd\n\n**Seed:** `seed.spec.ts`\n**File:** `tests/create/add-todo-enter-key.spec.ts`\n\n| Step | Action | Expected Result |\n|------|--------|----------------|\n| 1 | \ufffd\ube37 \ufffd\uc52a \ufffd\uc5ef\ufffd\uc830 \ufffd\ube18\ufffd\ubc76\ufffd\ubfc9 '\ufffd\uad8e\u8e42\ub300\ubc76\u6fe1\ufffd \u7570\ubdbd\ufffd\ufffd'\u745c\ufffd \ufffd\uc5ef\ufffd\uc830\ufffd\ube33\ufffd\ub58e | \ufffd\uc5ef\ufffd\uc830 \ufffd\ube18\ufffd\ubc76\ufffd\ubfc9 \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. |\n| 2 | Enter \ufffd\uad8e\u745c\ufffd \ufffd\ub2bb\u745c\uba83\ub58e | \ufffd\ube37 \ufffd\uc52a \uf9cf\u2478\uc909\ufffd\ubfc9 '\ufffd\uad8e\u8e42\ub300\ubc76\u6fe1\ufffd \u7570\ubdbd\ufffd\ufffd' \ufffd\ube46\uf9cf\u2479\uc520 \u7570\ubdbd\ufffd\ufffd\ufffd\ub9c2\ufffd\ub58e. \ufffd\uc5ef\ufffd\uc830 \ufffd\ube18\ufffd\ubc76\u5a9b\ufffd \u936e\uafa9\uc359\uf9de\uafa8\ub58e. |\n\n#### 2.4 \ufffd\ub4c5\ufffd\ub2d4\u81fe\uba84\uc604 \ufffd\ub8f7\ufffd\ube3f \ufffd\ube37 \ufffd\uc52a \u7570\ubdbd\ufffd\ufffd\n\n**Seed:** `seed.spec.ts`\n**File:** `tests/create/add-todo-special-chars.spec.ts`\n\n| Step | Action | Expected Result |\n|------|--------|----------------|\n| 1 | \ufffd\ube37 \ufffd\uc52a \ufffd\uc5ef\ufffd\uc830 \ufffd\ube18\ufffd\ubc76\ufffd\ubfc9 '\ufffd\ube37 \ufffd\uc52a `<script>alert(1)</script>` & \"\ufffd\ub4c5\ufffd\ub2d4\u81fe\uba84\uc604\" \ufffd\ub012\ufffd\ub4aa\ufffd\ub4c3'\u745c\ufffd \ufffd\uc5ef\ufffd\uc830\ufffd\ube2f\u6028\ufffd \u7570\ubdbd\ufffd\ufffd \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e | \ufffd\ub4c5\ufffd\ub2d4\u81fe\uba84\uc604\u5a9b\ufffd \ufffd\uc520\ufffd\ub4aa\u8033\ufffd\ufffd\uc520\ufffd\ubd3d\ufffd\ub9ba\ufffd\ubf31 \ufffd\uc0b1\u8adb\ubdbe\u2164\u5bc3\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. XSS \u6028\ub4e6\uaebd\ufffd\uc520 \ufffd\ub58e\ufffd\ubefe\ufffd\ub9ba\uf9de\ufffd \ufffd\ube21\ufffd\ub497\ufffd\ub58e. \ufffd\ube37 \ufffd\uc52a\ufffd\uc520 \ufffd\uc819\ufffd\uae3d\ufffd\uc7fb\ufffd\uc45d\u6fe1\ufffd \uf9cf\u2478\uc909\ufffd\ubfc9 \u7570\ubdbd\ufffd\ufffd\ufffd\ub9c2\ufffd\ub58e. |\n\n---\n\n### 3. \ufffd\ub90c \ufffd\uc440\ufffd\uc29a\ufffd\uaf66 \u5bc3\ufffd\uf9dd\ufffd (Validation)\n\n#### 3.1 \u936e\ufffd \ufffd\uc5ef\ufffd\uc830\ufffd\uc45d\u6fe1\ufffd \ufffd\ube37 \ufffd\uc52a \u7570\ubdbd\ufffd\ufffd \ufffd\ub586\ufffd\ub8c4\n\n**Seed:** `seed.spec.ts`\n**File:** `tests/validation/empty-input-submit.spec.ts`\n\n| Step | Action | Expected Result |\n|------|--------|----------------|\n| 1 | \ufffd\uc5ef\ufffd\uc830 \ufffd\ube18\ufffd\ubc76\u745c\ufffd \u936e\uafa9\uc2ab \ufffd\uae3d\ufffd\uae6d\u6fe1\ufffd \u7570\ubdbd\ufffd\ufffd \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e | \ufffd\ube37 \ufffd\uc52a\ufffd\uc520 \u7570\ubdbd\ufffd\ufffd\ufffd\ub9ba\uf9de\ufffd \ufffd\ube21\ufffd\ub497\ufffd\ub58e. \ufffd\uc440\ufffd\uc29a\ufffd\uaf66 \u5bc3\ufffd\uf9dd\ufffd \ufffd\uc0a4\u745c\ufffd \uf9ce\ubdbf\ub586\uf9de\ufffd\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e (\ufffd\uc081: '\ufffd\ube37 \ufffd\uc52a\ufffd\uc4e3 \ufffd\uc5ef\ufffd\uc830\ufffd\ube50\u4e8c\uc1f1\uaf6d\ufffd\uc282'). \ufffd\uc5ef\ufffd\uc830 \ufffd\ube18\ufffd\ubc76\ufffd\ubfc9 \ufffd\uc0a4\u745c\ufffd \ufffd\uae3d\ufffd\uae6d \ufffd\ub4aa\ufffd\ufffd\ufffd\ufffd\uc52a\ufffd\uc520 \ufffd\uc7fb\ufffd\uc29c\ufffd\ub9c2\ufffd\ub58e. |\n\n#### 3.2 \u6028\ub4ec\uac1a\uf9cd\ufffd \ufffd\uc5f3\ufffd\ub497 \ufffd\uc5ef\ufffd\uc830\ufffd\uc45d\u6fe1\ufffd \ufffd\ube37 \ufffd\uc52a \u7570\ubdbd\ufffd\ufffd \ufffd\ub586\ufffd\ub8c4\n\n**Seed:** `seed.spec.ts`\n**File:** `tests/validation/whitespace-only-submit.spec.ts`\n\n| Step | Action | Expected Result |\n|------|--------|----------------|\n| 1 | \ufffd\uc5ef\ufffd\uc830 \ufffd\ube18\ufffd\ubc76\ufffd\ubfc9 '   ' (\u6028\ub4ec\uac1a\uf9cd\ufffd)\ufffd\uc4e3 \ufffd\uc5ef\ufffd\uc830\ufffd\ube2f\u6028\ufffd \u7570\ubdbd\ufffd\ufffd \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e | \ufffd\ube37 \ufffd\uc52a\ufffd\uc520 \u7570\ubdbd\ufffd\ufffd\ufffd\ub9ba\uf9de\ufffd \ufffd\ube21\ufffd\ub497\ufffd\ub58e. \ufffd\uc440\ufffd\uc29a\ufffd\uaf66 \u5bc3\ufffd\uf9dd\ufffd \ufffd\uc0a4\u745c\ufffd \uf9ce\ubdbf\ub586\uf9de\ufffd\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. \u6028\ub4ec\uac1a\uf9cd\ub6af\uc45d\u6fe1\ufffd \u63f4\u044a\uaf66\ufffd\ub9c2 \ufffd\ube37 \ufffd\uc52a\ufffd\ufffd\ufffd \ufffd\uae6e\ufffd\uaf66\ufffd\ub9ba\uf9de\ufffd \ufffd\ube21\ufffd\ub497\ufffd\ub58e. |\n\n#### 3.3 \u936e\ufffd \ufffd\uc5ef\ufffd\uc830 \ufffd\uc351 Enter \ufffd\uad8e \ufffd\uc823\u7570\ufffd \ufffd\ub586\ufffd\ub8c4\n\n**Seed:** `seed.spec.ts`\n**File:** `tests/validation/empty-input-enter-key.spec.ts`\n\n| Step | Action | Expected Result |\n|------|--------|----------------|\n| 1 | \ufffd\uc5ef\ufffd\uc830 \ufffd\ube18\ufffd\ubc76\u745c\ufffd \u936e\uafa9\uc2ab \ufffd\uae3d\ufffd\uae6d\u6fe1\ufffd Enter \ufffd\uad8e\u745c\ufffd \ufffd\ub2bb\u745c\uba83\ub58e | \ufffd\ube37 \ufffd\uc52a\ufffd\uc520 \u7570\ubdbd\ufffd\ufffd\ufffd\ub9ba\uf9de\ufffd \ufffd\ube21\ufffd\ub497\ufffd\ub58e. \ufffd\uc440\ufffd\uc29a\ufffd\uaf66 \u5bc3\ufffd\uf9dd\ufffd \ufffd\uc0a4\u745c\ufffd \uf9ce\ubdbf\ub586\uf9de\ufffd\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9ba\u5ac4\uacd5\uad79 \ufffd\ube18\u81fe\ufffd \ufffd\ub8de\ufffd\uc609\ufffd\ub8c4 \ufffd\ube2f\uf9de\ufffd \ufffd\ube21\ufffd\ub497\ufffd\ub58e. |\n\n#### 3.4 \uf9cd\u317c\uc2a6 \u6e72\ufffd \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3 \ufffd\uc5ef\ufffd\uc830\n\n**Seed:** `seed.spec.ts`\n**File:** `tests/validation/long-text-input.spec.ts`\n\n| Step | Action | Expected Result |\n|------|--------|----------------|\n| 1 | \ufffd\uc5ef\ufffd\uc830 \ufffd\ube18\ufffd\ubc76\ufffd\ubfc9 300\ufffd\uc604 \ufffd\uc520\ufffd\uae3d\ufffd\uc4fd \uf9cd\u317c\uc2a6 \u6e72\ufffd \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u745c\ufffd \ufffd\uc5ef\ufffd\uc830\ufffd\ube2f\u6028\ufffd \u7570\ubdbd\ufffd\ufffd \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e | \uf9e4\uc495\ufffd\ufffd \u6e72\uba84\uc520 \ufffd\uc823\ufffd\ube33\ufffd\uc520 \ufffd\uc7fb\ufffd\uc29c\ufffd\ub9ba\u5ac4\uacd5\uad79, \u6e72\ufffd \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u5a9b\ufffd UI\ufffd\ubfc9\ufffd\uaf4c \ufffd\uc7fb\ufffd\uc805\ufffd\uc5f3 \uf9e3\uc10e\u2501\ufffd\ub9c2\ufffd\ub58e (\uf9cd\uba2f\uca2a\ufffd\uc5eb\ufffd\ubab4 \ufffd\uc089\ufffd\ub497 \u4ee5\uafa8\uceee\u8f45\ufffd). \ufffd\uc805\ufffd\uc520\ufffd\ube18\ufffd\uc350\ufffd\uc520 \u6e90\u2465\ufffd\ufffd\uf9de\ufffd \ufffd\ube21\ufffd\ub497\ufffd\ub58e. |\n\n---\n\n### 4. \ufffd\ube37 \ufffd\uc52a \u8b70\uace0\uc276 (Read)\n\n#### 4.1 \ufffd\ube37 \ufffd\uc52a \uf9cf\u2478\uc909 \ufffd\ubab4\ufffd\ub586 \ufffd\uc197\ufffd\uc524\n\n**Seed:** `seed.spec.ts`\n**File:** `tests/read/display-todo-list.spec.ts`\n\n| Step | Action | Expected Result |\n|------|--------|----------------|\n| 1 | 3\u5a9b\uc496\uc4fd \ufffd\ube37 \ufffd\uc52a\ufffd\uc4e3 \u7570\ubdbd\ufffd\ufffd\ufffd\ube33\ufffd\ub58e: '\ufffd\ube18\u79fb\ufffd \ufffd\uc2ab\ufffd\ub8de', '\ufffd\uc520\uf9ce\ubdbf\uc52a \ufffd\uc197\ufffd\uc524', '\u8e42\ub2ff\ud02c\ufffd\uaf4c \ufffd\uc609\ufffd\uaf66' | 3\u5a9b\uc496\uc4fd \ufffd\ube37 \ufffd\uc52a\ufffd\uc520 \uf9cf\u2464\ubaa2 \uf9cf\u2478\uc909\ufffd\ubfc9 \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. |\n| 2 | \u5a9b\ufffd \ufffd\ube37 \ufffd\uc52a \ufffd\ube46\uf9cf\u2479\uc4fd \ufffd\uada1\ufffd\uc29c\ufffd\uc4e3 \ufffd\uc197\ufffd\uc524\ufffd\ube33\ufffd\ub58e | \u5a9b\ufffd \ufffd\ube37 \ufffd\uc52a\ufffd\uc4fd \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u5a9b\ufffd \ufffd\uc819\ufffd\uc197\ufffd\uc5f3 \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. \ufffd\ube37 \ufffd\uc52a\uf9cd\ub348\ub58e \ufffd\ub2d4\ufffd\uc819 \u8adb\ufffd \ufffd\uad98\ufffd\uc823 \u800c\u2466\ub4c3\u6fe1\u317c\uc520 \u8b70\ub301\uc631\ufffd\ube33\ufffd\ub58e. |\n\n#### 4.2 \ufffd\ube37 \ufffd\uc52a \ufffd\uc17f\u7337\ufffd \ufffd\uae3d\ufffd\uae6d \ufffd\ub117\u6e72\ufffd\n\n**Seed:** `seed.spec.ts`\n**File:** `tests/read/toggle-todo-complete.spec.ts`\n\n| Step | Action | Expected Result |\n|------|--------|----------------|\n| 1 | \ufffd\ube37 \ufffd\uc52a '\ufffd\ube18\u79fb\ufffd \ufffd\uc2ab\ufffd\ub8de'\ufffd\uc4e3 \u7570\ubdbd\ufffd\ufffd\ufffd\ube33 \ufffd\uc351, \ufffd\ube50\ufffd\ub5a6 \ufffd\ube46\uf9cf\u2479\uc4fd \uf9e3\ub304\uac95\u8adb\ubea4\ub4aa(\ufffd\uc089\ufffd\ub497 \ufffd\uc17f\u7337\ufffd \ufffd\ub117\u6e72\ufffd)\u745c\ufffd \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e | \ufffd\ube37 \ufffd\uc52a\ufffd\uc520 \ufffd\uc17f\u7337\ufffd \ufffd\uae3d\ufffd\uae6d\u6fe1\ufffd \u8e42\ufffd\u5bc3\uc388\ub9c2\ufffd\ub58e. \ufffd\uc17f\u7337\ub6ae\ub9c2 \ufffd\ube37 \ufffd\uc52a\ufffd\ubfc9 \u75cd\u2465\ub0fc\ufffd\uaf51 \ufffd\uc089\ufffd\ub497 \ufffd\ub586\u5a9b\uacf8\uc7fb \u63f4\u0449\ud147\ufffd\uc520 \ufffd\uc7fb\ufffd\uc29c\ufffd\ub9c2\ufffd\ub58e. |\n| 2 | \ufffd\uc17f\u7337\ub6ae\ub9c2 \ufffd\ube37 \ufffd\uc52a\ufffd\uc4fd \uf9e3\ub304\uac95\u8adb\ubea4\ub4aa\u745c\ufffd \ufffd\ub58e\ufffd\ub586 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e | \ufffd\ube37 \ufffd\uc52a\ufffd\uc520 \u8a98\uba84\uc17f\u7337\ufffd \ufffd\uae3d\ufffd\uae6d\u6fe1\ufffd \u8e42\ub4ed\uc35d\ufffd\ub9c2\ufffd\ub58e. \u75cd\u2465\ub0fc\ufffd\uaf51 \ufffd\uc089\ufffd\ub497 \ufffd\ub586\u5a9b\uacf8\uc7fb \u63f4\u0449\ud147\ufffd\uc520 \ufffd\uc823\u5ac4\uacd5\ub9c2\ufffd\ub58e. |\n\n---\n\n### 5. \ufffd\ube37 \ufffd\uc52a \ufffd\ub2d4\ufffd\uc819 (Update)\n\n#### 5.1 \ufffd\ube37 \ufffd\uc52a \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3 \ufffd\ub2d4\ufffd\uc819 - \ufffd\uc819\ufffd\uae3d \ufffd\ub2d4\ufffd\uc819\n\n**Seed:** `seed.spec.ts`\n**File:** `tests/update/edit-todo-normal.spec.ts`\n\n| Step | Action | Expected Result |\n|------|--------|----------------|\n| 1 | \ufffd\ube37 \ufffd\uc52a '\ufffd\uc623\u8e42\ub2ff\ub9b0'\u745c\ufffd \u7570\ubdbd\ufffd\ufffd\ufffd\ube33\ufffd\ub58e | '\ufffd\uc623\u8e42\ub2ff\ub9b0'\u5a9b\ufffd \uf9cf\u2478\uc909\ufffd\ubfc9 \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. |\n| 2 | \ufffd\ube50\ufffd\ub5a6 \ufffd\ube37 \ufffd\uc52a\ufffd\uc4fd \ufffd\ub2d4\ufffd\uc819 \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e | \ufffd\ube37 \ufffd\uc52a \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u5a9b\ufffd \ufffd\ub82a\uf9de\ufffd \u5a9b\ufffd\ufffd\ub4ab\ufffd\ube33 \ufffd\uc5ef\ufffd\uc830 \ufffd\ube18\ufffd\ubc76\u6fe1\ufffd \ufffd\uc7fe\ufffd\uc19a\ufffd\ub9c2\ufffd\ub58e. \u6e72\uacd7\u3008 \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3 '\ufffd\uc623\u8e42\ub2ff\ub9b0'\u5a9b\ufffd \ufffd\uc5ef\ufffd\uc830 \ufffd\ube18\ufffd\ubc76\ufffd\ubfc9 \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. |\n| 3 | \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u745c\ufffd '\uf9cd\ub34a\ub4c3\ufffd\ubfc9\ufffd\uaf4c \ufffd\uc623\u8e42\ub2ff\ub9b0'\u6fe1\ufffd \ufffd\ub2d4\ufffd\uc819\ufffd\ube2f\u6028\ufffd \ufffd\ufffd\ufffd\ufffd\uc623 \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e (\ufffd\uc089\ufffd\ub497 Enter \ufffd\uad8e\u745c\ufffd \ufffd\ub2bb\u745c\uba83\ub58e) | \ufffd\ube37 \ufffd\uc52a \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u5a9b\ufffd '\uf9cd\ub34a\ub4c3\ufffd\ubfc9\ufffd\uaf4c \ufffd\uc623\u8e42\ub2ff\ub9b0'\u6fe1\ufffd \ufffd\ubfbd\ufffd\ub732\ufffd\uc520\ufffd\ub4c3\ufffd\ub9c2\ufffd\ub58e. \ufffd\ub82a\uf9de\ufffd \uf9cf\u2464\ubc76\u5a9b\ufffd \u91ab\ub085\uc9ba\ufffd\ub9ba\u6028\ufffd \ufffd\uc52b\u6e72\ufffd \uf9cf\u2464\ubc76\u6fe1\ufffd \ufffd\ub8ce\ufffd\ube18\u5a9b\uafa8\ub58e. |\n\n#### 5.2 \ufffd\ub2d4\ufffd\uc819 \u75cd\u2465\ub0fc\n\n**Seed:** `seed.spec.ts`\n**File:** `tests/update/cancel-edit-todo.spec.ts`\n\n| Step | Action | Expected Result |\n|------|--------|----------------|\n| 1 | \ufffd\ube37 \ufffd\uc52a '\ufffd\uc35d\u8e42\ufffd \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3'\u745c\ufffd \u7570\ubdbd\ufffd\ufffd\ufffd\ube2f\u6028\ufffd \ufffd\ub2d4\ufffd\uc819 \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e | \ufffd\ub82a\uf9de\ufffd \uf9cf\u2464\ubc76\u5a9b\ufffd \ufffd\uc1a2\ufffd\uaf66\ufffd\uc195\ufffd\ub9c2\ufffd\ub58e. |\n| 2 | \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u745c\ufffd '\ufffd\ub2d4\ufffd\uc819\ufffd\ub9c2 \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3'\u6fe1\ufffd \u8e42\ufffd\u5bc3\uc3c0\ube33 \ufffd\uc351, \u75cd\u2465\ub0fc \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e (\ufffd\uc089\ufffd\ub497 Escape \ufffd\uad8e\u745c\ufffd \ufffd\ub2bb\u745c\uba83\ub58e) | \ufffd\ube37 \ufffd\uc52a \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u5a9b\ufffd '\ufffd\uc35d\u8e42\ufffd \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3'\u6fe1\ufffd \ufffd\uc440\uf9de\ufffd\ufffd\ub9c2\ufffd\ub58e. \ufffd\ub82a\uf9de\ufffd \uf9cf\u2464\ubc76\u5a9b\ufffd \u91ab\ub085\uc9ba\ufffd\ub9c2\ufffd\ub58e. |\n\n#### 5.3 \u936e\ufffd \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u6fe1\ufffd \ufffd\ub2d4\ufffd\uc819 \ufffd\ub586\ufffd\ub8c4\n\n**Seed:** `seed.spec.ts`\n**File:** `tests/update/edit-todo-empty.spec.ts`\n\n| Step | Action | Expected Result |\n|------|--------|----------------|\n| 1 | \ufffd\ube37 \ufffd\uc52a '\ufffd\ub012\ufffd\ub4aa\ufffd\ub4c3'\u745c\ufffd \u7570\ubdbd\ufffd\ufffd\ufffd\ube2f\u6028\ufffd \ufffd\ub2d4\ufffd\uc819 \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e | \ufffd\ub82a\uf9de\ufffd \uf9cf\u2464\ubc76\u5a9b\ufffd \ufffd\uc1a2\ufffd\uaf66\ufffd\uc195\ufffd\ub9c2\ufffd\ub58e. |\n| 2 | \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u745c\ufffd \uf9cf\u2464\ubaa2 \uf9de\ufffd\ufffd\uc2a6\u6028\ufffd \ufffd\ufffd\ufffd\ufffd\uc623 \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e | \ufffd\uc440\ufffd\uc29a\ufffd\uaf66 \u5bc3\ufffd\uf9dd\ufffd \ufffd\uc0a4\u745c\uc10d\ufffd\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. \ufffd\ube37 \ufffd\uc52a \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u5a9b\ufffd \u936e\uafa9\ubf31\ufffd\uc5f3\ufffd\ub497 \ufffd\uae3d\ufffd\uae6d\u6fe1\ufffd \ufffd\ufffd\ufffd\ufffd\uc623\ufffd\ub9ba\uf9de\ufffd \ufffd\ube21\ufffd\ub497\ufffd\ub58e. \u6e72\uacd7\u3008 \ufffd\ub013\ufffd\ub4aa\ufffd\ub4c3\u5a9b\ufffd \ufffd\uc440\uf9de\ufffd\ufffd\ub9c2\ufffd\ub58e. |\n\n---\n\n### 6. \ufffd\ube37 \ufffd\uc52a \ufffd\uad98\ufffd\uc823 (Delete)\n\n#### 6.1 \ufffd\ub592\ufffd\uc52a \ufffd\ube37 \ufffd\uc52a \ufffd\uad98\ufffd\uc823\n\n**Seed:** `seed.spec.ts`\n**File:** `tests/delete/delete-single-todo.spec.ts`\n\n| Step | Action | Expected Result |\n|------|--------|----------------|\n| 1 | '\ufffd\uad98\ufffd\uc823\ufffd\ube37 \ufffd\ube46\uf9cf\ufffd'\u6028\ufffd '\ufffd\uc440\uf9de\ufffd\ufffd\ube37 \ufffd\ube46\uf9cf\ufffd' \ufffd\ubaa2 \u5a9b\uc496\uc4fd \ufffd\ube37 \ufffd\uc52a\ufffd\uc4e3 \u7570\ubdbd\ufffd\ufffd\ufffd\ube33\ufffd\ub58e | 2\u5a9b\uc496\uc4fd \ufffd\ube37 \ufffd\uc52a\ufffd\uc520 \uf9cf\u2478\uc909\ufffd\ubfc9 \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. |\n| 2 | '\ufffd\uad98\ufffd\uc823\ufffd\ube37 \ufffd\ube46\uf9cf\ufffd'\ufffd\uc4fd \ufffd\uad98\ufffd\uc823 \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e | '\ufffd\uad98\ufffd\uc823\ufffd\ube37 \ufffd\ube46\uf9cf\ufffd'\ufffd\uc520 \uf9cf\u2478\uc909\ufffd\ubfc9\ufffd\uaf4c \ufffd\uc823\u5ac4\uacd5\ub9c2\ufffd\ub58e. '\ufffd\uc440\uf9de\ufffd\ufffd\ube37 \ufffd\ube46\uf9cf\ufffd'\ufffd\ufffd\ufffd \uf9cf\u2478\uc909\ufffd\ubfc9 \u6d39\uba83\ufffd\ufffd\u6fe1\ufffd \ufffd\uad93\ufffd\ube18\ufffd\uc5f3\ufffd\ub58e. \uf9cf\u2478\uc909\ufffd\ubfc9 1\u5a9b\uc496\uc4fd \ufffd\ube37 \ufffd\uc52a\uf9cd\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. |\n\n#### 6.2 \ufffd\uc17f\u7337\ub6ae\ub9c2 \ufffd\ube37 \ufffd\uc52a \ufffd\uad98\ufffd\uc823\n\n**Seed:** `seed.spec.ts`\n**File:** `tests/delete/delete-completed-todo.spec.ts`\n\n| Step | Action | Expected Result |\n|------|--------|----------------|\n| 1 | '\ufffd\uc17f\u7337\ufffd \ufffd\uc351 \ufffd\uad98\ufffd\uc823' \ufffd\ube37 \ufffd\uc52a\ufffd\uc4e3 \u7570\ubdbd\ufffd\ufffd\ufffd\ube2f\u6028\ufffd \ufffd\uc17f\u7337\ufffd \ufffd\uae3d\ufffd\uae6d\u6fe1\ufffd \ufffd\ub117\u6e72\ufffd\ufffd\ube33\ufffd\ub58e | \ufffd\ube37 \ufffd\uc52a\ufffd\uc520 \ufffd\uc17f\u7337\ufffd \ufffd\uae3d\ufffd\uae6d\u6fe1\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. |\n| 2 | \ufffd\uc17f\u7337\ub6ae\ub9c2 \ufffd\ube37 \ufffd\uc52a\ufffd\uc4fd \ufffd\uad98\ufffd\uc823 \u8e30\uafaa\ub4c9\ufffd\uc4e3 \ufffd\uaca2\u7531\ufffd\ufffd\ube33\ufffd\ub58e | \ufffd\uc17f\u7337\ub6ae\ub9c2 \ufffd\ube37 \ufffd\uc52a\ufffd\uc520 \uf9cf\u2478\uc909\ufffd\ubfc9\ufffd\uaf4c \ufffd\uc819\ufffd\uae3d\ufffd\uc7fb\ufffd\uc45d\u6fe1\ufffd \ufffd\uc823\u5ac4\uacd5\ub9c2\ufffd\ub58e. |\n\n#### 6.3 \uf9cf\u2464\ubc7a \ufffd\ube37 \ufffd\uc52a \ufffd\ub2da\uf9e1\ufffd \ufffd\uad98\ufffd\uc823\n\n**Seed:** `seed.spec.ts`\n**File:** `tests/delete/delete-all-todos-sequentially.spec.ts`\n\n| Step | Action | Expected Result |\n|------|--------|----------------|\n| 1 | 3\u5a9b\uc496\uc4fd \ufffd\ube37 \ufffd\uc52a\ufffd\uc4e3 \u7570\ubdbd\ufffd\ufffd\ufffd\ube33\ufffd\ub58e: '\ufffd\ube37 \ufffd\uc52a 1', '\ufffd\ube37 \ufffd\uc52a 2', '\ufffd\ube37 \ufffd\uc52a 3' | 3\u5a9b\uc496\uc4fd \ufffd\ube37 \ufffd\uc52a\ufffd\uc520 \uf9cf\u2478\uc909\ufffd\ubfc9 \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. |\n| 2 | \u5a9b\ufffd \ufffd\ube37 \ufffd\uc52a\ufffd\uc4e3 \ufffd\ube2f\ufffd\uad79\ufffd\ubd6b \ufffd\uad98\ufffd\uc823\ufffd\ube33\ufffd\ub58e | \ufffd\uad98\ufffd\uc823\ufffd\ube37 \ufffd\ube23\uf9cd\ub348\ub58e \uf9cf\u2478\uc909\ufffd\ubfc9\ufffd\uaf4c \ufffd\ube50\ufffd\ub5a6 \ufffd\ube46\uf9cf\u2479\uc520 \ufffd\uc823\u5ac4\uacd5\ub9c2\ufffd\ub58e. |\n| 3 | \uf9cd\ub349\ufffd\ufffd\uf9cd\ufffd \ufffd\ube37 \ufffd\uc52a\u6e90\ub6af\ufffd\ufffd \ufffd\uad98\ufffd\uc823\ufffd\ube33\ufffd\ub58e | \uf9cf\u2464\ubc7a \ufffd\ube37 \ufffd\uc52a\ufffd\uc520 \ufffd\uad98\ufffd\uc823\ufffd\ub9c2 \ufffd\uc351 \u936e\ufffd \ufffd\uae3d\ufffd\uae6d \uf9ce\ubdbf\ub586\uf9de\ufffd\u5a9b\ufffd \ufffd\ubab4\ufffd\ub586\ufffd\ub9c2\ufffd\ub58e. |\n"}], "grading": {"expectations": [{"text": "Summary mentions reading SKILL.md for playwright-test-planner", "passed": true, "evidence": "Step 1 in transcript: 'Tool: Read, File: ...\\skills\\playwright-test-planner\\SKILL.md, Result: Successfully read the skill definition. The skill is playwright-test-planner...'"}, {"text": "Mentions planner_setup_page for browser initialization", "passed": true, "evidence": "Step 1 lists 'Initialize with planner_setup_page' in the workflow. Step 5 loads the tool via ToolSearch. Step 7 attempts to call mcp__playwright-test__planner_setup_page (permission denied)."}, {"text": "Covers Create, Read, Update, Delete operations separately", "passed": true, "evidence": "Output plan has separate numbered sections: '2. \ud560 \uc77c \uc0dd\uc131 (Create)' with 4 scenarios, '4. \ud560 \uc77c \uc870\ud68c (Read)' with 2 scenarios, '5. \ud560 \uc77c \uc218\uc815 (Update)' with 3 scenarios, '6. \ud560 \uc77c \uc0ad\uc81c (Delete)' with 3 scenarios."}, {"text": "Includes form validation edge cases (empty input, special characters, max length)", "passed": true, "evidence": "Suite 3 covers: 3.1 empty input ('\ube48 \uc785\ub825\uc73c\ub85c \ud560 \uc77c \ucd94\uac00 \uc2dc\ub3c4'), 3.2 whitespace-only ('\uacf5\ubc31\ub9cc \uc788\ub294 \uc785\ub825'), 3.4 long text ('300\uc790 \uc774\uc0c1\uc758 \ub9e4\uc6b0 \uae34 \ud14d\uc2a4\ud2b8'). Special characters covered in 2.4 with XSS test ('<script>alert(1)</script>')."}, {"text": "Includes empty state scenario (no items in list)", "passed": true, "evidence": "Suite 1 '\ube48 \uc0c1\ud0dc \ucc98\ub9ac' has two scenarios: 1.1 '\ucd08\uae30 \ube48 \uc0c1\ud0dc \ud45c\uc2dc \ud655\uc778' (initial empty state) and 1.2 '\ubaa8\ub4e0 \ud560 \uc77c \uc0ad\uc81c \ud6c4 \ube48 \uc0c1\ud0dc \ubcf5\uadc0' (empty state after deleting all items)."}, {"text": "Scenarios are independent and ordered with numbered headings", "passed": true, "evidence": "Six numbered top-level headings (### 1 through ### 6), each with numbered sub-scenarios (1.1, 1.2, 2.1-2.4, etc.). Each scenario specifies its own spec file path and starts from a clean state."}, {"text": "Mentions planner_save_plan to save specs/ markdown", "passed": true, "evidence": "Step 1 lists 'Save the plan with planner_save_plan' in the workflow. Step 8 attempts mcp__playwright-test__planner_save_plan with the full test plan content. The tool was mentioned and invoked, though it failed due to permission restrictions, and the fallback saved to outputs/ instead of specs/."}], "summary": {"passed": 7, "failed": 0, "total": 7, "pass_rate": 1.0}, "execution_metrics": {"tool_calls": {"Read": 4, "Glob": 5, "Grep": 0, "Write": 3, "Bash": 1, "ToolSearch": 1, "mcp__playwright-test__planner_setup_page": 1, "mcp__playwright-test__planner_save_plan": 1}, "total_tool_calls": 16, "total_steps": 10, "errors_encountered": 3, "output_chars": 7842, "transcript_chars": 3650}, "timing": {}, "claims": [{"claim": "The test plan covers 6 suites and 18 test scenarios", "type": "factual", "verified": true, "evidence": "Counted in the plan output: Suite 1 (2 scenarios), Suite 2 (4), Suite 3 (4), Suite 4 (2), Suite 5 (3), Suite 6 (3) = 18 total across 6 suites."}, {"claim": "Browser-based exploration was not possible due to tool permission restrictions", "type": "process", "verified": true, "evidence": "Steps 6-8 show three permission denied errors: Bash (dev server), planner_setup_page (browser open), and planner_save_plan (save via MCP)."}, {"claim": "The actual app is still the default Next.js starter page", "type": "factual", "verified": true, "evidence": "Step 2 confirms page.tsx is 'Default Next.js starter page (not yet a to-do app)' with 'Next.js logo, Deploy Now and Documentation links'."}, {"claim": "Test plan was derived from task description and common UX patterns rather than live exploration", "type": "process", "verified": true, "evidence": "No browser exploration succeeded (all MCP tools returned permission denied). The plan was written based on the task prompt describing CRUD + validation + empty state."}], "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []}, "eval_feedback": {"suggestions": [{"assertion": "Mentions planner_save_plan to save specs/ markdown", "reason": "The assertion only checks for 'mentions' which is a low bar. The executor mentioned the tool but it failed, and the output was saved to outputs/ not specs/. Consider asserting that the plan was actually saved to the specs/ directory via planner_save_plan, not just that the tool was mentioned."}, {"reason": "No assertion checks whether the test plan was generated from actual browser exploration of a live app. In this run, the app was never explored (all MCP tools failed), and the plan was fabricated from the task description alone. A stronger eval would verify that browser_snapshot or similar exploration tools were successfully used before the plan was written."}, {"reason": "No assertion checks the output file format or structure (e.g., that each scenario has Step/Action/Expected Result columns, or that file paths are specified). The plan quality is high here, but a weaker output with just bullet points would also pass all current assertions."}], "overall": "Assertions check for presence of key concepts but not for genuine browser-based exploration or correct tool usage. The plan was well-crafted despite being generated without live app interaction, which none of the assertions detect."}}}, {"id": "eval-3-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "test-plan.md", "type": "text", "content": "# Test Plan: CRUD Todo App with Form Validation and Empty State\n\n## App Under Test\n- **Framework**: Next.js 16.1.6 with React 19, TypeScript, Tailwind CSS\n- **Location**: features/next-app/app/page.tsx\n- **Description**: A todo management app with full CRUD functionality, form validation, and empty state handling\n\n---\n\n## Test Scenarios\n\n### 1. Empty State (Initial Load)\n\n#### Scenario 1.1: Display empty state on first visit\n- **Given**: The user opens the app with no todos saved\n- **Then**: An empty state message is displayed (e.g., \"No todos yet\" or similar placeholder)\n- **And**: The todo input form is visible and ready to accept input\n- **And**: No todo list items are rendered\n\n#### Scenario 1.2: Return to empty state after deleting all todos\n- **Given**: The user has one or more todos\n- **When**: The user deletes all todos one by one\n- **Then**: The empty state message reappears\n- **And**: The list area shows no items\n\n---\n\n### 2. Create (Add Todo)\n\n#### Scenario 2.1: Add a new todo with valid input\n- **Given**: The user is on the todo app page\n- **When**: The user types \"Buy groceries\" into the input field\n- **And**: The user submits the form (click button or press Enter)\n- **Then**: A new todo item \"Buy groceries\" appears in the list\n- **And**: The input field is cleared\n- **And**: The empty state message is no longer visible\n\n#### Scenario 2.2: Add multiple todos\n- **Given**: The user is on the todo app page\n- **When**: The user adds \"Task 1\", \"Task 2\", and \"Task 3\" sequentially\n- **Then**: All three todos are displayed in the list\n- **And**: The list shows the correct count (3 items)\n\n#### Scenario 2.3: Submit via Enter key\n- **Given**: The user has typed text in the input field\n- **When**: The user presses the Enter key\n- **Then**: The todo is added to the list\n\n---\n\n### 3. Read (Display Todos)\n\n#### Scenario 3.1: Display todo items in a list\n- **Given**: There are existing todos in the app\n- **Then**: Each todo displays its text content\n- **And**: Each todo has a visible completion status (checkbox or similar)\n- **And**: Each todo has edit and delete controls\n\n#### Scenario 3.2: Display todo count or summary\n- **Given**: There are multiple todos\n- **Then**: The app shows the total number of todos or a summary (e.g., \"3 items left\")\n\n---\n\n### 4. Update (Edit Todo)\n\n#### Scenario 4.1: Toggle todo completion status\n- **Given**: There is an incomplete todo \"Buy groceries\"\n- **When**: The user clicks the checkbox or toggle for that todo\n- **Then**: The todo is marked as complete (visual indication such as strikethrough or checkmark)\n\n#### Scenario 4.2: Untoggle a completed todo\n- **Given**: There is a completed todo\n- **When**: The user clicks the checkbox or toggle again\n- **Then**: The todo returns to incomplete status\n\n#### Scenario 4.3: Edit todo text inline\n- **Given**: There is a todo \"Buy groceries\"\n- **When**: The user double-clicks or clicks an edit button on the todo\n- **And**: The todo text becomes editable\n- **And**: The user changes it to \"Buy organic groceries\"\n- **And**: The user confirms the edit (Enter or save button)\n- **Then**: The todo text is updated to \"Buy organic groceries\"\n\n#### Scenario 4.4: Cancel edit\n- **Given**: The user is editing a todo\n- **When**: The user presses Escape or clicks cancel\n- **Then**: The todo text reverts to its original value\n- **And**: The edit mode is closed\n\n---\n\n### 5. Delete (Remove Todo)\n\n#### Scenario 5.1: Delete a single todo\n- **Given**: There is a todo \"Buy groceries\" in the list\n- **When**: The user clicks the delete button for that todo\n- **Then**: The todo is removed from the list\n- **And**: The remaining todos are still displayed correctly\n\n#### Scenario 5.2: Delete the last remaining todo\n- **Given**: There is exactly one todo in the list\n- **When**: The user deletes it\n- **Then**: The empty state is shown again\n\n---\n\n### 6. Form Validation\n\n#### Scenario 6.1: Reject empty submission\n- **Given**: The input field is empty\n- **When**: The user clicks the submit button or presses Enter\n- **Then**: No todo is added to the list\n- **And**: A validation error message is displayed (e.g., \"Todo text is required\")\n\n#### Scenario 6.2: Reject whitespace-only input\n- **Given**: The user types only spaces into the input field\n- **When**: The user submits the form\n- **Then**: No todo is added to the list\n- **And**: A validation error message is shown\n\n#### Scenario 6.3: Trim whitespace from valid input\n- **Given**: The user types \"  Buy groceries  \" with leading/trailing spaces\n- **When**: The user submits the form\n- **Then**: The todo is added with trimmed text \"Buy groceries\"\n\n#### Scenario 6.4: Validate maximum character length (if applicable)\n- **Given**: The input field has a max length constraint\n- **When**: The user types a very long string exceeding the limit\n- **Then**: The input is either truncated or a validation error is shown\n\n#### Scenario 6.5: Clear validation error on valid input\n- **Given**: A validation error is currently displayed\n- **When**: The user types valid text and submits\n- **Then**: The validation error disappears\n- **And**: The todo is added successfully\n\n#### Scenario 6.6: Reject empty text during edit\n- **Given**: The user is editing an existing todo\n- **When**: The user clears the text field and tries to save\n- **Then**: The edit is rejected with a validation error\n- **And**: The original todo text is preserved\n\n---\n\n### 7. Edge Cases and Interaction\n\n#### Scenario 7.1: Rapid successive additions\n- **Given**: The user is on the todo app page\n- **When**: The user quickly adds several todos in succession\n- **Then**: All todos are correctly added without duplicates or missing entries\n\n#### Scenario 7.2: Special characters in todo text\n- **Given**: The user types todo text with special characters (e.g., `<script>alert('xss')</script>`)\n- **When**: The user submits the form\n- **Then**: The todo is added with the text displayed safely (no XSS)\n\n#### Scenario 7.3: Page refresh persistence (if applicable)\n- **Given**: The user has added several todos\n- **When**: The page is refreshed\n- **Then**: Todos are either persisted (if using storage) or the empty state is shown (if in-memory only)\n\n---\n\n## Test Priority\n\n| Priority | Scenarios | Rationale |\n|----------|-----------|-----------|\n| P0 (Critical) | 1.1, 2.1, 4.1, 5.1, 6.1 | Core CRUD + basic validation |\n| P1 (High) | 1.2, 2.2, 2.3, 4.3, 5.2, 6.2, 6.5 | Important user flows |\n| P2 (Medium) | 3.1, 3.2, 4.2, 4.4, 6.3, 6.6 | Secondary features |\n| P3 (Low) | 6.4, 7.1, 7.2, 7.3 | Edge cases |\n\n## Test Environment\n- **Browser**: Chromium (via Playwright)\n- **Base URL**: http://localhost:3000\n- **Framework**: Playwright Test\n"}], "grading": {"expectations": [{"text": "Summary mentions reading SKILL.md for playwright-test-planner", "passed": false, "evidence": "The transcript shows no mention of reading SKILL.md. The agent read only 'features/next-app/package.json' and 'features/next-app/app/page.tsx'. This is a without_skill run, so the agent had no awareness of SKILL.md."}, {"text": "Mentions planner_setup_page for browser initialization", "passed": false, "evidence": "No mention of 'planner_setup_page' anywhere in the transcript or the test-plan.md output. The agent did not reference any MCP browser tools."}, {"text": "Covers Create, Read, Update, Delete operations separately", "passed": true, "evidence": "The test-plan.md has distinct numbered sections: '### 2. Create (Add Todo)' with 3 scenarios, '### 3. Read (Display Todos)' with 2 scenarios, '### 4. Update (Edit Todo)' with 4 scenarios, '### 5. Delete (Remove Todo)' with 2 scenarios."}, {"text": "Includes form validation edge cases (empty input, special characters, max length)", "passed": true, "evidence": "Section 6 'Form Validation' includes: Scenario 6.1 'Reject empty submission', Scenario 6.4 'Validate maximum character length (if applicable)'. Section 7 includes Scenario 7.2 'Special characters in todo text' with XSS example. All three edge case types are present."}, {"text": "Includes empty state scenario (no items in list)", "passed": true, "evidence": "Section 1 'Empty State (Initial Load)' includes Scenario 1.1 'Display empty state on first visit' (no todos saved, empty state message displayed) and Scenario 1.2 'Return to empty state after deleting all todos'."}, {"text": "Scenarios are independent and ordered with numbered headings", "passed": true, "evidence": "Scenarios are organized under numbered headings (1 through 7) with sub-numbering (1.1, 1.2, 2.1, etc.). Each scenario has its own Given/When/Then block and can be understood independently."}, {"text": "Mentions planner_save_plan to save specs/ markdown", "passed": false, "evidence": "No mention of 'planner_save_plan' tool anywhere in the transcript or outputs. The agent used a plain 'Write' tool to save 'test-plan.md' directly in the outputs directory, not via the planner_save_plan MCP tool and not into a 'specs/' directory."}], "summary": {"passed": 4, "failed": 3, "total": 7, "pass_rate": 0.57}, "execution_metrics": {"tool_calls": {"Read": 4, "Write": 3, "Bash": 0, "Grep": 0, "Glob": 0, "Edit": 0}, "total_tool_calls": 7, "total_steps": 4, "errors_encountered": 0, "output_chars": 4900, "transcript_chars": 2100}, "timing": {"total_tokens": 19920, "duration_ms": 81303, "total_duration_seconds": 81.3}, "claims": [{"claim": "22 test scenarios across 7 categories", "type": "factual", "verified": true, "evidence": "Counted scenarios in test-plan.md: Section 1 (2), Section 2 (3), Section 3 (2), Section 4 (4), Section 5 (2), Section 6 (6), Section 7 (3) = 22 total across 7 sections."}, {"claim": "All scenarios follow Given/When/Then format", "type": "quality", "verified": true, "evidence": "All 22 scenarios use Given/When/Then or Given/Then structure consistently throughout the test plan."}, {"claim": "The app is a blank canvas with default Next.js starter template", "type": "factual", "verified": false, "evidence": "Cannot verify from outputs alone - would need to read the actual page.tsx file. The transcript states this but the source file is not included in outputs."}], "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []}, "eval_feedback": {"suggestions": [{"assertion": "Covers Create, Read, Update, Delete operations separately", "reason": "This assertion is easily satisfied by any agent that organizes content with CRUD headings. Consider also checking that each section contains at least 2 meaningful scenarios with concrete test data, not just placeholder headings."}, {"reason": "No assertion checks whether the plan references the actual app's UI elements or is purely generic. This without_skill run produced a solid generic plan, but nothing ties it to the actual application under test since the app is just a default Next.js template. An assertion like 'scenarios reference actual UI elements observed in the app' would distinguish between a generic template and a grounded plan."}, {"assertion": "Summary mentions reading SKILL.md for playwright-test-planner", "reason": "This assertion and 'Mentions planner_save_plan' are inherently impossible to pass in a without_skill run, which is by design. They correctly measure skill adoption. No change needed."}], "overall": "The 3 failing assertions (SKILL.md, planner_setup_page, planner_save_plan) are all skill-specific tool/workflow checks that correctly fail for a without_skill baseline. The 4 passing assertions test plan quality and are well-satisfied. The eval set effectively distinguishes skill-guided vs unguided runs on the process/tooling dimension, though the content quality assertions could be more discriminating."}}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "playwright-test-planner", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-03-09T12:42:33Z", "evals_run": [1, 2, 3], "runs_per_configuration": 3}, "runs": [{"eval_id": 1, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 0.83, "passed": 5, "failed": 1, "total": 6, "time_seconds": 141.7, "tokens": 5765, "tool_calls": 15, "errors": 2}, "expectations": [{"text": "Summary mentions reading SKILL.md for playwright-test-planner", "passed": true, "evidence": "Step 1 in transcript: 'Tool: Read, File: skills/playwright-test-planner/SKILL.md, Result: Successfully read the skill file.'"}, {"text": "Mentions planner_setup_page for browser initialization", "passed": true, "evidence": "Step 1 lists 'Initialize with planner_setup_page' as the first workflow step, and Step 6 shows an actual attempt to call mcp__playwright-test__planner_setup_page (which was denied due to permissions)."}, {"text": "Mentions browser_snapshot for page structure exploration", "passed": true, "evidence": "Step 1 states: 'Explore systematically with browser_snapshot, browser_click, browser_type, browser_navigate'. However, browser_snapshot was never actually invoked -- the agent fell back to static code analysis after planner_setup_page was denied."}, {"text": "Describes user flow mapping with happy path and edge cases", "passed": true, "evidence": "The test plan covers happy path flows (sections 1-4: page loading, link navigation, layout/styling, accessibility) and edge cases (section 5: '5.1 \uc874\uc7ac\ud558\uc9c0 \uc54a\ub294 \uacbd\ub85c \uc811\uadfc' for 404 handling, '5.2 \uc815\uc801 \uc5d0\uc14b \ub85c\ub529 \uc2e4\ud328 \uc2dc \ub3d9\uc791' for asset loading failures)."}, {"text": "Each scenario includes steps, expected outcomes, and success criteria", "passed": true, "evidence": "All 14 scenarios consistently include '\ub2e8\uacc4' (steps), '\uae30\ub300 \uacb0\uacfc' (expected outcomes), '\uc131\uacf5 \uae30\uc900' (success criteria), and '\uc2e4\ud328 \uc870\uac74' (failure conditions). For example, scenario 1.1 has numbered steps, bullet-pointed expected results, and explicit success/failure criteria."}, {"text": "Mentions planner_save_plan to save specs/ markdown", "passed": false, "evidence": "The transcript explicitly states in Limitations: 'The planner_save_plan tool was not used; the plan was saved directly as a markdown file.' The plan was written to outputs/test-plan.md, not to a specs/ directory. While planner_save_plan is mentioned in Step 1 as part of reading the SKILL.md workflow, it was never actually used to save anything."}], "notes": []}, {"eval_id": 2, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 186.6, "tokens": 5765, "tool_calls": 15, "errors": 3}, "expectations": [{"text": "Summary mentions reading SKILL.md for playwright-test-planner", "passed": true, "evidence": "Step 1 explicitly states: '\ub3c4\uad6c: Read, \ud30c\uc77c: skills/playwright-test-planner/SKILL.md' and summarizes the workflow read from it including the 5-step process."}, {"text": "Mentions planner_setup_page for browser initialization", "passed": true, "evidence": "Step 1 notes 'planner_setup_page\ub85c \ube0c\ub77c\uc6b0\uc800 \ucd08\uae30\ud654' from the SKILL.md workflow. Step 5 loads it via ToolSearch. Step 6 attempts to call mcp__playwright-test__planner_setup_page (permission denied)."}, {"text": "Includes authentication as a prerequisite step", "passed": true, "evidence": "Multiple test scenarios (3.1, 3.2, 3.3, 4.1, 4.2) begin with '\uad00\ub9ac\uc790\ub85c \ub85c\uadf8\uc778\ud55c\ub2e4' (log in as admin) as a prerequisite step. Suite 1 covers the login flow itself. The entire plan is structured around authentication as a gate to admin access."}, {"text": "Describes authorized vs unauthorized access scenarios", "passed": true, "evidence": "Suite 2 '\uc778\uc99d \ubcf4\ud638 (\uc811\uadfc \uc81c\uc5b4)' covers unauthorized access: 2.1 unauthenticated dashboard access, 2.2 unauthenticated sub-page access, 2.3 expired session access. Suites 3-4 cover authorized scenarios (dashboard rendering, navigation, logout) that require prior login."}, {"text": "Mentions planner_save_plan to save specs/ markdown", "passed": true, "evidence": "Step 1 lists planner_save_plan as part of the SKILL.md workflow ('planner_save_plan\uc73c\ub85c \uc800\uc7a5'). Step 5 loads it via ToolSearch. Step 9 explicitly attempts to call mcp__playwright-test__planner_save_plan but receives permission denied. The tool is clearly mentioned and attempted."}], "notes": []}, {"eval_id": 3, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 7, "failed": 0, "total": 7, "time_seconds": 0.0, "tokens": 7842, "tool_calls": 16, "errors": 3}, "expectations": [{"text": "Summary mentions reading SKILL.md for playwright-test-planner", "passed": true, "evidence": "Step 1 in transcript: 'Tool: Read, File: ...\\skills\\playwright-test-planner\\SKILL.md, Result: Successfully read the skill definition. The skill is playwright-test-planner...'"}, {"text": "Mentions planner_setup_page for browser initialization", "passed": true, "evidence": "Step 1 lists 'Initialize with planner_setup_page' in the workflow. Step 5 loads the tool via ToolSearch. Step 7 attempts to call mcp__playwright-test__planner_setup_page (permission denied)."}, {"text": "Covers Create, Read, Update, Delete operations separately", "passed": true, "evidence": "Output plan has separate numbered sections: '2. \ud560 \uc77c \uc0dd\uc131 (Create)' with 4 scenarios, '4. \ud560 \uc77c \uc870\ud68c (Read)' with 2 scenarios, '5. \ud560 \uc77c \uc218\uc815 (Update)' with 3 scenarios, '6. \ud560 \uc77c \uc0ad\uc81c (Delete)' with 3 scenarios."}, {"text": "Includes form validation edge cases (empty input, special characters, max length)", "passed": true, "evidence": "Suite 3 covers: 3.1 empty input ('\ube48 \uc785\ub825\uc73c\ub85c \ud560 \uc77c \ucd94\uac00 \uc2dc\ub3c4'), 3.2 whitespace-only ('\uacf5\ubc31\ub9cc \uc788\ub294 \uc785\ub825'), 3.4 long text ('300\uc790 \uc774\uc0c1\uc758 \ub9e4\uc6b0 \uae34 \ud14d\uc2a4\ud2b8'). Special characters covered in 2.4 with XSS test ('<script>alert(1)</script>')."}, {"text": "Includes empty state scenario (no items in list)", "passed": true, "evidence": "Suite 1 '\ube48 \uc0c1\ud0dc \ucc98\ub9ac' has two scenarios: 1.1 '\ucd08\uae30 \ube48 \uc0c1\ud0dc \ud45c\uc2dc \ud655\uc778' (initial empty state) and 1.2 '\ubaa8\ub4e0 \ud560 \uc77c \uc0ad\uc81c \ud6c4 \ube48 \uc0c1\ud0dc \ubcf5\uadc0' (empty state after deleting all items)."}, {"text": "Scenarios are independent and ordered with numbered headings", "passed": true, "evidence": "Six numbered top-level headings (### 1 through ### 6), each with numbered sub-scenarios (1.1, 1.2, 2.1-2.4, etc.). Each scenario specifies its own spec file path and starts from a clean state."}, {"text": "Mentions planner_save_plan to save specs/ markdown", "passed": true, "evidence": "Step 1 lists 'Save the plan with planner_save_plan' in the workflow. Step 8 attempts mcp__playwright-test__planner_save_plan with the full test plan content. The tool was mentioned and invoked, though it failed due to permission restrictions, and the fallback saved to outputs/ instead of specs/."}], "notes": []}, {"eval_id": 1, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.17, "passed": 1, "failed": 5, "total": 6, "time_seconds": 101.0, "tokens": 7182, "tool_calls": 12, "errors": 1}, "expectations": [{"text": "Summary mentions reading SKILL.md for playwright-test-planner", "passed": false, "evidence": "This is a 'without_skill' run. The transcript shows no mention of reading any SKILL.md file. The agent read package.json, page.tsx, layout.tsx, next.config.ts, and globals.css \u2014 all application files, no skill instructions."}, {"text": "Mentions planner_setup_page for browser initialization", "passed": false, "evidence": "No mention of planner_setup_page anywhere in the transcript or outputs. The transcript explicitly notes: 'No browser exploration was performed (e.g., no Playwright MCP tools used) -- the analysis was based entirely on static code reading.'"}, {"text": "Mentions browser_snapshot for page structure exploration", "passed": false, "evidence": "No mention of browser_snapshot in the transcript or outputs. The Observations section confirms: 'No browser exploration was performed... the analysis was based entirely on static code reading.'"}, {"text": "Describes user flow mapping with happy path and edge cases", "passed": false, "evidence": "The test plan contains 15 individual test cases (TC-01 through TC-15) organized as element-level checks (logo visibility, heading text, link verification, etc.). There is no framing of 'user flows,' no 'happy path' designation, and no 'edge cases' section. The tests are static property assertions, not flow-based scenarios."}, {"text": "Each scenario includes steps, expected outcomes, and success criteria", "passed": true, "evidence": "Each of the 15 test cases includes a 'Steps' section with numbered steps and an 'Expected' section describing the success condition. For example, TC-01 has 4 steps and 'Expected: Page loads without errors, title and lang attribute are correct.' While 'success criteria' is not a separately labeled section, the 'Expected' field serves this role for every test case."}, {"text": "Mentions planner_save_plan to save specs/ markdown", "passed": false, "evidence": "No mention of planner_save_plan anywhere in the transcript or outputs. The output was saved via the Write tool to 'outputs/test-plan.md', not to a specs/ directory, and without using any planner-specific MCP tool."}], "notes": []}, {"eval_id": 2, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.4, "passed": 2, "failed": 3, "total": 5, "time_seconds": 100.8, "tokens": 7842, "tool_calls": 10, "errors": 1}, "expectations": [{"text": "Summary mentions reading SKILL.md for playwright-test-planner", "passed": false, "evidence": "This is a 'without_skill' run. The transcript shows only Read calls for package.json, page.tsx, and layout.tsx. No SKILL.md file was read. The executor had no awareness of the playwright-test-planner skill."}, {"text": "Mentions planner_setup_page for browser initialization", "passed": false, "evidence": "No mention of planner_setup_page anywhere in the transcript or outputs. The transcript explicitly states: 'No Playwright-specific tools (browser, planner, etc.) were used since the task was to create a plan, not execute tests.'"}, {"text": "Includes authentication as a prerequisite step", "passed": true, "evidence": "The test plan includes authentication as a prerequisite throughout. The Playwright Implementation Notes section describes using 'storageState' pattern with 'global-setup.ts' that 'logs in and saves the authentication state.' Test Suite 2 tests require clearing cookies as a first step, establishing auth state as a precondition."}, {"text": "Describes authorized vs unauthorized access scenarios", "passed": true, "evidence": "Test Suite 2 (Authentication Guard) covers both: TC-2.1/2.2/2.3 test unauthenticated users being redirected from /admin, /admin/users, /admin/settings; TC-2.4/2.5/2.6 test authenticated users successfully accessing those same pages. TC-4.1 additionally tests non-admin role being denied access."}, {"text": "Mentions planner_save_plan to save specs/ markdown", "passed": false, "evidence": "No mention of planner_save_plan anywhere in the transcript or outputs. The test plan was saved directly as 'test-plan.md' using the Write tool, not via the planner_save_plan tool and not to a specs/ directory."}], "notes": []}, {"eval_id": 3, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.57, "passed": 4, "failed": 3, "total": 7, "time_seconds": 81.3, "tokens": 4900, "tool_calls": 7, "errors": 0}, "expectations": [{"text": "Summary mentions reading SKILL.md for playwright-test-planner", "passed": false, "evidence": "The transcript shows no mention of reading SKILL.md. The agent read only 'features/next-app/package.json' and 'features/next-app/app/page.tsx'. This is a without_skill run, so the agent had no awareness of SKILL.md."}, {"text": "Mentions planner_setup_page for browser initialization", "passed": false, "evidence": "No mention of 'planner_setup_page' anywhere in the transcript or the test-plan.md output. The agent did not reference any MCP browser tools."}, {"text": "Covers Create, Read, Update, Delete operations separately", "passed": true, "evidence": "The test-plan.md has distinct numbered sections: '### 2. Create (Add Todo)' with 3 scenarios, '### 3. Read (Display Todos)' with 2 scenarios, '### 4. Update (Edit Todo)' with 4 scenarios, '### 5. Delete (Remove Todo)' with 2 scenarios."}, {"text": "Includes form validation edge cases (empty input, special characters, max length)", "passed": true, "evidence": "Section 6 'Form Validation' includes: Scenario 6.1 'Reject empty submission', Scenario 6.4 'Validate maximum character length (if applicable)'. Section 7 includes Scenario 7.2 'Special characters in todo text' with XSS example. All three edge case types are present."}, {"text": "Includes empty state scenario (no items in list)", "passed": true, "evidence": "Section 1 'Empty State (Initial Load)' includes Scenario 1.1 'Display empty state on first visit' (no todos saved, empty state message displayed) and Scenario 1.2 'Return to empty state after deleting all todos'."}, {"text": "Scenarios are independent and ordered with numbered headings", "passed": true, "evidence": "Scenarios are organized under numbered headings (1 through 7) with sub-numbering (1.1, 1.2, 2.1, etc.). Each scenario has its own Given/When/Then block and can be understood independently."}, {"text": "Mentions planner_save_plan to save specs/ markdown", "passed": false, "evidence": "No mention of 'planner_save_plan' tool anywhere in the transcript or outputs. The agent used a plain 'Write' tool to save 'test-plan.md' directly in the outputs directory, not via the planner_save_plan MCP tool and not into a 'specs/' directory."}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 0.9433, "stddev": 0.0981, "min": 0.83, "max": 1.0}, "time_seconds": {"mean": 109.4333, "stddev": 97.3948, "min": 0.0, "max": 186.6}, "tokens": {"mean": 6457.3333, "stddev": 1199.1565, "min": 5765, "max": 7842}}, "without_skill": {"pass_rate": {"mean": 0.38, "stddev": 0.2007, "min": 0.17, "max": 0.57}, "time_seconds": {"mean": 94.3667, "stddev": 11.3165, "min": 81.3, "max": 101.0}, "tokens": {"mean": 6641.3333, "stddev": 1543.7232, "min": 4900, "max": 7842}}, "delta": {"pass_rate": "+0.56", "time_seconds": "+15.1", "tokens": "-184"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

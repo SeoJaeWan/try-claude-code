@@ -1,0 +1,13 @@
+{
+  "eval_id": 3,
+  "eval_name": "ui-redesign",
+  "prompt": "UI가 리디자인돼서 셀렉터가 다 바뀌었어. 테스트 전부 깨졌는데 한번에 고쳐줘",
+  "assertions": [
+    "Summary mentions reading SKILL.md for playwright-test-healer",
+    "Mentions test_run to identify all failing tests",
+    "Mentions test_debug to pause at each failure point",
+    "Uses browser_generate_locator to get updated selectors",
+    "Updates selectors preferring getByRole/getByText over CSS selectors",
+    "Fixes tests one at a time and re-runs test_run after each fix"
+  ]
+}
