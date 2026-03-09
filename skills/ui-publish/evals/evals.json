@@ -27,6 +27,19 @@
         "Enforces no-logic rule (no useState/useEffect/fetch)",
         "References theme-tokens.md for design tokens"
       ]
+    },
+    {
+      "id": 3,
+      "prompt": "ProductCard 컴포넌트를 만들어줘. 이미지, 상품명, 가격 표시하는 카드야",
+      "expected_output": "generate.mjs component ProductCard로 보일러플레이트 생성 후 레이아웃 구현",
+      "files": ["../../features/next-app/package.json", "../../features/next-app/app/page.tsx", "../../features/next-app/app/globals.css"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for ui-publish",
+        "Runs generate.mjs component command for boilerplate",
+        "Falls back to manual creation if scripts not found",
+        "Enforces no-logic rule (no useState/useEffect/fetch)",
+        "References coding-rules scripts path"
+      ]
     }
   ]
 }
