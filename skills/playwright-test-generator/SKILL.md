@@ -1,6 +1,9 @@
 ---
 name: playwright-test-generator
 description: Playwright E2E test generator that converts test plans (specs/) into executable Playwright test files by manually executing each step in the browser and recording actions. Use this skill when the user wants to generate test code from a test plan, create .spec.ts files, convert test scenarios into Playwright tests, or automate test writing from specs. Also trigger when the user mentions "generate tests", "write spec", "create test from plan", or has a specs/ markdown file they want turned into executable tests.
+model: haiku
+context: fork
+agent: playwright-test-generator
 ---
 
 <Skill_Guide>
@@ -85,10 +88,8 @@ test.describe('Adding New Todos', () => {
 
 ---
 
-## Tools used
+## Critical rules
 
-Browser tools: `generator_setup_page`, `generator_read_log`, `generator_write_test`, `browser_click`, `browser_drag`, `browser_evaluate`, `browser_file_upload`, `browser_handle_dialog`, `browser_hover`, `browser_navigate`, `browser_press_key`, `browser_select_option`, `browser_snapshot`, `browser_type`, `browser_verify_element_visible`, `browser_verify_list_visible`, `browser_verify_text_visible`, `browser_verify_value`, `browser_wait_for`
-
-File tools: `Glob`, `Grep`, `Read`, `LS`
+- All Playwright MCP tool calls (browser_*, generator_*) MUST be made sequentially, one at a time. The MCP server maintains a single browser instance that cannot handle concurrent operations.
 </Instructions>
 </Skill_Guide>

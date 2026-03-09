@@ -1,6 +1,9 @@
 ---
 name: playwright-test-healer
 description: Playwright E2E test healer that debugs and repairs broken Playwright tests by analyzing failures, updating selectors, and fixing assertions. Use this skill when the user has failing Playwright tests, broken E2E tests, needs to fix test selectors, debug test timeouts, or repair flaky tests. Also trigger when the user mentions "test failed", "fix test", "debug test", "test broken", "selector changed", or "assertion error" in the context of Playwright or E2E testing.
+model: sonnet
+context: fork
+agent: playwright-test-healer
 ---
 
 <Skill_Guide>
@@ -73,14 +76,11 @@ Repeat investigation and fixing until all tests pass cleanly.
 - Never wait for `networkidle` or use deprecated APIs
 - If a test is correct but the application has a genuine bug, mark it as `test.fixme()` with a comment explaining the actual vs expected behavior
 - Do not ask user questions — take the most reasonable action to pass the test
-- All MCP tool calls must be sequential (single browser instance)
 
 ---
 
-## Tools used
+## Critical rules
 
-Browser tools: `test_run`, `test_debug`, `test_list`, `browser_console_messages`, `browser_evaluate`, `browser_generate_locator`, `browser_network_requests`, `browser_snapshot`
-
-File tools: `Glob`, `Grep`, `Read`, `LS`, `Edit`, `MultiEdit`, `Write`
+- All Playwright MCP tool calls (browser_*, test_*) MUST be made sequentially, one at a time. The MCP server maintains a single browser instance that cannot handle concurrent operations.
 </Instructions>
 </Skill_Guide>
