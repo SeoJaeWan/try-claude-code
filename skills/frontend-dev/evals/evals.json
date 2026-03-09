@@ -26,6 +26,19 @@
         "Implements infinite scroll with IntersectionObserver or similar",
         "Mentions TDD or test-first approach"
       ]
+    },
+    {
+      "id": 3,
+      "prompt": "useFetchOrder라는 API 훅을 만들어줘. query 방식으로 주문 데이터를 가져오는 훅이야",
+      "expected_output": "generate.mjs api-hook 명령어로 보일러플레이트 생성 후 구현, 또는 스크립트 없을 시 수동 구현",
+      "files": ["../../features/next-app/package.json", "../../features/next-app/app/page.tsx"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for frontend-dev",
+        "Runs generate.mjs api-hook command with --method query",
+        "Falls back to manual implementation if scripts not found",
+        "Generates test-suite boilerplate with generate.mjs test-suite or writes tests manually",
+        "References coding-rules scripts path"
+      ]
     }
   ]
 }

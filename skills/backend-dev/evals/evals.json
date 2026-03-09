@@ -26,6 +26,19 @@
         "Mentions TypeORM Entity or DB schema definition",
         "References coding-rules/folder-structure.md"
       ]
+    },
+    {
+      "id": 3,
+      "prompt": "주문 관리 모듈을 새로 만들어줘. orders 모듈 구조를 생성하고 기본 CRUD 넣어줘",
+      "expected_output": "generate.mjs structure orders --create로 모듈 보일러플레이트 생성 후 CRUD 구현",
+      "files": ["../../features/nest-api/package.json", "../../features/nest-api/src/app.module.ts"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for backend-dev",
+        "Runs generate.mjs structure command for module scaffolding",
+        "Falls back to manual creation if scripts not found",
+        "Creates controller, service, module files",
+        "References coding-rules scripts path"
+      ]
     }
   ]
 }
