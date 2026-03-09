@@ -11,7 +11,10 @@
       "Write",
       "Edit",
       "Glob",
-      "Grep"
+      "Grep",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:shipyard.build)",
+      "Bash(npx playwright:*)"
     ]
   }
 }

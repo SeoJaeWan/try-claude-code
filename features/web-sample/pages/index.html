@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sample Page</title>
+  <!-- BAD: no meta description -->
+  <!-- BAD: no JSON-LD structured data -->
+  <!-- BAD: render-blocking CSS (synchronous, in head) -->
+  <link rel="stylesheet" href="https://cdn.example.com/styles.css" />
+  <!-- BAD: no font-display: swap declared -->
+  <style>
+    @font-face {
+      font-family: "CustomFont";
+      src: url("/fonts/custom.woff2") format("woff2");
+      /* missing: font-display: swap */
+    }
+  </style>
+</head>
+<body>
+  <h1>Welcome to the Sample Page</h1>
+
+  <!-- GOOD: HTTPS link -->
+  <a href="https://example.com/about">About Us</a>
+
+  <!-- GOOD: image with width and height -->
+  <img src="/public/hero.png" alt="Hero banner" width="800" height="400" />
+
+  <!-- BAD: image missing alt attribute -->
+  <img src="/public/logo.png" width="120" height="40" />
+
+  <!-- BAD: image missing width and height (CLS risk) -->
+  <img src="/public/promo.png" alt="Promotional banner" />
+
+  <p>Check out our <a href="https://example.com/deals">latest deals</a>.</p>
+
+  <script>
+    // BAD: innerHTML usage (XSS risk, blocks rendering)
+    var label = document.getElementById("label");
+    var userInput = location.hash.slice(1);
+    if (label) {
+      label.innerHTML = "Hello, " + userInput;
+    }
+  </script>
+</body>
+</html>
