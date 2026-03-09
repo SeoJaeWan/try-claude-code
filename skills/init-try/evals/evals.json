@@ -1,0 +1,20 @@
+{
+  "skill_name": "init-try",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "이 프로젝트에 try-claude를 초기화해줘",
+      "expected_output": ".claude/try-claude/ 하위에 references/coding-rules/ 9개 문서 + scripts/generate.mjs, references/design/ 5개 문서, project.json, 7개 디렉토리 생성",
+      "files": [],
+      "expectations": [
+        "Summary mentions reading SKILL.md for init-try",
+        "Lists .claude/try-claude/ as target directory",
+        "Mentions references/coding-rules/ with 9 documents",
+        "Mentions scripts/generate.mjs",
+        "Mentions references/design/ with design documents",
+        "Mentions project.json creation",
+        "Lists 7 directories (plans, reports, logs, codemaps, humanmaps, jira-review, references)"
+      ]
+    }
+  ]
+}

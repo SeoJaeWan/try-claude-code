@@ -1,0 +1,19 @@
+{
+  "skill_name": "playwright-test-planner",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "현재 웹 앱을 탐색해서 E2E 테스트 플랜을 작성해줘",
+      "expected_output": "planner_setup_page로 브라우저 초기화, browser_snapshot으로 페이지 구조 탐색, 사용자 흐름 매핑, planner_save_plan으로 specs/ 저장",
+      "files": ["../../features/next-app/package.json", "../../features/next-app/app/page.tsx"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for playwright-test-planner",
+        "Mentions planner_setup_page for browser initialization",
+        "Mentions browser_snapshot for page structure exploration",
+        "Describes user flow mapping with happy path and edge cases",
+        "Each scenario includes steps, expected outcomes, and success criteria",
+        "Mentions planner_save_plan to save specs/ markdown"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "skill_name": "frontend-dev",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "로그인 페이지에 useAuth 커스텀 훅을 만들고 API 연동해줘",
+      "expected_output": "use{Verb}{Resource} 네이밍, TDD RED->GREEN 사이클, coding-rules 참조, generate.mjs 활용",
+      "files": ["../../features/next-app/package.json", "../../features/next-app/app/page.tsx", "../../features/next-app/app/layout.tsx"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for frontend-dev",
+        "References use{Verb}{Resource} naming convention",
+        "Mentions TDD RED->GREEN workflow or test-first approach",
+        "References coding-rules documents",
+        "Mentions generate.mjs or coding-rules-based implementation"
+      ]
+    }
+  ]
+}

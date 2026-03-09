@@ -1,0 +1,19 @@
+{
+  "skill_name": "doc-update",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "프로젝트 문서를 업데이트해줘. CODEMAPS랑 HUMANMAPS 둘 다 갱신해줘.",
+      "expected_output": "detect_changes.mjs -> changes.json, extract_structure.mjs -> extracted_structure.json, CODEMAPS/INDEX.md, HUMANMAPS .html 생성",
+      "files": ["../../features/next-app/package.json", "../../features/next-app/app/page.tsx", "../../features/next-app/app/layout.tsx"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for doc-update",
+        "Mentions detect_changes.mjs execution",
+        "Mentions extract_structure.mjs execution",
+        "Describes CODEMAPS/INDEX.md generation",
+        "Mentions HUMANMAPS HTML file generation",
+        "Describes pipeline execution order"
+      ]
+    }
+  ]
+}
