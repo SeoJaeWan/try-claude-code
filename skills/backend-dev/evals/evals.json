@@ -13,6 +13,19 @@
         "Mentions DB snake_case naming convention",
         "Mentions generate.mjs or manual file generation"
       ]
+    },
+    {
+      "id": 2,
+      "prompt": "상품 CRUD API를 만들어줘. TypeORM으로 DB 연동하고 DTO 검증도 포함해줘",
+      "expected_output": "products module/controller/service, CreateProductDto with class-validator, TypeORM Entity, Repository 패턴",
+      "files": ["../../features/nest-api/package.json", "../../features/nest-api/src/app.module.ts", "../../features/nest-api/src/main.ts"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for backend-dev",
+        "Creates CRUD endpoints (GET/POST/PUT/DELETE)",
+        "Mentions DTO with class-validator decorators",
+        "Mentions TypeORM Entity or DB schema definition",
+        "References coding-rules/folder-structure.md"
+      ]
     }
   ]
 }

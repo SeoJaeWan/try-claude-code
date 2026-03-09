@@ -14,6 +14,19 @@
         "Performs root cause analysis (selectors, timing, data)",
         "Fixes code and re-runs test_run to verify"
       ]
+    },
+    {
+      "id": 2,
+      "prompt": "테스트가 가끔 통과하고 가끔 실패해. flaky 테스트 원인 찾아서 고쳐줘",
+      "expected_output": "test_run 반복 실행으로 flaky 패턴 확인, 타이밍/레이스 컨디션 분석, waitFor/적절한 대기 추가",
+      "files": ["../../features/next-app/package.json", "../../seed.spec.ts"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for playwright-test-healer",
+        "Mentions test_run to identify flaky pattern",
+        "Analyzes timing or race condition as root cause",
+        "Adds explicit waits (waitFor, expect with timeout)",
+        "Re-runs test_run multiple times to confirm stability"
+      ]
     }
   ]
 }

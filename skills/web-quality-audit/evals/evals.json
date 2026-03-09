@@ -16,6 +16,20 @@
         "Mentions CWV (11 items)",
         "Mentions unified HTML+CSV report generation"
       ]
+    },
+    {
+      "id": 2,
+      "prompt": "접근성이랑 SEO만 검토해줘. 나머지는 안 해도 돼",
+      "expected_output": "A-접근성(33)과 C-SEO(10)만 선택 실행, B/D/E 스킵, 부분 리포트 생성",
+      "files": ["../../features/web-sample/pages/index.html", "../../features/web-sample/pages/dashboard.tsx"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for web-quality-audit",
+        "Executes only Accessibility and SEO reviews",
+        "Skips Best Practices, Performance, and CWV",
+        "Mentions Accessibility (33 items) checklist",
+        "Mentions SEO (10 items) checklist",
+        "Generates partial HTML+CSV report"
+      ]
     }
   ]
 }

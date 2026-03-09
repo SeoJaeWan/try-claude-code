@@ -13,6 +13,19 @@
         "References coding-rules documents",
         "Mentions generate.mjs or coding-rules-based implementation"
       ]
+    },
+    {
+      "id": 2,
+      "prompt": "상품 목록 페이지에 무한스크롤과 필터 기능을 추가해줘. 상태관리는 zustand 써줘",
+      "expected_output": "useFetchProducts 훅, zustand store, IntersectionObserver 기반 무한스크롤, 필터 상태 연동",
+      "files": ["../../features/next-app/package.json", "../../features/next-app/app/page.tsx", "../../features/next-app/app/layout.tsx"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for frontend-dev",
+        "Creates custom hook with use{Verb}{Resource} pattern",
+        "Mentions zustand or external state management setup",
+        "Implements infinite scroll with IntersectionObserver or similar",
+        "Mentions TDD or test-first approach"
+      ]
     }
   ]
 }

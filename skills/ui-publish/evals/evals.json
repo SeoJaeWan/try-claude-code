@@ -14,6 +14,19 @@
         "Enforces no-logic rule (no useState/useEffect/fetch)",
         "Describes layout-only props (className, children)"
       ]
+    },
+    {
+      "id": 2,
+      "prompt": "회원가입 폼 UI를 만들어줘. 이름, 이메일, 비밀번호 필드와 제출 버튼 포함",
+      "expected_output": "Pretendard 폰트, Tailwind CSS, no-logic, form 레이아웃만 구성, 비즈니스 로직 없음",
+      "files": ["../../features/next-app/package.json", "../../features/next-app/app/page.tsx", "../../features/next-app/app/globals.css"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for ui-publish",
+        "Creates form with input fields (name, email, password)",
+        "Mentions Tailwind CSS for styling",
+        "Enforces no-logic rule (no useState/useEffect/fetch)",
+        "References theme-tokens.md for design tokens"
+      ]
     }
   ]
 }

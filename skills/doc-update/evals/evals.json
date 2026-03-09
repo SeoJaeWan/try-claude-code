@@ -14,6 +14,19 @@
         "Mentions HUMANMAPS HTML file generation",
         "Describes pipeline execution order"
       ]
+    },
+    {
+      "id": 2,
+      "prompt": "백엔드 API 코드가 변경됐어. CODEMAPS만 부분 업데이트해줘",
+      "expected_output": "detect_changes.mjs로 변경 감지, 변경된 모듈만 extract_structure.mjs, CODEMAPS 부분 갱신",
+      "files": ["../../features/nest-api/package.json", "../../features/nest-api/src/app.module.ts", "../../features/nest-api/src/main.ts"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for doc-update",
+        "Mentions detect_changes.mjs for change detection",
+        "Performs partial update (not full regeneration)",
+        "Describes CODEMAPS/INDEX.md update",
+        "Mentions extract_structure.mjs execution"
+      ]
     }
   ]
 }
