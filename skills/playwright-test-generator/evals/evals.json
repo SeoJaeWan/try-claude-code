@@ -29,6 +29,21 @@
         "Mentions generator_write_test for .spec.ts output",
         "Generated code uses describe/test block structure"
       ]
+    },
+    {
+      "id": 3,
+      "prompt": "specs/에 있는 플랜 중에서 검색/필터 기능 테스트만 코드로 만들어줘. 결과가 없을 때도 확인해야 해",
+      "expected_output": "검색 입력 → 결과 필터링 검증, 결과 없음 UI 확인, getByRole/getByText 기반 resilient selector 사용",
+      "files": ["../../features/next-app/package.json", "../../specs/README.md", "../../seed.spec.ts"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for playwright-test-generator",
+        "Mentions generator_setup_page for browser initialization",
+        "Executes search/filter steps live in the browser",
+        "Includes no-results scenario verification",
+        "Mentions generator_read_log to retrieve execution log",
+        "Mentions generator_write_test for .spec.ts output",
+        "Uses resilient selectors (getByRole, getByText, getByLabel) over raw CSS"
+      ]
     }
   ]
 }
