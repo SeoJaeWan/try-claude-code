@@ -1,6 +1,9 @@
 ---
 name: playwright-test-planner
 description: E2E test planner that explores running web applications via browser to create comprehensive test plans. Use this skill when the user wants to create test scenarios, plan E2E tests, explore a web app for testable flows, generate test specs, or write QA documentation for a website. Also trigger when the user mentions "test plan", "test scenarios", "specs", or wants to understand what to test in their web application.
+model: sonnet
+context: fork
+agent: playwright-test-planner
 ---
 
 <Skill_Guide>
@@ -69,10 +72,8 @@ Test plans (specs/) are written in Korean. Technical terms (UI labels, code, pat
 
 ---
 
-## Tools used
+## Critical rules
 
-Browser tools: `planner_setup_page`, `planner_save_plan`, `browser_click`, `browser_close`, `browser_console_messages`, `browser_drag`, `browser_evaluate`, `browser_file_upload`, `browser_handle_dialog`, `browser_hover`, `browser_navigate`, `browser_navigate_back`, `browser_network_requests`, `browser_press_key`, `browser_run_code`, `browser_select_option`, `browser_snapshot`, `browser_take_screenshot`, `browser_type`, `browser_wait_for`
-
-File tools: `Glob`, `Grep`, `Read`, `LS`
+- All Playwright MCP tool calls (browser_*, planner_*) MUST be made sequentially, one at a time. The MCP server maintains a single browser instance that cannot handle concurrent operations.
 </Instructions>
 </Skill_Guide>
