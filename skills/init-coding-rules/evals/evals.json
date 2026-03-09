@@ -13,6 +13,19 @@
         "Describes 4-group approval workflow (ESLint, TSConfig, commitlint, husky+lint-staged)",
         "Mentions config file generation"
       ]
+    },
+    {
+      "id": 2,
+      "prompt": "NestJS 백엔드 프로젝트에 coding-rules 설정을 적용해줘",
+      "expected_output": "package.json에서 NestJS 감지, 백엔드용 ESLint 규칙 적용, 4그룹 승인 후 생성",
+      "files": ["../../features/nest-api/package.json"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for init-coding-rules",
+        "Detects NestJS framework from package.json",
+        "Mentions reading coding-rules documents",
+        "Describes 4-group approval workflow",
+        "Generates backend-appropriate config files"
+      ]
     }
   ]
 }

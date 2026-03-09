@@ -15,6 +15,20 @@
         "Generated code uses describe/test block structure",
         "Includes step comments before each action"
       ]
+    },
+    {
+      "id": 2,
+      "prompt": "회원가입 폼 테스트를 생성해줘. 유효성 검증 실패 케이스도 포함해",
+      "expected_output": "폼 입력 → 제출 → 성공/실패 검증, 빈 필드/잘못된 이메일 등 에지케이스 포함",
+      "files": ["../../features/next-app/package.json", "../../seed.spec.ts"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for playwright-test-generator",
+        "Mentions generator_setup_page for browser initialization",
+        "Generates tests for form input and submission",
+        "Includes validation failure scenarios (empty fields, invalid email)",
+        "Mentions generator_write_test for .spec.ts output",
+        "Generated code uses describe/test block structure"
+      ]
     }
   ]
 }
