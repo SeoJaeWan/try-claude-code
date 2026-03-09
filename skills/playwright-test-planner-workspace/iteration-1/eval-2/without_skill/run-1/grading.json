@@ -1,0 +1,100 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for playwright-test-planner",
+      "passed": false,
+      "evidence": "This is a 'without_skill' run. The transcript shows only Read calls for package.json, page.tsx, and layout.tsx. No SKILL.md file was read. The executor had no awareness of the playwright-test-planner skill."
+    },
+    {
+      "text": "Mentions planner_setup_page for browser initialization",
+      "passed": false,
+      "evidence": "No mention of planner_setup_page anywhere in the transcript or outputs. The transcript explicitly states: 'No Playwright-specific tools (browser, planner, etc.) were used since the task was to create a plan, not execute tests.'"
+    },
+    {
+      "text": "Includes authentication as a prerequisite step",
+      "passed": true,
+      "evidence": "The test plan includes authentication as a prerequisite throughout. The Playwright Implementation Notes section describes using 'storageState' pattern with 'global-setup.ts' that 'logs in and saves the authentication state.' Test Suite 2 tests require clearing cookies as a first step, establishing auth state as a precondition."
+    },
+    {
+      "text": "Describes authorized vs unauthorized access scenarios",
+      "passed": true,
+      "evidence": "Test Suite 2 (Authentication Guard) covers both: TC-2.1/2.2/2.3 test unauthenticated users being redirected from /admin, /admin/users, /admin/settings; TC-2.4/2.5/2.6 test authenticated users successfully accessing those same pages. TC-4.1 additionally tests non-admin role being denied access."
+    },
+    {
+      "text": "Mentions planner_save_plan to save specs/ markdown",
+      "passed": false,
+      "evidence": "No mention of planner_save_plan anywhere in the transcript or outputs. The test plan was saved directly as 'test-plan.md' using the Write tool, not via the planner_save_plan tool and not to a specs/ directory."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 3,
+    "total": 5,
+    "pass_rate": 0.4
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 3,
+      "Glob": 3,
+      "Bash": 1,
+      "Write": 3
+    },
+    "total_tool_calls": 10,
+    "total_steps": 7,
+    "errors_encountered": 1,
+    "output_chars": 7842,
+    "transcript_chars": 2280
+  },
+  "timing": {
+    "total_tokens": 19034,
+    "executor_duration_seconds": 100.8,
+    "total_duration_seconds": 100.8
+  },
+  "claims": [
+    {
+      "claim": "The app is Next.js 16.1.6 with React 19, TypeScript, and Tailwind CSS 4",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Transcript Step 1 states these were read from package.json. Consistent with the test plan header."
+    },
+    {
+      "claim": "No admin or auth pages exist in the app",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Transcript Step 2 shows Glob searches for *admin* and *auth* patterns returned no results (only node_modules matches for auth)."
+    },
+    {
+      "claim": "26 test cases were created (13 High, 9 Medium, 4 Low)",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Counted test cases in test-plan.md: Suite 1 (6) + Suite 2 (7) + Suite 3 (5) + Suite 4 (2) + Suite 5 (2) + Suite 6 (4) = 26. Priority breakdown matches the summary table."
+    },
+    {
+      "claim": "The test plan is hypothetical since no admin pages exist",
+      "type": "process",
+      "verified": true,
+      "evidence": "Transcript Step 5 states 'Since no admin/auth pages exist yet, created a comprehensive hypothetical test plan.' The plan header confirms: 'Current State: Fresh Next.js app with default home page only.'"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "Includes authentication as a prerequisite step",
+        "reason": "This assertion is loosely worded — any test plan about admin auth will naturally mention authentication. It passes here even though the executor did not use any skill-specific workflow. Consider tightening to require authentication setup via a specific mechanism (e.g., storageState file, beforeAll hook, or planner tool) rather than just mentioning auth."
+      },
+      {
+        "assertion": "Describes authorized vs unauthorized access scenarios",
+        "reason": "Similarly loose — any reasonable test plan about admin auth will cover both scenarios. This passed identically in the without_skill run, meaning it does not discriminate between skill-guided and unguided outputs. Consider requiring specific structural elements that the skill would produce (e.g., scenarios in a particular format, or saved to a specific location)."
+      },
+      {
+        "reason": "Three of five assertions (SKILL.md, planner_setup_page, planner_save_plan) test skill tool usage rather than output quality. This is appropriate for a 'without_skill' baseline comparison, but the eval set lacks assertions about output format or content quality that would differentiate a good plan from a mediocre one — e.g., whether scenarios include concrete selectors, data-testid attributes, or reference the actual app's DOM structure."
+      }
+    ],
+    "overall": "The eval set is well-designed as a skill-adoption measurement: 3 of 5 assertions specifically test whether the skill's tools were used, making it clear this run (without_skill) should score low. The 2 content assertions are too easily satisfied to differentiate quality, but that may be intentional for a baseline comparison."
+  }
+}

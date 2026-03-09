@@ -1,0 +1,106 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for playwright-test-planner",
+      "passed": false,
+      "evidence": "The transcript shows no mention of reading SKILL.md. The agent read only 'features/next-app/package.json' and 'features/next-app/app/page.tsx'. This is a without_skill run, so the agent had no awareness of SKILL.md."
+    },
+    {
+      "text": "Mentions planner_setup_page for browser initialization",
+      "passed": false,
+      "evidence": "No mention of 'planner_setup_page' anywhere in the transcript or the test-plan.md output. The agent did not reference any MCP browser tools."
+    },
+    {
+      "text": "Covers Create, Read, Update, Delete operations separately",
+      "passed": true,
+      "evidence": "The test-plan.md has distinct numbered sections: '### 2. Create (Add Todo)' with 3 scenarios, '### 3. Read (Display Todos)' with 2 scenarios, '### 4. Update (Edit Todo)' with 4 scenarios, '### 5. Delete (Remove Todo)' with 2 scenarios."
+    },
+    {
+      "text": "Includes form validation edge cases (empty input, special characters, max length)",
+      "passed": true,
+      "evidence": "Section 6 'Form Validation' includes: Scenario 6.1 'Reject empty submission', Scenario 6.4 'Validate maximum character length (if applicable)'. Section 7 includes Scenario 7.2 'Special characters in todo text' with XSS example. All three edge case types are present."
+    },
+    {
+      "text": "Includes empty state scenario (no items in list)",
+      "passed": true,
+      "evidence": "Section 1 'Empty State (Initial Load)' includes Scenario 1.1 'Display empty state on first visit' (no todos saved, empty state message displayed) and Scenario 1.2 'Return to empty state after deleting all todos'."
+    },
+    {
+      "text": "Scenarios are independent and ordered with numbered headings",
+      "passed": true,
+      "evidence": "Scenarios are organized under numbered headings (1 through 7) with sub-numbering (1.1, 1.2, 2.1, etc.). Each scenario has its own Given/When/Then block and can be understood independently."
+    },
+    {
+      "text": "Mentions planner_save_plan to save specs/ markdown",
+      "passed": false,
+      "evidence": "No mention of 'planner_save_plan' tool anywhere in the transcript or outputs. The agent used a plain 'Write' tool to save 'test-plan.md' directly in the outputs directory, not via the planner_save_plan MCP tool and not into a 'specs/' directory."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 3,
+    "total": 7,
+    "pass_rate": 0.57
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 4,
+      "Write": 3,
+      "Bash": 0,
+      "Grep": 0,
+      "Glob": 0,
+      "Edit": 0
+    },
+    "total_tool_calls": 7,
+    "total_steps": 4,
+    "errors_encountered": 0,
+    "output_chars": 4900,
+    "transcript_chars": 2100
+  },
+  "timing": {
+    "total_tokens": 19920,
+    "duration_ms": 81303,
+    "total_duration_seconds": 81.3
+  },
+  "claims": [
+    {
+      "claim": "22 test scenarios across 7 categories",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Counted scenarios in test-plan.md: Section 1 (2), Section 2 (3), Section 3 (2), Section 4 (4), Section 5 (2), Section 6 (6), Section 7 (3) = 22 total across 7 sections."
+    },
+    {
+      "claim": "All scenarios follow Given/When/Then format",
+      "type": "quality",
+      "verified": true,
+      "evidence": "All 22 scenarios use Given/When/Then or Given/Then structure consistently throughout the test plan."
+    },
+    {
+      "claim": "The app is a blank canvas with default Next.js starter template",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Cannot verify from outputs alone - would need to read the actual page.tsx file. The transcript states this but the source file is not included in outputs."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "Covers Create, Read, Update, Delete operations separately",
+        "reason": "This assertion is easily satisfied by any agent that organizes content with CRUD headings. Consider also checking that each section contains at least 2 meaningful scenarios with concrete test data, not just placeholder headings."
+      },
+      {
+        "reason": "No assertion checks whether the plan references the actual app's UI elements or is purely generic. This without_skill run produced a solid generic plan, but nothing ties it to the actual application under test since the app is just a default Next.js template. An assertion like 'scenarios reference actual UI elements observed in the app' would distinguish between a generic template and a grounded plan."
+      },
+      {
+        "assertion": "Summary mentions reading SKILL.md for playwright-test-planner",
+        "reason": "This assertion and 'Mentions planner_save_plan' are inherently impossible to pass in a without_skill run, which is by design. They correctly measure skill adoption. No change needed."
+      }
+    ],
+    "overall": "The 3 failing assertions (SKILL.md, planner_setup_page, planner_save_plan) are all skill-specific tool/workflow checks that correctly fail for a without_skill baseline. The 4 passing assertions test plan quality and are well-satisfied. The eval set effectively distinguishes skill-guided vs unguided runs on the process/tooling dimension, though the content quality assertions could be more discriminating."
+  }
+}

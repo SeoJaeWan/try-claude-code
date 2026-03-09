@@ -1,0 +1,109 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for playwright-test-planner",
+      "passed": true,
+      "evidence": "Step 1 in transcript: 'Tool: Read, File: skills/playwright-test-planner/SKILL.md, Result: Successfully read the skill file.'"
+    },
+    {
+      "text": "Mentions planner_setup_page for browser initialization",
+      "passed": true,
+      "evidence": "Step 1 lists 'Initialize with planner_setup_page' as the first workflow step, and Step 6 shows an actual attempt to call mcp__playwright-test__planner_setup_page (which was denied due to permissions)."
+    },
+    {
+      "text": "Mentions browser_snapshot for page structure exploration",
+      "passed": true,
+      "evidence": "Step 1 states: 'Explore systematically with browser_snapshot, browser_click, browser_type, browser_navigate'. However, browser_snapshot was never actually invoked -- the agent fell back to static code analysis after planner_setup_page was denied."
+    },
+    {
+      "text": "Describes user flow mapping with happy path and edge cases",
+      "passed": true,
+      "evidence": "The test plan covers happy path flows (sections 1-4: page loading, link navigation, layout/styling, accessibility) and edge cases (section 5: '5.1 존재하지 않는 경로 접근' for 404 handling, '5.2 정적 에셋 로딩 실패 시 동작' for asset loading failures)."
+    },
+    {
+      "text": "Each scenario includes steps, expected outcomes, and success criteria",
+      "passed": true,
+      "evidence": "All 14 scenarios consistently include '단계' (steps), '기대 결과' (expected outcomes), '성공 기준' (success criteria), and '실패 조건' (failure conditions). For example, scenario 1.1 has numbered steps, bullet-pointed expected results, and explicit success/failure criteria."
+    },
+    {
+      "text": "Mentions planner_save_plan to save specs/ markdown",
+      "passed": false,
+      "evidence": "The transcript explicitly states in Limitations: 'The planner_save_plan tool was not used; the plan was saved directly as a markdown file.' The plan was written to outputs/test-plan.md, not to a specs/ directory. While planner_save_plan is mentioned in Step 1 as part of reading the SKILL.md workflow, it was never actually used to save anything."
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 1,
+    "total": 6,
+    "pass_rate": 0.83
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 4,
+      "Glob": 5,
+      "Write": 3,
+      "ToolSearch": 1,
+      "mcp__playwright-test__planner_setup_page": 1,
+      "Edit": 0,
+      "Bash": 1
+    },
+    "total_tool_calls": 15,
+    "total_steps": 9,
+    "errors_encountered": 2,
+    "output_chars": 5765,
+    "transcript_chars": 3280
+  },
+  "timing": {
+    "total_duration_seconds": 141.7
+  },
+  "claims": [
+    {
+      "claim": "Created 14 test scenarios across 6 categories",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Counted 14 numbered scenarios (1.1-1.3, 2.1-2.4, 3.1-3.2, 4.1-4.2, 5.1-5.2, 6.1) across 6 numbered category headings in test-plan.md."
+    },
+    {
+      "claim": "Browser-based exploration was not available due to permission restrictions",
+      "type": "process",
+      "verified": true,
+      "evidence": "metrics.json lists 'mcp__playwright-test__planner_setup_page permission denied' as an error. The transcript confirms this in Step 6."
+    },
+    {
+      "claim": "Test plan was written in Korean with technical terms in English",
+      "type": "quality",
+      "verified": true,
+      "evidence": "test-plan.md uses Korean for descriptions and headings while keeping technical terms like 'HTTP 200', 'alt', 'href', 'target=\"_blank\"', 'prefers-color-scheme: dark' in English."
+    },
+    {
+      "claim": "The app is a default Next.js starter application",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Transcript Step 2 confirms reading package.json (Next.js 16.1.6) and page.tsx showing default starter page content. Step 3 shows only layout.tsx and page.tsx exist."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "Mentions browser_snapshot for page structure exploration",
+        "reason": "This assertion passes merely because browser_snapshot is named in the transcript summary of SKILL.md contents. The agent never actually used browser_snapshot -- it fell back to static code analysis. A stronger assertion would be 'Uses browser_snapshot to explore the live page structure' which would have failed here and revealed the degraded execution path."
+      },
+      {
+        "assertion": "Mentions planner_save_plan to save specs/ markdown",
+        "reason": "The wording 'mentions' is ambiguous -- does it mean the tool is referenced in passing, or that it was actually used? The agent mentioned it when summarizing SKILL.md but never invoked it. Consider splitting into two assertions: one for awareness of the tool, one for actual usage."
+      },
+      {
+        "reason": "No assertion checks whether the test plan was actually saved using planner_save_plan vs. a raw Write call. The agent bypassed the skill's intended tool and wrote directly to outputs/test-plan.md. This is a significant deviation from the skill workflow that goes undetected by the current assertions."
+      },
+      {
+        "reason": "No assertion checks that the agent actually performed live browser exploration. The entire execution fell back to static code analysis due to permission errors, meaning the core task ('explore the current web app') was not accomplished as intended. An assertion like 'Agent successfully opens the app in a browser' would catch this critical failure."
+      }
+    ],
+    "overall": "The assertions mostly check for mentions of tools rather than actual usage. Since the browser exploration failed entirely (permission denied), the agent produced a test plan based solely on reading source code, which is a fundamentally different and less reliable approach. The current assertions do not distinguish between these two execution paths."
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "tool_calls": {
+    "Read": 6,
+    "Glob": 5,
+    "Grep": 1,
+    "Bash": 2,
+    "ToolSearch": 2,
+    "Write": 5,
+    "mcp__playwright-test__generator_setup_page": 1
+  },
+  "total_tool_calls": 22,
+  "total_steps": 8,
+  "files_created": 5,
+  "errors_encountered": 2,
+  "error_details": [
+    "Bash mkdir denied - outputs directory creation blocked",
+    "generator_setup_page denied - MCP tool permission not granted"
+  ],
+  "output_chars": 3842,
+  "transcript_chars": 3180
+}

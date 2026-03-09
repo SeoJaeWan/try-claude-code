@@ -1,0 +1,14 @@
+{
+  "eval_id": 3,
+  "eval_name": "crud-validation",
+  "prompt": "CRUD 기능이 있는 할 일 관리 앱인데, 폼 유효성 검증이랑 빈 상태 처리도 테스트해야 해. 테스트 시나리오 정리해줘",
+  "assertions": [
+    "Summary mentions reading SKILL.md for playwright-test-planner",
+    "Mentions planner_setup_page for browser initialization",
+    "Covers Create, Read, Update, Delete operations separately",
+    "Includes form validation edge cases (empty input, special characters, max length)",
+    "Includes empty state scenario (no items in list)",
+    "Scenarios are independent and ordered with numbered headings",
+    "Mentions planner_save_plan to save specs/ markdown"
+  ]
+}

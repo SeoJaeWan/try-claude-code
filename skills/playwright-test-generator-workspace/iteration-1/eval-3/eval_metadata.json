@@ -1,0 +1,14 @@
+{
+  "eval_id": 3,
+  "eval_name": "search-filter",
+  "prompt": "specs/에 있는 플랜 중에서 검색/필터 기능 테스트만 코드로 만들어줘. 결과가 없을 때도 확인해야 해",
+  "assertions": [
+    "Summary mentions reading SKILL.md for playwright-test-generator",
+    "Mentions generator_setup_page for browser initialization",
+    "Executes search/filter steps live in the browser",
+    "Includes no-results scenario verification",
+    "Mentions generator_read_log to retrieve execution log",
+    "Mentions generator_write_test for .spec.ts output",
+    "Uses resilient selectors (getByRole, getByText, getByLabel) over raw CSS"
+  ]
+}

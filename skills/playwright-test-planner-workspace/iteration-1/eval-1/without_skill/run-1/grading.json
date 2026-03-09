@@ -1,0 +1,105 @@
+{
+  "expectations": [
+    {
+      "text": "Summary mentions reading SKILL.md for playwright-test-planner",
+      "passed": false,
+      "evidence": "This is a 'without_skill' run. The transcript shows no mention of reading any SKILL.md file. The agent read package.json, page.tsx, layout.tsx, next.config.ts, and globals.css — all application files, no skill instructions."
+    },
+    {
+      "text": "Mentions planner_setup_page for browser initialization",
+      "passed": false,
+      "evidence": "No mention of planner_setup_page anywhere in the transcript or outputs. The transcript explicitly notes: 'No browser exploration was performed (e.g., no Playwright MCP tools used) -- the analysis was based entirely on static code reading.'"
+    },
+    {
+      "text": "Mentions browser_snapshot for page structure exploration",
+      "passed": false,
+      "evidence": "No mention of browser_snapshot in the transcript or outputs. The Observations section confirms: 'No browser exploration was performed... the analysis was based entirely on static code reading.'"
+    },
+    {
+      "text": "Describes user flow mapping with happy path and edge cases",
+      "passed": false,
+      "evidence": "The test plan contains 15 individual test cases (TC-01 through TC-15) organized as element-level checks (logo visibility, heading text, link verification, etc.). There is no framing of 'user flows,' no 'happy path' designation, and no 'edge cases' section. The tests are static property assertions, not flow-based scenarios."
+    },
+    {
+      "text": "Each scenario includes steps, expected outcomes, and success criteria",
+      "passed": true,
+      "evidence": "Each of the 15 test cases includes a 'Steps' section with numbered steps and an 'Expected' section describing the success condition. For example, TC-01 has 4 steps and 'Expected: Page loads without errors, title and lang attribute are correct.' While 'success criteria' is not a separately labeled section, the 'Expected' field serves this role for every test case."
+    },
+    {
+      "text": "Mentions planner_save_plan to save specs/ markdown",
+      "passed": false,
+      "evidence": "No mention of planner_save_plan anywhere in the transcript or outputs. The output was saved via the Write tool to 'outputs/test-plan.md', not to a specs/ directory, and without using any planner-specific MCP tool."
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 5,
+    "total": 6,
+    "pass_rate": 0.17
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 5,
+      "Glob": 3,
+      "Bash": 1,
+      "Write": 3
+    },
+    "total_tool_calls": 12,
+    "total_steps": 8,
+    "errors_encountered": 1,
+    "output_chars": 7182,
+    "transcript_chars": 2847
+  },
+  "timing": {
+    "total_tokens": 18819,
+    "executor_duration_seconds": 101.0,
+    "total_duration_seconds": 101.0
+  },
+  "claims": [
+    {
+      "claim": "15 test cases were created covering all visible elements",
+      "type": "quality",
+      "verified": true,
+      "evidence": "test-plan.md contains exactly 15 test cases (TC-01 through TC-15), each targeting a distinct element or behavior identified in the source code."
+    },
+    {
+      "claim": "No browser exploration was performed",
+      "type": "process",
+      "verified": true,
+      "evidence": "The tools summary in the transcript shows only Read, Glob, Bash, and Write tools. No Playwright MCP tools (browser_*, planner_*) were used."
+    },
+    {
+      "claim": "The app uses Next.js 16.1.6 with React 19.2.3",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Cannot independently verify package.json contents from available outputs, but the claim is sourced from reading the actual package.json file."
+    },
+    {
+      "claim": "Analysis was based entirely on static code reading",
+      "type": "process",
+      "verified": true,
+      "evidence": "The transcript confirms all steps used Read and Glob tools to examine source files. No browser-based tools were invoked."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "Each scenario includes steps, expected outcomes, and success criteria",
+        "reason": "This assertion is easily satisfied by any structured test plan template. It doesn't discriminate between a skill-guided plan and a manually written one — as demonstrated by the without_skill run passing it. Consider making this more specific to the planner skill's output format or requiring the scenarios to reference actual observed browser state."
+      },
+      {
+        "assertion": "Describes user flow mapping with happy path and edge cases",
+        "reason": "This is a good discriminating assertion — it correctly failed here since the without_skill run produced element-level checks rather than flow-based scenarios. However, the wording is vague enough that a test plan mentioning 'happy path' once in passing might satisfy it. Consider requiring specific flow names or a minimum number of distinct flows."
+      },
+      {
+        "reason": "No assertion checks whether the agent actually launched the app in a browser and interacted with it. This is arguably the most important differentiator for the planner skill. Consider adding: 'Agent navigates to the running app in a browser before writing the plan.'"
+      }
+    ],
+    "overall": "The expectations are heavily skill-specific (SKILL.md, planner_setup_page, browser_snapshot, planner_save_plan), making this a good baseline comparison — the without_skill run correctly fails on 5 of 6. The one passing assertion (steps/expected/criteria) is the weakest since it tests generic test plan structure rather than skill-specific behavior."
+  }
+}
