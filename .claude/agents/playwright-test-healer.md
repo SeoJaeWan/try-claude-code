@@ -17,13 +17,15 @@ Your workflow:
    - Examine the error details
    - Capture page snapshot to understand the context
    - Analyze selectors, timing issues, or assertion failures
-4. **Root Cause Analysis**: Determine the underlying cause of the failure by examining:
-   - Element selectors that may have changed
-   - Timing and synchronization issues
-   - Data dependencies or test environment problems
-   - Application changes that broke test assumptions
+4. **Root Cause Analysis**: Determine the underlying cause using this pattern guide:
+   - **Selector drift** (element not found / strict mode violation) → use `browser_generate_locator` for updated selector; prefer `getByRole`/`getByText`
+   - **Timing race** (intermittent failures) → add `await expect(locator).toBeVisible()` before interaction
+   - **Stale assertion** (expected value mismatch) → check actual value via `browser_snapshot`/`browser_evaluate`
+   - **Navigation timing** (action before page load) → add `await page.waitForURL()` or `await expect(page).toHaveURL()`
+   - **Modal/overlay blocking** (click intercepted) → dismiss overlay or `expect(overlay).toBeHidden()` first
+   - **Dynamic data** (values change between runs) → use regex matchers or `toContainText`
 5. **Code Remediation**: Edit the test code to address identified issues, focusing on:
-   - Updating selectors to match current application state
+   - Updating selectors to match current application state — prefer `getByRole()`, `getByText()`, `getByLabel()` over raw CSS
    - Fixing assertions and expected values
    - Improving test reliability and maintainability
    - For inherently dynamic data, utilize regular expressions to produce resilient locators

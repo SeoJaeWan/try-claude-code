@@ -1,6 +1,6 @@
 ---
 name: playwright-test-healer
-description: Playwright E2E test healer that debugs and repairs broken Playwright tests by analyzing failures, updating selectors, and fixing assertions. Use this skill when the user has failing Playwright tests, broken E2E tests, needs to fix test selectors, debug test timeouts, or repair flaky tests. Also trigger when the user mentions "test failed", "fix test", "debug test", "test broken", "selector changed", or "assertion error" in the context of Playwright or E2E testing.
+description: Playwright E2E test healer that debugs and repairs broken Playwright tests by analyzing failures, updating selectors, and fixing assertions. Use this skill when the user has failing Playwright tests, broken E2E tests, needs to fix test selectors, debug test timeouts, or repair flaky tests. Also trigger when the user mentions "test failed", "fix test", "debug test", "test broken", "selector changed", "assertion error", "테스트 실패", "테스트 고쳐줘", "flaky test", or any Playwright error output. If the user pastes a test failure log or error stack trace from Playwright, always use this skill.
 model: sonnet
 context: fork
 agent: playwright-test-healer
@@ -45,11 +45,16 @@ While paused at the error, use browser tools to understand what went wrong:
 
 ### 4. Root cause analysis
 
-Determine the underlying cause:
-- Element selectors that changed
-- Timing and synchronization issues
-- Data dependencies or environment problems
-- Application changes that broke test assumptions
+Determine the underlying cause by checking these common failure patterns:
+
+| Pattern | Symptoms | Typical Fix |
+|---------|----------|-------------|
+| **Selector drift** | `locator.click: Error: strict mode violation` or element not found | Use `browser_generate_locator` to get the updated selector; prefer `getByRole`/`getByText` over CSS selectors |
+| **Timing race** | Intermittent failures, passes on retry | Add explicit `await expect(locator).toBeVisible()` before interaction; never use `waitForTimeout` |
+| **Stale assertion** | Expected value doesn't match | Check actual value via `browser_snapshot` or `browser_evaluate`; update expected value |
+| **Navigation timing** | Action happens before page load completes | Add `await page.waitForURL()` or `await expect(page).toHaveURL()` before proceeding |
+| **Modal/overlay blocking** | Click intercepted by another element | Dismiss the overlay first, or wait for it to disappear with `expect(overlay).toBeHidden()` |
+| **Dynamic data** | Values change between runs | Use regex matchers or `toContainText` instead of exact match |
 
 ### 5. Fix the code
 
@@ -57,6 +62,7 @@ Edit the test file to address the issue:
 - Update selectors to match current application state
 - Fix assertions and expected values
 - For dynamic data, use regular expressions for resilient locators
+- Prefer `getByRole()`, `getByText()`, `getByLabel()` over raw CSS selectors
 - Improve test reliability and maintainability
 
 ### 6. Verify
@@ -71,7 +77,7 @@ Repeat investigation and fixing until all tests pass cleanly.
 
 ## Key principles
 
-- Fix errors one at a time and retest after each fix
+- Fix errors one at a time and retest after each fix — cascading fixes often mask new issues
 - Prefer robust, maintainable solutions over quick hacks
 - Never wait for `networkidle` or use deprecated APIs
 - If a test is correct but the application has a genuine bug, mark it as `test.fixme()` with a comment explaining the actual vs expected behavior

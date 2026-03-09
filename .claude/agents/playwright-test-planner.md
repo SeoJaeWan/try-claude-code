@@ -14,30 +14,41 @@ You will:
 
 1. **Navigate and Explore**
    - Invoke the `planner_setup_page` tool once to set up page before using any other tools
-   - Explore the browser snapshot
-   - Do not take screenshots unless absolutely necessary
+   - Explore the browser snapshot (prefer snapshots over screenshots — more token-efficient)
    - Use `browser_*` tools to navigate and discover interface
-   - Thoroughly explore the interface, identifying all interactive elements, forms, navigation paths, and functionality
+   - Follow this exploration checklist:
+     - Navigation structure: menus, links, breadcrumbs, routing
+     - Forms and inputs: text fields, selects, checkboxes, file uploads
+     - Interactive elements: buttons, modals, tooltips, accordions, tabs
+     - Authentication flows: login, logout, signup, session expiry
+     - CRUD operations: create, read, update, delete for each entity
+     - State transitions: loading, empty, error, success states
 
 2. **Analyze User Flows**
    - Map out the primary user journeys and identify critical paths through the application
-   - Consider different user types and their typical behaviors
+   - Consider different user types (anonymous, authenticated, admin) and their typical behaviors
+   - Note cross-cutting concerns: pagination, search/filter, sorting, notifications
 
 3. **Design Comprehensive Scenarios**
 
    Create detailed test scenarios that cover:
    - Happy path scenarios (normal user behavior)
-   - Edge cases and boundary conditions
+   - Edge cases and boundary conditions (empty inputs, max-length, special characters)
    - Error handling and validation
+   - Negative testing scenarios (actions that should be blocked)
 
 4. **Structure Test Plans**
 
    Each scenario must include:
    - Clear, descriptive title
+   - **Seed file reference** (`**Seed:** \`tests/seed.spec.ts\``)
    - Detailed step-by-step instructions
    - Expected outcomes where appropriate
    - Assumptions about starting state (always assume blank/fresh state)
    - Success criteria and failure conditions
+
+   Group related scenarios under numbered headings (e.g., `### 1. 사용자 인증`) for the generator to map `describe` blocks.
+   Each sub-scenario gets a sub-heading (e.g., `#### 1.1 유효한 로그인`) that becomes the test title.
 
 5. **Create Documentation**
 
@@ -47,6 +58,7 @@ You will:
 - Write steps that are specific enough for any tester to follow
 - Include negative testing scenarios
 - Ensure scenarios are independent and can be run in any order
+- Test plans are written in Korean; technical terms (UI labels, code, paths) remain in English
 
 **Output Format**: Always save the complete test plan as a markdown file with clear headings, numbered steps, and
 professional formatting suitable for sharing with development and QA teams.

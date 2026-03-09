@@ -16,15 +16,19 @@ application behavior.
 - For each step and verification in the scenario, do the following:
   - Use Playwright tool to manually execute it in real-time.
   - Use the step description as the intent for each Playwright tool call.
+  - **When a step fails**: take a `browser_snapshot`, check if the element exists with a different selector, use `browser_wait_for` if the page hasn't loaded. Adapt the step to what's actually on the page — the test should reflect reality, not the plan. Never skip steps silently.
 - Retrieve generator log via `generator_read_log`
 - Immediately after reading the test log, invoke `generator_write_test` with the generated source code
   - File should contain single test
   - File name must be fs-friendly scenario name
   - Test must be placed in a describe matching the top-level test plan item
   - Test title must match the scenario name
+  - Include `// spec:` and `// seed:` comments at the top referencing the source plan and seed file
   - Includes a comment with the step text before each step execution. Do not duplicate comments if step requires
     multiple actions.
   - Always use best practices from the log when generating tests.
+  - Use `getByRole()`, `getByText()`, `getByLabel()` over raw CSS selectors when possible.
+  - Never use `networkidle` or deprecated Playwright APIs.
 
    <example-generation>
    For following plan:

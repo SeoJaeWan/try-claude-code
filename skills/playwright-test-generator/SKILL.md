@@ -1,7 +1,7 @@
 ---
 name: playwright-test-generator
-description: Playwright E2E test generator that converts test plans (specs/) into executable Playwright test files by manually executing each step in the browser and recording actions. Use this skill when the user wants to generate test code from a test plan, create .spec.ts files, convert test scenarios into Playwright tests, or automate test writing from specs. Also trigger when the user mentions "generate tests", "write spec", "create test from plan", or has a specs/ markdown file they want turned into executable tests.
-model: haiku
+description: Playwright E2E test generator that converts test plans (specs/) into executable Playwright test files by manually executing each step in the browser and recording actions. Use this skill when the user wants to generate test code from a test plan, create .spec.ts files, convert test scenarios into Playwright tests, or automate test writing from specs. Also trigger when the user mentions "generate tests", "write spec", "create test from plan", "테스트 코드 생성", "spec 파일 만들어줘", or has a specs/ markdown file they want turned into executable tests. If there are spec files in specs/ and the user asks for test code, always use this skill.
+model: sonnet
 context: fork
 agent: playwright-test-generator
 ---
@@ -43,6 +43,13 @@ For each step and verification in the scenario:
 - Use the step description as the intent for each tool call
 - `browser_click`, `browser_type`, `browser_snapshot` etc.
 
+**When a step fails during live execution:**
+- Take a `browser_snapshot` to understand the current page state
+- Check if the element exists but with a different selector or position
+- If the page hasn't loaded yet, use `browser_wait_for` before retrying
+- If the step genuinely doesn't match the current UI, note the discrepancy and adapt the step to what's actually on the page — the generated test should reflect reality, not the plan
+- Do not skip steps silently; record what happened in a comment
+
 ### 4. Read the execution log
 
 After completing all steps, retrieve the recorded interaction log via `generator_read_log`. This log contains the actual Playwright actions, selectors, and best practices observed during execution.
@@ -56,8 +63,10 @@ Requirements for the generated file:
 - File name must be filesystem-friendly scenario name
 - Test placed in a `describe` block matching the top-level test plan item
 - Test title matches the scenario name
+- Include `// spec:` and `// seed:` comments at the top referencing the source plan and seed file
 - Comment with step text before each step execution (no duplicate comments for multi-action steps)
 - Apply best practices from the execution log
+- Use Playwright's auto-waiting and web-first assertions (`expect(locator).toBeVisible()`) rather than manual waits
 
 ### Example
 
@@ -91,5 +100,7 @@ test.describe('Adding New Todos', () => {
 ## Critical rules
 
 - All Playwright MCP tool calls (browser_*, generator_*) MUST be made sequentially, one at a time. The MCP server maintains a single browser instance that cannot handle concurrent operations.
+- Never use `networkidle` or deprecated Playwright APIs.
+- Use `page.getByRole()`, `page.getByText()`, `page.getByLabel()` over raw CSS selectors when possible — they are more resilient to DOM changes.
 </Instructions>
 </Skill_Guide>

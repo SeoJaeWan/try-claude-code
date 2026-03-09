@@ -27,6 +27,20 @@
         "Adds explicit waits (waitFor, expect with timeout)",
         "Re-runs test_run multiple times to confirm stability"
       ]
+    },
+    {
+      "id": 3,
+      "prompt": "UI가 리디자인돼서 셀렉터가 다 바뀌었어. 테스트 전부 깨졌는데 한번에 고쳐줘",
+      "expected_output": "test_run으로 전체 실패 목록 확인, test_debug + browser_generate_locator로 새 셀렉터 확인, 각 테스트 파일 수정, getByRole/getByText 우선 사용",
+      "files": ["../../features/next-app/package.json", "../../seed.spec.ts"],
+      "expectations": [
+        "Summary mentions reading SKILL.md for playwright-test-healer",
+        "Mentions test_run to identify all failing tests",
+        "Mentions test_debug to pause at each failure point",
+        "Uses browser_generate_locator to get updated selectors",
+        "Updates selectors preferring getByRole/getByText over CSS selectors",
+        "Fixes tests one at a time and re-runs test_run after each fix"
+      ]
     }
   ]
 }
