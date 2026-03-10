@@ -94,11 +94,11 @@ Use template references when drafting:
 
 ### Step 3.5. Generate test plan (conditional)
 
-If the plan includes testable code units (hooks, services, utilities) **and** constraint IDs (`[C-...]`), run the `plan-tests` workflow:
+If the plan includes testable logic boundaries (hooks, services, utilities, validators, mappers, use cases, state management, controller methods) **and** constraint IDs (`[C-...]`), run the `plan-tests` workflow:
 
 1. Read `./.codex/skills/plan-tests/SKILL.md`
 2. Execute the plan-tests workflow to generate test files under `./plans/{task-name}/tests/`
-3. Verify `tests/manifest.md` shows 100% constraint coverage
+3. Verify `tests/manifest.md` shows 100% constraint coverage with explicit defensive and edge/exception review
 
 **Skip** if the plan contains only documentation, configuration, or structural changes with no testable code units.
 
