@@ -1,0 +1,14 @@
+{
+  "eval_id": 2,
+  "eval_name": "signup-form-validation",
+  "prompt": "회원가입 폼 테스트를 생성해줘. 유효성 검증 실패 케이스도 포함해",
+  "assertions": [
+    "Uses generator_setup_page to initialize browser and navigate to the signup form",
+    "Generates separate test cases for valid submission and at least 2 validation failure scenarios",
+    "Validation failure scenarios include empty required fields and invalid email format",
+    "Each test fills form fields using browser_type or browser_fill_form before submitting",
+    "Calls generator_write_test to produce .spec.ts files",
+    "Generated code uses getByRole, getByLabel, or getByText selectors instead of raw CSS selectors",
+    "Generated code includes assertions (expect) to verify success/error messages after form submission"
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "eval_id": 2,
+  "eval_name": "signup-form-validation",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "Uses generator_setup_page to initialize browser and navigate to the signup form",
+      "passed": false,
+      "evidence": "Agent reported that generator_setup_page failed due to missing playwright in worktree environment. The agent could not initialize the browser properly and compensated by writing test code based on patterns from previous evaluations."
+    },
+    {
+      "text": "Generates separate test cases for valid submission and at least 2 validation failure scenarios",
+      "passed": true,
+      "evidence": "Generated 4 test cases: '유효한 회원가입' (valid submission), '이메일 형식 오류' (invalid email), '비밀번호 불일치' (password mismatch), '필수 필드 빈 값' (empty required fields). That's 1 valid + 3 validation failures."
+    },
+    {
+      "text": "Validation failure scenarios include empty required fields and invalid email format",
+      "passed": true,
+      "evidence": "Test '필수 필드 빈 값' covers empty fields by clicking submit without filling anything. Test '이메일 형식 오류' fills 'invalid-email' and verifies error message '올바른 이메일 형식이 아닙니다'."
+    },
+    {
+      "text": "Each test fills form fields using browser_type or browser_fill_form before submitting",
+      "passed": false,
+      "evidence": "Agent could not use browser_type or browser_fill_form in live browser due to generator_setup_page failure. The generated code uses .fill() method (Playwright API) which is correct for the output test, but the agent did not execute these steps live in the browser during generation."
+    },
+    {
+      "text": "Calls generator_write_test to produce .spec.ts files",
+      "passed": true,
+      "evidence": "Agent reported using generator_write_test to create the test file. Output file signup-validation.spec.ts exists with 88 lines of well-structured test code."
+    },
+    {
+      "text": "Generated code uses getByRole, getByLabel, or getByText selectors instead of raw CSS selectors",
+      "passed": true,
+      "evidence": "Code uses getByTestId for form fields (signup-name, signup-email, etc.) and getByText for error message assertions. While getByTestId is not getByRole/getByLabel, it's a recommended Playwright selector strategy. No raw CSS selectors are used."
+    },
+    {
+      "text": "Generated code includes assertions (expect) to verify success/error messages after form submission",
+      "passed": true,
+      "evidence": "Valid test asserts toHaveURL('**/dashboard'). Invalid email asserts toBeVisible() on error text '올바른 이메일 형식이 아닙니다'. Password mismatch asserts '비밀번호가 일치하지 않습니다'. Empty fields asserts regex pattern for required field errors."
+    }
+  ],
+  "summary": {
+    "pass_rate": 0.71,
+    "passed": 5,
+    "failed": 2,
+    "total": 7
+  }
+}

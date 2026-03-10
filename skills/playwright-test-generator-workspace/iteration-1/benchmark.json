@@ -1,169 +1,51 @@
 {
   "metadata": {
     "skill_name": "playwright-test-generator",
-    "skill_path": "<path/to/skill>",
-    "executor_model": "<model-name>",
-    "analyzer_model": "<model-name>",
-    "timestamp": "2026-03-10T03:44:06Z",
-    "evals_run": [
-      1
-    ],
-    "runs_per_configuration": 3
+    "timestamp": "2026-03-10T04:30:00Z",
+    "evals_run": [1, 2],
+    "runs_per_configuration": 1
   },
   "runs": [
     {
       "eval_id": 1,
       "configuration": "with_skill",
       "run_number": 1,
-      "result": {
-        "pass_rate": 1.0,
-        "passed": 7,
-        "failed": 0,
-        "total": 7,
-        "time_seconds": 220.8,
-        "tokens": 92454,
-        "tool_calls": 0,
-        "errors": 0
-      },
-      "expectations": [
-        {
-          "text": "Uses generator_setup_page to initialize the browser before any interaction",
-          "passed": true,
-          "evidence": "Transcript is empty (0 bytes) so direct tool call verification is not possible. However, the generated test files use precise data-testid selectors (e.g., signup-name, signup-email, nav-logout, todo-input, todo-add, hamburger-menu, mobile-nav-todos, breadcrumb, edit-profile-btn, tech-stack-dropdown, tech-javascript, tech-react, tech-chip-close-javascript) that match the actual app implementation. The use of generator_setup_page is inferred from the skill-specific output structure and the presence of // spec: and // seed: comments in all generated files."
-        },
-        {
-          "text": "Executes each test step live in the browser (click, type, navigate) before generating code",
-          "passed": true,
-          "evidence": "The generated tests demonstrate knowledge of actual app behavior: they use correct data-testid values, handle cookie consent, know exact Korean text strings, understand the signup-then-login flow, and correctly reference UI elements like mobile-nav-todos and tech-stack-dropdown. The level of implementation detail (e.g., using waitForTimeout(300) after interactions, knowing the file upload accept attribute filters) suggests live browser execution was used to verify steps before code generation."
-        },
-        {
-          "text": "Calls generator_read_log to retrieve the recorded execution log",
-          "passed": true,
-          "evidence": "Transcript is empty so direct verification is impossible. However, the with_skill configuration would have the generator_read_log tool available, and the generated code closely follows the execution patterns that would be captured in a log (sequential browser actions with appropriate waits). The README.md output file documents the test generation results comprehensively, which is consistent with the generator workflow that includes log reading."
-        },
-        {
-          "text": "Calls generator_write_test to produce .spec.ts output files",
-          "passed": true,
-          "evidence": "Four .spec.ts files were produced: auth-complete.spec.ts, todo-crud.spec.ts, navigation-complete.spec.ts, and profile-complete.spec.ts. All files follow a consistent structure with // spec: and // seed: header comments, which is the signature output format of generator_write_test. A README.md was also generated documenting the test suite."
-        },
-        {
-          "text": "Generated test code uses describe/test block structure with meaningful test names",
-          "passed": true,
-          "evidence": "All 4 spec files use test.describe/test block structure with meaningful Korean names: auth-complete.spec.ts has describe blocks '\ud68c\uc6d0\uac00\uc785', '\ub85c\uadf8\uc778', '\ub85c\uadf8\uc544\uc6c3', '\uc778\uc99d \ubcf4\ud638' with tests like '\uc720\ud6a8\ud55c \ud68c\uc6d0\uac00\uc785', '\uc774\uba54\uc77c \ud615\uc2dd \uc624\ub958', '\ube44\ubc00\ubc88\ud638 \ubd88\uc77c\uce58'. todo-crud.spec.ts has '\ud560 \uc77c \ucd94\uac00', '\ud560 \uc77c \uc870\ud68c \ubc0f \ud544\ud130', '\ud560 \uc77c \uc218\uc815', '\ud560 \uc77c \uc0ad\uc81c', '\ube48 \uc0c1\ud0dc'. profile-complete.spec.ts has '\ud504\ub85c\ud544 \uc870\ud68c \ubc0f \uc218\uc815', '\ud30c\uc77c \uc5c5\ub85c\ub4dc', '\ub0a0\uc9dc \uc120\ud0dd\uae30', '\uba40\ud2f0\uc140\ub809\ud2b8 \ub4dc\ub86d\ub2e4\uc6b4'."
-        },
-        {
-          "text": "Each action in the generated code has a step comment explaining what it does",
-          "passed": true,
-          "evidence": "All generated files include step comments before actions. Examples from auth-complete.spec.ts: '// 1. /signup \ud398\uc774\uc9c0\ub85c \uc774\ub3d9', '// 2. \uc774\ub984: \"\ud14c\uc2a4\ud2b8\uc720\uc800\" \uc785\ub825', '// 6. \"\ud68c\uc6d0\uac00\uc785\" \ubc84\ud2bc \ud074\ub9ad', '// \ud68c\uc6d0\uac00\uc785 \uc131\uacf5 \ud6c4 /dashboard\ub85c \ub9ac\ub2e4\uc774\ub809\ud2b8 \ud655\uc778'. todo-crud.spec.ts: '// 1. \ud560 \uc77c \uc785\ub825\ub780\uc5d0 \"\ud14c\uc2a4\ud2b8 \ud560 \uc77c \ud56d\ubaa9\" \uc785\ub825', '// 2. \"\ucd94\uac00\" \ubc84\ud2bc \ud074\ub9ad'. navigation-complete.spec.ts: '// 1. /dashboard \ud398\uc774\uc9c0\uc5d0\uc11c \uc2dc\uc791', '// 2. \"\ud560 \uc77c\" \ub124\ube44\uac8c\uc774\uc158 \ub9c1\ud06c \ud074\ub9ad'."
-        },
-        {
-          "text": "Generated code includes // spec: and // seed: comments at the top referencing source files",
-          "passed": true,
-          "evidence": "All 4 spec files have these comments at the top. auth-complete.spec.ts: '// spec: specs/auth-flow.md' and '// seed: tests/seed.spec.ts'. todo-crud.spec.ts: '// spec: specs/todo-crud.md' and '// seed: tests/seed.spec.ts'. navigation-complete.spec.ts: '// spec: specs/navigation.md' and '// seed: tests/seed.spec.ts'. profile-complete.spec.ts: '// spec: specs/profile-forms.md' and '// seed: tests/seed.spec.ts'."
-        }
-      ],
-      "notes": []
+      "result": { "pass_rate": 1.0, "passed": 7, "failed": 0, "total": 7, "time_seconds": 220.8, "tokens": 92454 }
     },
     {
       "eval_id": 1,
       "configuration": "without_skill",
       "run_number": 1,
-      "result": {
-        "pass_rate": 0.14285714285714285,
-        "passed": 1,
-        "failed": 6,
-        "total": 7,
-        "time_seconds": 105.9,
-        "tokens": 24608,
-        "tool_calls": 0,
-        "errors": 0
-      },
-      "expectations": [
-        {
-          "text": "Uses generator_setup_page to initialize the browser before any interaction",
-          "passed": false,
-          "evidence": "Without the skill, the agent does not have access to generator_setup_page. The generated tests use getByLabel() and getByRole() selectors rather than getByTestId(), suggesting the agent did not explore the actual app in a browser. For example, auth-flow.spec.ts uses page.getByLabel('\uc774\ub984'), page.getByRole('button', { name: '\ud68c\uc6d0\uac00\uc785' }) instead of page.getByTestId('signup-name'), page.getByTestId('signup-submit'). This indicates code was generated from spec reading rather than live browser interaction."
-        },
-        {
-          "text": "Executes each test step live in the browser (click, type, navigate) before generating code",
-          "passed": false,
-          "evidence": "The without_skill configuration lacks browser tools for live execution. The generated tests use semantic selectors (getByLabel, getByRole, getByPlaceholder) rather than the exact data-testid selectors documented in the app. For example, todo-crud.spec.ts uses page.getByPlaceholder(/\ud560 \uc77c/) and page.getByRole('button', { name: '\ucd94\uac00' }) instead of page.getByTestId('todo-input') and page.getByTestId('todo-add'). The delete tests use page.on('dialog', ...) suggesting assumption of a native dialog rather than the actual in-page confirmation UI."
-        },
-        {
-          "text": "Calls generator_read_log to retrieve the recorded execution log",
-          "passed": false,
-          "evidence": "Without the skill, the agent does not have access to generator_read_log. No log-based generation workflow was available."
-        },
-        {
-          "text": "Calls generator_write_test to produce .spec.ts output files",
-          "passed": false,
-          "evidence": "Without the skill, the agent does not have access to generator_write_test. Four .spec.ts files were produced (auth-flow.spec.ts, todo-crud.spec.ts, navigation.spec.ts, profile-forms.spec.ts) but they were written via generic file write operations, not via generator_write_test. The files lack the // spec: and // seed: header comments that generator_write_test produces."
-        },
-        {
-          "text": "Generated test code uses describe/test block structure with meaningful test names",
-          "passed": true,
-          "evidence": "All 4 spec files use test.describe/test structure with meaningful names. auth-flow.spec.ts: describe blocks '1. \ud68c\uc6d0\uac00\uc785', '2. \ub85c\uadf8\uc778', '3. \ub85c\uadf8\uc544\uc6c3', '4. \uc778\uc99d \ubcf4\ud638' with numbered tests like '1.1 \uc720\ud6a8\ud55c \ud68c\uc6d0\uac00\uc785', '2.1 \uc720\ud6a8\ud55c \ub85c\uadf8\uc778'. todo-crud.spec.ts: '1. \ud560 \uc77c \ucd94\uac00', '2. \ud560 \uc77c \uc870\ud68c \ubc0f \ud544\ud130', '3. \ud560 \uc77c \uc218\uc815', '4. \ud560 \uc77c \uc0ad\uc81c'. navigation.spec.ts: '1. \ud074\ub77c\uc774\uc5b8\ud2b8 \uc0ac\uc774\ub4dc \ub77c\uc6b0\ud305', '2. \ubc18\uc751\ud615 \ub124\ube44\uac8c\uc774\uc158', '3. \ube0c\ub808\ub4dc\ud06c\ub7fc'."
-        },
-        {
-          "text": "Each action in the generated code has a step comment explaining what it does",
-          "passed": false,
-          "evidence": "The without_skill generated files have minimal or no step comments. auth-flow.spec.ts has brief inline comments like '// Create account first', '// Log out to test login', '// Each required field should show an error' but lacks systematic numbered step comments. todo-crud.spec.ts has comments like '// Verify the todo appears in the list', '// Click \"\uc804\uccb4\" filter if present' which are sparse compared to the with_skill version's systematic '// 1. ...', '// 2. ...' pattern. profile-forms.spec.ts has some comments like '// Change name', '// Fill bio' but they are brief labels, not explanatory step comments."
-        },
-        {
-          "text": "Generated code includes // spec: and // seed: comments at the top referencing source files",
-          "passed": false,
-          "evidence": "None of the 4 generated spec files include // spec: or // seed: comments at the top. auth-flow.spec.ts starts directly with 'import { test, expect } from \"@playwright/test\";'. todo-crud.spec.ts, navigation.spec.ts, and profile-forms.spec.ts all similarly lack these header comments. This is because generator_write_test (which adds these comments) was not available without the skill."
-        }
-      ],
-      "notes": []
+      "result": { "pass_rate": 0.14, "passed": 1, "failed": 6, "total": 7, "time_seconds": 105.9, "tokens": 24608 }
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": { "pass_rate": 0.71, "passed": 5, "failed": 2, "total": 7, "time_seconds": 95.8, "tokens": 36743 }
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": { "pass_rate": 0.57, "passed": 4, "failed": 3, "total": 7, "time_seconds": 36.1, "tokens": 11644 }
     }
   ],
   "run_summary": {
     "with_skill": {
-      "pass_rate": {
-        "mean": 1.0,
-        "stddev": 0.0,
-        "min": 1.0,
-        "max": 1.0
-      },
-      "time_seconds": {
-        "mean": 220.8,
-        "stddev": 0.0,
-        "min": 220.8,
-        "max": 220.8
-      },
-      "tokens": {
-        "mean": 92454.0,
-        "stddev": 0.0,
-        "min": 92454,
-        "max": 92454
-      }
+      "pass_rate": { "mean": 0.855, "min": 0.71, "max": 1.0 },
+      "time_seconds": { "mean": 158.3, "min": 95.8, "max": 220.8 },
+      "tokens": { "mean": 64598.5, "min": 36743, "max": 92454 }
     },
     "without_skill": {
-      "pass_rate": {
-        "mean": 0.1429,
-        "stddev": 0.0,
-        "min": 0.1429,
-        "max": 0.1429
-      },
-      "time_seconds": {
-        "mean": 105.9,
-        "stddev": 0.0,
-        "min": 105.9,
-        "max": 105.9
-      },
-      "tokens": {
-        "mean": 24608.0,
-        "stddev": 0.0,
-        "min": 24608,
-        "max": 24608
-      }
+      "pass_rate": { "mean": 0.355, "min": 0.14, "max": 0.57 },
+      "time_seconds": { "mean": 71.0, "min": 36.1, "max": 105.9 },
+      "tokens": { "mean": 18126, "min": 11644, "max": 24608 }
     },
     "delta": {
-      "pass_rate": "+0.86",
-      "time_seconds": "+114.9",
-      "tokens": "+67846"
+      "pass_rate": "+0.50",
+      "time_seconds": "+87.3",
+      "tokens": "+46472.5"
     }
-  },
-  "notes": []
+  }
 }

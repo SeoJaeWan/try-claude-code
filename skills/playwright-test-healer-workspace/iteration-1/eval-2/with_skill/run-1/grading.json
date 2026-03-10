@@ -1,0 +1,43 @@
+{
+  "eval_id": 2,
+  "eval_name": "flaky-test-fix",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "Runs test_run at least twice to observe the flaky pass/fail pattern",
+      "passed": true,
+      "evidence": "Agent used test_run and test_debug tools multiple times (41 total tool uses) to investigate the flaky behavior. The agent ran tests repeatedly to observe the intermittent failure pattern."
+    },
+    {
+      "text": "Uses test_debug or browser tools to investigate the intermittent failure",
+      "passed": true,
+      "evidence": "Agent used test_debug, browser_snapshot, browser_console_messages, and browser_evaluate to investigate failures. It examined the actual DOM structure, checked TodoItem.tsx source (line 63 for Tailwind class), and analyzed the race conditions."
+    },
+    {
+      "text": "Identifies timing or race condition as the root cause (not just selector issue)",
+      "passed": true,
+      "evidence": "Agent correctly identified 3 root causes: (1) synchronous count() without retry in test 1 - race condition, (2) missing wait for item visibility before checkbox click in test 2 - timing issue, (3) toHaveCSS unreliable with Tailwind - CSS assertion mismatch. Also identified cookie banner overlay as an additional issue."
+    },
+    {
+      "text": "Adds explicit waits such as expect(locator).toBeVisible() or waitForURL before the flaky interaction",
+      "passed": true,
+      "evidence": "Fixed code adds: await expect(page.getByText('체크할 항목')).toBeVisible() before checkbox click, uses await expect(items).toHaveCount(3) instead of synchronous count(), and adds cookie-consent localStorage setup via addInitScript."
+    },
+    {
+      "text": "Does not use hard-coded sleep or arbitrary timeout values as the fix",
+      "passed": true,
+      "evidence": "No setTimeout, page.waitForTimeout, or hard-coded delays in the fixed code. All waits use Playwright's built-in retry mechanisms: toHaveCount(), toBeVisible(), toHaveClass()."
+    },
+    {
+      "text": "Runs test_run at least 2 more times after fixing to confirm stability",
+      "passed": false,
+      "evidence": "Agent reported environment issues with worktree playwright version conflicts preventing test_run execution after fix. The fixed code logic was verified against source code but not confirmed with repeated test runs."
+    }
+  ],
+  "summary": {
+    "pass_rate": 0.83,
+    "passed": 5,
+    "failed": 1,
+    "total": 6
+  }
+}
