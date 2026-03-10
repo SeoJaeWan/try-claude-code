@@ -8,6 +8,19 @@
 - 배경:
 - 실행 모드: `partial-parallel` 또는 `parallel`
 
+## Resolved Decisions
+
+- 구현/테스트/UX 결과를 바꾸는 정책, 계약, 스키마, 상태, 권한, 검증 결정:
+
+## Explicit Defaults
+
+- 비차단(non-blocking) 기본값과 그 이유:
+
+## Assumptions and Risks
+
+- Assumptions:
+- Risks:
+
 ## Parallel Feasibility Matrix
 
 | Work Unit       | 예상 변경 파일군             | 선행 산출물 의존 | 충돌 여부 | 병렬 가능   |
@@ -46,6 +59,12 @@
 UI/user-flow scope인 경우 E2E 트랙(또는 후속 phase)을 추가:
 - `playwright-test-planner` -> `playwright-test-generator`
 - `playwright-test-healer`는 실패 시 조건부 실행
+
+## 최종 인수 체크리스트
+
+- [ ] 차단성 정책 모호성이 남아 있지 않음
+- [ ] `Resolved Decisions`와 병렬 트랙 분해가 일치함
+- [ ] `Explicit Defaults`는 저위험 기본값만 포함함
 
 ## 트랙 파일 필수 메타 (각 plan-{track}.md)
 

@@ -1,6 +1,6 @@
 ---
 name: architect
-description: Codex entry skill for rigorous implementation planning. Produces plan artifacts in ./plans and coordinates Claude execution handoff.
+description: Codex entry skill for rigorous implementation planning. Use when a request needs a decision-complete execution plan under ./plans after resolving blocking product policy, UX, contract, schema, validation, state, or permission ambiguity, and when Claude execution handoff is needed.
 ---
 
 <Skill_Guide>
@@ -30,8 +30,21 @@ Before writing any plan artifact:
 
 ### Step 1. Analyze request
 
-- Clarify goals, boundaries, constraints, and acceptance criteria.
-- If ambiguity remains that can change architecture, send back to `brainstorm` first.
+- Clarify goals, boundaries, constraints, acceptance criteria, and feature policy.
+- Classify missing information as `blocking`, `derivable`, or `deferrable`.
+- Treat ambiguity as `blocking` when it can change architecture, API/data contracts, schema, business rules, UX behavior, permissions, validation, state transitions, navigation, error handling, accessibility expectations, or acceptance tests.
+- Derive what can be confirmed from local context before asking the user.
+
+### Step 1.5. Resolve blocking decisions before planning (required)
+
+- Do not write any plan artifact while `blocking` ambiguity remains.
+- Route unresolved `blocking` ambiguity to `brainstorm` first.
+- If direct clarification is necessary, ask only concise, actionable questions:
+  - Batch at most 4 blocking questions at once
+  - Prefer structured user-input tooling when available
+  - Otherwise ask concise plain-text questions in chat
+- Do not hide unresolved blocking decisions inside `Assumptions and risks`.
+- Only carry forward `deferrable` items as explicit defaults, and mark them as non-blocking.
 
 ### Step 2. Gather high-level context (optional)
 
@@ -40,6 +53,7 @@ Use high-level inspection only:
 - Existing related features
 - Tech stack and major boundaries
 - Expected integration points
+- Existing policies, contracts, behaviors, and conventions that answer missing questions
 
 Do not deep-dive into implementation details.
 
@@ -51,16 +65,18 @@ Create plan artifacts in `./plans/{task-name}/`.
 
 1. Problem statement and scope
 2. Out-of-scope
-3. Assumptions and risks
-4. Phase breakdown with machine-readable `owner_agent` field per phase
-5. File change list (create/modify/delete)
-6. Validation commands and exit criteria
-7. Rollback or fallback strategy
-8. Final acceptance checklist
-9. Parallel Feasibility Matrix
-10. Execution Mode Decision (`sequential` | `partial-parallel` | `parallel`)
-11. Critical Path
-12. Track Dependency Graph (text)
+3. Resolved Decisions
+4. Explicit Defaults (non-blocking)
+5. Assumptions and risks
+6. Phase breakdown with machine-readable `owner_agent` field per phase
+7. File change list (create/modify/delete)
+8. Validation commands and exit criteria
+9. Rollback or fallback strategy
+10. Final acceptance checklist
+11. Parallel Feasibility Matrix
+12. Execution Mode Decision (`sequential` | `partial-parallel` | `parallel`)
+13. Critical Path
+14. Track Dependency Graph (text)
 
 Every executable plan file (`plan.md` and `plan-{track}.md`) must include this header at the top:
 
@@ -176,15 +192,17 @@ Parallel track rules:
 Run these checks before finalizing:
 
 1. Every phase/task block has a concrete `owner_agent` field and the value maps to `./.claude/agents/{agent-name}.md`.
-2. No `TBD` assignee or unresolved critical dependency.
-3. Every executable plan file includes `Branch` header.
-4. Execution Mode Decision matches generated artifacts:
+2. No unresolved blocking policy/contract/schema/UX ambiguity remains.
+3. No `TBD` assignee or unresolved critical dependency.
+4. Every executable plan file includes `Branch` header.
+5. Execution Mode Decision matches generated artifacts:
     - `sequential` => no `plan-{track}.md`
     - `partial-parallel`/`parallel` => 2+ track plans with required metadata
-5. Track dependency graph is acyclic.
-6. Failure Escalation Policy is explicit (`bug-report` create -> `codex-debug` on unresolved/repeat -> `bug-report` update).
-7. Visual/design-oriented work is assigned to `publisher`; logic-oriented work is assigned to developer agents.
-8. For UI/user-flow scope, E2E phases are explicit (`playwright-test-planner` -> `playwright-test-generator`, healer is conditional).
+6. Track dependency graph is acyclic.
+7. `Resolved Decisions` records all user-confirmed blocking choices, and `Explicit Defaults` contains only non-blocking defaults.
+8. Failure Escalation Policy is explicit (`bug-report` create -> `codex-debug` on unresolved/repeat -> `bug-report` update).
+9. Visual/design-oriented work is assigned to `publisher`; logic-oriented work is assigned to developer agents.
+10. For UI/user-flow scope, E2E phases are explicit (`playwright-test-planner` -> `playwright-test-generator`, healer is conditional).
 
 ### Step 6. Self-review gate (required)
 
@@ -192,16 +210,18 @@ After drafting plan artifacts, run a strict self-review and incorporate critical
 Self-review checklist:
 
 1. Plan scope, goals, and acceptance criteria are internally consistent.
-2. Every phase/task has `owner_agent`, and each value maps to `./.claude/agents/{agent-name}.md`.
-3. Every executable plan file includes `Branch`.
-4. Validation commands and exit criteria are explicit and executable.
-5. Rollback/fallback strategy is concrete and testable.
-6. If `Execution Mode = sequential`, confirm no track files are generated.
-7. If `Execution Mode != sequential`, confirm every track has `DependsOn` and `ReadyCheck`.
-8. Confirm no circular dependencies in the track graph.
-9. Confirm Failure Escalation Policy is actionable and phase owners can execute it.
-10. Confirm visual/design tasks are owned by `publisher` and not mixed with logic in the same execution block.
-11. For UI/user-flow scope, confirm E2E phases and order are explicit, and healer is conditional only on failure.
+2. No unresolved blocking policy ambiguity remains, including frontend UX/state/validation policy and backend contract/schema/rule policy.
+3. `Resolved Decisions` contains all blocking choices, and `Explicit Defaults` contains only low-risk non-blocking defaults.
+4. Every phase/task has `owner_agent`, and each value maps to `./.claude/agents/{agent-name}.md`.
+5. Every executable plan file includes `Branch`.
+6. Validation commands and exit criteria are explicit and executable.
+7. Rollback/fallback strategy is concrete and testable.
+8. If `Execution Mode = sequential`, confirm no track files are generated.
+9. If `Execution Mode != sequential`, confirm every track has `DependsOn` and `ReadyCheck`.
+10. Confirm no circular dependencies in the track graph.
+11. Confirm Failure Escalation Policy is actionable and phase owners can execute it.
+12. Confirm visual/design tasks are owned by `publisher` and not mixed with logic in the same execution block.
+13. For UI/user-flow scope, confirm E2E phases and order are explicit, and healer is conditional only on failure.
    Do not request execution before this gate is complete.
 
 ### Step 7. Compatibility policy (required)
@@ -225,7 +245,7 @@ Provide a concise execution handoff summary:
    - parallel: run one `planner-lite` session per `plan-{track}.md`
 4. Confirm branch merge rule: `planner-lite` enforces `Agent(... isolation: "worktree")` per phase, merges after each worker completes, then performs final merge into each file's `Branch` with `--no-ff`
 5. For UI/user-flow scope, include E2E invocation order in handoff (`playwright-test-planner` -> `playwright-test-generator`, healer only on failures)
-6. Blocked decisions requiring user confirmation
+6. Explicit defaults and deferred low-risk choices recorded in the plan
 
 ## Output contract
 
@@ -246,6 +266,7 @@ Provide a concise execution handoff summary:
 - Do not omit E2E planning when UI/user-flow scope exists.
 - Focus on "what to execute" and "in what order".
 - Ensure all gates are explicit and testable.
+- Do not produce a plan with unresolved blocking product-policy ambiguity.
 - If the user explicitly requests direct agent execution for a low-risk focused task, do not force planning.
   </Instructions>
   </Skill_Guide>
