@@ -1,0 +1,56 @@
+{
+  "skill_name": "guard-e2e-test",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "회원가입 → 대시보드 → 로그아웃까지 전체 플로우 E2E 테스트 만들어줘. 앱은 http://localhost:3000 에서 돌아가고 있어.",
+      "expected_output": "guard/auth/signup-to-logout.spec.ts 생성, route 전환 체인 검증, 상태 유지 검증 포함",
+      "files": [],
+      "expectations": [
+        "Reads skills/guard-e2e-test/SKILL.md via Read tool",
+        "Reads references/e2e-conventions.md for locator and assertion rules",
+        "Reads references/agent-browser-patterns.md for browser exploration patterns",
+        "Detects existing playwright.config.ts and test conventions",
+        "Explores the running app via agent-browser before writing tests",
+        "Creates .spec.ts under guard/ subdirectory in the test directory",
+        "Test describe block has [Guard] prefix",
+        "Test names include journey_id [JOURNEY-AUTH-001]",
+        "Includes happy flow scenario (signup → dashboard → logout)",
+        "Includes state persistence scenario (reload after login)",
+        "Includes branch flow scenario (unauthenticated dashboard access → redirect)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "상품 검색 → 장바구니 추가 → 결제 → 주문 완료 여정의 회귀 테스트가 필요해. localhost:3000에서 실행 중이야.",
+      "expected_output": "guard/commerce/search-to-order.spec.ts 생성, 4단계 route 전환 검증, 장바구니 상태 유지 검증",
+      "files": [],
+      "expectations": [
+        "Reads skills/guard-e2e-test/SKILL.md via Read tool",
+        "Explores /search, /cart, /checkout, /order-complete routes via agent-browser",
+        "Creates .spec.ts under guard/commerce/ directory",
+        "Test covers full route chain: /search → /cart → /checkout → /order-complete",
+        "Verifies cart state persists across route transitions",
+        "Includes branch flow for empty cart checkout attempt",
+        "Uses data-testid or role-based locators, no CSS selectors",
+        "Does NOT write single-screen tests (that is plan-e2e-test scope)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "온보딩 플로우 E2E 회귀 테스트 만들어줘. /onboarding/step-1 → step-2 → step-3 → /dashboard 순서야. http://localhost:3000 에서 확인 가능해.",
+      "expected_output": "guard/onboarding/multi-step-flow.spec.ts 생성, 다단계 폼 진행 검증, 뒤로가기 동작 검증",
+      "files": [],
+      "expectations": [
+        "Reads skills/guard-e2e-test/SKILL.md via Read tool",
+        "Explores all 3 onboarding steps and dashboard via agent-browser",
+        "Creates .spec.ts under guard/onboarding/ directory",
+        "Test covers full route chain: /onboarding/step-1 → step-2 → step-3 → /dashboard",
+        "Verifies form data persists between steps",
+        "Includes branch flow for skipping a step (direct URL access to step-3)",
+        "Each test is independently runnable (no shared state between tests)",
+        "Runs playwright test to verify generated tests pass"
+      ]
+    }
+  ]
+}
