@@ -1,0 +1,12 @@
+{
+  "eval_id": 1,
+  "eval_name": "init-migration-diff",
+  "configuration": "without_skill",
+  "expectations": [
+    {"text": "SKILL.md 파일을 읽어 스킬 컨텍스트 확인", "passed": false, "evidence": "SKILL.md 읽기 시도 없음, 스킬 컨텍스트 미확인"},
+    {"text": "references/faq.md 파일을 읽어 정확한 답변 도출", "passed": false, "evidence": "faq.md 파일 경로를 알지 못해 참조하지 못함"},
+    {"text": "init-try 명령어의 역할과 동작을 정확히 설명", "passed": false, "evidence": "일반적 '초기화' 설명만 제공, 구체적 동작 미설명"},
+    {"text": "migration 명령어의 역할과 init-try와의 차이를 설명", "passed": true, "evidence": "일반적 수준에서 차이점 언급하였으나 세부사항 부족"},
+    {"text": "한국어로 답변 작성", "passed": true, "evidence": "한국어로 답변 작성됨"}
+  ]
+}

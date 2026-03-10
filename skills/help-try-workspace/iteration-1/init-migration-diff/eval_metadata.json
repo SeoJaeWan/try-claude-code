@@ -1,0 +1,12 @@
+{
+  "eval_id": 1,
+  "eval_name": "init-migration-diff",
+  "prompt": "try-claude 설정은 어떻게 하나요? init-try랑 migration 차이가 뭐예요?",
+  "assertions": [
+    {"id": "reads-skill-md", "text": "SKILL.md 파일을 읽어 스킬 컨텍스트 확인"},
+    {"id": "reads-faq-md", "text": "references/faq.md 파일을 읽어 정확한 답변 도출"},
+    {"id": "explains-init-try", "text": "init-try 명령어의 역할과 동작을 정확히 설명"},
+    {"id": "explains-migration", "text": "migration 명령어의 역할과 init-try와의 차이를 설명"},
+    {"id": "answers-in-korean", "text": "한국어로 답변 작성"}
+  ]
+}
