@@ -1,0 +1,13 @@
+{
+  "eval_id": 3,
+  "eval_name": "detect-new-references",
+  "prompt": "try-claude에 새로운 레퍼런스 문서가 추가됐는지 확인하고 동기화해줘",
+  "assertions": [
+    {"id": "reads-skill-md", "text": "SKILL.md를 읽어 마이그레이션 스크립트 확인"},
+    {"id": "runs-migration-script", "text": "node skills/migration/scripts/run.mjs --repo-root 실행"},
+    {"id": "detects-new-files", "text": "플러그인 기본값에 새로 추가된 레퍼런스 감지"},
+    {"id": "sha256-new-file-tracking", "text": "새 파일의 SHA256 해시 등록 및 추적"},
+    {"id": "adds-new-references", "text": "새 레퍼런스를 .claude/try-claude에 추가"},
+    {"id": "reports-detection-counts", "text": "감지 및 추가 결과 카운트 리포트"}
+  ]
+}
