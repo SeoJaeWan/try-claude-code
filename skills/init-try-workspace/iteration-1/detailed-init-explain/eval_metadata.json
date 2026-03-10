@@ -1,0 +1,13 @@
+{
+  "eval_id": 3,
+  "eval_name": "detailed-init-explain",
+  "prompt": "try-claude를 초기화하고 어떤 파일이 생성되는지 상세히 알려줘",
+  "assertions": [
+    {"id": "reads-skill-md", "text": "SKILL.md 파일을 읽어 초기화 절차 확인"},
+    {"id": "runs-init-script", "text": "node skills/init-try/scripts/run.mjs --repo-root <repo-root> 실행"},
+    {"id": "creates-directory-structure", "text": ".claude/try-claude/ 디렉토리 구조 생성"},
+    {"id": "creates-project-json", "text": "project.json 파일 생성"},
+    {"id": "explains-each-directory", "text": "각 디렉토리(plans, reports, logs, codemaps, humanmaps, references)의 용도 상세 설명"},
+    {"id": "explains-project-json", "text": "project.json 파일의 구조와 필드 설명"}
+  ]
+}

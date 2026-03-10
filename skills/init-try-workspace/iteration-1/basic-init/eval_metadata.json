@@ -1,0 +1,13 @@
+{
+  "eval_id": 1,
+  "eval_name": "basic-init",
+  "prompt": "이 프로젝트에 try-claude를 초기화해줘",
+  "assertions": [
+    {"id": "reads-skill-md", "text": "SKILL.md 파일을 읽어 초기화 절차 확인"},
+    {"id": "runs-init-script", "text": "node skills/init-try/scripts/run.mjs --repo-root <repo-root> 실행"},
+    {"id": "creates-directory-structure", "text": ".claude/try-claude/ 디렉토리 구조 생성 (plans, reports, logs, codemaps, humanmaps, references)"},
+    {"id": "creates-project-json", "text": "project.json 파일 생성"},
+    {"id": "seeds-references", "text": "references/ 디렉토리에 초기 참조 파일 시딩"},
+    {"id": "verifies-output", "text": "초기화 완료 후 생성된 구조 확인"}
+  ]
+}

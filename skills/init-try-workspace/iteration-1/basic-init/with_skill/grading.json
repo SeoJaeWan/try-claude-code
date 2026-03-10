@@ -1,0 +1,13 @@
+{
+  "eval_id": 1,
+  "eval_name": "basic-init",
+  "configuration": "with_skill",
+  "expectations": [
+    {"text": "SKILL.md 파일을 읽어 초기화 절차 확인", "passed": true, "evidence": "SKILL.md 읽기 후 init-try 스크립트 경로 확인"},
+    {"text": "node skills/init-try/scripts/run.mjs --repo-root <repo-root> 실행", "passed": true, "evidence": "run.mjs --repo-root . 실행 계획 명시"},
+    {"text": ".claude/try-claude/ 디렉토리 구조 생성", "passed": true, "evidence": "plans, reports, logs, codemaps, humanmaps, references 전체 구조 계획"},
+    {"text": "project.json 파일 생성", "passed": true, "evidence": "project.json 생성 계획 명시"},
+    {"text": "references/ 디렉토리에 초기 참조 파일 시딩", "passed": true, "evidence": "references/ 시딩 계획 포함"},
+    {"text": "초기화 완료 후 생성된 구조 확인", "passed": true, "evidence": "ls 명령으로 구조 확인 계획"}
+  ]
+}
