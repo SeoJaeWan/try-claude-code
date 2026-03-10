@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTodos } from "@/contexts/TodoContext";
 import StatsCard from "@/components/StatsCard";
 import TodoForm from "@/components/TodoForm";
+import NotificationList from "@/components/NotificationList";
 
 export default function DashboardPage() {
   const { user, isAuthenticated, mounted } = useAuth();
@@ -28,6 +29,9 @@ export default function DashboardPage() {
         안녕하세요, {user?.name}님
       </h1>
       <p className="mt-1 text-sm text-zinc-500">오늘도 좋은 하루 되세요!</p>
+      <p className="mt-1 text-xs text-zinc-400" data-testid="current-date">
+        {new Date().toLocaleDateString("ko-KR")}
+      </p>
 
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatsCard label="전체 할 일" value={todos.length} testId="stat-total" />
@@ -38,6 +42,11 @@ export default function DashboardPage() {
       <div className="mt-8">
         <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-50">빠른 추가</h2>
         <TodoForm onSubmit={addTodo} />
+      </div>
+
+      <div className="mt-8">
+        <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-50">알림</h2>
+        <NotificationList />
       </div>
 
       <div className="mt-6">

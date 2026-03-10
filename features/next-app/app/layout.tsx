@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TodoProvider } from "@/contexts/TodoContext";
 import Navbar from "@/components/Navbar";
+import CookieBanner from "@/components/CookieBanner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,6 +35,7 @@ export default function RootLayout({
           <TodoProvider>
             <Navbar />
             <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
+            <CookieBanner />
           </TodoProvider>
         </AuthProvider>
       </body>

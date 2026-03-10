@@ -5,7 +5,7 @@
       "id": 1,
       "prompt": "Playwright 테스트가 실패하고 있어. 디버깅하고 고쳐줘",
       "expected_output": "test_run으로 전체 테스트 실행, 실패별 test_debug, browser tools로 에러 조사, 근본 원인 분석, 코드 수정 후 재검증",
-      "files": ["../../features/next-app/package.json", "../../seed.spec.ts"],
+      "files": ["../../features/next-app/package.json", "../../features/next-app/tests/seed.spec.ts"],
       "expectations": [
         "Runs test_run to execute the full test suite and identify failures",
         "Uses test_debug to pause at each failing test's failure point",
@@ -17,9 +17,9 @@
     },
     {
       "id": 2,
-      "prompt": "테스트가 가끔 통과하고 가끔 실패해. flaky 테스트 원인 찾아서 고쳐줘",
+      "prompt": "tests/flaky-todo-count.spec.ts 테스트가 가끔 통과하고 가끔 실패해. flaky 테스트 원인 찾아서 고쳐줘",
       "expected_output": "test_run 반복 실행으로 flaky 패턴 확인, 타이밍/레이스 컨디션 분석, waitFor/적절한 대기 추가",
-      "files": ["../../features/next-app/package.json", "../../seed.spec.ts"],
+      "files": ["../../features/next-app/package.json", "../../features/next-app/tests/flaky-todo-count.spec.ts"],
       "expectations": [
         "Runs test_run at least twice to observe the flaky pass/fail pattern",
         "Uses test_debug or browser tools to investigate the intermittent failure",
@@ -33,7 +33,7 @@
       "id": 3,
       "prompt": "UI가 리디자인돼서 셀렉터가 다 바뀌었어. 테스트 전부 깨졌는데 한번에 고쳐줘",
       "expected_output": "test_run으로 전체 실패 목록 확인, test_debug + browser_generate_locator로 새 셀렉터 확인, 각 테스트 파일 수정, getByRole/getByText 우선 사용",
-      "files": ["../../features/next-app/package.json", "../../seed.spec.ts"],
+      "files": ["../../features/next-app/package.json", "../../features/next-app/tests/seed.spec.ts"],
       "expectations": [
         "Runs test_run to get the complete list of all failing tests",
         "Uses test_debug to inspect each failure and understand the new DOM structure",
@@ -45,9 +45,9 @@
     },
     {
       "id": 4,
-      "prompt": "이 테스트가 날짜나 카운터 같은 동적 데이터 때문에 실패해. 매번 값이 달라져서 assertion이 안 맞아",
+      "prompt": "tests/dashboard-date.spec.ts 테스트가 날짜나 카운터 같은 동적 데이터 때문에 실패해. 매번 값이 달라져서 assertion이 안 맞아",
       "expected_output": "동적 데이터 assertion 실패 진단, 정규식 매처나 toContainText 같은 유연한 검증으로 교체",
-      "files": ["../../features/next-app/package.json", "../../seed.spec.ts"],
+      "files": ["../../features/next-app/package.json", "../../features/next-app/tests/dashboard-date.spec.ts"],
       "expectations": [
         "Runs test_run to identify the assertion failure caused by dynamic data",
         "Uses test_debug or browser_evaluate to inspect the actual dynamic value",
@@ -59,9 +59,9 @@
     },
     {
       "id": 5,
-      "prompt": "클릭하려는 버튼이 모달이나 쿠키 배너에 가려져서 테스트가 실패해. 고쳐줘",
-      "expected_output": "클릭 차단 원인 진단 (overlay/modal), overlay dismiss 후 클릭하도록 수정",
-      "files": ["../../features/next-app/package.json", "../../seed.spec.ts"],
+      "prompt": "tests/cookie-blocked-click.spec.ts 테스트에서 클릭하려는 버튼이 쿠키 배너에 가려져서 실패해. 고쳐줘",
+      "expected_output": "클릭 차단 원인 진단 (cookie-banner overlay), overlay dismiss 후 클릭하도록 수정",
+      "files": ["../../features/next-app/package.json", "../../features/next-app/tests/cookie-blocked-click.spec.ts"],
       "expectations": [
         "Runs test_run to identify the click interception failure",
         "Uses test_debug and browser_snapshot to identify the blocking overlay element",
@@ -75,7 +75,7 @@
       "id": 6,
       "prompt": "Several spec files are failing with different errors - some have wrong selectors, one has a timing issue, and another has a stale assertion. Fix them all",
       "expected_output": "복합 실패: 셀렉터/타이밍/assertion 각각 다른 원인. 개별 진단 후 하나씩 수정, 각 수정 후 재검증",
-      "files": ["../../features/next-app/package.json", "../../seed.spec.ts"],
+      "files": ["../../features/next-app/package.json", "../../features/next-app/tests/seed.spec.ts"],
       "expectations": [
         "Runs test_run to get the full list of all failing tests across multiple spec files",
         "Uses test_debug on each failing test to diagnose individually",
