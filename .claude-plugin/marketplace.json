@@ -1,0 +1,163 @@
+{
+  "name": "try-claude",
+  "owner": {
+    "name": "seojaewan"
+  },
+  "metadata": {
+    "description": "Claude Code workflow plugin providing agents, skills, commands, and references for structured AI-assisted development.",
+    "version": "0.1.0",
+    "pluginRoot": "./skills"
+  },
+  "plugins": [
+    {
+      "name": "backend-dev",
+      "source": "./skills/backend-dev",
+      "description": "NestJS backend development with TypeORM, Passport, Swagger integration.",
+      "version": "0.1.0",
+      "author": { "name": "seojaewan" },
+      "category": "development",
+      "tags": ["backend", "nestjs", "typescript", "api"],
+      "license": "MIT"
+    },
+    {
+      "name": "commit",
+      "source": "./skills/commit",
+      "description": "Commits Git changes following Conventional Commits rules with commitlint validation.",
+      "version": "0.1.0",
+      "author": { "name": "seojaewan" },
+      "category": "git",
+      "tags": ["git", "commit", "conventional-commits", "commitlint"],
+      "license": "MIT"
+    },
+    {
+      "name": "doc-update",
+      "source": "./skills/doc-update",
+      "description": "CODEMAPS and HUMANMAPS auto-generation from service code structure.",
+      "version": "0.1.0",
+      "author": { "name": "seojaewan" },
+      "category": "documentation",
+      "tags": ["docs", "codemaps", "humanmaps", "code-structure"],
+      "license": "MIT"
+    },
+    {
+      "name": "frontend-dev",
+      "source": "./skills/frontend-dev",
+      "description": "Next.js frontend development with React hooks, state management, and API integration.",
+      "version": "0.1.0",
+      "author": { "name": "seojaewan" },
+      "category": "development",
+      "tags": ["frontend", "nextjs", "react", "typescript"],
+      "license": "MIT"
+    },
+    {
+      "name": "guard-e2e-test",
+      "source": "./skills/guard-e2e-test",
+      "description": "Full-flow E2E Playwright test generation traversing multiple routes and states.",
+      "version": "0.1.0",
+      "author": { "name": "seojaewan" },
+      "category": "testing",
+      "tags": ["e2e", "playwright", "guard", "regression"],
+      "license": "MIT"
+    },
+    {
+      "name": "help-try",
+      "source": "./skills/help-try",
+      "description": "FAQ-style answers for try-claude setup, init/migration, runtime structure, and MCP policies.",
+      "version": "0.1.0",
+      "author": { "name": "seojaewan" },
+      "category": "support",
+      "tags": ["help", "faq", "setup", "mcp"],
+      "license": "MIT"
+    },
+    {
+      "name": "init-coding-rules",
+      "source": "./skills/init-coding-rules",
+      "description": "Dynamic generation of ESLint, commitlint, husky, lint-staged, and TSConfig based on coding-rules.",
+      "version": "0.1.0",
+      "author": { "name": "seojaewan" },
+      "category": "configuration",
+      "tags": ["eslint", "commitlint", "husky", "lint-staged", "coding-rules"],
+      "license": "MIT"
+    },
+    {
+      "name": "init-try",
+      "source": "./skills/init-try",
+      "description": "Bootstrap the repo-local try-claude runtime under .claude/try-claude and seed managed references.",
+      "version": "0.1.0",
+      "author": { "name": "seojaewan" },
+      "category": "configuration",
+      "tags": ["init", "bootstrap", "setup"],
+      "license": "MIT"
+    },
+    {
+      "name": "migration",
+      "source": "./skills/migration",
+      "description": "Sync repo-local managed references with latest plugin defaults using SHA256 hash comparison.",
+      "version": "0.1.0",
+      "author": { "name": "seojaewan" },
+      "category": "configuration",
+      "tags": ["migration", "sync", "references", "update"],
+      "license": "MIT"
+    },
+    {
+      "name": "planner-lite",
+      "source": "./skills/planner-lite",
+      "description": "Lightweight task planning with structured phase breakdown and dependency analysis.",
+      "version": "0.1.0",
+      "author": { "name": "seojaewan" },
+      "category": "workflow",
+      "tags": ["planning", "task", "workflow", "phases"],
+      "license": "MIT"
+    },
+    {
+      "name": "playwright-test-generator",
+      "source": "./skills/playwright-test-generator",
+      "description": "Automated Playwright test generation from E2E test plans.",
+      "version": "0.1.0",
+      "author": { "name": "seojaewan" },
+      "category": "testing",
+      "tags": ["playwright", "test-generation", "e2e", "automation"],
+      "license": "MIT"
+    },
+    {
+      "name": "playwright-test-healer",
+      "source": "./skills/playwright-test-healer",
+      "description": "Auto-heal failing Playwright tests by analyzing errors and updating selectors.",
+      "version": "0.1.0",
+      "author": { "name": "seojaewan" },
+      "category": "testing",
+      "tags": ["playwright", "test-healing", "auto-fix", "selectors"],
+      "license": "MIT"
+    },
+    {
+      "name": "playwright-test-planner",
+      "source": "./skills/playwright-test-planner",
+      "description": "Plan E2E test scenarios with structured test case design and coverage analysis.",
+      "version": "0.1.0",
+      "author": { "name": "seojaewan" },
+      "category": "testing",
+      "tags": ["playwright", "test-planning", "e2e", "coverage"],
+      "license": "MIT"
+    },
+    {
+      "name": "pr",
+      "source": "./skills/pr",
+      "description": "Creates GitHub Pull Requests with structured body, template support, and branch safety guards.",
+      "version": "0.1.0",
+      "author": { "name": "seojaewan" },
+      "category": "git",
+      "tags": ["git", "pull-request", "github", "pr"],
+      "license": "MIT"
+    },
+    {
+      "name": "ui-publish",
+      "source": "./skills/ui-publish",
+      "description": "UI/UX component creation with layout-first approach, Tailwind CSS, and design system adherence.",
+      "version": "0.1.0",
+      "author": { "name": "seojaewan" },
+      "category": "development",
+      "tags": ["ui", "components", "tailwind", "design-system", "react"],
+      "license": "MIT"
+    }
+  ]
+}
