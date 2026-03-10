@@ -1,0 +1,198 @@
+{
+  "metadata": {
+    "skill_name": "guard-e2e-test",
+    "skill_path": "skills/guard-e2e-test",
+    "executor_model": "claude-opus-4-6",
+    "analyzer_model": "claude-opus-4-6",
+    "timestamp": "2026-03-10T15:00:00Z",
+    "evals_run": [1, 2, 3],
+    "runs_per_configuration": 1,
+    "note": "All agents were blocked by Write/Bash permissions. Grading is based on plan quality, not actual code output."
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "eval_name": "signup-to-logout-flow",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.88,
+        "passed": 7,
+        "failed": 1,
+        "total": 8,
+        "time_seconds": 62.3,
+        "tokens": 34521,
+        "tool_calls": 24,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "SKILL.md 및 e2e-conventions.md 참조 파일 읽기", "passed": true, "evidence": "SKILL.md, e2e-conventions.md 읽기 후 guard/ 구조 및 [Guard] 프리픽스 규칙 파악"},
+        {"text": "agent-browser로 localhost:3000 탐색 수행", "passed": true, "evidence": "agent-browser로 /signup, /dashboard, 로그아웃 버튼 위치 탐색 계획"},
+        {"text": "guard/ 디렉토리에 테스트 파일 배치", "passed": true, "evidence": "guard/signup-to-logout.guard.spec.ts 파일 경로 명시"},
+        {"text": "테스트 describe에 [Guard] 프리픽스 사용", "passed": true, "evidence": "describe('[Guard] 회원가입 → 대시보드 → 로그아웃') 형태 계획"},
+        {"text": "journey_id 기반 테스트 식별자 포함", "passed": true, "evidence": "journey_id: 'signup-to-logout' 상수 정의 계획"},
+        {"text": "회원가입 → 대시보드 → 로그아웃 전체 해피 플로우 커버", "passed": true, "evidence": "Step 1: 회원가입 폼 입력, Step 2: 대시보드 진입 확인, Step 3: 로그아웃 클릭 및 리다이렉트 검증"},
+        {"text": "data-testid 기반 로케이터 사용", "passed": true, "evidence": "data-testid='signup-form', data-testid='dashboard-greeting', data-testid='logout-btn' 사용 계획"},
+        {"text": "로그인 상태 유지 및 로그아웃 후 상태 초기화 검증", "passed": false, "evidence": "로그아웃 후 /dashboard 접근 시 리다이렉트 검증은 있으나 localStorage/cookie 초기화 검증 미언급"}
+      ]
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "signup-to-logout-flow",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.13,
+        "passed": 1,
+        "failed": 7,
+        "total": 8,
+        "time_seconds": 71.5,
+        "tokens": 22140,
+        "tool_calls": 22,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "SKILL.md 및 e2e-conventions.md 참조 파일 읽기", "passed": false, "evidence": "컨벤션 파일 읽기 없이 바로 테스트 작성 시도"},
+        {"text": "agent-browser로 localhost:3000 탐색 수행", "passed": false, "evidence": "브라우저 탐색 없이 추측 기반 셀렉터 사용"},
+        {"text": "guard/ 디렉토리에 테스트 파일 배치", "passed": false, "evidence": "tests/ 또는 e2e/ 루트에 파일 배치 계획"},
+        {"text": "테스트 describe에 [Guard] 프리픽스 사용", "passed": false, "evidence": "[Guard] 프리픽스 없이 일반 describe 사용"},
+        {"text": "journey_id 기반 테스트 식별자 포함", "passed": false, "evidence": "journey_id 개념 미사용"},
+        {"text": "회원가입 → 대시보드 → 로그아웃 전체 해피 플로우 커버", "passed": true, "evidence": "회원가입, 대시보드 확인, 로그아웃 단계 포함"},
+        {"text": "data-testid 기반 로케이터 사용", "passed": false, "evidence": "CSS 셀렉터 및 텍스트 기반 로케이터 혼용"},
+        {"text": "로그인 상태 유지 및 로그아웃 후 상태 초기화 검증", "passed": false, "evidence": "로그아웃 후 상태 초기화 검증 미포함"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "dashboard-to-todos-flow",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.88,
+        "passed": 7,
+        "failed": 1,
+        "total": 8,
+        "time_seconds": 73.5,
+        "tokens": 38210,
+        "tool_calls": 27,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "SKILL.md 및 e2e-conventions.md 참조 파일 읽기", "passed": true, "evidence": "SKILL.md → e2e-conventions.md 순서로 읽고 guard 규칙 파악"},
+        {"text": "agent-browser로 대시보드 및 /todos 페이지 탐색", "passed": true, "evidence": "agent-browser로 /dashboard, /todos 페이지 탐색하여 할 일 추가 폼, 완료 체크박스, 통계 위젯 위치 확인"},
+        {"text": "guard/ 디렉토리에 테스트 파일 배치", "passed": true, "evidence": "guard/dashboard-to-todos.guard.spec.ts 경로 명시"},
+        {"text": "테스트 describe에 [Guard] 프리픽스 사용", "passed": true, "evidence": "describe('[Guard] 대시보드 → 할 일 추가 → 완료 → 통계 반영') 형태 계획"},
+        {"text": "journey_id 기반 테스트 식별자 포함", "passed": true, "evidence": "journey_id: 'dashboard-to-todos' 상수 정의"},
+        {"text": "로그인 → 할 일 추가 → 완료 처리 → 통계 반영 전체 해피 플로우", "passed": true, "evidence": "4단계 플로우 전체 커버: 로그인 → 대시보드에서 할 일 추가 → /todos에서 완료 → 대시보드 통계 확인"},
+        {"text": "할 일 완료 후 대시보드 통계에 반영되는지 검증", "passed": true, "evidence": "대시보드 통계 위젯에서 완료 카운트 증가 검증 계획"},
+        {"text": "할 일 미완료 상태에서 통계 불변 등 분기 플로우 커버", "passed": false, "evidence": "미완료 상태의 분기 테스트 계획 미언급, 해피 플로우만 커버"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "dashboard-to-todos-flow",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.13,
+        "passed": 1,
+        "failed": 7,
+        "total": 8,
+        "time_seconds": 58.1,
+        "tokens": 25830,
+        "tool_calls": 19,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "SKILL.md 및 e2e-conventions.md 참조 파일 읽기", "passed": false, "evidence": "컨벤션 파일 참조 없이 바로 테스트 작성 시도"},
+        {"text": "agent-browser로 대시보드 및 /todos 페이지 탐색", "passed": false, "evidence": "브라우저 탐색 없이 추측 기반 페이지 구조 가정"},
+        {"text": "guard/ 디렉토리에 테스트 파일 배치", "passed": false, "evidence": "tests/e2e/ 루트에 파일 배치 계획"},
+        {"text": "테스트 describe에 [Guard] 프리픽스 사용", "passed": false, "evidence": "일반 describe('Dashboard to Todos flow') 형태 사용"},
+        {"text": "journey_id 기반 테스트 식별자 포함", "passed": false, "evidence": "journey_id 개념 미사용"},
+        {"text": "로그인 → 할 일 추가 → 완료 처리 → 통계 반영 전체 해피 플로우", "passed": true, "evidence": "로그인, 할 일 추가, 완료 처리 단계는 포함하나 통계 반영 검증은 약함"},
+        {"text": "할 일 완료 후 대시보드 통계에 반영되는지 검증", "passed": false, "evidence": "대시보드 통계 위젯 검증 미포함, /todos 페이지에서만 확인"},
+        {"text": "할 일 미완료 상태에서 통계 불변 등 분기 플로우 커버", "passed": false, "evidence": "분기 플로우 미포함"}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "profile-update-flow",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 56.7,
+        "tokens": 31840,
+        "tool_calls": 22,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "SKILL.md 및 e2e-conventions.md 참조 파일 읽기", "passed": true, "evidence": "SKILL.md, e2e-conventions.md 읽기 후 guard 구조 규칙 파악"},
+        {"text": "agent-browser로 프로필 페이지 및 대시보드 탐색", "passed": true, "evidence": "agent-browser로 /profile 페이지 탐색 → 이름 입력, 스킬 멀티셀렉트, 저장 버튼 구조 확인"},
+        {"text": "guard/ 디렉토리에 테스트 파일 배치", "passed": true, "evidence": "guard/profile-update.guard.spec.ts 파일 경로 명시"},
+        {"text": "테스트 describe에 [Guard] 프리픽스 사용", "passed": true, "evidence": "describe('[Guard] 프로필 수정 → 저장 → 대시보드 반영 → 재진입 유지') 형태 계획"},
+        {"text": "journey_id 기반 테스트 식별자 포함", "passed": true, "evidence": "journey_id: 'profile-update' 상수 정의"},
+        {"text": "프로필 수정 → 저장 → 대시보드 반영 → 재진입 유지 전체 해피 플로우", "passed": true, "evidence": "5단계 플로우: 로그인 → 프로필 이동 → 이름/스킬 수정 → 대시보드 인사말 확인 → 프로필 재진입 데이터 유지"},
+        {"text": "data-testid 기반 로케이터 사용", "passed": true, "evidence": "data-testid='profile-name', data-testid='skill-select', data-testid='save-btn' 사용 계획"},
+        {"text": "프로필 재진입 시 수정된 데이터 유지 검증", "passed": true, "evidence": "프로필 페이지 재방문 후 이름 input value, 선택된 스킬 값 검증 계획 명시"}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "profile-update-flow",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.25,
+        "passed": 2,
+        "failed": 6,
+        "total": 8,
+        "time_seconds": 82.3,
+        "tokens": 23450,
+        "tool_calls": 26,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "SKILL.md 및 e2e-conventions.md 참조 파일 읽기", "passed": false, "evidence": "컨벤션 파일 참조 없이 바로 테스트 작성 시도"},
+        {"text": "agent-browser로 프로필 페이지 및 대시보드 탐색", "passed": false, "evidence": "브라우저 탐색 없이 추측 기반 폼 구조 가정"},
+        {"text": "guard/ 디렉토리에 테스트 파일 배치", "passed": false, "evidence": "e2e/ 루트에 profile-update.spec.ts 배치 계획"},
+        {"text": "테스트 describe에 [Guard] 프리픽스 사용", "passed": false, "evidence": "[Guard] 프리픽스 없이 describe('Profile Update') 사용"},
+        {"text": "journey_id 기반 테스트 식별자 포함", "passed": false, "evidence": "journey_id 개념 미사용"},
+        {"text": "프로필 수정 → 저장 → 대시보드 반영 → 재진입 유지 전체 해피 플로우", "passed": true, "evidence": "프로필 수정, 저장 단계는 포함하나 대시보드 반영 검증은 미포함"},
+        {"text": "data-testid 기반 로케이터 사용", "passed": false, "evidence": "CSS 셀렉터 (#name, .skill-option, button[type=submit]) 혼용"},
+        {"text": "프로필 재진입 시 수정된 데이터 유지 검증", "passed": true, "evidence": "프로필 페이지 재방문 후 값 확인 계획은 포함"}
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 0.92, "stddev": 0.06, "min": 0.88, "max": 1.0},
+      "time_seconds": {"mean": 64.2, "stddev": 6.9, "min": 56.7, "max": 73.5},
+      "tokens": {"mean": 34857, "stddev": 2617, "min": 31840, "max": 38210}
+    },
+    "without_skill": {
+      "pass_rate": {"mean": 0.17, "stddev": 0.06, "min": 0.13, "max": 0.25},
+      "time_seconds": {"mean": 70.6, "stddev": 9.9, "min": 58.1, "max": 82.3},
+      "tokens": {"mean": 23807, "stddev": 1524, "min": 22140, "max": 25830}
+    },
+    "delta": {
+      "pass_rate": "+0.75",
+      "time_seconds": "-6.4",
+      "tokens": "+11050"
+    }
+  },
+  "notes": [
+    "⚠️ 모든 에이전트가 Write/Bash 권한 미허용으로 실제 코드를 생성하지 못함. 계획 품질 기반 평가.",
+    "with_skill 평균 pass rate 92% vs without_skill 17% — guard-e2e-test 스킬이 컨벤션 준수에 결정적 영향",
+    "without_skill은 모든 eval에서 5개 핵심 컨벤션(references-read, browser-exploration, guard-directory, guard-prefix, journey-id)을 전부 실패",
+    "with_skill은 agent-browser 탐색을 통해 실제 DOM 구조 기반 data-testid 로케이터를 도출 — without_skill은 CSS 셀렉터 추측에 의존",
+    "profile-update-flow에서 with_skill 100% 달성 — 프로필 → 대시보드 → 프로필 크로스 라우트 검증이 가장 완성도 높음",
+    "with_skill이 평균 11,050 토큰 더 사용하지만, 참조 파일 읽기 + 브라우저 탐색으로 품질이 크게 향상",
+    "with_skill은 평균 6.4초 더 빠름 — 컨벤션 파악 후 구조적 계획 수립이 without_skill의 시행착오보다 효율적",
+    "분기 플로우(branch-flow) 커버리지는 양쪽 모두 약함 — 해피 패스 중심 계획 경향",
+    "실제 코드 실행 기반 재평가 필요 — 현재 결과는 계획 품질만 반영"
+  ]
+}
