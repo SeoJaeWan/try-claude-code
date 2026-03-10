@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "useAuth 훅 파일이 생성되었는가", "passed": true, "evidence": "hooks/auth/useAuth.ts 생성됨"},
+    {"text": "use{Verb}{Resource} 네이밍 패턴 준수", "passed": true, "evidence": "useAuth - 패턴 준수"},
+    {"text": "API 호출 로직 포함 (login, signup, logout 중 하나 이상)", "passed": true, "evidence": "login, logout, fetchUser API 호출 포함"},
+    {"text": "훅에 대한 테스트 파일 작성 여부", "passed": false, "evidence": "테스트 파일 미작성"},
+    {"text": "에러/로딩 상태 처리 포함", "passed": true, "evidence": "에러/로딩 상태 처리 포함"},
+    {"text": "TypeScript 타입 정의 사용", "passed": true, "evidence": "TypeScript로 작성됨"}
+  ],
+  "summary": {"passed": 5, "failed": 1, "total": 6, "pass_rate": 0.83}
+}

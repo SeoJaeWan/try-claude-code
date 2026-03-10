@@ -1,0 +1,13 @@
+{
+  "eval_id": 3,
+  "eval_name": "api-hook",
+  "prompt": "useFetchOrder라는 API 훅을 만들어줘. query 방식으로 주문 데이터를 가져오는 훅이야",
+  "assertions": [
+    {"id": "hook-file-created", "text": "useFetchOrder 훅 파일 생성"},
+    {"id": "query-pattern", "text": "query 방식 데이터 페칭 패턴 사용"},
+    {"id": "test-file-created", "text": "테스트 파일 작성 여부"},
+    {"id": "error-loading-states", "text": "에러/로딩 상태 처리 포함"},
+    {"id": "typescript-types", "text": "TypeScript 타입 정의 사용"},
+    {"id": "boilerplate-attempt", "text": "generate.mjs 보일러플레이트 생성 시도 여부"}
+  ]
+}
