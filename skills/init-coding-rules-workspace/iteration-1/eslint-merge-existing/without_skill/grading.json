@@ -1,0 +1,13 @@
+{
+  "eval_id": 3,
+  "eval_name": "eslint-merge-existing",
+  "configuration": "without_skill",
+  "expectations": [
+    {"text": "coding-rules 문서 9개를 읽고 참조", "passed": false, "evidence": "coding-rules 문서 탐색/참조 없음, 일반 ESLint 추천 규칙만 적용"},
+    {"text": "기존 ESLint 설정 파일을 읽고 감사(audit)", "passed": true, "evidence": "기존 .eslintrc.json 읽기는 수행"},
+    {"text": "4-group 승인 계획에서 기존 설정과의 차이점/병합 전략 제시", "passed": false, "evidence": "승인 계획 없이 바로 파일 덮어쓰기 시도"},
+    {"text": "기존 ESLint 규칙과 coding-rules 규칙을 병합하는 전략 명시", "passed": false, "evidence": "체계적 병합 전략 미제시, 기존 규칙 일부 손실 가능"},
+    {"text": "병합된 ESLint + commitlint + husky 설정 파일 생성", "passed": false, "evidence": "ESLint, husky 계획은 있으나 commitlint 설정 누락"},
+    {"text": "패키지 자동 설치하지 않고 설치 명령만 안내", "passed": false, "evidence": "npm install 자동 실행 시도"}
+  ]
+}

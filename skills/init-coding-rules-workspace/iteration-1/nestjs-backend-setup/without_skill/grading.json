@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "eval_name": "nestjs-backend-setup",
+  "configuration": "without_skill",
+  "expectations": [
+    {"text": "coding-rules 문서 9개를 읽고 참조", "passed": false, "evidence": "coding-rules 문서 탐색/참조 없음, 일반 ESLint 템플릿 사용"},
+    {"text": "package.json에서 NestJS 프레임워크 감지", "passed": true, "evidence": "package.json 확인 후 NestJS 프로젝트 인식"},
+    {"text": "4-group 승인 계획 (ESLint, commitlint, husky+lint-staged, TSConfig) 제시", "passed": false, "evidence": "승인 계획 없이 바로 파일 생성 시도"},
+    {"text": "coding-rules 기반 ESLint 설정 파일 생성", "passed": false, "evidence": "coding-rules 매핑 없는 NestJS 기본 ESLint 설정"},
+    {"text": "commitlint + husky + lint-staged 설정 파일 생성", "passed": false, "evidence": "commitlint, husky 계획은 있으나 lint-staged 설정 누락"},
+    {"text": "NestJS 백엔드 전용 규칙 적용", "passed": true, "evidence": "typescript-eslint 플러그인 + NestJS 기본 규칙 적용"}
+  ]
+}

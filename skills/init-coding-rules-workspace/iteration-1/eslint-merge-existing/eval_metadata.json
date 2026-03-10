@@ -1,0 +1,13 @@
+{
+  "eval_id": 3,
+  "eval_name": "eslint-merge-existing",
+  "prompt": "현재 프로젝트의 ESLint 설정을 coding-rules 기준으로 업데이트해줘. 기존 설정이 있으면 병합해줘",
+  "assertions": [
+    {"id": "reads-coding-rules", "text": "coding-rules 문서 9개를 읽고 참조"},
+    {"id": "audits-existing-config", "text": "기존 ESLint 설정 파일을 읽고 감사(audit)"},
+    {"id": "presents-4group-approval", "text": "4-group 승인 계획에서 기존 설정과의 차이점/병합 전략 제시"},
+    {"id": "merge-strategy", "text": "기존 ESLint 규칙과 coding-rules 규칙을 병합하는 전략 명시"},
+    {"id": "creates-config-files", "text": "병합된 ESLint + commitlint + husky 설정 파일 생성"},
+    {"id": "no-auto-install", "text": "패키지 자동 설치하지 않고 설치 명령만 안내"}
+  ]
+}
