@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "SKILL.md를 먼저 읽었는가", "passed": true, "evidence": "SKILL.md 읽고 Step 1 검증 워크플로우 따름"},
+    {"text": "Branch: 헤더 누락을 감지했는가", "passed": true, "evidence": "Branch: 헤더 없음을 명확히 감지"},
+    {"text": "검증 실패 시 실행을 중단했는가", "passed": true, "evidence": "SKILL.md 규칙에 따라 즉시 중단"},
+    {"text": "사용자에게 검증 오류를 보고했는가", "passed": true, "evidence": "상세한 오류 보고 생성"},
+    {"text": "Branch: 헤더 추가를 제안했는가", "passed": true, "evidence": "**Branch:** feature/profile 추가 제안"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}
+}
