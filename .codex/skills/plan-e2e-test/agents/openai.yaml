@@ -1,7 +1,7 @@
 interface:
   display_name: "Plan E2E Test"
-  short_description: "Generate contract-first Playwright E2E test code (.spec.ts) as plan artifacts."
-  default_prompt: "Use $plan-e2e-test to generate Playwright E2E test files under ./plans/{task}/e2e/."
+  short_description: "Generate frozen feature-level browser-integration Playwright plans after browser contracts resolve."
+  default_prompt: "Use $plan-e2e-test to generate frozen feature-level browser integration Playwright test files under ./plans/{task}/e2e/ after all browser contracts are resolved."
 
 policy:
   allow_implicit_invocation: true

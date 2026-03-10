@@ -1,6 +1,6 @@
 ---
 name: architect
-description: Codex entry skill for rigorous implementation planning. Use when a request needs a decision-complete execution plan under ./plans after resolving blocking product policy, UX, contract, schema, validation, state, or permission ambiguity, and when Claude execution handoff is needed.
+description: Codex entry skill for rigorous implementation planning. Use when a request needs a decision-complete execution plan under ./plans after resolving blocking product policy, UX, contract, schema, validation, state, permission, and frontend browser-contract ambiguity, and when frontend browser-integration tests must be separated from later full-flow Playwright guard phases.
 ---
 
 <Skill_Guide>
@@ -33,6 +33,12 @@ Before writing any plan artifact:
 - Clarify goals, boundaries, constraints, acceptance criteria, and feature policy.
 - Classify missing information as `blocking`, `derivable`, or `deferrable`.
 - Treat ambiguity as `blocking` when it can change architecture, API/data contracts, schema, business rules, UX behavior, permissions, validation, state transitions, navigation, error handling, accessibility expectations, or acceptance tests.
+- For frontend/UI scope, treat unresolved browser contracts as `blocking`. Browser contracts include:
+  - `route contract`
+  - `user state contract`
+  - `action contract`
+  - `visible outcome contract`
+  - `locator/testability contract`
 - Derive what can be confirmed from local context before asking the user.
 
 ### Step 1.5. Resolve blocking decisions before planning (required)
@@ -45,6 +51,7 @@ Before writing any plan artifact:
   - Otherwise ask concise plain-text questions in chat
 - Do not hide unresolved blocking decisions inside `Assumptions and risks`.
 - Only carry forward `deferrable` items as explicit defaults, and mark them as non-blocking.
+- For frontend/UI scope, do not create implementation plans until the browser contracts above are resolved in a decision-complete form.
 
 ### Step 2. Gather high-level context (optional)
 
@@ -78,6 +85,14 @@ Create plan artifacts in `./plans/{task-name}/`.
 13. Critical Path
 14. Track Dependency Graph (text)
 
+For frontend/UI scope, `Resolved Decisions` must explicitly cover:
+
+- `route contract`
+- `user state contract`
+- `action contract`
+- `visible outcome contract`
+- `locator/testability contract`
+
 Every executable plan file (`plan.md` and `plan-{track}.md`) must include this header at the top:
 
 ```markdown
@@ -100,7 +115,7 @@ Routing guidance (required):
 - Assign business logic, state transitions, event handling, data flow, API integration, and validation logic to `frontend-developer` (or `backend-developer` when server-side).
 - If a phase mixes both concerns, split it into separate phases/tasks with explicit `owner_agent` per concern.
 - Every execution block (`Phase n`, `Tn`) must include `- owner_agent: \`{agent-name}\``.
-- `owner_agent` must match an existing agent file: `./.claude/agents/{agent-name}.md`.
+- `owner_agent` must match an existing agent file: `./agents/{agent-name}.md`.
 - Do not rely only on heading text such as `(Owner: ...)`.
 
 Use template references when drafting:
@@ -120,17 +135,53 @@ If the plan includes testable logic boundaries (hooks, services, utilities, vali
 
 Test files are plan artifacts, not implementation code. Developers copy them to the source tree during the TDD Red phase.
 
-### Step 3.6. Generate E2E test plan (conditional)
+### Step 3.6. Generate browser integration test plan (conditional)
 
-If the task changes user-facing UI, navigation, or end-user flows, run the `plan-e2e-test` workflow:
+If the task changes user-facing UI within a feature, screen, modal, or other bounded browser surface, run the `plan-e2e-test` workflow:
 
+0. Confirm the frontend browser contracts are fully resolved in `plan.md`
 1. Read `./.codex/skills/plan-e2e-test/SKILL.md`
 2. Execute the plan-e2e-test workflow to generate Playwright `.spec.ts` files under `./plans/{task-name}/e2e/`
-3. Verify `e2e/manifest.md` shows 100% UI-facing constraint coverage and includes the `data-testid` registry
+3. Verify `e2e/manifest.md` shows 100% coverage for in-scope browser-integration constraints, includes the `data-testid` registry, and explicitly lists any full-flow journeys deferred to `playwright-guard`
 
-E2E tests are **frozen at planning time** (strict AI TDD). Implementation must pass them; tests are not modified to match implementation. If E2E tests fail, fix the implementation, NOT the tests.
+Use `plan-e2e-test` for:
+
+- Same-surface form validation, error display, and submit gating
+- Loading, disabled, success, and API error states visible within the feature
+- Browser-visible integration across components/modules within one bounded feature surface
+
+Do **not** use `plan-e2e-test` for:
+
+- Multi-route full journeys
+- Auth/session handoffs across pages
+- Reload persistence across the application shell
+- Post-implementation regression hardening
+
+Those belong to a later `playwright-guard` phase.
+
+Browser integration tests are **frozen at planning time** (strict AI TDD). Implementation must pass them; tests are not modified to match implementation. If these tests fail, fix the implementation, NOT the tests.
 
 **Skip** for backend-only, documentation-only, or configuration-only scope.
+If any frontend browser contract is missing, do not run `plan-e2e-test`; return to clarification first.
+
+### Step 3.7. Plan full-flow Playwright guard phase (conditional)
+
+If the task changes a cross-route user journey, auth/session transition, redirect chain, persisted browser state, or any release-critical flow that needs post-implementation regression hardening, add a later execution phase owned by `playwright-guard`.
+
+Required planning rules:
+
+1. Set `owner_agent: playwright-guard`
+2. Set `primary_skill: guard-e2e-test`
+3. Schedule the phase after implementation reaches green on its core validation commands
+4. State the trigger and scope explicitly:
+   - changed journey or affected routes
+   - expected final user-visible outcome
+   - known fragile/risky behavior or failed verification signal
+   - target app URL or start route
+5. State the expected output as real Playwright guard specs in the project test tree, not in `plans/`
+6. State that `playwright-guard` must not edit frozen `plan-e2e-test` artifacts
+
+Skip this phase only when the task has no full-flow journey or regression-hardening requirement.
 
 ### Step 4. Conditional parallelization decision (required)
 
@@ -192,7 +243,7 @@ Parallel track rules:
 
 Run these checks before finalizing:
 
-1. Every phase/task block has a concrete `owner_agent` field and the value maps to `./.claude/agents/{agent-name}.md`.
+1. Every phase/task block has a concrete `owner_agent` field and the value maps to `./agents/{agent-name}.md`.
 2. No unresolved blocking policy/contract/schema/UX ambiguity remains.
 3. No `TBD` assignee or unresolved critical dependency.
 4. Every executable plan file includes `Branch` header.
@@ -203,7 +254,9 @@ Run these checks before finalizing:
 7. `Resolved Decisions` records all user-confirmed blocking choices, and `Explicit Defaults` contains only non-blocking defaults.
 8. Failure Escalation Policy is explicit (`bug-report` create -> `codex-debug` on unresolved/repeat -> `bug-report` update).
 9. Visual/design-oriented work is assigned to `publisher`; logic-oriented work is assigned to developer agents.
-10. For UI/user-flow scope, `plan-e2e-test` artifacts exist under `plans/{task-name}/e2e/` with frozen `.spec.ts` files.
+10. For UI/feature-browser scope, `plan-e2e-test` artifacts exist under `plans/{task-name}/e2e/` with frozen browser-integration `.spec.ts` files.
+11. For UI/user-journey or regression-hardening scope, a later `playwright-guard` phase exists with explicit trigger, scope, and exit criteria.
+12. For UI scope, `Resolved Decisions` contains all five frontend browser contracts before any implementation or `plan-e2e-test` artifact is produced.
 
 ### Step 6. Self-review gate (required)
 
@@ -213,7 +266,7 @@ Self-review checklist:
 1. Plan scope, goals, and acceptance criteria are internally consistent.
 2. No unresolved blocking policy ambiguity remains, including frontend UX/state/validation policy and backend contract/schema/rule policy.
 3. `Resolved Decisions` contains all blocking choices, and `Explicit Defaults` contains only low-risk non-blocking defaults.
-4. Every phase/task has `owner_agent`, and each value maps to `./.claude/agents/{agent-name}.md`.
+4. Every phase/task has `owner_agent`, and each value maps to `./agents/{agent-name}.md`.
 5. Every executable plan file includes `Branch`.
 6. Validation commands and exit criteria are explicit and executable.
 7. Rollback/fallback strategy is concrete and testable.
@@ -222,7 +275,9 @@ Self-review checklist:
 10. Confirm no circular dependencies in the track graph.
 11. Confirm Failure Escalation Policy is actionable and phase owners can execute it.
 12. Confirm visual/design tasks are owned by `publisher` and not mixed with logic in the same execution block.
-13. For UI/user-flow scope, confirm `plan-e2e-test` artifacts exist with frozen `.spec.ts` files and `data-testid` registry.
+13. For UI/feature-browser scope, confirm `plan-e2e-test` artifacts exist with frozen browser-integration `.spec.ts` files and `data-testid` registry.
+14. For UI/user-journey or regression-hardening scope, confirm a later `playwright-guard` phase is planned with explicit trigger and scope.
+15. For UI/user-flow scope, confirm `Resolved Decisions` explicitly defines route, user state, action, visible outcome, and locator/testability contracts.
    Do not request execution before this gate is complete.
 
 ### Step 7. Compatibility policy (required)
@@ -245,7 +300,7 @@ Provide a concise execution handoff summary:
    - sequential: run `planner-lite` session against `plan.md`
    - parallel: run one `planner-lite` session per `plan-{track}.md`
 4. Confirm branch merge rule: `planner-lite` enforces `Agent(... isolation: "worktree")` per phase, merges after each worker completes, then performs final merge into each file's `Branch` with `--no-ff`
-5. For UI/user-flow scope, confirm `plan-e2e-test` artifacts are included and note that E2E tests are frozen (implementation must satisfy them)
+5. For UI/user-flow scope, confirm whether `plan-e2e-test` artifacts are included and whether a later `playwright-guard` phase is scheduled for full-flow/regression coverage
 6. Explicit defaults and deferred low-risk choices recorded in the plan
 
 ## Output contract
@@ -267,7 +322,9 @@ Provide a concise execution handoff summary:
 
 - Planning only: do not write implementation code.
 - Test files generated by `plan-unit-test` and `plan-e2e-test` are plan artifacts, not implementation code.
-- Do not omit E2E planning (`plan-e2e-test`) when UI/user-flow scope exists.
+- `playwright-guard` generates real regression tests later; architect only plans that phase.
+- Do not omit browser-integration planning (`plan-e2e-test`) when feature-level UI/browser scope exists.
+- Do not omit a `playwright-guard` phase when full-flow journey or regression-hardening coverage is required.
 - Focus on "what to execute" and "in what order".
 - Ensure all gates are explicit and testable.
 - Do not produce a plan with unresolved blocking product-policy ambiguity.
