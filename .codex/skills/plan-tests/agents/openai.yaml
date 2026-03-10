@@ -1,7 +1,7 @@
 interface:
   display_name: "Plan Tests"
-  short_description: "Generate constraint-mapped unit test files as plan artifacts."
-  default_prompt: "Use $plan-tests to generate unit test files mapped to plan.md constraint IDs, stored under ./plans/{task}/tests/."
+  short_description: "Generate stack-aware, constraint-mapped logic tests as plan artifacts."
+  default_prompt: "Use $plan-tests to generate stack-aware, constraint-mapped logic tests under ./plans/{task}/tests/."
 
 policy:
   allow_implicit_invocation: true

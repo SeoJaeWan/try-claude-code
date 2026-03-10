@@ -1,29 +1,32 @@
 # Constraint Coverage Rules
 
-Mandatory coverage requirements for plan-tests skill.
+Mandatory coverage requirements for `plan-tests`.
 
 ---
 
 ## Core Rules
 
-1. **Every constraint ID** in plan.md must map to **at least one test case**.
-2. Each constraint must have **both**:
-   - Positive case >= 1 (expected success behavior)
-   - Negative case >= 1 (expected failure/edge behavior)
-3. Every mapped test name must **include its constraint ID token** (`[C-...]`).
-4. If coverage is incomplete, **do not mark test generation complete** even if existing tests pass.
+1. **Every constraint ID** in `plan.md` must map to **at least one test case**.
+2. Each constraint must include **both**:
+   - Expected behavior >= 1
+   - Defensive coverage >= 1
+3. Defensive coverage may be satisfied by **validation failure, edge case, or exception path**, but at least one non-happy-path scenario is mandatory for every constraint.
+4. **Exception or recovery scenarios are mandatory** when the logic can fail through dependencies, parsing, persistence, authorization, or state transitions.
+5. Every mapped test name must **include its constraint ID token** (`[C-...]`).
+6. If coverage is incomplete, **do not mark test generation complete** even if existing tests pass.
 
 ---
 
 ## Coverage Verification
 
-Before completing the plan-tests workflow:
+Before completing the `plan-tests` workflow:
 
-1. List all constraint IDs from plan.md
-2. For each ID, verify at least one `it('[C-xxx] ...')` test exists
-3. For each ID, verify both positive and negative variants exist
-4. Calculate coverage: `covered / total * 100`
-5. **100% required** — no exceptions
+1. List all constraint IDs from `plan.md`
+2. For each ID, verify at least one expected-behavior test exists
+3. For each ID, verify at least one defensive test exists
+4. For each ID, explicitly review whether edge and exception categories apply
+5. Calculate coverage: `covered / total * 100`
+6. **100% required** - no exceptions
 
 ---
 
@@ -35,23 +38,26 @@ The `manifest.md` must include a coverage summary:
 ## Coverage
 
 - Total constraints: {N}
-- Covered constraints: {N}
+- Constraints with expected coverage: {N}
+- Constraints with defensive coverage: {N}
+- Constraints with explicit edge/exception review: {N}
 - Coverage: 100%
 ```
 
-If coverage < 100%, list missing constraints:
+If coverage or review is incomplete, list missing items explicitly:
 
 ```markdown
 ## Missing Coverage
 
-- [ ] [C-XXX-001] — no test case found
-- [ ] [C-XXX-002] — missing negative case
+- [ ] [C-XXX-001] - no expected-behavior test found
+- [ ] [C-XXX-002] - no defensive test found
+- [ ] [C-XXX-003] - exception applicability not reviewed
 ```
 
 ---
 
 ## Traceability
 
-- Constraint ID in test name enables grep-based traceability
-- `grep -r "C-AUTH-001" __tests__/` should return at least 2 results (positive + negative)
-- This supports plan review and post-implementation auditing
+- Constraint IDs in test names enable grep-based traceability
+- In most cases, `grep -r "C-AUTH-001" __tests__/` should return at least two scenario entries: expected + defensive
+- If a single parameterized block covers multiple scenario categories, `manifest.md` must still record those categories explicitly
