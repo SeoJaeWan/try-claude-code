@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "eval_name": "signup-form-ui",
+  "prompt": "회원가입 폼 UI를 만들어줘. 이름, 이메일, 비밀번호 필드와 제출 버튼 포함",
+  "assertions": [
+    {"id": "reads-skill-md", "text": "SKILL.md 파일을 읽고 지침을 따름"},
+    {"id": "reads-theme-tokens", "text": "theme-tokens.md 디자인 토큰 참조"},
+    {"id": "uses-tailwind", "text": "Tailwind CSS 클래스 사용 (인라인 스타일 아님)"},
+    {"id": "no-logic-state", "text": "useState/useEffect/fetch 등 로직 미사용 (visual only)"},
+    {"id": "pretendard-font", "text": "Pretendard 폰트 사용 (font.md 참조)"},
+    {"id": "default-export", "text": "컴포넌트를 default export로 내보냄"}
+  ]
+}
