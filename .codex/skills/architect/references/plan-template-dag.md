@@ -56,9 +56,9 @@
 - `plan-core.md`
 - `plan-docs.md`
 
-UI/user-flow scope인 경우 E2E 트랙(또는 후속 phase)을 추가:
-- `playwright-test-planner` -> `playwright-test-generator`
-- `playwright-test-healer`는 실패 시 조건부 실행
+UI/user-flow scope인 경우 planning 단계에서 `plan-e2e-test` 스킬로 E2E artifact 생성:
+- `plans/{task-name}/e2e/manifest.md` + `plans/{task-name}/e2e/{domain}/{scenario}.spec.ts`
+- E2E 테스트는 frozen artifact (구현이 테스트를 통과해야 함, 테스트를 수정하지 않음)
 
 ## 최종 인수 체크리스트
 
@@ -131,7 +131,8 @@ UI/user-flow scope인 경우 E2E 트랙(또는 후속 phase)을 추가:
 - owner_agent: `{agent-name}`
 - primary_skill: `{skill-name}` (선택)
 - 작업:
-- 테스트: `tests/{mirrored-source-path}` (해당 시)
+- 단위 테스트: `tests/{mirrored-source-path}` (해당 시, plan-unit-test artifact)
+- E2E 테스트: `e2e/{domain}/{scenario}.spec.ts` (해당 시, plan-e2e-test artifact)
 
 ### T2
 
