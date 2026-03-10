@@ -1,0 +1,12 @@
+{
+  "eval_id": 3,
+  "eval_name": "coding-rules-overview",
+  "configuration": "with_skill",
+  "expectations": [
+    {"text": "SKILL.md 파일을 읽어 스킬 컨텍스트 확인", "passed": true, "evidence": "SKILL.md 읽기 tool call 확인"},
+    {"text": "references/faq.md 파일을 읽어 coding-rules 관련 FAQ 확인", "passed": true, "evidence": "faq.md 읽기 후 coding-rules 항목 참조"},
+    {"text": "coding-rules 문서 목록을 정확히 나열", "passed": true, "evidence": "faq.md 기반으로 전체 coding-rules 문서 목록 나열"},
+    {"text": "각 coding-rules 문서의 역할과 설정 내용을 설명", "passed": true, "evidence": "각 문서별 목적, 설정 항목, 적용 방법 설명"},
+    {"text": "한국어로 답변 작성", "passed": true, "evidence": "전체 답변이 한국어로 작성됨"}
+  ]
+}

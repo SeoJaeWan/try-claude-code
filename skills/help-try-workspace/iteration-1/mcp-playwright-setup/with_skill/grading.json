@@ -1,0 +1,12 @@
+{
+  "eval_id": 2,
+  "eval_name": "mcp-playwright-setup",
+  "configuration": "with_skill",
+  "expectations": [
+    {"text": "SKILL.md 파일을 읽어 스킬 컨텍스트 확인", "passed": true, "evidence": "SKILL.md 읽기 tool call 확인"},
+    {"text": "references/faq.md 파일을 읽어 MCP 관련 FAQ 확인", "passed": true, "evidence": "faq.md 읽기 후 MCP 설정 항목 참조"},
+    {"text": "MCP 서버 설정 방법을 정확히 설명", "passed": true, "evidence": ".claude/mcp.json 경로, mcpServers 구조, command/args/env 필드 설명"},
+    {"text": "playwright-test MCP 서버 설정 및 사용법 설명", "passed": true, "evidence": "playwright-test 서버 설정 예시 및 allowedTools 정책 설명"},
+    {"text": "한국어로 답변 작성", "passed": true, "evidence": "전체 답변이 한국어로 작성됨"}
+  ]
+}
