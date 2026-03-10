@@ -1,0 +1,13 @@
+{
+  "eval_id": 1,
+  "eval_name": "basic-pr-create",
+  "prompt": "PR 올려줘",
+  "assertions": [
+    {"id": "read-skill-md", "text": "SKILL.md 파일을 읽어 PR 생성 워크플로우 확인"},
+    {"id": "check-branch", "text": "현재 브랜치 상태 확인 (git status, git branch)"},
+    {"id": "analyze-commits", "text": "커밋 히스토리 분석 (git log, git diff)"},
+    {"id": "check-pr-template", "text": "PR 템플릿 파일 존재 여부 확인 (.github/PULL_REQUEST_TEMPLATE.md)"},
+    {"id": "pr-body-format", "text": "PR 본문에 Summary/Changes/Test plan 섹션 포함"},
+    {"id": "gh-pr-create", "text": "gh pr create 명령어 실행"}
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "eval_id": 1,
+  "eval_name": "basic-pr-create",
+  "configuration": "without_skill",
+  "expectations": [
+    {"text": "SKILL.md 파일을 읽어 PR 생성 워크플로우 확인", "passed": false, "evidence": "SKILL.md 읽기 단계 없음 — 스킬 파일 미참조"},
+    {"text": "현재 브랜치 상태 확인 (git status, git branch)", "passed": true, "evidence": "git branch 실행으로 브랜치 확인"},
+    {"text": "커밋 히스토리 분석 (git log, git diff)", "passed": true, "evidence": "git log 실행했으나 diff 분석은 미흡"},
+    {"text": "PR 템플릿 파일 존재 여부 확인", "passed": false, "evidence": "PR 템플릿 확인 단계 없음"},
+    {"text": "PR 본문에 Summary/Changes/Test plan 섹션 포함", "passed": false, "evidence": "단순 텍스트 PR body — 구조화된 섹션 미사용"},
+    {"text": "gh pr create 명령어 실행", "passed": true, "evidence": "gh pr create 실행 계획 포함"}
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "eval_name": "pr-with-reviewer",
+  "prompt": "현재 브랜치의 변경사항으로 PR을 만들어줘. 리뷰어는 팀원 kim으로 지정해줘",
+  "assertions": [
+    {"id": "read-skill-md", "text": "SKILL.md 파일을 읽어 PR 생성 워크플로우 확인"},
+    {"id": "check-branch", "text": "현재 브랜치 상태 확인 (git status, git branch)"},
+    {"id": "analyze-commits", "text": "커밋 히스토리 분석 (git log, git diff)"},
+    {"id": "check-pr-template", "text": "PR 템플릿 파일 존재 여부 확인"},
+    {"id": "pr-body-format", "text": "PR 본문에 Summary/Changes/Test plan 섹션 포함"},
+    {"id": "reviewer-assigned", "text": "리뷰어 kim이 --reviewer 옵션으로 지정됨"}
+  ]
+}
