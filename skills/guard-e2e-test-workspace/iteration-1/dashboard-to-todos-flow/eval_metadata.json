@@ -1,0 +1,15 @@
+{
+  "eval_id": 2,
+  "eval_name": "dashboard-to-todos-flow",
+  "prompt": "로그인 → 대시보드에서 할 일 추가 → /todos에서 완료 처리 → 대시보드 통계 반영 확인까지 전체 플로우 회귀 테스트 만들어줘. localhost:3000에서 실행 중이야.",
+  "assertions": [
+    {"id": "references-read", "text": "SKILL.md 및 e2e-conventions.md 참조 파일 읽기"},
+    {"id": "browser-exploration", "text": "agent-browser로 대시보드 및 /todos 페이지 탐색"},
+    {"id": "guard-directory", "text": "guard/ 디렉토리에 테스트 파일 배치"},
+    {"id": "guard-prefix", "text": "테스트 describe에 [Guard] 프리픽스 사용"},
+    {"id": "journey-id", "text": "journey_id 기반 테스트 식별자 포함"},
+    {"id": "happy-flow", "text": "로그인 → 할 일 추가 → 완료 처리 → 통계 반영 전체 해피 플로우"},
+    {"id": "state-persistence", "text": "할 일 완료 후 대시보드 통계에 반영되는지 검증"},
+    {"id": "branch-flow", "text": "할 일 미완료 상태에서 통계 불변 등 분기 플로우 커버"}
+  ]
+}

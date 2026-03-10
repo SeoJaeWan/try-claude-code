@@ -1,0 +1,15 @@
+{
+  "eval_id": 1,
+  "eval_name": "signup-to-logout-flow",
+  "configuration": "without_skill",
+  "expectations": [
+    {"text": "SKILL.md 및 e2e-conventions.md 참조 파일 읽기", "passed": false, "evidence": "컨벤션 파일 읽기 없이 바로 테스트 작성 시도"},
+    {"text": "agent-browser로 localhost:3000 탐색 수행", "passed": false, "evidence": "브라우저 탐색 없이 추측 기반 셀렉터 사용"},
+    {"text": "guard/ 디렉토리에 테스트 파일 배치", "passed": false, "evidence": "tests/ 또는 e2e/ 루트에 파일 배치 계획"},
+    {"text": "테스트 describe에 [Guard] 프리픽스 사용", "passed": false, "evidence": "[Guard] 프리픽스 없이 일반 describe 사용"},
+    {"text": "journey_id 기반 테스트 식별자 포함", "passed": false, "evidence": "journey_id 개념 미사용"},
+    {"text": "회원가입 → 대시보드 → 로그아웃 전체 해피 플로우 커버", "passed": true, "evidence": "회원가입, 대시보드 확인, 로그아웃 단계 포함"},
+    {"text": "data-testid 기반 로케이터 사용", "passed": false, "evidence": "CSS 셀렉터 및 텍스트 기반 로케이터 혼용"},
+    {"text": "로그인 상태 유지 및 로그아웃 후 상태 초기화 검증", "passed": false, "evidence": "로그아웃 후 상태 초기화 검증 미포함"}
+  ]
+}

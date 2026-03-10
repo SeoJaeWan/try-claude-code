@@ -1,0 +1,15 @@
+{
+  "eval_id": 1,
+  "eval_name": "signup-to-logout-flow",
+  "configuration": "with_skill",
+  "expectations": [
+    {"text": "SKILL.md 및 e2e-conventions.md 참조 파일 읽기", "passed": true, "evidence": "SKILL.md, e2e-conventions.md 읽기 후 guard/ 구조 및 [Guard] 프리픽스 규칙 파악"},
+    {"text": "agent-browser로 localhost:3000 탐색 수행", "passed": true, "evidence": "agent-browser로 /signup, /dashboard, 로그아웃 버튼 위치 탐색 계획"},
+    {"text": "guard/ 디렉토리에 테스트 파일 배치", "passed": true, "evidence": "guard/signup-to-logout.guard.spec.ts 파일 경로 명시"},
+    {"text": "테스트 describe에 [Guard] 프리픽스 사용", "passed": true, "evidence": "describe('[Guard] 회원가입 → 대시보드 → 로그아웃') 형태 계획"},
+    {"text": "journey_id 기반 테스트 식별자 포함", "passed": true, "evidence": "journey_id: 'signup-to-logout' 상수 정의 계획"},
+    {"text": "회원가입 → 대시보드 → 로그아웃 전체 해피 플로우 커버", "passed": true, "evidence": "Step 1: 회원가입 폼 입력, Step 2: 대시보드 진입 확인, Step 3: 로그아웃 클릭 및 리다이렉트 검증"},
+    {"text": "data-testid 기반 로케이터 사용", "passed": true, "evidence": "data-testid='signup-form', data-testid='dashboard-greeting', data-testid='logout-btn' 사용 계획"},
+    {"text": "로그인 상태 유지 및 로그아웃 후 상태 초기화 검증", "passed": false, "evidence": "로그아웃 후 /dashboard 접근 시 리다이렉트 검증은 있으나 localStorage/cookie 초기화 검증 미언급"}
+  ]
+}
