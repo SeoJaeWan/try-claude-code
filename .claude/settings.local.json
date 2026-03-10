@@ -14,7 +14,9 @@
       "Grep",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:shipyard.build)",
-      "Bash(npx playwright:*)"
+      "Bash(npx playwright:*)",
+      "Bash(SKILL_CREATOR=\"/c/Users/USER/.claude/plugins/cache/anthropic-agent-skills-custom-by-seojaewan/example-skills/0aabef2ce37c/skills/skill-creator\")",
+      "Read(//c/Users/USER/Desktop/dev/try-claude-code/**)"
     ]
   }
 }
