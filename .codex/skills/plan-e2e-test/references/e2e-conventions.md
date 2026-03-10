@@ -1,6 +1,6 @@
 # E2E Test Conventions Reference
 
-Inline reference for `plan-e2e-test`. Use this to turn plan constraints into executable Playwright E2E test contracts.
+Inline reference for `plan-e2e-test`. Use this to turn plan constraints into executable Playwright browser-integration contracts for bounded feature surfaces.
 
 ---
 
@@ -127,11 +127,13 @@ export class LoginPage {
 
 Since tests are authored at planning time without running a live browser:
 
-1. **Derive locators from plan constraints**: Use the planned UI structure and `data-testid` names
-2. **Derive URLs from planned routes**: Use the route definitions in `plan.md`
-3. **Derive expected text from plan specs**: Use the planned labels, messages, and content
-4. **Assume standard Playwright behavior**: Auto-waiting, built-in assertions, navigation events
-5. **Document assumptions**: If a locator or URL depends on implementation details not yet finalized, note it in `manifest.md`
+1. **Require resolved browser contracts first**: `plan.md` must explicitly define route, user state, action, visible outcome, and locator/testability contracts before E2E authoring starts
+2. **Derive locators from resolved contracts**: Use the planned UI structure and `data-testid` names
+3. **Derive URLs from resolved routes**: Use the route definitions in `plan.md`
+4. **Derive expected text from resolved outcomes**: Use the planned labels, messages, and content
+5. **Assume standard Playwright behavior**: Auto-waiting, built-in assertions, navigation events
+6. **Do not document missing contracts as assumptions**: If a locator, route, state, action, or visible result is not finalized, stop and return a blocking issue instead of generating tests
+7. **Do not author cross-route journeys here**: Redirect chains, session persistence, and post-implementation regression journeys belong to `playwright-guard`
 
 The `data-testid Registry` in `manifest.md` becomes the binding contract: implementation must apply these attributes exactly as specified.
 

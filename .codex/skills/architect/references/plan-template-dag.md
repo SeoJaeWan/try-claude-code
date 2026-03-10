@@ -56,9 +56,14 @@
 - `plan-core.md`
 - `plan-docs.md`
 
-UI/user-flow scope인 경우 planning 단계에서 `plan-e2e-test` 스킬로 E2E artifact 생성:
+UI/feature-browser scope인 경우 planning 단계에서 `plan-e2e-test` 스킬로 browser-integration artifact 생성:
 - `plans/{task-name}/e2e/manifest.md` + `plans/{task-name}/e2e/{domain}/{scenario}.spec.ts`
-- E2E 테스트는 frozen artifact (구현이 테스트를 통과해야 함, 테스트를 수정하지 않음)
+- 테스트는 frozen artifact (구현이 테스트를 통과해야 함, 테스트를 수정하지 않음)
+
+UI/user-journey 또는 regression-hardening scope인 경우 후속 execution track/phase에 아래를 추가:
+- `owner_agent: playwright-guard`
+- `primary_skill: guard-e2e-test`
+- 산출물: 실제 테스트 디렉토리의 `guard/{domain}/{risk}.spec.ts`
 
 ## 최종 인수 체크리스트
 
@@ -76,7 +81,7 @@ UI/user-flow scope인 경우 planning 단계에서 `plan-e2e-test` 스킬로 E2E
 - `Outputs`: 트랙 완료 산출물
 - `MergeCondition`: 병합 가능 조건
 - 각 실행 블록(`Tn`)의 `owner_agent`
-    - `owner_agent`: `./.claude/agents/{owner_agent}.md`와 일치
+    - `owner_agent`: `./agents/{owner_agent}.md`와 일치
     - 필요 시 `primary_skill`로 에이전트 내부 실행 스킬 고정
 - 실행/병합 오케스트레이션:
     - 트랙별로 `planner-lite` 스킬 세션 1개 실행 (메인 대화에서)

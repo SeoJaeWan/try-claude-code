@@ -1,25 +1,33 @@
 ---
 name: plan-e2e-test
-description: Codex skill for generating contract-first Playwright E2E test code as plan artifacts. Called by architect after plan.md creation for UI/user-flow scope.
+description: Codex skill for generating contract-first feature-level browser integration Playwright test code as plan artifacts, but only after frontend browser contracts are fully resolved in plan.md. Called by architect after plan.md creation for UI feature/screen scope.
 ---
 
 <Skill_Guide>
 <Purpose>
-Generate deterministic Playwright E2E test files (.spec.ts) as plan artifacts during the planning phase. These tests define frozen user-flow contracts that implementation must satisfy. No live browser exploration is required.
+Generate deterministic Playwright browser integration test files (`.spec.ts`) as plan artifacts during the planning phase. These tests define frozen feature/screen contracts that implementation must satisfy. No live browser exploration is required. Full-flow journey and regression guard tests are handled later by `playwright-guard`, not by this skill.
 </Purpose>
 
 <Instructions>
 # plan-e2e-test
 
-Generate Playwright `.spec.ts` files mapped to `plan.md` constraint IDs. These tests become frozen plan artifacts that define the E2E behavioral contract. Implementation must pass these tests; tests are not modified to match implementation.
+Generate Playwright `.spec.ts` files mapped to `plan.md` constraint IDs. These tests become frozen plan artifacts that define the browser-integration contract for a bounded feature surface. Implementation must pass these tests; tests are not modified to match implementation.
 
-**Strict AI TDD**: E2E test code is frozen at planning time. If tests fail, fix the implementation, NOT the tests.
+**Strict AI TDD**: Browser integration test code is frozen at planning time. If tests fail, fix the implementation, NOT the tests.
+
+**Precondition**: Do not generate any E2E test code unless `plan.md` already resolves all frontend browser contracts:
+
+- `route contract`
+- `user state contract`
+- `action contract`
+- `visible outcome contract`
+- `locator/testability contract`
 
 ---
 
 ## Inputs to inspect
 
-1. `./plans/{task-name}/plan.md` - constraint IDs (`[C-...]`), user flows, and UI scope
+1. `./plans/{task-name}/plan.md` - constraint IDs (`[C-...]`), feature-level user interactions, and UI scope
 2. `./.codex/skills/plan-e2e-test/references/e2e-conventions.md` - E2E test writing rules
 3. `./.codex/skills/plan-e2e-test/references/constraint-coverage.md` - E2E coverage rules
 4. Local Playwright config and existing E2E tests - use this to detect conventions before generating files
@@ -28,7 +36,18 @@ Generate Playwright `.spec.ts` files mapped to `plan.md` constraint IDs. These t
 
 ## Workflow
 
-### Step 0. Detect Playwright conventions
+### Step 0. Verify browser contracts first
+
+Read `plan.md` and confirm all five frontend browser contracts are explicitly resolved.
+
+Rules:
+
+- If any contract is missing, ambiguous, or deferred, stop immediately.
+- Do not infer missing browser contracts from guesswork.
+- Do not "fill the gap" with speculative routes, states, actions, outcomes, or test IDs.
+- Return the missing contracts as blocking issues to `architect`; do not generate partial E2E artifacts.
+
+### Step 0.5. Detect Playwright conventions
 
 - Inspect the repository for existing Playwright configuration (`playwright.config.ts`, `playwright.config.js`)
 - Check for existing E2E test files (`*.spec.ts`, `e2e/` directory)
@@ -36,26 +55,28 @@ Generate Playwright `.spec.ts` files mapped to `plan.md` constraint IDs. These t
 - If no Playwright setup exists, generate tests assuming standard Playwright defaults
 - Identify existing page objects, fixtures, or helper utilities to reuse
 
-### Step 1. Extract E2E targets from `plan.md`
+### Step 1. Extract browser integration targets from `plan.md`
 
 - Parse all constraint IDs (`[C-...]`) from `plan.md` that involve user-facing behavior
-- Identify testable user flows: page navigation, form submission, CRUD operations, authentication flows, error displays, loading states, responsive behavior
-- Map each flow to the constraints it verifies
+- Identify bounded browser-integration targets: form validation, submit gating, loading/success/error states, CRUD interactions inside one screen or feature shell, and visible API/module integration on that surface
+- Map each target to the constraints it verifies
+- Use only flows whose route, user state, action, visible outcome, and locator/testability contracts are explicitly resolved
 - Skip constraints that are purely internal logic (covered by `plan-unit-test`)
+- Exclude multi-route journeys, cross-page auth/session handoffs, persistence-after-reload flows, and post-implementation regression guards; record these under `Deferred to playwright-guard` in `manifest.md`
 
 ### Step 2. Read reference documents
 
 - Read `./references/e2e-conventions.md` (E2E writing rules)
 - Read `./references/constraint-coverage.md` (E2E coverage rules)
 
-### Step 3. Design test scenarios per user flow
+### Step 3. Design test scenarios per browser integration target
 
-For each user flow, derive the E2E scenarios:
+For each target, derive the browser integration scenarios:
 
-- **Happy path**: complete user journey succeeds end-to-end
+- **Interaction path**: the intended feature interaction succeeds within the bounded surface
 - **Validation/error path**: user sees appropriate error feedback for invalid input or failed operations
-- **Edge case path**: empty states, boundary inputs, concurrent actions visible to user
-- **Navigation path**: correct routing, redirects, back/forward behavior
+- **Edge state path**: empty states, boundary inputs, loading, disabled controls, concurrent actions visible to the user
+- **Feature-local navigation path**: tabs, drawers, modals, or sub-routes that stay inside the same feature shell
 
 Rules:
 
@@ -63,10 +84,12 @@ Rules:
 - Each scenario must trace back to at least one constraint ID
 - Use deterministic assertions (no flaky timing-dependent checks)
 - Design tests that can run without live browser exploration at authoring time
+- Do not author scenarios for flows whose browser contracts are not fully resolved
+- Do not author full-flow journey assertions that cross major routes or application states; those belong to `playwright-guard`
 
 ### Step 4. Generate `.spec.ts` files
 
-For each testable flow, generate a Playwright test file following these rules:
+For each testable target, generate a Playwright test file following these rules:
 
 - **Korean spec descriptions** in `test.describe` / `test` blocks
 - **Constraint ID** in the test name: `test('[C-UI-001] ...', ...)`
@@ -82,40 +105,38 @@ Example structure:
 ```typescript
 import { test, expect } from '@playwright/test';
 
-test.describe('로그인 페이지', () => {
-  test('[C-AUTH-001] 유효한 자격 증명으로 로그인하면 대시보드로 이동한다', async ({ page }) => {
+test.describe('프로필 설정 폼', () => {
+  test('[C-PROFILE-001] 표시 이름이 비어 있으면 오류 메시지를 표시한다', async ({ page }) => {
     // Arrange
-    await page.goto('/login');
+    await page.goto('/settings/profile');
 
     // Act
-    await page.getByTestId('email-input').fill('user@example.com');
-    await page.getByTestId('password-input').fill('Password123!');
-    await page.getByTestId('login-button').click();
+    await page.getByTestId('display-name-input').fill('');
+    await page.getByTestId('save-button').click();
 
     // Assert
-    await expect(page).toHaveURL('/dashboard');
-    await expect(page.getByTestId('welcome-message')).toBeVisible();
+    await expect(page.getByTestId('display-name-error')).toBeVisible();
+    await expect(page.getByTestId('display-name-error')).toContainText('표시 이름');
   });
 
-  test('[C-AUTH-001] 잘못된 비밀번호로 로그인하면 오류 메시지를 표시한다', async ({ page }) => {
+  test('[C-PROFILE-002] 저장 중에는 버튼을 비활성화하고 성공 배너를 표시한다', async ({ page }) => {
     // Arrange
-    await page.goto('/login');
+    await page.goto('/settings/profile');
 
     // Act
-    await page.getByTestId('email-input').fill('user@example.com');
-    await page.getByTestId('password-input').fill('wrong');
-    await page.getByTestId('login-button').click();
+    await page.getByTestId('display-name-input').fill('새 이름');
+    await page.getByTestId('save-button').click();
 
     // Assert
-    await expect(page.getByTestId('error-message')).toBeVisible();
-    await expect(page.getByTestId('error-message')).toContainText('비밀번호');
+    await expect(page.getByTestId('save-button')).toBeDisabled();
+    await expect(page.getByTestId('profile-save-success')).toBeVisible();
   });
 });
 ```
 
 ### Step 5. Save test files as plan artifacts
 
-Save generated E2E tests to `./plans/{task-name}/e2e/` with logical grouping:
+Save generated browser integration tests to `./plans/{task-name}/e2e/` with logical grouping:
 
 ```text
 plans/{task-name}/e2e/
@@ -139,7 +160,7 @@ Create `e2e/manifest.md` with:
 
 | Test File | Target Flow | Constraints | Scenario Types |
 |-----------|-------------|-------------|----------------|
-| `auth/login.spec.ts` | Login flow | [C-AUTH-001], [C-AUTH-002] | happy, validation, navigation |
+| `settings/profile.spec.ts` | Profile settings form | [C-PROFILE-001], [C-PROFILE-002] | interaction, validation, local-navigation |
 | ... | ... | ... | ... |
 
 ## data-testid Registry
@@ -150,23 +171,32 @@ Create `e2e/manifest.md` with:
 | `login-button` | Submit button | Login page |
 | ... | ... | ... |
 
+## Deferred to `playwright-guard`
+
+| Journey / Flow | Reason |
+|----------------|--------|
+| `signup -> dashboard redirect` | Cross-route full journey owned by post-implementation guard phase |
+| ... | ... |
+
 ## Coverage
 
-- Total UI-facing constraints: N
-- Constraints with happy-path coverage: N
+- Total in-scope browser-integration constraints: N
+- Constraints with interaction-path coverage: N
 - Constraints with error/validation coverage: N
-- Coverage: 100%
+- Deferred full-flow guard constraints: N
+- Browser-integration coverage: 100%
 ```
 
-The `data-testid Registry` serves as a contract between E2E tests and implementation. Implementation must apply these exact `data-testid` attributes.
+The `data-testid Registry` serves as a contract between browser integration tests and implementation. Implementation must apply these exact `data-testid` attributes.
 
 ### Step 7. Verify constraint coverage
 
-- Every UI-facing constraint ID in `plan.md` must map to >= 1 E2E test
-- Every constraint must include at least a happy-path scenario
+- Every in-scope browser-integration constraint ID in `plan.md` must map to >= 1 Playwright test
+- Every in-scope constraint must include at least an interaction-path scenario
 - Validation/error scenarios must exist for constraints involving user input
+- Constraints intentionally deferred to `playwright-guard` must be listed in `manifest.md` and excluded from the `plan-e2e-test` coverage denominator
 - If coverage < 100%, add missing tests before completing
-- Do not mark complete until coverage is 100%
+- Do not mark complete until in-scope coverage is 100%
 
 ---
 
@@ -183,8 +213,10 @@ The `data-testid Registry` serves as a contract between E2E tests and implementa
 - **Plan artifacts only**: Tests are stored in `plans/`, not in the source tree
 - **Frozen at planning time**: E2E tests are behavioral contracts; implementation must satisfy them
 - **No live browser required**: Tests are authored deterministically from plan constraints
-- **Constraint coverage 100%**: Mandatory for all UI-facing constraints before completion
+- **Constraint coverage 100%**: Mandatory for all in-scope browser-integration constraints before completion
 - **data-testid preferred**: Use `data-testid` attributes as the primary locator strategy
 - **Test isolation**: Each test must be independently runnable with no shared state
+- **No speculative browser contract authoring**: Missing route/state/action/outcome/locator contracts are blocking errors, not assumptions
+- **No full-flow journey authoring**: Cross-route or post-implementation regression coverage belongs to `playwright-guard`
 </Instructions>
 </Skill_Guide>

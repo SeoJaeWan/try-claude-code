@@ -56,7 +56,7 @@
 
 ## 단계별 실행
 
-`owner_agent` 값은 `./.claude/agents/{owner_agent}.md`와 일치해야 함.
+`owner_agent` 값은 `./agents/{owner_agent}.md`와 일치해야 함.
 필요 시 `primary_skill`로 에이전트 내부 실행 스킬을 고정할 수 있음.
 실행은 `planner-lite` 스킬이 메인 대화에서 오케스트레이션하며, 각 페이즈 디스패치에서 `Agent(... isolation: "worktree")`를 강제함. 페이즈별 머지 후 최종 `Branch`로 `--no-ff` 병합함.
 
@@ -83,13 +83,20 @@
 - 작업:
 - 산출물:
 
-### E2E Test Artifacts (UI/user-flow scope)
+### Browser Integration Test Artifacts (UI/feature-browser scope)
 
-E2E 테스트는 planning 단계에서 `plan-e2e-test` 스킬로 생성된 frozen artifact임.
-별도의 E2E 실행 phase는 불필요 - 구현 phase에서 E2E artifact를 참조하여 `data-testid` 적용.
+`plan-e2e-test` 산출물은 planning 단계에서 생성된 frozen browser-integration artifact임.
+이 artifact 자체를 만들기 위한 별도 실행 phase는 불필요 - 구현 phase에서 artifact를 참조하여 `data-testid` 적용.
 
 - 산출물 위치: `plans/{task-name}/e2e/manifest.md`, `plans/{task-name}/e2e/{domain}/{scenario}.spec.ts`
 - E2E 실패 시 구현을 수정 (테스트를 수정하지 않음)
+
+전체 사용자 여정 또는 회귀 hardening이 필요하면 별도 phase를 추가:
+
+- owner_agent: `playwright-guard`
+- primary_skill: `guard-e2e-test`
+- 작업: 실제 구현된 앱을 탐색해 full-flow/regression Playwright guard spec 생성
+- 산출물: 실제 테스트 디렉토리의 `guard/{domain}/{risk}.spec.ts`
 
 ## 파일 변경 목록
 
