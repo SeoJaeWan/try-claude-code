@@ -42,15 +42,13 @@ test.describe("할 일 필터", () => {
     await addTodo(page, "장보기");
     await page.getByTestId("search-input").fill("존재하지않는항목");
 
-    // BUG: wrong selector - should check empty-state, not "no-results"
-    await expect(page.getByTestId("no-results")).toBeVisible();
+    await expect(page.getByTestId("empty-state")).toBeVisible();
   });
 
   test("완료 필터", async ({ page }) => {
     await addTodo(page, "완료될 항목");
 
-    // BUG: trying to click checkbox with wrong approach
-    await page.locator(".todo-checkbox").first().click();
+    await page.locator('[data-testid^="todo-checkbox-"]').first().click();
     await page.getByTestId("filter-completed").click();
 
     await expect(page.getByText("완료될 항목")).toBeVisible();

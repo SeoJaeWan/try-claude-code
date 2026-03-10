@@ -19,25 +19,23 @@ test.describe("네비게이션", () => {
   });
 
   test("네비게이션 바 링크 전환", async ({ page }) => {
-    // BUG: using old link selector
-    await page.locator('a[href="/todos"]').click();
+    await page.getByTestId("nav-todos").click();
     await expect(page).toHaveURL(/\/todos/);
 
-    await page.locator('a[href="/profile"]').click();
+    await page.getByTestId("nav-profile").click();
     await expect(page).toHaveURL(/\/profile/);
   });
 
   test("모바일 햄버거 메뉴", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
 
-    // BUG: wrong selector for hamburger button
-    await page.getByTestId("menu-button").click();
+    await page.getByTestId("hamburger-menu").click();
     await expect(page.getByTestId("mobile-menu")).toBeVisible();
   });
 
   test("브레드크럼 표시", async ({ page }) => {
     await page.goto("http://localhost:3000/todos");
-    // BUG: checking for exact text that might differ
-    await expect(page.getByTestId("breadcrumbs")).toContainText("Home > Todos");
+    await expect(page.getByTestId("breadcrumbs")).toContainText("홈");
+    await expect(page.getByTestId("breadcrumbs")).toContainText("할 일");
   });
 });

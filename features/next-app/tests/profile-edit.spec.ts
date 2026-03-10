@@ -37,8 +37,7 @@ test.describe("프로필 수정", () => {
   test("멀티셀렉트 기술 스택", async ({ page }) => {
     await page.getByTestId("profile-edit-btn").click();
 
-    // BUG: wrong selector - should be "profile-skills-toggle"
-    await page.getByTestId("skills-dropdown").click();
+    await page.getByTestId("profile-skills-toggle").click();
     await page.getByTestId("multiselect-option-JavaScript").click();
     await page.getByTestId("multiselect-option-React").click();
 

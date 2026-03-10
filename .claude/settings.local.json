@@ -46,7 +46,9 @@
       "mcp__playwright-test__test_debug",
       "mcp__playwright-test__test_list",
       "mcp__playwright-test__test_run",
-      "mcp__playwright-test__browser_generate_locator"
+      "mcp__playwright-test__browser_generate_locator",
+      "Bash(node:*)",
+      "Bash(npm:*)"
     ]
   }
 }

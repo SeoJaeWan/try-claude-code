@@ -21,8 +21,7 @@ test.describe("할 일 추가", () => {
   });
 
   test("유효한 할 일 추가", async ({ page }) => {
-    // BUG: wrong selector - should be "todo-input" not "task-input"
-    await page.getByTestId("task-input").fill("테스트 할 일 항목");
+    await page.getByTestId("todo-input").fill("테스트 할 일 항목");
     await page.getByTestId("todo-add").click();
 
     await expect(page.getByText("테스트 할 일 항목")).toBeVisible();
@@ -31,7 +30,6 @@ test.describe("할 일 추가", () => {
   test("빈 입력 유효성 검증", async ({ page }) => {
     await page.getByTestId("todo-add").click();
 
-    // BUG: wrong expected text
-    await expect(page.getByText("할일을 입력하세요")).toBeVisible();
+    await expect(page.getByTestId("todo-input-error")).toBeVisible();
   });
 });
