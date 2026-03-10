@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "eval_name": "signup-form-ui",
+  "configuration": "without_skill",
+  "expectations": [
+    {"text": "SKILL.md 파일을 읽고 지침을 따름", "passed": false, "evidence": "SKILL.md 미참조, 디자인 시스템 지침 미확인"},
+    {"text": "theme-tokens.md 디자인 토큰 참조", "passed": false, "evidence": "theme-tokens.md 미참조, 하드코딩된 색상값 사용"},
+    {"text": "Tailwind CSS 클래스 사용", "passed": true, "evidence": "Tailwind 일부 사용하나 인라인 스타일 혼용"},
+    {"text": "useState/useEffect/fetch 등 로직 미사용", "passed": false, "evidence": "useState 3개 + onSubmit + fetch 포함"},
+    {"text": "Pretendard 폰트 사용", "passed": false, "evidence": "Pretendard 미적용, Inter/시스템 폰트 사용"},
+    {"text": "컴포넌트를 default export로 내보냄", "passed": false, "evidence": "named export (export const) 사용"}
+  ]
+}
