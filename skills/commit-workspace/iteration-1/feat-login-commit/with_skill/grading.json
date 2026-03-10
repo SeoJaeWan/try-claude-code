@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "eval_name": "feat-login-commit",
+  "configuration": "with_skill",
+  "expectations": [
+    {"text": "SKILL.md를 읽어 커밋 규칙 확인", "passed": true, "evidence": "skills/commit/SKILL.md Read 호출, 커밋 타입 규칙 테이블 확인"},
+    {"text": "feat 타입을 커밋 메시지에 사용", "passed": true, "evidence": "feat: add login authentication 형식 계획"},
+    {"text": "git diff 분석 기반으로 구체적 subject 작성", "passed": true, "evidence": "git diff로 로그인 관련 코드 분석 후 subject 작성 계획"},
+    {"text": "커밋 메시지 subject line 50자 이하", "passed": true, "evidence": "50자 이하 규칙 명시, subject만 사용 계획"},
+    {"text": "commitlint로 커밋 메시지 사전 검증", "passed": true, "evidence": "commitlint.config.mjs 확인 + pnpm exec commitlint --last --verbose 계획"},
+    {"text": "커밋 메시지 본문 없이 subject만 사용", "passed": true, "evidence": "-m 플래그 하나만 사용, 본문 미작성 명시"}
+  ]
+}

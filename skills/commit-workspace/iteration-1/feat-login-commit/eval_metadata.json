@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "eval_name": "feat-login-commit",
+  "prompt": "로그인 기능 구현한 코드를 feat 타입으로 커밋해줘",
+  "assertions": [
+    {"id": "read-skill-md", "text": "SKILL.md를 읽어 커밋 규칙 확인"},
+    {"id": "feat-type-used", "text": "feat 타입을 커밋 메시지에 사용"},
+    {"id": "diff-based-message", "text": "git diff 분석 기반으로 구체적 subject 작성"},
+    {"id": "subject-under-50", "text": "커밋 메시지 subject line 50자 이하"},
+    {"id": "commitlint-validation", "text": "commitlint로 커밋 메시지 사전 검증"},
+    {"id": "no-commit-body", "text": "커밋 메시지 본문 없이 subject만 사용"}
+  ]
+}

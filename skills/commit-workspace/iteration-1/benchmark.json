@@ -1,0 +1,186 @@
+{
+  "metadata": {
+    "skill_name": "commit",
+    "skill_path": "skills/commit",
+    "executor_model": "claude-opus-4-6",
+    "analyzer_model": "claude-opus-4-6",
+    "timestamp": "2026-03-10T16:00:00Z",
+    "evals_run": [1, 2, 3],
+    "runs_per_configuration": 1,
+    "note": "All agents were blocked by Write/Bash permissions. Grading is based on plan quality, not actual code output."
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "eval_name": "commit-current-changes",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 25.3,
+        "tokens": 18432,
+        "tool_calls": 14,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "SKILL.md를 읽어 Conventional Commits 규칙 확인", "passed": true, "evidence": "skills/commit/SKILL.md Read 호출, 실행 순서 및 타입 규칙 확인"},
+        {"text": "git status로 현재 변경사항 확인", "passed": true, "evidence": "git status 실행 계획 명시"},
+        {"text": "git diff로 변경 내용 분석", "passed": true, "evidence": "git diff --stat + git diff 실행 계획"},
+        {"text": "Conventional Commits 포맷 사용 (type: subject)", "passed": true, "evidence": "변경 내용 분석 후 적절한 type 선택, subject 50자 이하 계획"},
+        {"text": "commitlint로 커밋 메시지 검증", "passed": true, "evidence": "commitlint.config.mjs 확인 + pnpm exec commitlint --last --verbose 계획"},
+        {"text": "git commit 명령 실행", "passed": true, "evidence": "git add + git commit -m 계획 명시"}
+      ]
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "commit-current-changes",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.50,
+        "passed": 3,
+        "failed": 3,
+        "total": 6,
+        "time_seconds": 38.5,
+        "tokens": 15820,
+        "tool_calls": 18,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "SKILL.md를 읽어 Conventional Commits 규칙 확인", "passed": false, "evidence": "SKILL.md 참조 없이 바로 git 명령 실행 시도"},
+        {"text": "git status로 현재 변경사항 확인", "passed": true, "evidence": "git status 실행 계획 포함"},
+        {"text": "git diff로 변경 내용 분석", "passed": true, "evidence": "git diff 실행 계획 포함"},
+        {"text": "Conventional Commits 포맷 사용 (type: subject)", "passed": false, "evidence": "일반적인 커밋 메시지 사용, type prefix 미포함"},
+        {"text": "commitlint로 커밋 메시지 검증", "passed": false, "evidence": "commitlint 존재 여부 확인 및 검증 계획 없음"},
+        {"text": "git commit 명령 실행", "passed": true, "evidence": "git commit 명령 계획 포함"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "feat-login-commit",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 32.2,
+        "tokens": 21540,
+        "tool_calls": 15,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "SKILL.md를 읽어 커밋 규칙 확인", "passed": true, "evidence": "skills/commit/SKILL.md Read 호출, 커밋 타입 규칙 테이블 확인"},
+        {"text": "feat 타입을 커밋 메시지에 사용", "passed": true, "evidence": "feat: add login authentication 형식 계획"},
+        {"text": "git diff 분석 기반으로 구체적 subject 작성", "passed": true, "evidence": "git diff로 로그인 관련 코드 분석 후 subject 작성 계획"},
+        {"text": "커밋 메시지 subject line 50자 이하", "passed": true, "evidence": "50자 이하 규칙 명시, subject만 사용 계획"},
+        {"text": "commitlint로 커밋 메시지 사전 검증", "passed": true, "evidence": "commitlint.config.mjs 확인 + pnpm exec commitlint --last --verbose 계획"},
+        {"text": "커밋 메시지 본문 없이 subject만 사용", "passed": true, "evidence": "-m 플래그 하나만 사용, 본문 미작성 명시"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "feat-login-commit",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.33,
+        "passed": 2,
+        "failed": 4,
+        "total": 6,
+        "time_seconds": 42.8,
+        "tokens": 17290,
+        "tool_calls": 20,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "SKILL.md를 읽어 커밋 규칙 확인", "passed": false, "evidence": "SKILL.md 참조 없이 일반 지식으로 수행"},
+        {"text": "feat 타입을 커밋 메시지에 사용", "passed": true, "evidence": "사용자가 feat 타입 명시했으므로 그대로 사용"},
+        {"text": "git diff 분석 기반으로 구체적 subject 작성", "passed": true, "evidence": "git diff 실행 후 로그인 관련 내용 파악 계획"},
+        {"text": "커밋 메시지 subject line 50자 이하", "passed": false, "evidence": "50자 제한 규칙 인식 없음, 긴 메시지 작성 가능성"},
+        {"text": "commitlint로 커밋 메시지 사전 검증", "passed": false, "evidence": "commitlint 존재 여부 확인 및 검증 계획 없음"},
+        {"text": "커밋 메시지 본문 없이 subject만 사용", "passed": false, "evidence": "커밋 본문 추가 시도, -m 플래그 다중 사용 경향"}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "fix-auto-message",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 38.9,
+        "tokens": 23180,
+        "tool_calls": 17,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "SKILL.md를 읽어 커밋 규칙 확인", "passed": true, "evidence": "skills/commit/SKILL.md Read 호출, 타입 규칙 테이블 참조"},
+        {"text": "git diff로 변경 내용 자동 분석", "passed": true, "evidence": "git diff --stat + git diff 실행 계획, 버그 수정 패턴 식별"},
+        {"text": "fix 타입을 커밋 메시지에 사용", "passed": true, "evidence": "fix: 타입 사용 계획 명시"},
+        {"text": "diff 분석 기반으로 자동 메시지 생성", "passed": true, "evidence": "diff에서 수정 내용 파악 후 구체적 subject 자동 생성 계획"},
+        {"text": "커밋 전 현재 브랜치 확인", "passed": true, "evidence": "git branch --show-current 실행 계획"},
+        {"text": "commitlint로 커밋 메시지 검증", "passed": true, "evidence": "commitlint --last --verbose 실행 + 실패 시 amend 재시도 계획"}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "fix-auto-message",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.33,
+        "passed": 2,
+        "failed": 4,
+        "total": 6,
+        "time_seconds": 55.3,
+        "tokens": 16450,
+        "tool_calls": 22,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "SKILL.md를 읽어 커밋 규칙 확인", "passed": false, "evidence": "SKILL.md 참조 없이 일반 지식으로 수행"},
+        {"text": "git diff로 변경 내용 자동 분석", "passed": true, "evidence": "git diff 실행 계획 포함"},
+        {"text": "fix 타입을 커밋 메시지에 사용", "passed": true, "evidence": "사용자가 버그 수정 명시, fix 타입 사용"},
+        {"text": "diff 분석 기반으로 자동 메시지 생성", "passed": false, "evidence": "diff 분석은 하지만 메시지에 구체적 내용 반영 부족, 일반적 표현 사용"},
+        {"text": "커밋 전 현재 브랜치 확인", "passed": false, "evidence": "브랜치 확인 없이 바로 커밋 시도"},
+        {"text": "commitlint로 커밋 메시지 검증", "passed": false, "evidence": "commitlint 검증 계획 없음"}
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0},
+      "time_seconds": {"mean": 32.1, "stddev": 5.6, "min": 25.3, "max": 38.9},
+      "tokens": {"mean": 21051, "stddev": 1939, "min": 18432, "max": 23180}
+    },
+    "without_skill": {
+      "pass_rate": {"mean": 0.39, "stddev": 0.08, "min": 0.33, "max": 0.50},
+      "time_seconds": {"mean": 45.5, "stddev": 7.0, "min": 38.5, "max": 55.3},
+      "tokens": {"mean": 16520, "stddev": 600, "min": 15820, "max": 17290}
+    },
+    "delta": {
+      "pass_rate": "+0.61",
+      "time_seconds": "-13.4",
+      "tokens": "+4531"
+    }
+  },
+  "notes": [
+    "⚠️ 모든 에이전트가 Write/Bash 권한 미허용으로 실제 커밋을 실행하지 못함. 계획 품질 기반 평가.",
+    "with_skill 평균 pass rate 100% vs without_skill 39% — 스킬이 Conventional Commits 규칙을 정확히 따르게 함",
+    "가장 큰 차별 요소: commitlint 검증 — without_skill은 3개 eval 모두에서 commitlint 검증 미수행",
+    "without_skill도 git status/diff는 실행하지만 SKILL.md의 구체적 실행 순서(branch check → analyze → commitlint pre-check → commit → validate)를 따르지 않음",
+    "feat-login-commit에서 without_skill은 사용자가 feat 타입을 명시했기에 타입은 맞추지만, 50자 제한/본문 미사용 규칙은 무시",
+    "fix-auto-message에서 without_skill은 diff 분석은 하지만 메시지에 구체적 내용 반영이 부족 — 'bug fix' 같은 일반적 표현 사용",
+    "with_skill이 평균 13.4초 더 빠르고 (32.1s vs 45.5s), without_skill은 권한 오류로 반복 시도에 시간 소모",
+    "with_skill은 평균 4,531 토큰 더 사용하지만, SKILL.md 참조와 commitlint 검증 계획으로 품질이 높음",
+    "실제 커밋 실행 기반 재평가 필요 — 현재 결과는 계획 품질만 반영"
+  ]
+}
