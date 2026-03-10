@@ -1,0 +1,13 @@
+{
+  "eval_id": 1,
+  "eval_name": "crud-api",
+  "configuration": "with_skill",
+  "expectations": [
+    {"text": "Product 컨트롤러 파일 생성", "passed": true, "evidence": "product.controller.ts 생성 계획 명시"},
+    {"text": "Product 서비스 파일 생성", "passed": true, "evidence": "product.service.ts 생성 계획 명시"},
+    {"text": "5개 CRUD 엔드포인트 모두 구현", "passed": true, "evidence": "목록 조회, 상세 조회, 생성, 수정, 삭제 — CRUD 전체 계획"},
+    {"text": "DTO 또는 입력 검증 로직 포함", "passed": true, "evidence": "create-product.dto.ts, update-product.dto.ts 계획"},
+    {"text": "테스트 파일 작성 여부", "passed": true, "evidence": "product.controller.spec.ts, product.service.spec.ts 계획"},
+    {"text": "에러 처리 (404, 400 등) 포함", "passed": false, "evidence": "에러 처리에 대한 구체적 언급 없음"}
+  ]
+}
