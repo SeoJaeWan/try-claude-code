@@ -1,0 +1,14 @@
+{
+  "expectations": [
+    {"text": "SKILL.md를 먼저 읽었는가", "passed": true, "evidence": "SKILL.md 읽기 시도함"},
+    {"text": "Branch: 헤더를 검증했는가", "passed": false, "evidence": "Bash 권한 거부로 실행 불가"},
+    {"text": "owner_agent 참조가 agents/*.md에 존재하는지 검증했는가", "passed": false, "evidence": "Bash 권한 거부로 실행 불가"},
+    {"text": "git worktree add -b 로 태스크 브랜치를 생성했는가", "passed": false, "evidence": "Bash 권한 거부로 실행 불가"},
+    {"text": "Phase를 순차적으로 실행했는가", "passed": false, "evidence": "Bash 권한 거부로 실행 불가"},
+    {"text": "각 Phase마다 별도 커밋을 생성했는가", "passed": false, "evidence": "Bash 권한 거부로 실행 불가"},
+    {"text": "git merge --no-ff 로 최종 병합했는가", "passed": false, "evidence": "Bash 권한 거부로 실행 불가"},
+    {"text": "worktree 정리 후 브랜치 삭제했는가", "passed": false, "evidence": "Bash 권한 거부로 실행 불가"}
+  ],
+  "summary": {"passed": 1, "failed": 7, "total": 8, "pass_rate": 0.125},
+  "note": "Bash permission denied in worktree isolation - planner-lite requires Bash for git operations"
+}

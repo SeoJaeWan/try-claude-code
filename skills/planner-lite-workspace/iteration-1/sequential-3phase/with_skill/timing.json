@@ -1,0 +1,6 @@
+{
+  "total_tokens": 18280,
+  "duration_ms": 32898,
+  "total_duration_seconds": 32.9,
+  "note": "Bash permission denied - agent could not execute git worktree workflow"
+}
