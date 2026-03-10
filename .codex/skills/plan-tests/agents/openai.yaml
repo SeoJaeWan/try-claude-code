@@ -1,7 +1,0 @@
-interface:
-  display_name: "Plan Tests"
-  short_description: "Generate stack-aware, constraint-mapped logic tests as plan artifacts."
-  default_prompt: "Use $plan-tests to generate stack-aware, constraint-mapped logic tests under ./plans/{task}/tests/."
-
-policy:
-  allow_implicit_invocation: true

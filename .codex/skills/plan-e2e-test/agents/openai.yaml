@@ -1,0 +1,7 @@
+interface:
+  display_name: "Plan E2E Test"
+  short_description: "Generate contract-first Playwright E2E test code (.spec.ts) as plan artifacts."
+  default_prompt: "Use $plan-e2e-test to generate Playwright E2E test files under ./plans/{task}/e2e/."
+
+policy:
+  allow_implicit_invocation: true

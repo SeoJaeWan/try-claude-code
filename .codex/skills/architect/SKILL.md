@@ -108,28 +108,29 @@ Use template references when drafting:
 - Sequential template: `./.codex/skills/architect/references/plan-template-sequential.md`
 - DAG template: `./.codex/skills/architect/references/plan-template-dag.md`
 
-### Step 3.5. Generate test plan (conditional)
+### Step 3.5. Generate unit test plan (conditional)
 
-If the plan includes testable logic boundaries (hooks, services, utilities, validators, mappers, use cases, state management, controller methods) **and** constraint IDs (`[C-...]`), run the `plan-tests` workflow:
+If the plan includes testable logic boundaries (hooks, services, utilities, validators, mappers, use cases, state management, controller methods) **and** constraint IDs (`[C-...]`), run the `plan-unit-test` workflow:
 
-1. Read `./.codex/skills/plan-tests/SKILL.md`
-2. Execute the plan-tests workflow to generate test files under `./plans/{task-name}/tests/`
+1. Read `./.codex/skills/plan-unit-test/SKILL.md`
+2. Execute the plan-unit-test workflow to generate test files under `./plans/{task-name}/tests/`
 3. Verify `tests/manifest.md` shows 100% constraint coverage with explicit defensive and edge/exception review
 
 **Skip** if the plan contains only documentation, configuration, or structural changes with no testable code units.
 
 Test files are plan artifacts, not implementation code. Developers copy them to the source tree during the TDD Red phase.
 
-### Step 3.6. Plan E2E flow (conditional)
+### Step 3.6. Generate E2E test plan (conditional)
 
-If the task changes user-facing UI, navigation, or end-user flows, include explicit E2E phases in the plan:
+If the task changes user-facing UI, navigation, or end-user flows, run the `plan-e2e-test` workflow:
 
-1. `playwright-test-planner` creates or updates scenario specs (`specs/`)
-2. `playwright-test-generator` creates or updates Playwright test files (`e2e/`)
-3. `playwright-test-healer` runs only when generated/existing E2E tests fail due to selector or UI drift
+1. Read `./.codex/skills/plan-e2e-test/SKILL.md`
+2. Execute the plan-e2e-test workflow to generate Playwright `.spec.ts` files under `./plans/{task-name}/e2e/`
+3. Verify `e2e/manifest.md` shows 100% UI-facing constraint coverage and includes the `data-testid` registry
 
-Skip for backend-only, documentation-only, or configuration-only scope.
-E2E phases must also use explicit `owner_agent` fields like other executable blocks.
+E2E tests are **frozen at planning time** (strict AI TDD). Implementation must pass them; tests are not modified to match implementation. If E2E tests fail, fix the implementation, NOT the tests.
+
+**Skip** for backend-only, documentation-only, or configuration-only scope.
 
 ### Step 4. Conditional parallelization decision (required)
 
@@ -202,7 +203,7 @@ Run these checks before finalizing:
 7. `Resolved Decisions` records all user-confirmed blocking choices, and `Explicit Defaults` contains only non-blocking defaults.
 8. Failure Escalation Policy is explicit (`bug-report` create -> `codex-debug` on unresolved/repeat -> `bug-report` update).
 9. Visual/design-oriented work is assigned to `publisher`; logic-oriented work is assigned to developer agents.
-10. For UI/user-flow scope, E2E phases are explicit (`playwright-test-planner` -> `playwright-test-generator`, healer is conditional).
+10. For UI/user-flow scope, `plan-e2e-test` artifacts exist under `plans/{task-name}/e2e/` with frozen `.spec.ts` files.
 
 ### Step 6. Self-review gate (required)
 
@@ -221,7 +222,7 @@ Self-review checklist:
 10. Confirm no circular dependencies in the track graph.
 11. Confirm Failure Escalation Policy is actionable and phase owners can execute it.
 12. Confirm visual/design tasks are owned by `publisher` and not mixed with logic in the same execution block.
-13. For UI/user-flow scope, confirm E2E phases and order are explicit, and healer is conditional only on failure.
+13. For UI/user-flow scope, confirm `plan-e2e-test` artifacts exist with frozen `.spec.ts` files and `data-testid` registry.
    Do not request execution before this gate is complete.
 
 ### Step 7. Compatibility policy (required)
@@ -244,7 +245,7 @@ Provide a concise execution handoff summary:
    - sequential: run `planner-lite` session against `plan.md`
    - parallel: run one `planner-lite` session per `plan-{track}.md`
 4. Confirm branch merge rule: `planner-lite` enforces `Agent(... isolation: "worktree")` per phase, merges after each worker completes, then performs final merge into each file's `Branch` with `--no-ff`
-5. For UI/user-flow scope, include E2E invocation order in handoff (`playwright-test-planner` -> `playwright-test-generator`, healer only on failures)
+5. For UI/user-flow scope, confirm `plan-e2e-test` artifacts are included and note that E2E tests are frozen (implementation must satisfy them)
 6. Explicit defaults and deferred low-risk choices recorded in the plan
 
 ## Output contract
@@ -254,16 +255,19 @@ Provide a concise execution handoff summary:
 - Partial/parallel mode:
     - `./plans/{task-name}/plan.md` (master index)
     - `./plans/{task-name}/plan-{track}.md` (2+)
-- Test artifacts (when Step 3.5 applies):
+- Unit test artifacts (when Step 3.5 applies):
     - `./plans/{task-name}/tests/manifest.md`
     - `./plans/{task-name}/tests/{mirrored-source-paths}`
+- E2E test artifacts (when Step 3.6 applies):
+    - `./plans/{task-name}/e2e/manifest.md`
+    - `./plans/{task-name}/e2e/{domain}/{scenario}.spec.ts`
 - Output language: Korean
 
 ## Guardrails
 
 - Planning only: do not write implementation code.
-- Test files generated by `plan-tests` are plan artifacts, not implementation code.
-- Do not omit E2E planning when UI/user-flow scope exists.
+- Test files generated by `plan-unit-test` and `plan-e2e-test` are plan artifacts, not implementation code.
+- Do not omit E2E planning (`plan-e2e-test`) when UI/user-flow scope exists.
 - Focus on "what to execute" and "in what order".
 - Ensure all gates are explicit and testable.
 - Do not produce a plan with unresolved blocking product-policy ambiguity.
