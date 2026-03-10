@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "eval_name": "preserve-user-edits",
+  "prompt": "coding-rules 문서를 최신 버전으로 업데이트해줘. 내가 수정한 부분은 유지해줘",
+  "assertions": [
+    {"id": "reads-skill-md", "text": "SKILL.md를 읽어 마이그레이션 동작 방식 확인"},
+    {"id": "runs-migration-script", "text": "node skills/migration/scripts/run.mjs --repo-root 실행"},
+    {"id": "section-aware-merge", "text": "섹션 단위 병합으로 사용자 수정 보존"},
+    {"id": "sha256-hash-check", "text": "SHA256 해시로 섹션별 변경 여부 감지"},
+    {"id": "preserves-user-edits", "text": "사용자가 수정한 섹션은 덮어쓰지 않음"},
+    {"id": "updates-unchanged-sections", "text": "사용자가 수정하지 않은 섹션만 최신화"}
+  ]
+}
