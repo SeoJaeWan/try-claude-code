@@ -1,23 +1,24 @@
 ---
 name: brainstorm
-description: Codex entry skill for decision-focused clarification and option exploration. Asks targeted questions to confirm user intent before planning.
+description: Codex entry skill for decision-focused clarification and option exploration. Use when unresolved product policy, UX, contract, schema, validation, state, accessibility, or permission ambiguity must be resolved before planning.
 ---
 
 <Skill_Guide>
 <Purpose>
-Clarify ambiguous requests with focused brainstorming, tradeoff comparison, and confirmation questions before planning.
+Clarify ambiguous requests with focused brainstorming, tradeoff comparison, and confirmation questions so blocking product and implementation policy is resolved before planning.
 </Purpose>
 
 <Instructions>
 # brainstorm
 
-Use this as the entrypoint when ambiguity can change architecture, scope, tooling, API contracts, UX, or delivery strategy.
+Use this as the entrypoint when ambiguity can change architecture, scope, tooling, API contracts, product policy, UX, or delivery strategy.
 
 ## When to use
 
 - Request is ambiguous: "add login", "make dashboard", "improve UX".
 - Multiple approaches are plausible and tradeoffs matter.
 - Library/framework/pattern choices need to be made.
+- Business-rule, UX, validation, permission, or state behavior policy is missing.
 - Acceptance criteria are missing or vague.
 - The user wants clarification questions before committing to a plan.
 
@@ -34,6 +35,7 @@ Identify what is clear vs unclear:
 - Required outcomes and constraints
 - Missing decisions
 - Plausible architecture/library branches
+- Missing product-policy decisions across data model, business rules, UX behavior, permissions, validation, state/error handling, and accessibility expectations
 
 ### 2. Gather local context
 
@@ -41,6 +43,7 @@ Read only what is needed:
 - `./.ai/references/domain.md` for business context
 - `./.ai/codemaps/` for current structure (if present)
 - Other relevant references under `./.ai/references/`
+- Existing code and UI behavior that can answer questions without user input
 
 ### 3. Research latest information when needed
 
@@ -49,7 +52,7 @@ If reliable research tooling is unavailable, state that clearly and ask the user
 
 ### 4. Compare approaches (required)
 
-Always present 2-3 options with tradeoffs.
+Always present 2-3 options with tradeoffs when multiple viable policy or implementation directions exist.
 For each option include:
 - Pros
 - Cons
@@ -66,12 +69,16 @@ Rules:
 - Questions must be actionable
 - Do not ask what can be derived from local context
 - Questions should help the user confirm scope and direction quickly
+- Prioritize blocking policy ambiguity that would change the implementation plan, tests, or user-visible behavior
+- If more than 4 blocking questions exist, ask them in rounds
+- Prefer structured user-input tooling when available; otherwise ask concise plain-text questions
 
 ### 6. Produce decision snapshot (default)
 
 Return a concise decision snapshot in the response:
 - Confirmed choices
-- Deferred choices
+- Resolved blocking policies
+- Deferred low-risk choices
 - Key assumptions
 - Recommended next step (`architect` or direct execution)
 
@@ -97,19 +104,23 @@ Include:
 
 Before handoff, confirm:
 - No hidden assumptions remain
-- Blocking questions are explicit
+- No blocking policy ambiguity remains for the chosen planning scope
+- Blocking questions are explicit when another clarification round is still needed
 - Recommended next step is clear
 
 ### 9. Handoff to architect (when needed)
 
 When planning is needed, provide:
 1. Summary of confirmed decisions
-2. Remaining blocked decisions (if any)
+2. Explicit defaults or deferred low-risk choices
 3. Suggested planning scope boundaries
+
+Do not hand off to `architect` while blocking policy ambiguity remains.
 
 ## Guardrails
 - Do not write implementation plans or code.
 - Do not skip approach comparison when meaningful tradeoffs exist.
+- Do not hand off to `architect` with unresolved blocking policy ambiguity.
 - If requirements are already clear, explicitly state skip reason and route to `architect` directly.
 </Instructions>
 </Skill_Guide>

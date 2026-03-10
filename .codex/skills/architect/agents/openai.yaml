@@ -1,7 +1,7 @@
 interface:
   display_name: "Architect"
-  short_description: "Create gated implementation plans and Claude execution handoff under plans/."
-  default_prompt: "Use $architect to produce a decision-complete plan under ./plans, include self-review gate, and provide Claude handoff instructions."
+  short_description: "Create gated plans after resolving blocking ambiguity."
+  default_prompt: "Use $architect to resolve or reject blocking policy ambiguity before producing a decision-complete plan under ./plans and execution handoff."
 
 policy:
   allow_implicit_invocation: true

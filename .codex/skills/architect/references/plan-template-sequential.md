@@ -8,6 +8,19 @@
 - 배경:
 - 실행 모드: `sequential`
 
+## Resolved Decisions
+
+- 구현/테스트/UX 결과를 바꾸는 정책, 계약, 스키마, 상태, 권한, 검증 결정:
+
+## Explicit Defaults
+
+- 비차단(non-blocking) 기본값과 그 이유:
+
+## Assumptions and Risks
+
+- Assumptions:
+- Risks:
+
 ## Parallel Feasibility Matrix
 
 | Work Unit | 예상 변경 파일군 | 선행 산출물 의존 | 충돌 여부       | 병렬 가능 |
@@ -98,6 +111,12 @@
 - [ ] 기준 1
 - [ ] 기준 2
 
+## 최종 인수 체크리스트
+
+- [ ] 차단성 정책 모호성이 남아 있지 않음
+- [ ] `Resolved Decisions`와 구현/테스트 범위가 일치함
+- [ ] `Explicit Defaults`는 저위험 기본값만 포함함
+
 ## 롤백/폴백
 
 - 롤백 방법:
@@ -110,5 +129,7 @@
 ## Self-review
 
 - [ ] owner_agent 미지정 없음
+- [ ] 차단성 정책/계약/UX 모호성이 남아 있지 않음
+- [ ] `Resolved Decisions`와 `Explicit Defaults`가 구분되어 있음
 - [ ] 실행/검증 명령 명시
 - [ ] 순차 모드인데 track 파일이 생성되지 않음
