@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "eval_name": "partial-codemaps-update",
+  "configuration": "with_skill",
+  "expectations": [
+    {"text": "SKILL.md 파일을 읽고 파이프라인 순서 파악", "passed": true, "evidence": "SKILL.md 읽기 후 파이프라인 순서 및 부분 업데이트 절차 파악"},
+    {"text": "detect_changes.mjs로 변경된 파일 감지 계획", "passed": true, "evidence": "detect_changes.mjs 실행으로 백엔드 API 변경 파일 감지 계획"},
+    {"text": "extract_structure.mjs로 변경 범위 구조 추출 계획", "passed": true, "evidence": "extract_structure.mjs로 변경된 모듈 구조만 재추출 계획"},
+    {"text": "CODEMAPS (.md) 문서만 부분 갱신 계획", "passed": true, "evidence": "backend-api.codemap.md 부분 갱신 계획 명시"},
+    {"text": "HUMANMAPS 생성을 건너뛰거나 명시적으로 제외", "passed": true, "evidence": "HUMANMAPS 생성 건너뜀 명시 — 요청 범위 외로 판단"},
+    {"text": ".claude/try-claude/codemaps/ 경로에 출력 계획", "passed": true, "evidence": ".claude/try-claude/codemaps/ 경로 정확히 명시"}
+  ]
+}

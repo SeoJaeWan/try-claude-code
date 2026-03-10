@@ -1,0 +1,13 @@
+{
+  "eval_id": 1,
+  "eval_name": "full-doc-update",
+  "configuration": "without_skill",
+  "expectations": [
+    {"text": "SKILL.md 파일을 읽고 파이프라인 순서 파악", "passed": false, "evidence": "SKILL.md 미참조 — 파이프라인 존재 자체를 인지하지 못함"},
+    {"text": "detect_changes.mjs 스크립트 실행 계획", "passed": false, "evidence": "detect_changes.mjs 스크립트 존재 미인지, 수동 파일 탐색"},
+    {"text": "extract_structure.mjs 스크립트 실행 계획", "passed": false, "evidence": "extract_structure.mjs 스크립트 존재 미인지, 직접 파일 읽기 시도"},
+    {"text": "CODEMAPS (.md) 문서 생성/갱신 계획", "passed": false, "evidence": "CODEMAPS 형식 미사용 — 일반 Markdown 문서 계획"},
+    {"text": "HUMANMAPS (.html) 문서 생성/갱신 계획", "passed": false, "evidence": "HUMANMAPS 형식 미사용 — 일반 HTML 문서 계획"},
+    {"text": ".claude/try-claude/codemaps/ 및 humanmaps/ 경로 사용", "passed": false, "evidence": "docs/ 폴더에 출력 계획 — 올바른 경로 미사용"}
+  ]
+}
