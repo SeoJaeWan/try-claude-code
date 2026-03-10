@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "커스텀 훅 파일 생성", "passed": false, "evidence": "별도 커스텀 훅 파일 미생성. ProductList 컴포넌트 내부에 IntersectionObserver 직접 구현"},
+    {"text": "Zustand 스토어 파일 생성", "passed": true, "evidence": "stores/useProductStore.ts 생성"},
+    {"text": "IntersectionObserver 또는 스크롤 기반 무한 로딩 구현", "passed": true, "evidence": "IntersectionObserver 기반 무한 스크롤 구현"},
+    {"text": "필터 기능 구현", "passed": true, "evidence": "ProductFilter 컴포넌트에 search, category, price range, sort 구현"},
+    {"text": "테스트 파일 작성 여부", "passed": false, "evidence": "테스트 파일 미작성"},
+    {"text": "use{Verb}{Resource} 네이밍 준수", "passed": false, "evidence": "useProductStore - 동사 누락 (useFetchProducts 등이 아닌 단순 리소스명)"}
+  ],
+  "summary": {"passed": 3, "failed": 3, "total": 6, "pass_rate": 0.50}
+}
