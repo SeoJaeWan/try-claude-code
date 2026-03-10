@@ -1,0 +1,13 @@
+{
+  "eval_id": 1,
+  "eval_name": "nextjs-full-setup",
+  "prompt": "이 프로젝트에 ESLint, commitlint, husky 설정을 coding-rules 기반으로 생성해줘",
+  "assertions": [
+    {"id": "reads-coding-rules", "text": "coding-rules 문서 9개를 읽고 참조"},
+    {"id": "detects-framework", "text": "package.json에서 Next.js 프레임워크 감지"},
+    {"id": "presents-4group-approval", "text": "4-group 승인 계획 (ESLint, commitlint, husky+lint-staged, TSConfig) 제시"},
+    {"id": "creates-eslint-config", "text": "coding-rules 기반 ESLint 설정 파일 생성"},
+    {"id": "creates-commitlint-husky", "text": "commitlint + husky + lint-staged 설정 파일 생성"},
+    {"id": "nextjs-specific-rules", "text": "Next.js 전용 ESLint 규칙/플러그인 포함 (e.g., @next/eslint-plugin-next)"}
+  ]
+}
