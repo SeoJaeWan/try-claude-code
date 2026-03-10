@@ -1,0 +1,13 @@
+{
+  "eval_id": 3,
+  "eval_name": "humanmaps-only",
+  "prompt": "전체 프로젝트 구조를 스캔하고 HUMANMAPS 문서만 새로 생성해줘",
+  "assertions": [
+    {"id": "skill-md-read", "text": "SKILL.md 파일을 읽고 파이프라인 순서 파악"},
+    {"id": "detect-changes-run", "text": "detect_changes.mjs 스크립트 실행 계획"},
+    {"id": "extract-structure-run", "text": "extract_structure.mjs로 전체 구조 추출 계획"},
+    {"id": "humanmaps-generated", "text": "HUMANMAPS (.html) 문서 생성 계획"},
+    {"id": "codemaps-skipped", "text": "CODEMAPS 생성을 건너뛰거나 명시적으로 제외"},
+    {"id": "output-path-correct", "text": ".claude/try-claude/humanmaps/ 경로에 출력 계획"}
+  ]
+}
