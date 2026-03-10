@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "eval_name": "auth-admin-page",
+  "prompt": "로그인이 필요한 관리자 페이지의 테스트 플랜을 작성해줘",
+  "assertions": [
+    "Uses planner_setup_page to initialize the browser",
+    "Explores the login page and attempts authentication flow in the browser",
+    "Includes authentication as a prerequisite step in test scenarios",
+    "Describes both authorized access and unauthorized/unauthenticated access scenarios",
+    "Includes session-related edge cases (expired session, invalid token, or logout)",
+    "Saves the plan using planner_save_plan to specs/ directory"
+  ]
+}

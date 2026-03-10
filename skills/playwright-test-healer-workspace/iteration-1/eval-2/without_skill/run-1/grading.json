@@ -1,0 +1,43 @@
+{
+  "eval_id": 2,
+  "eval_name": "flaky-test-fix",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "Runs test_run at least twice to observe the flaky pass/fail pattern",
+      "passed": false,
+      "evidence": "Without_skill agent does not have access to test_run. The agent analyzed the test code statically by reading the file, not by running tests."
+    },
+    {
+      "text": "Uses test_debug or browser tools to investigate the intermittent failure",
+      "passed": false,
+      "evidence": "Without_skill agent does not have access to test_debug or browser tools. Investigation was done entirely through static code analysis."
+    },
+    {
+      "text": "Identifies timing or race condition as the root cause (not just selector issue)",
+      "passed": true,
+      "evidence": "Agent correctly identified: (1) race condition in rapid sequential adds - fill+click sequence can race against React re-renders, (2) loose locator scoping with .first() on broad page-level queries. Both are timing/race condition issues, not just selector problems."
+    },
+    {
+      "text": "Adds explicit waits such as expect(locator).toBeVisible() or waitForURL before the flaky interaction",
+      "passed": true,
+      "evidence": "Fixed code adds intermediate await expect(items).toHaveCount(N) after each add operation (lines 35, 39, 43). Also adds await expect(todoItem).toBeVisible() and await expect(checkbox).toBeVisible() before clicking. Uses scoped locators within todoItem container."
+    },
+    {
+      "text": "Does not use hard-coded sleep or arbitrary timeout values as the fix",
+      "passed": true,
+      "evidence": "No setTimeout, page.waitForTimeout, or hard-coded delays in the fixed code. All waits use Playwright's built-in retry: toHaveCount(), toBeVisible(), toHaveClass()."
+    },
+    {
+      "text": "Runs test_run at least 2 more times after fixing to confirm stability",
+      "passed": false,
+      "evidence": "Without_skill agent does not have access to test_run. No verification was performed after fixing the test code."
+    }
+  ],
+  "summary": {
+    "pass_rate": 0.5,
+    "passed": 3,
+    "failed": 3,
+    "total": 6
+  }
+}

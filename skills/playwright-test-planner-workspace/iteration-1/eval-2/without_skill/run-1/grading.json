@@ -1,0 +1,43 @@
+{
+  "eval_id": 2,
+  "eval_name": "auth-admin-page",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "Uses planner_setup_page to initialize the browser",
+      "passed": false,
+      "evidence": "Without_skill agent does not have access to planner_setup_page. The agent read source code files directly to build the test plan without any browser interaction."
+    },
+    {
+      "text": "Explores the login page and attempts authentication flow in the browser",
+      "passed": false,
+      "evidence": "No browser exploration was performed. The agent analyzed source code files (AuthContext.tsx, page components, Navbar.tsx) to understand the auth flow and built the plan from code reading."
+    },
+    {
+      "text": "Includes authentication as a prerequisite step in test scenarios",
+      "passed": true,
+      "evidence": "Multiple test suites include auth prerequisites. Suite 4 (Dashboard) and Suite 5 (Profile) specify 'Precondition: Logged in'. Suite 3 covers auth guard behavior. Tests 1.7, 1.8 specify 'Register user via signup first' as precondition."
+    },
+    {
+      "text": "Describes both authorized access and unauthorized/unauthenticated access scenarios",
+      "passed": true,
+      "evidence": "Suite 3 covers unauthenticated access (3.1-3.3: redirect to /login for /dashboard, /todos, /profile). Suite 7 covers authenticated vs unauthenticated navbar (7.1, 7.2). Suite 3.4 covers authenticated access to all protected pages. Suite 4-6 cover post-login functionality."
+    },
+    {
+      "text": "Includes session-related edge cases (expired session, invalid token, or logout)",
+      "passed": true,
+      "evidence": "Suite 8 covers session management: 8.1 (session persists across reload), 8.2 (30-minute timeout with auth_login_at manipulation). Suite 7.4 covers logout clearing session. However, missing explicit test for manual localStorage deletion."
+    },
+    {
+      "text": "Saves the plan using planner_save_plan to specs/ directory",
+      "passed": false,
+      "evidence": "Without_skill agent does not have access to planner_save_plan tool. The plan was written directly as a file to the outputs directory, not saved via the planner_save_plan tool."
+    }
+  ],
+  "summary": {
+    "pass_rate": 0.5,
+    "passed": 3,
+    "failed": 3,
+    "total": 6
+  }
+}
