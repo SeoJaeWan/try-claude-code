@@ -1,11 +1,13 @@
 # Playwright MCP vs agent-browser 정리
 
+> **Historical Reference:** 이 문서는 historical reference입니다. 현재 활성 E2E 아키텍처는 `plan-e2e-test` skill 기반의 contract-first 방식입니다. 계획 단계에서 최종 Playwright `.spec.ts` 코드를 생성하고, 구현이 이를 통과하도록 합니다. 아래 내용은 이전 Playwright agent pipeline (planner/generator/healer) 아키텍처에 대한 기술 분석으로, 참고용으로 보존합니다.
+
 ## 목적
 
-이 문서는 현재 플러그인에 있는 Playwright 기반 agent 구조와 `agent-browser`의 역할 차이를 정리하고,
+이 문서는 이전 플러그인의 Playwright 기반 agent 구조와 `agent-browser`의 역할 차이를 정리하고,
 `Playwright 테스트 자체를 agent-browser로 대체할 수 있는가?`라는 질문에 대한 결론을 남긴다.
 
-## 한 줄 결론
+## 한 줄 결론 (당시 분석)
 
 `agent-browser`는 `Playwright Test`의 대체재라기보다, AI가 브라우저를 다루는 방식에서 `Playwright MCP`를 대체하거나 보완할 수 있는 브라우저 인터페이스에 가깝다.
 
@@ -30,9 +32,9 @@
 - 내부적으로 Playwright 또는 CDP를 활용할 수 있지만, agent에게는 작은 CLI 명령 집합과 압축된 snapshot/ref 기반 인터페이스를 제공한다.
 - 목표는 브라우저 제어를 더 단순하고, 더 토큰 효율적으로 만드는 것이다.
 
-## 현재 플러그인 구조
+## 이전 플러그인 구조 (retired)
 
-현재 저장소는 Playwright MCP 위에 역할별 agent를 얹는 구조다.
+당시 저장소는 Playwright MCP 위에 역할별 agent를 얹는 구조였다.
 
 - `agents/playwright-test-planner.md`
   - 브라우저를 탐색해 테스트 시나리오 문서(`specs/`)를 만든다.
@@ -41,7 +43,7 @@
 - `agents/playwright-test-healer.md`
   - 실패한 Playwright 테스트를 실행/디버그하고, 테스트 코드를 수정한다.
 
-즉 구조적으로는 다음과 같다.
+즉 구조적으로는 다음과 같았다.
 
 `Playwright MCP = agent의 손발`
 
@@ -89,16 +91,18 @@
 - assertion/reporter/trace 중심 CI 테스트 자산
 - 현재 플러그인의 `planner -> generator -> healer` 테스트 파이프라인 전체
 
-## 실무적으로 맞는 결론
+## 당시 실무적 결론
 
-가장 현실적인 선택은 전면 교체보다 하이브리드다.
+가장 현실적인 선택은 전면 교체보다 하이브리드였다.
 
 - 브라우저 탐색 계층
-  - `Playwright MCP` 대신 `agent-browser`를 검토할 수 있다.
+  - `Playwright MCP` 대신 `agent-browser`를 검토할 수 있었다.
 - 테스트 자산 계층
-  - Playwright Test는 유지하는 편이 낫다.
-- 현재 플러그인 구조
-  - `planner / generator / healer` 파이프라인은 유지하고, 필요하면 브라우저 탐색 부분만 더 얇게 바꾸는 방식이 적절하다.
+  - Playwright Test는 유지하는 편이 나았다.
+- 당시 플러그인 구조
+  - `planner / generator / healer` 파이프라인은 유지하고, 필요하면 브라우저 탐색 부분만 더 얇게 바꾸는 방식이 적절했다.
+
+> **현재 아키텍처 참고:** planner/generator/healer 파이프라인은 retired되었다. 현재 E2E 테스트는 `plan-e2e-test` skill이 계획 단계에서 contract artifact로 생성하며, 라이브 브라우저 탐색 없이 deterministic Playwright 코드를 작성한다.
 
 ## 요약
 

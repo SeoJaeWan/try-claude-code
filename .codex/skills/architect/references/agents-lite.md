@@ -17,18 +17,10 @@ Use this file instead of the legacy centralized agents reference set.
 - `bug-report`: bug recording on failure
 - `activity-log`: task completion logging
 
-## E2E Testing (separate Playwright agents)
+## Planning Skills (run by architect)
 
-- `playwright-test-planner`: E2E test plan creation
-- `playwright-test-generator`: E2E test code generation
-- `playwright-test-healer`: E2E test auto-repair
-
-## E2E Routing Rules
-
-- For UI/user-flow changes, include explicit phases for:
-  - `playwright-test-planner` -> `playwright-test-generator`
-- Use `playwright-test-healer` only as a conditional failure path (not default).
-- Keep E2E phases separated from UI implementation phases for traceability.
+- `plan-unit-test`: generates unit/logic test files as plan artifacts (`plans/{task}/tests/`)
+- `plan-e2e-test`: generates frozen Playwright E2E `.spec.ts` files as plan artifacts (`plans/{task}/e2e/`)
 
 ## Planning Rules
 
@@ -42,4 +34,4 @@ Use this file instead of the legacy centralized agents reference set.
 8. Every executable plan file must include `Branch` header.
 9. `planner-lite` skill runs in the main conversation and enforces `Agent(... isolation: "worktree")` on phase dispatch. Merge source branch into `Branch` from plan files (`--no-ff`).
 10. For parallel runs, start one `planner-lite` skill session per `plan-{track}.md`.
-11. For UI/user-flow scope, E2E phases must be explicitly represented in plan order.
+11. For UI/user-flow scope, `plan-e2e-test` artifacts must be generated during planning (frozen E2E contracts).

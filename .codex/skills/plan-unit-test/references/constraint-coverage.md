@@ -1,6 +1,6 @@
 # Constraint Coverage Rules
 
-Mandatory coverage requirements for `plan-tests`.
+Mandatory coverage requirements for `plan-unit-test`.
 
 ---
 
@@ -19,7 +19,7 @@ Mandatory coverage requirements for `plan-tests`.
 
 ## Coverage Verification
 
-Before completing the `plan-tests` workflow:
+Before completing the `plan-unit-test` workflow:
 
 1. List all constraint IDs from `plan.md`
 2. For each ID, verify at least one expected-behavior test exists

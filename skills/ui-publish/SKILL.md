@@ -132,11 +132,10 @@ node .claude/try-claude/references/coding-rules/scripts/generate.mjs structure <
 
 ---
 
-## E2E Test Trigger
+## E2E Tests
 
-- **After you create UI, Playwright Test Agents automatically generate E2E tests**
-- Your UI layout serves as foundation for E2E tests
-- Playwright Planner → Generator → Healer pipeline handles all E2E automation
-- DO NOT write E2E tests manually — delegate to Playwright Test Agents
+- E2E 테스트는 계획 단계에서 `plan-e2e-test` skill이 contract artifact로 생성한다
+- UI publisher는 E2E 테스트를 트리거하거나 작성하지 않는다
+- E2E 테스트는 plan artifact로 이미 동결되어 있으며, 구현이 이를 통과해야 한다
 </Instructions>
 </Skill_Guide>

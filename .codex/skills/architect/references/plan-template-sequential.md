@@ -66,7 +66,8 @@
 - primary_skill: `{skill-name}` (선택)
 - 작업:
 - 산출물:
-- 테스트: `tests/{mirrored-source-path}` (해당 시)
+- 단위 테스트: `tests/{mirrored-source-path}` (해당 시, plan-unit-test artifact)
+- E2E 테스트: `e2e/{domain}/{scenario}.spec.ts` (해당 시, plan-e2e-test artifact)
 
 ### Phase 2
 
@@ -82,18 +83,13 @@
 - 작업:
 - 산출물:
 
-### Optional E2E Phase (UI/user-flow scope)
+### E2E Test Artifacts (UI/user-flow scope)
 
-- owner_agent: `playwright-test-planner`
-- 작업: `specs/` 시나리오 계획 생성/갱신
-- 산출물: `specs/{domain}/{feature}.md`
+E2E 테스트는 planning 단계에서 `plan-e2e-test` 스킬로 생성된 frozen artifact임.
+별도의 E2E 실행 phase는 불필요 - 구현 phase에서 E2E artifact를 참조하여 `data-testid` 적용.
 
-- owner_agent: `playwright-test-generator`
-- 작업: Playwright 테스트 코드 생성/갱신
-- 산출물: `e2e/{domain}/{scenario}.spec.ts`
-
-- owner_agent: `playwright-test-healer` (실패 시 조건부)
-- 작업: E2E 실패 원인 분석 및 테스트 자동 수복
+- 산출물 위치: `plans/{task-name}/e2e/manifest.md`, `plans/{task-name}/e2e/{domain}/{scenario}.spec.ts`
+- E2E 실패 시 구현을 수정 (테스트를 수정하지 않음)
 
 ## 파일 변경 목록
 
