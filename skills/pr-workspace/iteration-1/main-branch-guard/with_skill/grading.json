@@ -1,0 +1,13 @@
+{
+  "eval_id": 3,
+  "eval_name": "main-branch-guard",
+  "configuration": "with_skill",
+  "expectations": [
+    {"text": "SKILL.md 파일을 읽어 PR 생성 워크플로우 확인", "passed": true, "evidence": "SKILL.md 읽기를 첫 번째 단계로 실행"},
+    {"text": "현재 브랜치가 main인지 확인", "passed": true, "evidence": "git branch --show-current로 main 브랜치 확인"},
+    {"text": "main 브랜치에서의 PR 생성이 부적절함을 감지", "passed": true, "evidence": "main 브랜치 감지 후 PR 생성 부적절 판단"},
+    {"text": "사용자에게 main 브랜치에서는 PR을 만들 수 없음을 경고", "passed": true, "evidence": "경고 메시지 출력 — 'main 브랜치에서는 PR을 생성할 수 없습니다'"},
+    {"text": "새 브랜치를 생성하거나 다른 브랜치로 전환할 것을 제안", "passed": true, "evidence": "git checkout -b feature/xxx 명령어 안내"},
+    {"text": "실제로 gh pr create를 실행하지 않음", "passed": true, "evidence": "gh pr create 실행하지 않음 — 안전한 중단"}
+  ]
+}
