@@ -1,27 +1,29 @@
 ---
-name: plan-tests
-description: Codex skill for generating stack-aware, constraint-mapped logic tests as plan artifacts. Called by architect after plan.md creation.
+name: plan-unit-test
+description: Codex skill for generating stack-aware, constraint-mapped unit/logic tests as plan artifacts. Called by architect after plan.md creation.
 ---
 
 <Skill_Guide>
 <Purpose>
-Generate spec-oriented test files as plan artifacts during the planning phase. These tests exist to turn plan constraints into executable logic contracts, including defensive and exceptional behavior, before implementation begins.
+Generate spec-oriented unit/logic test files as plan artifacts during the planning phase. These tests exist to turn plan constraints into executable logic contracts, including defensive and exceptional behavior, before implementation begins.
 </Purpose>
 
 <Instructions>
-# plan-tests
+# plan-unit-test
 
-Generate stack-aware test files mapped to `plan.md` constraint IDs. These tests become plan artifacts that developers later copy into the source tree for Red-Green TDD.
+Generate stack-aware unit/logic test files mapped to `plan.md` constraint IDs. These tests become plan artifacts that developers later copy into the source tree for Red-Green TDD.
 
 The goal is not to optimize for "easy passing." The goal is to make the required logic explicit enough that implementation can be judged against a concrete behavioral contract.
+
+This skill covers **unit and logic tests only**. E2E tests are handled by the `plan-e2e-test` skill.
 
 ---
 
 ## Inputs to inspect
 
 1. `./plans/{task-name}/plan.md` - constraint IDs (`[C-...]`) and test targets
-2. `./.codex/skills/plan-tests/references/testing-conventions.md` - test writing rules
-3. `./.codex/skills/plan-tests/references/constraint-coverage.md` - coverage rules
+2. `./.codex/skills/plan-unit-test/references/testing-conventions.md` - test writing rules
+3. `./.codex/skills/plan-unit-test/references/constraint-coverage.md` - coverage rules
 4. Local test/build config near the target code - use this to detect stack and conventions before generating files
 
 ---
@@ -42,6 +44,7 @@ The goal is not to optimize for "easy passing." The goal is to make the required
 - Identify testable logic boundaries: hooks, services, utilities, validators, mappers, use cases, state management, controller methods, domain policies
 - Choose the narrowest boundary that can verify the required logic accurately
 - Skip document-only or config-only changes with no testable logic
+- Skip user-facing flows that are better covered by E2E tests (`plan-e2e-test`)
 
 ### Step 2. Read reference documents
 
@@ -139,7 +142,7 @@ If a category is intentionally omitted for a constraint, note the reason in the 
 ## Guardrails
 
 - **Test files only**: Do not write implementation or production code
-- **No E2E tests**: E2E is handled by Playwright Test Agents
+- **No E2E tests**: E2E is handled by `plan-e2e-test` skill
 - **Plan artifacts only**: Tests are stored in `plans/`, not in the source tree
 - **No default stack assumptions**: Detect local conventions first, ask the user if unclear
 - **Constraint coverage 100%**: Mandatory before completion

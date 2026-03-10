@@ -1,6 +1,6 @@
 # Testing Conventions Reference
 
-Inline reference for `plan-tests`. Use this to turn plan constraints into executable logic specifications.
+Inline reference for `plan-unit-test`. Use this to turn plan constraints into executable logic specifications.
 
 Follow the current project's test stack and file conventions. If the repository does not make the stack clear, ask the user before generating files.
 
