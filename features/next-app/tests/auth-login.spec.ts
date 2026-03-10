@@ -23,8 +23,7 @@ test.describe("로그인", () => {
     await page.getByTestId("login-password").fill("password123");
     await page.getByTestId("login-submit").click();
 
-    // BUG: stale assertion - checking for old greeting format
-    await expect(page.getByText("Welcome back, 테스트유저")).toBeVisible();
+    await expect(page.getByTestId("greeting")).toContainText("안녕하세요, 테스트유저님");
   });
 
   test("미등록 이메일 에러", async ({ page }) => {
@@ -33,8 +32,7 @@ test.describe("로그인", () => {
     await page.getByTestId("login-password").fill("password123");
     await page.getByTestId("login-submit").click();
 
-    // BUG: wrong test ID
-    await expect(page.getByTestId("error-message")).toBeVisible();
+    await expect(page.getByTestId("login-error")).toBeVisible();
   });
 
   test("비밀번호 8자 미만 검증", async ({ page }) => {
