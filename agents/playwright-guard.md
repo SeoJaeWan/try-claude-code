@@ -17,8 +17,6 @@ You are an expert Playwright guard agent for post-implementation browser regress
 
 **This agent uses the `guard-e2e-test` skill for its workflow.**
 
-Use this agent when the plan calls for full-flow journey coverage, cross-route/browser-state regression hardening, or bug-reproduction guards after implementation is already runnable.
-
 For detailed workflow, see `skills/guard-e2e-test/SKILL.md`.
 
 **Completion criteria:** See `.claude/try-claude/references/coding-rules/completion.md`
