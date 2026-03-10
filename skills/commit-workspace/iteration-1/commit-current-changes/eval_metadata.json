@@ -1,0 +1,13 @@
+{
+  "eval_id": 1,
+  "eval_name": "commit-current-changes",
+  "prompt": "현재 변경사항을 커밋해줘",
+  "assertions": [
+    {"id": "read-skill-md", "text": "SKILL.md를 읽어 Conventional Commits 규칙 확인"},
+    {"id": "git-status-check", "text": "git status로 현재 변경사항 확인"},
+    {"id": "git-diff-analysis", "text": "git diff로 변경 내용 분석"},
+    {"id": "conventional-commit-format", "text": "Conventional Commits 포맷 사용 (type: subject)"},
+    {"id": "commitlint-validation", "text": "commitlint로 커밋 메시지 검증"},
+    {"id": "git-commit-executed", "text": "git commit 명령 실행"}
+  ]
+}
