@@ -1,0 +1,48 @@
+{
+  "eval_id": 1,
+  "eval_name": "generate-from-specs",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "Uses generator_setup_page to initialize the browser before any interaction",
+      "passed": false,
+      "evidence": "Without the skill, the agent does not have access to generator_setup_page. The generated tests use getByLabel() and getByRole() selectors rather than getByTestId(), suggesting the agent did not explore the actual app in a browser. For example, auth-flow.spec.ts uses page.getByLabel('이름'), page.getByRole('button', { name: '회원가입' }) instead of page.getByTestId('signup-name'), page.getByTestId('signup-submit'). This indicates code was generated from spec reading rather than live browser interaction."
+    },
+    {
+      "text": "Executes each test step live in the browser (click, type, navigate) before generating code",
+      "passed": false,
+      "evidence": "The without_skill configuration lacks browser tools for live execution. The generated tests use semantic selectors (getByLabel, getByRole, getByPlaceholder) rather than the exact data-testid selectors documented in the app. For example, todo-crud.spec.ts uses page.getByPlaceholder(/할 일/) and page.getByRole('button', { name: '추가' }) instead of page.getByTestId('todo-input') and page.getByTestId('todo-add'). The delete tests use page.on('dialog', ...) suggesting assumption of a native dialog rather than the actual in-page confirmation UI."
+    },
+    {
+      "text": "Calls generator_read_log to retrieve the recorded execution log",
+      "passed": false,
+      "evidence": "Without the skill, the agent does not have access to generator_read_log. No log-based generation workflow was available."
+    },
+    {
+      "text": "Calls generator_write_test to produce .spec.ts output files",
+      "passed": false,
+      "evidence": "Without the skill, the agent does not have access to generator_write_test. Four .spec.ts files were produced (auth-flow.spec.ts, todo-crud.spec.ts, navigation.spec.ts, profile-forms.spec.ts) but they were written via generic file write operations, not via generator_write_test. The files lack the // spec: and // seed: header comments that generator_write_test produces."
+    },
+    {
+      "text": "Generated test code uses describe/test block structure with meaningful test names",
+      "passed": true,
+      "evidence": "All 4 spec files use test.describe/test structure with meaningful names. auth-flow.spec.ts: describe blocks '1. 회원가입', '2. 로그인', '3. 로그아웃', '4. 인증 보호' with numbered tests like '1.1 유효한 회원가입', '2.1 유효한 로그인'. todo-crud.spec.ts: '1. 할 일 추가', '2. 할 일 조회 및 필터', '3. 할 일 수정', '4. 할 일 삭제'. navigation.spec.ts: '1. 클라이언트 사이드 라우팅', '2. 반응형 네비게이션', '3. 브레드크럼'."
+    },
+    {
+      "text": "Each action in the generated code has a step comment explaining what it does",
+      "passed": false,
+      "evidence": "The without_skill generated files have minimal or no step comments. auth-flow.spec.ts has brief inline comments like '// Create account first', '// Log out to test login', '// Each required field should show an error' but lacks systematic numbered step comments. todo-crud.spec.ts has comments like '// Verify the todo appears in the list', '// Click \"전체\" filter if present' which are sparse compared to the with_skill version's systematic '// 1. ...', '// 2. ...' pattern. profile-forms.spec.ts has some comments like '// Change name', '// Fill bio' but they are brief labels, not explanatory step comments."
+    },
+    {
+      "text": "Generated code includes // spec: and // seed: comments at the top referencing source files",
+      "passed": false,
+      "evidence": "None of the 4 generated spec files include // spec: or // seed: comments at the top. auth-flow.spec.ts starts directly with 'import { test, expect } from \"@playwright/test\";'. todo-crud.spec.ts, navigation.spec.ts, and profile-forms.spec.ts all similarly lack these header comments. This is because generator_write_test (which adds these comments) was not available without the skill."
+    }
+  ],
+  "summary": {
+    "pass_rate": 0.14285714285714285,
+    "passed": 1,
+    "failed": 6,
+    "total": 7
+  }
+}

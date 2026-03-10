@@ -5,6 +5,12 @@ import { test, expect } from "@playwright/test";
 
 async function loginAsTestUser(page: import("@playwright/test").Page) {
   await page.goto("/signup");
+  // Accept cookie banner if visible (it blocks all interactions with z-50 overlay)
+  const cookieBanner = page.getByTestId("cookie-banner");
+  if (await cookieBanner.isVisible()) {
+    await page.getByTestId("cookie-accept").click();
+    await expect(cookieBanner).toBeHidden();
+  }
   await page.getByTestId("signup-name").fill("테스트유저");
   await page.getByTestId("signup-email").fill(`test-${Date.now()}@example.com`);
   await page.getByTestId("signup-password").fill("password123");
@@ -14,11 +20,7 @@ async function loginAsTestUser(page: import("@playwright/test").Page) {
 }
 
 test.describe("대시보드 동적 데이터", () => {
-  // Pre-accept cookie consent to prevent the cookie banner overlay from blocking interactions
   test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("cookie-consent", "true");
-    });
     await loginAsTestUser(page);
   });
 
