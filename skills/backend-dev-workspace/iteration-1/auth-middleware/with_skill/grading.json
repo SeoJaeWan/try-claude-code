@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "eval_name": "auth-middleware",
+  "configuration": "with_skill",
+  "expectations": [
+    {"text": "인증 모듈/파일 생성", "passed": true, "evidence": "auth.module.ts + 13개 파일 구조 명시"},
+    {"text": "JWT 토큰 발급 로직 구현", "passed": true, "evidence": "jwt.strategy.ts, @nestjs/jwt 사용 계획"},
+    {"text": "로그인 엔드포인트 구현", "passed": true, "evidence": "POST /auth/login 명시"},
+    {"text": "인증 가드/미들웨어 구현", "passed": true, "evidence": "jwt-auth.guard.ts + GET /auth/profile 보호 계획"},
+    {"text": "테스트 파일 작성 여부", "passed": true, "evidence": "auth.service.spec.ts, auth.controller.spec.ts 계획"},
+    {"text": "비밀번호 해싱 처리", "passed": true, "evidence": "bcrypt 해싱 명시, POST /auth/register에서 사용"}
+  ]
+}
