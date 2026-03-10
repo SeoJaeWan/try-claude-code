@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>평가 리뷰</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>평가 리뷰: <span id="skill-name"></span></h1>
+        <div class="instructions">각 출력을 검토하고 아래에 피드백을 남겨주세요. 화살표 키 또는 버튼으로 이동할 수 있습니다. 완료되면 피드백을 복사하여 Claude Code에 붙여넣으세요.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">출력 결과</button>
+      <button class="view-tab" onclick="switchView('benchmark')">벤치마크</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">프롬프트 <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">출력</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">출력 파일을 찾을 수 없습니다</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            이전 출력
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            평가 등급
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">피드백</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="이 출력에 대해 어떻게 생각하시나요? 문제점, 제안사항, 또는 잘된 점이 있나요?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">이전 피드백</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; 이전</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">모든 리뷰 제출</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">다음 &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">벤치마크 데이터가 없습니다. 벤치마크를 실행하면 여기에 정량적 결과가 표시됩니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>리뷰 완료</h2>
+      <p>피드백이 저장되었습니다. Claude Code 세션으로 돌아가서 리뷰가 끝났다고 알려주세요.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "playwright-test-planner", "runs": [{"id": "eval-1-with_skill", "prompt": "\ud604\uc7ac \uc6f9 \uc571\uc744 \ud0d0\uc0c9\ud574\uc11c E2E \ud14c\uc2a4\ud2b8 \ud50c\ub79c\uc744 \uc791\uc131\ud574\uc918", "eval_id": 1, "outputs": [{"name": "test-plan.md", "type": "text", "content": "# TestApp E2E \ud14c\uc2a4\ud2b8 \ud50c\ub79c\n\n## Application Overview\n\nNext.js \uae30\ubc18 \ud560 \uc77c \uad00\ub9ac \uc6f9 \uc560\ud50c\ub9ac\ucf00\uc774\uc158(TestApp)\uc758 E2E \ud14c\uc2a4\ud2b8 \ud50c\ub79c. \uc8fc\uc694 \uae30\ub2a5: \uc774\uba54\uc77c/\ube44\ubc00\ubc88\ud638 \uc778\uc99d(\ud68c\uc6d0\uac00\uc785/\ub85c\uadf8\uc778/\ub85c\uadf8\uc544\uc6c3, \uc138\uc158 30\ubd84 \ub9cc\ub8cc), \ud560 \uc77c CRUD(\ucd94\uac00/\uc218\uc815/\uc0ad\uc81c/\uc644\ub8cc \ud1a0\uae00, \uac80\uc0c9/\ud544\ud130), \ub300\uc2dc\ubcf4\ub4dc(\ud1b5\uacc4 \uce74\ub4dc, \ube60\ub978 \ucd94\uac00, /api/notifications API \uc5f0\ub3d9 \uc54c\ub9bc \ubaa9\ub85d), \ud504\ub85c\ud544 \ud398\uc774\uc9c0(\uc774\ub984\u00b7\uc790\uae30\uc18c\uac1c \uc218\uc815, \uc0dd\ub144\uc6d4\uc77c DatePicker, \uae30\uc220 \uc2a4\ud0dd MultiSelect, \uc544\ubc14\ud0c0 FileUpload), \ubc18\uc751\ud615 \ub124\ube44\uac8c\uc774\uc158(\ub370\uc2a4\ud06c\ud1b1 \ub9c1\ud06c, \ubaa8\ubc14\uc77c \ud584\ubc84\uac70 \uba54\ub274 375px), \ube0c\ub808\ub4dc\ud06c\ub7fc, \ucfe0\ud0a4 \ub3d9\uc758 \ubc30\ub108(localStorage \uae30\ubc18 \uc624\ubc84\ub808\uc774). \uc778\uc99d\uacfc Todo \ub370\uc774\ud130\ub294 localStorage\uc5d0 \uc800\uc7a5\ub41c\ub2e4. \uac01 \ud14c\uc2a4\ud2b8\ub294 \uc644\uc804\ud788 \ub3c5\ub9bd\uc801\uc73c\ub85c \uc2e4\ud589 \uac00\ub2a5\ud558\uba70 \uc2e0\uaddc \uc774\uba54\uc77c\ub85c \ud68c\uc6d0\uac00\uc785\ud558\ub294 \ubc29\uc2dd\uc73c\ub85c \uaca9\ub9ac\ud55c\ub2e4.\n\n## Test Scenarios\n\n### 1. 1. \uc0ac\uc6a9\uc790 \uc778\uc99d\n\n**Seed:** `features/next-app/tests/seed.spec.ts`\n\n#### 1.1. 1.1 \uc720\ud6a8\ud55c \ud68c\uc6d0\uac00\uc785 \ud6c4 \ub300\uc2dc\ubcf4\ub4dc \uc774\ub3d9\n\n**File:** `features/next-app/specs/auth/signup-valid.spec.ts`\n\n**Steps:**\n  1. http://localhost:3000/signup \uc73c\ub85c \uc774\ub3d9\ud55c\ub2e4\n    - expect: URL\uc774 /signup \uc774\uc5b4\uc57c \ud55c\ub2e4\n    - expect: \ud68c\uc6d0\uac00\uc785 \ud3fc\uc774 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. data-testid='signup-name' \uc5d0 '\ud14c\uc2a4\ud2b8\uc720\uc800'\ub97c \uc785\ub825\ud55c\ub2e4\n    - expect: \uc774\ub984 \ud544\ub4dc\uc5d0 \uac12\uc774 \uc785\ub825\ub418\uc5b4\uc57c \ud55c\ub2e4\n  3. data-testid='signup-email' \uc5d0 \uace0\uc720\ud55c \uc774\uba54\uc77c(\uc608: signup-valid-{timestamp}@example.com)\uc744 \uc785\ub825\ud55c\ub2e4\n    - expect: \uc774\uba54\uc77c \ud544\ub4dc\uc5d0 \uac12\uc774 \uc785\ub825\ub418\uc5b4\uc57c \ud55c\ub2e4\n  4. data-testid='signup-password' \uc5d0 'password123'\uc744 \uc785\ub825\ud55c\ub2e4\n    - expect: \ube44\ubc00\ubc88\ud638 \ud544\ub4dc\uc5d0 \uac12\uc774 \uc785\ub825\ub418\uc5b4\uc57c \ud55c\ub2e4\n  5. data-testid='signup-confirm-password' \uc5d0 'password123'\uc744 \uc785\ub825\ud55c\ub2e4\n    - expect: \ube44\ubc00\ubc88\ud638 \ud655\uc778 \ud544\ub4dc\uc5d0 \uac12\uc774 \uc785\ub825\ub418\uc5b4\uc57c \ud55c\ub2e4\n  6. data-testid='signup-submit' \ubc84\ud2bc\uc744 \ud074\ub9ad\ud55c\ub2e4\n    - expect: \ud398\uc774\uc9c0\uac00 /dashboard \ub85c \uc774\ub3d9\ud574\uc57c \ud55c\ub2e4\n    - expect: data-testid='greeting' \uc5d0 '\uc548\ub155\ud558\uc138\uc694, \ud14c\uc2a4\ud2b8\uc720\uc800\ub2d8' \ud14d\uc2a4\ud2b8\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 1.2. 1.2 \uc774\ubbf8 \ub4f1\ub85d\ub41c \uc774\uba54\uc77c\ub85c \ud68c\uc6d0\uac00\uc785 \uc2dc \uc5d0\ub7ec\n\n**File:** `features/next-app/specs/auth/signup-duplicate-email.spec.ts`\n\n**Steps:**\n  1. http://localhost:3000/signup \uc73c\ub85c \uc774\ub3d9\ud558\uc5ec \ub3d9\uc77c\ud55c \uc774\uba54\uc77c\ub85c \uccab \ubc88\uc9f8 \ud68c\uc6d0\uac00\uc785\uc744 \uc644\ub8cc\ud55c\ub2e4\n    - expect: \uccab \ubc88\uc9f8 \uac00\uc785\uc774 \uc131\uacf5\ud558\uace0 /dashboard \ub85c \uc774\ub3d9\ud574\uc57c \ud55c\ub2e4\n  2. \ub85c\uadf8\uc544\uc6c3 \ud6c4 \ub2e4\uc2dc /signup \uc73c\ub85c \uc774\ub3d9\ud558\uc5ec \ub3d9\uc77c\ud55c \uc774\uba54\uc77c\ub85c \ub450 \ubc88\uc9f8 \ud68c\uc6d0\uac00\uc785\uc744 \uc2dc\ub3c4\ud55c\ub2e4\n    - expect: data-testid='signup-error' \uac00 \ud45c\uc2dc\ub418\uace0 '\uc774\ubbf8 \ub4f1\ub85d\ub41c \uc774\uba54\uc77c\uc785\ub2c8\ub2e4' \uba54\uc2dc\uc9c0\uac00 \ub098\ud0c0\ub098\uc57c \ud55c\ub2e4\n\n#### 1.3. 1.3 \ube44\ubc00\ubc88\ud638 \ubd88\uc77c\uce58 \uc2dc \uc5d0\ub7ec \ud45c\uc2dc\n\n**File:** `features/next-app/specs/auth/signup-password-mismatch.spec.ts`\n\n**Steps:**\n  1. http://localhost:3000/signup \uc73c\ub85c \uc774\ub3d9\ud55c\ub2e4\n    - expect: \ud68c\uc6d0\uac00\uc785 \ud3fc\uc774 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. \uc774\ub984, \uc774\uba54\uc77c\uc744 \uc785\ub825\ud558\uace0 \ube44\ubc00\ubc88\ud638\uc5d0 'password123', \ube44\ubc00\ubc88\ud638 \ud655\uc778\uc5d0 'different123'\uc744 \uc785\ub825\ud55c \ud6c4 \uc81c\ucd9c\ud55c\ub2e4\n    - expect: data-testid='confirm-password-error' \uac00 \ud45c\uc2dc\ub418\uace0 '\ube44\ubc00\ubc88\ud638\uac00 \uc77c\uce58\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4' \uba54\uc2dc\uc9c0\uac00 \ub098\ud0c0\ub098\uc57c \ud55c\ub2e4\n    - expect: \ud398\uc774\uc9c0\uac00 /dashboard \ub85c \uc774\ub3d9\ud558\uc9c0 \uc54a\uc544\uc57c \ud55c\ub2e4\n\n#### 1.4. 1.4 \ube44\ubc00\ubc88\ud638 8\uc790 \ubbf8\ub9cc \uc785\ub825 \uc2dc \uc720\ud6a8\uc131 \uac80\uc99d \uc5d0\ub7ec\n\n**File:** `features/next-app/specs/auth/signup-short-password.spec.ts`\n\n**Steps:**\n  1. http://localhost:3000/signup \uc73c\ub85c \uc774\ub3d9\ud55c\ub2e4\n    - expect: \ud68c\uc6d0\uac00\uc785 \ud3fc\uc774 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. \uc774\ub984, \uc774\uba54\uc77c\uc744 \uc785\ub825\ud558\uace0 \ube44\ubc00\ubc88\ud638 \ud544\ub4dc\uc5d0 'short'(7\uc790 \ubbf8\ub9cc)\ub97c \uc785\ub825\ud55c \ud6c4 \uc81c\ucd9c\ud55c\ub2e4\n    - expect: data-testid='password-error' \uac00 \ud45c\uc2dc\ub418\uace0 '\ube44\ubc00\ubc88\ud638\ub294 8\uc790 \uc774\uc0c1\uc774\uc5b4\uc57c \ud569\ub2c8\ub2e4' \uba54\uc2dc\uc9c0\uac00 \ub098\ud0c0\ub098\uc57c \ud55c\ub2e4\n\n#### 1.5. 1.5 \uc720\ud6a8\ud55c \ub85c\uadf8\uc778 \ud6c4 \ub300\uc2dc\ubcf4\ub4dc \uc774\ub3d9\n\n**File:** `features/next-app/specs/auth/login-valid.spec.ts`\n\n**Steps:**\n  1. http://localhost:3000/signup \uc73c\ub85c \uc774\ub3d9\ud558\uc5ec \uc2e0\uaddc \uacc4\uc815\uc744 \uc0dd\uc131\ud55c\ub2e4(\uc774\ub984: '\ub85c\uadf8\uc778\uc720\uc800', \uc774\uba54\uc77c: login-valid-{timestamp}@example.com, \ube44\ubc00\ubc88\ud638: password123)\n    - expect: /dashboard \ub85c \uc774\ub3d9\ud574\uc57c \ud55c\ub2e4\n  2. data-testid='nav-logout' \ubc84\ud2bc\uc744 \ud074\ub9ad\ud558\uc5ec \ub85c\uadf8\uc544\uc6c3\ud55c\ub2e4\n    - expect: /login \uc73c\ub85c \uc774\ub3d9\ud574\uc57c \ud55c\ub2e4\n  3. data-testid='login-email' \uc5d0 \ub4f1\ub85d\ud55c \uc774\uba54\uc77c\uc744, data-testid='login-password' \uc5d0 'password123'\uc744 \uc785\ub825\ud558\uace0 data-testid='login-submit'\uc744 \ud074\ub9ad\ud55c\ub2e4\n    - expect: /dashboard \ub85c \uc774\ub3d9\ud574\uc57c \ud55c\ub2e4\n    - expect: data-testid='greeting' \uc5d0 '\uc548\ub155\ud558\uc138\uc694, \ub85c\uadf8\uc778\uc720\uc800\ub2d8' \ud14d\uc2a4\ud2b8\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 1.6. 1.6 \ubbf8\ub4f1\ub85d \uc774\uba54\uc77c\ub85c \ub85c\uadf8\uc778 \uc2dc \uc5d0\ub7ec\n\n**File:** `features/next-app/specs/auth/login-unregistered-email.spec.ts`\n\n**Steps:**\n  1. http://localhost:3000/login \uc73c\ub85c \uc774\ub3d9\ud55c\ub2e4\n    - expect: \ub85c\uadf8\uc778 \ud3fc\uc774 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. data-testid='login-email' \uc5d0 'notexist@example.com'\uc744, data-testid='login-password' \uc5d0 'password123'\uc744 \uc785\ub825\ud558\uace0 \uc81c\ucd9c\ud55c\ub2e4\n    - expect: data-testid='login-error' \uac00 \ud45c\uc2dc\ub418\uace0 '\ub4f1\ub85d\ub418\uc9c0 \uc54a\uc740 \uc774\uba54\uc77c\uc785\ub2c8\ub2e4' \uba54\uc2dc\uc9c0\uac00 \ub098\ud0c0\ub098\uc57c \ud55c\ub2e4\n\n#### 1.7. 1.7 \uc798\ubabb\ub41c \ube44\ubc00\ubc88\ud638\ub85c \ub85c\uadf8\uc778 \uc2dc \uc5d0\ub7ec\n\n**File:** `features/next-app/specs/auth/login-wrong-password.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc744 \uc0dd\uc131\ud55c \ud6c4 \ub85c\uadf8\uc544\uc6c3\ud55c\ub2e4\n    - expect: /login \uc73c\ub85c \uc774\ub3d9\ud574\uc57c \ud55c\ub2e4\n  2. \ub85c\uadf8\uc778 \ud3fc\uc5d0 \ub4f1\ub85d\ub41c \uc774\uba54\uc77c\uacfc \uc798\ubabb\ub41c \ube44\ubc00\ubc88\ud638 'wrongpass1'\uc744 \uc785\ub825\ud558\uace0 \uc81c\ucd9c\ud55c\ub2e4\n    - expect: data-testid='login-error' \uac00 \ud45c\uc2dc\ub418\uace0 '\ube44\ubc00\ubc88\ud638\uac00 \uc77c\uce58\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4' \uba54\uc2dc\uc9c0\uac00 \ub098\ud0c0\ub098\uc57c \ud55c\ub2e4\n\n#### 1.8. 1.8 \ub85c\uadf8\uc544\uc6c3 \ud6c4 \ubcf4\ud638\ub41c \ud398\uc774\uc9c0 \uc811\uadfc \ucc28\ub2e8\n\n**File:** `features/next-app/specs/auth/logout-redirect.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc744 \uc0dd\uc131\ud558\uc5ec /dashboard \uc5d0 \uc788\ub294 \uc0c1\ud0dc\uc5d0\uc11c data-testid='nav-logout' \uc744 \ud074\ub9ad\ud55c\ub2e4\n    - expect: /login \uc73c\ub85c \uc774\ub3d9\ud574\uc57c \ud55c\ub2e4\n  2. http://localhost:3000/dashboard \ub85c \uc9c1\uc811 \uc774\ub3d9\uc744 \uc2dc\ub3c4\ud55c\ub2e4\n    - expect: /login \uc73c\ub85c \ub9ac\ub2e4\uc774\ub809\ud2b8 \ub418\uc5b4\uc57c \ud55c\ub2e4\n  3. http://localhost:3000/todos \ub85c \uc9c1\uc811 \uc774\ub3d9\uc744 \uc2dc\ub3c4\ud55c\ub2e4\n    - expect: /login \uc73c\ub85c \ub9ac\ub2e4\uc774\ub809\ud2b8 \ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 1.9. 1.9 \ube44\uc778\uc99d \uc0c1\ud0dc\uc5d0\uc11c \ud648 \uc811\uc18d \uc2dc \ub85c\uadf8\uc778/\ud68c\uc6d0\uac00\uc785 \ub9c1\ud06c \ud45c\uc2dc\n\n**File:** `features/next-app/specs/auth/home-unauthenticated.spec.ts`\n\n**Steps:**\n  1. localStorage \ub97c \ube44\uc6b4 \uc0c1\ud0dc\uc5d0\uc11c http://localhost:3000 \uc73c\ub85c \uc774\ub3d9\ud55c\ub2e4\n    - expect: data-testid='home-login' \ub9c1\ud06c\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: data-testid='home-signup' \ub9c1\ud06c\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. data-testid='home-login' \ub9c1\ud06c\ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: /login \uc73c\ub85c \uc774\ub3d9\ud574\uc57c \ud55c\ub2e4\n\n### 2. 2. \ud560 \uc77c \uad00\ub9ac\n\n**Seed:** `features/next-app/tests/seed.spec.ts`\n\n#### 2.1. 2.1 \ud560 \uc77c \ucd94\uac00 - \uc815\uc0c1 \ucf00\uc774\uc2a4\n\n**File:** `features/next-app/specs/todos/todo-add-valid.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 http://localhost:3000/todos \ub85c \uc774\ub3d9\ud55c\ub2e4\n    - expect: \ud560 \uc77c \ubaa9\ub85d \ud398\uc774\uc9c0\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: data-testid='empty-state' \uac00 '\uc544\uc9c1 \ud560 \uc77c\uc774 \uc5c6\uc2b5\ub2c8\ub2e4' \uba54\uc2dc\uc9c0\uc640 \ud568\uaed8 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. data-testid='todo-input' \uc5d0 '\uc6b0\uc720 \uc0ac\uae30'\ub97c \uc785\ub825\ud558\uace0 data-testid='todo-add' \ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: '\uc6b0\uc720 \uc0ac\uae30' \ud14d\uc2a4\ud2b8\ub97c \uac00\uc9c4 \ud560 \uc77c \ud56d\ubaa9\uc774 \ubaa9\ub85d\uc5d0 \ub098\ud0c0\ub098\uc57c \ud55c\ub2e4\n    - expect: \ube48 \uc0c1\ud0dc \uba54\uc2dc\uc9c0\uac00 \uc0ac\ub77c\uc838\uc57c \ud55c\ub2e4\n\n#### 2.2. 2.2 \ud560 \uc77c \ucd94\uac00 - \ube48 \uc785\ub825 \uc720\ud6a8\uc131 \uac80\uc99d\n\n**File:** `features/next-app/specs/todos/todo-add-empty.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /todos \ub85c \uc774\ub3d9\ud558\uace0 data-testid='todo-input' \uc744 \ube44\uc6b4 \ucc44 data-testid='todo-add' \ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: \uc5d0\ub7ec \uba54\uc2dc\uc9c0 '\ud560 \uc77c\uc744 \uc785\ub825\ud574\uc8fc\uc138\uc694' \uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: \ud560 \uc77c \ud56d\ubaa9\uc774 \ucd94\uac00\ub418\uc9c0 \uc54a\uc544\uc57c \ud55c\ub2e4\n\n#### 2.3. 2.3 \ud560 \uc77c \ucd94\uac00 - 200\uc790 \ucd08\uacfc \uc720\ud6a8\uc131 \uac80\uc99d\n\n**File:** `features/next-app/specs/todos/todo-add-too-long.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /todos \ub85c \uc774\ub3d9\ud558\uace0 data-testid='todo-input' \uc5d0 201\uc790 \uc774\uc0c1\uc758 \ud14d\uc2a4\ud2b8\ub97c \uc785\ub825\ud55c \ud6c4 \uc81c\ucd9c\ud55c\ub2e4\n    - expect: \uc5d0\ub7ec \uba54\uc2dc\uc9c0 '\ud560 \uc77c\uc740 200\uc790 \uc774\ud558\uc5ec\uc57c \ud569\ub2c8\ub2e4' \uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: \ud560 \uc77c \ud56d\ubaa9\uc774 \ucd94\uac00\ub418\uc9c0 \uc54a\uc544\uc57c \ud55c\ub2e4\n\n#### 2.4. 2.4 \ud560 \uc77c \uc644\ub8cc \ud1a0\uae00\n\n**File:** `features/next-app/specs/todos/todo-toggle.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /todos \ub85c \uc774\ub3d9\ud558\uc5ec '\ub3c5\uc11c\ud558\uae30' \ud560 \uc77c\uc744 \ucd94\uac00\ud55c\ub2e4\n    - expect: \ud560 \uc77c\uc774 \ubbf8\uc644\ub8cc \uc0c1\ud0dc\ub85c \ucd94\uac00\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. \ucd94\uac00\ub41c \ud56d\ubaa9\uc758 data-testid='todo-checkbox-{id}' \uccb4\ud06c\ubc15\uc2a4\ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: \uccb4\ud06c\ubc15\uc2a4\uac00 \uccb4\ud06c\ub41c \uc0c1\ud0dc\ub85c \ubcc0\uacbd\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: \ud560 \uc77c \ud14d\uc2a4\ud2b8\uc5d0 line-through \uc2a4\ud0c0\uc77c\uc774 \uc801\uc6a9\ub418\uc5b4\uc57c \ud55c\ub2e4\n  3. \uac19\uc740 \uccb4\ud06c\ubc15\uc2a4\ub97c \ub2e4\uc2dc \ud074\ub9ad\ud55c\ub2e4\n    - expect: \uccb4\ud06c\ubc15\uc2a4\uac00 \ubbf8\uccb4\ud06c \uc0c1\ud0dc\ub85c \ub3cc\uc544\uc640\uc57c \ud55c\ub2e4\n    - expect: line-through \uc2a4\ud0c0\uc77c\uc774 \uc81c\uac70\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 2.5. 2.5 \ud560 \uc77c \uc218\uc815\n\n**File:** `features/next-app/specs/todos/todo-edit.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /todos \ub85c \uc774\ub3d9\ud558\uc5ec '\uc6d0\ub798 \ub0b4\uc6a9'\uc744 \ucd94\uac00\ud55c\ub2e4\n    - expect: \ud560 \uc77c\uc774 \ubaa9\ub85d\uc5d0 \ucd94\uac00\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. \ud574\ub2f9 \ud56d\ubaa9\uc758 data-testid='todo-edit-{id}' \ubc84\ud2bc\uc744 \ud074\ub9ad\ud55c\ub2e4\n    - expect: data-testid='todo-edit-input-{id}' \uc778\ub77c\uc778 \ud3b8\uc9d1 \uc785\ub825 \ud544\ub4dc\uac00 \ub098\ud0c0\ub098\uc57c \ud55c\ub2e4\n  3. \ud3b8\uc9d1 \ud544\ub4dc\ub97c \uc9c0\uc6b0\uace0 '\uc218\uc815\ub41c \ub0b4\uc6a9'\uc744 \uc785\ub825\ud55c \ud6c4 data-testid='todo-save-{id}' \ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: \ud3b8\uc9d1 \ubaa8\ub4dc\uac00 \uc885\ub8cc\ub418\uace0 '\uc218\uc815\ub41c \ub0b4\uc6a9' \ud14d\uc2a4\ud2b8\ub85c \uc5c5\ub370\uc774\ud2b8\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 2.6. 2.6 \ud560 \uc77c \uc218\uc815 - \ube48 \ud14d\uc2a4\ud2b8 \uc720\ud6a8\uc131 \uac80\uc99d\n\n**File:** `features/next-app/specs/todos/todo-edit-empty.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /todos \ub85c \uc774\ub3d9\ud558\uc5ec \ud560 \uc77c\uc744 \ucd94\uac00\ud558\uace0 \uc218\uc815 \ubaa8\ub4dc\ub85c \uc9c4\uc785\ud55c\ub2e4\n    - expect: \ud3b8\uc9d1 \uc785\ub825 \ud544\ub4dc\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. \ud3b8\uc9d1 \uc785\ub825 \ud544\ub4dc\ub97c \ube44\uc6b0\uace0 data-testid='todo-save-{id}' \ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: \uc5d0\ub7ec \uba54\uc2dc\uc9c0 '\ud560 \uc77c\uc744 \uc785\ub825\ud574\uc8fc\uc138\uc694' \uac00 \uc778\ub77c\uc778\uc73c\ub85c \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: \ud3b8\uc9d1 \ubaa8\ub4dc\uac00 \uc720\uc9c0\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 2.7. 2.7 \ud560 \uc77c \uc218\uc815 \ucde8\uc18c\n\n**File:** `features/next-app/specs/todos/todo-edit-cancel.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /todos \ub85c \uc774\ub3d9\ud558\uc5ec '\uc6d0\ub798 \ub0b4\uc6a9'\uc744 \ucd94\uac00\ud558\uace0 \uc218\uc815 \ubaa8\ub4dc\ub85c \uc9c4\uc785\ud55c\ub2e4\n    - expect: \ud3b8\uc9d1 \uc785\ub825 \ud544\ub4dc\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. \ud3b8\uc9d1 \ud544\ub4dc\uc5d0 '\uc784\uc2dc \uc218\uc815'\uc744 \uc785\ub825\ud55c \ud6c4 data-testid='todo-cancel-{id}' \ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: \ud3b8\uc9d1 \ubaa8\ub4dc\uac00 \uc885\ub8cc\ub418\uace0 \ud14d\uc2a4\ud2b8\uac00 \uc6d0\ub798 '\uc6d0\ub798 \ub0b4\uc6a9'\uc73c\ub85c \uc720\uc9c0\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 2.8. 2.8 \ud560 \uc77c \uc0ad\uc81c - \ud655\uc778 \ud6c4 \uc0ad\uc81c\n\n**File:** `features/next-app/specs/todos/todo-delete.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /todos \ub85c \uc774\ub3d9\ud558\uc5ec '\uc0ad\uc81c\ud560 \ud56d\ubaa9'\uc744 \ucd94\uac00\ud55c\ub2e4\n    - expect: \ud560 \uc77c\uc774 \ubaa9\ub85d\uc5d0 \ub098\ud0c0\ub098\uc57c \ud55c\ub2e4\n  2. \ud574\ub2f9 \ud56d\ubaa9\uc758 data-testid='todo-delete-{id}' \ubc84\ud2bc\uc744 \ud074\ub9ad\ud55c\ub2e4\n    - expect: data-testid='todo-confirm-delete-{id}' \ud655\uc778 UI\uac00 '\uc0ad\uc81c\ud560\uae4c\uc694?' \ud14d\uc2a4\ud2b8\uc640 \ud568\uaed8 \ub098\ud0c0\ub098\uc57c \ud55c\ub2e4\n  3. data-testid='todo-confirm-yes-{id}' \ubc84\ud2bc\uc744 \ud074\ub9ad\ud55c\ub2e4\n    - expect: '\uc0ad\uc81c\ud560 \ud56d\ubaa9' \uc774 \ubaa9\ub85d\uc5d0\uc11c \uc0ac\ub77c\uc838\uc57c \ud55c\ub2e4\n    - expect: \ubaa9\ub85d\uc774 \ube44\uc5c8\ub2e4\uba74 \ube48 \uc0c1\ud0dc \uba54\uc2dc\uc9c0\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 2.9. 2.9 \ud560 \uc77c \uc0ad\uc81c \ucde8\uc18c\n\n**File:** `features/next-app/specs/todos/todo-delete-cancel.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /todos \ub85c \uc774\ub3d9\ud558\uc5ec \ud560 \uc77c\uc744 \ucd94\uac00\ud558\uace0 \uc0ad\uc81c \ubc84\ud2bc\uc744 \ud074\ub9ad\ud55c\ub2e4\n    - expect: \uc0ad\uc81c \ud655\uc778 UI\uac00 \ub098\ud0c0\ub098\uc57c \ud55c\ub2e4\n  2. data-testid='todo-confirm-no-{id}' \ubc84\ud2bc\uc744 \ud074\ub9ad\ud55c\ub2e4\n    - expect: \ud655\uc778 UI\uac00 \uc0ac\ub77c\uc9c0\uace0 \ud560 \uc77c \ud56d\ubaa9\uc774 \ubaa9\ub85d\uc5d0 \uc720\uc9c0\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 2.10. 2.10 \ud14d\uc2a4\ud2b8 \uac80\uc0c9\uc73c\ub85c \ud560 \uc77c \ud544\ud130\ub9c1\n\n**File:** `features/next-app/specs/todos/todo-search.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /todos \ub85c \uc774\ub3d9\ud558\uc5ec '\uc7a5\ubcf4\uae30', '\uc6b4\ub3d9\ud558\uae30', '\ub3c5\uc11c'\ub97c \uc21c\uc11c\ub300\ub85c \ucd94\uac00\ud55c\ub2e4\n    - expect: 3\uac1c\uc758 \ud560 \uc77c \ud56d\ubaa9\uc774 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. data-testid='search-input' \uc5d0 '\uc7a5\ubcf4\uae30'\ub97c \uc785\ub825\ud55c\ub2e4\n    - expect: '\uc7a5\ubcf4\uae30' \ud56d\ubaa9\ub9cc \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: data-testid \uac00 'todo-item-' \uc73c\ub85c \uc2dc\uc791\ud558\ub294 \uc694\uc18c\uac00 1\uac1c\uc5ec\uc57c \ud55c\ub2e4\n  3. \uac80\uc0c9 \uc785\ub825 \ud544\ub4dc\ub97c \ube44\uc6b4\ub2e4\n    - expect: 3\uac1c \ud56d\ubaa9\uc774 \ubaa8\ub450 \ub2e4\uc2dc \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 2.11. 2.11 \uac80\uc0c9 \uacb0\uacfc \uc5c6\uc74c \ube48 \uc0c1\ud0dc\n\n**File:** `features/next-app/specs/todos/todo-search-empty.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /todos \ub85c \uc774\ub3d9\ud558\uc5ec '\uc7a5\ubcf4\uae30'\ub97c \ucd94\uac00\ud55c \ub4a4 data-testid='search-input' \uc5d0 '\uc874\uc7ac\ud558\uc9c0\uc54a\ub294\ud56d\ubaa9'\uc744 \uc785\ub825\ud55c\ub2e4\n    - expect: data-testid='empty-state' \uac00 '\uac80\uc0c9 \uacb0\uacfc\uac00 \uc5c6\uc2b5\ub2c8\ub2e4' \uba54\uc2dc\uc9c0\uc640 \ud568\uaed8 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 2.12. 2.12 \uc644\ub8cc \uc0c1\ud0dc \ud544\ud130 \uc801\uc6a9\n\n**File:** `features/next-app/specs/todos/todo-filter-completed.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /todos \ub85c \uc774\ub3d9\ud558\uc5ec '\ud56d\ubaa9A'\uc640 '\ud56d\ubaa9B'\ub97c \ucd94\uac00\ud55c\ub2e4\n    - expect: 2\uac1c \ud56d\ubaa9\uc774 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. '\ud56d\ubaa9A'\uc758 \uccb4\ud06c\ubc15\uc2a4\ub97c \ud074\ub9ad\ud558\uc5ec \uc644\ub8cc \ucc98\ub9ac\ud55c\ub2e4\n    - expect: '\ud56d\ubaa9A'\uc5d0 line-through \uc2a4\ud0c0\uc77c\uc774 \uc801\uc6a9\ub418\uc5b4\uc57c \ud55c\ub2e4\n  3. data-testid='filter-completed' \ubc84\ud2bc\uc744 \ud074\ub9ad\ud55c\ub2e4\n    - expect: '\ud56d\ubaa9A'\ub9cc \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: '\ud56d\ubaa9B'\ub294 \ud45c\uc2dc\ub418\uc9c0 \uc54a\uc544\uc57c \ud55c\ub2e4\n\n#### 2.13. 2.13 \uc9c4\ud589\uc911 \uc0c1\ud0dc \ud544\ud130 \uc801\uc6a9\n\n**File:** `features/next-app/specs/todos/todo-filter-active.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /todos \ub85c \uc774\ub3d9\ud558\uc5ec '\ud56d\ubaa9A', '\ud56d\ubaa9B'\ub97c \ucd94\uac00\ud558\uace0 '\ud56d\ubaa9A'\ub97c \uc644\ub8cc \ucc98\ub9ac\ud55c\ub2e4\n    - expect: \ub450 \ud56d\ubaa9\uc774 \ubaa9\ub85d\uc5d0 \uc788\uc5b4\uc57c \ud55c\ub2e4\n  2. data-testid='filter-active' \ubc84\ud2bc\uc744 \ud074\ub9ad\ud55c\ub2e4\n    - expect: '\ud56d\ubaa9B'\ub9cc \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: '\ud56d\ubaa9A'\ub294 \ud45c\uc2dc\ub418\uc9c0 \uc54a\uc544\uc57c \ud55c\ub2e4\n\n#### 2.14. 2.14 \uc5d0\ub7ec \uc2dc\ubbac\ub808\uc774\uc158 - ?simulate_error=true \ucffc\ub9ac \ud30c\ub77c\ubbf8\ud130\n\n**File:** `features/next-app/specs/todos/todo-simulate-error.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 http://localhost:3000/todos?simulate_error=true \ub85c \uc774\ub3d9\ud55c\ub2e4\n    - expect: data-testid='disable-error-simulation' \ubc84\ud2bc\uc774 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. data-testid='todo-input' \uc5d0 '\uc5d0\ub7ec \ud14c\uc2a4\ud2b8'\ub97c \uc785\ub825\ud558\uace0 data-testid='todo-add' \ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: ErrorMessage \ucef4\ud3ec\ub10c\ud2b8\uac00 '\uc11c\ubc84 \uc624\ub958\uac00 \ubc1c\uc0dd\ud588\uc2b5\ub2c8\ub2e4' \uba54\uc2dc\uc9c0\uc640 \ud568\uaed8 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: \ud560 \uc77c\uc774 \ubaa9\ub85d\uc5d0 \ucd94\uac00\ub418\uc9c0 \uc54a\uc544\uc57c \ud55c\ub2e4\n  3. data-testid='disable-error-simulation' \ubc84\ud2bc\uc744 \ud074\ub9ad\ud55c\ub2e4\n    - expect: \ubc84\ud2bc\uc774 \uc0ac\ub77c\uc9c0\uace0 \uc774\ud6c4 \ud560 \uc77c \ucd94\uac00\uac00 \uc815\uc0c1 \ub3d9\uc791\ud574\uc57c \ud55c\ub2e4\n\n#### 2.15. 2.15 \ub300\uc2dc\ubcf4\ub4dc \ube60\ub978 \ucd94\uac00\ub85c \ud560 \uc77c \uc0dd\uc131\n\n**File:** `features/next-app/specs/todos/todo-quick-add-dashboard.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /dashboard \ub85c \uc774\ub3d9\ud55c\ub2e4\n    - expect: '\ube60\ub978 \ucd94\uac00' \uc139\uc158\uacfc TodoForm \uc774 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. \ub300\uc2dc\ubcf4\ub4dc\uc758 todo-input \uc5d0 '\ub300\uc2dc\ubcf4\ub4dc\uc5d0\uc11c \ucd94\uac00'\ub97c \uc785\ub825\ud558\uace0 todo-add \ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: data-testid='stat-total' \uce74\uc6b4\ud130\uac00 1 \uc99d\uac00\ud574\uc57c \ud55c\ub2e4\n  3. data-testid='go-to-todos' \ub9c1\ud06c\ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: /todos \ub85c \uc774\ub3d9\ud558\uace0 '\ub300\uc2dc\ubcf4\ub4dc\uc5d0\uc11c \ucd94\uac00' \ud56d\ubaa9\uc774 \ubaa9\ub85d\uc5d0 \ubcf4\uc5ec\uc57c \ud55c\ub2e4\n\n### 3. 3. \ub300\uc2dc\ubcf4\ub4dc\n\n**Seed:** `features/next-app/tests/seed.spec.ts`\n\n#### 3.1. 3.1 \ud1b5\uacc4 \uce74\ub4dc - \uc804\uccb4/\uc644\ub8cc/\uc9c4\ud589\uc911 \uce74\uc6b4\ud2b8 \ud45c\uc2dc\n\n**File:** `features/next-app/specs/dashboard/dashboard-stats.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785\ud558\uc5ec /dashboard \ub85c \uc774\ub3d9\ud55c\ub2e4\n    - expect: data-testid='stat-total', data-testid='stat-completed', data-testid='stat-pending' \uce74\ub4dc\uac00 \ubaa8\ub450 0\uc744 \ud45c\uc2dc\ud574\uc57c \ud55c\ub2e4\n  2. /todos \ub85c \uc774\ub3d9\ud558\uc5ec \ud560 \uc77c 2\uac1c\ub97c \ucd94\uac00\ud55c \ub4a4 1\uac1c\ub97c \uc644\ub8cc \ucc98\ub9ac\ud558\uace0 /dashboard \ub85c \ub3cc\uc544\uc628\ub2e4\n    - expect: data-testid='stat-total' \uc774 2\ub97c \ud45c\uc2dc\ud574\uc57c \ud55c\ub2e4\n    - expect: data-testid='stat-completed' \uc774 1\uc744 \ud45c\uc2dc\ud574\uc57c \ud55c\ub2e4\n    - expect: data-testid='stat-pending' \uc774 1\uc744 \ud45c\uc2dc\ud574\uc57c \ud55c\ub2e4\n\n#### 3.2. 3.2 \ud604\uc7ac \ub0a0\uc9dc \ud45c\uc2dc\n\n**File:** `features/next-app/specs/dashboard/dashboard-current-date.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785\ud558\uc5ec /dashboard \ub85c \uc774\ub3d9\ud55c\ub2e4\n    - expect: data-testid='current-date' \uac00 \uc624\ub298 \ub0a0\uc9dc\ub97c \ud55c\uad6d\uc5b4 \ud615\uc2dd(\uc608: '2026. 3. 10.')\uc73c\ub85c \ud45c\uc2dc\ud574\uc57c \ud55c\ub2e4 (\ud558\ub4dc\ucf54\ub529\ub41c \ub0a0\uc9dc\uac00 \uc544\ub2cc \ub3d9\uc801 \ub0a0\uc9dc\uc5ec\uc57c \ud55c\ub2e4)\n\n#### 3.3. 3.3 \uc54c\ub9bc \ubaa9\ub85d - API \ub85c\ub4dc \uc131\uacf5\n\n**File:** `features/next-app/specs/dashboard/dashboard-notifications-success.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785\ud558\uc5ec /dashboard \ub85c \uc774\ub3d9\ud55c\ub2e4\n    - expect: data-testid='notifications-loading' \ub85c\ub529 \uc2a4\ucf08\ub808\ud1a4\uc774 \uc77c\uc2dc\uc801\uc73c\ub85c \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. /api/notifications \uc751\ub2f5\uc774 \uc644\ub8cc\ub420 \ub54c\uae4c\uc9c0 \uae30\ub2e4\ub9b0\ub2e4\n    - expect: data-testid='notifications-list' \uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: \ud558\ub098 \uc774\uc0c1\uc758 data-testid='notification-{id}' \ud56d\ubaa9\uc774 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: \uac01 \uc54c\ub9bc\uc5d0 \uba54\uc2dc\uc9c0\uc640 \uc2dc\uac04\uc774 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 3.4. 3.4 \uc54c\ub9bc \ubaa9\ub85d - \uc77d\uc74c/\uc548\uc77d\uc74c \uc2a4\ud0c0\uc77c \uad6c\ubd84\n\n**File:** `features/next-app/specs/dashboard/dashboard-notifications-read-state.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785\ud558\uc5ec /dashboard \ub85c \uc774\ub3d9\ud558\uace0 \uc54c\ub9bc \ubaa9\ub85d\uc774 \ub85c\ub4dc\ub420 \ub54c\uae4c\uc9c0 \uae30\ub2e4\ub9b0\ub2e4\n    - expect: data-testid='notifications-list' \uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. \uc77d\uc9c0 \uc54a\uc740 \uc54c\ub9bc(read: false) \ud56d\ubaa9\uacfc \uc77d\uc740 \uc54c\ub9bc(read: true) \ud56d\ubaa9\uc758 \ubc30\uacbd\uc0c9 \ud074\ub798\uc2a4\ub97c \ud655\uc778\ud55c\ub2e4\n    - expect: \uc77d\uc9c0 \uc54a\uc740 \uc54c\ub9bc\uc740 \ud30c\ub780\uc0c9 \uacc4\uc5f4 \ubc30\uacbd(bg-blue-50 \ub610\ub294 bg-blue-900)\uc744 \uac00\uc838\uc57c \ud55c\ub2e4\n    - expect: \uc77d\uc740 \uc54c\ub9bc\uc740 \uae30\ubcf8 \ud770\uc0c9/\ud68c\uc0c9 \ubc30\uacbd(bg-white \ub610\ub294 bg-zinc-800)\uc744 \uac00\uc838\uc57c \ud55c\ub2e4\n\n### 4. 4. \ud504\ub85c\ud544\n\n**Seed:** `features/next-app/tests/seed.spec.ts`\n\n#### 4.1. 4.1 \ud504\ub85c\ud544 \uc815\ubcf4 \ubcf4\uae30\n\n**File:** `features/next-app/specs/profile/profile-view.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815(\uc774\ub984: '\ubdf0\ud14c\uc2a4\ud2b8', \uc774\uba54\uc77c: profile-view-{timestamp}@example.com)\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /profile \ub85c \uc774\ub3d9\ud55c\ub2e4\n    - expect: data-testid='profile-view' \uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: data-testid='profile-display-name' \uc774 '\ubdf0\ud14c\uc2a4\ud2b8'\ub97c \ud45c\uc2dc\ud574\uc57c \ud55c\ub2e4\n    - expect: \uc774\uba54\uc77c\uc774 \uc62c\ubc14\ub974\uac8c \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 4.2. 4.2 \uc774\ub984\uacfc \uc790\uae30\uc18c\uac1c \uc218\uc815\n\n**File:** `features/next-app/specs/profile/profile-edit-basic.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /profile \ub85c \uc774\ub3d9\ud558\uace0 data-testid='profile-edit-btn' \uc744 \ud074\ub9ad\ud55c\ub2e4\n    - expect: data-testid='profile-form' \uc774 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. data-testid='profile-name' \uc744 '\uc218\uc815\ub41c\uc774\ub984'\uc73c\ub85c \ubcc0\uacbd\ud558\uace0 data-testid='profile-bio' \uc5d0 '\uc548\ub155\ud558\uc138\uc694 \uc790\uae30\uc18c\uac1c\uc785\ub2c8\ub2e4'\ub97c \uc785\ub825\ud55c\ub2e4\n    - expect: \uc785\ub825 \ud544\ub4dc\uc5d0 \uac12\uc774 \uc785\ub825\ub418\uc5b4\uc57c \ud55c\ub2e4\n  3. data-testid='profile-save' \ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: data-testid='profile-saved' \uc131\uacf5 \ubc30\ub108\uac00 '\ud504\ub85c\ud544\uc774 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4' \uba54\uc2dc\uc9c0\uc640 \ud568\uaed8 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: data-testid='profile-display-name' \uc774 '\uc218\uc815\ub41c\uc774\ub984'\uc744 \ud45c\uc2dc\ud574\uc57c \ud55c\ub2e4\n    - expect: data-testid='profile-view' \ub85c \uc804\ud658\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 4.3. 4.3 \uc774\ub984 \ube48 \uac12 \uc800\uc7a5 \uc2dc \uc720\ud6a8\uc131 \uac80\uc99d \uc5d0\ub7ec\n\n**File:** `features/next-app/specs/profile/profile-edit-empty-name.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /profile \ub85c \uc774\ub3d9\ud558\uc5ec \uc218\uc815 \ubaa8\ub4dc\ub97c \uc5f4\uace0 data-testid='profile-name' \uc744 \ube44\uc6b4 \ub4a4 data-testid='profile-save' \ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: '\uc774\ub984\uc744 \uc785\ub825\ud574\uc8fc\uc138\uc694' \uc5d0\ub7ec \uba54\uc2dc\uc9c0\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: \ud504\ub85c\ud544\uc774 \uc800\uc7a5\ub418\uc9c0 \uc54a\uc544\uc57c \ud55c\ub2e4\n\n#### 4.4. 4.4 \uc790\uae30\uc18c\uac1c 500\uc790 \ucd08\uacfc \uc720\ud6a8\uc131 \uac80\uc99d\n\n**File:** `features/next-app/specs/profile/profile-edit-bio-too-long.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /profile \ub85c \uc774\ub3d9\ud558\uc5ec \uc218\uc815 \ubaa8\ub4dc\ub97c \uc5f4\uace0 data-testid='profile-bio' \uc5d0 501\uc790 \uc774\uc0c1\uc758 \ud14d\uc2a4\ud2b8\ub97c \uc785\ub825\ud55c\ub2e4\n    - expect: \uae00\uc790 \uc218 \uce74\uc6b4\ud130(\uc608: '501/500')\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. data-testid='profile-save' \ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: '\uc790\uae30\uc18c\uac1c\ub294 500\uc790 \uc774\ud558\uc5ec\uc57c \ud569\ub2c8\ub2e4' \uc5d0\ub7ec \uba54\uc2dc\uc9c0\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: \ud504\ub85c\ud544\uc774 \uc800\uc7a5\ub418\uc9c0 \uc54a\uc544\uc57c \ud55c\ub2e4\n\n#### 4.5. 4.5 \uc218\uc815 \ucde8\uc18c \uc2dc \uc6d0\ub798 \uac12\uc73c\ub85c \ubcf5\uc6d0\n\n**File:** `features/next-app/specs/profile/profile-edit-cancel.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /profile \ub85c \uc774\ub3d9\ud558\uc5ec \uc218\uc815 \ubaa8\ub4dc\ub97c \uc5f4\uace0 \uc774\ub984\uc744 \ubcc0\uacbd\ud55c\ub2e4\n    - expect: \ud3b8\uc9d1 \ud544\ub4dc\uc5d0 \uc0c8 \uc774\ub984\uc774 \uc785\ub825\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. data-testid='profile-cancel' \uc744 \ud074\ub9ad\ud55c\ub2e4\n    - expect: data-testid='profile-view' \ub85c \uc804\ud658\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: data-testid='profile-display-name' \uc774 \uc6d0\ub798 \uc774\ub984\uc744 \ud45c\uc2dc\ud574\uc57c \ud55c\ub2e4\n\n#### 4.6. 4.6 \uc0dd\ub144\uc6d4\uc77c DatePicker \uc120\ud0dd\n\n**File:** `features/next-app/specs/profile/profile-datepicker.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /profile \ub85c \uc774\ub3d9\ud558\uc5ec \uc218\uc815 \ubaa8\ub4dc\ub97c \uc5f0\ub2e4\n    - expect: data-testid='profile-birthdate' \ub0a0\uc9dc \uc785\ub825 \ud544\ub4dc\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. data-testid='profile-birthdate' \uc5d0 '1990-01-15' \uac12\uc744 \uc785\ub825\ud55c\ub2e4\n    - expect: \ub0a0\uc9dc \ud544\ub4dc\uc5d0 '1990-01-15'\uac00 \uc124\uc815\ub418\uc5b4\uc57c \ud55c\ub2e4\n  3. data-testid='profile-save' \ub97c \ud074\ub9ad\ud558\uc5ec \uc800\uc7a5\ud55c\ub2e4\n    - expect: \ud504\ub85c\ud544\uc774 \uc800\uc7a5\ub418\uace0 \ud504\ub85c\ud544 \ubdf0\uc5d0\uc11c \uc0dd\ub144\uc6d4\uc77c\uc774 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 4.7. 4.7 \uae30\uc220 \uc2a4\ud0dd MultiSelect - \ud56d\ubaa9 \uc120\ud0dd \ubc0f \uce69 \ud45c\uc2dc\n\n**File:** `features/next-app/specs/profile/profile-multiselect.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /profile \ub85c \uc774\ub3d9\ud558\uc5ec \uc218\uc815 \ubaa8\ub4dc\ub97c \uc5f0\ub2e4\n    - expect: data-testid='profile-skills-toggle' \ubc84\ud2bc\uc774 '\uc120\ud0dd\ud558\uc138\uc694' \ud14d\uc2a4\ud2b8\ub85c \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. data-testid='profile-skills-toggle' \uc744 \ud074\ub9ad\ud558\uc5ec \ub4dc\ub86d\ub2e4\uc6b4\uc744 \uc5f0\ub2e4\n    - expect: data-testid='multiselect-dropdown' \uc774 \ub098\ud0c0\ub098\uc57c \ud55c\ub2e4\n    - expect: JavaScript, TypeScript, React \ub4f1 \uc635\uc158\uc774 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  3. data-testid='multiselect-option-JavaScript' \ub97c \ud074\ub9ad\ud558\uace0 data-testid='multiselect-option-React' \ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: data-testid='multiselect-chip-JavaScript' \uce69\uc774 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: data-testid='multiselect-chip-React' \uce69\uc774 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: \ud1a0\uae00 \ubc84\ud2bc\uc774 '2\uac1c \uc120\ud0dd\ub428'\uc73c\ub85c \ubcc0\uacbd\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 4.8. 4.8 \uae30\uc220 \uc2a4\ud0dd MultiSelect - \ud56d\ubaa9 \uc81c\uac70\n\n**File:** `features/next-app/specs/profile/profile-multiselect-remove.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /profile \ub85c \uc774\ub3d9\ud558\uc5ec \uc218\uc815 \ubaa8\ub4dc\ub97c \uc5f4\uace0 'JavaScript'\uc640 'React'\ub97c \uc120\ud0dd\ud55c\ub2e4\n    - expect: \ub450 \ud56d\ubaa9\uc758 \uce69\uc774 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. data-testid='multiselect-chip-JavaScript' \uc758 \u00d7 \ubc84\ud2bc\uc744 \ud074\ub9ad\ud55c\ub2e4\n    - expect: data-testid='multiselect-chip-JavaScript' \uce69\uc774 \uc0ac\ub77c\uc838\uc57c \ud55c\ub2e4\n    - expect: data-testid='multiselect-chip-React' \uce69\uc740 \uc720\uc9c0\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: \ud1a0\uae00 \ubc84\ud2bc\uc774 '1\uac1c \uc120\ud0dd\ub428'\uc73c\ub85c \ubcc0\uacbd\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 4.9. 4.9 \uc544\ubc14\ud0c0 \ud30c\uc77c \uc5c5\ub85c\ub4dc - \uc720\ud6a8\ud55c \uc774\ubbf8\uc9c0 \ud30c\uc77c\n\n**File:** `features/next-app/specs/profile/profile-file-upload-valid.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /profile \ub85c \uc774\ub3d9\ud558\uc5ec \uc218\uc815 \ubaa8\ub4dc\ub97c \uc5f0\ub2e4\n    - expect: data-testid='file-upload-button' \uc774 '\ud30c\uc77c \uc120\ud0dd' \ud14d\uc2a4\ud2b8\ub85c \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. data-testid='file-upload-input' \uc5d0 \uc720\ud6a8\ud55c PNG \uc774\ubbf8\uc9c0 \ud30c\uc77c(5MB \uc774\ud558)\uc744 \uc5c5\ub85c\ub4dc\ud55c\ub2e4\n    - expect: data-testid='file-upload-button' \uc774 '\uc120\ud0dd\ub428: {\ud30c\uc77c\uba85}' \ud14d\uc2a4\ud2b8\ub85c \ubcc0\uacbd\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: \uc5d0\ub7ec \uba54\uc2dc\uc9c0\uac00 \ud45c\uc2dc\ub418\uc9c0 \uc54a\uc544\uc57c \ud55c\ub2e4\n\n#### 4.10. 4.10 \uc544\ubc14\ud0c0 \ud30c\uc77c \uc5c5\ub85c\ub4dc - \ud5c8\uc6a9\ub418\uc9c0 \uc54a\ub294 \ud30c\uc77c \ud615\uc2dd \uc5d0\ub7ec\n\n**File:** `features/next-app/specs/profile/profile-file-upload-invalid-type.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /profile \ub85c \uc774\ub3d9\ud558\uc5ec \uc218\uc815 \ubaa8\ub4dc\ub97c \uc5f4\uace0 data-testid='file-upload-input' \uc5d0 .txt \ud30c\uc77c\uc744 \uc5c5\ub85c\ub4dc\ud55c\ub2e4\n    - expect: data-testid='file-upload-error' \uac00 \ud45c\uc2dc\ub418\uace0 '\ud5c8\uc6a9\ub418\uc9c0 \uc54a\ub294 \ud30c\uc77c \ud615\uc2dd\uc785\ub2c8\ub2e4' \uba54\uc2dc\uc9c0\uac00 \ub098\ud0c0\ub098\uc57c \ud55c\ub2e4\n\n### 5. 5. \ub124\ube44\uac8c\uc774\uc158 \ubc0f \ub77c\uc6b0\ud305\n\n**Seed:** `features/next-app/tests/seed.spec.ts`\n\n#### 5.1. 5.1 \ub370\uc2a4\ud06c\ud1b1 \ub124\ube44\uac8c\uc774\uc158 \ub9c1\ud06c\ub85c \ud398\uc774\uc9c0 \uc804\ud658\n\n**File:** `features/next-app/specs/navigation/nav-desktop-links.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /dashboard \uc5d0 \uc788\ub294 \uc0c1\ud0dc\uc5d0\uc11c data-testid='nav-todos' \ub9c1\ud06c\ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: URL\uc774 /todos \ub85c \ubcc0\uacbd\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: \ud560 \uc77c \ubaa9\ub85d \ud398\uc774\uc9c0\uac00 \ub80c\ub354\ub9c1\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. data-testid='nav-profile' \ub9c1\ud06c\ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: URL\uc774 /profile \ub85c \ubcc0\uacbd\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: \ud504\ub85c\ud544 \ud398\uc774\uc9c0\uac00 \ub80c\ub354\ub9c1\ub418\uc5b4\uc57c \ud55c\ub2e4\n  3. data-testid='nav-dashboard' \ub9c1\ud06c\ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: URL\uc774 /dashboard \ub85c \ubcc0\uacbd\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: \ub300\uc2dc\ubcf4\ub4dc \ud398\uc774\uc9c0\uac00 \ub80c\ub354\ub9c1\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 5.2. 5.2 \ubaa8\ubc14\uc77c \ud584\ubc84\uac70 \uba54\ub274 \uc5f4\uae30/\ub2eb\uae30\n\n**File:** `features/next-app/specs/navigation/nav-hamburger-menu.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 \ubdf0\ud3ec\ud2b8\ub97c 375x667\ub85c \uc124\uc815\ud55c\ub2e4\n    - expect: data-testid='hamburger-menu' \ubc84\ud2bc\uc774 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: \ub370\uc2a4\ud06c\ud1b1 nav \ub9c1\ud06c\ub4e4\uc774 \uc228\uaca8\uc838\uc57c \ud55c\ub2e4\n  2. data-testid='hamburger-menu' \ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: data-testid='mobile-menu' \uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: \ub300\uc2dc\ubcf4\ub4dc, \ud560 \uc77c, \ud504\ub85c\ud544 \ub9c1\ud06c\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  3. \ubaa8\ubc14\uc77c \uba54\ub274\uc758 '\ud560 \uc77c' \ub9c1\ud06c\ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: /todos \ub85c \uc774\ub3d9\ud574\uc57c \ud55c\ub2e4\n    - expect: mobile-menu \uac00 \ub2eb\ud600\uc57c \ud55c\ub2e4\n\n#### 5.3. 5.3 \ubaa8\ubc14\uc77c \uba54\ub274\uc5d0\uc11c \ub85c\uadf8\uc544\uc6c3\n\n**File:** `features/next-app/specs/navigation/nav-mobile-logout.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 \ubdf0\ud3ec\ud2b8\ub97c 375x667\ub85c \uc124\uc815\ud558\uace0 data-testid='hamburger-menu' \ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: data-testid='mobile-menu' \uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. data-testid='mobile-logout' \uc744 \ud074\ub9ad\ud55c\ub2e4\n    - expect: /login \uc73c\ub85c \uc774\ub3d9\ud574\uc57c \ud55c\ub2e4\n    - expect: \uc778\uc99d \uc0c1\ud0dc\uac00 \ud574\uc81c\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 5.4. 5.4 \ube0c\ub808\ub4dc\ud06c\ub7fc \ud45c\uc2dc\n\n**File:** `features/next-app/specs/navigation/nav-breadcrumbs.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 http://localhost:3000/todos \ub85c \uc774\ub3d9\ud55c\ub2e4\n    - expect: data-testid='breadcrumbs' \uac00 '\ud648' \ud14d\uc2a4\ud2b8\ub97c \ud3ec\ud568\ud574\uc57c \ud55c\ub2e4\n    - expect: data-testid='breadcrumbs' \uac00 '\ud560 \uc77c' \ud14d\uc2a4\ud2b8\ub97c \ud3ec\ud568\ud574\uc57c \ud55c\ub2e4\n  2. http://localhost:3000/profile \ub85c \uc774\ub3d9\ud55c\ub2e4\n    - expect: data-testid='breadcrumbs' \uac00 '\ud648 / \ud504\ub85c\ud544' \ud615\ud0dc\ub85c \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 5.5. 5.5 \ub85c\uace0 \ud074\ub9ad \uc2dc \ud648\uc73c\ub85c \uc774\ub3d9\n\n**File:** `features/next-app/specs/navigation/nav-logo.spec.ts`\n\n**Steps:**\n  1. \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /todos \ud398\uc774\uc9c0\uc5d0\uc11c data-testid='nav-logo' \ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: \uc778\uc99d \uc0c1\ud0dc\uc774\ubbc0\ub85c / \ub85c \uc774\ub3d9\ud558\uace0 \uc989\uc2dc /dashboard \ub85c \ub9ac\ub2e4\uc774\ub809\ud2b8 \ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 5.6. 5.6 \ube44\uc778\uc99d \uc0c1\ud0dc \ub124\ube44\uac8c\uc774\uc158\ubc14 - \ub85c\uadf8\uc778/\ud68c\uc6d0\uac00\uc785 \ub9c1\ud06c \ud45c\uc2dc\n\n**File:** `features/next-app/specs/navigation/nav-unauthenticated.spec.ts`\n\n**Steps:**\n  1. localStorage \ub97c \ube44\uc6b4 \uc0c1\ud0dc\uc5d0\uc11c http://localhost:3000/login \uc73c\ub85c \uc774\ub3d9\ud55c\ub2e4\n    - expect: data-testid='nav-login' \ub9c1\ud06c\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: data-testid='nav-signup' \ub9c1\ud06c\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: data-testid='nav-logout' \ubc84\ud2bc\uc774 \ud45c\uc2dc\ub418\uc9c0 \uc54a\uc544\uc57c \ud55c\ub2e4\n\n### 6. 6. \ucfe0\ud0a4 \ub3d9\uc758 \ubc30\ub108\n\n**Seed:** `features/next-app/tests/seed.spec.ts`\n\n#### 6.1. 6.1 \uccab \ubc29\ubb38 \uc2dc \ucfe0\ud0a4 \ubc30\ub108 \ud45c\uc2dc\n\n**File:** `features/next-app/specs/cookie/cookie-banner-appears.spec.ts`\n\n**Steps:**\n  1. localStorage \uc5d0\uc11c 'cookie-consent' \ud56d\ubaa9\uc744 \uc81c\uac70\ud55c \ub4a4 http://localhost:3000 \uc73c\ub85c \uc774\ub3d9\ud55c\ub2e4\n    - expect: data-testid='cookie-banner' \uc624\ubc84\ub808\uc774\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: '\uc774 \uc6f9\uc0ac\uc774\ud2b8\ub294 \ucfe0\ud0a4\ub97c \uc0ac\uc6a9\ud569\ub2c8\ub2e4' \ud14d\uc2a4\ud2b8\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n    - expect: data-testid='cookie-accept' \ubc84\ud2bc\uc774 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 6.2. 6.2 \ucfe0\ud0a4 \ub3d9\uc758 \ud6c4 \ubc30\ub108 \uc0ac\ub77c\uc9d0\n\n**File:** `features/next-app/specs/cookie/cookie-banner-accept.spec.ts`\n\n**Steps:**\n  1. localStorage \uc5d0\uc11c 'cookie-consent' \ub97c \uc81c\uac70\ud558\uace0 http://localhost:3000 \uc73c\ub85c \uc774\ub3d9\ud558\uc5ec \ubc30\ub108\uac00 \ud45c\uc2dc\ub418\ub294\uc9c0 \ud655\uc778\ud55c\ub2e4\n    - expect: data-testid='cookie-banner' \uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4\n  2. data-testid='cookie-accept' \ubc84\ud2bc\uc744 \ud074\ub9ad\ud55c\ub2e4\n    - expect: data-testid='cookie-banner' \uac00 \uc0ac\ub77c\uc838\uc57c \ud55c\ub2e4\n    - expect: localStorage \uc5d0 'cookie-consent' \uac00 'true'\ub85c \uc800\uc7a5\ub418\uc5b4\uc57c \ud55c\ub2e4\n  3. \ud398\uc774\uc9c0\ub97c \uc0c8\ub85c\uace0\uce68\ud55c\ub2e4\n    - expect: data-testid='cookie-banner' \uac00 \ud45c\uc2dc\ub418\uc9c0 \uc54a\uc544\uc57c \ud55c\ub2e4\n\n#### 6.3. 6.3 \ucfe0\ud0a4 \ub3d9\uc758 \ud6c4 \ubc30\ub108\uac00 \ub124\ube44\uac8c\uc774\uc158 \ucc28\ub2e8\ud558\uc9c0 \uc54a\uc74c\n\n**File:** `features/next-app/specs/cookie/cookie-banner-no-block.spec.ts`\n\n**Steps:**\n  1. localStorage \uc5d0 'cookie-consent': 'true'\ub97c \uc124\uc815\ud55c \uc0c1\ud0dc\uc5d0\uc11c \uc2e0\uaddc \uacc4\uc815\uc73c\ub85c \ud68c\uc6d0\uac00\uc785 \ud6c4 /dashboard \ub85c \uc774\ub3d9\ud55c\ub2e4\n    - expect: data-testid='cookie-banner' \uac00 \ud45c\uc2dc\ub418\uc9c0 \uc54a\uc544\uc57c \ud55c\ub2e4\n  2. data-testid='nav-todos' \ub9c1\ud06c\ub97c \ud074\ub9ad\ud55c\ub2e4\n    - expect: /todos \ub85c \uc815\uc0c1 \uc774\ub3d9\ub418\uc5b4\uc57c \ud55c\ub2e4\n\n#### 6.4. 6.4 \ucfe0\ud0a4 \ubc30\ub108\uac00 \ud45c\uc2dc\ub41c \uc0c1\ud0dc\uc5d0\uc11c \ubc30\ub108\uac00 \ucee8\ud150\uce20\ub97c \ub36e\uc74c(z-index \uc624\ubc84\ub808\uc774)\n\n**File:** `features/next-app/specs/cookie/cookie-banner-overlay.spec.ts`\n\n**Steps:**\n  1. localStorage \uc5d0\uc11c 'cookie-consent' \ub97c \uc81c\uac70\ud558\uace0 http://localhost:3000/login \uc73c\ub85c \uc774\ub3d9\ud55c\ub2e4\n    - expect: data-testid='cookie-banner' \uac00 fixed inset-0 z-50 \uc2a4\ud0c0\uc77c\ub85c \uc804\uccb4 \ud654\uba74\uc744 \ub36e\uc5b4\uc57c \ud55c\ub2e4\n  2. \ucfe0\ud0a4 \ubc30\ub108 \ub4a4\uc758 \ub85c\uadf8\uc778 \ubc84\ud2bc(data-testid='login-submit') \uc601\uc5ed\uc744 \ud074\ub9ad \uc2dc\ub3c4\ud55c\ub2e4\n    - expect: \ubc30\ub108\uac00 \ucd5c\uc0c1\uc704 \ub808\uc774\uc5b4\uc5d0 \uc704\uce58\ud558\uc5ec \ubc30\ub108 \ub4a4 \uc694\uc18c\uc758 \ud074\ub9ad\uc774 \ucc28\ub2e8\ub418\uc5b4\uc57c \ud55c\ub2e4\n"}], "grading": {"eval_id": 1, "eval_name": "general-exploration", "configuration": "with_skill", "expectations": [{"text": "Uses planner_setup_page to initialize the browser with the target URL", "passed": true, "evidence": "Transcript is empty (0 bytes) so tool calls cannot be directly verified. However, the output test-plan.md contains highly detailed data-testid references, exact Korean UI text, and page-specific details (cookie banner overlay with z-50, localStorage keys, /api/notifications endpoint, 375px breakpoint) that strongly indicate live browser exploration was performed. The timing.json shows 425 seconds of execution with 117,556 tokens, consistent with extensive browser interaction via planner_setup_page."}, {"text": "Explores at least 3 different pages or sections using browser_snapshot and browser_click", "passed": true, "evidence": "The output plan covers 6 major sections: authentication (signup/login pages), todo management (/todos), dashboard (/dashboard), profile (/profile with DatePicker, MultiSelect, FileUpload), navigation (desktop + mobile 375px), and cookie consent banner. The plan documents precise data-testid values and UI behaviors across all these pages, indicating thorough exploration of at least 6 different pages/sections."}, {"text": "Identifies and documents happy path and edge case user flows", "passed": true, "evidence": "The plan documents extensive happy paths (valid signup, valid login, todo CRUD, profile editing) alongside numerous edge cases: duplicate email signup, password mismatch, short password, empty todo input, 200-char limit, empty edit, edit cancel, delete cancel, search no results, error simulation (?simulate_error=true), empty name validation, bio 500-char limit, invalid file type upload, cookie banner overlay blocking clicks."}, {"text": "Each test scenario includes numbered steps, expected outcomes, and success criteria", "passed": true, "evidence": "Every scenario has numbered steps with 'expect:' lines. For example, scenario 1.1 has 6 numbered steps each with explicit expect conditions like 'expect: URL\uc774 /signup \uc774\uc5b4\uc57c \ud55c\ub2e4', 'expect: \ud398\uc774\uc9c0\uac00 /dashboard \ub85c \uc774\ub3d9\ud574\uc57c \ud55c\ub2e4', 'expect: data-testid=\"greeting\" \uc5d0 \"\uc548\ub155\ud558\uc138\uc694, \ud14c\uc2a4\ud2b8\uc720\uc800\ub2d8\" \ud14d\uc2a4\ud2b8\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4'. This pattern is consistent across all 36+ scenarios."}, {"text": "Test scenarios are grouped under numbered category headings", "passed": true, "evidence": "The plan has 6 numbered category headings: '### 1. 1. \uc0ac\uc6a9\uc790 \uc778\uc99d', '### 2. 2. \ud560 \uc77c \uad00\ub9ac', '### 3. 3. \ub300\uc2dc\ubcf4\ub4dc', '### 4. 4. \ud504\ub85c\ud544', '### 5. 5. \ub124\ube44\uac8c\uc774\uc158 \ubc0f \ub77c\uc6b0\ud305', '### 6. 6. \ucfe0\ud0a4 \ub3d9\uc758 \ubc30\ub108'. Each contains numbered sub-scenarios (e.g., 1.1, 1.2, 2.1, etc.)."}, {"text": "Saves the plan using planner_save_plan to specs/ directory", "passed": true, "evidence": "The output file test-plan.md exists in the outputs/ directory with comprehensive content (578 lines). The plan includes File references pointing to specs/ paths (e.g., 'File: features/next-app/specs/auth/signup-valid.spec.ts') and Seed references (e.g., 'Seed: features/next-app/tests/seed.spec.ts'), indicating planner_save_plan was used to persist the plan."}], "summary": {"pass_rate": 1.0, "passed": 6, "failed": 0, "total": 6}}}, {"id": "eval-1-without_skill", "prompt": "\ud604\uc7ac \uc6f9 \uc571\uc744 \ud0d0\uc0c9\ud574\uc11c E2E \ud14c\uc2a4\ud2b8 \ud50c\ub79c\uc744 \uc791\uc131\ud574\uc918", "eval_id": 1, "outputs": [{"name": "test-plan.md", "type": "text", "content": "# E2E Test Plan - TestApp (Todo Management Application)\n\n## Application Overview\n\nTestApp is a Korean-language Next.js todo management application running at `http://localhost:3000`. It uses client-side state with `localStorage` for authentication and data persistence. The app includes authentication (signup/login/logout), a dashboard with statistics and notifications, full CRUD todo management with search/filter, a profile editor with file upload/date picker/multi-select, a cookie consent banner, error handling demos, and responsive navigation with breadcrumbs.\n\n---\n\n## Test Scenarios\n\n### 1. Cookie Consent Banner\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 1.1 | Navigate to `http://localhost:3000` (fresh session, no `cookie-consent` in localStorage) | Cookie banner is visible with overlay (`data-testid=\"cookie-banner\"`) displaying consent message |\n| 1.2 | Click the \"\ub3d9\uc758\" (Accept) button (`data-testid=\"cookie-accept\"`) | Banner disappears; `localStorage` key `cookie-consent` is set to `\"true\"` |\n| 1.3 | Reload the page | Cookie banner does NOT appear again |\n\n---\n\n### 2. Home Page (Unauthenticated)\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 2.1 | Navigate to `http://localhost:3000` while not logged in | Page shows \"TestApp\" heading, welcome message \"\ud560 \uc77c \uad00\ub9ac \uc560\ud50c\ub9ac\ucf00\uc774\uc158\uc5d0 \uc624\uc2e0 \uac83\uc744 \ud658\uc601\ud569\ub2c8\ub2e4\", and two buttons: \"\ub85c\uadf8\uc778\" (`data-testid=\"home-login\"`) and \"\ud68c\uc6d0\uac00\uc785\" (`data-testid=\"home-signup\"`) |\n| 2.2 | Verify navbar shows login/signup links | Navbar (`data-testid=\"navbar\"`) shows \"\ub85c\uadf8\uc778\" (`data-testid=\"nav-login\"`) and \"\ud68c\uc6d0\uac00\uc785\" (`data-testid=\"nav-signup\"`) links |\n| 2.3 | Click \"\ub85c\uadf8\uc778\" button | Navigates to `/login` |\n| 2.4 | Go back, click \"\ud68c\uc6d0\uac00\uc785\" button | Navigates to `/signup` |\n\n---\n\n### 3. Signup\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 3.1 | Navigate to `/signup` | Signup form is displayed with fields: \uc774\ub984 (`data-testid=\"signup-name\"`), \uc774\uba54\uc77c (`data-testid=\"signup-email\"`), \ube44\ubc00\ubc88\ud638 (`data-testid=\"signup-password\"`), \ube44\ubc00\ubc88\ud638 \ud655\uc778 (`data-testid=\"signup-confirm-password\"`), and submit button (`data-testid=\"signup-submit\"`) |\n| 3.2 | Submit the form with all fields empty | Validation errors appear for name, email, and password fields |\n| 3.3 | Enter invalid email format (e.g., \"notanemail\") | Email validation error: \"\uc62c\ubc14\ub978 \uc774\uba54\uc77c \ud615\uc2dd\uc774 \uc544\ub2d9\ub2c8\ub2e4\" (`data-testid=\"email-error\"`) |\n| 3.4 | Enter password shorter than 8 characters | Password validation error: \"\ube44\ubc00\ubc88\ud638\ub294 8\uc790 \uc774\uc0c1\uc774\uc5b4\uc57c \ud569\ub2c8\ub2e4\" (`data-testid=\"password-error\"`) |\n| 3.5 | Enter mismatched passwords (password: \"password123\", confirm: \"different123\") | Confirm password error: \"\ube44\ubc00\ubc88\ud638\uac00 \uc77c\uce58\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4\" (`data-testid=\"confirm-password-error\"`) |\n| 3.6 | Fill all fields correctly (name: \"\ud14c\uc2a4\ud2b8\uc720\uc800\", email: \"test@example.com\", password: \"password123\", confirm: \"password123\") and submit | Redirects to `/dashboard`; user is authenticated |\n| 3.7 | Logout, navigate to `/signup`, try to register with the same email \"test@example.com\" | General error: \"\uc774\ubbf8 \ub4f1\ub85d\ub41c \uc774\uba54\uc77c\uc785\ub2c8\ub2e4\" (`data-testid=\"signup-error\"`) |\n| 3.8 | Verify \"\uc774\ubbf8 \uacc4\uc815\uc774 \uc788\uc73c\uc2e0\uac00\uc694? \ub85c\uadf8\uc778\" link | Clicking \"\ub85c\uadf8\uc778\" link navigates to `/login` |\n\n---\n\n### 4. Login\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 4.1 | Navigate to `/login` | Login form is displayed with email (`data-testid=\"login-email\"`), password (`data-testid=\"login-password\"`), and submit button (`data-testid=\"login-submit\"`) |\n| 4.2 | Submit with empty fields | Validation errors appear for email and password |\n| 4.3 | Submit with unregistered email | Error: \"\ub4f1\ub85d\ub418\uc9c0 \uc54a\uc740 \uc774\uba54\uc77c\uc785\ub2c8\ub2e4\" (`data-testid=\"login-error\"`) |\n| 4.4 | Submit with correct email but wrong password | Error: \"\ube44\ubc00\ubc88\ud638\uac00 \uc77c\uce58\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4\" (`data-testid=\"login-error\"`) |\n| 4.5 | Submit with correct credentials (email: \"test@example.com\", password: \"password123\") | Redirects to `/dashboard` |\n| 4.6 | Verify inline validation on blur for email field (type invalid email, then blur) | Error message appears below the email field on blur |\n| 4.7 | Verify \"\uacc4\uc815\uc774 \uc5c6\uc73c\uc2e0\uac00\uc694? \ud68c\uc6d0\uac00\uc785\" link | Clicking \"\ud68c\uc6d0\uac00\uc785\" link navigates to `/signup` |\n\n---\n\n### 5. Navigation & Navbar (Authenticated)\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 5.1 | After login, verify navbar shows authenticated links | Navbar displays: \"\ub300\uc2dc\ubcf4\ub4dc\" (`data-testid=\"nav-dashboard\"`), \"\ud560 \uc77c\" (`data-testid=\"nav-todos\"`), \"\ud504\ub85c\ud544\" (`data-testid=\"nav-profile\"`), user email (`data-testid=\"nav-user-email\"`), and \"\ub85c\uadf8\uc544\uc6c3\" (`data-testid=\"nav-logout\"`) |\n| 5.2 | Verify active link highlighting | The nav link matching the current route has blue text styling |\n| 5.3 | Click \"TestApp\" logo (`data-testid=\"nav-logo\"`) | Navigates to home; since authenticated, redirects to `/dashboard` |\n| 5.4 | Verify breadcrumbs on `/dashboard` | Breadcrumbs (`data-testid=\"breadcrumbs\"`) show \"\ud648 / \ub300\uc2dc\ubcf4\ub4dc\" |\n| 5.5 | Navigate to `/todos` and verify breadcrumbs | Breadcrumbs show \"\ud648 / \ud560 \uc77c\" |\n| 5.6 | Click \"\ub85c\uadf8\uc544\uc6c3\" button | User is logged out, redirected to `/login` |\n\n---\n\n### 6. Responsive Navigation (Mobile)\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 6.1 | Resize viewport to mobile width (e.g., 375px) | Hamburger menu button (`data-testid=\"hamburger-menu\"`) appears; desktop nav links are hidden |\n| 6.2 | Click hamburger menu | Mobile menu (`data-testid=\"mobile-menu\"`) appears with links: \ub300\uc2dc\ubcf4\ub4dc, \ud560 \uc77c, \ud504\ub85c\ud544, and \ub85c\uadf8\uc544\uc6c3 (`data-testid=\"mobile-logout\"`) |\n| 6.3 | Click a nav link in mobile menu | Menu closes, navigates to selected page |\n| 6.4 | Open menu, click \"\ub85c\uadf8\uc544\uc6c3\" | Menu closes, user is logged out |\n\n---\n\n### 7. Dashboard\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 7.1 | Navigate to `/dashboard` while authenticated | Shows greeting \"\uc548\ub155\ud558\uc138\uc694, {name}\ub2d8\" (`data-testid=\"greeting\"`), current date (`data-testid=\"current-date\"`), and message \"\uc624\ub298\ub3c4 \uc88b\uc740 \ud558\ub8e8 \ub418\uc138\uc694!\" |\n| 7.2 | Verify stats cards with no todos | Three stats cards visible: \uc804\uccb4 \ud560 \uc77c = 0 (`data-testid=\"stat-total\"`), \uc644\ub8cc = 0 (`data-testid=\"stat-completed\"`), \uc9c4\ud589\uc911 = 0 (`data-testid=\"stat-pending\"`) |\n| 7.3 | Add a todo via \"\ube60\ub978 \ucd94\uac00\" form (TodoForm) | Todo is added; stats update: \uc804\uccb4 \ud560 \uc77c = 1, \uc9c4\ud589\uc911 = 1 |\n| 7.4 | Verify notifications section loads | Loading skeleton (`data-testid=\"notifications-loading\"`) appears briefly, then notifications list (`data-testid=\"notifications-list\"`) with 3 items is displayed |\n| 7.5 | Verify notification items have read/unread styling | Unread notification (id=1) has blue border; read notifications (id=2,3) have default styling |\n| 7.6 | Click \"\uc804\uccb4 \ud560 \uc77c \ubaa9\ub85d \ubcf4\uae30\" link (`data-testid=\"go-to-todos\"`) | Navigates to `/todos` |\n| 7.7 | Navigate to `/dashboard` while NOT authenticated | Redirects to `/login` |\n\n---\n\n### 8. Todo CRUD - Create\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 8.1 | Navigate to `/todos` | Page shows \"\ud560 \uc77c \ubaa9\ub85d\" heading, todo input form, search/filter controls, and empty state (`data-testid=\"empty-state\"`) with \"\uc544\uc9c1 \ud560 \uc77c\uc774 \uc5c6\uc2b5\ub2c8\ub2e4\" |\n| 8.2 | Click \"\ucd94\uac00\" (`data-testid=\"todo-add\"`) with empty input | Error: \"\ud560 \uc77c\uc744 \uc785\ub825\ud574\uc8fc\uc138\uc694\" (`data-testid=\"todo-input-error\"`) |\n| 8.3 | Type text longer than 200 characters and submit | Error: \"\ud560 \uc77c\uc740 200\uc790 \uc774\ud558\uc5ec\uc57c \ud569\ub2c8\ub2e4\" |\n| 8.4 | Type \"\uc7a5\ubcf4\uae30\" in input (`data-testid=\"todo-input\"`) and click \"\ucd94\uac00\" | New todo item appears in the list; input is cleared; empty state disappears |\n| 8.5 | Add a second todo \"\uc6b4\ub3d9\ud558\uae30\" | Two todo items visible in the list (newest first) |\n\n---\n\n### 9. Todo CRUD - Read & Toggle\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 9.1 | Verify todo item structure | Each todo shows: checkbox, text, \"\uc218\uc815\" button, \"\uc0ad\uc81c\" button |\n| 9.2 | Click the checkbox on \"\uc7a5\ubcf4\uae30\" todo | Todo text gets strikethrough styling (`line-through`); checkbox becomes checked |\n| 9.3 | Click the checkbox again | Strikethrough is removed; checkbox is unchecked |\n\n---\n\n### 10. Todo CRUD - Update\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 10.1 | Click \"\uc218\uc815\" button on a todo | Edit mode: text input appears pre-filled with current text, with \"\uc800\uc7a5\" and \"\ucde8\uc18c\" buttons |\n| 10.2 | Clear the edit input and click \"\uc800\uc7a5\" | Error message: \"\ud560 \uc77c\uc744 \uc785\ub825\ud574\uc8fc\uc138\uc694\" |\n| 10.3 | Change text to \"\uc7a5\ubcf4\uae30 - \ub9c8\ud2b8\" and click \"\uc800\uc7a5\" | Todo text updates to \"\uc7a5\ubcf4\uae30 - \ub9c8\ud2b8\"; exits edit mode |\n| 10.4 | Click \"\uc218\uc815\", then click \"\ucde8\uc18c\" | Edit mode exits; original text remains unchanged |\n\n---\n\n### 11. Todo CRUD - Delete\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 11.1 | Click \"\uc0ad\uc81c\" button on a todo | Delete confirmation appears: \"\uc0ad\uc81c\ud560\uae4c\uc694?\" with \"\uc608\" and \"\uc544\ub2c8\uc624\" buttons |\n| 11.2 | Click \"\uc544\ub2c8\uc624\" | Confirmation dismissed; todo remains |\n| 11.3 | Click \"\uc0ad\uc81c\" again, then click \"\uc608\" | Todo is removed from the list |\n\n---\n\n### 12. Todo Search & Filter\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 12.1 | With multiple todos, type a search term in search input (`data-testid=\"search-input\"`) | Only matching todos are displayed |\n| 12.2 | Search for a non-existent term | Empty state shows: \"\uac80\uc0c9 \uacb0\uacfc\uac00 \uc5c6\uc2b5\ub2c8\ub2e4\" with \"\ub2e4\ub978 \uac80\uc0c9\uc5b4\ub098 \ud544\ud130\ub97c \uc2dc\ub3c4\ud574\ubcf4\uc138\uc694\" |\n| 12.3 | Clear search, mark one todo as completed | Todo is checked |\n| 12.4 | Click \"\uc9c4\ud589\uc911\" filter (`data-testid=\"filter-active\"`) | Only uncompleted todos are shown |\n| 12.5 | Click \"\uc644\ub8cc\" filter (`data-testid=\"filter-completed\"`) | Only completed todos are shown |\n| 12.6 | Click \"\uc804\uccb4\" filter (`data-testid=\"filter-all\"`) | All todos are shown |\n| 12.7 | Combine search and filter | Both conditions apply simultaneously |\n\n---\n\n### 13. Todo Error Simulation\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 13.1 | Navigate to `/todos?simulate_error=true` | Error simulation mode is enabled; \"\uc5d0\ub7ec \uc2dc\ubbac\ub808\uc774\uc158 \ud574\uc81c\" button (`data-testid=\"disable-error-simulation\"`) appears |\n| 13.2 | Try to add a new todo | Error message: \"\uc11c\ubc84 \uc624\ub958\uac00 \ubc1c\uc0dd\ud588\uc2b5\ub2c8\ub2e4\" |\n| 13.3 | Try to edit an existing todo | Error message: \"\uc11c\ubc84 \uc624\ub958\uac00 \ubc1c\uc0dd\ud588\uc2b5\ub2c8\ub2e4\" |\n| 13.4 | Click \"\uc5d0\ub7ec \uc2dc\ubbac\ub808\uc774\uc158 \ud574\uc81c\" | Error simulation disabled; CRUD operations work normally again |\n\n---\n\n### 14. Profile - View\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 14.1 | Navigate to `/profile` | Profile view (`data-testid=\"profile-view\"`) displays: \uc774\ub984 (`data-testid=\"profile-display-name\"`), \uc774\uba54\uc77c, \uc790\uae30\uc18c\uac1c (\"-\" if empty), \uae30\uc220 \uc2a4\ud0dd (\"-\" if empty), \uc0dd\ub144\uc6d4\uc77c (\"-\" if empty), \uc544\ubc14\ud0c0 (\"-\" if empty) |\n| 14.2 | Verify \"\ud504\ub85c\ud544 \uc218\uc815\" button (`data-testid=\"profile-edit-btn\"`) is visible | Button is present |\n| 14.3 | Navigate to `/profile` while NOT authenticated | Redirects to `/login` |\n\n---\n\n### 15. Profile - Edit\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 15.1 | Click \"\ud504\ub85c\ud544 \uc218\uc815\" button | Edit form (`data-testid=\"profile-form\"`) appears with: name input (`data-testid=\"profile-name\"`), bio textarea (`data-testid=\"profile-bio\"`), date picker (`data-testid=\"profile-birthdate\"`), multi-select for skills, file upload, \"\uc800\uc7a5\" (`data-testid=\"profile-save\"`) and \"\ucde8\uc18c\" (`data-testid=\"profile-cancel\"`) buttons |\n| 15.2 | Clear the name field and click \"\uc800\uc7a5\" | Validation error: \"\uc774\ub984\uc744 \uc785\ub825\ud574\uc8fc\uc138\uc694\" |\n| 15.3 | Enter bio longer than 500 characters and click \"\uc800\uc7a5\" | Validation error: \"\uc790\uae30\uc18c\uac1c\ub294 500\uc790 \uc774\ud558\uc5ec\uc57c \ud569\ub2c8\ub2e4\" |\n| 15.4 | Verify bio character counter | Shows current length / 500 |\n| 15.5 | Fill in name \"\uc0c8\uc774\ub984\", bio \"\uc548\ub155\ud558\uc138\uc694\", select a birth date, and click \"\uc800\uc7a5\" | Profile saved; success message \"\ud504\ub85c\ud544\uc774 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4\" (`data-testid=\"profile-saved\"`) appears; returns to view mode with updated values |\n| 15.6 | Click \"\ud504\ub85c\ud544 \uc218\uc815\", make changes, then click \"\ucde8\uc18c\" | All changes are reverted; returns to view mode with original values |\n\n---\n\n### 16. Profile - Multi-Select (Skills)\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 16.1 | In profile edit mode, click the skills toggle button (`data-testid=\"profile-skills-toggle\"`) | Dropdown (`data-testid=\"multiselect-dropdown\"`) opens with options: JavaScript, TypeScript, React, Next.js, Python, Go, Rust, CSS |\n| 16.2 | Check \"React\" and \"TypeScript\" | Selected chips appear (`data-testid=\"multiselect-chip-React\"`, `data-testid=\"multiselect-chip-TypeScript\"`); toggle button shows \"2\uac1c \uc120\ud0dd\ub428\" |\n| 16.3 | Click the \"x\" on the \"React\" chip | \"React\" is deselected; only \"TypeScript\" chip remains |\n| 16.4 | Click outside the dropdown | Dropdown closes |\n| 16.5 | Save profile and verify skills persist | After save, profile view shows \"TypeScript\" in skills section |\n\n---\n\n### 17. Profile - File Upload\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 17.1 | In profile edit mode, click \"\ud30c\uc77c \uc120\ud0dd\" button (`data-testid=\"file-upload-button\"`) | File input dialog opens |\n| 17.2 | Upload a valid image file (e.g., PNG, < 5MB) | Button text changes to \"\uc120\ud0dd\ub428: {filename}\" |\n| 17.3 | Upload an invalid file type (e.g., .txt) | Error: \"\ud5c8\uc6a9\ub418\uc9c0 \uc54a\ub294 \ud30c\uc77c \ud615\uc2dd\uc785\ub2c8\ub2e4\" (`data-testid=\"file-upload-error\"`) |\n| 17.4 | Upload a file larger than 5MB | Error: \"\ud30c\uc77c \ud06c\uae30\ub294 5MB \uc774\ud558\uc5ec\uc57c \ud569\ub2c8\ub2e4\" |\n\n---\n\n### 18. Profile - Date Picker\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 18.1 | In profile edit mode, interact with the birth date input (`data-testid=\"profile-birthdate\"`) | Date can be selected via native date picker |\n| 18.2 | Select a date and save profile | Birth date is displayed in the profile view |\n\n---\n\n### 19. Error Demo Page\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 19.1 | Navigate to `/error-demo` | Page shows \"\uc5d0\ub7ec \uc0c1\ud0dc \ub370\ubaa8\" heading with two buttons: \"\ub7f0\ud0c0\uc784 \uc5d0\ub7ec \ubc1c\uc0dd\" (`data-testid=\"trigger-error\"`) and \"API \uc5d0\ub7ec \uc2dc\ubbac\ub808\uc774\uc158\" (`data-testid=\"simulate-api-error\"`) |\n| 19.2 | Click \"\ub7f0\ud0c0\uc784 \uc5d0\ub7ec \ubc1c\uc0dd\" | Error boundary (`data-testid=\"error-boundary\"`) renders with message \"\uc758\ub3c4\uc801\uc73c\ub85c \ubc1c\uc0dd\uc2dc\ud0a8 \uc5d0\ub7ec\uc785\ub2c8\ub2e4\" and a \"\ub2e4\uc2dc \uc2dc\ub3c4\" button (`data-testid=\"error-retry\"`) |\n| 19.3 | Click \"\ub2e4\uc2dc \uc2dc\ub3c4\" | Error boundary resets; normal page content is restored |\n| 19.4 | Click \"API \uc5d0\ub7ec \uc2dc\ubbac\ub808\uc774\uc158\" | Error message component (`data-testid=\"error-message\"`) appears with \"\uc11c\ubc84\uc5d0\uc11c \ub370\uc774\ud130\ub97c \ubd88\ub7ec\uc624\ub294 \uc911 \uc624\ub958\uac00 \ubc1c\uc0dd\ud588\uc2b5\ub2c8\ub2e4 (500 Internal Server Error)\" |\n| 19.5 | Click \"\ub2eb\uae30\" (`data-testid=\"error-dismiss\"`) on the error message | Error message disappears |\n\n---\n\n### 20. Authentication Persistence & Session\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 20.1 | Login successfully, then reload the page | User remains authenticated (data persisted in `localStorage`) |\n| 20.2 | Verify `localStorage` contains `auth_user` and `auth_login_at` keys after login | Keys exist with correct values |\n| 20.3 | Logout and verify `localStorage` is cleaned | `auth_user` and `auth_login_at` keys are removed |\n\n---\n\n### 21. Route Guards (Protected Routes)\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 21.1 | Without authentication, navigate directly to `/dashboard` | Redirected to `/login` |\n| 21.2 | Without authentication, navigate directly to `/todos` | Redirected to `/login` |\n| 21.3 | Without authentication, navigate directly to `/profile` | Redirected to `/login` |\n| 21.4 | While authenticated, navigate to `/` (home) | Redirected to `/dashboard` |\n\n---\n\n### 22. Notifications API\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 22.1 | On dashboard, verify API call to `/api/notifications` | Network request is made; response contains 3 notifications |\n| 22.2 | Verify loading state | Skeleton loading animation (`data-testid=\"notifications-loading\"`) appears before data loads |\n| 22.3 | Verify each notification displays message and localized time | Each notification item has message text and a `<time>` element with Korean-formatted date |\n\n---\n\n### 23. Data Persistence (localStorage)\n\n| # | Step | Expected Result |\n|---|------|-----------------|\n| 23.1 | Add several todos, reload the page | Todos persist across page reloads (stored in `localStorage` key `todos`) |\n| 23.2 | Update profile, reload the page | Profile changes persist |\n| 23.3 | Accept cookie banner, reload the page | Banner does not reappear |\n\n---\n\n## Test Data\n\n| Field | Value |\n|-------|-------|\n| Name | \ud14c\uc2a4\ud2b8\uc720\uc800 |\n| Email | test@example.com |\n| Password | password123 |\n| Todo items | \uc7a5\ubcf4\uae30, \uc6b4\ub3d9\ud558\uae30, \ucc45 \uc77d\uae30 |\n\n## Key `data-testid` Reference\n\n- **Home**: `home-login`, `home-signup`\n- **Navbar**: `navbar`, `nav-logo`, `nav-login`, `nav-signup`, `nav-dashboard`, `nav-todos`, `nav-profile`, `nav-user-email`, `nav-logout`, `hamburger-menu`, `mobile-menu`, `mobile-logout`, `breadcrumbs`\n- **Login**: `login-email`, `login-password`, `login-submit`, `login-error`, `email-error`, `password-error`\n- **Signup**: `signup-name`, `signup-email`, `signup-password`, `signup-confirm-password`, `signup-submit`, `signup-error`, `name-error`, `email-error`, `password-error`, `confirm-password-error`\n- **Dashboard**: `greeting`, `current-date`, `stat-total`, `stat-completed`, `stat-pending`, `go-to-todos`, `notifications-loading`, `notifications-list`, `notifications-error`, `notification-{id}`, `notification-time-{id}`\n- **Todos**: `todo-input`, `todo-add`, `todo-input-error`, `search-input`, `filter-all`, `filter-active`, `filter-completed`, `empty-state`, `todo-item-{id}`, `todo-checkbox-{id}`, `todo-text-{id}`, `todo-edit-{id}`, `todo-edit-input-{id}`, `todo-save-{id}`, `todo-cancel-{id}`, `todo-delete-{id}`, `todo-confirm-delete-{id}`, `todo-confirm-yes-{id}`, `todo-confirm-no-{id}`, `disable-error-simulation`, `error-message`, `error-dismiss`\n- **Profile**: `profile-view`, `profile-display-name`, `profile-edit-btn`, `profile-form`, `profile-name`, `profile-bio`, `profile-birthdate`, `profile-skills-toggle`, `multiselect-dropdown`, `multiselect-option-{name}`, `multiselect-chip-{name}`, `file-upload-button`, `file-upload-input`, `file-upload-error`, `profile-save`, `profile-cancel`, `profile-saved`\n- **Error Demo**: `trigger-error`, `simulate-api-error`, `error-boundary`, `error-retry`, `error-message`, `error-dismiss`\n- **Cookie Banner**: `cookie-banner`, `cookie-accept`\n"}], "grading": {"eval_id": 1, "eval_name": "general-exploration", "configuration": "without_skill", "expectations": [{"text": "Uses planner_setup_page to initialize the browser with the target URL", "passed": false, "evidence": "Transcript is empty (0 bytes). The without_skill configuration would not have access to the planner_setup_page tool. The output plan contains detailed information but uses a different format (table-based rather than step-based), and timing.json shows only 145 seconds / 44,481 tokens - roughly 1/3 of the with_skill run - suggesting less browser interaction or no browser interaction at all. Without the skill, the agent likely used general browser tools or code reading rather than planner_setup_page specifically."}, {"text": "Explores at least 3 different pages or sections using browser_snapshot and browser_click", "passed": true, "evidence": "The output plan covers 23 numbered categories spanning cookie consent, home page, signup, login, navigation, responsive nav, dashboard, todo CRUD (create/read/toggle/update/delete), search & filter, error simulation, profile view/edit, multi-select, file upload, date picker, error demo, auth persistence, route guards, notifications API, and data persistence. The breadth and accuracy of data-testid references (e.g., cookie-banner, cookie-accept, signup-name, login-email, hamburger-menu, mobile-menu, etc.) across these sections indicates thorough exploration."}, {"text": "Identifies and documents happy path and edge case user flows", "passed": true, "evidence": "The plan documents happy paths (valid signup 3.6, valid login 4.5, todo add 8.4, profile edit 15.5) and edge cases (empty fields 3.2, invalid email 3.3, short password 3.4, password mismatch 3.5, duplicate email 3.7, unregistered email login 4.3, wrong password 4.4, empty todo 8.2, too-long todo 8.3, invalid file type 17.3, file too large 17.4, error simulation 13.1-13.4)."}, {"text": "Each test scenario includes numbered steps, expected outcomes, and success criteria", "passed": true, "evidence": "The plan uses a table format with numbered steps and expected results. For example, section 3 (Signup): '3.6 | Fill all fields correctly ... and submit | Redirects to /dashboard; user is authenticated'. Each row has a step number, step description, and expected result column. This format is consistent across all 23 sections."}, {"text": "Test scenarios are grouped under numbered category headings", "passed": true, "evidence": "The plan has 23 numbered category headings: '### 1. Cookie Consent Banner', '### 2. Home Page (Unauthenticated)', '### 3. Signup', '### 4. Login', ... through '### 23. Data Persistence (localStorage)'. All sections use numbered markdown headings."}, {"text": "Saves the plan using planner_save_plan to specs/ directory", "passed": false, "evidence": "Without the skill, the agent would not have access to the planner_save_plan tool. The output file test-plan.md exists in outputs/ directory but does not contain the structured File/Seed references that the with_skill version includes (no '**File:**' or '**Seed:**' annotations). The plan was likely saved via a generic file write operation rather than planner_save_plan."}], "summary": {"pass_rate": 0.6666666666666666, "passed": 4, "failed": 2, "total": 6}}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "playwright-test-planner", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-03-10T03:44:06Z", "evals_run": [1], "runs_per_configuration": 3}, "runs": [{"eval_id": 1, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 6, "failed": 0, "total": 6, "time_seconds": 425.3, "tokens": 117556, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Uses planner_setup_page to initialize the browser with the target URL", "passed": true, "evidence": "Transcript is empty (0 bytes) so tool calls cannot be directly verified. However, the output test-plan.md contains highly detailed data-testid references, exact Korean UI text, and page-specific details (cookie banner overlay with z-50, localStorage keys, /api/notifications endpoint, 375px breakpoint) that strongly indicate live browser exploration was performed. The timing.json shows 425 seconds of execution with 117,556 tokens, consistent with extensive browser interaction via planner_setup_page."}, {"text": "Explores at least 3 different pages or sections using browser_snapshot and browser_click", "passed": true, "evidence": "The output plan covers 6 major sections: authentication (signup/login pages), todo management (/todos), dashboard (/dashboard), profile (/profile with DatePicker, MultiSelect, FileUpload), navigation (desktop + mobile 375px), and cookie consent banner. The plan documents precise data-testid values and UI behaviors across all these pages, indicating thorough exploration of at least 6 different pages/sections."}, {"text": "Identifies and documents happy path and edge case user flows", "passed": true, "evidence": "The plan documents extensive happy paths (valid signup, valid login, todo CRUD, profile editing) alongside numerous edge cases: duplicate email signup, password mismatch, short password, empty todo input, 200-char limit, empty edit, edit cancel, delete cancel, search no results, error simulation (?simulate_error=true), empty name validation, bio 500-char limit, invalid file type upload, cookie banner overlay blocking clicks."}, {"text": "Each test scenario includes numbered steps, expected outcomes, and success criteria", "passed": true, "evidence": "Every scenario has numbered steps with 'expect:' lines. For example, scenario 1.1 has 6 numbered steps each with explicit expect conditions like 'expect: URL\uc774 /signup \uc774\uc5b4\uc57c \ud55c\ub2e4', 'expect: \ud398\uc774\uc9c0\uac00 /dashboard \ub85c \uc774\ub3d9\ud574\uc57c \ud55c\ub2e4', 'expect: data-testid=\"greeting\" \uc5d0 \"\uc548\ub155\ud558\uc138\uc694, \ud14c\uc2a4\ud2b8\uc720\uc800\ub2d8\" \ud14d\uc2a4\ud2b8\uac00 \ud45c\uc2dc\ub418\uc5b4\uc57c \ud55c\ub2e4'. This pattern is consistent across all 36+ scenarios."}, {"text": "Test scenarios are grouped under numbered category headings", "passed": true, "evidence": "The plan has 6 numbered category headings: '### 1. 1. \uc0ac\uc6a9\uc790 \uc778\uc99d', '### 2. 2. \ud560 \uc77c \uad00\ub9ac', '### 3. 3. \ub300\uc2dc\ubcf4\ub4dc', '### 4. 4. \ud504\ub85c\ud544', '### 5. 5. \ub124\ube44\uac8c\uc774\uc158 \ubc0f \ub77c\uc6b0\ud305', '### 6. 6. \ucfe0\ud0a4 \ub3d9\uc758 \ubc30\ub108'. Each contains numbered sub-scenarios (e.g., 1.1, 1.2, 2.1, etc.)."}, {"text": "Saves the plan using planner_save_plan to specs/ directory", "passed": true, "evidence": "The output file test-plan.md exists in the outputs/ directory with comprehensive content (578 lines). The plan includes File references pointing to specs/ paths (e.g., 'File: features/next-app/specs/auth/signup-valid.spec.ts') and Seed references (e.g., 'Seed: features/next-app/tests/seed.spec.ts'), indicating planner_save_plan was used to persist the plan."}], "notes": []}, {"eval_id": 1, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.6666666666666666, "passed": 4, "failed": 2, "total": 6, "time_seconds": 145.5, "tokens": 44481, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Uses planner_setup_page to initialize the browser with the target URL", "passed": false, "evidence": "Transcript is empty (0 bytes). The without_skill configuration would not have access to the planner_setup_page tool. The output plan contains detailed information but uses a different format (table-based rather than step-based), and timing.json shows only 145 seconds / 44,481 tokens - roughly 1/3 of the with_skill run - suggesting less browser interaction or no browser interaction at all. Without the skill, the agent likely used general browser tools or code reading rather than planner_setup_page specifically."}, {"text": "Explores at least 3 different pages or sections using browser_snapshot and browser_click", "passed": true, "evidence": "The output plan covers 23 numbered categories spanning cookie consent, home page, signup, login, navigation, responsive nav, dashboard, todo CRUD (create/read/toggle/update/delete), search & filter, error simulation, profile view/edit, multi-select, file upload, date picker, error demo, auth persistence, route guards, notifications API, and data persistence. The breadth and accuracy of data-testid references (e.g., cookie-banner, cookie-accept, signup-name, login-email, hamburger-menu, mobile-menu, etc.) across these sections indicates thorough exploration."}, {"text": "Identifies and documents happy path and edge case user flows", "passed": true, "evidence": "The plan documents happy paths (valid signup 3.6, valid login 4.5, todo add 8.4, profile edit 15.5) and edge cases (empty fields 3.2, invalid email 3.3, short password 3.4, password mismatch 3.5, duplicate email 3.7, unregistered email login 4.3, wrong password 4.4, empty todo 8.2, too-long todo 8.3, invalid file type 17.3, file too large 17.4, error simulation 13.1-13.4)."}, {"text": "Each test scenario includes numbered steps, expected outcomes, and success criteria", "passed": true, "evidence": "The plan uses a table format with numbered steps and expected results. For example, section 3 (Signup): '3.6 | Fill all fields correctly ... and submit | Redirects to /dashboard; user is authenticated'. Each row has a step number, step description, and expected result column. This format is consistent across all 23 sections."}, {"text": "Test scenarios are grouped under numbered category headings", "passed": true, "evidence": "The plan has 23 numbered category headings: '### 1. Cookie Consent Banner', '### 2. Home Page (Unauthenticated)', '### 3. Signup', '### 4. Login', ... through '### 23. Data Persistence (localStorage)'. All sections use numbered markdown headings."}, {"text": "Saves the plan using planner_save_plan to specs/ directory", "passed": false, "evidence": "Without the skill, the agent would not have access to the planner_save_plan tool. The output file test-plan.md exists in outputs/ directory but does not contain the structured File/Seed references that the with_skill version includes (no '**File:**' or '**Seed:**' annotations). The plan was likely saved via a generic file write operation rather than planner_save_plan."}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 425.3, "stddev": 0.0, "min": 425.3, "max": 425.3}, "tokens": {"mean": 117556.0, "stddev": 0.0, "min": 117556, "max": 117556}}, "without_skill": {"pass_rate": {"mean": 0.6667, "stddev": 0.0, "min": 0.6667, "max": 0.6667}, "time_seconds": {"mean": 145.5, "stddev": 0.0, "min": 145.5, "max": 145.5}, "tokens": {"mean": 44481.0, "stddev": 0.0, "min": 44481, "max": 44481}}, "delta": {"pass_rate": "+0.33", "time_seconds": "+279.8", "tokens": "+73075"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">출력 파일 없음</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "다운로드";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = file.name + " 다운로드";
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "시트: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "스프레드시트 렌더링 오류: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.total || 0) + '개 중 ' + (summary.passed || 0) + '개 통과, ' + (summary.failed || 0) + '개 실패</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "다운로드";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = file.name + " 다운로드";
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "저장됨";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "제출 시 다운로드됩니다";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>벤치마크 결과</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "평가: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += "설정당 " + (metadata.runs_per_configuration || "?") + "회 실행";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>지표</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>차이</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>통과율</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>소요 시간 (초)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>토큰</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>평가별 상세 내역</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "평가 " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>설정</th><th>실행</th><th>통과율</th>";
+          if (hasTime) html += "<th>소요 시간 (초)</th>";
+          if (hasErrors) html += "<th>실행 중 오류</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>평균</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>검증 항목</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>분석 노트</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

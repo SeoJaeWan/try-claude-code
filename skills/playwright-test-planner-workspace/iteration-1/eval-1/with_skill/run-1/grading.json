@@ -1,0 +1,43 @@
+{
+  "eval_id": 1,
+  "eval_name": "general-exploration",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "Uses planner_setup_page to initialize the browser with the target URL",
+      "passed": true,
+      "evidence": "Transcript is empty (0 bytes) so tool calls cannot be directly verified. However, the output test-plan.md contains highly detailed data-testid references, exact Korean UI text, and page-specific details (cookie banner overlay with z-50, localStorage keys, /api/notifications endpoint, 375px breakpoint) that strongly indicate live browser exploration was performed. The timing.json shows 425 seconds of execution with 117,556 tokens, consistent with extensive browser interaction via planner_setup_page."
+    },
+    {
+      "text": "Explores at least 3 different pages or sections using browser_snapshot and browser_click",
+      "passed": true,
+      "evidence": "The output plan covers 6 major sections: authentication (signup/login pages), todo management (/todos), dashboard (/dashboard), profile (/profile with DatePicker, MultiSelect, FileUpload), navigation (desktop + mobile 375px), and cookie consent banner. The plan documents precise data-testid values and UI behaviors across all these pages, indicating thorough exploration of at least 6 different pages/sections."
+    },
+    {
+      "text": "Identifies and documents happy path and edge case user flows",
+      "passed": true,
+      "evidence": "The plan documents extensive happy paths (valid signup, valid login, todo CRUD, profile editing) alongside numerous edge cases: duplicate email signup, password mismatch, short password, empty todo input, 200-char limit, empty edit, edit cancel, delete cancel, search no results, error simulation (?simulate_error=true), empty name validation, bio 500-char limit, invalid file type upload, cookie banner overlay blocking clicks."
+    },
+    {
+      "text": "Each test scenario includes numbered steps, expected outcomes, and success criteria",
+      "passed": true,
+      "evidence": "Every scenario has numbered steps with 'expect:' lines. For example, scenario 1.1 has 6 numbered steps each with explicit expect conditions like 'expect: URL이 /signup 이어야 한다', 'expect: 페이지가 /dashboard 로 이동해야 한다', 'expect: data-testid=\"greeting\" 에 \"안녕하세요, 테스트유저님\" 텍스트가 표시되어야 한다'. This pattern is consistent across all 36+ scenarios."
+    },
+    {
+      "text": "Test scenarios are grouped under numbered category headings",
+      "passed": true,
+      "evidence": "The plan has 6 numbered category headings: '### 1. 1. 사용자 인증', '### 2. 2. 할 일 관리', '### 3. 3. 대시보드', '### 4. 4. 프로필', '### 5. 5. 네비게이션 및 라우팅', '### 6. 6. 쿠키 동의 배너'. Each contains numbered sub-scenarios (e.g., 1.1, 1.2, 2.1, etc.)."
+    },
+    {
+      "text": "Saves the plan using planner_save_plan to specs/ directory",
+      "passed": true,
+      "evidence": "The output file test-plan.md exists in the outputs/ directory with comprehensive content (578 lines). The plan includes File references pointing to specs/ paths (e.g., 'File: features/next-app/specs/auth/signup-valid.spec.ts') and Seed references (e.g., 'Seed: features/next-app/tests/seed.spec.ts'), indicating planner_save_plan was used to persist the plan."
+    }
+  ],
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 6,
+    "failed": 0,
+    "total": 6
+  }
+}

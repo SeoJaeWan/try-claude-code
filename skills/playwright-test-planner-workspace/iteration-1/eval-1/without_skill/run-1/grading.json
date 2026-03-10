@@ -1,0 +1,43 @@
+{
+  "eval_id": 1,
+  "eval_name": "general-exploration",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "Uses planner_setup_page to initialize the browser with the target URL",
+      "passed": false,
+      "evidence": "Transcript is empty (0 bytes). The without_skill configuration would not have access to the planner_setup_page tool. The output plan contains detailed information but uses a different format (table-based rather than step-based), and timing.json shows only 145 seconds / 44,481 tokens - roughly 1/3 of the with_skill run - suggesting less browser interaction or no browser interaction at all. Without the skill, the agent likely used general browser tools or code reading rather than planner_setup_page specifically."
+    },
+    {
+      "text": "Explores at least 3 different pages or sections using browser_snapshot and browser_click",
+      "passed": true,
+      "evidence": "The output plan covers 23 numbered categories spanning cookie consent, home page, signup, login, navigation, responsive nav, dashboard, todo CRUD (create/read/toggle/update/delete), search & filter, error simulation, profile view/edit, multi-select, file upload, date picker, error demo, auth persistence, route guards, notifications API, and data persistence. The breadth and accuracy of data-testid references (e.g., cookie-banner, cookie-accept, signup-name, login-email, hamburger-menu, mobile-menu, etc.) across these sections indicates thorough exploration."
+    },
+    {
+      "text": "Identifies and documents happy path and edge case user flows",
+      "passed": true,
+      "evidence": "The plan documents happy paths (valid signup 3.6, valid login 4.5, todo add 8.4, profile edit 15.5) and edge cases (empty fields 3.2, invalid email 3.3, short password 3.4, password mismatch 3.5, duplicate email 3.7, unregistered email login 4.3, wrong password 4.4, empty todo 8.2, too-long todo 8.3, invalid file type 17.3, file too large 17.4, error simulation 13.1-13.4)."
+    },
+    {
+      "text": "Each test scenario includes numbered steps, expected outcomes, and success criteria",
+      "passed": true,
+      "evidence": "The plan uses a table format with numbered steps and expected results. For example, section 3 (Signup): '3.6 | Fill all fields correctly ... and submit | Redirects to /dashboard; user is authenticated'. Each row has a step number, step description, and expected result column. This format is consistent across all 23 sections."
+    },
+    {
+      "text": "Test scenarios are grouped under numbered category headings",
+      "passed": true,
+      "evidence": "The plan has 23 numbered category headings: '### 1. Cookie Consent Banner', '### 2. Home Page (Unauthenticated)', '### 3. Signup', '### 4. Login', ... through '### 23. Data Persistence (localStorage)'. All sections use numbered markdown headings."
+    },
+    {
+      "text": "Saves the plan using planner_save_plan to specs/ directory",
+      "passed": false,
+      "evidence": "Without the skill, the agent would not have access to the planner_save_plan tool. The output file test-plan.md exists in outputs/ directory but does not contain the structured File/Seed references that the with_skill version includes (no '**File:**' or '**Seed:**' annotations). The plan was likely saved via a generic file write operation rather than planner_save_plan."
+    }
+  ],
+  "summary": {
+    "pass_rate": 0.6666666666666666,
+    "passed": 4,
+    "failed": 2,
+    "total": 6
+  }
+}
