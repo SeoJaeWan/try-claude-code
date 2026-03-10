@@ -79,12 +79,15 @@ node .claude/try-claude/references/coding-rules/scripts/generate.mjs structure <
 
 ## TDD Workflow
 
-1. **Copy test files** from `.claude/try-claude/plans/{task-name}/tests/` to source tree
+1. **Copy unit test files** from `.claude/try-claude/plans/{task-name}/tests/` to source tree
    - Read `tests/manifest.md` for file list and destination paths
    - Strip `tests/` prefix to get destination path
-2. **Red verification**: run test command — tests must FAIL
-3. **Implement** API/services to pass tests
-4. **Green verification**: run test command — ALL pass
+2. **Copy E2E test files** (if present) from `.claude/try-claude/plans/{task-name}/e2e/` to the project's e2e test directory
+   - E2E tests are plan artifacts (contract-first) — do NOT modify them
+3. **Red verification**: run test command — tests must FAIL
+4. **Implement** API/services to pass tests
+5. **Green verification**: run test command — ALL pass
+6. **E2E verification** (if E2E tests exist): run Playwright — E2E must pass. If E2E fails, fix implementation, NOT tests.
 
 ---
 
@@ -92,23 +95,25 @@ node .claude/try-claude/references/coding-rules/scripts/generate.mjs structure <
 
 1. **Detect stack** (Step 0 above)
 2. Read plan from `.claude/try-claude/plans/{task-name}/plan.md`
-3. Copy test files from `.claude/try-claude/plans/{task-name}/tests/` to source tree (read `manifest.md` for paths)
-4. Red verification: run test command — confirm tests FAIL
-5. Read domain.md (business logic)
-6. Read CODEMAPS/backend.md, database.md (if present)
-7. Read coding-rules/ (conventions, if present)
-8. Use WebSearch/WebFetch if needed (framework docs, ORM docs)
-9. Confirm the current branch matches plan header (`**Branch:**`)
-10. Implement according to detected framework's conventions
-11. Run tests — confirm ALL pass (Green)
-12. Run type/compile check:
+3. Copy unit test files from `.claude/try-claude/plans/{task-name}/tests/` to source tree (read `manifest.md` for paths)
+4. Copy E2E test files (if present) from `.claude/try-claude/plans/{task-name}/e2e/` to the project's e2e test directory
+5. Red verification: run test command — confirm tests FAIL
+6. Read domain.md (business logic)
+7. Read CODEMAPS/backend.md, database.md (if present)
+8. Read coding-rules/ (conventions, if present)
+9. Use WebSearch/WebFetch if needed (framework docs, ORM docs)
+10. Confirm the current branch matches plan header (`**Branch:**`)
+11. Implement according to detected framework's conventions
+12. Run tests — confirm ALL pass (Green)
+13. Run E2E tests (if present): confirm E2E pass. If E2E fails, fix implementation, NOT tests.
+14. Run type/compile check:
     - TypeScript: `pnpm run typecheck` or `pnpm exec tsc --noEmit`
     - Java/Kotlin: build includes compilation
     - Python: `mypy` (if configured)
     - Go: `go build ./...`
-13. Verify and auto-fix lint (use project's configured linter)
-14. Commit changes
-15. Return results based on plan.md
+15. Verify and auto-fix lint (use project's configured linter)
+16. Commit changes
+17. Return results based on plan.md
 
 ---
 

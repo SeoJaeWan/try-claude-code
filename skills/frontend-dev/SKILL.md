@@ -84,34 +84,40 @@ node .claude/try-claude/references/coding-rules/scripts/generate.mjs test-suite 
 
 ## TDD Workflow
 
-1. **Copy test files** from `.claude/try-claude/plans/{task-name}/tests/` to source tree
+1. **Copy unit test files** from `.claude/try-claude/plans/{task-name}/tests/` to source tree
    - Read `tests/manifest.md` for file list and destination paths
    - Strip `tests/` prefix to get destination path
-2. **Red verification**: `pnpm test` — tests must FAIL
-3. **Implement** hooks/logic to pass tests
-4. **Green verification**: `pnpm test` — ALL pass
+2. **Copy E2E test files** from `.claude/try-claude/plans/{task-name}/e2e/` to the project's e2e test directory
+   - Read `e2e/manifest.md` (if present) for file list and destination paths
+   - E2E tests are plan artifacts (contract-first) — do NOT modify them
+3. **Red verification**: `pnpm test` — tests must FAIL
+4. **Implement** hooks/logic to pass tests
+5. **Green verification**: `pnpm test` — ALL pass
+6. **E2E verification**: `pnpm exec playwright test` — E2E must pass. If E2E fails, fix implementation, NOT tests.
 
 ---
 
 ## Implementation Steps
 
 1. Read plan from `.claude/try-claude/plans/{task-name}/plan.md`
-2. Copy test files from `.claude/try-claude/plans/{task-name}/tests/` to source tree (read `manifest.md` for paths)
-3. Red verification: `pnpm test` — confirm tests FAIL (no implementation yet)
-4. Read domain.md (user scenarios)
-5. Read CODEMAPS/frontend.md (if present)
-6. Read design/ (design principles)
-7. Use WebSearch/WebFetch if needed (React, Next.js, Expo, TanStack Query)
-8. Confirm the current branch matches plan header (`**Branch:**`)
-9. Implement:
+2. Copy unit test files from `.claude/try-claude/plans/{task-name}/tests/` to source tree (read `manifest.md` for paths)
+3. Copy E2E test files from `.claude/try-claude/plans/{task-name}/e2e/` to the project's e2e test directory (if present)
+4. Red verification: `pnpm test` — confirm tests FAIL (no implementation yet)
+5. Read domain.md (user scenarios)
+6. Read CODEMAPS/frontend.md (if present)
+7. Read design/ (design principles)
+8. Use WebSearch/WebFetch if needed (React, Next.js, Expo, TanStack Query)
+9. Confirm the current branch matches plan header (`**Branch:**`)
+10. Implement:
     - Custom hooks (use `{hooksRoot}` rules from `folder-structure.md`)
     - State management integration
     - Connect to UI components from ui-publish
-10. Run tests: `pnpm test` — confirm ALL pass (Green)
-11. Run typecheck:
+11. Run tests: `pnpm test` — confirm ALL pass (Green)
+12. Run E2E tests: `pnpm exec playwright test` — confirm E2E pass. If E2E fails, fix implementation, NOT tests.
+13. Run typecheck:
     - `pnpm run typecheck` (if no script exists, use `pnpm exec tsc --noEmit`)
     - No type errors allowed before proceeding to the next step
-12. Verify and auto-fix lint:
+14. Verify and auto-fix lint:
 
 ```bash
 pnpm lint --fix
@@ -120,11 +126,11 @@ pnpm lint --fix
 - Manually fix any errors that cannot be auto-fixed
 - Repeat until lint is clean
 
-13. Run build verification (`pnpm build`)
+15. Run build verification (`pnpm build`)
     - 목적: TypeScript/ESLint에서 놓치는 프레임워크 설정 충돌을 조기 탐지
     - 기준: build exit code 0, blocking 에러 없음
-14. Commit changes
-15. Return results based on plan.md
+16. Commit changes
+17. Return results based on plan.md
 
 ---
 
