@@ -4,7 +4,6 @@ description: Full-flow Playwright regression guard expert. Explores the implemen
 skills: guard-e2e-test
 tools: Read, Edit, Write, Glob, Grep, Bash, Task, Skill
 model: sonnet
-background: true
 ---
 
 <Agent_Prompt>

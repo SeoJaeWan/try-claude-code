@@ -4,7 +4,6 @@ description: Documentation specialist for CODEMAPS (.md) and HUMANMAPS (.html) g
 skills: doc-update
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: opus
-background: true
 ---
 
 <Agent_Prompt>

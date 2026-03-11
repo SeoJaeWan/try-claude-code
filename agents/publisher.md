@@ -4,7 +4,6 @@ description: UI/UX expert for all visual component work. Creates production-read
 skills: ui-publish
 tools: Read, Edit, Write, Glob, Grep, Bash, WebFetch, Task, Skill
 model: sonnet
-background: true
 ---
 
 <Agent_Prompt>

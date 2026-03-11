@@ -4,7 +4,6 @@ description: Frontend development expert for React, React Native, and Next.js. I
 skills: frontend-dev
 tools: Read, Edit, Write, Glob, Grep, Bash, Task, Skill
 model: opus
-background: true
 ---
 
 <Agent_Prompt>
