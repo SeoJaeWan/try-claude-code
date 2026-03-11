@@ -73,11 +73,48 @@ node .claude/try-claude/references/coding-rules/scripts/generate.mjs structure <
 - Database integration (ORM/query builder, migrations, schema)
 - Authentication and authorization
 - Caching strategy (where applicable)
-- Backend testing (unit, integration)
+- Running existing tests (unit, integration) — this skill does NOT author new test files
+
+> **Scope note:** This skill implements production code and runs pre-written tests from the plan.
+> It does not create test files from scratch. If no tests exist in the plan, skip the TDD steps and implement directly.
 
 ---
 
-## TDD Workflow
+## HTTP Error Response Handling
+
+Every API endpoint must include proper error responses. Without explicit error handling, frameworks return generic 500 errors which leak implementation details and confuse API consumers.
+
+### Standard HTTP error patterns
+
+| Status | When to use | Example |
+|---|---|---|
+| `400 Bad Request` | Invalid input, missing required fields, validation failure | DTO validation fails |
+| `401 Unauthorized` | Missing or invalid authentication | No/expired JWT token |
+| `403 Forbidden` | Authenticated but insufficient permissions | User accessing admin route |
+| `404 Not Found` | Resource does not exist | `GET /products/:id` with non-existent ID |
+| `409 Conflict` | Duplicate resource or state conflict | Creating user with existing email |
+| `422 Unprocessable Entity` | Semantically invalid input | Invalid date range |
+
+### Global error handling
+
+- Set up a global exception filter/middleware to catch unhandled exceptions and return consistent 500 responses
+- Never expose internal stack traces or implementation details in 500 responses
+- Log the full error server-side for debugging
+
+### Checklist for every endpoint
+
+- [ ] Single-resource GET/PUT/DELETE: return 404 if resource not found
+- [ ] POST/PUT with body: validate input, return 400 on failure
+- [ ] Unique constraints: return 409 on duplicate
+- [ ] Auth-protected routes: return 401/403 appropriately
+- [ ] Global exception handler registered (500 responses without stack trace leaks)
+
+---
+
+## TDD Workflow (only when plan includes tests)
+
+> Skip this entire section if the plan directory has no `tests/` or `e2e/` folder.
+> For tasks like migrations or schema-only work, jump straight to Implementation Steps.
 
 1. **Copy unit test files** from `.claude/try-claude/plans/{task-name}/tests/` to source tree
    - Read `tests/manifest.md` for file list and destination paths
