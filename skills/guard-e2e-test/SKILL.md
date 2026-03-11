@@ -106,8 +106,8 @@ User journey context is received via injection.
     - Korean descriptions, AAA pattern (Arrange/Act/Assert)
     - Minimum scenarios per journey:
         - **Happy flow**: Entire journey passes end-to-end
-        - **State persistence**: Auth/session/data survives route transitions
-        - **Branch flow**: Proper redirects on failure/unauthenticated access
+        - **State persistence**: Auth/session/data survives route transitions. This includes verifying teardown — when a journey ends (e.g., logout), confirm that client-side state like `localStorage`, `sessionStorage`, and cookies are actually cleared, not just that a redirect happened. A redirect alone doesn't prove the session was destroyed; stale tokens in storage can cause ghost logins.
+        - **Branch flow**: Proper redirects on failure/unauthenticated access, AND data-state branches. Think about the "inverse" of the happy path — if the happy path verifies "action X changes state Y", include a branch that verifies "without action X, state Y remains unchanged." For example, if the happy flow checks that completing a todo increments the stats counter, a branch flow should verify that adding a todo without completing it leaves the counter unchanged. These data-invariant checks catch subtle regressions where state leaks between unrelated actions.
 
 5. **Verify tests** — `pnpm exec playwright test {generated-file}`
     - Locator failures → re-explore with agent-browser and fix
@@ -148,10 +148,54 @@ test.describe("[Guard] Signup → Dashboard → Logout journey", () => {
         await expect(page).toHaveURL("/login");
     });
 
+    test("[JOURNEY-AUTH-001] Logout clears client-side state completely", async ({page}) => {
+        // State persistence (teardown): a redirect alone doesn't prove session destruction.
+        // Verify that client storage is actually wiped — stale tokens cause ghost logins.
+        await page.goto("/signup");
+        await page.getByTestId("email-input").fill("newuser@example.com");
+        await page.getByTestId("password-input").fill("SecurePass123!");
+        await page.getByTestId("signup-button").click();
+        await expect(page).toHaveURL("/dashboard");
+
+        // Logout
+        await page.getByTestId("user-menu").click();
+        await page.getByTestId("logout-button").click();
+        await expect(page).toHaveURL("/login");
+
+        // Verify client-side state is cleared
+        const localStorageLength = await page.evaluate(() => localStorage.length);
+        expect(localStorageLength).toBe(0);
+
+        const cookies = await page.context().cookies();
+        const sessionCookies = cookies.filter(c => c.name.match(/token|session|auth/i));
+        expect(sessionCookies).toHaveLength(0);
+    });
+
     test("[JOURNEY-AUTH-001] Unauthenticated /dashboard access redirects to /login", async ({page}) => {
         // Branch flow: access protected route without auth
         await page.goto("/dashboard");
         await expect(page).toHaveURL("/login");
+    });
+});
+
+// --- Data-state branch flow example ---
+test.describe("[Guard] Dashboard → Todo → Stats journey", () => {
+    test("[JOURNEY-TODO-001] Completing a todo increments dashboard stats", async ({page}) => {
+        // Happy flow: add → complete → stats reflect change
+        // ... (login + navigate to dashboard)
+        const initialCount = await page.getByTestId("stats-completed").textContent();
+        // ... (add todo, complete it)
+        await expect(page.getByTestId("stats-completed")).not.toHaveText(initialCount!);
+    });
+
+    test("[JOURNEY-TODO-001] Adding todo without completing does not change stats", async ({page}) => {
+        // Branch flow (data-state invariant): the inverse of the happy path.
+        // If completing a todo changes the counter, adding one without completing must NOT.
+        // ... (login + navigate to dashboard)
+        const initialCount = await page.getByTestId("stats-completed").textContent();
+        // ... (add todo, but do NOT complete it)
+        await page.goto("/dashboard");
+        await expect(page.getByTestId("stats-completed")).toHaveText(initialCount!);
     });
 });
 ```
