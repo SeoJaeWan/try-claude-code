@@ -40,7 +40,7 @@ Full-flow E2E test workflow that traverses entire user journeys across routes.
 | **Scope**          | Per-feature/screen (vertical slice)    | Cross-route/state traversal (horizontal flow)            |
 | **Verifies**       | Component + state + API integration    | Route transitions, state persistence, auth flows         |
 | **Timing**         | Planning phase (pre-implementation)    | Post-implementation                                      |
-| **Browser**        | Not required (frozen artifact)         | Live exploration via agent-browser                       |
+| **Browser**        | Not required (frozen artifact)         | Live exploration via agent-browser CLI (npx)             |
 | **Output**         | `plans/{task}/e2e/`                    | Actual test directory                                    |
 | **Mutability**     | Frozen (no modifications)              | Living test (can be improved)                            |
 | **Purpose**        | Lock feature contract for development  | Defend entire user journey against regressions           |
@@ -91,13 +91,15 @@ User journey context is received via injection.
     - Identify test directory path (e.g., `tests/e2e/`, `e2e/`)
     - If no existing conventions, apply defaults from `references/e2e-conventions.md`
 
-3. **Browser exploration (agent-browser)** — Walk through the entire journey live
-    - Navigate to journey start point at `app_url` → snapshot → understand page structure
-    - Execute each route transition from `flow_steps` in order
-    - **Snapshot at each route transition** → capture URL changes and page state
-    - **Verify state continuity**: confirm auth tokens, session, user data persist across route transitions
-    - Collect: route patterns, transition triggers (buttons/links), verification points per page, state transitions
-    - For non-interactive elements (welcome messages, status indicators), use full snapshot or evaluate
+3. **Browser exploration (agent-browser CLI via Bash)** — Walk through the entire journey live
+    - First-time setup: `npx agent-browser install` (downloads Chromium if needed)
+    - Navigate to journey start: `npx agent-browser open {app_url}` → `npx agent-browser snapshot` → understand page structure
+    - Execute each route transition from `flow_steps` in order using refs from snapshot
+    - **After each route transition**: `npx agent-browser get url` to confirm URL change, then `npx agent-browser snapshot` for new page structure
+    - **Verify state continuity**: `npx agent-browser storage local` and `npx agent-browser cookies` to confirm auth tokens/session persist
+    - Collect: route patterns, transition triggers (buttons/links via refs), verification points per page, state transitions
+    - For non-interactive elements (welcome messages, status indicators): `npx agent-browser get text <selector>` or `npx agent-browser eval <js>`
+    - See `references/agent-browser-patterns.md` for full CLI command reference and token optimization patterns
 
 4. **Generate tests** — Write `.spec.ts` from collected information
     - File placement: `{test-dir}/guard/{journey-domain}/{journey-scenario}.spec.ts`
