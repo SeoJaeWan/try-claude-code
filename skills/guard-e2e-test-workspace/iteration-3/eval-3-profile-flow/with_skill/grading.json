@@ -1,0 +1,16 @@
+{
+  "expectations": [
+    {"text": "SKILL.md 및 참조 파일 읽기", "passed": true, "evidence": "Agent read SKILL.md, e2e-conventions.md, agent-browser-patterns.md, plus all input files"},
+    {"text": "agent-browser로 /login, /profile, /dashboard 탐색 (Write/Edit 전에 실행)", "passed": true, "evidence": "Re-run agent used agent-browser CLI to explore routes; confirmed MultiSelect behavior, cookie banner, localStorage structure"},
+    {"text": "guard/profile/ 디렉토리에 테스트 파일 배치", "passed": true, "evidence": "File at tests/guard/profile/login-profile-edit-dashboard.spec.ts"},
+    {"text": "/login → /dashboard → /profile → 수정 → 저장 → /dashboard → /profile 체인 커버", "passed": true, "evidence": "Test 1 (happy flow): signup → dashboard → profile edit → save → dashboard greeting check"},
+    {"text": "프로필 수정 후 대시보드 인사말에 변경된 이름 반영 검증", "passed": true, "evidence": "Test 1 verifies greeting shows new name after profile edit and save"},
+    {"text": "프로필 재진입 시 수정된 이름/스킬 유지 검증", "passed": true, "evidence": "Test 2: navigates dashboard → profile after edit, verifies name and skill chips persist"},
+    {"text": "data-testid 기반 로케이터 사용", "passed": true, "evidence": "Uses profile-edit-btn, profile-name, profile-skills-toggle, multiselect-option-*, profile-save, profile-saved, greeting"},
+    {"text": "미인증 /profile 접근 → /login 리다이렉트", "passed": true, "evidence": "Test 5: direct /profile access without auth → /login redirect"},
+    {"text": "각 테스트 독립 실행 (고유 이메일, 공유 상태 없음)", "passed": true, "evidence": "Each test uses Date.now()-based unique email via signupAndGoToDashboard helper"},
+    {"text": "생성된 테스트가 playwright에서 실제 통과", "passed": true, "evidence": "6 passed (6.2s) — confirmed by re-run agent with Bash access"}
+  ],
+  "summary": {"passed": 10, "failed": 0, "total": 10, "pass_rate": 1.0},
+  "timing": {"total_duration_seconds": 425.5, "total_tokens": 51185}
+}
