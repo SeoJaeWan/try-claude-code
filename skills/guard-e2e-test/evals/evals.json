@@ -12,11 +12,13 @@
         "Reads references/agent-browser-patterns.md for browser exploration patterns",
         "Detects existing playwright.config.ts and test conventions in features/next-app",
         "Explores the running app via agent-browser before writing tests",
+        "Invokes Playwright MCP tools (browser_navigate, browser_snapshot) at least once BEFORE any Write/Edit tool call for .spec.ts — verifiable by checking tool call order in transcript",
         "Creates .spec.ts under guard/ subdirectory in features/next-app/tests/",
         "Test describe block has [Guard] prefix",
         "Test names include journey_id [JOURNEY-AUTH-001]",
         "Includes happy flow scenario: /signup → fill form (signup-name, signup-email, signup-password, signup-confirm-password) → submit → /dashboard",
         "Includes state persistence scenario: reload on /dashboard → greeting element still visible",
+        "Includes state teardown scenario: verifies localStorage/sessionStorage/cookies are actually cleared after logout (page.evaluate + context.cookies pattern)",
         "Includes branch flow scenario: unauthenticated /dashboard access → redirect to /login",
         "Uses data-testid locators (signup-submit, nav-logout, greeting, etc.)"
       ]
@@ -29,10 +31,12 @@
       "expectations": [
         "Reads skills/guard-e2e-test/SKILL.md via Read tool",
         "Explores /login, /dashboard, /todos routes via agent-browser",
+        "Invokes Playwright MCP tools (browser_navigate, browser_snapshot) at least once BEFORE any Write/Edit tool call for .spec.ts — verifiable by checking tool call order in transcript",
         "Creates .spec.ts under guard/todo/ directory in features/next-app/tests/",
         "Test covers full route chain: /login → /dashboard → quick add todo → /todos → complete todo → /dashboard → stat-completed updated",
         "Verifies todo state persists across route transitions (dashboard ↔ todos)",
         "Verifies stat-total, stat-completed, stat-pending reflect correct counts after operations",
+        "Includes data-state branch flow: adding a todo without completing it leaves stats counter unchanged",
         "Includes branch flow: navigate to /todos without login → redirect to /login",
         "Uses data-testid locators (todo-input, todo-add, todo-checkbox-{id}, stat-total, stat-completed, nav-todos, nav-dashboard)",
         "Does NOT write single-screen tests (per-screen todo validation is plan-e2e-test scope)"
@@ -46,6 +50,7 @@
       "expectations": [
         "Reads skills/guard-e2e-test/SKILL.md via Read tool",
         "Explores /login, /profile, /dashboard routes via agent-browser",
+        "Invokes Playwright MCP tools (browser_navigate, browser_snapshot) at least once BEFORE any Write/Edit tool call for .spec.ts — verifiable by checking tool call order in transcript",
         "Creates .spec.ts under guard/profile/ directory in features/next-app/tests/",
         "Test covers full route chain: /login → /dashboard → /profile → edit → save → /dashboard → /profile",
         "Verifies profile data persists: after save, navigate to /dashboard, greeting shows updated name",
