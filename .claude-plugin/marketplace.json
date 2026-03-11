@@ -12,7 +12,7 @@
       "name": "try-claude-skills",
       "description": "Collection of AI-assisted development workflow skills including frontend/backend development, Git workflows, E2E testing, project setup, documentation, and task planning",
       "source": "./",
-      "strict": false,
+      "strict": true,
       "skills": [
         "./skills/backend-dev",
         "./skills/frontend-dev",
