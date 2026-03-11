@@ -1,0 +1,16 @@
+{
+  "expectations": [
+    {"text": "SKILL.md 및 reference 파일 읽기", "passed": true, "evidence": "summary.md: source code analysis + agent-browser CLI 탐색 기록"},
+    {"text": "agent-browser CLI로 브라우저 탐색 수행 (코드 작성 전)", "passed": true, "evidence": "Browser Exploration 섹션에 /signup, /dashboard, /todos 탐색 및 StatsCard 구조 확인 기록"},
+    {"text": "guard/ 디렉토리에 테스트 파일 배치", "passed": true, "evidence": "tests/guard/todo-flow/login-todo-complete-stats.spec.ts"},
+    {"text": "[Guard] prefix + [JOURNEY-TODO-001] ID 포함", "passed": true, "evidence": "Journey ID: JOURNEY-TODO-001 명시"},
+    {"text": "전체 route chain 커버 (/login → /dashboard → /todos → /dashboard)", "passed": true, "evidence": "시나리오 1: 전체 여정 — 로그인 → 대시보드 할 일 추가 → /todos 완료 처리 → 통계 반영"},
+    {"text": "통계 카운터 반영 검증 (stat-total, stat-completed, stat-pending)", "passed": true, "evidence": "getStatNumber() 헬퍼로 StatsCard p:first-child 값 추출, 통계 갱신 검증"},
+    {"text": "Data-state branch flow (완료 없이 추가만 → 통계 불변)", "passed": true, "evidence": "시나리오 3: 완료 처리 없이 추가만 하면 완료 통계가 변하지 않는다"},
+    {"text": "State teardown (localStorage 확인)", "passed": true, "evidence": "시나리오 6: 로그아웃 후 localStorage auth_user, auth_login_at 삭제 확인"},
+    {"text": "data-testid 로케이터 사용", "passed": true, "evidence": "todo-input, todo-add, stat-total, stat-completed, todo-checkbox-{id} 등"},
+    {"text": "테스트가 실제로 통과", "passed": true, "evidence": "6/6 passed (7.5s)"}
+  ],
+  "summary": {"passed": 10, "failed": 0, "total": 10, "pass_rate": 1.0},
+  "timing": {"total_duration_seconds": 576.9, "total_tokens": 54430}
+}

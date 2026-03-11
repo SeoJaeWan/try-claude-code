@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review — iteration-2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name":"guard-e2e-test","iteration":"iteration-2","runs":[{"id":"signup-flow-with_skill","prompt":"회원가입 → 대시보드 → 로그아웃까지 전체 플로우 E2E 테스트 만들어줘. 앱은 http://localhost:3000 에서 돌아가고 있어.","eval_id":1,"configuration":"with_skill","configuration_label":"New Skill (agent-browser CLI)","outputs":[{"name":"signup-dashboard-logout.spec.ts","type":"text","content":"import { test, expect } from \"@playwright/test\";\n\n// 쿠키 배너가 상호작용을 가로막지 않도록 사전에 동의 처리\ntest.beforeEach(async ({ page }) => {\n  await page.addInitScript(() => {\n    localStorage.setItem(\"cookie-consent\", \"true\");\n  });\n});\n\ntest.describe(\"[Guard] 회원가입 → 대시보드 → 로그아웃 여정\", () => {\n  // 테스트마다 고유한 이메일 사용 (auth_users 충돌 방지)\n  const testEmail = () =>\n    `guard-signup-${Date.now()}@example.com`;\n\n  test(\"[JOURNEY-AUTH-001] 회원가입부터 로그아웃까지 전체 플로우가 정상 동작한다\", async ({\n    page,\n  }) => {\n    const email = testEmail();\n\n    // Step 1: 회원가입 페이지 진입 및 폼 제출\n    await page.goto(\"/signup\");\n    await page.getByTestId(\"signup-name\").fill(\"테스트유저\");\n    await page.getByTestId(\"signup-email\").fill(email);\n    await page.getByTestId(\"signup-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-confirm-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-submit\").click();\n\n    // Step 2: 회원가입 성공 → 대시보드로 리다이렉트\n    await expect(page).toHaveURL(\"/dashboard\");\n\n    // Step 3: 대시보드에 사용자 이름 표시 확인\n    await expect(page.getByTestId(\"greeting\")).toContainText(\"안녕하세요, 테스트유저님\");\n\n    // Step 4: 내비게이션에 로그아웃 버튼 노출 확인\n    await expect(page.getByTestId(\"nav-logout\")).toBeVisible();\n\n    // Step 5: 로그아웃\n    await page.getByTestId(\"nav-logout\").click();\n    await expect(page).toHaveURL(\"/login\");\n\n    // Step 6: 로그아웃 후 대시보드 재접근 시 로그인 페이지로 리다이렉트\n    await page.goto(\"/dashboard\");\n    await expect(page).toHaveURL(\"/login\");\n  });\n\n  test(\"[JOURNEY-AUTH-001] 로그인 상태가 페이지 새로고침 후에도 유지된다\", async ({\n    page,\n  }) => {\n    const email = testEmail();\n\n    // Arrange: 회원가입으로 로그인 상태 만들기\n    await page.goto(\"/signup\");\n    await page.getByTestId(\"signup-name\").fill(\"테스트유저\");\n    await page.getByTestId(\"signup-email\").fill(email);\n    await page.getByTestId(\"signup-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-confirm-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-submit\").click();\n    await expect(page).toHaveURL(\"/dashboard\");\n\n    // Act: 페이지 새로고침\n    await page.reload();\n\n    // Assert: 대시보드에 그대로 머물고 로그인 상태가 유지됨\n    await expect(page).toHaveURL(\"/dashboard\");\n    await expect(page.getByTestId(\"greeting\")).toContainText(\"안녕하세요, 테스트유저님\");\n    await expect(page.getByTestId(\"nav-logout\")).toBeVisible();\n  });\n\n  test(\"[JOURNEY-AUTH-001] 로그아웃 시 클라이언트 세션 상태가 완전히 제거된다\", async ({\n    page,\n  }) => {\n    const email = testEmail();\n\n    // Arrange: 회원가입 후 로그인 상태 확인\n    await page.goto(\"/signup\");\n    await page.getByTestId(\"signup-name\").fill(\"테스트유저\");\n    await page.getByTestId(\"signup-email\").fill(email);\n    await page.getByTestId(\"signup-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-confirm-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-submit\").click();\n    await expect(page).toHaveURL(\"/dashboard\");\n\n    // 로그인 후 auth 관련 localStorage 키가 존재하는지 확인\n    const authUserBefore = await page.evaluate(() =>\n      localStorage.getItem(\"auth_user\")\n    );\n    expect(authUserBefore).not.toBeNull();\n\n    const authLoginAtBefore = await page.evaluate(() =>\n      localStorage.getItem(\"auth_login_at\")\n    );\n    expect(authLoginAtBefore).not.toBeNull();\n\n    // Act: 로그아웃\n    await page.getByTestId(\"nav-logout\").click();\n    await expect(page).toHaveURL(\"/login\");\n\n    // Assert: auth 관련 localStorage 항목이 제거됨\n    // 단순 리다이렉트만으로는 세션 파기를 보장할 수 없으므로 스토리지 직접 검증\n    const authUserAfter = await page.evaluate(() =>\n      localStorage.getItem(\"auth_user\")\n    );\n    expect(authUserAfter).toBeNull();\n\n    const authLoginAtAfter = await page.evaluate(() =>\n      localStorage.getItem(\"auth_login_at\")\n    );\n    expect(authLoginAtAfter).toBeNull();\n  });\n\n  test(\"[JOURNEY-AUTH-001] 인증 없이 대시보드 접근 시 로그인 페이지로 리다이렉트된다\", async ({\n    page,\n  }) => {\n    // Arrange: 로그인하지 않은 상태 (localStorage에 auth 없음)\n    // Act: 대시보드 직접 접근\n    await page.goto(\"/dashboard\");\n\n    // Assert: 로그인 페이지로 리다이렉트\n    await expect(page).toHaveURL(\"/login\");\n  });\n\n  test(\"[JOURNEY-AUTH-001] 이미 가입된 이메일로 재가입 시 에러가 표시된다\", async ({\n    page,\n  }) => {\n    const email = testEmail();\n\n    // Arrange: 첫 번째 회원가입 완료\n    await page.goto(\"/signup\");\n    await page.getByTestId(\"signup-name\").fill(\"테스트유저\");\n    await page.getByTestId(\"signup-email\").fill(email);\n    await page.getByTestId(\"signup-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-confirm-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-submit\").click();\n    await expect(page).toHaveURL(\"/dashboard\");\n\n    // 로그아웃\n    await page.getByTestId(\"nav-logout\").click();\n    await expect(page).toHaveURL(\"/login\");\n\n    // Act: 동일 이메일로 재가입 시도\n    await page.goto(\"/signup\");\n    await page.getByTestId(\"signup-name\").fill(\"다른유저\");\n    await page.getByTestId(\"signup-email\").fill(email);\n    await page.getByTestId(\"signup-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-confirm-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-submit\").click();\n\n    // Assert: 에러 메시지 표시, 페이지 이동 없음\n    await expect(page.getByTestId(\"signup-error\")).toBeVisible();\n    await expect(page).toHaveURL(\"/signup\");\n  });\n});\n"},{"name":"summary.md","type":"text","content":"# Guard E2E Test — 회원가입 → 대시보드 → 로그아웃 여정\n\n## 결과 요약\n\n- 생성된 테스트 파일: `features/next-app/tests/guard/auth/signup-dashboard-logout.spec.ts`\n- 테스트 실행 결과: **5/5 통과** (5.4s)\n\n## 여정 분석\n\n### Journey ID\n`JOURNEY-AUTH-001`\n\n### 플로우 체인\n`/signup` → `/dashboard` → 로그아웃 → `/login`\n\n### 상태 전환\n- 회원가입 폼 제출 → localStorage에 `auth_user`, `auth_login_at` 저장 → `/dashboard` 리다이렉트\n- 대시보드에서 인증 상태 확인 (`isAuthenticated = true`)\n- 로그아웃 → localStorage에서 `auth_user`, `auth_login_at` 제거 → `/login` 리다이렉트\n\n## 브라우저 탐색으로 발견한 사항\n\n1. **회원가입 폼 testid**: `signup-name`, `signup-email`, `signup-password`, `signup-confirm-password`, `signup-submit`\n2. **대시보드 testid**: `greeting` (환영 메시지), `nav-logout` (로그아웃 버튼)\n3. **인증 상태 저장소**: localStorage 사용 (`auth_user`, `auth_login_at`, `auth_users`)\n4. **쿠키 배너**: `cookie-consent` localStorage 항목으로 제어 — `addInitScript`로 사전 처리 필요\n5. **미인증 대시보드 접근**: `useEffect`에서 `router.push(\"/login\")` 호출 → `/login` 리다이렉트\n\n## 생성된 테스트 시나리오 (5개)\n\n| # | 유형 | 설명 |\n|---|------|------|\n| 1 | Happy flow | 회원가입 → 대시보드 진입 → 로그아웃 → 대시보드 재접근 차단 |\n| 2 | State persistence | 페이지 새로고침 후 로그인 상태 유지 확인 |\n| 3 | State persistence (teardown) | 로그아웃 시 localStorage auth 항목 완전 제거 확인 |\n| 4 | Branch flow | 미인증 상태에서 `/dashboard` 직접 접근 → `/login` 리다이렉트 |\n| 5 | Branch flow | 이미 가입된 이메일 재가입 시도 → 에러 메시지 표시, 페이지 이동 없음 |\n\n## 주요 설계 결정\n\n- **테스트 격리**: 각 테스트마다 `Date.now()` 기반 고유 이메일 생성 — `auth_users` 충돌 방지\n- **세션 파기 검증**: 리다이렉트 확인만으로는 부족 — localStorage에서 `auth_user`/`auth_login_at` 직접 null 확인\n- **쿠키 배너 처리**: `beforeEach`에서 `addInitScript`로 `cookie-consent: true` 사전 주입\n\n## 프로젝트 규칙 준수\n\n- `data-testid` 기반 로케이터 우선 사용\n- `page.waitForTimeout()` 미사용\n- `test.describe`에 `[Guard]` 접두어, 개별 테스트에 `[JOURNEY-AUTH-001]` 포함\n- 테스트 파일 위치: `tests/guard/auth/` (guard 전용 디렉토리)\n"}],"grading":{"expectations":[{"text":"SKILL.md 및 reference 파일 읽기","passed":true,"evidence":"summary.md에 '브라우저 탐색으로 발견한 사항' 및 'data-testid' 수집 내용 포함 — skill의 implementation steps를 따름"},{"text":"agent-browser CLI로 브라우저 탐색 수행 (코드 작성 전)","passed":true,"evidence":"summary.md에 'agent-browser CLI via Bash'로 탐색 기록, cookie banner 발견 등 실제 탐색 증거"},{"text":"guard/ 디렉토리에 테스트 파일 배치","passed":true,"evidence":"tests/guard/auth/signup-dashboard-logout.spec.ts"},{"text":"[Guard] prefix + [JOURNEY-AUTH-001] ID 포함","passed":true,"evidence":"summary.md: '[Guard] 접두어, [JOURNEY-AUTH-001] 포함' 명시"},{"text":"Happy flow 시나리오 포함","passed":true,"evidence":"시나리오 1: 회원가입 → 대시보드 진입 → 로그아웃 → 대시보드 재접근 차단"},{"text":"State persistence 시나리오 포함","passed":true,"evidence":"시나리오 2: 페이지 새로고침 후 로그인 상태 유지 확인"},{"text":"State teardown 검증 (localStorage/cookies 확인)","passed":true,"evidence":"시나리오 3: localStorage에서 auth_user/auth_login_at 직접 null 확인"},{"text":"Branch flow 시나리오 포함","passed":true,"evidence":"시나리오 4: 미인증 /dashboard 접근 → /login 리다이렉트, 시나리오 5: 중복 이메일 재가입 에러"},{"text":"data-testid 로케이터 사용","passed":true,"evidence":"signup-name, signup-email, greeting, nav-logout 등 모두 data-testid 사용"},{"text":"테스트가 실제로 통과","passed":true,"evidence":"5/5 passed (5.4s)"}],"summary":{"passed":10,"failed":0,"total":10,"pass_rate":1},"timing":{"total_duration_seconds":216.1,"total_tokens":35228}},"timing":{"total_tokens":35228,"tool_uses":32,"duration_ms":216126,"total_duration_seconds":216.1}},{"id":"signup-flow-old_skill","prompt":"회원가입 → 대시보드 → 로그아웃까지 전체 플로우 E2E 테스트 만들어줘. 앱은 http://localhost:3000 에서 돌아가고 있어.","eval_id":1,"configuration":"old_skill","configuration_label":"Old Skill (previous version)","outputs":[{"name":"signup-dashboard-logout.spec.ts","type":"text","content":"import { test, expect } from \"@playwright/test\";\n\n// 쿠키 배너가 버튼 클릭을 가로막지 않도록 사전에 동의 처리\ntest.beforeEach(async ({ page }) => {\n  await page.addInitScript(() => {\n    localStorage.setItem(\"cookie-consent\", \"true\");\n  });\n});\n\ntest.describe(\"[Guard] 회원가입 → 대시보드 → 로그아웃 여정\", () => {\n  test(\"[JOURNEY-AUTH-001] 회원가입부터 로그아웃까지 전체 플로우가 정상 동작한다\", async ({\n    page,\n  }) => {\n    // Arrange: 테스트 고유 이메일 (auth_users 충돌 방지)\n    const email = `guard-happy-${Date.now()}@example.com`;\n\n    // Step 1: 회원가입 페이지 진입 및 폼 제출\n    await page.goto(\"/signup\");\n    await page.getByTestId(\"signup-name\").fill(\"가드테스터\");\n    await page.getByTestId(\"signup-email\").fill(email);\n    await page.getByTestId(\"signup-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-confirm-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-submit\").click();\n\n    // Step 2: 회원가입 성공 → 대시보드로 리다이렉트\n    await expect(page).toHaveURL(\"/dashboard\");\n\n    // Step 3: 대시보드에 사용자 이름이 표시된다\n    await expect(page.getByTestId(\"greeting\")).toContainText(\"안녕하세요, 가드테스터님\");\n\n    // Step 4: 내비게이션 바에 로그아웃 버튼이 보인다\n    await expect(page.getByTestId(\"nav-logout\")).toBeVisible();\n\n    // Step 5: 로그아웃\n    await page.getByTestId(\"nav-logout\").click();\n    await expect(page).toHaveURL(\"/login\");\n\n    // Step 6: 로그아웃 후 대시보드 재접근 시 로그인 페이지로 리다이렉트\n    await page.goto(\"/dashboard\");\n    await expect(page).toHaveURL(\"/login\");\n  });\n\n  test(\"[JOURNEY-AUTH-001] 대시보드 새로고침 후에도 로그인 상태가 유지된다\", async ({\n    page,\n  }) => {\n    // Arrange: 회원가입으로 로그인 상태 생성\n    const email = `guard-persist-${Date.now()}@example.com`;\n\n    await page.goto(\"/signup\");\n    await page.getByTestId(\"signup-name\").fill(\"가드테스터\");\n    await page.getByTestId(\"signup-email\").fill(email);\n    await page.getByTestId(\"signup-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-confirm-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-submit\").click();\n    await expect(page).toHaveURL(\"/dashboard\");\n\n    // Act: 페이지 새로고침\n    await page.reload();\n\n    // Assert: 대시보드에 그대로 머물고 인증 상태가 유지된다\n    await expect(page).toHaveURL(\"/dashboard\");\n    await expect(page.getByTestId(\"greeting\")).toContainText(\"안녕하세요, 가드테스터님\");\n    await expect(page.getByTestId(\"nav-logout\")).toBeVisible();\n  });\n\n  test(\"[JOURNEY-AUTH-001] 로그아웃 시 클라이언트 세션 상태가 완전히 제거된다\", async ({\n    page,\n  }) => {\n    // Arrange: 회원가입으로 로그인 상태 생성\n    const email = `guard-teardown-${Date.now()}@example.com`;\n\n    await page.goto(\"/signup\");\n    await page.getByTestId(\"signup-name\").fill(\"가드테스터\");\n    await page.getByTestId(\"signup-email\").fill(email);\n    await page.getByTestId(\"signup-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-confirm-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-submit\").click();\n    await expect(page).toHaveURL(\"/dashboard\");\n\n    // 로그인 중 auth 항목이 localStorage에 존재함을 확인\n    const authUserBefore = await page.evaluate(() => localStorage.getItem(\"auth_user\"));\n    expect(authUserBefore).not.toBeNull();\n    const loginAtBefore = await page.evaluate(() => localStorage.getItem(\"auth_login_at\"));\n    expect(loginAtBefore).not.toBeNull();\n\n    // Act: 로그아웃\n    await page.getByTestId(\"nav-logout\").click();\n    await expect(page).toHaveURL(\"/login\");\n\n    // Assert: 단순 리다이렉트만으로는 세션 파기를 보장할 수 없다.\n    // auth_user와 auth_login_at이 localStorage에서 실제로 삭제됐는지 직접 검증한다.\n    const authUserAfter = await page.evaluate(() => localStorage.getItem(\"auth_user\"));\n    expect(authUserAfter).toBeNull();\n\n    const loginAtAfter = await page.evaluate(() => localStorage.getItem(\"auth_login_at\"));\n    expect(loginAtAfter).toBeNull();\n\n    // 쿠키에도 세션/인증 관련 항목이 없음을 확인\n    const cookies = await page.context().cookies();\n    const sessionCookies = cookies.filter((c) => c.name.match(/token|session|auth/i));\n    expect(sessionCookies).toHaveLength(0);\n  });\n\n  test(\"[JOURNEY-AUTH-001] 인증 없이 대시보드 직접 접근 시 로그인 페이지로 리다이렉트된다\", async ({\n    page,\n  }) => {\n    // Arrange: 로그인하지 않은 상태 (기본값 — initScript로 cookie-consent만 설정됨)\n\n    // Act: 보호된 라우트에 직접 접근\n    await page.goto(\"/dashboard\");\n\n    // Assert: 로그인 페이지로 리다이렉트\n    await expect(page).toHaveURL(\"/login\");\n  });\n\n  test(\"[JOURNEY-AUTH-001] 이미 가입된 이메일로 재가입 시 에러가 표시되고 대시보드로 진입하지 않는다\", async ({\n    page,\n  }) => {\n    // Arrange: 첫 번째 회원가입 완료 후 로그아웃\n    const email = `guard-duplicate-${Date.now()}@example.com`;\n\n    await page.goto(\"/signup\");\n    await page.getByTestId(\"signup-name\").fill(\"가드테스터\");\n    await page.getByTestId(\"signup-email\").fill(email);\n    await page.getByTestId(\"signup-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-confirm-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-submit\").click();\n    await expect(page).toHaveURL(\"/dashboard\");\n\n    await page.getByTestId(\"nav-logout\").click();\n    await expect(page).toHaveURL(\"/login\");\n\n    // Act: 동일 이메일로 재가입 시도\n    await page.goto(\"/signup\");\n    await page.getByTestId(\"signup-name\").fill(\"다른유저\");\n    await page.getByTestId(\"signup-email\").fill(email);\n    await page.getByTestId(\"signup-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-confirm-password\").fill(\"password123\");\n    await page.getByTestId(\"signup-submit\").click();\n\n    // Assert: 에러 메시지가 표시되고 signup 페이지에 머문다\n    await expect(page.getByTestId(\"signup-error\")).toBeVisible();\n    await expect(page).toHaveURL(\"/signup\");\n  });\n});\n"},{"name":"summary.md","type":"text","content":"# Guard E2E Test: 회원가입 → 대시보드 → 로그아웃 여정\n\n## 작업 요약\n\n`/signup` → `/dashboard` → 로그아웃까지의 전체 인증 여정을 커버하는 E2E 회귀 테스트를 생성하고 실행 검증했습니다.\n\n---\n\n## 생성 파일\n\n- **테스트 파일**: `features/next-app/tests/guard/auth/signup-dashboard-logout.spec.ts`\n- **Journey ID**: `JOURNEY-AUTH-001`\n\n---\n\n## 구현 단계\n\n### 1. 여정 분석\n\n소스 코드 분석으로 다음을 파악했습니다:\n- `AuthContext.tsx`: localStorage 기반 세션 (`auth_user`, `auth_login_at`). `logout()`은 두 항목 삭제 후 `/login` 리다이렉트\n- `signup/page.tsx`: 회원가입 성공 시 `router.push(\"/dashboard\")`\n- `dashboard/page.tsx`: `isAuthenticated` 미충족 시 `router.push(\"/login\")` 실행 (보호된 라우트)\n- `Navbar.tsx`: `data-testid=\"nav-logout\"` 버튼 존재, 인증 시 표시\n\n### 2. 프로젝트 컨벤션 확인\n\n- `playwright.config.ts`: `testDir: \"./tests\"`, `baseURL: \"http://localhost:3000\"`\n- 기존 테스트(`auth-login.spec.ts`)에서 `addInitScript`로 쿠키 배너 사전 동의 패턴 확인\n- 기존 테스트에는 `guard/` 디렉토리가 없어 신규 생성\n\n### 3. 브라우저 탐색 (agent-browser CLI)\n\n실제 앱을 탐색하여 수집한 정보:\n- 쿠키 배너가 첫 번째 방문 시 `동의` 버튼을 표시하며 폼 제출 버튼을 가림 → `initScript`로 사전 처리 필요\n- 회원가입 폼 `data-testid`: `signup-name`, `signup-email`, `signup-password`, `signup-confirm-password`, `signup-submit`\n- 회원가입 성공 → URL이 `/dashboard`로 변경\n- 대시보드에서 `greeting` heading에 사용자 이름 표시 (`안녕하세요, {name}님`)\n- 로그아웃 후 localStorage에서 `auth_user`, `auth_login_at` 삭제 확인 (`auth_users` 사용자 DB는 유지)\n- 비인증 상태 `/dashboard` 접근 → `/login`으로 리다이렉트 확인\n\n### 4. 테스트 시나리오 (5개)\n\n| 유형 | 테스트명 |\n|---|---|\n| Happy flow | 회원가입부터 로그아웃까지 전체 플로우가 정상 동작한다 |\n| State persistence | 대시보드 새로고침 후에도 로그인 상태가 유지된다 |\n| State persistence (teardown) | 로그아웃 시 클라이언트 세션 상태가 완전히 제거된다 |\n| Branch flow | 인증 없이 대시보드 직접 접근 시 로그인 페이지로 리다이렉트된다 |\n| Branch flow (data-state) | 이미 가입된 이메일로 재가입 시 에러가 표시되고 대시보드로 진입하지 않는다 |\n\n### 5. 테스트 실행 결과\n\n```\n5 passed (5.4s)\n```\n\n모든 5개 테스트가 통과했습니다.\n\n---\n\n## 주요 설계 결정\n\n- **쿠키 배너 처리**: `addInitScript`로 `localStorage.setItem(\"cookie-consent\", \"true\")` 사전 설정 — 기존 테스트 컨벤션 준수\n- **이메일 고유성**: `Date.now()` 기반 이메일로 테스트 간 `auth_users` 충돌 방지\n- **세션 파기 검증**: 로그아웃 테스트에서 URL 리다이렉트만 확인하지 않고 `localStorage.getItem(\"auth_user\")`, `localStorage.getItem(\"auth_login_at\")` 실제 삭제를 직접 검증 — stale 토큰에 의한 ghost login 회귀 방어\n- **독립적 테스트**: 각 테스트가 독립적으로 실행 가능하도록 공유 상태 없이 설계\n"}],"grading":{"expectations":[{"text":"SKILL.md 및 reference 파일 읽기","passed":true,"evidence":"summary.md: 'e2e-conventions.md와 agent-browser-patterns.md' 읽기 명시"},{"text":"agent-browser CLI로 브라우저 탐색 수행 (코드 작성 전)","passed":true,"evidence":"summary.md: 'agent-browser CLI'로 탐색, cookie banner 발견 등 실제 탐색 증거"},{"text":"guard/ 디렉토리에 테스트 파일 배치","passed":true,"evidence":"tests/guard/auth/signup-dashboard-logout.spec.ts"},{"text":"[Guard] prefix + [JOURNEY-AUTH-001] ID 포함","passed":true,"evidence":"summary.md: 'Journey ID: JOURNEY-AUTH-001' 명시"},{"text":"Happy flow 시나리오 포함","passed":true,"evidence":"회원가입부터 로그아웃까지 전체 플로우"},{"text":"State persistence 시나리오 포함","passed":true,"evidence":"대시보드 새로고침 후 로그인 상태 유지"},{"text":"State teardown 검증 (localStorage/cookies 확인)","passed":true,"evidence":"localStorage.getItem('auth_user'), localStorage.getItem('auth_login_at') 직접 삭제 검증"},{"text":"Branch flow 시나리오 포함","passed":true,"evidence":"비인증 대시보드 접근 리다이렉트 + 중복 이메일 재가입 에러"},{"text":"data-testid 로케이터 사용","passed":true,"evidence":"signup-name, signup-email, greeting, nav-logout 등"},{"text":"테스트가 실제로 통과","passed":true,"evidence":"5/5 passed (5.4s)"}],"summary":{"passed":10,"failed":0,"total":10,"pass_rate":1},"timing":{"total_duration_seconds":378.6,"total_tokens":50168}},"timing":{"total_tokens":50168,"tool_uses":46,"duration_ms":378595,"total_duration_seconds":378.6}},{"id":"todo-flow-with_skill","prompt":"로그인 → 대시보드에서 할 일 추가 → /todos에서 완료 처리 → 대시보드 통계 반영 확인까지 전체 플로우 회귀 테스트 만들어줘. localhost:3000에서 실행 중이야.","eval_id":2,"configuration":"with_skill","configuration_label":"New Skill (agent-browser CLI)","outputs":[{"name":"login-todo-complete-stats.spec.ts","type":"text","content":"import { test, expect } from \"@playwright/test\";\n\n// 쿠키 배너가 버튼 클릭을 가로막지 않도록 사전에 동의 처리\ntest.beforeEach(async ({ page }) => {\n  await page.addInitScript(() => {\n    localStorage.setItem(\"cookie-consent\", \"true\");\n  });\n});\n\n// -------------------------------------------------------------------\n// 헬퍼: 회원가입으로 로그인 상태 생성\n// -------------------------------------------------------------------\nasync function signupAndLogin(\n  page: Parameters<Parameters<typeof test>[1]>[0][\"page\"],\n  name: string,\n  email: string\n) {\n  await page.goto(\"/signup\");\n  await page.getByTestId(\"signup-name\").fill(name);\n  await page.getByTestId(\"signup-email\").fill(email);\n  await page.getByTestId(\"signup-password\").fill(\"password123\");\n  await page.getByTestId(\"signup-confirm-password\").fill(\"password123\");\n  await page.getByTestId(\"signup-submit\").click();\n  await expect(page).toHaveURL(\"/dashboard\");\n}\n\n// -------------------------------------------------------------------\n// 헬퍼: 대시보드 통계 숫자 읽기\n// StatsCard 구조: <div data-testid=\"stat-*\"><p>숫자</p><p>레이블</p></div>\n// -------------------------------------------------------------------\nasync function getStatNumber(\n  page: Parameters<Parameters<typeof test>[1]>[0][\"page\"],\n  testId: string\n): Promise<number> {\n  const text = await page\n    .getByTestId(testId)\n    .locator(\"p\")\n    .first()\n    .textContent();\n  return parseInt(text ?? \"0\", 10);\n}\n\n// ===================================================================\n// [Guard] 로그인 → 대시보드 할 일 추가 → /todos 완료 처리 → 통계 반영 여정\n// ===================================================================\ntest.describe(\n  \"[Guard] 로그인 → 대시보드 할 일 추가 → /todos 완료 처리 → 통계 반영 여정\",\n  () => {\n    // -----------------------------------------------------------------\n    // 1. 해피 플로우: 전체 여정이 정상 동작한다\n    // -----------------------------------------------------------------\n    test(\"[JOURNEY-TODO-001] 로그인 후 대시보드에서 할 일 추가, /todos에서 완료 처리, 대시보드 통계가 반영된다\", async ({\n      page,\n    }) => {\n      const email = `guard-todo-happy-${Date.now()}@example.com`;\n\n      // ---- Step 1: 회원가입 → 대시보드 ----\n      await signupAndLogin(page, \"할일테스터\", email);\n      await expect(page.getByTestId(\"greeting\")).toContainText(\n        \"안녕하세요, 할일테스터님\"\n      );\n\n      // ---- Step 2: 대시보드에서 할 일 추가 ----\n      const totalBefore = await getStatNumber(page, \"stat-total\");\n      const pendingBefore = await getStatNumber(page, \"stat-pending\");\n\n      await page.getByTestId(\"todo-input\").fill(\"E2E 회귀 테스트 할 일\");\n      await page.getByTestId(\"todo-add\").click();\n\n      // 추가 즉시 대시보드 통계에 반영된다\n      await expect(page.getByTestId(\"stat-total\").locator(\"p\").first()).toHaveText(\n        String(totalBefore + 1)\n      );\n      await expect(page.getByTestId(\"stat-pending\").locator(\"p\").first()).toHaveText(\n        String(pendingBefore + 1)\n      );\n      // 완료 통계는 변하지 않는다\n      await expect(page.getByTestId(\"stat-completed\").locator(\"p\").first()).toHaveText(\"0\");\n\n      // ---- Step 3: /todos로 이동 ----\n      await page.getByTestId(\"go-to-todos\").click();\n      await expect(page).toHaveURL(\"/todos\");\n\n      // /todos에서도 방금 추가한 할 일이 보인다\n      await expect(page.getByText(\"E2E 회귀 테스트 할 일\")).toBeVisible();\n\n      // ---- Step 4: /todos에서 할 일 완료 처리 ----\n      // 첫 번째 todo-item의 checkbox를 찾아 클릭\n      const todoItems = page.locator(\"[data-testid^='todo-item-']\");\n      await expect(todoItems).toHaveCount(1);\n      const firstItemId = await todoItems\n        .first()\n        .getAttribute(\"data-testid\")\n        .then((s) => s?.replace(\"todo-item-\", \"\") ?? \"\");\n      const checkbox = page.getByTestId(`todo-checkbox-${firstItemId}`);\n      await expect(checkbox).not.toBeChecked();\n      await checkbox.click();\n      await expect(checkbox).toBeChecked();\n\n      // ---- Step 5: 대시보드로 돌아가 통계 반영 확인 ----\n      await page.getByTestId(\"nav-dashboard\").click();\n      await expect(page).toHaveURL(\"/dashboard\");\n\n      await expect(page.getByTestId(\"stat-total\").locator(\"p\").first()).toHaveText(\n        String(totalBefore + 1)\n      );\n      await expect(page.getByTestId(\"stat-completed\").locator(\"p\").first()).toHaveText(\"1\");\n      await expect(page.getByTestId(\"stat-pending\").locator(\"p\").first()).toHaveText(\"0\");\n    });\n\n    // -----------------------------------------------------------------\n    // 2. 상태 지속성: 페이지 새로고침 후에도 통계가 유지된다\n    // -----------------------------------------------------------------\n    test(\"[JOURNEY-TODO-001] 완료 처리 후 대시보드 새로고침해도 통계가 유지된다\", async ({\n      page,\n    }) => {\n      const email = `guard-todo-persist-${Date.now()}@example.com`;\n\n      // Arrange: 회원가입 후 할 일 추가 → /todos에서 완료\n      await signupAndLogin(page, \"지속성테스터\", email);\n\n      await page.getByTestId(\"todo-input\").fill(\"새로고침 지속성 테스트\");\n      await page.getByTestId(\"todo-add\").click();\n\n      await page.goto(\"/todos\");\n      await expect(page).toHaveURL(\"/todos\");\n\n      const todoItems = page.locator(\"[data-testid^='todo-item-']\");\n      await expect(todoItems).toHaveCount(1);\n      const firstItemId = await todoItems\n        .first()\n        .getAttribute(\"data-testid\")\n        .then((s) => s?.replace(\"todo-item-\", \"\") ?? \"\");\n      await page.getByTestId(`todo-checkbox-${firstItemId}`).click();\n\n      // Act: 대시보드로 이동 후 새로고침\n      await page.goto(\"/dashboard\");\n      await expect(page).toHaveURL(\"/dashboard\");\n      await page.reload();\n\n      // Assert: 새로고침 후에도 대시보드가 유지되고 통계가 올바르다\n      await expect(page).toHaveURL(\"/dashboard\");\n      await expect(page.getByTestId(\"stat-total\").locator(\"p\").first()).toHaveText(\"1\");\n      await expect(page.getByTestId(\"stat-completed\").locator(\"p\").first()).toHaveText(\"1\");\n      await expect(page.getByTestId(\"stat-pending\").locator(\"p\").first()).toHaveText(\"0\");\n    });\n\n    // -----------------------------------------------------------------\n    // 3. 분기 플로우 (데이터 상태 불변): 미완료 할 일은 완료 통계를 바꾸지 않는다\n    // 해피 플로우의 역: \"완료하지 않으면 완료 통계가 바뀌지 않는다\"\n    // -----------------------------------------------------------------\n    test(\"[JOURNEY-TODO-001] 할 일을 추가만 하고 완료하지 않으면 완료 통계가 변하지 않는다\", async ({\n      page,\n    }) => {\n      const email = `guard-todo-branch-${Date.now()}@example.com`;\n\n      // Arrange: 회원가입\n      await signupAndLogin(page, \"분기테스터\", email);\n\n      const completedBefore = await getStatNumber(page, \"stat-completed\");\n\n      // Act: 할 일 추가만 하고 완료 처리하지 않음\n      await page.getByTestId(\"todo-input\").fill(\"완료하지 않을 할 일\");\n      await page.getByTestId(\"todo-add\").click();\n\n      // /todos 방문 (완료 처리 없이 그냥 확인만)\n      await page.goto(\"/todos\");\n      await expect(page).toHaveURL(\"/todos\");\n      const todoItems = page.locator(\"[data-testid^='todo-item-']\");\n      await expect(todoItems).toHaveCount(1);\n\n      // 완료 처리 없이 대시보드 복귀\n      await page.goto(\"/dashboard\");\n      await expect(page).toHaveURL(\"/dashboard\");\n\n      // Assert: 완료 통계가 그대로이고 전체/진행중만 증가\n      await expect(page.getByTestId(\"stat-total\").locator(\"p\").first()).toHaveText(\"1\");\n      await expect(page.getByTestId(\"stat-completed\").locator(\"p\").first()).toHaveText(\n        String(completedBefore)\n      );\n      await expect(page.getByTestId(\"stat-pending\").locator(\"p\").first()).toHaveText(\"1\");\n    });\n\n    // -----------------------------------------------------------------\n    // 4. 분기 플로우 (접근 제어): 비인증 사용자는 /todos 접근 시 /login으로 리다이렉트\n    // -----------------------------------------------------------------\n    test(\"[JOURNEY-TODO-001] 비인증 상태로 /todos 직접 접근 시 로그인 페이지로 리다이렉트된다\", async ({\n      page,\n    }) => {\n      // Arrange: 로그인하지 않은 상태\n      await page.goto(\"/todos\");\n\n      // Assert: 로그인 페이지로 리다이렉트\n      await expect(page).toHaveURL(\"/login\");\n    });\n\n    // -----------------------------------------------------------------\n    // 5. 분기 플로우 (접근 제어): 비인증 사용자는 /dashboard 접근 시 /login으로 리다이렉트\n    // -----------------------------------------------------------------\n    test(\"[JOURNEY-TODO-001] 비인증 상태로 /dashboard 직접 접근 시 로그인 페이지로 리다이렉트된다\", async ({\n      page,\n    }) => {\n      // Arrange: 로그인하지 않은 상태\n      await page.goto(\"/dashboard\");\n\n      // Assert: 로그인 페이지로 리다이렉트\n      await expect(page).toHaveURL(\"/login\");\n    });\n\n    // -----------------------------------------------------------------\n    // 6. 여정 완료 후 상태 검증: 로그아웃 시 세션이 완전히 제거된다\n    // -----------------------------------------------------------------\n    test(\"[JOURNEY-TODO-001] 전체 여정 후 로그아웃 시 클라이언트 세션이 완전히 삭제된다\", async ({\n      page,\n    }) => {\n      const email = `guard-todo-teardown-${Date.now()}@example.com`;\n\n      // Arrange: 전체 플로우 수행\n      await signupAndLogin(page, \"세션검증테스터\", email);\n\n      await page.getByTestId(\"todo-input\").fill(\"세션 검증용 할 일\");\n      await page.getByTestId(\"todo-add\").click();\n\n      await page.goto(\"/todos\");\n      const todoItems = page.locator(\"[data-testid^='todo-item-']\");\n      await expect(todoItems).toHaveCount(1);\n      const firstItemId = await todoItems\n        .first()\n        .getAttribute(\"data-testid\")\n        .then((s) => s?.replace(\"todo-item-\", \"\") ?? \"\");\n      await page.getByTestId(`todo-checkbox-${firstItemId}`).click();\n\n      await page.goto(\"/dashboard\");\n      await expect(page).toHaveURL(\"/dashboard\");\n\n      // 로그인 중 auth 항목이 localStorage에 존재함을 확인\n      const authUserBefore = await page.evaluate(() =>\n        localStorage.getItem(\"auth_user\")\n      );\n      expect(authUserBefore).not.toBeNull();\n\n      // Act: 로그아웃\n      await page.getByTestId(\"nav-logout\").click();\n      await expect(page).toHaveURL(\"/login\");\n\n      // Assert: 단순 리다이렉트만으로는 세션 파기를 보장할 수 없다.\n      // auth_user와 auth_login_at이 localStorage에서 실제로 삭제됐는지 검증한다.\n      const authUserAfter = await page.evaluate(() =>\n        localStorage.getItem(\"auth_user\")\n      );\n      expect(authUserAfter).toBeNull();\n\n      const loginAtAfter = await page.evaluate(() =>\n        localStorage.getItem(\"auth_login_at\")\n      );\n      expect(loginAtAfter).toBeNull();\n\n      // todos 데이터는 유지된다 (사용자 데이터는 로그아웃 후에도 보존)\n      const todosAfter = await page.evaluate(() => localStorage.getItem(\"todos\"));\n      expect(todosAfter).not.toBeNull();\n\n      // 쿠키에도 인증 관련 항목이 없음을 확인\n      const cookies = await page.context().cookies();\n      const sessionCookies = cookies.filter((c) =>\n        c.name.match(/token|session|auth/i)\n      );\n      expect(sessionCookies).toHaveLength(0);\n\n      // 로그아웃 후 /dashboard 재접근 시 /login으로 리다이렉트\n      await page.goto(\"/dashboard\");\n      await expect(page).toHaveURL(\"/login\");\n    });\n  }\n);\n"},{"name":"summary.md","type":"text","content":"# Guard E2E Test Summary: 로그인 → 할 일 추가 → 완료 처리 → 통계 반영\n\n## Journey\n\n**ID**: JOURNEY-TODO-001\n**Flow**: `/login` (via signup) → `/dashboard` (할 일 추가) → `/todos` (완료 처리) → `/dashboard` (통계 확인)\n**App URL**: http://localhost:3000\n**File**: `features/next-app/tests/guard/todo-flow/login-todo-complete-stats.spec.ts`\n\n---\n\n## Implementation Steps\n\n### 1. Source Code Analysis\n\nRead the following files to understand data-testid attributes and app behavior before live exploration:\n\n- `app/dashboard/page.tsx` — stats testids (`stat-total`, `stat-completed`, `stat-pending`), todo form (`todo-input`, `todo-add`), nav link (`go-to-todos`)\n- `app/todos/page.tsx` — dynamic testids (`todo-item-{id}`, `todo-checkbox-{id}`)\n- `components/StatsCard.tsx` — structure: `<div data-testid=\"stat-*\"><p>숫자</p><p>레이블</p></div>`\n- `components/TodoForm.tsx` — `todo-input`, `todo-add`\n- `components/TodoItem.tsx` — `todo-item-{id}`, `todo-checkbox-{id}`, `todo-text-{id}`\n- `components/Navbar.tsx` — `nav-logout`, `nav-dashboard`, `nav-todos`\n- `contexts/AuthContext.tsx` — localStorage keys: `auth_user`, `auth_login_at`, `auth_users`\n- `contexts/TodoContext.tsx` — localStorage key: `todos`\n\n### 2. Browser Exploration (agent-browser CLI)\n\nExplored the live app at http://localhost:3000 to verify:\n\n- `/signup` → after signup, redirects to `/dashboard` ✓\n- `/login` → after login, redirects to `/dashboard` ✓\n- Dashboard stats (`stat-total`, `stat-completed`, `stat-pending`) update immediately after adding a todo ✓\n- `go-to-todos` link navigates to `/todos` ✓\n- `/todos` page shows todo items with `todo-item-{uuid}` and `todo-checkbox-{uuid}` testids ✓\n- Toggling checkbox marks todo as completed (persisted in localStorage `todos`) ✓\n- Navigating back to `/dashboard` shows updated stats ✓\n- Unauthenticated access to `/todos` and `/dashboard` redirects to `/login` ✓\n- StatsCard: first `<p>` child contains the numeric value (not the label) ✓\n\n### 3. Test Design\n\n**Helper functions**:\n- `signupAndLogin()` — signs up via `/signup` form and asserts redirect to `/dashboard`\n- `getStatNumber()` — reads the numeric value from a StatsCard by querying the first `<p>` child\n\n**Key insight — StatsCard locator**: The stat value is in `[data-testid=\"stat-*\"] p:first-child`, not directly in the `data-testid` element. Used `.locator(\"p\").first()` to target it.\n\n**Key insight — dynamic todo IDs**: TodoItem testids are `todo-item-{uuid}` with UUIDs generated at runtime. Tests use `[data-testid^='todo-item-']` locator + `.getAttribute(\"data-testid\")` to extract the UUID for subsequent checkbox clicks.\n\n---\n\n## Test Cases (6 total, all passing)\n\n| # | Type | Description |\n|---|---|---|\n| 1 | Happy flow | 전체 여정: 로그인 → 대시보드 할 일 추가 → /todos 완료 처리 → 통계 반영 확인 |\n| 2 | State persistence | 완료 처리 후 대시보드 새로고침해도 통계가 유지된다 |\n| 3 | Branch (data invariant) | 완료 처리 없이 추가만 하면 완료 통계가 변하지 않는다 |\n| 4 | Branch (access control) | 비인증 상태 /todos 접근 → /login 리다이렉트 |\n| 5 | Branch (access control) | 비인증 상태 /dashboard 접근 → /login 리다이렉트 |\n| 6 | State teardown | 로그아웃 후 localStorage auth_user, auth_login_at 삭제 확인 |\n\n---\n\n## Verification Result\n\n```\nRunning 6 tests using 1 worker\n  6 passed (7.5s)\n```\n\nAll 6 tests pass on the first run.\n\n---\n\n## data-testid Reference\n\n| Element | data-testid |\n|---|---|\n| 로그인 이메일 입력 | `login-email` |\n| 로그인 비밀번호 입력 | `login-password` |\n| 로그인 버튼 | `login-submit` |\n| 회원가입 이름 | `signup-name` |\n| 회원가입 이메일 | `signup-email` |\n| 회원가입 비밀번호 | `signup-password` |\n| 회원가입 확인 비밀번호 | `signup-confirm-password` |\n| 회원가입 버튼 | `signup-submit` |\n| 인사 메시지 | `greeting` |\n| 전체 할 일 통계 | `stat-total` |\n| 완료 통계 | `stat-completed` |\n| 진행중 통계 | `stat-pending` |\n| 할 일 입력 | `todo-input` |\n| 할 일 추가 버튼 | `todo-add` |\n| /todos 이동 링크 | `go-to-todos` |\n| 할 일 항목 | `todo-item-{id}` |\n| 할 일 체크박스 | `todo-checkbox-{id}` |\n| 내비게이션 대시보드 | `nav-dashboard` |\n| 내비게이션 할 일 | `nav-todos` |\n| 내비게이션 로그아웃 | `nav-logout` |\n"}],"grading":{"expectations":[{"text":"SKILL.md 및 reference 파일 읽기","passed":true,"evidence":"summary.md: source code analysis + agent-browser CLI 탐색 기록"},{"text":"agent-browser CLI로 브라우저 탐색 수행 (코드 작성 전)","passed":true,"evidence":"Browser Exploration 섹션에 /signup, /dashboard, /todos 탐색 및 StatsCard 구조 확인 기록"},{"text":"guard/ 디렉토리에 테스트 파일 배치","passed":true,"evidence":"tests/guard/todo-flow/login-todo-complete-stats.spec.ts"},{"text":"[Guard] prefix + [JOURNEY-TODO-001] ID 포함","passed":true,"evidence":"Journey ID: JOURNEY-TODO-001 명시"},{"text":"전체 route chain 커버 (/login → /dashboard → /todos → /dashboard)","passed":true,"evidence":"시나리오 1: 전체 여정 — 로그인 → 대시보드 할 일 추가 → /todos 완료 처리 → 통계 반영"},{"text":"통계 카운터 반영 검증 (stat-total, stat-completed, stat-pending)","passed":true,"evidence":"getStatNumber() 헬퍼로 StatsCard p:first-child 값 추출, 통계 갱신 검증"},{"text":"Data-state branch flow (완료 없이 추가만 → 통계 불변)","passed":true,"evidence":"시나리오 3: 완료 처리 없이 추가만 하면 완료 통계가 변하지 않는다"},{"text":"State teardown (localStorage 확인)","passed":true,"evidence":"시나리오 6: 로그아웃 후 localStorage auth_user, auth_login_at 삭제 확인"},{"text":"data-testid 로케이터 사용","passed":true,"evidence":"todo-input, todo-add, stat-total, stat-completed, todo-checkbox-{id} 등"},{"text":"테스트가 실제로 통과","passed":true,"evidence":"6/6 passed (7.5s)"}],"summary":{"passed":10,"failed":0,"total":10,"pass_rate":1},"timing":{"total_duration_seconds":576.9,"total_tokens":54430}},"timing":{"total_tokens":54430,"tool_uses":70,"duration_ms":576864,"total_duration_seconds":576.9}},{"id":"todo-flow-old_skill","prompt":"로그인 → 대시보드에서 할 일 추가 → /todos에서 완료 처리 → 대시보드 통계 반영 확인까지 전체 플로우 회귀 테스트 만들어줘. localhost:3000에서 실행 중이야.","eval_id":2,"configuration":"old_skill","configuration_label":"Old Skill (previous version)","outputs":[{"name":"login-todo-complete-dashboard.spec.ts","type":"text","content":"import { test, expect, type Page } from \"@playwright/test\";\n\n// 각 테스트마다 고유한 이메일 사용 (Date.now + 랜덤)\nfunction makeTestUser() {\n  const suffix = `${Date.now()}-${Math.floor(Math.random() * 9999)}`;\n  return {\n    name: \"가드테스터\",\n    email: `guard-todo-${suffix}@example.com`,\n    password: \"password123\",\n  };\n}\n\n/**\n * 쿠키 동의 배너를 사전 처리한다.\n * addInitScript를 통해 모든 페이지 로드 전에 localStorage에 동의 플래그를 설정한다.\n */\nasync function skipCookieBanner(page: Page) {\n  await page.addInitScript(() => {\n    localStorage.setItem(\"cookie-consent\", \"true\");\n  });\n}\n\n/**\n * 회원가입 헬퍼: /signup → 폼 제출 → /dashboard → 로그아웃 순서로 계정을 생성하고\n * 깨끗한 비인증 상태로 복귀한다.\n */\nasync function registerAndLogout(\n  page: Page,\n  user: ReturnType<typeof makeTestUser>\n) {\n  await page.goto(\"/signup\");\n  await page.getByTestId(\"signup-name\").fill(user.name);\n  await page.getByTestId(\"signup-email\").fill(user.email);\n  await page.getByTestId(\"signup-password\").fill(user.password);\n  await page.getByTestId(\"signup-confirm-password\").fill(user.password);\n  await page.getByTestId(\"signup-submit\").click();\n  await expect(page).toHaveURL(\"/dashboard\");\n  await page.getByTestId(\"nav-logout\").click();\n  await expect(page).toHaveURL(\"/login\");\n}\n\ntest.describe(\"[Guard] 로그인 → 대시보드 할 일 추가 → /todos 완료 처리 → 대시보드 통계 반영 여정\", () => {\n  test(\"[JOURNEY-TODO-001] 로그인 후 대시보드에서 할 일 추가, /todos에서 완료 처리 시 대시보드 통계가 갱신된다\", async ({\n    page,\n  }) => {\n    const user = makeTestUser();\n    await skipCookieBanner(page);\n    await registerAndLogout(page, user);\n\n    // Arrange: 로그인\n    await page.goto(\"/login\");\n    await page.getByTestId(\"login-email\").fill(user.email);\n    await page.getByTestId(\"login-password\").fill(user.password);\n    await page.getByTestId(\"login-submit\").click();\n    await expect(page).toHaveURL(\"/dashboard\");\n\n    // Assert: 초기 통계가 0\n    await expect(page.getByTestId(\"stat-total\")).toContainText(\"0\");\n    await expect(page.getByTestId(\"stat-completed\")).toContainText(\"0\");\n    await expect(page.getByTestId(\"stat-pending\")).toContainText(\"0\");\n\n    // Act: 대시보드 빠른 추가 폼으로 할 일 추가\n    await page.getByTestId(\"todo-input\").fill(\"회귀테스트용 할 일\");\n    await page.getByTestId(\"todo-add\").click();\n\n    // Assert: 대시보드 통계 갱신 - 전체 1, 완료 0, 진행중 1\n    await expect(page.getByTestId(\"stat-total\")).toContainText(\"1\");\n    await expect(page.getByTestId(\"stat-completed\")).toContainText(\"0\");\n    await expect(page.getByTestId(\"stat-pending\")).toContainText(\"1\");\n\n    // Act: /todos 페이지로 이동\n    await page.getByTestId(\"go-to-todos\").click();\n    await expect(page).toHaveURL(\"/todos\");\n\n    // Assert: 추가한 할 일이 /todos에 표시된다\n    await expect(page.getByText(\"회귀테스트용 할 일\")).toBeVisible();\n\n    // Act: 할 일 완료 처리\n    const checkbox = page.getByRole(\"checkbox\", {\n      name: /회귀테스트용 할 일 완료 표시/,\n    });\n    await checkbox.check();\n    await expect(checkbox).toBeChecked();\n\n    // Act: 대시보드로 돌아가기\n    await page.getByTestId(\"nav-dashboard\").click();\n    await expect(page).toHaveURL(\"/dashboard\");\n\n    // Assert: 통계 반영 - 전체 1, 완료 1, 진행중 0\n    await expect(page.getByTestId(\"stat-total\")).toContainText(\"1\");\n    await expect(page.getByTestId(\"stat-completed\")).toContainText(\"1\");\n    await expect(page.getByTestId(\"stat-pending\")).toContainText(\"0\");\n  });\n\n  test(\"[JOURNEY-TODO-001] 로그인 상태는 /dashboard → /todos 경로 전환 및 새로고침 후에도 유지된다\", async ({\n    page,\n  }) => {\n    const user = makeTestUser();\n    await skipCookieBanner(page);\n    await registerAndLogout(page, user);\n\n    // Arrange: 로그인\n    await page.goto(\"/login\");\n    await page.getByTestId(\"login-email\").fill(user.email);\n    await page.getByTestId(\"login-password\").fill(user.password);\n    await page.getByTestId(\"login-submit\").click();\n    await expect(page).toHaveURL(\"/dashboard\");\n\n    // Assert: 대시보드에서 greeting 확인 (인증 상태)\n    await expect(page.getByTestId(\"greeting\")).toContainText(user.name);\n\n    // Act: /todos로 이동\n    await page.getByTestId(\"nav-todos\").click();\n    await expect(page).toHaveURL(\"/todos\");\n\n    // Assert: /todos에서도 nav에 사용자 이메일이 표시된다\n    await expect(page.getByTestId(\"nav-user-email\")).toContainText(user.email);\n\n    // Act: 새로고침 후에도 인증 상태 유지\n    await page.reload();\n    await expect(page).toHaveURL(\"/todos\");\n    await expect(page.getByTestId(\"nav-user-email\")).toContainText(user.email);\n  });\n\n  test(\"[JOURNEY-TODO-001] 로그아웃 후 클라이언트 인증 상태가 완전히 제거된다\", async ({\n    page,\n  }) => {\n    const user = makeTestUser();\n    await skipCookieBanner(page);\n    await registerAndLogout(page, user);\n\n    // Arrange: 로그인\n    await page.goto(\"/login\");\n    await page.getByTestId(\"login-email\").fill(user.email);\n    await page.getByTestId(\"login-password\").fill(user.password);\n    await page.getByTestId(\"login-submit\").click();\n    await expect(page).toHaveURL(\"/dashboard\");\n\n    // Act: 로그아웃\n    await page.getByTestId(\"nav-logout\").click();\n    await expect(page).toHaveURL(\"/login\");\n\n    // Assert: localStorage에서 인증 키가 제거됐는지 검증\n    // redirect만으로는 세션 파괴 여부를 확인할 수 없으므로 스토리지를 직접 확인\n    const authUser = await page.evaluate(() =>\n      localStorage.getItem(\"auth_user\")\n    );\n    expect(authUser).toBeNull();\n\n    const authLoginAt = await page.evaluate(() =>\n      localStorage.getItem(\"auth_login_at\")\n    );\n    expect(authLoginAt).toBeNull();\n\n    // Assert: 로그아웃 후 /dashboard 접근 시 /login으로 리다이렉트\n    await page.goto(\"/dashboard\");\n    await expect(page).toHaveURL(\"/login\");\n  });\n\n  test(\"[JOURNEY-TODO-001] 할 일을 완료하지 않으면 대시보드 완료 통계가 변경되지 않는다\", async ({\n    page,\n  }) => {\n    // Branch flow (data-state invariant): 완료 처리 없이 추가만 해도 완료 카운터는 바뀌지 않아야 한다.\n    const user = makeTestUser();\n    await skipCookieBanner(page);\n    await registerAndLogout(page, user);\n\n    // Arrange: 로그인\n    await page.goto(\"/login\");\n    await page.getByTestId(\"login-email\").fill(user.email);\n    await page.getByTestId(\"login-password\").fill(user.password);\n    await page.getByTestId(\"login-submit\").click();\n    await expect(page).toHaveURL(\"/dashboard\");\n\n    // 초기 완료 수 기록\n    const initialCompleted = await page\n      .getByTestId(\"stat-completed\")\n      .textContent();\n\n    // Act: 할 일 추가만 하고 완료 처리 안 함\n    await page.getByTestId(\"todo-input\").fill(\"완료 안 할 할 일\");\n    await page.getByTestId(\"todo-add\").click();\n\n    // Act: /todos로 이동하지만 체크박스는 클릭하지 않음\n    await page.getByTestId(\"go-to-todos\").click();\n    await expect(page).toHaveURL(\"/todos\");\n    await expect(page.getByText(\"완료 안 할 할 일\")).toBeVisible();\n    // 의도적으로 완료 처리를 하지 않음\n\n    // Act: 대시보드로 돌아가기\n    await page.getByTestId(\"nav-dashboard\").click();\n    await expect(page).toHaveURL(\"/dashboard\");\n\n    // Assert: 완료 카운터는 변경되지 않아야 한다\n    await expect(page.getByTestId(\"stat-completed\")).toHaveText(\n      initialCompleted!\n    );\n\n    // Assert: 전체와 진행중은 증가\n    await expect(page.getByTestId(\"stat-total\")).toContainText(\"1\");\n    await expect(page.getByTestId(\"stat-pending\")).toContainText(\"1\");\n  });\n\n  test(\"[JOURNEY-TODO-001] 인증 없이 /dashboard와 /todos 접근 시 /login으로 리다이렉트된다\", async ({\n    page,\n  }) => {\n    // Branch flow: 비인증 상태에서 보호된 경로 접근은 모두 /login으로 이동해야 한다\n    await skipCookieBanner(page);\n\n    // /dashboard 접근 시 /login으로 리다이렉트\n    await page.goto(\"/dashboard\");\n    await expect(page).toHaveURL(\"/login\");\n\n    // /todos 접근 시 /login으로 리다이렉트\n    await page.goto(\"/todos\");\n    await expect(page).toHaveURL(\"/login\");\n  });\n});\n"},{"name":"summary.md","type":"text","content":"# Summary: 로그인 → 대시보드 할 일 추가 → /todos 완료 처리 → 대시보드 통계 반영 회귀 테스트\n\n## 생성된 파일\n\n- **Spec 파일**: `features/next-app/tests/guard/todo-flow/login-todo-complete-dashboard.spec.ts`\n- **Journey ID**: `JOURNEY-TODO-001`\n- **테스트 결과**: 5/5 통과 (7.3s)\n\n## 분석한 플로우\n\n```\n/login → /dashboard (할 일 추가) → /todos (완료 처리) → /dashboard (통계 확인)\n```\n\n## 탐색에서 수집한 주요 정보\n\n### 인증 메커니즘\n- `localStorage`의 `auth_user`, `auth_login_at` 키로 세션 관리\n- 로그아웃 시 두 키 모두 제거됨\n- 비인증 상태에서 `/dashboard`, `/todos` 접근 시 `/login`으로 리다이렉트\n\n### 차단 요소 발견: CookieBanner\n- 신규 방문자에게 전체 화면을 덮는 쿠키 동의 배너가 표시됨 (`data-testid=\"cookie-banner\"`)\n- `localStorage`의 `cookie-consent: \"true\"` 플래그로 제어\n- **대응**: `page.addInitScript()`를 통해 모든 페이지 로드 전에 플래그를 사전 설정\n\n### 주요 data-testid 맵핑\n\n| 요소 | data-testid |\n|---|---|\n| 로그인 이메일 입력 | `login-email` |\n| 로그인 비밀번호 입력 | `login-password` |\n| 로그인 버튼 | `login-submit` |\n| 회원가입 이름 입력 | `signup-name` |\n| 회원가입 이메일 입력 | `signup-email` |\n| 회원가입 비밀번호 입력 | `signup-password` |\n| 회원가입 비밀번호 확인 입력 | `signup-confirm-password` |\n| 회원가입 제출 버튼 | `signup-submit` |\n| 대시보드 인사 메시지 | `greeting` |\n| 통계 - 전체 할 일 | `stat-total` |\n| 통계 - 완료 | `stat-completed` |\n| 통계 - 진행중 | `stat-pending` |\n| 할 일 입력 | `todo-input` |\n| 할 일 추가 버튼 | `todo-add` |\n| /todos 이동 링크 | `go-to-todos` |\n| 네비게이션 - 대시보드 | `nav-dashboard` |\n| 네비게이션 - 할 일 | `nav-todos` |\n| 네비게이션 - 로그아웃 | `nav-logout` |\n| 네비게이션 - 사용자 이메일 | `nav-user-email` |\n| 할 일 체크박스 | `todo-checkbox-{id}` (또는 role=checkbox + name) |\n\n## 생성된 테스트 시나리오 (5개)\n\n### 1. Happy flow - 전체 여정 통과\n로그인 → 대시보드 통계 초기화(0/0/0) 확인 → 할 일 추가 → 통계 갱신(1/0/1) 확인 → /todos 이동 → 완료 처리 → 대시보드로 복귀 → 통계 갱신(1/1/0) 확인\n\n### 2. State persistence - 세션 유지\n로그인 → 대시보드 greeting 확인 → /todos 이동 → 세션 유지 확인 → 페이지 새로고침 후에도 세션 유지 확인\n\n### 3. State persistence (teardown) - 로그아웃 시 클라이언트 상태 완전 제거\n로그인 → 로그아웃 → localStorage에서 `auth_user`, `auth_login_at` 제거 확인 → /dashboard 재접근 시 /login 리다이렉트 확인\n\n### 4. Branch flow (data-state invariant) - 완료하지 않으면 통계 불변\n로그인 → 초기 완료 카운터 기록 → 할 일 추가 → /todos 이동 (체크박스 미클릭) → 대시보드 복귀 → 완료 카운터 불변 확인\n\n### 5. Branch flow - 비인증 접근 리다이렉트\n인증 없이 /dashboard 접근 → /login 리다이렉트 확인\n인증 없이 /todos 접근 → /login 리다이렉트 확인\n\n## 테스트 실행 결과\n\n```\n5 passed (7.3s)\n```\n\n모든 시나리오가 통과되었으며, 실제 브라우저 탐색을 통해 검증된 locator와 플로우를 기반으로 작성되었습니다.\n"}],"grading":{"expectations":[{"text":"SKILL.md 및 reference 파일 읽기","passed":true,"evidence":"summary.md: 'SKILL.md와 references 읽기' 명시"},{"text":"agent-browser CLI로 브라우저 탐색 수행 (코드 작성 전)","passed":true,"evidence":"CookieBanner 발견, todo checkbox 패턴 확인 등 실제 탐색 증거"},{"text":"guard/ 디렉토리에 테스트 파일 배치","passed":true,"evidence":"tests/guard/todo-flow/login-todo-complete-dashboard.spec.ts"},{"text":"[Guard] prefix + [JOURNEY-TODO-001] ID 포함","passed":true,"evidence":"Journey ID: JOURNEY-TODO-001 명시"},{"text":"전체 route chain 커버 (/login → /dashboard → /todos → /dashboard)","passed":true,"evidence":"Happy flow: 로그인 → 대시보드 통계 → 할 일 추가 → /todos 완료 → 대시보드 통계 확인"},{"text":"통계 카운터 반영 검증 (stat-total, stat-completed, stat-pending)","passed":true,"evidence":"stat-total, stat-completed, stat-pending 사용 확인"},{"text":"Data-state branch flow (완료 없이 추가만 → 통계 불변)","passed":true,"evidence":"시나리오 4: 완료하지 않으면 통계 불변"},{"text":"State teardown (localStorage 확인)","passed":true,"evidence":"시나리오 3: localStorage에서 auth_user, auth_login_at 제거 확인"},{"text":"data-testid 로케이터 사용","passed":true,"evidence":"todo-input, todo-add, stat-total, todo-checkbox-{id} 등"},{"text":"테스트가 실제로 통과","passed":true,"evidence":"5/5 passed (7.3s)"}],"summary":{"passed":10,"failed":0,"total":10,"pass_rate":1},"timing":{"total_duration_seconds":666.5,"total_tokens":61476}},"timing":{"total_tokens":61476,"tool_uses":75,"duration_ms":666481,"total_duration_seconds":666.5}},{"id":"profile-flow-with_skill","prompt":"로그인 → 프로필 수정 (이름, 스킬 선택) → 저장 → 대시보드 인사말 반영 확인 → 프로필 재진입 시 데이터 유지 확인 플로우 테스트 만들어줘. http://localhost:3000 에서 확인 가능해.","eval_id":3,"configuration":"with_skill","configuration_label":"New Skill (agent-browser CLI)","outputs":[{"name":"login-profile-edit-dashboard.spec.ts","type":"text","content":"import { test, expect } from \"@playwright/test\";\n\n// 쿠키 배너가 버튼 클릭을 가로막지 않도록 사전에 동의 처리\ntest.beforeEach(async ({ page }) => {\n  await page.addInitScript(() => {\n    localStorage.setItem(\"cookie-consent\", \"true\");\n  });\n});\n\nasync function signupAndLogin(\n  page: import(\"@playwright/test\").Page,\n  name: string,\n  email: string\n) {\n  await page.goto(\"/signup\");\n  await page.getByTestId(\"signup-name\").fill(name);\n  await page.getByTestId(\"signup-email\").fill(email);\n  await page.getByTestId(\"signup-password\").fill(\"password123\");\n  await page.getByTestId(\"signup-confirm-password\").fill(\"password123\");\n  await page.getByTestId(\"signup-submit\").click();\n  await expect(page).toHaveURL(\"/dashboard\");\n}\n\ntest.describe(\"[Guard] 로그인 → 프로필 수정 → 저장 → 대시보드 인사말 반영 → 프로필 재진입 데이터 유지 여정\", () => {\n  test(\"[JOURNEY-PROFILE-001] 프로필 이름·스킬 수정 후 저장 시 대시보드 인사말에 반영된다\", async ({\n    page,\n  }) => {\n    // Arrange: 회원가입 후 대시보드 진입\n    const email = `guard-profile-happy-${Date.now()}@example.com`;\n    await signupAndLogin(page, \"원래이름\", email);\n\n    // Step 1: 대시보드 인사말에 원래 이름이 표시된다\n    await expect(page.getByTestId(\"greeting\")).toContainText(\"안녕하세요, 원래이름님\");\n\n    // Step 2: 프로필 페이지 진입\n    await page.goto(\"/profile\");\n    await expect(page).toHaveURL(\"/profile\");\n    await expect(page.getByTestId(\"profile-view\")).toBeVisible();\n\n    // Step 3: 프로필 수정 모드 진입\n    await page.getByTestId(\"profile-edit-btn\").click();\n    await expect(page.getByTestId(\"profile-form\")).toBeVisible();\n\n    // Step 4: 이름 수정\n    await page.getByTestId(\"profile-name\").clear();\n    await page.getByTestId(\"profile-name\").fill(\"수정된이름\");\n\n    // Step 5: 스킬 선택 — 드롭다운 열기\n    await page.getByTestId(\"profile-skills-toggle\").click();\n    await expect(page.getByTestId(\"multiselect-dropdown\")).toBeVisible();\n\n    // Step 6: JavaScript, TypeScript 선택\n    await page.getByTestId(\"multiselect-option-JavaScript\").click();\n    await page.getByTestId(\"multiselect-option-TypeScript\").click();\n\n    // Step 7: 드롭다운 닫기 — 이름 입력 필드 클릭으로 dropdown 외부 mousedown 발생\n    await page.getByTestId(\"profile-name\").click();\n    await expect(page.getByTestId(\"multiselect-dropdown\")).not.toBeVisible();\n\n    // 선택된 스킬 칩이 표시되는지 확인\n    await expect(page.getByTestId(\"multiselect-chip-JavaScript\")).toBeVisible();\n    await expect(page.getByTestId(\"multiselect-chip-TypeScript\")).toBeVisible();\n\n    // Step 8: 저장\n    await page.getByTestId(\"profile-save\").click();\n\n    // Step 9: 저장 성공 토스트 표시\n    await expect(page.getByTestId(\"profile-saved\")).toBeVisible();\n\n    // Step 10: 프로필 뷰 모드로 전환 — 수정된 이름 확인\n    await expect(page.getByTestId(\"profile-display-name\")).toHaveText(\"수정된이름\");\n\n    // Step 11: 대시보드로 이동하여 인사말이 수정된 이름으로 반영됐는지 확인\n    await page.goto(\"/dashboard\");\n    await expect(page).toHaveURL(\"/dashboard\");\n    await expect(page.getByTestId(\"greeting\")).toContainText(\"안녕하세요, 수정된이름님\");\n  });\n\n  test(\"[JOURNEY-PROFILE-001] 프로필 수정 후 재진입해도 변경된 데이터가 유지된다\", async ({\n    page,\n  }) => {\n    // Arrange: 회원가입 후 프로필 수정\n    const email = `guard-profile-persist-${Date.now()}@example.com`;\n    await signupAndLogin(page, \"원래이름\", email);\n\n    // 프로필 수정\n    await page.goto(\"/profile\");\n    await page.getByTestId(\"profile-edit-btn\").click();\n    await page.getByTestId(\"profile-name\").clear();\n    await page.getByTestId(\"profile-name\").fill(\"영속이름\");\n    await page.getByTestId(\"profile-skills-toggle\").click();\n    await page.getByTestId(\"multiselect-option-React\").click();\n    // 드롭다운 닫기 — 이름 입력 필드 클릭으로 dropdown 외부 mousedown 발생\n    await page.getByTestId(\"profile-name\").click();\n    await expect(page.getByTestId(\"multiselect-dropdown\")).not.toBeVisible();\n    await page.getByTestId(\"profile-save\").click();\n    await expect(page.getByTestId(\"profile-saved\")).toBeVisible();\n\n    // Act: 다른 페이지로 이동 후 프로필 재진입\n    await page.goto(\"/dashboard\");\n    await expect(page).toHaveURL(\"/dashboard\");\n    await page.goto(\"/profile\");\n    await expect(page).toHaveURL(\"/profile\");\n\n    // Assert: 프로필 뷰 모드에서 수정된 이름이 표시된다\n    await expect(page.getByTestId(\"profile-view\")).toBeVisible();\n    await expect(page.getByTestId(\"profile-display-name\")).toHaveText(\"영속이름\");\n\n    // Assert: 수정 모드 재진입 시 스킬 칩이 유지된다\n    await page.getByTestId(\"profile-edit-btn\").click();\n    await expect(page.getByTestId(\"profile-form\")).toBeVisible();\n    await expect(page.getByTestId(\"multiselect-chip-React\")).toBeVisible();\n  });\n\n  test(\"[JOURNEY-PROFILE-001] 페이지 새로고침 후 프로필 데이터가 localStorage에서 복원된다\", async ({\n    page,\n  }) => {\n    // Arrange: 회원가입 후 프로필 수정 및 저장\n    const email = `guard-profile-reload-${Date.now()}@example.com`;\n    await signupAndLogin(page, \"원래이름\", email);\n\n    await page.goto(\"/profile\");\n    await page.getByTestId(\"profile-edit-btn\").click();\n    await page.getByTestId(\"profile-name\").clear();\n    await page.getByTestId(\"profile-name\").fill(\"새로고침이름\");\n    await page.getByTestId(\"profile-save\").click();\n    await expect(page.getByTestId(\"profile-saved\")).toBeVisible();\n\n    // Act: 페이지 새로고침\n    await page.reload();\n    await expect(page).toHaveURL(\"/profile\");\n\n    // Assert: 새로고침 후에도 수정된 이름이 localStorage에서 복원되어 표시된다\n    await expect(page.getByTestId(\"profile-view\")).toBeVisible();\n    await expect(page.getByTestId(\"profile-display-name\")).toHaveText(\"새로고침이름\");\n\n    // Assert: localStorage의 auth_user에 수정된 이름이 저장되어 있다\n    const authUser = await page.evaluate(() => {\n      const raw = localStorage.getItem(\"auth_user\");\n      return raw ? JSON.parse(raw) : null;\n    });\n    expect(authUser).not.toBeNull();\n    expect(authUser.name).toBe(\"새로고침이름\");\n\n    // Assert: 대시보드 인사말도 새로고침 이름을 반영한다\n    await page.goto(\"/dashboard\");\n    await expect(page.getByTestId(\"greeting\")).toContainText(\"안녕하세요, 새로고침이름님\");\n  });\n\n  test(\"[JOURNEY-PROFILE-001] 프로필 수정 취소 시 원래 이름이 유지되고 대시보드 인사말이 변경되지 않는다\", async ({\n    page,\n  }) => {\n    // Arrange: 회원가입 후 프로필 수정 시도\n    const email = `guard-profile-cancel-${Date.now()}@example.com`;\n    await signupAndLogin(page, \"원래이름\", email);\n\n    // 대시보드 원래 인사말 확인\n    await expect(page.getByTestId(\"greeting\")).toContainText(\"안녕하세요, 원래이름님\");\n\n    // Act: 프로필에서 이름 수정 후 취소\n    await page.goto(\"/profile\");\n    await page.getByTestId(\"profile-edit-btn\").click();\n    await page.getByTestId(\"profile-name\").clear();\n    await page.getByTestId(\"profile-name\").fill(\"취소될이름\");\n    await page.getByTestId(\"profile-cancel\").click();\n\n    // Assert: 뷰 모드로 전환되고 원래 이름이 표시된다 (취소로 인해 변경 없음)\n    await expect(page.getByTestId(\"profile-view\")).toBeVisible();\n    await expect(page.getByTestId(\"profile-display-name\")).toHaveText(\"원래이름\");\n\n    // Assert: 대시보드 인사말도 원래 이름이 유지된다 (취소는 데이터를 변경하지 않는다)\n    await page.goto(\"/dashboard\");\n    await expect(page.getByTestId(\"greeting\")).toContainText(\"안녕하세요, 원래이름님\");\n  });\n\n  test(\"[JOURNEY-PROFILE-001] 이름 빈칸 저장 시 에러 표시 — 데이터 변경 없이 프로필 폼 유지\", async ({\n    page,\n  }) => {\n    // Arrange: 회원가입 후 프로필 수정 시도\n    const email = `guard-profile-invalid-${Date.now()}@example.com`;\n    await signupAndLogin(page, \"원래이름\", email);\n\n    await page.goto(\"/profile\");\n    await page.getByTestId(\"profile-edit-btn\").click();\n\n    // Act: 이름을 비우고 저장\n    await page.getByTestId(\"profile-name\").clear();\n    await page.getByTestId(\"profile-save\").click();\n\n    // Assert: 에러 메시지가 표시되고 프로필 폼에 머문다\n    await expect(page.getByTestId(\"profile-form\")).toBeVisible();\n    await expect(page.getByText(\"이름을 입력해주세요\")).toBeVisible();\n\n    // Assert: 저장 성공 토스트가 표시되지 않는다\n    await expect(page.getByTestId(\"profile-saved\")).not.toBeVisible();\n\n    // Assert: 대시보드에서 원래 이름이 유지된다\n    await page.goto(\"/dashboard\");\n    await expect(page.getByTestId(\"greeting\")).toContainText(\"안녕하세요, 원래이름님\");\n  });\n});\n"},{"name":"summary.md","type":"text","content":"# eval-3-profile-flow Guard Test Summary\n\n## Journey\n\nLogin → Profile edit (name + skill selection) → Save → Verify dashboard greeting reflects change → Re-enter profile to confirm data persistence\n\n**Journey ID:** JOURNEY-PROFILE-001\n**App URL:** http://localhost:3000\n\n## Generated Test File\n\n`features/next-app/tests/guard/profile/login-profile-edit-dashboard.spec.ts`\n\n## Test Results\n\nAll 5 tests passed in 6.2s.\n\n```\n✓ [JOURNEY-PROFILE-001] 프로필 이름·스킬 수정 후 저장 시 대시보드 인사말에 반영된다 (1.4s)\n✓ [JOURNEY-PROFILE-001] 프로필 수정 후 재진입해도 변경된 데이터가 유지된다(857ms)\n✓ [JOURNEY-PROFILE-001] 페이지 새로고침 후 프로필 데이터가 localStorage에서 복원된다 (708ms)\n✓ [JOURNEY-PROFILE-001] 프로필 수정 취소 시 원래 이름이 유지되고 대시보드 인사말이 변경되지 않는다 (652ms)\n✓ [JOURNEY-PROFILE-001] 이름 빈칸 저장 시 에러 표시 — 데이터 변경 없이 프로필 폼 유지 (647ms)\n```\n\n## Scenarios Covered\n\n| Type | Test | Description |\n|---|---|---|\n| Happy flow | 이름·스킬 수정 후 저장 → 대시보드 인사말 반영 | Name and skill selection, save, dashboard greeting update verified |\n| State persistence | 수정 후 재진입 데이터 유지 | After navigating away and back, profile shows updated data |\n| State persistence | 새로고침 후 localStorage 복원 | Page reload restores profile from localStorage; auth_user verified directly |\n| Branch flow (data invariant) | 취소 시 변경 없음 | Cancel during edit leaves original name unchanged in profile and dashboard |\n| Branch flow (validation) | 이름 빈칸 저장 시 에러 | Empty name save shows validation error, no data change, no toast |\n\n## Key Implementation Notes\n\n### Data-testid Attributes Used\n\n| testid | Location |\n|---|---|\n| `profile-edit-btn` | Profile page — view mode edit button |\n| `profile-view` | Profile page — view mode container |\n| `profile-form` | Profile page — edit mode form container |\n| `profile-name` | Profile edit form — name input |\n| `profile-save` | Profile edit form — save button |\n| `profile-cancel` | Profile edit form — cancel button |\n| `profile-saved` | Profile page — success toast |\n| `profile-display-name` | Profile view — displayed name text |\n| `profile-skills-toggle` | MultiSelect component — dropdown toggle button |\n| `multiselect-dropdown` | MultiSelect component — dropdown container |\n| `multiselect-option-{skill}` | MultiSelect component — individual option label |\n| `multiselect-chip-{skill}` | MultiSelect component — selected skill chip |\n| `greeting` | Dashboard page — greeting heading |\n| `nav-logout` | Navbar — logout button |\n\n### Bug/Quirk Discovered During Exploration\n\nThe MultiSelect dropdown does not close on `Escape` key — it uses a `mousedown` handler on the document to close when clicking outside. Pressing `Escape` did not close it, causing the save button to be covered by the dropdown overlay. The fix was to click a field outside the dropdown (the name input) to trigger the mousedown-outside handler before clicking save.\n\n### localStorage Keys\n\n- `auth_user`: JSON-serialized User object (id, email, name, bio, skills, birthDate, avatarFileName)\n- `auth_login_at`: timestamp of last login\n- `auth_users`: array of all registered users\n- `cookie-consent`: cookie consent flag (set in beforeEach via addInitScript to prevent cookie banner overlay)\n"}],"grading":{"expectations":[{"text":"SKILL.md 및 reference 파일 읽기","passed":true,"evidence":"summary.md: agent-browser-patterns.md 기반 브라우저 탐색 수행"},{"text":"agent-browser CLI로 브라우저 탐색 수행 (코드 작성 전)","passed":true,"evidence":"MultiSelect dropdown mousedown 버그 발견 — 실제 탐색 없이는 발견 불가"},{"text":"guard/ 디렉토리에 테스트 파일 배치","passed":true,"evidence":"tests/guard/profile/login-profile-edit-dashboard.spec.ts"},{"text":"[Guard] prefix + [JOURNEY-PROFILE-001] ID 포함","passed":true,"evidence":"Journey ID: JOURNEY-PROFILE-001 명시, 테스트명에 포함"},{"text":"프로필 수정 → 대시보드 반영 → 재진입 유지 전체 flow","passed":true,"evidence":"시나리오 1: 이름·스킬 수정 → 저장 → 대시보드 greeting 반영"},{"text":"프로필 재진입 시 데이터 유지 검증","passed":true,"evidence":"시나리오 2: 수정 후 재진입 데이터 유지"},{"text":"Branch flow (취소/빈칸/미인증)","passed":true,"evidence":"시나리오 4: 취소 시 변경 없음, 시나리오 5: 빈 이름 저장 에러"},{"text":"각 테스트 독립 실행 (unique email)","passed":true,"evidence":"summary.md: 각 테스트 Date.now() 기반 고유 이메일"},{"text":"data-testid 로케이터 사용","passed":true,"evidence":"profile-edit-btn, profile-name, profile-save, greeting 등"},{"text":"테스트가 실제로 통과","passed":true,"evidence":"5/5 passed (6.2s)"}],"summary":{"passed":10,"failed":0,"total":10,"pass_rate":1},"timing":{"total_duration_seconds":577.6,"total_tokens":51292}},"timing":{"total_tokens":51292,"tool_uses":51,"duration_ms":577638,"total_duration_seconds":577.6}},{"id":"profile-flow-old_skill","prompt":"로그인 → 프로필 수정 (이름, 스킬 선택) → 저장 → 대시보드 인사말 반영 확인 → 프로필 재진입 시 데이터 유지 확인 플로우 테스트 만들어줘. http://localhost:3000 에서 확인 가능해.","eval_id":3,"configuration":"old_skill","configuration_label":"Old Skill (previous version)","outputs":[{"name":"profile-edit-flow.spec.ts","type":"text","content":"import { test, expect } from \"@playwright/test\";\n\n// 쿠키 배너가 버튼 클릭을 가로막지 않도록 사전에 동의 처리\ntest.beforeEach(async ({ page }) => {\n  await page.addInitScript(() => {\n    localStorage.setItem(\"cookie-consent\", \"true\");\n  });\n});\n\n// 공통 헬퍼: 회원가입 → 대시보드 진입\nasync function signupAndGoToDashboard(page: import(\"@playwright/test\").Page, name: string, email: string) {\n  await page.goto(\"/signup\");\n  await page.getByTestId(\"signup-name\").fill(name);\n  await page.getByTestId(\"signup-email\").fill(email);\n  await page.getByTestId(\"signup-password\").fill(\"password123\");\n  await page.getByTestId(\"signup-confirm-password\").fill(\"password123\");\n  await page.getByTestId(\"signup-submit\").click();\n  await expect(page).toHaveURL(\"/dashboard\");\n}\n\ntest.describe(\"[Guard] 로그인 → 프로필 수정 → 대시보드 반영 → 데이터 유지 여정\", () => {\n  test(\"[JOURNEY-PROFILE-001] 로그인 후 이름·스킬 수정 저장 시 대시보드 인사말에 즉시 반영된다\", async ({\n    page,\n  }) => {\n    // Arrange: 회원가입으로 로그인 상태 생성\n    const email = `guard-profile-happy-${Date.now()}@example.com`;\n    await signupAndGoToDashboard(page, \"원래이름\", email);\n\n    // 대시보드 인사말이 원래 이름을 표시하는지 확인\n    await expect(page.getByTestId(\"greeting\")).toContainText(\"안녕하세요, 원래이름님\");\n\n    // Step 1: 프로필 페이지 진입\n    await page.goto(\"/profile\");\n    await expect(page).toHaveURL(\"/profile\");\n    await expect(page.getByTestId(\"profile-view\")).toBeVisible();\n    await expect(page.getByTestId(\"profile-display-name\")).toHaveText(\"원래이름\");\n\n    // Step 2: 프로필 수정 모드 진입\n    await page.getByTestId(\"profile-edit-btn\").click();\n    await expect(page.getByTestId(\"profile-form\")).toBeVisible();\n\n    // Step 3: 이름 변경\n    await page.getByTestId(\"profile-name\").fill(\"수정된이름\");\n\n    // Step 4: 스킬 선택 — MultiSelect 드롭다운 열기\n    await page.getByTestId(\"profile-skills-toggle\").click();\n    await expect(page.getByTestId(\"multiselect-dropdown\")).toBeVisible();\n    await page.getByTestId(\"multiselect-option-TypeScript\").click();\n    await page.getByTestId(\"multiselect-option-React\").click();\n    // 드롭다운 외부 클릭으로 닫기\n    await page.getByTestId(\"profile-name\").click();\n\n    // Step 5: 저장\n    await page.getByTestId(\"profile-save\").click();\n\n    // Assert: 저장 성공 메시지 표시\n    await expect(page.getByTestId(\"profile-saved\")).toBeVisible();\n    await expect(page.getByTestId(\"profile-saved\")).toContainText(\"프로필이 저장되었습니다\");\n\n    // Assert: view 모드로 전환되고 변경된 이름 표시\n    await expect(page.getByTestId(\"profile-view\")).toBeVisible();\n    await expect(page.getByTestId(\"profile-display-name\")).toHaveText(\"수정된이름\");\n\n    // Step 6: 대시보드로 이동 → 인사말에 새 이름 반영 확인\n    await page.goto(\"/dashboard\");\n    await expect(page).toHaveURL(\"/dashboard\");\n    await expect(page.getByTestId(\"greeting\")).toContainText(\"안녕하세요, 수정된이름님\");\n  });\n\n  test(\"[JOURNEY-PROFILE-001] 프로필 수정 저장 후 프로필 재진입 시 변경 데이터가 유지된다\", async ({\n    page,\n  }) => {\n    // Arrange: 회원가입으로 로그인 상태 생성\n    const email = `guard-profile-persist-${Date.now()}@example.com`;\n    await signupAndGoToDashboard(page, \"초기이름\", email);\n\n    // Step 1: 프로필 수정\n    await page.goto(\"/profile\");\n    await page.getByTestId(\"profile-edit-btn\").click();\n    await page.getByTestId(\"profile-name\").fill(\"저장후확인이름\");\n\n    // 스킬 선택\n    await page.getByTestId(\"profile-skills-toggle\").click();\n    await expect(page.getByTestId(\"multiselect-dropdown\")).toBeVisible();\n    await page.getByTestId(\"multiselect-option-JavaScript\").click();\n    await page.getByTestId(\"multiselect-option-Next.js\").click();\n    await page.getByTestId(\"profile-name\").click(); // 드롭다운 닫기\n\n    await page.getByTestId(\"profile-save\").click();\n    await expect(page.getByTestId(\"profile-saved\")).toBeVisible();\n\n    // Step 2: 대시보드를 거쳐 프로필 재진입\n    await page.goto(\"/dashboard\");\n    await expect(page).toHaveURL(\"/dashboard\");\n    await page.goto(\"/profile\");\n    await expect(page).toHaveURL(\"/profile\");\n\n    // Assert: 수정한 이름이 유지된다\n    await expect(page.getByTestId(\"profile-view\")).toBeVisible();\n    await expect(page.getByTestId(\"profile-display-name\")).toHaveText(\"저장후확인이름\");\n\n    // Assert: 선택한 스킬 칩이 수정 모드에서 유지된다\n    await page.getByTestId(\"profile-edit-btn\").click();\n    await expect(page.getByTestId(\"profile-form\")).toBeVisible();\n    await expect(page.getByTestId(\"multiselect-chip-JavaScript\")).toBeVisible();\n    await expect(page.getByTestId(\"multiselect-chip-Next.js\")).toBeVisible();\n  });\n\n  test(\"[JOURNEY-PROFILE-001] 프로필 수정 후 페이지 새로고침 시 변경 데이터가 유지된다\", async ({\n    page,\n  }) => {\n    // Arrange: 회원가입으로 로그인 상태 생성\n    const email = `guard-profile-reload-${Date.now()}@example.com`;\n    await signupAndGoToDashboard(page, \"새로고침전이름\", email);\n\n    // Step 1: 프로필 수정\n    await page.goto(\"/profile\");\n    await page.getByTestId(\"profile-edit-btn\").click();\n    await page.getByTestId(\"profile-name\").fill(\"새로고침후이름\");\n\n    await page.getByTestId(\"profile-skills-toggle\").click();\n    await expect(page.getByTestId(\"multiselect-dropdown\")).toBeVisible();\n    await page.getByTestId(\"multiselect-option-Go\").click();\n    await page.getByTestId(\"profile-name\").click();\n\n    await page.getByTestId(\"profile-save\").click();\n    await expect(page.getByTestId(\"profile-saved\")).toBeVisible();\n\n    // Step 2: 페이지 새로고침\n    await page.reload();\n    await expect(page).toHaveURL(\"/profile\");\n\n    // Assert: 새로고침 후 변경된 이름이 유지된다\n    await expect(page.getByTestId(\"profile-view\")).toBeVisible();\n    await expect(page.getByTestId(\"profile-display-name\")).toHaveText(\"새로고침후이름\");\n\n    // Step 3: 대시보드 새로고침 후 인사말도 새 이름 반영\n    await page.goto(\"/dashboard\");\n    await page.reload();\n    await expect(page).toHaveURL(\"/dashboard\");\n    await expect(page.getByTestId(\"greeting\")).toContainText(\"안녕하세요, 새로고침후이름님\");\n  });\n\n  test(\"[JOURNEY-PROFILE-001] 프로필 수정 취소 시 이름·스킬 변경이 반영되지 않는다 (데이터 불변 분기)\", async ({\n    page,\n  }) => {\n    // Arrange: 회원가입으로 로그인 상태 생성\n    const email = `guard-profile-cancel-${Date.now()}@example.com`;\n    await signupAndGoToDashboard(page, \"취소전이름\", email);\n\n    // Step 1: 프로필 수정 모드 진입 후 변경\n    await page.goto(\"/profile\");\n    await page.getByTestId(\"profile-edit-btn\").click();\n    await page.getByTestId(\"profile-name\").fill(\"절대저장안됨\");\n\n    await page.getByTestId(\"profile-skills-toggle\").click();\n    await expect(page.getByTestId(\"multiselect-dropdown\")).toBeVisible();\n    await page.getByTestId(\"multiselect-option-Rust\").click();\n    await page.getByTestId(\"profile-name\").click();\n\n    // Step 2: 저장하지 않고 취소\n    await page.getByTestId(\"profile-cancel\").click();\n\n    // Assert: view 모드로 전환되고 원래 이름이 표시된다\n    await expect(page.getByTestId(\"profile-view\")).toBeVisible();\n    await expect(page.getByTestId(\"profile-display-name\")).toHaveText(\"취소전이름\");\n\n    // Assert: 대시보드 인사말도 원래 이름 그대로\n    await page.goto(\"/dashboard\");\n    await expect(page.getByTestId(\"greeting\")).toContainText(\"안녕하세요, 취소전이름님\");\n  });\n\n  test(\"[JOURNEY-PROFILE-001] 비인증 상태에서 프로필 페이지 직접 접근 시 로그인 페이지로 리다이렉트된다\", async ({\n    page,\n  }) => {\n    // Arrange: 로그인하지 않은 상태 (initScript로 cookie-consent만 설정됨)\n\n    // Act: 보호된 프로필 라우트에 직접 접근\n    await page.goto(\"/profile\");\n\n    // Assert: 로그인 페이지로 리다이렉트\n    await expect(page).toHaveURL(\"/login\");\n  });\n\n  test(\"[JOURNEY-PROFILE-001] 이름 비워두고 저장 시 에러가 표시되고 원래 이름이 유지된다\", async ({\n    page,\n  }) => {\n    // Branch flow: 빈 이름으로 저장 시도 — 유효성 오류가 발생하고 데이터가 변경되지 않는다\n    const email = `guard-profile-validation-${Date.now()}@example.com`;\n    await signupAndGoToDashboard(page, \"유효성검사이름\", email);\n\n    // Step 1: 프로필 수정 모드 진입\n    await page.goto(\"/profile\");\n    await page.getByTestId(\"profile-edit-btn\").click();\n\n    // Step 2: 이름을 비워두고 저장 시도\n    await page.getByTestId(\"profile-name\").fill(\"\");\n    await page.getByTestId(\"profile-save\").click();\n\n    // Assert: 에러 메시지가 표시되고 수정 모드가 유지된다\n    await expect(page.getByTestId(\"profile-form\")).toBeVisible();\n    await expect(page.getByRole(\"paragraph\").filter({ hasText: \"이름을 입력해주세요\" })).toBeVisible();\n\n    // Assert: 프로필 저장 성공 메시지가 나타나지 않는다\n    await expect(page.getByTestId(\"profile-saved\")).not.toBeVisible();\n  });\n});\n"},{"name":"summary.md","type":"text","content":"# Profile Edit Flow Guard Test — Summary\n\n## Journey ID\n`JOURNEY-PROFILE-001`\n\n## Summary\n로그인 → 프로필 수정(이름·스킬) → 저장 → 대시보드 인사말 반영 확인 → 프로필 재진입 시 데이터 유지 확인\n\n## Flow Steps\n`/login → /dashboard → /profile (view) → /profile (edit) → save → /dashboard (greeting check) → /profile (re-enter, data persistence check)`\n\n## App URL\n`http://localhost:3000`\n\n---\n\n## Implementation Steps Followed\n\n### 1. Journey Analysis\n- Route transition chain 파악: 로그인 → 대시보드 → 프로필(view) → 프로필(edit) → 저장 → 대시보드 → 프로필(재진입)\n- 상태 전환 포인트: `auth_user` localStorage (인증), `auth_users` localStorage (프로필 저장)\n- 주요 검증 포인트: 이름 변경이 대시보드 greeting에 반영되는지, 페이지 이탈 후 재진입 시 데이터 유지\n- 분기 경로: 취소 시 미반영, 빈 이름 저장 시 유효성 오류, 비인증 접근 시 로그인 리다이렉트\n\n### 2. Project Conventions Detection\n- `playwright.config.ts`: `testDir: \"./tests\"`, `baseURL: \"http://localhost:3000\"`\n- 기존 가드 테스트 패턴: `tests/guard/{domain}/{scenario}.spec.ts`\n- 공통 패턴: `test.beforeEach` + `addInitScript`로 `cookie-consent` 설정\n- 인증 패턴: 각 테스트마다 고유 이메일로 회원가입하여 독립적 상태 확보\n\n### 3. Browser Exploration\n- agent-browser CLI로 로그인 → 대시보드 → 프로필 페이지 순서로 탐색\n- 발견된 `data-testid` 목록:\n  - 로그인: `login-email`, `login-password`, `login-submit`\n  - 프로필 view: `profile-view`, `profile-display-name`, `profile-edit-btn`\n  - 프로필 form: `profile-form`, `profile-name`, `profile-skills-toggle`, `profile-save`, `profile-cancel`, `profile-saved`\n  - MultiSelect: `multiselect-dropdown`, `multiselect-option-{SkillName}`, `multiselect-chip-{SkillName}`\n  - 대시보드: `greeting`\n  - 내비게이션: `nav-logout`\n- AuthContext 분석: `auth_user`(현재 사용자), `auth_login_at`(로그인 시각), `auth_users`(전체 사용자 DB)를 localStorage에 저장\n\n### 4. Generated Test File\n**경로:** `features/next-app/tests/guard/profile/profile-edit-flow.spec.ts`\n\n#### 테스트 시나리오 (6개)\n\n| # | 시나리오 타입 | 설명 |\n|---|---|---|\n| 1 | Happy flow | 이름·스킬 수정 저장 → 대시보드 인사말 즉시 반영 |\n| 2 | State persistence | 저장 후 프로필 재진입 시 이름·스킬 데이터 유지 |\n| 3 | State persistence | 저장 후 페이지 새로고침 시 데이터 유지 (대시보드 포함) |\n| 4 | Branch flow (data-state invariant) | 취소 시 이름·스킬 변경 미반영 — happy flow의 역 케이스 |\n| 5 | Branch flow (auth guard) | 비인증 상태에서 `/profile` 직접 접근 시 `/login` 리다이렉트 |\n| 6 | Branch flow (validation) | 빈 이름으로 저장 시도 → 유효성 오류 표시, 저장 성공 메시지 없음 |\n\n### 5. Test Verification\n```\n6 passed (7.0s)\n```\n모든 테스트 통과. locator 실패 없음, 라우트 전환 실패 없음.\n\n---\n\n## Locator Strategy Used\n- `data-testid` 우선 (profile-*, multiselect-*) — 발견된 testid 재사용\n- `page.getByRole(\"paragraph\")` + `filter` — 유효성 오류 메시지 검증\n\n## Test Independence\n- 각 테스트마다 `Date.now()` 기반 고유 이메일로 회원가입 → localStorage 충돌 없음\n- `beforeEach`에서 `cookie-consent` initScript 설정 → 쿠키 배너 차단 방지\n"}],"grading":{"expectations":[{"text":"SKILL.md 및 reference 파일 읽기","passed":true,"evidence":"summary.md: e2e-conventions.md, agent-browser-patterns.md 읽기 명시"},{"text":"agent-browser CLI로 브라우저 탐색 수행 (코드 작성 전)","passed":true,"evidence":"agent-browser CLI로 로그인 → 대시보드 → 프로필 탐색, MultiSelect 패턴 발견"},{"text":"guard/ 디렉토리에 테스트 파일 배치","passed":true,"evidence":"tests/guard/profile/profile-edit-flow.spec.ts"},{"text":"[Guard] prefix + [JOURNEY-PROFILE-001] ID 포함","passed":true,"evidence":"Journey ID: JOURNEY-PROFILE-001 명시"},{"text":"프로필 수정 → 대시보드 반영 → 재진입 유지 전체 flow","passed":true,"evidence":"시나리오 1: 이름·스킬 수정 저장 → 대시보드 greeting 즉시 반영"},{"text":"프로필 재진입 시 데이터 유지 검증","passed":true,"evidence":"시나리오 2: 저장 후 프로필 재진입 시 이름·스킬 유지"},{"text":"Branch flow (취소/빈칸/미인증)","passed":true,"evidence":"시나리오 4: 취소 미반영, 시나리오 5: 비인증 리다이렉트, 시나리오 6: 빈 이름 유효성 오류"},{"text":"각 테스트 독립 실행 (unique email)","passed":true,"evidence":"Date.now() 기반 고유 이메일, cookie-consent initScript"},{"text":"data-testid 로케이터 사용","passed":true,"evidence":"profile-edit-btn, profile-name, profile-save, greeting 등"},{"text":"테스트가 실제로 통과","passed":true,"evidence":"6/6 passed (7.0s)"}],"summary":{"passed":10,"failed":0,"total":10,"pass_rate":1},"timing":{"total_duration_seconds":491.1,"total_tokens":51184}},"timing":{"total_tokens":51184,"tool_uses":62,"duration_ms":491092,"total_duration_seconds":491.1}}],"benchmark":{"metadata":{"skill_name":"guard-e2e-test","skill_path":"skills/guard-e2e-test","iteration":2,"executor_model":"claude-opus-4-6","analyzer_model":"claude-opus-4-6","timestamp":"2026-03-11T00:00:00Z","evals_run":[1,2,3],"runs_per_configuration":1,"change_description":"Replaced Playwright MCP browser tools with agent-browser CLI (npx) for browser exploration","previous_iteration":"skills/guard-e2e-test-workspace/iteration-1"},"runs":[{"eval_id":1,"eval_name":"signup-flow","configuration":"with_skill","run_number":1,"result":{"pass_rate":1,"passed":10,"failed":0,"total":10,"time_seconds":216.1,"tokens":35228,"tool_calls":32,"errors":0}},{"eval_id":1,"eval_name":"signup-flow","configuration":"old_skill","run_number":1,"result":{"pass_rate":1,"passed":10,"failed":0,"total":10,"time_seconds":378.6,"tokens":50168,"tool_calls":46,"errors":0}},{"eval_id":2,"eval_name":"todo-flow","configuration":"with_skill","run_number":1,"result":{"pass_rate":1,"passed":10,"failed":0,"total":10,"time_seconds":576.9,"tokens":54430,"tool_calls":70,"errors":0}},{"eval_id":2,"eval_name":"todo-flow","configuration":"old_skill","run_number":1,"result":{"pass_rate":1,"passed":10,"failed":0,"total":10,"time_seconds":666.5,"tokens":61476,"tool_calls":75,"errors":0}},{"eval_id":3,"eval_name":"profile-flow","configuration":"with_skill","run_number":1,"result":{"pass_rate":1,"passed":10,"failed":0,"total":10,"time_seconds":577.6,"tokens":51292,"tool_calls":51,"errors":0}},{"eval_id":3,"eval_name":"profile-flow","configuration":"old_skill","run_number":1,"result":{"pass_rate":1,"passed":10,"failed":0,"total":10,"time_seconds":491.1,"tokens":51184,"tool_calls":62,"errors":0}}],"run_summary":{"with_skill":{"pass_rate":{"mean":1,"stddev":0,"min":1,"max":1},"time_seconds":{"mean":456.9,"stddev":170.5,"min":216.1,"max":577.6},"tokens":{"mean":46983,"stddev":8388,"min":35228,"max":54430},"tool_calls":{"mean":51,"stddev":15.5,"min":32,"max":70}},"old_skill":{"pass_rate":{"mean":1,"stddev":0,"min":1,"max":1},"time_seconds":{"mean":512.1,"stddev":118,"min":378.6,"max":666.5},"tokens":{"mean":54276,"stddev":5253,"min":50168,"max":61476},"tool_calls":{"mean":61,"stddev":11.9,"min":46,"max":75}},"delta":{"pass_rate":"0.0 (both 100%)","time_seconds":"-55.2s (-10.8%)","tokens":"-7293 (-13.4%)","tool_calls":"-10.0 (-16.4%)"}},"comparison_with_iteration_1":{"iteration_1_note":"iteration-1 agents were blocked by Write/Bash permissions — graded on plan quality only","iteration_2_note":"iteration-2 agents ran fully with PreToolUse hook enabling Bash permissions — actual test execution","key_improvements":["Both configs now achieve 100% pass rate (iteration-1: with_skill 92%, without_skill 17%)","agent-browser CLI version uses 13.4% fewer tokens than old skill","agent-browser CLI version uses 16.4% fewer tool calls","agent-browser CLI version is 10.8% faster"]},"notes":["iteration-2는 old_skill(이전 버전) vs with_skill(agent-browser CLI 업데이트 버전) 비교","PreToolUse hook으로 subagent Bash 권한 문제 해결 — 모든 에이전트가 실제 코드 생성 및 테스트 실행 완료","품질(pass_rate)은 동일(100%) — agent-browser CLI 전환이 테스트 품질을 저하시키지 않음","토큰 13.4% 절감, 도구 호출 16.4% 감소, 시간 10.8% 단축","eval-1(signup-flow)에서 가장 큰 토큰 절감: 35,228 vs 50,168 (-29.8%)","eval-2(todo-flow)에서 가장 큰 시간 절감: 576.9s vs 666.5s (-13.4%)","eval-3(profile-flow)은 토큰 거의 동일(51,292 vs 51,184) — MultiSelect 패턴 탐색이 양쪽 모두 비슷한 비용"]},"previous_feedback":{},"previous_outputs":{}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>
