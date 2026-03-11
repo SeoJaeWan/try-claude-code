@@ -39,7 +39,6 @@
         {"id": "migration-created", "text": "마이그레이션 파일 생성"},
         {"id": "relation-setup", "text": "1:N 관계 설정 (FK 포함)"},
         {"id": "column-types", "text": "적절한 컬럼 타입 정의 (varchar, int, timestamp 등)"},
-        {"id": "test-file-created", "text": "테스트 파일 작성 여부"},
         {"id": "naming-convention", "text": "프로젝트 네이밍 컨벤션 준수 (snake_case 테이블명 등)"}
       ]
     }

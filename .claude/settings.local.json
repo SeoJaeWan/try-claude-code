@@ -48,7 +48,17 @@
       "mcp__playwright-test__test_run",
       "mcp__playwright-test__browser_generate_locator",
       "Bash(node:*)",
-      "Bash(npm:*)"
+      "Bash(npm:*)",
+      "Bash(pnpm:*)",
+      "Bash(git:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(cd:*)",
+      "Bash(nohup:*)",
+      "Bash(kill:*)",
+      "Bash(find /c/Users/USER/Desktop/dev/try-claude-code -name \"*backend-dev*\" -type d 2>/dev/null | head -20)"
     ]
   }
 }
