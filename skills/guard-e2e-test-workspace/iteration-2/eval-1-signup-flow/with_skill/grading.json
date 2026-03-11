@@ -1,0 +1,16 @@
+{
+  "expectations": [
+    {"text": "SKILL.md 및 reference 파일 읽기", "passed": true, "evidence": "summary.md에 '브라우저 탐색으로 발견한 사항' 및 'data-testid' 수집 내용 포함 — skill의 implementation steps를 따름"},
+    {"text": "agent-browser CLI로 브라우저 탐색 수행 (코드 작성 전)", "passed": true, "evidence": "summary.md에 'agent-browser CLI via Bash'로 탐색 기록, cookie banner 발견 등 실제 탐색 증거"},
+    {"text": "guard/ 디렉토리에 테스트 파일 배치", "passed": true, "evidence": "tests/guard/auth/signup-dashboard-logout.spec.ts"},
+    {"text": "[Guard] prefix + [JOURNEY-AUTH-001] ID 포함", "passed": true, "evidence": "summary.md: '[Guard] 접두어, [JOURNEY-AUTH-001] 포함' 명시"},
+    {"text": "Happy flow 시나리오 포함", "passed": true, "evidence": "시나리오 1: 회원가입 → 대시보드 진입 → 로그아웃 → 대시보드 재접근 차단"},
+    {"text": "State persistence 시나리오 포함", "passed": true, "evidence": "시나리오 2: 페이지 새로고침 후 로그인 상태 유지 확인"},
+    {"text": "State teardown 검증 (localStorage/cookies 확인)", "passed": true, "evidence": "시나리오 3: localStorage에서 auth_user/auth_login_at 직접 null 확인"},
+    {"text": "Branch flow 시나리오 포함", "passed": true, "evidence": "시나리오 4: 미인증 /dashboard 접근 → /login 리다이렉트, 시나리오 5: 중복 이메일 재가입 에러"},
+    {"text": "data-testid 로케이터 사용", "passed": true, "evidence": "signup-name, signup-email, greeting, nav-logout 등 모두 data-testid 사용"},
+    {"text": "테스트가 실제로 통과", "passed": true, "evidence": "5/5 passed (5.4s)"}
+  ],
+  "summary": {"passed": 10, "failed": 0, "total": 10, "pass_rate": 1.0},
+  "timing": {"total_duration_seconds": 216.1, "total_tokens": 35228}
+}

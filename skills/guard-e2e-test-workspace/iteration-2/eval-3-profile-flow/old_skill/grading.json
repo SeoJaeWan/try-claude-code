@@ -1,0 +1,16 @@
+{
+  "expectations": [
+    {"text": "SKILL.md 및 reference 파일 읽기", "passed": true, "evidence": "summary.md: e2e-conventions.md, agent-browser-patterns.md 읽기 명시"},
+    {"text": "agent-browser CLI로 브라우저 탐색 수행 (코드 작성 전)", "passed": true, "evidence": "agent-browser CLI로 로그인 → 대시보드 → 프로필 탐색, MultiSelect 패턴 발견"},
+    {"text": "guard/ 디렉토리에 테스트 파일 배치", "passed": true, "evidence": "tests/guard/profile/profile-edit-flow.spec.ts"},
+    {"text": "[Guard] prefix + [JOURNEY-PROFILE-001] ID 포함", "passed": true, "evidence": "Journey ID: JOURNEY-PROFILE-001 명시"},
+    {"text": "프로필 수정 → 대시보드 반영 → 재진입 유지 전체 flow", "passed": true, "evidence": "시나리오 1: 이름·스킬 수정 저장 → 대시보드 greeting 즉시 반영"},
+    {"text": "프로필 재진입 시 데이터 유지 검증", "passed": true, "evidence": "시나리오 2: 저장 후 프로필 재진입 시 이름·스킬 유지"},
+    {"text": "Branch flow (취소/빈칸/미인증)", "passed": true, "evidence": "시나리오 4: 취소 미반영, 시나리오 5: 비인증 리다이렉트, 시나리오 6: 빈 이름 유효성 오류"},
+    {"text": "각 테스트 독립 실행 (unique email)", "passed": true, "evidence": "Date.now() 기반 고유 이메일, cookie-consent initScript"},
+    {"text": "data-testid 로케이터 사용", "passed": true, "evidence": "profile-edit-btn, profile-name, profile-save, greeting 등"},
+    {"text": "테스트가 실제로 통과", "passed": true, "evidence": "6/6 passed (7.0s)"}
+  ],
+  "summary": {"passed": 10, "failed": 0, "total": 10, "pass_rate": 1.0},
+  "timing": {"total_duration_seconds": 491.1, "total_tokens": 51184}
+}

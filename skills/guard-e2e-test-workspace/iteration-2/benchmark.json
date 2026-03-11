@@ -1,0 +1,151 @@
+{
+  "metadata": {
+    "skill_name": "guard-e2e-test",
+    "skill_path": "skills/guard-e2e-test",
+    "iteration": 2,
+    "executor_model": "claude-opus-4-6",
+    "analyzer_model": "claude-opus-4-6",
+    "timestamp": "2026-03-11T00:00:00Z",
+    "evals_run": [1, 2, 3],
+    "runs_per_configuration": 1,
+    "change_description": "Replaced Playwright MCP browser tools with agent-browser CLI (npx) for browser exploration",
+    "previous_iteration": "skills/guard-e2e-test-workspace/iteration-1"
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "eval_name": "signup-flow",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "failed": 0,
+        "total": 10,
+        "time_seconds": 216.1,
+        "tokens": 35228,
+        "tool_calls": 32,
+        "errors": 0
+      }
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "signup-flow",
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "failed": 0,
+        "total": 10,
+        "time_seconds": 378.6,
+        "tokens": 50168,
+        "tool_calls": 46,
+        "errors": 0
+      }
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "todo-flow",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "failed": 0,
+        "total": 10,
+        "time_seconds": 576.9,
+        "tokens": 54430,
+        "tool_calls": 70,
+        "errors": 0
+      }
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "todo-flow",
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "failed": 0,
+        "total": 10,
+        "time_seconds": 666.5,
+        "tokens": 61476,
+        "tool_calls": 75,
+        "errors": 0
+      }
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "profile-flow",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "failed": 0,
+        "total": 10,
+        "time_seconds": 577.6,
+        "tokens": 51292,
+        "tool_calls": 51,
+        "errors": 0
+      }
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "profile-flow",
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "failed": 0,
+        "total": 10,
+        "time_seconds": 491.1,
+        "tokens": 51184,
+        "tool_calls": 62,
+        "errors": 0
+      }
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0},
+      "time_seconds": {"mean": 456.9, "stddev": 170.5, "min": 216.1, "max": 577.6},
+      "tokens": {"mean": 46983, "stddev": 8388, "min": 35228, "max": 54430},
+      "tool_calls": {"mean": 51.0, "stddev": 15.5, "min": 32, "max": 70}
+    },
+    "old_skill": {
+      "pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0},
+      "time_seconds": {"mean": 512.1, "stddev": 118.0, "min": 378.6, "max": 666.5},
+      "tokens": {"mean": 54276, "stddev": 5253, "min": 50168, "max": 61476},
+      "tool_calls": {"mean": 61.0, "stddev": 11.9, "min": 46, "max": 75}
+    },
+    "delta": {
+      "pass_rate": "0.0 (both 100%)",
+      "time_seconds": "-55.2s (-10.8%)",
+      "tokens": "-7293 (-13.4%)",
+      "tool_calls": "-10.0 (-16.4%)"
+    }
+  },
+  "comparison_with_iteration_1": {
+    "iteration_1_note": "iteration-1 agents were blocked by Write/Bash permissions — graded on plan quality only",
+    "iteration_2_note": "iteration-2 agents ran fully with PreToolUse hook enabling Bash permissions — actual test execution",
+    "key_improvements": [
+      "Both configs now achieve 100% pass rate (iteration-1: with_skill 92%, without_skill 17%)",
+      "agent-browser CLI version uses 13.4% fewer tokens than old skill",
+      "agent-browser CLI version uses 16.4% fewer tool calls",
+      "agent-browser CLI version is 10.8% faster"
+    ]
+  },
+  "notes": [
+    "iteration-2는 old_skill(이전 버전) vs with_skill(agent-browser CLI 업데이트 버전) 비교",
+    "PreToolUse hook으로 subagent Bash 권한 문제 해결 — 모든 에이전트가 실제 코드 생성 및 테스트 실행 완료",
+    "품질(pass_rate)은 동일(100%) — agent-browser CLI 전환이 테스트 품질을 저하시키지 않음",
+    "토큰 13.4% 절감, 도구 호출 16.4% 감소, 시간 10.8% 단축",
+    "eval-1(signup-flow)에서 가장 큰 토큰 절감: 35,228 vs 50,168 (-29.8%)",
+    "eval-2(todo-flow)에서 가장 큰 시간 절감: 576.9s vs 666.5s (-13.4%)",
+    "eval-3(profile-flow)은 토큰 거의 동일(51,292 vs 51,184) — MultiSelect 패턴 탐색이 양쪽 모두 비슷한 비용"
+  ]
+}
