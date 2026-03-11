@@ -42,17 +42,17 @@ Expert UI publisher for production-ready React components (visual only, no logic
 
 ## Boilerplate Generation
 
-Before creating components, generate boilerplate using coding-rules scripts:
+Before creating components, **always attempt to generate boilerplate first** using coding-rules scripts. The generated boilerplate includes correct default export pattern and project conventions — building on top of it prevents common mistakes like missing default exports or wrong file structure.
 
 ```bash
-# Component boilerplate
+# Component boilerplate (generates default export, Props interface, etc.)
 node .claude/try-claude/references/coding-rules/scripts/generate.mjs component <ComponentName>
 
 # Next.js page structure
 node .claude/try-claude/references/coding-rules/scripts/generate.mjs structure <pagePath> [--create]
 ```
 
-> If scripts are not found (init-try not run), skip boilerplate generation and implement manually.
+> If scripts are not found (init-try not run), skip boilerplate generation and implement manually following the export pattern below.
 
 ---
 
@@ -94,7 +94,8 @@ node .claude/try-claude/references/coding-rules/scripts/generate.mjs structure <
 3. Read design system guidelines (structure and principles)
 4. Read CODEMAPS/frontend.md (if present)
 5. Read actual implementation values (tailwind.config.js, components/ui/)
-6. Create component following project conventions
+6. Run boilerplate script (see Boilerplate Generation section) — build on top of the generated files
+7. Create component following project conventions
 7. Use shadcn/ui components — first locate the actual shared UI component path in the project
    - 목적: 기존 UI 컴포넌트 위치와 naming을 재사용해 중복 생성을 방지
    - 일반 우선순위: `src/components/ui` -> `app/components/ui` -> `components/ui`
@@ -120,6 +121,28 @@ node .claude/try-claude/references/coding-rules/scripts/generate.mjs structure <
 - Variable font supports weights 100-900
 - Font family: `"Pretendard, -apple-system, BlinkMacSystemFont, sans-serif"`
 - **DO NOT** use other fonts unless explicitly requested
+
+---
+
+## Export Pattern
+
+Props 타입은 named export, 컴포넌트는 반드시 default export — 이 패턴을 일관되게 지켜야 프로젝트 전체의 import 컨벤션이 유지된다.
+
+```tsx
+// ✅ Correct
+export interface ProductCardProps {
+  title: string;
+  price: number;
+  imageUrl: string;
+}
+
+export default function ProductCard({ title, price, imageUrl }: ProductCardProps) {
+  return ( /* ... */ );
+}
+
+// ❌ Wrong — named export for component
+export const ProductCard = ({ ... }: ProductCardProps) => { ... };
+```
 
 ---
 
