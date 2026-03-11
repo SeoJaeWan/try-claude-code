@@ -4,7 +4,6 @@ description: Backend development expert. Auto-detects framework and language. Im
 skills: backend-dev
 tools: Read, Edit, Write, Glob, Grep, Bash, Task, Skill
 model: opus
-background: true
 ---
 
 <Agent_Prompt>
