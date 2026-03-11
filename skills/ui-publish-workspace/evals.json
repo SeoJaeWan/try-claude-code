@@ -48,6 +48,21 @@
         {"id": "uses-boilerplate-script", "text": "generate.mjs 스크립트를 실행하여 보일러플레이트 생성"},
         {"id": "correct-export-pattern", "text": "Props 타입은 named export + 컴포넌트는 default export 패턴 준수"}
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "NotificationBanner 컴포넌트를 만들어줘. 아이콘, 메시지 텍스트, 닫기 버튼이 있는 알림 배너야",
+      "expected_output": "generate.mjs 스크립트로 보일러플레이트 생성 후, 그 위에 NotificationBanner 구현",
+      "files": [],
+      "assertions": [
+        {"id": "runs-generate-script", "text": "generate.mjs component NotificationBanner 명령을 Bash로 실행"},
+        {"id": "script-output-used", "text": "스크립트가 생성한 파일 위에 구현 (스크립트 실행 후 해당 파일을 편집)"},
+        {"id": "default-export-from-script", "text": "스크립트가 생성한 default export 패턴을 유지"},
+        {"id": "correct-export-pattern", "text": "Props 타입은 named export + 컴포넌트는 default export 패턴 준수"},
+        {"id": "no-logic-state", "text": "useState/useEffect/fetch 등 로직 미사용 (visual only)"},
+        {"id": "uses-tailwind", "text": "Tailwind CSS 클래스 사용 (인라인 스타일 아님)"},
+        {"id": "reads-theme-tokens", "text": "theme-tokens.md 디자인 토큰 참조"}
+      ]
     }
   ]
 }

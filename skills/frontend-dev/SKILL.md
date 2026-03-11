@@ -43,7 +43,7 @@ Expert frontend development workflow for React, Next.js, and React Native.
 
 ## Boilerplate Generation
 
-Before implementing hooks, generate boilerplate using coding-rules scripts:
+Before implementing hooks, **always attempt to generate boilerplate first** using coding-rules scripts. The generated boilerplate includes correct hook structure, naming conventions, and test scaffolding — building on top of it prevents common mistakes like inconsistent patterns.
 
 ```bash
 # Custom hook boilerplate
