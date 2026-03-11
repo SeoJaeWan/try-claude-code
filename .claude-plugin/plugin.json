@@ -1,9 +1,0 @@
-{
-  "name": "try-claude-claude",
-  "version": "0.1.0",
-  "description": "Claude Code workflow plugin providing agents, skills, commands, and references for structured AI-assisted development.",
-  "author": {
-    "name": "seojaewan"
-  },
-  "license": "MIT"
-}
