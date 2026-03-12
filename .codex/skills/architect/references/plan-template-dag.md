@@ -58,9 +58,9 @@
 - `tests/manifest.md` (track test manifest index)
 - `e2e/manifest.md` (track e2e manifest index)
 
-UI/feature-browser scope인 경우 planning 단계에서 `plan-e2e-test` 스킬로 browser-integration artifact 생성:
+UI feature scope인 경우 planning 단계에서 `plan-e2e-test` 스킬로 runner-appropriate E2E artifact 생성:
 
-- `plans/{task-name}/plan-{track}/e2e/manifest.md` + `plans/{task-name}/plan-{track}/e2e/{domain}/{domain}.spec.ts`
+- `plans/{task-name}/plan-{track}/e2e/manifest.md` + track-local runner-appropriate E2E artifacts
 - 상세 기준은 `references/planning-policy.md`를 따름
 
 UI/user-journey 또는 regression-hardening scope인 경우 후속 execution track/phase에 아래를 추가:
@@ -92,7 +92,7 @@ UI/user-journey 또는 regression-hardening scope인 경우 후속 execution tra
 각 트랙은 아래를 함께 포함해야 한다:
 
 - `plan-{track}/tests/manifest.md` (+ 테스트 파일) 또는 `N/A` 근거
-- `plan-{track}/e2e/manifest.md` (+ spec 파일) 또는 `N/A` 근거
+- `plan-{track}/e2e/manifest.md` (+ runner-appropriate E2E 파일) 또는 `N/A` 근거
 
 ---
 
@@ -143,7 +143,7 @@ UI/user-journey 또는 regression-hardening scope인 경우 후속 execution tra
 - primary_skill: `{skill-name}` (선택)
 - 작업:
 - 단위 테스트: `tests/{mirrored-source-path}` (해당 시, plan-unit-test artifact)
-- E2E 테스트: `e2e/{domain}/{domain}.spec.ts` (해당 시, plan-e2e-test artifact)
+- E2E 테스트: runner-appropriate artifact (`e2e/{domain}/{domain}.spec.ts` 또는 `e2e/maestro/{flow}.yaml`) (해당 시, plan-e2e-test artifact)
 
 ### T2
 

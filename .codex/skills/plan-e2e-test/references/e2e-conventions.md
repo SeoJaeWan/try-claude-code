@@ -1,195 +1,97 @@
 # E2E Test Conventions Reference
 
-Inline reference for `plan-e2e-test`. Use this to turn plan constraints into executable Playwright browser-integration contracts for bounded feature surfaces.
+Inline reference for `plan-e2e-test`.
+Use this to turn plan constraints into executable, runner-appropriate E2E contracts.
 
 ---
 
-## Playwright Best Practices
+## Runner Selection
 
-### Locator Strategy (priority order)
+- `Playwright`: browser/web surfaces
+- `Maestro`: React Native / Expo mobile surfaces
 
-1. **`data-testid`** (preferred): `page.getByTestId('login-button')`
-2. **Role-based**: `page.getByRole('button', { name: '로그인' })`
-3. **Label-based**: `page.getByLabel('이메일')`
-4. **Placeholder-based**: `page.getByPlaceholder('이메일을 입력하세요')`
-5. **Text-based** (last resort): `page.getByText('환영합니다')`
+Pick exactly one runner per bounded surface unless the plan explicitly requires both.
 
-Avoid CSS selectors and XPath. They are brittle and break on styling changes.
+---
 
-### data-testid Strategy
+## Shared Rules
 
-- Apply `data-testid` to all interactive elements (buttons, inputs, links, toggles)
-- Apply `data-testid` to key display elements referenced in assertions (messages, status indicators, counters)
-- Use kebab-case naming: `login-button`, `email-input`, `error-message`
-- Use hierarchical naming for nested contexts: `modal-confirm-button`, `sidebar-nav-link`
-- Document all `data-testid` values in `manifest.md` as a contract for implementation
+- Prefer explicit locator contracts over style/text selectors
+- Keep tests deterministic and short
+- Do not encode implementation internals
+- Do not add waits unless the runner and plan require them
+- Author only from resolved UI contracts
+
+---
+
+## Playwright Conventions
+
+### Locator Priority
+
+1. `data-testid`
+2. role
+3. label
+4. placeholder
+5. text (last resort)
 
 ### Assertions
 
-- Use Playwright's built-in expect assertions with auto-retry:
-  - `await expect(locator).toBeVisible()`
-  - `await expect(locator).toHaveText('expected')`
-  - `await expect(locator).toContainText('partial')`
-  - `await expect(page).toHaveURL('/expected-path')`
-  - `await expect(locator).toHaveCount(3)`
-  - `await expect(locator).toBeEnabled()` / `toBeDisabled()`
-  - `await expect(locator).toHaveValue('input-value')`
-- Do not use `page.waitForTimeout()` - rely on auto-waiting
-- Use `page.waitForURL()` for navigation assertions
-- Use `page.waitForResponse()` when asserting after API calls
+- `await expect(locator).toBeVisible()`
+- `await expect(locator).toHaveText(...)`
+- `await expect(locator).toBeDisabled()`
+- `await expect(page).toHaveURL(...)`
 
-### Test Isolation
-
-- Each test must be independently runnable
-- Use `test.beforeEach` for shared setup (e.g., navigation to page)
-- Do not share state between tests via variables or global state
-- Use Playwright fixtures for reusable test setup
-- Clean up test data in `test.afterEach` when needed
-
----
-
-## Test File Structure
-
-### File Naming Convention
+### Structure
 
 - Group by domain/component: `e2e/{domain}/{domain}.spec.ts`
-- Prefer concise names: `taskIcon.spec.ts`, `contextMenu.spec.ts`, `overlay.spec.ts`
-- Default to one file per domain/component/surface, and separate sub-contracts with multiple `test.describe`
-- Split files only when setup/fixtures diverge materially or file size becomes unmanageable
-- Domain directory naming must follow repo convention; JS/TS repos default to camelCase (`contextMenu`) unless local tests clearly use another convention
-
-### Test Block Structure
-
-```typescript
-import { test, expect } from '@playwright/test';
-
-test.describe('{페이지/기능명}', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/target-page');
-  });
-
-  test('[C-XXX-001] {Korean spec description for happy path}', async ({ page }) => {
-    // Arrange - set up preconditions if needed
-
-    // Act - perform user interactions
-    await page.getByTestId('action-element').click();
-
-    // Assert - verify expected outcome
-    await expect(page.getByTestId('result-element')).toBeVisible();
-  });
-
-  test('[C-XXX-001] {Korean spec description for error path}', async ({ page }) => {
-    // Arrange
-
-    // Act
-    await page.getByTestId('submit-button').click();
-
-    // Assert
-    await expect(page.getByTestId('error-message')).toBeVisible();
-  });
-});
-```
-
-### Page Object Pattern
-
-Use page objects when a page has 3+ interactions to reduce duplication:
-
-```typescript
-// pages/login.page.ts
-import { type Page, type Locator } from '@playwright/test';
-
-export class LoginPage {
-  readonly emailInput: Locator;
-  readonly passwordInput: Locator;
-  readonly submitButton: Locator;
-  readonly errorMessage: Locator;
-
-  constructor(private page: Page) {
-    this.emailInput = page.getByTestId('email-input');
-    this.passwordInput = page.getByTestId('password-input');
-    this.submitButton = page.getByTestId('login-button');
-    this.errorMessage = page.getByTestId('error-message');
-  }
-
-  async goto() {
-    await this.page.goto('/login');
-  }
-
-  async login(email: string, password: string) {
-    await this.emailInput.fill(email);
-    await this.passwordInput.fill(password);
-    await this.submitButton.click();
-  }
-}
-```
+- Use `test.describe`
+- Put constraint IDs in test names
+- Use Page Objects when interaction count is 3+
 
 ---
 
-## Deterministic Test Authoring (Without Live Browser)
+## Maestro Conventions
 
-Since tests are authored at planning time without running a live browser:
+### Locator Priority
 
-1. **Require resolved browser contracts first**: `plan.md` must explicitly define route, user state, action, visible outcome, and locator/testability contracts before E2E authoring starts
-2. **Derive locators from resolved contracts**: Use the planned UI structure and `data-testid` names
-3. **Derive URLs from resolved routes**: Use the route definitions in `plan.md`
-4. **Derive expected text from resolved outcomes**: Use the planned labels, messages, and content
-5. **Assume standard Playwright behavior**: Auto-waiting, built-in assertions, navigation events
-6. **Do not document missing contracts as assumptions**: If a locator, route, state, action, or visible result is not finalized, stop and return a blocking issue instead of generating tests
-7. **Do not author cross-route journeys here**: Redirect chains, session persistence, and post-implementation regression journeys belong to `playwright-guard`
+1. `id:` mapped from React Native `testID`
+2. visible text only when it is the explicit product contract
 
-The `data-testid Registry` in `manifest.md` becomes the binding contract: implementation must apply these attributes exactly as specified.
+### Commands
 
----
+- `launchApp`
+- `tapOn`
+- `inputText`
+- `assertVisible`
+- `assertNotVisible`
+- `runFlow`
 
-## Common Interaction Patterns
+### Structure
 
-### Form Submission
-
-```typescript
-await page.getByTestId('name-input').fill('value');
-await page.getByTestId('submit-button').click();
-await expect(page.getByTestId('success-message')).toBeVisible();
-```
-
-### Navigation
-
-```typescript
-await page.getByTestId('nav-link').click();
-await expect(page).toHaveURL('/target');
-```
-
-### Modal/Dialog
-
-```typescript
-await page.getByTestId('open-modal-button').click();
-await expect(page.getByTestId('modal')).toBeVisible();
-await page.getByTestId('modal-confirm-button').click();
-await expect(page.getByTestId('modal')).not.toBeVisible();
-```
-
-### List/Table
-
-```typescript
-await expect(page.getByTestId('list-item')).toHaveCount(3);
-await page.getByTestId('list-item').first().click();
-```
-
-### Loading State
-
-```typescript
-await page.getByTestId('submit-button').click();
-await expect(page.getByTestId('loading-spinner')).toBeVisible();
-await expect(page.getByTestId('result')).toBeVisible();
-```
+- Group under `e2e/maestro/`
+- One YAML flow per bounded surface or acceptance scenario
+- Reuse with `runFlow` when a base flow exists
+- Keep file names concise and surface-oriented
 
 ---
 
-## Anti-patterns to Avoid
+## Deterministic Authoring
 
-- **No `page.waitForTimeout()`**: Use auto-waiting or explicit wait conditions
-- **No CSS selectors**: Use `data-testid` or role-based locators
-- **No test interdependence**: Each test runs independently
-- **No implementation-coupled selectors**: Do not use class names, component internals, or generated IDs
-- **No flaky assertions**: Avoid timing-sensitive checks; use Playwright's retry-able assertions
-- **No test modification after freeze**: If E2E fails, fix implementation, not tests
-- **No unnecessary same-domain file fragmentation**: avoid splitting one component/domain across many small spec files without clear isolation need
+Since artifacts are written during planning without running the app:
+
+1. Require resolved UI contracts first
+2. Derive locators from the declared registry
+3. Derive routes or app-shell entry points from `plan.md`
+4. Derive visible assertions from explicit outcomes only
+5. Stop on missing contracts instead of guessing
+
+---
+
+## Anti-patterns
+
+- No CSS selectors for Playwright when `data-testid` exists
+- No raw text locators for Maestro when `testID` exists
+- No `page.waitForTimeout()` for Playwright
+- No timing-based sleeps for Maestro unless the plan explicitly justifies them
+- No cross-route browser regression journeys here
+- No mutation of frozen tests after implementation starts

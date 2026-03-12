@@ -1,6 +1,6 @@
 ---
 name: architect
-description: Codex entry skill for rigorous implementation planning. Use when a request needs a decision-complete execution plan under ./plans after resolving blocking product policy, UX, contract, schema, validation, state, permission, and frontend browser-contract ambiguity, and when frontend browser-integration tests must be separated from later full-flow Playwright guard phases.
+description: Codex entry skill for rigorous implementation planning. Use when a request needs a decision-complete execution plan under ./plans after resolving blocking product policy, UX, contract, schema, validation, state, permission, and frontend UI-contract ambiguity, and when runner-appropriate feature-level E2E tests must be separated from later browser full-flow Playwright guard phases.
 ---
 
 <Skill_Guide>
@@ -48,7 +48,7 @@ Before writing any plan artifact:
   - Batch at most 4 blocking questions at once
   - Prefer structured user-input tooling when available
   - Otherwise ask concise plain-text questions in chat
-- For frontend/UI scope, browser contracts defined in `planning-policy.md` must be decision-complete before implementation planning or `plan-e2e-test`.
+- For frontend/UI scope, UI contracts defined in `planning-policy.md` must be decision-complete before implementation planning or `plan-e2e-test`.
 - Do not hide unresolved blocking decisions inside `Assumptions and risks`.
 - Only carry forward `deferrable` items as explicit defaults.
 
@@ -83,18 +83,18 @@ If the plan includes testable logic boundaries and constraint IDs (`[C-...]`):
 
 Skip for documentation-only, configuration-only, or structural-only scope with no testable code units.
 
-### Step 3.6. Generate browser integration test plan (conditional)
+### Step 3.6. Generate UI E2E test plan (conditional)
 
-If the task changes feature-level user-facing browser behavior:
+If the task changes feature-level user-facing behavior within a bounded UI surface:
 
-1. Confirm frontend browser contracts are fully resolved
+1. Confirm frontend UI contracts are fully resolved
 2. Read `./.codex/skills/plan-e2e-test/SKILL.md`
 3. Execute `plan-e2e-test`:
    - sequential: `./plans/{task-name}/e2e/`
    - non-sequential: `./plans/{task-name}/plan-{track}/e2e/`
-4. Verify the manifest matches the browser-integration policy in `planning-policy.md`
+4. Verify the manifest matches the E2E policy in `planning-policy.md`
 
-`plan-e2e-test` covers frozen feature/screen browser-integration tests only. Cross-route journeys and post-implementation regression coverage belong to a later `playwright-guard` phase.
+`plan-e2e-test` covers frozen feature/screen E2E artifacts only, using the runner selected from the environment. Browser full-flow regression coverage still belongs to a later `playwright-guard` phase.
 
 ### Step 3.7. Plan full-flow Playwright guard phase (conditional)
 
@@ -145,9 +145,9 @@ Provide a concise execution handoff summary using the handoff requirements in `p
 - Unit test artifacts when Step 3.5 applies:
   - sequential: `./plans/{task-name}/tests/manifest.md`, `./plans/{task-name}/tests/{mirrored-source-paths}`
   - non-sequential: `./plans/{task-name}/plan-{track}/tests/manifest.md`, `./plans/{task-name}/plan-{track}/tests/{mirrored-source-paths}`
-- Browser integration test artifacts when Step 3.6 applies:
-  - sequential: `./plans/{task-name}/e2e/manifest.md`, `./plans/{task-name}/e2e/{domain}/{domain}.spec.ts`
-  - non-sequential: `./plans/{task-name}/plan-{track}/e2e/manifest.md`, `./plans/{task-name}/plan-{track}/e2e/{domain}/{domain}.spec.ts`
+- E2E test artifacts when Step 3.6 applies:
+  - sequential: `./plans/{task-name}/e2e/manifest.md`, plus runner-appropriate artifacts such as `./plans/{task-name}/e2e/{domain}/{domain}.spec.ts` or `./plans/{task-name}/e2e/maestro/{flow}.yaml`
+  - non-sequential: `./plans/{task-name}/plan-{track}/e2e/manifest.md`, plus track-local runner-appropriate artifacts
 - Output language: Korean
 
 ## Guardrails

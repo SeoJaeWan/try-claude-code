@@ -6,7 +6,7 @@ Use this file for:
 
 - blocking vs derivable vs deferrable decision policy
 - required plan sections and routing metadata
-- browser contract and UI test planning rules
+- UI contract and E2E test planning rules
 - quality gates and self-review
 - execution handoff requirements
 
@@ -30,11 +30,11 @@ Treat ambiguity as `blocking` when it can change:
 - UX behavior, permissions, validation, or state transitions
 - navigation, error handling, accessibility expectations, or acceptance tests
 
-### Frontend Browser Contracts
+### Frontend UI Contracts
 
 For frontend/UI scope, these are always `blocking`:
 
-- `route contract`
+- `route or navigation/surface contract`
 - `user state contract`
 - `action contract`
 - `visible outcome contract`
@@ -65,7 +65,7 @@ Do not hide unresolved blockers inside `Assumptions and risks`.
 13. Critical Path
 14. Track Dependency Graph
 
-For frontend/UI scope, `Resolved Decisions` must explicitly cover the five browser contracts.
+For frontend/UI scope, `Resolved Decisions` must explicitly cover the five UI contracts.
 
 Every executable plan file must include a `Branch` header:
 
@@ -108,7 +108,7 @@ See `agents-lite.md` for the canonical execution agent catalog and skill mapping
 
 ---
 
-## Browser Test Planning Policy
+## UI E2E Planning Policy
 
 ### `plan-unit-test`
 
@@ -127,7 +127,7 @@ Examples:
 
 ### `plan-e2e-test`
 
-Run when the task changes feature-level user-facing browser behavior within a bounded surface such as:
+Run when the task changes feature-level user-facing behavior within a bounded UI surface such as:
 
 - a screen
 - a form
@@ -140,7 +140,7 @@ Use it for:
 
 - same-surface validation and error display
 - submit gating, loading, success, disabled, and API error states
-- browser-visible integration across components/modules within one bounded feature surface
+- user-visible integration across components/modules within one bounded feature surface
 
 Do not use it for:
 
@@ -153,9 +153,9 @@ These tests are frozen at planning time. Implementation must satisfy them.
 
 Default organization for planning-time E2E artifacts:
 
-- One spec per domain/component/surface: `e2e/{domain}/{domain}.spec.ts`
-- Put sub-contracts in separate `test.describe` blocks inside that file
-- Split into multiple spec files only when setup/fixtures diverge materially or file size becomes unmanageable
+- Playwright: `e2e/{domain}/{domain}.spec.ts`
+- Maestro: `e2e/maestro/{flow}.yaml`
+- Split only when setup or fixtures diverge materially or file size becomes unmanageable
 
 ### `playwright-guard`
 
@@ -223,9 +223,9 @@ Before finalizing:
 7. `Resolved Decisions` contains blocking choices; `Explicit Defaults` contains only non-blocking defaults
 8. Failure Escalation Policy is explicit
 9. Visual/design work is assigned to `publisher`; logic work is assigned to developer agents
-10. For UI/feature-browser scope, `plan-e2e-test` artifacts exist with frozen browser-integration `.spec.ts` files and `data-testid` registry
+10. For UI feature scope, `plan-e2e-test` artifacts exist with runner-appropriate frozen E2E files and locator registry
 11. For UI/user-journey or regression-hardening scope, a later `playwright-guard` phase exists with explicit trigger, scope, and exit criteria
-12. For UI scope, the five browser contracts are resolved before implementation planning or `plan-e2e-test`
+12. For UI scope, the five UI contracts are resolved before implementation planning or `plan-e2e-test`
 13. Non-sequential mode uses `plan-{track}/plan.md` folder layout (no flat `plan-{track}.md`)
 14. Every implementation track has matching `plan/tests/e2e` artifacts or explicit `N/A`
 15. Root `tests/manifest.md` and `e2e/manifest.md` are maintained as track indexes
@@ -248,9 +248,9 @@ After drafting plan artifacts:
 10. No circular dependencies exist in the track graph
 11. Failure escalation is actionable
 12. Visual/design work is not mixed with logic in the same execution block
-13. For UI/feature-browser scope, `plan-e2e-test` artifacts exist with frozen browser-integration specs and `data-testid` registry
+13. For UI feature scope, `plan-e2e-test` artifacts exist with frozen runner-appropriate E2E artifacts and locator registry
 14. For UI/user-journey or regression-hardening scope, a later `playwright-guard` phase is planned
-15. For UI scope, `Resolved Decisions` explicitly defines route, user state, action, visible outcome, and locator/testability contracts
+15. For UI scope, `Resolved Decisions` explicitly defines route or navigation/surface, user state, action, visible outcome, and locator/testability contracts
 16. Non-sequential mode uses folderized track plan paths (`plan-{track}/plan.md`)
 17. Every implementation track has its own `tests` and `e2e` manifest (or explicit `N/A`)
 18. Root test/e2e manifests provide track-level index links only
