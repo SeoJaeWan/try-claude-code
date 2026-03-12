@@ -65,7 +65,7 @@
 - 작업:
 - 산출물:
 - 단위 테스트: `tests/{mirrored-source-path}` (해당 시, plan-unit-test artifact)
-- E2E 테스트: `e2e/{domain}/{domain}.spec.ts` (해당 시, plan-e2e-test artifact)
+- E2E 테스트: runner-appropriate artifact (`e2e/{domain}/{domain}.spec.ts` 또는 `e2e/maestro/{flow}.yaml`) (해당 시, plan-e2e-test artifact)
 
 ### Phase 2
 
@@ -81,11 +81,11 @@
 - 작업:
 - 산출물:
 
-### Browser Integration Test Artifacts (UI/feature-browser scope)
+### UI E2E Test Artifacts (UI feature scope)
 
 상세 기준은 `references/planning-policy.md`를 따른다.
 
-- 산출물 위치: `plans/{task-name}/e2e/manifest.md`, `plans/{task-name}/e2e/{domain}/{domain}.spec.ts`
+- 산출물 위치: `plans/{task-name}/e2e/manifest.md`, plus runner-appropriate E2E artifacts
 - 메모:
 
 전체 사용자 여정 또는 회귀 hardening이 필요하면 별도 phase를 추가:

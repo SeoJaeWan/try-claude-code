@@ -16,7 +16,7 @@ For detailed planning rules, quality gates, and UI test-phase policy, read `plan
 ## Planning Skills (run by architect)
 
 - `plan-unit-test`: generates unit/logic test files as plan artifacts (`plans/{task}/tests/`)
-- `plan-e2e-test`: generates frozen feature-level browser integration Playwright `.spec.ts` files as plan artifacts (`plans/{task}/e2e/`)
+- `plan-e2e-test`: generates frozen feature-level E2E plan artifacts with the runner chosen from the environment (`plans/{task}/e2e/`)
 
 ## Post-implementation Test Agents
 
