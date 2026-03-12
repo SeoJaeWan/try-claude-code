@@ -6,11 +6,11 @@ For detailed planning rules, quality gates, and UI test-phase policy, read `plan
 
 ## Canonical Execution Agents
 
-| owner_agent          | Primary skill examples | Role                                                    |
-| -------------------- | ---------------------- | ------------------------------------------------------- |
-| `frontend-developer` | `frontend-dev`         | frontend logic, integration, hooks, state               |
-| `backend-developer`  | `backend-dev`          | API, DB, auth, server logic                             |
-| `publisher`          | `ui-publish`           | UI layout and visual structure only (no business logic) |
+| owner_agent          | Primary skill examples | Role                                                      |
+| -------------------- | ---------------------- | --------------------------------------------------------- |
+| `frontend-developer` | `frontend-dev`         | frontend logic, integration, hooks, state                 |
+| `backend-developer`  | `backend-dev`          | API, DB, auth, server logic                               |
+| `publisher`          | `ui-publish`           | UI layout and visual structure only (no business logic)   |
 | `playwright-guard`   | `guard-e2e-test`       | post-implementation full-flow Playwright regression guard |
 
 ## Planning Skills (run by architect)

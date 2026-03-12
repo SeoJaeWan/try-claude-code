@@ -14,6 +14,7 @@ Mandatory coverage requirements for `plan-unit-test`.
 4. **Exception or recovery scenarios are mandatory** when the logic can fail through dependencies, parsing, persistence, authorization, or state transitions.
 5. Every mapped test name must **include its constraint ID token** (`[C-...]`).
 6. If coverage is incomplete, **do not mark test generation complete** even if existing tests pass.
+7. If non-sequential track plans exist, compute coverage per track and do not omit in-scope split boundaries.
 
 ---
 
@@ -27,6 +28,7 @@ Before completing the `plan-unit-test` workflow:
 4. For each ID, explicitly review whether edge and exception categories apply
 5. Calculate coverage: `covered / total * 100`
 6. **100% required** - no exceptions
+7. Verify each implementation track has its own `tests/manifest.md` (or explicit `N/A`) and root index links it
 
 ---
 
@@ -44,6 +46,8 @@ The `manifest.md` must include a coverage summary:
 - Coverage: 100%
 ```
 
+For non-sequential mode, keep this format per track at `plan-{track}/tests/manifest.md` and maintain root index manifest at `plans/{task-name}/tests/manifest.md`.
+
 If coverage or review is incomplete, list missing items explicitly:
 
 ```markdown
@@ -59,5 +63,6 @@ If coverage or review is incomplete, list missing items explicitly:
 ## Traceability
 
 - Constraint IDs in test names enable grep-based traceability
-- In most cases, `grep -r "C-AUTH-001" __tests__/` should return at least two scenario entries: expected + defensive
+- In most cases, `grep -r "C-AUTH-001" tests/` should return at least two scenario entries: expected + defensive
 - If a single parameterized block covers multiple scenario categories, `manifest.md` must still record those categories explicitly
+- If hook-based boundaries are in scope, verify traceability at each hook file path (`useXxx/test/useXxx.test.ts`)

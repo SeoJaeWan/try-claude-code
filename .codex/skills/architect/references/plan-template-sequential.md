@@ -36,8 +36,8 @@
 
 - `sequential`
 - 근거:
-    - 공유 핵심 파일군 집중
-    - 선행 산출물 의존도가 높음
+  - 공유 핵심 파일군 집중
+  - 선행 산출물 의존도가 높음
 
 ## Critical Path
 
@@ -65,7 +65,7 @@
 - 작업:
 - 산출물:
 - 단위 테스트: `tests/{mirrored-source-path}` (해당 시, plan-unit-test artifact)
-- E2E 테스트: `e2e/{domain}/{scenario}.spec.ts` (해당 시, plan-e2e-test artifact)
+- E2E 테스트: `e2e/{domain}/{domain}.spec.ts` (해당 시, plan-e2e-test artifact)
 
 ### Phase 2
 
@@ -85,7 +85,7 @@
 
 상세 기준은 `references/planning-policy.md`를 따른다.
 
-- 산출물 위치: `plans/{task-name}/e2e/manifest.md`, `plans/{task-name}/e2e/{domain}/{scenario}.spec.ts`
+- 산출물 위치: `plans/{task-name}/e2e/manifest.md`, `plans/{task-name}/e2e/{domain}/{domain}.spec.ts`
 - 메모:
 
 전체 사용자 여정 또는 회귀 hardening이 필요하면 별도 phase를 추가:

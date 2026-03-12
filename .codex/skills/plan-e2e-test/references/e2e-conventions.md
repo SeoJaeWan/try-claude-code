@@ -52,9 +52,11 @@ Avoid CSS selectors and XPath. They are brittle and break on styling changes.
 
 ### File Naming Convention
 
-- Group by domain/feature: `e2e/{domain}/{feature}.spec.ts`
-- Use descriptive names: `login.spec.ts`, `create-post.spec.ts`, `settings-profile.spec.ts`
-- One file per major user flow or page
+- Group by domain/component: `e2e/{domain}/{domain}.spec.ts`
+- Prefer concise names: `taskIcon.spec.ts`, `contextMenu.spec.ts`, `overlay.spec.ts`
+- Default to one file per domain/component/surface, and separate sub-contracts with multiple `test.describe`
+- Split files only when setup/fixtures diverge materially or file size becomes unmanageable
+- Domain directory naming must follow repo convention; JS/TS repos default to camelCase (`contextMenu`) unless local tests clearly use another convention
 
 ### Test Block Structure
 
@@ -190,3 +192,4 @@ await expect(page.getByTestId('result')).toBeVisible();
 - **No implementation-coupled selectors**: Do not use class names, component internals, or generated IDs
 - **No flaky assertions**: Avoid timing-sensitive checks; use Playwright's retry-able assertions
 - **No test modification after freeze**: If E2E fails, fix implementation, not tests
+- **No unnecessary same-domain file fragmentation**: avoid splitting one component/domain across many small spec files without clear isolation need

@@ -21,10 +21,12 @@ This skill covers **unit and logic tests only**. E2E tests are handled by the `p
 
 ## Inputs to inspect
 
-1. `./plans/{task-name}/plan.md` - constraint IDs (`[C-...]`) and test targets
-2. `./.codex/skills/plan-unit-test/references/testing-conventions.md` - test writing rules
-3. `./.codex/skills/plan-unit-test/references/constraint-coverage.md` - coverage rules
-4. Local test/build config near the target code - use this to detect stack and conventions before generating files
+1. `./plans/{task-name}/plan.md` - constraint IDs (`[C-...]`), execution mode, test targets
+2. `./plans/{task-name}/plan-{track}/plan.md` (존재 시) - track별 테스트 범위
+3. `./plans/{task-name}/tests/manifest.md` (존재 시) - track test 인덱스 규칙
+4. `./.codex/skills/plan-unit-test/references/testing-conventions.md` - test writing rules
+5. `./.codex/skills/plan-unit-test/references/constraint-coverage.md` - coverage rules
+6. Local test/build config near the target code - use this to detect stack and conventions before generating files
 
 ---
 
@@ -41,10 +43,12 @@ This skill covers **unit and logic tests only**. E2E tests are handled by the `p
 ### Step 1. Extract test targets from `plan.md`
 
 - Parse all constraint IDs (`[C-...]`) from `plan.md`
+- If track plans exist, map constraints and test targets to each track first and generate artifacts per track
 - Identify testable logic boundaries: hooks, services, utilities, validators, mappers, use cases, state management, controller methods, domain policies
 - Choose the narrowest boundary that can verify the required logic accurately
 - Skip document-only or config-only changes with no testable logic
 - Skip user-facing flows that are better covered by E2E tests (`plan-e2e-test`)
+- Do not omit adjacent in-scope logic boundaries declared in plan scope (e.g., split sub-panels such as `leftPanel`)
 
 ### Step 2. Read reference documents
 
@@ -80,22 +84,29 @@ For each testable unit, generate a test file following these rules:
 - **Stack-aware output**: use the framework and conventions already present in the target project
 - **Boundary-first testing**: prefer direct logic verification over broader UI or end-to-end coverage
 - **Mocking**: mock only external boundaries, using the tools already established in the repo
+- **Hook naming**: hook tests must target `useXxx` boundaries and keep `use` prefix
+- **Hook path convention (default)**: `src/hooks/useXxx/test/useXxx.test.ts` (avoid grouping multiple hooks in one folder)
+- **File naming**: prefer concise file names (`useXxx.test.ts`), keep contract detail in `describe`/`it` text
 
 These tests may be unit-style, slice-style, or lightweight boundary tests depending on the narrowest layer that can specify the logic correctly.
 
 ### Step 5. Save test files as plan artifacts
 
-Save generated tests to `./plans/{task-name}/tests/` with source path mirroring:
+Save generated tests with source path mirroring:
+
+- sequential: `./plans/{task-name}/tests/`
+- non-sequential: `./plans/{task-name}/plan-{track}/tests/`
 
 ```text
 plans/{task-name}/tests/
 |- manifest.md
-|- src/hooks/useLogin/__tests__/index.test.ts
-|- src/services/authService/__tests__/index.test.ts
+|- src/hooks/useLogin/test/useLogin.test.ts
+|- src/services/authService/test/authService.test.ts
 `- src/test/java/com/example/auth/AuthServiceTest.java
 ```
 
 The path under `tests/` mirrors the eventual destination path in the source tree. Developers strip the `tests/` prefix to determine where to copy each file.
+When execution mode is not sequential, maintain one manifest per track and keep root `tests/manifest.md` as an index.
 
 ### Step 6. Write `manifest.md`
 
@@ -106,10 +117,10 @@ Create `tests/manifest.md` with:
 
 ## Files
 
-| Test File | Destination | Constraints | Scenario Types |
-|-----------|-------------|-------------|----------------|
-| `src/services/auth/__tests__/index.test.ts` | `src/services/auth/__tests__/index.test.ts` | [C-AUTH-001], [C-AUTH-002] | expected, defensive, exception |
-| ... | ... | ... | ... |
+| Test File                                   | Destination                                 | Constraints                | Scenario Types                 |
+| ------------------------------------------- | ------------------------------------------- | -------------------------- | ------------------------------ |
+| `src/services/auth/test/auth.test.ts` | `src/services/auth/test/auth.test.ts` | [C-AUTH-001], [C-AUTH-002] | expected, defensive, exception |
+| ...                                         | ...                                         | ...                        | ...                            |
 
 ## Coverage
 
@@ -135,8 +146,13 @@ If a category is intentionally omitted for a constraint, note the reason in the 
 
 ## Output contract
 
-- `./plans/{task-name}/tests/manifest.md`
-- `./plans/{task-name}/tests/{mirrored-destination-paths}`
+- Sequential:
+  - `./plans/{task-name}/tests/manifest.md`
+  - `./plans/{task-name}/tests/{mirrored-destination-paths}`
+- Non-sequential:
+  - `./plans/{task-name}/plan-{track}/tests/manifest.md`
+  - `./plans/{task-name}/plan-{track}/tests/{mirrored-destination-paths}`
+  - `./plans/{task-name}/tests/manifest.md` (track index)
 - Output language: Korean (test specs)
 
 ## Guardrails
@@ -147,5 +163,6 @@ If a category is intentionally omitted for a constraint, note the reason in the 
 - **No default stack assumptions**: Detect local conventions first, ask the user if unclear
 - **Constraint coverage 100%**: Mandatory before completion
 - **Spec-first mindset**: Tests are planning contracts for required logic, not a checklist written only to pass
-</Instructions>
-</Skill_Guide>
+- **No mixed hook bundles by default**: one hook boundary per folder/file path unless repo conventions require otherwise
+  </Instructions>
+  </Skill_Guide>

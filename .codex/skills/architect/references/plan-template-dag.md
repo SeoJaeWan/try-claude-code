@@ -33,8 +33,8 @@
 
 - `partial-parallel` 또는 `parallel`
 - 근거:
-    - 선행 단일 트랙 완료 후 독립 병렬 트랙 실행 가능
-    - track 간 BlockingFiles 교집합이 없음
+  - 선행 단일 트랙 완료 후 독립 병렬 트랙 실행 가능
+  - track 간 BlockingFiles 교집합이 없음
 
 ## Critical Path
 
@@ -52,15 +52,19 @@
 ## 메인 플랜 산출물
 
 - `plan.md` (마스터 인덱스 + DAG 설명)
-- `plan-contract-freeze.md`
-- `plan-core.md`
-- `plan-docs.md`
+- `plan-contract-freeze/plan.md`
+- `plan-core/plan.md`
+- `plan-docs/plan.md`
+- `tests/manifest.md` (track test manifest index)
+- `e2e/manifest.md` (track e2e manifest index)
 
 UI/feature-browser scope인 경우 planning 단계에서 `plan-e2e-test` 스킬로 browser-integration artifact 생성:
-- `plans/{task-name}/e2e/manifest.md` + `plans/{task-name}/e2e/{domain}/{scenario}.spec.ts`
+
+- `plans/{task-name}/plan-{track}/e2e/manifest.md` + `plans/{task-name}/plan-{track}/e2e/{domain}/{domain}.spec.ts`
 - 상세 기준은 `references/planning-policy.md`를 따름
 
 UI/user-journey 또는 regression-hardening scope인 경우 후속 execution track/phase에 아래를 추가:
+
 - `owner_agent: playwright-guard`
 - `primary_skill: guard-e2e-test`
 - 산출물: 실제 테스트 디렉토리의 `guard/{domain}/{risk}.spec.ts`
@@ -71,7 +75,7 @@ UI/user-journey 또는 regression-hardening scope인 경우 후속 execution tra
 - [ ] `Resolved Decisions`와 병렬 트랙 분해가 일치함
 - [ ] `Explicit Defaults`는 저위험 기본값만 포함함
 
-## 트랙 파일 필수 메타 (각 plan-{track}.md)
+## 트랙 파일 필수 메타 (각 plan-{track}/plan.md)
 
 - `Track`: 트랙 식별자
 - `DependsOn`: 선행 트랙 목록 또는 `none`
@@ -81,9 +85,14 @@ UI/user-journey 또는 regression-hardening scope인 경우 후속 execution tra
 - `Outputs`: 트랙 완료 산출물
 - `MergeCondition`: 병합 가능 조건
 - 각 실행 블록(`Tn`)의 `owner_agent`
-    - 상세 규칙은 `references/planning-policy.md`를 따름
+  - 상세 규칙은 `references/planning-policy.md`를 따름
 - 실행/병합 오케스트레이션:
-    - 상세 규칙은 `references/planning-policy.md`를 따름
+  - 상세 규칙은 `references/planning-policy.md`를 따름
+
+각 트랙은 아래를 함께 포함해야 한다:
+
+- `plan-{track}/tests/manifest.md` (+ 테스트 파일) 또는 `N/A` 근거
+- `plan-{track}/e2e/manifest.md` (+ spec 파일) 또는 `N/A` 근거
 
 ---
 
@@ -134,7 +143,7 @@ UI/user-journey 또는 regression-hardening scope인 경우 후속 execution tra
 - primary_skill: `{skill-name}` (선택)
 - 작업:
 - 단위 테스트: `tests/{mirrored-source-path}` (해당 시, plan-unit-test artifact)
-- E2E 테스트: `e2e/{domain}/{scenario}.spec.ts` (해당 시, plan-e2e-test artifact)
+- E2E 테스트: `e2e/{domain}/{domain}.spec.ts` (해당 시, plan-e2e-test artifact)
 
 ### T2
 
