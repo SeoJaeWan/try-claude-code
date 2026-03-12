@@ -19,7 +19,7 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 1. User request and latest conversation context
 2. `./.codex/skills/architect/references/agents-lite.md` - execution agent catalog
 3. `./.codex/skills/architect/references/planning-policy.md` - canonical planning rules and quality gates
-4. `./.ai/references/coding-rules/git.md` - branch naming rules (없으면 로컬 규칙 탐색 후 Explicit Defaults에 fallback 규칙 기록)
+4. `./.codex/skills/architect/references/git.md` - commit message and branch naming rules (없으면 로컬 규칙 탐색 후 Explicit Defaults에 fallback 규칙 기록)
 5. Template references only when drafting:
    - `./.codex/skills/architect/references/plan-template-sequential.md`
    - `./.codex/skills/architect/references/plan-template-dag.md`
@@ -68,7 +68,7 @@ Do not deep-dive into implementation details.
 - Create plan artifacts in `./plans/{task-name}/`.
 - Draft from the sequential or DAG template reference.
 - Required sections, branch headers, `owner_agent` formatting, routing policy, browser-contract requirements, and UI test-phase split must follow `planning-policy.md`.
-- Branch names must follow `./.ai/references/coding-rules/git.md` when available; when unavailable, derive from local conventions and record the fallback in `Explicit Defaults`.
+- Branch names must follow `./.codex/skills/architect/references/git.md` when available; when unavailable, derive from local conventions and record the fallback in `Explicit Defaults`.
 - For `partial-parallel`/`parallel`, use track folders: `plan-{track}/plan.md` (flat `plan-{track}.md` 금지).
 
 ### Step 3.5. Generate unit test plan (conditional)
