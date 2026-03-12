@@ -32,6 +32,7 @@ Use this as the entrypoint when ambiguity can change architecture, scope, toolin
 ### 1. Analyze request
 
 Identify what is clear vs unclear:
+
 - Required outcomes and constraints
 - Missing decisions
 - Plausible architecture/library branches
@@ -40,6 +41,7 @@ Identify what is clear vs unclear:
 ### 2. Gather local context
 
 Read only what is needed:
+
 - `./.ai/references/domain.md` for business context
 - `./.ai/codemaps/` for current structure (if present)
 - Other relevant references under `./.ai/references/`
@@ -54,6 +56,7 @@ If reliable research tooling is unavailable, state that clearly and ask the user
 
 Always present 2-3 options with tradeoffs when multiple viable policy or implementation directions exist.
 For each option include:
+
 - Pros
 - Cons
 - Risks
@@ -65,6 +68,7 @@ Then recommend one option with concise rationale (YAGNI, maintainability, delive
 
 Ask only unresolved high-impact questions.
 Rules:
+
 - Max 4 questions at once
 - Questions must be actionable
 - Do not ask what can be derived from local context
@@ -76,6 +80,7 @@ Rules:
 ### 6. Produce decision snapshot (default)
 
 Return a concise decision snapshot in the response:
+
 - Confirmed choices
 - Resolved blocking policies
 - Deferred low-risk choices
@@ -87,9 +92,11 @@ Do not create a requirements artifact by default.
 ### 7. Optional artifact export (only on explicit user request)
 
 If and only if the user explicitly asks for a written artifact, export to:
+
 - `./.ai/requirements/{feature-name}.md`
 
 Include:
+
 - Background
 - Goals
 - Non-goals
@@ -103,6 +110,7 @@ Include:
 ### 8. Quality gate before handoff
 
 Before handoff, confirm:
+
 - No hidden assumptions remain
 - No blocking policy ambiguity remains for the chosen planning scope
 - Blocking questions are explicit when another clarification round is still needed
@@ -111,6 +119,7 @@ Before handoff, confirm:
 ### 9. Handoff to architect (when needed)
 
 When planning is needed, provide:
+
 1. Summary of confirmed decisions
 2. Explicit defaults or deferred low-risk choices
 3. Suggested planning scope boundaries
@@ -118,9 +127,10 @@ When planning is needed, provide:
 Do not hand off to `architect` while blocking policy ambiguity remains.
 
 ## Guardrails
+
 - Do not write implementation plans or code.
 - Do not skip approach comparison when meaningful tradeoffs exist.
 - Do not hand off to `architect` with unresolved blocking policy ambiguity.
 - If requirements are already clear, explicitly state skip reason and route to `architect` directly.
-</Instructions>
-</Skill_Guide>
+  </Instructions>
+  </Skill_Guide>

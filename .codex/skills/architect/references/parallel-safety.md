@@ -6,13 +6,13 @@ Reference for architect Step 4 (parallelization decision).
 
 ## Conflict Risk Classification Table
 
-| Risk Level | Condition | Example | Judgment |
-|------------|-----------|---------|----------|
-| **Critical** | Same file modified directly | Two agents modify `layout.tsx` | **Sequential required** |
-| **High** | Shared component/type/state modified simultaneously | A modifies `Button`, B uses `Button` | **Sequential recommended** |
-| **Medium** | DB schema, routing, config files | Adding migration + modifying entity | **Shared files first, then parallel** |
-| **Low** | Import chain (indirect dependency) | A modifies util, B uses that util | **Parallel possible (with caution)** |
-| **None** | Completely independent files | Implementing separate API endpoints | **Parallel safe** |
+| Risk Level   | Condition                                           | Example                              | Judgment                              |
+| ------------ | --------------------------------------------------- | ------------------------------------ | ------------------------------------- |
+| **Critical** | Same file modified directly                         | Two agents modify `layout.tsx`       | **Sequential required**               |
+| **High**     | Shared component/type/state modified simultaneously | A modifies `Button`, B uses `Button` | **Sequential recommended**            |
+| **Medium**   | DB schema, routing, config files                    | Adding migration + modifying entity  | **Shared files first, then parallel** |
+| **Low**      | Import chain (indirect dependency)                  | A modifies util, B uses that util    | **Parallel possible (with caution)**  |
+| **None**     | Completely independent files                        | Implementing separate API endpoints  | **Parallel safe**                     |
 
 ---
 
@@ -39,10 +39,10 @@ Include in plan.md when execution mode is `partial-parallel` or `parallel`:
 
 **Pattern:** [describe parallel structure]
 
-| Session | Branch | Plan File | Skill(s) | File Scope |
-|---------|--------|-----------|----------|------------|
-| Current | feat/x-frontend | plan-frontend.md | frontend-dev, ui-publish | app/, components/ |
-| Additional | feat/x-backend | plan-backend.md | backend-dev | server/, api/ |
+| Session    | Branch          | Plan File        | Skill(s)                 | File Scope        |
+| ---------- | --------------- | ---------------- | ------------------------ | ----------------- |
+| Current    | feat/x-frontend | plan-frontend.md | frontend-dev, ui-publish | app/, components/ |
+| Additional | feat/x-backend  | plan-backend.md  | backend-dev              | server/, api/     |
 
 **Conflict risk:** [None/Low/Medium]
 **Checklist:** [n/5 passed]

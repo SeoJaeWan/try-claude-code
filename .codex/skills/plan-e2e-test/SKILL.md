@@ -27,10 +27,12 @@ Generate Playwright `.spec.ts` files mapped to `plan.md` constraint IDs. These t
 
 ## Inputs to inspect
 
-1. `./plans/{task-name}/plan.md` - constraint IDs (`[C-...]`), feature-level user interactions, and UI scope
-2. `./.codex/skills/plan-e2e-test/references/e2e-conventions.md` - E2E test writing rules
-3. `./.codex/skills/plan-e2e-test/references/constraint-coverage.md` - E2E coverage rules
-4. Local Playwright config and existing E2E tests - use this to detect conventions before generating files
+1. `./plans/{task-name}/plan.md` - constraint IDs (`[C-...]`), feature-level user interactions, execution mode, track graph
+2. `./plans/{task-name}/plan-{track}/plan.md` (존재 시) - track별 범위/출력/검증 대상
+3. `./plans/{task-name}/e2e/manifest.md` (존재 시) - track e2e 인덱스 규칙
+4. `./.codex/skills/plan-e2e-test/references/e2e-conventions.md` - E2E test writing rules
+5. `./.codex/skills/plan-e2e-test/references/constraint-coverage.md` - E2E coverage rules
+6. Local Playwright config and existing E2E tests - use this to detect conventions before generating files
 
 ---
 
@@ -58,11 +60,13 @@ Rules:
 ### Step 1. Extract browser integration targets from `plan.md`
 
 - Parse all constraint IDs (`[C-...]`) from `plan.md` that involve user-facing behavior
+- If track plans exist, map constraints to each track scope first and generate artifacts per track
 - Identify bounded browser-integration targets: form validation, submit gating, loading/success/error states, CRUD interactions inside one screen or feature shell, and visible API/module integration on that surface
 - Map each target to the constraints it verifies
 - Use only flows whose route, user state, action, visible outcome, and locator/testability contracts are explicitly resolved
 - Skip constraints that are purely internal logic (covered by `plan-unit-test`)
 - Exclude multi-route journeys, cross-page auth/session handoffs, persistence-after-reload flows, and post-implementation regression guards; record these under `Deferred to playwright-guard` in `manifest.md`
+- Do not omit adjacent in-scope surfaces declared in plan scope (e.g., panel split children such as `leftPanel`)
 
 ### Step 2. Read reference documents
 
@@ -99,6 +103,10 @@ For each testable target, generate a Playwright test file following these rules:
 - **Deterministic assertions**: use `expect(locator).toBeVisible()`, `toHaveText()`, `toHaveURL()` etc.
 - **No hardcoded waits**: use Playwright auto-waiting, `waitForURL()`, `waitForResponse()` when needed
 - **AAA-style structure** with clear arrange/act/assert sections
+- **File granularity default**: one spec per domain/component/surface, multiple `test.describe` blocks inside
+- **Split rule**: split into multiple files only when setup/fixtures differ materially or file size becomes unmanageable
+- **Naming**: prefer concise filenames (`{domain}.spec.ts`), keep contract detail in `test.describe`/`test` text
+- **Domain folder naming**: follow repo convention; for JS/TS repositories default to camelCase (`contextMenu`, not `context-menu`) unless local tests clearly use kebab-case
 
 Example structure:
 
@@ -136,14 +144,16 @@ test.describe('프로필 설정 폼', () => {
 
 ### Step 5. Save test files as plan artifacts
 
-Save generated browser integration tests to `./plans/{task-name}/e2e/` with logical grouping:
+Save generated browser integration tests with logical grouping:
+
+- sequential: `./plans/{task-name}/e2e/`
+- non-sequential: `./plans/{task-name}/plan-{track}/e2e/`
 
 ```text
 plans/{task-name}/e2e/
 |- manifest.md
-|- auth/login.spec.ts
-|- auth/signup.spec.ts
-|- dashboard/overview.spec.ts
+|- auth/auth.spec.ts
+|- dashboard/dashboard.spec.ts
 `- settings/profile.spec.ts
 ```
 
@@ -151,32 +161,32 @@ The path structure groups tests by domain/feature. These files are the final `.s
 
 ### Step 6. Write `manifest.md`
 
-Create `e2e/manifest.md` with:
+Create `manifest.md` per target folder with:
 
 ```markdown
 # E2E Test Manifest
 
 ## Files
 
-| Test File | Target Flow | Constraints | Scenario Types |
-|-----------|-------------|-------------|----------------|
+| Test File                  | Target Flow           | Constraints                      | Scenario Types                            |
+| -------------------------- | --------------------- | -------------------------------- | ----------------------------------------- |
 | `settings/profile.spec.ts` | Profile settings form | [C-PROFILE-001], [C-PROFILE-002] | interaction, validation, local-navigation |
-| ... | ... | ... | ... |
+| ...                        | ...                   | ...                              | ...                                       |
 
 ## data-testid Registry
 
-| data-testid | Element | Page/Component |
-|-------------|---------|----------------|
-| `email-input` | Email input field | Login page |
-| `login-button` | Submit button | Login page |
-| ... | ... | ... |
+| data-testid    | Element           | Page/Component |
+| -------------- | ----------------- | -------------- |
+| `email-input`  | Email input field | Login page     |
+| `login-button` | Submit button     | Login page     |
+| ...            | ...               | ...            |
 
 ## Deferred to `playwright-guard`
 
-| Journey / Flow | Reason |
-|----------------|--------|
+| Journey / Flow                 | Reason                                                            |
+| ------------------------------ | ----------------------------------------------------------------- |
 | `signup -> dashboard redirect` | Cross-route full journey owned by post-implementation guard phase |
-| ... | ... |
+| ...                            | ...                                                               |
 
 ## Coverage
 
@@ -188,6 +198,11 @@ Create `e2e/manifest.md` with:
 ```
 
 The `data-testid Registry` serves as a contract between browser integration tests and implementation. Implementation must apply these exact `data-testid` attributes.
+
+When execution mode is not sequential:
+
+- Keep one manifest per track: `plan-{track}/e2e/manifest.md`
+- Maintain root index: `plans/{task-name}/e2e/manifest.md` linking all track manifests
 
 ### Step 7. Verify constraint coverage
 
@@ -202,8 +217,13 @@ The `data-testid Registry` serves as a contract between browser integration test
 
 ## Output contract
 
-- `./plans/{task-name}/e2e/manifest.md`
-- `./plans/{task-name}/e2e/{domain}/{scenario}.spec.ts`
+- Sequential:
+  - `./plans/{task-name}/e2e/manifest.md`
+  - `./plans/{task-name}/e2e/{domain}/{domain}.spec.ts`
+- Non-sequential:
+  - `./plans/{task-name}/plan-{track}/e2e/manifest.md`
+  - `./plans/{task-name}/plan-{track}/e2e/{domain}/{domain}.spec.ts`
+  - `./plans/{task-name}/e2e/manifest.md` (track index)
 - Output language: Korean (test specs)
 
 ## Guardrails
@@ -218,5 +238,6 @@ The `data-testid Registry` serves as a contract between browser integration test
 - **Test isolation**: Each test must be independently runnable with no shared state
 - **No speculative browser contract authoring**: Missing route/state/action/outcome/locator contracts are blocking errors, not assumptions
 - **No full-flow journey authoring**: Cross-route or post-implementation regression coverage belongs to `playwright-guard`
-</Instructions>
-</Skill_Guide>
+- **No fragmented same-domain files by default**: prefer one domain/component spec file with multiple `test.describe` blocks
+  </Instructions>
+  </Skill_Guide>

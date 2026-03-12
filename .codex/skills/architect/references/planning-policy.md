@@ -72,6 +72,17 @@ Every executable plan file must include a `Branch` header:
 - sequential: `**Branch:** {type}/{summary}`
 - track file: `**Branch:** {type}/{summary}-{track}`
 
+When execution mode is not sequential:
+
+- Use track folder layout, not flat track files:
+  - `plans/{task-name}/plan-{track}/plan.md`
+- Each implementation track must also define test artifacts in the same folder:
+  - `plans/{task-name}/plan-{track}/tests/manifest.md` (or explicit `N/A` with reason)
+  - `plans/{task-name}/plan-{track}/e2e/manifest.md` (or explicit `N/A` with reason)
+- Keep root indexes for discoverability:
+  - `plans/{task-name}/tests/manifest.md` (track manifest index)
+  - `plans/{task-name}/e2e/manifest.md` (track manifest index)
+
 ### Phase Metadata Rules
 
 - Every execution block (`Phase n`, `Tn`) must include `owner_agent`
@@ -140,6 +151,12 @@ Do not use it for:
 
 These tests are frozen at planning time. Implementation must satisfy them.
 
+Default organization for planning-time E2E artifacts:
+
+- One spec per domain/component/surface: `e2e/{domain}/{domain}.spec.ts`
+- Put sub-contracts in separate `test.describe` blocks inside that file
+- Split into multiple spec files only when setup/fixtures diverge materially or file size becomes unmanageable
+
 ### `playwright-guard`
 
 Add a later `playwright-guard` phase when the task changes:
@@ -175,8 +192,8 @@ Decision rules:
 
 When execution mode is not sequential:
 
-- generate `plan.md` plus `plan-{track}.md` files
-- each track file must include:
+- generate `plan.md` plus `plan-{track}/plan.md` files
+- each track plan file must include:
   - `Track`
   - `DependsOn`
   - `StartCondition`
@@ -185,6 +202,9 @@ When execution mode is not sequential:
   - `Outputs`
   - `MergeCondition`
   - per-task `owner_agent`
+- each implementation track must include:
+  - `tests/manifest.md` (+ test files) or explicit `N/A`
+  - `e2e/manifest.md` (+ spec files) or explicit `N/A`
 
 For conflict-risk details, use `parallel-safety.md`.
 
@@ -206,6 +226,9 @@ Before finalizing:
 10. For UI/feature-browser scope, `plan-e2e-test` artifacts exist with frozen browser-integration `.spec.ts` files and `data-testid` registry
 11. For UI/user-journey or regression-hardening scope, a later `playwright-guard` phase exists with explicit trigger, scope, and exit criteria
 12. For UI scope, the five browser contracts are resolved before implementation planning or `plan-e2e-test`
+13. Non-sequential mode uses `plan-{track}/plan.md` folder layout (no flat `plan-{track}.md`)
+14. Every implementation track has matching `plan/tests/e2e` artifacts or explicit `N/A`
+15. Root `tests/manifest.md` and `e2e/manifest.md` are maintained as track indexes
 
 ---
 
@@ -228,6 +251,9 @@ After drafting plan artifacts:
 13. For UI/feature-browser scope, `plan-e2e-test` artifacts exist with frozen browser-integration specs and `data-testid` registry
 14. For UI/user-journey or regression-hardening scope, a later `playwright-guard` phase is planned
 15. For UI scope, `Resolved Decisions` explicitly defines route, user state, action, visible outcome, and locator/testability contracts
+16. Non-sequential mode uses folderized track plan paths (`plan-{track}/plan.md`)
+17. Every implementation track has its own `tests` and `e2e` manifest (or explicit `N/A`)
+18. Root test/e2e manifests provide track-level index links only
 
 Do not request execution before this checklist passes.
 
@@ -241,7 +267,7 @@ Provide a concise handoff summary with:
 2. First executable phase and its `owner_agent`
 3. Execution invocation commands:
    - sequential: run `planner-lite` against `plan.md`
-   - parallel: run one `planner-lite` session per `plan-{track}.md`
+   - parallel: run one `planner-lite` session per `plan-{track}/plan.md`
 4. Merge rule:
    - `planner-lite` enforces `Agent(... isolation: "worktree")`
    - merge after each worker completes

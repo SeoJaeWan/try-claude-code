@@ -57,13 +57,13 @@ If a category truly does not apply, record that decision in `manifest.md` instea
 
 ## Choosing the Test Boundary
 
-| Target | Recommended method | Notes |
-|--------|--------------------|-------|
-| Utility / validator / mapper | Direct call | Prefer the narrowest pure logic boundary |
-| Service / use case / domain policy | Direct call with stubbed collaborators | Verify business rules and state transitions |
-| Hook / composable | Exercise the public API with the repo's hook harness | Validate exposed state and events, not internals |
-| Component with meaningful logic | Render through public props and events | Use only when the logic cannot be verified at a lower boundary |
-| Controller / endpoint adapter | Thin boundary test | Use when request mapping, status mapping, or exception translation matters |
+| Target                             | Recommended method                                   | Notes                                                                      |
+| ---------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------- |
+| Utility / validator / mapper       | Direct call                                          | Prefer the narrowest pure logic boundary                                   |
+| Service / use case / domain policy | Direct call with stubbed collaborators               | Verify business rules and state transitions                                |
+| Hook / composable                  | Exercise the public API with the repo's hook harness | Validate exposed state and events, not internals                           |
+| Component with meaningful logic    | Render through public props and events               | Use only when the logic cannot be verified at a lower boundary             |
+| Controller / endpoint adapter      | Thin boundary test                                   | Use when request mapping, status mapping, or exception translation matters |
 
 ---
 
@@ -77,11 +77,11 @@ If a category truly does not apply, record that decision in `manifest.md` instea
 
 ### Common stack examples (non-normative)
 
-| Repo already indicates | Common choices in that ecosystem |
-|------------------------|----------------------------------|
-| React / Next.js | Vitest + Testing Library + happy-dom or jsdom |
-| NestJS | Jest + Nest testing utilities + Supertest |
-| Java / Spring | JUnit 5 + Mockito + Spring Boot Test or MockMvc |
+| Repo already indicates | Common choices in that ecosystem                |
+| ---------------------- | ----------------------------------------------- |
+| React / Next.js        | Vitest + Testing Library + happy-dom or jsdom   |
+| NestJS                 | Jest + Nest testing utilities + Supertest       |
+| Java / Spring          | JUnit 5 + Mockito + Spring Boot Test or MockMvc |
 
 These are examples only. Use them only when the repository already points to that ecosystem.
 
@@ -101,11 +101,20 @@ These are examples only. Use them only when the repository already points to tha
 - Follow the destination layout already used by the project
 - Mirror that destination path under `plans/{task-name}/tests/`
 - If the repo has no clear convention, ask the user instead of inventing one
+- In non-sequential mode, generate files per track under `plans/{task-name}/plan-{track}/tests/`
+- Keep root `plans/{task-name}/tests/manifest.md` as a track index in non-sequential mode
 
 Examples:
 
-- TypeScript repo: `src/.../__tests__/index.test.ts` or adjacent `*.spec.ts`
+- TypeScript repo (default): `src/hooks/useXxx/test/useXxx.test.ts`, `src/services/xxx/test/xxx.test.ts`
 - Java / Spring repo: `src/test/java/.../*Test.java`
+
+### Hook-specific convention (default)
+
+- Treat each hook as its own test boundary
+- Use one hook folder per hook name: `useXxx`
+- Use concise test filename: `useXxx.test.ts`
+- Do not group unrelated hooks into one folder or one file unless the repository already enforces that pattern
 
 ---
 
