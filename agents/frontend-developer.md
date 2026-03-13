@@ -2,7 +2,7 @@
 name: frontend-developer
 description: Frontend development expert for React, React Native, and Next.js. Implements feature logic, custom hooks, state management, API integration, and mobile app development.
 skills: frontend-dev
-tools: Read, Edit, Write, Glob, Grep, Bash, Task, Skill
+tools: Read, Edit, Write, Glob, Grep, Bash
 model: opus
 ---
 

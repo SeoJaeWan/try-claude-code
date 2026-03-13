@@ -2,7 +2,7 @@
 name: publisher
 description: UI/UX expert for all visual component work. Creates production-ready React components with Tailwind CSS, layout-first approach without business logic.
 skills: ui-publish
-tools: Read, Edit, Write, Glob, Grep, Bash, WebFetch, Task, Skill
+tools: Read, Edit, Write, Glob, Grep, Bash
 model: sonnet
 ---
 
