@@ -62,7 +62,7 @@ Service code structure documentation (CODEMAPS + HUMANMAPS auto-generation).
 ### Service Root Discovery (auto, root-relative)
 - `detect_changes.mjs` recursively discovers service roots from the current execution root.
 - Candidate root names: `app`, `apps`, `src`, `pages`
-- Infrastructure/test folders are excluded (for example: `.git`, `node_modules`, `.claude`, `.ai`, `dist`, `coverage`, `__tests__`).
+- Infrastructure/test folders are excluded (for example: `.git`, `node_modules`, `.claude`, `.codex`, `dist`, `coverage`, `__tests__`).
 - No repository-specific hardcoding is used (for example, no fixed `repo/*` path).
 - `changes.json` includes:
   - `scan_roots`: discovered root directories (relative path list)

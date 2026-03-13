@@ -42,10 +42,12 @@ Identify what is clear vs unclear:
 
 Read only what is needed:
 
-- `./.ai/references/domain.md` for business context
-- `./.ai/codemaps/` for current structure (if present)
-- Other relevant references under `./.ai/references/`
-- Existing code and UI behavior that can answer questions without user input
+- Relevant folders and files inferred from the request
+- Repository folder structure to locate current boundaries and ownership
+- Existing code, tests, docs, and UI behavior that can answer questions without user input
+- `./.codex/` references only when they directly constrain this workflow
+
+Do not assume or depend on `./.ai/` or any other external AI metadata directory.
 
 ### 3. Research latest information when needed
 
@@ -93,7 +95,7 @@ Do not create a requirements artifact by default.
 
 If and only if the user explicitly asks for a written artifact, export to:
 
-- `./.ai/requirements/{feature-name}.md`
+- `./.codex/artifacts/brainstorm/{feature-name}.md`
 
 Include:
 
@@ -131,6 +133,8 @@ Do not hand off to `architect` while blocking policy ambiguity remains.
 - Do not write implementation plans or code.
 - Do not skip approach comparison when meaningful tradeoffs exist.
 - Do not hand off to `architect` with unresolved blocking policy ambiguity.
+- Do not depend on `./.ai/` or other external AI metadata directories.
+- Keep brainstorm-owned artifacts under `./.codex/`.
 - If requirements are already clear, explicitly state skip reason and route to `architect` directly.
   </Instructions>
   </Skill_Guide>
