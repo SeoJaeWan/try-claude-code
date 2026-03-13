@@ -19,9 +19,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const TARGET_DIR_NAMES = new Set(["app", "apps", "src", "pages"]);
-// Excluded directories include both legacy (.ai) and plugin-managed (.claude)
-// infrastructure paths. The .claude/try-claude/ directory is the managed overlay
-// seeded by init-try and should not be scanned as service code.
+// Excluded directories include agent-managed metadata directories and
+// infrastructure paths. The .claude/try-claude/ directory is the managed
+// overlay seeded by init-try and should not be scanned as service code.
 const EXCLUDE_DIRS = new Set([
   ".git",
   ".ai",
