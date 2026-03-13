@@ -2,7 +2,7 @@
 name: playwright-guard
 description: Full-flow Playwright regression guard expert. Explores the implemented UI and adds regression-focused journey tests after implementation or bug fixes.
 skills: guard-e2e-test
-tools: Read, Edit, Write, Glob, Grep, Bash, Task, Skill
+tools: Read, Edit, Write, Glob, Grep, Bash
 model: sonnet
 ---
 

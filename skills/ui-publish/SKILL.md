@@ -36,7 +36,7 @@ Expert UI publisher for production-ready React components (visual only, no logic
 - `app/globals.css` - CSS variables, global styles
 - `components/ui/` - Actual component implementations
 
-**For latest docs, use WebSearch/WebFetch (official docs first).**
+**For latest docs, refer to local project files and existing component implementations.**
 
 ---
 
