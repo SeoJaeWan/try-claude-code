@@ -1,6 +1,7 @@
 ---
 name: migration
 description: Sync repo-local managed references under .claude/try-claude with the latest plugin reference defaults.
+model: haiku
 ---
 
 <Skill_Guide>

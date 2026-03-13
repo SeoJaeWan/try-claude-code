@@ -1,6 +1,7 @@
 ---
 name: help-try
 description: try-claude 설정, init/migration, 런타임 구조, MCP 정책 관련 질문에 FAQ 형식으로 답변합니다.
+model: haiku
 ---
 
 <Skill_Guide>

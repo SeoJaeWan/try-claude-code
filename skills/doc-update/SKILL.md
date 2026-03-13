@@ -1,7 +1,7 @@
 ---
 name: doc-update
 description: CODEMAPS and HUMANMAPS auto-generation. Scans service code structure and generates documentation. Outputs to .claude/try-claude/codemaps/ and .claude/try-claude/humanmaps/.
-model: opus
+model: sonnet
 context: fork
 agent: doc-updater
 ---

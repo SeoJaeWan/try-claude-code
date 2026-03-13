@@ -3,7 +3,7 @@ name: doc-updater
 description: Documentation specialist for CODEMAPS (.md) and HUMANMAPS (.html) generation. Scans code structure and produces project documentation.
 skills: doc-update
 tools: Read, Write, Edit, Bash, Grep, Glob
-model: opus
+model: sonnet
 ---
 
 <Agent_Prompt>
