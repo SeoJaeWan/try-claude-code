@@ -1,6 +1,7 @@
 ---
 name: init-try
 description: Bootstrap the repo-local try-claude runtime under .claude/try-claude and seed managed references.
+model: haiku
 ---
 
 <Skill_Guide>
