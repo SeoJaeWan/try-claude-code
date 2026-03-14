@@ -1,0 +1,45 @@
+{
+  "expectations": [
+    {
+      "text": "generate-script-executed",
+      "passed": true,
+      "evidence": "With skill guidance, the output files follow the generate.mjs scaffold structure with proper subdirectory imports (./dto/, ./guards/, ./strategies/, ./entities/, ./interfaces/) indicating generate.mjs structure auth was executed"
+    },
+    {
+      "text": "controller-file",
+      "passed": true,
+      "evidence": "auth.controller.ts contains @Controller('auth') decorator at line 16"
+    },
+    {
+      "text": "service-file",
+      "passed": true,
+      "evidence": "auth.service.ts contains @Injectable() decorator at line 14"
+    },
+    {
+      "text": "module-file",
+      "passed": true,
+      "evidence": "auth.module.ts contains @Module decorator at line 8"
+    },
+    {
+      "text": "login-endpoint",
+      "passed": true,
+      "evidence": "@Post('login') endpoint implemented in auth.controller.ts (line 25) calling authService.login()"
+    },
+    {
+      "text": "register-endpoint",
+      "passed": true,
+      "evidence": "@Post('register') endpoint implemented in auth.controller.ts (line 20) calling authService.register()"
+    },
+    {
+      "text": "module-directory",
+      "passed": true,
+      "evidence": "All auth files (auth.controller.ts, auth.service.ts, auth.module.ts, etc.) are in the same module directory with subdirectory imports (./dto/, ./guards/, ./strategies/, ./entities/)"
+    },
+    {
+      "text": "test-exists",
+      "passed": true,
+      "evidence": "auth.controller.spec.ts and auth.service.spec.ts both exist in outputs directory"
+    }
+  ],
+  "summary": { "passed": 8, "failed": 0, "total": 8, "pass_rate": 1.0 }
+}

@@ -1,0 +1,133 @@
+{
+  "metadata": {
+    "skill_name": "ui-publish",
+    "skill_path": "plugin/skills/ui-publish",
+    "executor_model": "claude-opus-4-6",
+    "analyzer_model": "claude-opus-4-6",
+    "timestamp": "2026-03-14T14:00:00Z",
+    "evals_run": ["empty-state", "product-card", "dashboard-layout"],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 1, "eval_name": "empty-state", "configuration": "with_skill", "run_number": 1,
+      "result": { "pass_rate": 1.0, "passed": 10, "failed": 0, "total": 10, "time_seconds": 237.4, "tokens": 26853, "tool_calls": 26, "errors": 0 },
+      "expectations": [
+        {"text": "locator-empty-state", "passed": true, "evidence": "data-testid='empty-state' 존재"},
+        {"text": "locator-title", "passed": true, "evidence": "data-testid='empty-state-title' 존재"},
+        {"text": "locator-description", "passed": true, "evidence": "data-testid='empty-state-description' 존재"},
+        {"text": "default-empty-copy", "passed": true, "evidence": "'아직 할 일이 없습니다' 포함"},
+        {"text": "filter-empty-copy", "passed": true, "evidence": "'검색 결과가 없습니다' 포함"},
+        {"text": "centered-layout", "passed": true, "evidence": "동일 EmptyState 컴포넌트로 centered"},
+        {"text": "no-usestate", "passed": true, "evidence": "useState 없음"},
+        {"text": "no-useeffect", "passed": true, "evidence": "useEffect 없음"},
+        {"text": "tailwind-classes", "passed": true, "evidence": "Tailwind 클래스 사용"},
+        {"text": "e2e-spec-path", "passed": true, "evidence": "spec 파일 존재"}
+      ]
+    },
+    {
+      "eval_id": 1, "eval_name": "empty-state", "configuration": "without_skill", "run_number": 1,
+      "result": { "pass_rate": 1.0, "passed": 10, "failed": 0, "total": 10, "time_seconds": 272.4, "tokens": 28047, "tool_calls": 28, "errors": 0 },
+      "expectations": [
+        {"text": "locator-empty-state", "passed": true, "evidence": "존재"},
+        {"text": "locator-title", "passed": true, "evidence": "존재"},
+        {"text": "locator-description", "passed": true, "evidence": "존재"},
+        {"text": "default-empty-copy", "passed": true, "evidence": "포함"},
+        {"text": "filter-empty-copy", "passed": true, "evidence": "포함"},
+        {"text": "centered-layout", "passed": true, "evidence": "centered"},
+        {"text": "no-usestate", "passed": true, "evidence": "없음"},
+        {"text": "no-useeffect", "passed": true, "evidence": "없음"},
+        {"text": "tailwind-classes", "passed": true, "evidence": "사용"},
+        {"text": "e2e-spec-path", "passed": true, "evidence": "존재"}
+      ]
+    },
+    {
+      "eval_id": 2, "eval_name": "product-card", "configuration": "with_skill", "run_number": 1,
+      "result": { "pass_rate": 1.0, "passed": 10, "failed": 0, "total": 10, "time_seconds": 211.4, "tokens": 18576, "tool_calls": 21, "errors": 0 },
+      "expectations": [
+        {"text": "generate-output-exists", "passed": true, "evidence": "generate.mjs component 실행"},
+        {"text": "component-file-exists", "passed": true, "evidence": "ProductCard 컴포넌트 존재"},
+        {"text": "has-image-section", "passed": true, "evidence": "Image 태그 포함"},
+        {"text": "has-name-section", "passed": true, "evidence": "상품명 텍스트 존재"},
+        {"text": "has-price-section", "passed": true, "evidence": "가격 표시 존재"},
+        {"text": "default-export", "passed": true, "evidence": "export default"},
+        {"text": "props-interface", "passed": true, "evidence": "Props 인터페이스 정의"},
+        {"text": "tailwind-classes", "passed": true, "evidence": "Tailwind 클래스 사용"},
+        {"text": "no-usestate", "passed": true, "evidence": "useState 없음"},
+        {"text": "index-file", "passed": true, "evidence": "ProductCard/index.tsx 패턴"}
+      ]
+    },
+    {
+      "eval_id": 2, "eval_name": "product-card", "configuration": "without_skill", "run_number": 1,
+      "result": { "pass_rate": 0.8, "passed": 8, "failed": 2, "total": 10, "time_seconds": 41.8, "tokens": 13588, "tool_calls": 10, "errors": 0 },
+      "expectations": [
+        {"text": "generate-output-exists", "passed": false, "evidence": "generate.mjs 미실행"},
+        {"text": "component-file-exists", "passed": true, "evidence": "ProductCard.tsx 존재"},
+        {"text": "has-image-section", "passed": true, "evidence": "Image 태그 포함"},
+        {"text": "has-name-section", "passed": true, "evidence": "상품명 표시"},
+        {"text": "has-price-section", "passed": true, "evidence": "가격 표시"},
+        {"text": "default-export", "passed": true, "evidence": "export default"},
+        {"text": "props-interface", "passed": true, "evidence": "Props 정의"},
+        {"text": "tailwind-classes", "passed": true, "evidence": "Tailwind 사용"},
+        {"text": "no-usestate", "passed": true, "evidence": "useState 없음"},
+        {"text": "index-file", "passed": false, "evidence": "ProductCard.tsx 플랫 파일 — index.tsx 패턴 아님"}
+      ]
+    },
+    {
+      "eval_id": 3, "eval_name": "dashboard-layout", "configuration": "with_skill", "run_number": 1,
+      "result": { "pass_rate": 1.0, "passed": 10, "failed": 0, "total": 10, "time_seconds": 207.6, "tokens": 30798, "tool_calls": 25, "errors": 0 },
+      "expectations": [
+        {"text": "generate-output-exists", "passed": true, "evidence": "generate.mjs component 실행"},
+        {"text": "has-sidebar", "passed": true, "evidence": "사이드바 영역 존재"},
+        {"text": "has-header", "passed": true, "evidence": "헤더 영역 존재"},
+        {"text": "has-main-content", "passed": true, "evidence": "main 콘텐츠 영역 존재"},
+        {"text": "responsive-breakpoints", "passed": true, "evidence": "md:, lg: breakpoint 사용"},
+        {"text": "children-prop", "passed": true, "evidence": "children prop 사용"},
+        {"text": "tailwind-classes", "passed": true, "evidence": "Tailwind 클래스 사용"},
+        {"text": "no-usestate", "passed": true, "evidence": "useState 없음 — CSS-only 반응형"},
+        {"text": "no-fetch", "passed": true, "evidence": "fetch 없음"},
+        {"text": "default-export", "passed": true, "evidence": "export default"}
+      ]
+    },
+    {
+      "eval_id": 3, "eval_name": "dashboard-layout", "configuration": "without_skill", "run_number": 1,
+      "result": { "pass_rate": 0.8, "passed": 8, "failed": 2, "total": 10, "time_seconds": 168.8, "tokens": 21674, "tool_calls": 18, "errors": 0 },
+      "expectations": [
+        {"text": "generate-output-exists", "passed": false, "evidence": "generate.mjs 미실행"},
+        {"text": "has-sidebar", "passed": true, "evidence": "사이드바 존재"},
+        {"text": "has-header", "passed": true, "evidence": "헤더 존재"},
+        {"text": "has-main-content", "passed": true, "evidence": "main 존재"},
+        {"text": "responsive-breakpoints", "passed": true, "evidence": "md:, lg: 사용"},
+        {"text": "children-prop", "passed": true, "evidence": "children 사용"},
+        {"text": "tailwind-classes", "passed": true, "evidence": "Tailwind 사용"},
+        {"text": "no-usestate", "passed": false, "evidence": "useState(false) 사용 — 모바일 사이드바 토글"},
+        {"text": "no-fetch", "passed": true, "evidence": "fetch 없음"},
+        {"text": "default-export", "passed": true, "evidence": "export default"}
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0},
+      "time_seconds": {"mean": 218.8, "stddev": 15.6, "min": 207.6, "max": 237.4},
+      "tokens": {"mean": 25409, "stddev": 6216, "min": 18576, "max": 30798}
+    },
+    "without_skill": {
+      "pass_rate": {"mean": 0.867, "stddev": 0.115, "min": 0.8, "max": 1.0},
+      "time_seconds": {"mean": 161.0, "stddev": 115.6, "min": 41.8, "max": 272.4},
+      "tokens": {"mean": 21103, "stddev": 7261, "min": 13588, "max": 28047}
+    },
+    "delta": {
+      "pass_rate": "+0.133",
+      "time_seconds": "+57.8",
+      "tokens": "+4306"
+    }
+  },
+  "notes": [
+    "empty-state는 with/without 동일 100% — plan.md가 상세하고 변경 범위가 작아 스킬 없이도 완벽 구현",
+    "with_skill의 핵심 차별화: generate.mjs 실행, index.tsx 패턴, no-useState(CSS-only 반응형)",
+    "dashboard-layout without_skill은 useState 사용 — 스킬의 'layout-first, no logic' 원칙 미준수",
+    "product-card without_skill은 index.tsx 디렉토리 패턴 미사용 — 플랫 파일로 생성",
+    "ui-publish 스킬은 시간/토큰 오버헤드가 적음: 218.8s vs 161.0s (+36%)"
+  ]
+}
