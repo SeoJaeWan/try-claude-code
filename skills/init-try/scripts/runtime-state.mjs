@@ -30,11 +30,11 @@ export const computeHash = (content) =>
   createHash('sha256').update(content.replace(/\r\n/g, '\n')).digest('hex');
 
 export const loadPluginMeta = async (pluginRoot) => {
-  const pluginJsonPath = join(pluginRoot, '.claude-plugin', 'plugin.json');
-  const pluginJson = JSON.parse(await readFile(pluginJsonPath, 'utf8'));
+  const marketplacePath = join(pluginRoot, '.claude-plugin', 'marketplace.json');
+  const marketplace = JSON.parse(await readFile(marketplacePath, 'utf8'));
   return {
-    pluginId: pluginJson.id || PLUGIN_ID,
-    pluginVersion: pluginJson.version || '0.1.0',
+    pluginId: marketplace.name || PLUGIN_ID,
+    pluginVersion: marketplace.metadata?.version || '0.1.0',
     pluginRoot: normalizePath(resolve(pluginRoot)),
   };
 };
