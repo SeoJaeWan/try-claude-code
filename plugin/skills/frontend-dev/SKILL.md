@@ -20,10 +20,10 @@ Expert frontend development workflow for React, Next.js, and React Native.
 
 ## Documentation References
 
-**Read first (플러그인 번들 참조 — 이 SKILL.md 기준 `../../`에 위치):**
+**Read first (플러그인 번들 참조):**
 
-- `../../references/coding-rules/` - All coding rules
-- `../../references/design/` - Design system (structure, principles)
+- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/` - All coding rules
+- `${CLAUDE_PLUGIN_ROOT}/references/design/` - Design system (structure, principles)
 
 **Read from consumer repo (프로젝트 루트 기준):**
 
@@ -48,39 +48,30 @@ Expert frontend development workflow for React, Next.js, and React Native.
 
 Before implementing hooks, **always attempt to generate boilerplate first** using coding-rules scripts. The generated boilerplate includes correct hook structure, naming conventions, and test scaffolding — building on top of it prevents common mistakes like inconsistent patterns.
 
-generate.mjs는 이 스킬과 같은 플러그인에 번들된 스크립트다.
-
-**스크립트 찾는 방법:**
-1. 이 SKILL.md 파일이 로드된 실제 디스크 경로를 확인한다 (Glob `**/frontend-dev/SKILL.md` 사용)
-2. 해당 경로의 부모의 부모 디렉토리가 플러그인 루트다
-3. `<플러그인 루트>/references/coding-rules/scripts/generate.mjs`를 실행한다
-
-예시: SKILL.md가 `/home/user/.claude/plugins/cache/.../skills/frontend-dev/SKILL.md`에 있다면,
-generate.mjs는 `/home/user/.claude/plugins/cache/.../references/coding-rules/scripts/generate.mjs`에 있다.
+generate.mjs는 이 플러그인에 번들된 스크립트다. `${CLAUDE_PLUGIN_ROOT}` 변수로 접근한다.
 
 ```bash
-# 플러그인 루트를 PLUGIN_ROOT 변수로 잡은 후:
 # Custom hook boilerplate
-node $PLUGIN_ROOT/references/coding-rules/scripts/generate.mjs hook <hookName> [--form]
+node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs hook <hookName> [--form]
 
 # API hook boilerplate (query)
-node $PLUGIN_ROOT/references/coding-rules/scripts/generate.mjs api-hook <hookName> --method query
+node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs api-hook <hookName> --method query
 
 # API hook boilerplate (mutation)
-node $PLUGIN_ROOT/references/coding-rules/scripts/generate.mjs api-hook <hookName> --method mutation
+node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs api-hook <hookName> --method mutation
 
 # Test suite boilerplate
-node $PLUGIN_ROOT/references/coding-rules/scripts/generate.mjs test-suite <targetName> --type hook
+node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs test-suite <targetName> --type hook
 ```
 
 ---
 
 ## Coding Rules 준수
 
-파일이나 폴더를 생성·배치할 때 반드시 아래 문서를 읽고 따른다 (위 Documentation References의 플러그인 번들 경로 사용):
+파일이나 폴더를 생성·배치할 때 반드시 아래 문서를 읽고 따른다:
 
-- `../../references/coding-rules/folder-structure.md` — 훅/컴포넌트 배치 규칙, index.ts export 패턴, queries/ vs mutations/ 구분
-- `../../references/coding-rules/naming.md` — use{Verb}{Resource} 훅 네이밍, handle 접두사, 배열 변수 복수형
+- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/folder-structure.md` — 훅/컴포넌트 배치 규칙, index.ts export 패턴, queries/ vs mutations/ 구분
+- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/naming.md` — use{Verb}{Resource} 훅 네이밍, handle 접두사, 배열 변수 복수형
 
 ---
 

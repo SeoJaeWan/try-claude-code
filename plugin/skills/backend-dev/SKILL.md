@@ -39,12 +39,15 @@ If ambiguous, read the main entry file or config to confirm. Use the detected st
 
 ## Documentation References
 
-**Read first:**
+**Read first (플러그인 번들 참조):**
 
-- `references/coding-rules/` - Project coding rules (if present)
+- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/` - Project coding rules
+
+**Read from consumer repo (프로젝트 루트 기준):**
+
 - `codemaps/backend.md` - Existing API endpoints (if present)
 - `codemaps/database.md` - DB schema, tables (if present)
-- `references/domain.md` - Business logic and requirements
+- `references/domain.md` - Business logic and requirements (if present)
 
 **Read plan:**
 
@@ -58,14 +61,12 @@ If ambiguous, read the main entry file or config to confirm. Use the detected st
 
 For NestJS projects, generate module structure using coding-rules scripts.
 
-generate.mjs는 이 스킬과 같은 플러그인 안에 있다. 이 SKILL.md 파일의 위치에서 `../../references/coding-rules/scripts/generate.mjs`로 접근할 수 있다.
+generate.mjs는 이 플러그인에 번들된 스크립트다. `${CLAUDE_PLUGIN_ROOT}` 변수로 접근한다.
 
 ```bash
 # NestJS module structure
-node ../../references/coding-rules/scripts/generate.mjs structure <moduleName> [--create]
+node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs structure <moduleName> [--create]
 ```
-
-> 위 경로는 이 SKILL.md 기준 상대경로다. 실행 시 이 SKILL.md의 실제 위치를 기준으로 절대경로를 구성하라.
 
 ---
 
@@ -73,10 +74,8 @@ node ../../references/coding-rules/scripts/generate.mjs structure <moduleName> [
 
 파일이나 폴더를 생성·배치할 때 반드시 아래 문서를 읽고 따른다:
 
-- `references/coding-rules/folder-structure.md` — 모듈 구조, index.ts export 패턴
-- `references/coding-rules/naming.md` — DB 네이밍(snake_case), API 네이밍 규칙
-
-이 문서들은 이 SKILL.md 기준 `../../references/coding-rules/`에 있다.
+- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/folder-structure.md` — 모듈 구조, index.ts export 패턴
+- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/naming.md` — DB 네이밍(snake_case), API 네이밍 규칙
 
 ---
 
