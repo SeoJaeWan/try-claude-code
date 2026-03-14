@@ -12,6 +12,7 @@
 - Components do not implement new logic directly
 - All logic is extracted into custom hooks
 - Components import hooks and combine them in handlers only
+- **기존 컴포넌트에 인라인 로직(fetch, useState 등)이 있는 경우, 새 기능을 추가하기 전에 먼저 해당 로직을 커스텀 훅으로 추출한다** — 인라인 로직 위에 기능을 쌓으면 컴포넌트가 비대해지고 테스트가 어려워진다
 
 ```tsx
 // Good: 훅들을 결합하는 컴포넌트

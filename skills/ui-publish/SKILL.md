@@ -44,13 +44,17 @@ Expert UI publisher for production-ready React components (visual only, no logic
 
 Before creating components, **always attempt to generate boilerplate first** using coding-rules scripts. The generated boilerplate includes correct default export pattern and project conventions — building on top of it prevents common mistakes like missing default exports or wrong file structure.
 
+generate.mjs는 이 스킬과 같은 플러그인 안에 있다. 이 SKILL.md 파일의 위치에서 `../../references/coding-rules/scripts/generate.mjs`로 접근할 수 있다.
+
 ```bash
 # Component boilerplate (generates default export, Props interface, etc.)
-node references/coding-rules/scripts/generate.mjs component <ComponentName>
+node ../../references/coding-rules/scripts/generate.mjs component <ComponentName>
 
 # Next.js page structure
-node references/coding-rules/scripts/generate.mjs structure <pagePath> [--create]
+node ../../references/coding-rules/scripts/generate.mjs structure <pagePath> [--create]
 ```
+
+> 위 경로는 이 SKILL.md 기준 상대경로다. 실행 시 이 SKILL.md의 실제 위치를 기준으로 절대경로를 구성하라.
 
 ---
 
@@ -60,6 +64,17 @@ node references/coding-rules/scripts/generate.mjs structure <pagePath> [--create
 - ✅ Place new components in consistent locations
 - ✅ Avoid duplicate components
 - ✅ Reuse existing patterns
+
+---
+
+## Coding Rules 준수
+
+파일이나 폴더를 생성·배치할 때 반드시 아래 문서를 읽고 따른다:
+
+- `references/coding-rules/folder-structure.md` — 컴포넌트 배치 규칙, index.tsx export 패턴
+- `references/coding-rules/naming.md` — 네이밍 컨벤션, handle 접두사 규칙
+
+이 문서들은 이 SKILL.md 기준 `../../references/coding-rules/`에 있다.
 
 ---
 
