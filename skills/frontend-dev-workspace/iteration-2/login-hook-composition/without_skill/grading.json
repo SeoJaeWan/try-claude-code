@@ -1,0 +1,45 @@
+{
+  "eval_name": "login-hook-composition (without_skill)",
+  "expectations": [
+    {
+      "text": "generate-form-hook: generate.mjs hook useLoginForm 실행 결과로 생성된 파일이 존재한다",
+      "passed": false,
+      "evidence": "Summary does not mention running generate.mjs. useLoginForm was created manually in the outputs directory."
+    },
+    {
+      "text": "generate-api-hook: generate.mjs api-hook useLogin 실행 결과로 생성된 파일이 존재한다",
+      "passed": false,
+      "evidence": "Summary does not mention running generate.mjs. useLogin was created manually in the outputs directory."
+    },
+    {
+      "text": "login-hook-in-mutations: useLogin 훅이 apis/mutations/ 경로 하위에 배치된다",
+      "passed": false,
+      "evidence": "useLogin is at without_skill/outputs/useLogin.ts (flat output directory). It is not placed under apis/mutations/. The summary notes suggest placing it in hooks/ without specifying apis/mutations/."
+    },
+    {
+      "text": "form-hook-placement: useLoginForm이 hooks/ 하위에 배치된다",
+      "passed": false,
+      "evidence": "useLoginForm is at without_skill/outputs/useLoginForm.ts (flat output directory). The page.tsx imports it from '@/hooks/useLoginForm' suggesting intended placement in hooks/ root, but it was not actually placed there. The summary says 'hooks/ directory' but the actual file is in the outputs folder."
+    },
+    {
+      "text": "page-imports-hooks: 로그인 페이지 파일이 useLoginForm과 useLogin을 import한다",
+      "passed": true,
+      "evidence": "without_skill page.tsx imports useLoginForm from '@/hooks/useLoginForm' (line 4) and useLogin from '@/hooks/useLogin' (line 5)."
+    },
+    {
+      "text": "page-no-direct-logic: 로그인 페이지 컴포넌트에 직접적인 useState/fetch 로직이 없고 훅 조합만 한다",
+      "passed": true,
+      "evidence": "without_skill page.tsx has no useState, useEffect, or fetch calls. It only destructures from useLoginForm() and useLogin(), with a handleSubmit function that delegates to the hooks."
+    },
+    {
+      "text": "handle-submit: 폼 제출 핸들러가 handleSubmit 등 handle 접두사를 사용한다",
+      "passed": true,
+      "evidence": "without_skill page.tsx line 12: const handleSubmit = (e: React.FormEvent) => { ... }. The form uses onSubmit={handleSubmit}."
+    },
+    {
+      "text": "test-files-exist: useLoginForm 또는 useLogin에 대한 테스트 파일이 존재한다",
+      "passed": false,
+      "evidence": "No test files exist in the without_skill outputs directory. Only useLoginForm.ts, useLogin.ts, page.tsx, and summary.md are present."
+    }
+  ]
+}

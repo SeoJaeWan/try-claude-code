@@ -1,0 +1,40 @@
+{
+  "eval_name": "api-hook-order (with_skill)",
+  "expectations": [
+    {
+      "text": "generate-output-exists: generate.mjs api-hook 실행 결과로 생성된 보일러플레이트 파일이 존재한다",
+      "passed": false,
+      "evidence": "Summary states 'No generate.mjs scripts were run' because the coding-rules scripts directory does not exist. The hook was implemented manually."
+    },
+    {
+      "text": "hook-file-exists: useFetchOrder 훅 파일이 존재한다",
+      "passed": true,
+      "evidence": "File exists at features/next-app/hooks/apis/queries/useFetchOrder.ts with a full implementation of the useFetchOrder hook."
+    },
+    {
+      "text": "hook-in-queries: 훅 파일이 apis/queries/ 경로 하위에 배치된다",
+      "passed": true,
+      "evidence": "File is at features/next-app/hooks/apis/queries/useFetchOrder.ts, which is under apis/queries/."
+    },
+    {
+      "text": "index-export: 훅이 index.ts 파일에서 export된다",
+      "passed": false,
+      "evidence": "No index.ts file exists anywhere in features/next-app/hooks/. The hook is not re-exported from an index file."
+    },
+    {
+      "text": "returns-loading: 훅 반환값에 loading/isLoading 상태가 포함된다",
+      "passed": true,
+      "evidence": "useFetchOrder.ts returns { data, isLoading, error, isFetched, refetch } - isLoading is included in the return value."
+    },
+    {
+      "text": "returns-error: 훅 반환값에 error 상태가 포함된다",
+      "passed": true,
+      "evidence": "useFetchOrder.ts returns error: Error | null in UseFetchOrderResult interface."
+    },
+    {
+      "text": "test-file-exists: useFetchOrder에 대한 테스트 파일이 존재한다",
+      "passed": false,
+      "evidence": "No test file for useFetchOrder exists in the features/next-app directory. No .test.ts or .spec.ts files were found in the project at all."
+    }
+  ]
+}
