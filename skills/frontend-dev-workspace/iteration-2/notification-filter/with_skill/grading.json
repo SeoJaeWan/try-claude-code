@@ -1,0 +1,55 @@
+{
+  "eval_name": "notification-filter (with_skill)",
+  "expectations": [
+    {
+      "text": "filter-all-unread: all/unread 두 가지 필터 상태 전환이 코드에 구현되어 있다",
+      "passed": true,
+      "evidence": "NotificationList.tsx has FilterMode type ('all' | 'unread'), useState<FilterMode>('all'), and two buttons that call setFilter('all') and setFilter('unread'). Filtering logic uses filter === 'unread' to filter notifications."
+    },
+    {
+      "text": "hook-extracted: 필터 로직이 별도 커스텀 훅 파일로 분리되어 있다",
+      "passed": false,
+      "evidence": "Filter logic (useState, setFilter, filtering) is all inline in NotificationList.tsx. No separate hook file exists in features/next-app/hooks/ for notification filtering."
+    },
+    {
+      "text": "hook-name-pattern: 훅 이름이 use{Verb}{Resource} 패턴을 따른다",
+      "passed": false,
+      "evidence": "No custom hook was extracted for notification filtering, so there is no hook name to evaluate."
+    },
+    {
+      "text": "empty-state-rendered: unread 필터 결과 0건 시 data-testid='notifications-empty' 요소가 렌더링된다",
+      "passed": true,
+      "evidence": "NotificationList.tsx line 86-92: filtered.length === 0 renders <p data-testid='notifications-empty'>."
+    },
+    {
+      "text": "error-over-filter: error 상태일 때 필터 결과 대신 data-testid='notifications-error' 요소가 우선 렌더링된다",
+      "passed": true,
+      "evidence": "NotificationList.tsx lines 46-52: error check returns early with data-testid='notifications-error' element, before any filter buttons are rendered."
+    },
+    {
+      "text": "locator-filter-all: data-testid='notifications-filter-all' 속성이 코드에 존재한다",
+      "passed": true,
+      "evidence": "NotificationList.tsx line 63: data-testid=\"notifications-filter-all\" on the all filter button."
+    },
+    {
+      "text": "locator-filter-unread: data-testid='notifications-filter-unread' 속성이 코드에 존재한다",
+      "passed": true,
+      "evidence": "NotificationList.tsx line 74: data-testid=\"notifications-filter-unread\" on the unread filter button."
+    },
+    {
+      "text": "handler-prefix: 이벤트 핸들러 함수명이 handle 접두사를 사용한다",
+      "passed": false,
+      "evidence": "Filter button onClick handlers use inline arrow functions: onClick={() => setFilter('all')} and onClick={() => setFilter('unread')}. No named handler functions with handle prefix."
+    },
+    {
+      "text": "e2e-spec-path: E2E spec 파일이 features/next-app/tests/ 하위에 배치된다",
+      "passed": true,
+      "evidence": "File exists at features/next-app/tests/dashboard-notification-filter.spec.ts."
+    },
+    {
+      "text": "no-fetch-in-component: NotificationList 컴포넌트 파일에 직접적인 fetch/axios 호출이 없다",
+      "passed": false,
+      "evidence": "NotificationList.tsx line 21 has a direct fetch('/api/notifications') call inside useEffect. No hook extraction was done for data fetching."
+    }
+  ]
+}
