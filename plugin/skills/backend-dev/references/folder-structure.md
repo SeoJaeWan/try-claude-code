@@ -4,7 +4,7 @@
 
 ## Module-Based Architecture
 
-백엔드 프로젝트는 도메인(기능) 단위로 모듈을 구성한다. 하나의 모듈 디렉토리 안에 해당 도메인의 controller, service, repository, DTO, entity를 모두 배치한다.
+Backend projects are organized by domain (feature) modules. Each module directory contains the domain's controller, service, repository, DTO, and entity files.
 
 ```
 src/
@@ -42,16 +42,16 @@ src/
 
 | Condition | Location |
 |---|---|
-| 독립된 도메인 기능 | `src/{domain}/` (모듈 디렉토리) |
-| 공통 유틸리티/헬퍼 | `src/common/` |
-| 설정/환경 관련 | `src/config/` |
-| DB 마이그레이션 | `src/migrations/` 또는 프레임워크 관례 |
+| Independent domain feature | `src/{domain}/` (module directory) |
+| Shared utilities/helpers | `src/common/` |
+| Configuration/environment | `src/config/` |
+| DB migrations | `src/migrations/` or framework convention |
 
 ---
 
 ## File Naming Convention
 
-프레임워크 관례를 따른다:
+Follow framework conventions:
 
 | File Type | Pattern | Example |
 |---|---|---|
@@ -69,12 +69,12 @@ src/
 
 ## Test File Placement
 
-테스트 파일은 대상 파일과 같은 디렉토리에 co-locate한다:
+Test files are co-located with the target file in the same directory:
 
 ```
 src/orders/
 ├── orders.service.ts
-├── orders.service.spec.ts      ← 같은 디렉토리
+├── orders.service.spec.ts      ← same directory
 ├── orders.controller.ts
-└── orders.controller.spec.ts   ← 같은 디렉토리
+└── orders.controller.spec.ts   ← same directory
 ```

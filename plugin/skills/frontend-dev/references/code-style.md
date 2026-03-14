@@ -36,8 +36,8 @@ For complex conditions, use Early Return at the top of the component instead of 
 const UserProfile = (props: UserProfileProps) => {
   const { user } = props;
 
-  if (!user) return <div>사용자를 찾을 수 없습니다</div>;
-  if (user.isBlocked) return <div>차단된 사용자입니다</div>;
+  if (!user) return <div>User not found</div>;
+  if (user.isBlocked) return <div>Blocked user</div>;
 
   return (
     <div>
@@ -51,7 +51,7 @@ const UserProfile = (props: UserProfileProps) => {
 Ternary operators are only permitted when the entire expression fits on a single line:
 
 ```typescript
-{isLoading ? "로딩 중..." : title}
+{isLoading ? "Loading..." : title}
 ```
 
 ---

@@ -9,10 +9,10 @@
 - Components do not implement new logic directly
 - All logic is extracted into custom hooks
 - Components import hooks and combine them in handlers only
-- **기존 컴포넌트에 인라인 로직(fetch, useState 등)이 있는 경우, 새 기능을 추가하기 전에 먼저 해당 로직을 커스텀 훅으로 추출한다** — 인라인 로직 위에 기능을 쌓으면 컴포넌트가 비대해지고 테스트가 어려워진다
+- **If existing components contain inline logic (fetch, useState, etc.), extract that logic into custom hooks before adding new features** — stacking features on top of inline logic bloats the component and makes testing difficult
 
 ```tsx
-// Good: 훅들을 결합하는 컴포넌트
+// Good: Component that composes hooks
 const LoginPage = () => {
   const { form, handleChange } = useLoginForm();
   const { login, isLoading } = useLogin();
@@ -20,7 +20,7 @@ const LoginPage = () => {
   return <LoginFormUI {...form} onSubmit={handleSubmit} />;
 };
 
-// Bad: 컴포넌트에 직접 로직 구현 (useState, fetch 등)
+// Bad: Component with direct logic implementation (useState, fetch, etc.)
 ```
 
 ---
@@ -40,10 +40,10 @@ const LoginPage = () => {
 
 ```
 components/
-├── common/              # 공통 (2+ 페이지에서 사용)
+├── common/              # Shared (used in 2+ pages)
 │   ├── header/index.tsx
 │   └── button/index.tsx
-├── {domain}/            # 도메인별
+├── {domain}/            # Domain-specific
 │   └── problemCard/index.tsx
 └── providers/index.tsx  # Context Providers
 ```
@@ -91,17 +91,17 @@ All hook path rules in this document are expressed relative to `{hooksRoot}`.
 │   │   └── useGetUser/index.ts
 │   └── mutations/       # useMutation (POST/PUT/DELETE)
 │       └── useLogin/index.ts
-└── utils/               # 유틸 훅 (2+ 컴포넌트에서 사용)
+└── utils/               # Utility hooks (used in 2+ components)
     └── useDebounce/index.ts
 ```
 
 ### Hook Placement Decision Flow
 
 ```
-1. API 호출 훅?        → {hooksRoot}/apis/ (queries/ 또는 mutations/)
-2. 2+ 곳에서 사용?     → {hooksRoot}/utils/
-3. 특정 페이지 전용?   → app/{feature}/hooks/
-4. 특정 컴포넌트 전용? → components/{path}/hooks/
+1. API call hook?           → {hooksRoot}/apis/ (queries/ or mutations/)
+2. Used in 2+ places?       → {hooksRoot}/utils/
+3. Page-specific?            → app/{feature}/hooks/
+4. Component-specific?       → components/{path}/hooks/
 ```
 
 - When a dedicated hook is also needed elsewhere, move it to `{hooksRoot}/utils/`
@@ -113,6 +113,6 @@ All hook path rules in this document are expressed relative to `{hooksRoot}`.
 
 ```
 {hooksRoot}/apis/
-├── queries/       # 데이터 조회 (GET): useGetUser, useGetProblems
-└── mutations/     # 데이터 변경 (POST/PUT/DELETE): useLogin, useCreateMemo
+├── queries/       # Data fetching (GET): useGetUser, useGetProblems
+└── mutations/     # Data modification (POST/PUT/DELETE): useLogin, useCreateMemo
 ```
