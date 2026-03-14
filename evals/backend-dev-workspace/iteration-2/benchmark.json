@@ -1,0 +1,125 @@
+{
+  "metadata": {
+    "skill_name": "backend-dev",
+    "skill_path": "plugin/skills/backend-dev",
+    "executor_model": "claude-opus-4-6",
+    "analyzer_model": "claude-opus-4-6",
+    "timestamp": "2026-03-14T14:00:00Z",
+    "evals_run": ["profile-summary-api", "orders-crud", "auth-jwt"],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 1, "eval_name": "profile-summary-api", "configuration": "with_skill", "run_number": 1,
+      "result": { "pass_rate": 1.0, "passed": 9, "failed": 0, "total": 9, "time_seconds": 457.0, "tokens": 33199, "tool_calls": 39, "errors": 0 },
+      "expectations": [
+        {"text": "service-boundary", "passed": true, "evidence": "buildProfileSummary 메서드 존재"},
+        {"text": "response-shape", "passed": true, "evidence": "userName, pendingTodos, completedTodos, unreadNotifications 필드 포함"},
+        {"text": "normalization-defense", "passed": true, "evidence": "normalizeCount 방어 로직 존재"},
+        {"text": "controller-endpoint", "passed": true, "evidence": "@Get('profile-summary') 데코레이터"},
+        {"text": "controller-passthrough", "passed": true, "evidence": "service 결과 직접 반환"},
+        {"text": "test-service-spec", "passed": true, "evidence": "profile-summary.service.spec.ts 존재"},
+        {"text": "test-controller-spec", "passed": true, "evidence": "profile-summary.controller.spec.ts 존재"},
+        {"text": "test-placement", "passed": true, "evidence": "src/ 하위 배치"},
+        {"text": "camelcase-methods", "passed": true, "evidence": "buildProfileSummary, getProfileSummary"}
+      ]
+    },
+    {
+      "eval_id": 1, "eval_name": "profile-summary-api", "configuration": "without_skill", "run_number": 1,
+      "result": { "pass_rate": 1.0, "passed": 9, "failed": 0, "total": 9, "time_seconds": 370.4, "tokens": 29478, "tool_calls": 29, "errors": 0 },
+      "expectations": [
+        {"text": "service-boundary", "passed": true, "evidence": "buildProfileSummary 존재"},
+        {"text": "response-shape", "passed": true, "evidence": "4개 필드 포함"},
+        {"text": "normalization-defense", "passed": true, "evidence": "정규화 로직 존재"},
+        {"text": "controller-endpoint", "passed": true, "evidence": "@Get 데코레이터"},
+        {"text": "controller-passthrough", "passed": true, "evidence": "직접 반환"},
+        {"text": "test-service-spec", "passed": true, "evidence": "존재"},
+        {"text": "test-controller-spec", "passed": true, "evidence": "존재"},
+        {"text": "test-placement", "passed": true, "evidence": "src/ 하위"},
+        {"text": "camelcase-methods", "passed": true, "evidence": "camelCase 준수"}
+      ]
+    },
+    {
+      "eval_id": 2, "eval_name": "orders-crud", "configuration": "with_skill", "run_number": 1,
+      "result": { "pass_rate": 0.889, "passed": 8, "failed": 1, "total": 9, "time_seconds": 415.3, "tokens": 43050, "tool_calls": 49, "errors": 0 },
+      "expectations": [
+        {"text": "generate-script-executed", "passed": true, "evidence": "generate.mjs structure orders 실행"},
+        {"text": "crud-get", "passed": true, "evidence": "@Get() 존재"},
+        {"text": "crud-post", "passed": true, "evidence": "@Post() 존재"},
+        {"text": "crud-patch", "passed": true, "evidence": "@Patch(':id') 존재"},
+        {"text": "crud-delete", "passed": true, "evidence": "@Delete(':id') 존재"},
+        {"text": "module-registered", "passed": true, "evidence": "OrdersModule imports에 등록"},
+        {"text": "module-structure", "passed": true, "evidence": "orders/ 디렉토리에 모듈 파일 배치"},
+        {"text": "db-snake-case", "passed": false, "evidence": "camelCase 사용 (createdAt, customerName)"},
+        {"text": "test-exists", "passed": true, "evidence": "orders.service.spec.ts, orders.controller.spec.ts 존재"}
+      ]
+    },
+    {
+      "eval_id": 2, "eval_name": "orders-crud", "configuration": "without_skill", "run_number": 1,
+      "result": { "pass_rate": 0.778, "passed": 7, "failed": 2, "total": 9, "time_seconds": 359.1, "tokens": 26837, "tool_calls": 31, "errors": 0 },
+      "expectations": [
+        {"text": "generate-script-executed", "passed": false, "evidence": "generate.mjs 미실행"},
+        {"text": "crud-get", "passed": true, "evidence": "@Get() 존재"},
+        {"text": "crud-post", "passed": true, "evidence": "@Post() 존재"},
+        {"text": "crud-patch", "passed": true, "evidence": "@Patch 존재"},
+        {"text": "crud-delete", "passed": true, "evidence": "@Delete 존재"},
+        {"text": "module-registered", "passed": true, "evidence": "OrdersModule 등록"},
+        {"text": "module-structure", "passed": true, "evidence": "orders/ 디렉토리 구조"},
+        {"text": "db-snake-case", "passed": false, "evidence": "camelCase 사용"},
+        {"text": "test-exists", "passed": true, "evidence": "spec 파일 존재"}
+      ]
+    },
+    {
+      "eval_id": 3, "eval_name": "auth-jwt", "configuration": "with_skill", "run_number": 1,
+      "result": { "pass_rate": 1.0, "passed": 8, "failed": 0, "total": 8, "time_seconds": 341.0, "tokens": 38348, "tool_calls": 46, "errors": 0 },
+      "expectations": [
+        {"text": "generate-script-executed", "passed": true, "evidence": "generate.mjs structure auth 실행"},
+        {"text": "controller-file", "passed": true, "evidence": "@Controller('auth') 존재"},
+        {"text": "service-file", "passed": true, "evidence": "@Injectable() 존재"},
+        {"text": "module-file", "passed": true, "evidence": "@Module() 존재"},
+        {"text": "login-endpoint", "passed": true, "evidence": "login 엔드포인트 구현"},
+        {"text": "register-endpoint", "passed": true, "evidence": "register 엔드포인트 구현"},
+        {"text": "module-directory", "passed": true, "evidence": "auth/ 디렉토리에 모든 파일 배치"},
+        {"text": "test-exists", "passed": true, "evidence": "auth.service.spec.ts, auth.controller.spec.ts 존재"}
+      ]
+    },
+    {
+      "eval_id": 3, "eval_name": "auth-jwt", "configuration": "without_skill", "run_number": 1,
+      "result": { "pass_rate": 0.75, "passed": 6, "failed": 2, "total": 8, "time_seconds": 96.0, "tokens": 18439, "tool_calls": 23, "errors": 0 },
+      "expectations": [
+        {"text": "generate-script-executed", "passed": false, "evidence": "generate.mjs 미실행"},
+        {"text": "controller-file", "passed": true, "evidence": "@Controller 존재"},
+        {"text": "service-file", "passed": true, "evidence": "@Injectable 존재"},
+        {"text": "module-file", "passed": true, "evidence": "@Module 존재"},
+        {"text": "login-endpoint", "passed": true, "evidence": "login 구현"},
+        {"text": "register-endpoint", "passed": true, "evidence": "register 구현"},
+        {"text": "module-directory", "passed": true, "evidence": "auth/ 디렉토리"},
+        {"text": "test-exists", "passed": false, "evidence": "spec 파일 미존재"}
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 0.963, "stddev": 0.064, "min": 0.889, "max": 1.0},
+      "time_seconds": {"mean": 404.4, "stddev": 59.9, "min": 341.0, "max": 457.0},
+      "tokens": {"mean": 38199, "stddev": 4931, "min": 33199, "max": 43050}
+    },
+    "without_skill": {
+      "pass_rate": {"mean": 0.843, "stddev": 0.131, "min": 0.75, "max": 1.0},
+      "time_seconds": {"mean": 275.2, "stddev": 153.0, "min": 96.0, "max": 370.4},
+      "tokens": {"mean": 24918, "stddev": 5606, "min": 18439, "max": 29478}
+    },
+    "delta": {
+      "pass_rate": "+0.120",
+      "time_seconds": "+129.2",
+      "tokens": "+13281"
+    }
+  },
+  "notes": [
+    "profile-summary-api는 with/without 동일하게 100% — plan.md가 충분히 상세하여 스킬 없이도 올바르게 구현",
+    "generate.mjs 실행은 with_skill에서만 성공 (orders-crud, auth-jwt)",
+    "db-snake-case는 with/without 모두 실패 — 스킬에 snake_case 규칙이 있지만 in-memory 구현에서는 camelCase 인터페이스 사용",
+    "auth-jwt without_skill은 테스트 파일 미생성 — TDD 워크플로우는 스킬에서만 유도됨",
+    "with_skill은 평균 404.4s로 without_skill 275.2s 대비 47% 더 소요 — generate.mjs + TDD 오버헤드"
+  ]
+}

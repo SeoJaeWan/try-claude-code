@@ -1,0 +1,60 @@
+{
+  "expectations": [
+    {
+      "text": "generate-output-exists",
+      "passed": true,
+      "evidence": "ProductCard.index.tsx file exists in outputs directory (generated via generate.mjs)"
+    },
+    {
+      "text": "component-file-exists",
+      "passed": true,
+      "evidence": "ProductCard.index.tsx exists representing components/ProductCard/index.tsx"
+    },
+    {
+      "text": "has-image-section",
+      "passed": true,
+      "evidence": "Uses next/image Image component: <Image src={imageUrl} alt={imageAlt || name} fill ...> on line 32-36"
+    },
+    {
+      "text": "has-name-section",
+      "passed": true,
+      "evidence": "h3 element displays product name: <h3 ...>{name}</h3> on line 47-49"
+    },
+    {
+      "text": "has-price-section",
+      "passed": true,
+      "evidence": "p element displays price: <p ...>{currency}{price.toLocaleString(\"ko-KR\")}</p> on line 50-53"
+    },
+    {
+      "text": "default-export",
+      "passed": true,
+      "evidence": "Line 15: 'export default function ProductCard'"
+    },
+    {
+      "text": "props-interface",
+      "passed": true,
+      "evidence": "Line 5: 'export interface ProductCardProps' with imageUrl, imageAlt, name, price, currency, badge, testId fields"
+    },
+    {
+      "text": "tailwind-classes",
+      "passed": true,
+      "evidence": "Uses Tailwind classes throughout: rounded-2xl, border, shadow-sm, hover:shadow-md, aspect-square, object-cover, line-clamp-2, etc."
+    },
+    {
+      "text": "no-usestate",
+      "passed": true,
+      "evidence": "No useState import or call in the component file"
+    },
+    {
+      "text": "index-file",
+      "passed": true,
+      "evidence": "File is named ProductCard.index.tsx representing ProductCard/index.tsx pattern"
+    }
+  ],
+  "summary": {
+    "passed": 10,
+    "failed": 0,
+    "total": 10,
+    "pass_rate": 1.0
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "expectations": [
+    {
+      "text": "generate-script-executed",
+      "passed": false,
+      "evidence": "No skill guidance was provided; no evidence of generate.mjs structure auth command execution"
+    },
+    {
+      "text": "controller-file",
+      "passed": true,
+      "evidence": "auth.controller.ts contains @Controller('auth') decorator at line 17"
+    },
+    {
+      "text": "service-file",
+      "passed": true,
+      "evidence": "auth.service.ts contains @Injectable() decorator at line 19"
+    },
+    {
+      "text": "module-file",
+      "passed": true,
+      "evidence": "auth.module.ts contains @Module decorator at line 8"
+    },
+    {
+      "text": "login-endpoint",
+      "passed": true,
+      "evidence": "@Post('login') endpoint implemented in auth.controller.ts (line 27) calling authService.login()"
+    },
+    {
+      "text": "register-endpoint",
+      "passed": true,
+      "evidence": "@Post('register') endpoint implemented in auth.controller.ts (line 21) calling authService.register()"
+    },
+    {
+      "text": "module-directory",
+      "passed": true,
+      "evidence": "All auth files (auth.controller.ts, auth.service.ts, auth.module.ts, etc.) are in the same module directory with subdirectory imports (./dto/, ./guards/, ./strategies/)"
+    },
+    {
+      "text": "test-exists",
+      "passed": false,
+      "evidence": "No .spec.ts files exist in the without_skill outputs directory for auth"
+    }
+  ],
+  "summary": { "passed": 6, "failed": 2, "total": 8, "pass_rate": 0.75 }
+}

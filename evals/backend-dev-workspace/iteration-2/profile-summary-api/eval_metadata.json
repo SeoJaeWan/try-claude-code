@@ -1,0 +1,16 @@
+{
+  "eval_id": 1,
+  "eval_name": "profile-summary-api",
+  "prompt": "plans/sample-backend-profile-summary-api/plan.md의 Phase 1을 실행해줘. AppService에 buildProfileSummary를 추가하고 GET /profile-summary 엔드포인트 연결해줘",
+  "assertions": [
+    {"id": "service-boundary", "text": "AppService에 buildProfileSummary 메서드가 존재한다"},
+    {"id": "response-shape", "text": "응답이 userName, pendingTodos, completedTodos, unreadNotifications 필드를 포함한다"},
+    {"id": "normalization-defense", "text": "누락/잘못된 숫자 seed를 0으로 정규화하는 방어 로직이 코드에 포함된다"},
+    {"id": "controller-endpoint", "text": "GET /profile-summary 엔드포인트가 @Get 데코레이터로 등록되어 있다"},
+    {"id": "controller-passthrough", "text": "controller가 service 결과를 래핑 없이 그대로 반환한다"},
+    {"id": "test-service-spec", "text": "profile-summary.service.spec.ts 파일이 생성된다"},
+    {"id": "test-controller-spec", "text": "profile-summary.controller.spec.ts 파일이 생성된다"},
+    {"id": "test-placement", "text": "테스트 파일이 src/**/*.spec.ts 경로에 배치된다"},
+    {"id": "camelcase-methods", "text": "메서드명이 camelCase를 따른다"}
+  ]
+}

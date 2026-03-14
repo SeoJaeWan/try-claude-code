@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "generate-script-executed",
+      "passed": false,
+      "evidence": "No skill guidance was provided; no evidence of generate.mjs structure orders command execution"
+    },
+    {
+      "text": "crud-get",
+      "passed": true,
+      "evidence": "@Get() and @Get(':id') decorators on findAll and findOne methods in orders.controller.ts (lines 26, 31)"
+    },
+    {
+      "text": "crud-post",
+      "passed": true,
+      "evidence": "@Post() decorator on create method in orders.controller.ts (line 21)"
+    },
+    {
+      "text": "crud-patch",
+      "passed": true,
+      "evidence": "@Patch(':id') decorator on update method in orders.controller.ts (line 36)"
+    },
+    {
+      "text": "crud-delete",
+      "passed": true,
+      "evidence": "@Delete(':id') decorator on remove method in orders.controller.ts (line 44)"
+    },
+    {
+      "text": "module-registered",
+      "passed": true,
+      "evidence": "OrdersModule is in imports array of AppModule: imports: [AuthModule, OrdersModule] in app.module.ts (line 8)"
+    },
+    {
+      "text": "module-structure",
+      "passed": true,
+      "evidence": "orders.controller.ts, orders.service.ts, orders.module.ts all exist in the same outputs directory with consistent imports referencing ./dto/ and ./interfaces/ subdirectories"
+    },
+    {
+      "text": "db-snake-case",
+      "passed": false,
+      "evidence": "Order interface uses camelCase field names: customerName, totalAmount, createdAt, updatedAt (order.interface.ts). No snake_case DB column mapping found"
+    },
+    {
+      "text": "test-exists",
+      "passed": true,
+      "evidence": "orders.controller.spec.ts and orders.service.spec.ts both exist in outputs directory"
+    }
+  ],
+  "summary": { "passed": 7, "failed": 2, "total": 9, "pass_rate": 0.78 }
+}
