@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "service-boundary",
+      "passed": true,
+      "evidence": "AppService has buildProfileSummary method at line 23 of app.service.ts"
+    },
+    {
+      "text": "response-shape",
+      "passed": true,
+      "evidence": "ProfileSummary interface includes userName, pendingTodos, completedTodos, unreadNotifications fields (lines 10-15 of app.service.ts)"
+    },
+    {
+      "text": "normalization-defense",
+      "passed": true,
+      "evidence": "normalize arrow function at line 24 normalizes null/undefined/negative values to 0 via 'value != null && value >= 0 ? Math.floor(value) : 0'"
+    },
+    {
+      "text": "controller-endpoint",
+      "passed": true,
+      "evidence": "@Get('profile-summary') decorator on getProfileSummary method in app.controller.ts (line 13)"
+    },
+    {
+      "text": "controller-passthrough",
+      "passed": true,
+      "evidence": "Controller returns this.appService.getProfileSummary() directly without wrapping (line 15 of app.controller.ts)"
+    },
+    {
+      "text": "test-service-spec",
+      "passed": true,
+      "evidence": "profile-summary.service.spec.ts file exists in outputs directory"
+    },
+    {
+      "text": "test-controller-spec",
+      "passed": true,
+      "evidence": "profile-summary.controller.spec.ts file exists in outputs directory"
+    },
+    {
+      "text": "test-placement",
+      "passed": true,
+      "evidence": "Test files are named *.spec.ts, consistent with src/**/*.spec.ts placement convention"
+    },
+    {
+      "text": "camelcase-methods",
+      "passed": true,
+      "evidence": "All methods use camelCase: getHello, buildProfileSummary, getProfileSummary"
+    }
+  ],
+  "summary": { "passed": 9, "failed": 0, "total": 9, "pass_rate": 1.0 }
+}

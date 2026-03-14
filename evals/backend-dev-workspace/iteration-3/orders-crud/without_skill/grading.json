@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "generate-script-executed",
+      "passed": false,
+      "evidence": "without_skill variant: no evidence of generate.mjs script execution; module was created manually"
+    },
+    {
+      "text": "crud-get",
+      "passed": true,
+      "evidence": "@Get() on findAll and @Get(':id') on findOne in orders.controller.ts (lines 26-33)"
+    },
+    {
+      "text": "crud-post",
+      "passed": true,
+      "evidence": "@Post() on create method in orders.controller.ts (line 21)"
+    },
+    {
+      "text": "crud-patch",
+      "passed": true,
+      "evidence": "@Patch(':id') on update method in orders.controller.ts (line 36)"
+    },
+    {
+      "text": "crud-delete",
+      "passed": true,
+      "evidence": "@Delete(':id') on remove method in orders.controller.ts (line 44)"
+    },
+    {
+      "text": "module-registered",
+      "passed": true,
+      "evidence": "OrdersModule is in imports array of app.module.ts: imports: [AuthModule, OrdersModule] (line 8)"
+    },
+    {
+      "text": "module-structure",
+      "passed": true,
+      "evidence": "orders.controller.ts, orders.service.ts, orders.module.ts all colocated in outputs directory with consistent module imports"
+    },
+    {
+      "text": "db-snake-case",
+      "passed": false,
+      "evidence": "Order interface uses camelCase field names: customerName, totalAmount, createdAt, updatedAt — no snake_case column names (created_at, order_id, etc.)"
+    },
+    {
+      "text": "test-exists",
+      "passed": true,
+      "evidence": "orders.controller.spec.ts and orders.service.spec.ts both exist in outputs directory"
+    }
+  ],
+  "summary": { "passed": 7, "failed": 2, "total": 9, "pass_rate": 0.78 }
+}

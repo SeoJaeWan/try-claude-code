@@ -1,0 +1,45 @@
+{
+  "expectations": [
+    {
+      "text": "generate-script-executed",
+      "passed": false,
+      "evidence": "without_skill variant: no evidence of generate.mjs script execution; module was created manually"
+    },
+    {
+      "text": "controller-file",
+      "passed": true,
+      "evidence": "@Controller('auth') decorator present in auth.controller.ts (line 16)"
+    },
+    {
+      "text": "service-file",
+      "passed": true,
+      "evidence": "@Injectable() decorator present in auth.service.ts (line 19)"
+    },
+    {
+      "text": "module-file",
+      "passed": true,
+      "evidence": "@Module() decorator present in auth.module.ts (line 8)"
+    },
+    {
+      "text": "login-endpoint",
+      "passed": true,
+      "evidence": "@Post('login') endpoint implemented in auth.controller.ts (line 27) calling authService.login()"
+    },
+    {
+      "text": "register-endpoint",
+      "passed": true,
+      "evidence": "@Post('register') endpoint implemented in auth.controller.ts (line 21) calling authService.register()"
+    },
+    {
+      "text": "module-directory",
+      "passed": true,
+      "evidence": "All auth files (auth.controller.ts, auth.service.ts, auth.module.ts, jwt-auth.guard.ts, jwt.strategy.ts, etc.) colocated in outputs directory"
+    },
+    {
+      "text": "test-exists",
+      "passed": false,
+      "evidence": "No .spec.ts file found in auth-jwt/without_skill/outputs directory"
+    }
+  ],
+  "summary": { "passed": 6, "failed": 2, "total": 8, "pass_rate": 0.75 }
+}
