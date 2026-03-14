@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "generate-output-exists", "passed": true, "evidence": "에이전트가 generate.mjs api-hook useFetchOrder --method query 실행 확인 (transcript 참조)"},
+    {"text": "hook-file-exists", "passed": true, "evidence": "hooks/apis/queries/useFetchOrder/index.ts 존재"},
+    {"text": "hook-in-queries", "passed": true, "evidence": "apis/queries/ 하위 배치 확인"},
+    {"text": "index-export", "passed": true, "evidence": "useFetchOrder/index.ts 디렉토리 패턴으로 export"},
+    {"text": "returns-loading", "passed": true, "evidence": "isLoading: query.isLoading 반환 (line 47)"},
+    {"text": "returns-error", "passed": true, "evidence": "error: query.error 반환 (line 49)"}
+  ],
+  "summary": {"passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0}
+}
