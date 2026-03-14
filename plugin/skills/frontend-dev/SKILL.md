@@ -20,12 +20,15 @@ Expert frontend development workflow for React, Next.js, and React Native.
 
 ## Documentation References
 
-**Read first:**
+**Read first (플러그인 번들 참조 — 이 SKILL.md 기준 `../../`에 위치):**
 
-- `references/coding-rules/` - All coding rules
-- `references/design/` - Design system (structure, principles)
+- `../../references/coding-rules/` - All coding rules
+- `../../references/design/` - Design system (structure, principles)
+
+**Read from consumer repo (프로젝트 루트 기준):**
+
 - `codemaps/frontend.md` - Existing pages, routes, components (if present)
-- `references/domain.md` - User scenarios and business logic
+- `references/domain.md` - User scenarios and business logic (if present)
 
 **Read actual values:**
 
@@ -45,34 +48,39 @@ Expert frontend development workflow for React, Next.js, and React Native.
 
 Before implementing hooks, **always attempt to generate boilerplate first** using coding-rules scripts. The generated boilerplate includes correct hook structure, naming conventions, and test scaffolding — building on top of it prevents common mistakes like inconsistent patterns.
 
-generate.mjs는 이 스킬과 같은 플러그인 안에 있다. 이 SKILL.md 파일의 위치에서 `../../references/coding-rules/scripts/generate.mjs`로 접근할 수 있다.
+generate.mjs는 이 스킬과 같은 플러그인에 번들된 스크립트다.
+
+**스크립트 찾는 방법:**
+1. 이 SKILL.md 파일이 로드된 실제 디스크 경로를 확인한다 (Glob `**/frontend-dev/SKILL.md` 사용)
+2. 해당 경로의 부모의 부모 디렉토리가 플러그인 루트다
+3. `<플러그인 루트>/references/coding-rules/scripts/generate.mjs`를 실행한다
+
+예시: SKILL.md가 `/home/user/.claude/plugins/cache/.../skills/frontend-dev/SKILL.md`에 있다면,
+generate.mjs는 `/home/user/.claude/plugins/cache/.../references/coding-rules/scripts/generate.mjs`에 있다.
 
 ```bash
+# 플러그인 루트를 PLUGIN_ROOT 변수로 잡은 후:
 # Custom hook boilerplate
-node ../../references/coding-rules/scripts/generate.mjs hook <hookName> [--form]
+node $PLUGIN_ROOT/references/coding-rules/scripts/generate.mjs hook <hookName> [--form]
 
 # API hook boilerplate (query)
-node ../../references/coding-rules/scripts/generate.mjs api-hook <hookName> --method query
+node $PLUGIN_ROOT/references/coding-rules/scripts/generate.mjs api-hook <hookName> --method query
 
 # API hook boilerplate (mutation)
-node ../../references/coding-rules/scripts/generate.mjs api-hook <hookName> --method mutation
+node $PLUGIN_ROOT/references/coding-rules/scripts/generate.mjs api-hook <hookName> --method mutation
 
 # Test suite boilerplate
-node ../../references/coding-rules/scripts/generate.mjs test-suite <targetName> --type hook
+node $PLUGIN_ROOT/references/coding-rules/scripts/generate.mjs test-suite <targetName> --type hook
 ```
-
-> 위 경로는 이 SKILL.md 기준 상대경로다. 실행 시 이 SKILL.md의 실제 위치를 기준으로 절대경로를 구성하라.
 
 ---
 
 ## Coding Rules 준수
 
-파일이나 폴더를 생성·배치할 때 반드시 아래 문서를 읽고 따른다:
+파일이나 폴더를 생성·배치할 때 반드시 아래 문서를 읽고 따른다 (위 Documentation References의 플러그인 번들 경로 사용):
 
-- `references/coding-rules/folder-structure.md` — 훅/컴포넌트 배치 규칙, index.ts export 패턴, queries/ vs mutations/ 구분
-- `references/coding-rules/naming.md` — use{Verb}{Resource} 훅 네이밍, handle 접두사, 배열 변수 복수형
-
-이 문서들은 이 SKILL.md 기준 `../../references/coding-rules/`에 있다.
+- `../../references/coding-rules/folder-structure.md` — 훅/컴포넌트 배치 규칙, index.ts export 패턴, queries/ vs mutations/ 구분
+- `../../references/coding-rules/naming.md` — use{Verb}{Resource} 훅 네이밍, handle 접두사, 배열 변수 복수형
 
 ---
 
@@ -122,17 +130,17 @@ node ../../references/coding-rules/scripts/generate.mjs test-suite <targetName> 
 7. Read design/ (design principles)
 8. Use WebSearch/WebFetch if needed (React, Next.js, Expo, TanStack Query)
 9. Confirm the current branch matches plan header (`**Branch:**`)
-10. Implement:
+10. **기존 인라인 로직 추출**: 수정할 컴포넌트에 직접적인 fetch, useState, useEffect 등 인라인 로직이 있으면, 새 기능 구현 전에 먼저 커스텀 훅으로 추출한다. 인라인 로직 위에 기능을 쌓으면 컴포넌트가 비대해지고 테스트가 어려워진다.
+11. Implement:
     - Custom hooks (use `{hooksRoot}` rules from `folder-structure.md`)
     - State management integration
     - Connect to UI components from ui-publish
-11. **테스트 파일 생성**: 플랜에 테스트가 없는 경우에도 생성한 훅에 대한 테스트 파일을 작성한다. generate.mjs의 `test-suite` 명령으로 보일러플레이트를 생성한 후 테스트 케이스를 추가한다.
 12. Run tests: `pnpm test` — confirm ALL pass (Green)
 13. Run E2E tests: `pnpm exec playwright test` — confirm E2E pass. If E2E fails, fix implementation, NOT tests.
 14. Run typecheck:
     - `pnpm run typecheck` (if no script exists, use `pnpm exec tsc --noEmit`)
     - No type errors allowed before proceeding to the next step
-15. Verify and auto-fix lint:
+16. Verify and auto-fix lint:
 
 ```bash
 pnpm lint --fix
@@ -141,11 +149,11 @@ pnpm lint --fix
 - Manually fix any errors that cannot be auto-fixed
 - Repeat until lint is clean
 
-16. Run build verification (`pnpm build`)
+17. Run build verification (`pnpm build`)
     - 목적: TypeScript/ESLint에서 놓치는 프레임워크 설정 충돌을 조기 탐지
     - 기준: build exit code 0, blocking 에러 없음
-17. Commit changes
-18. Return results based on plan.md
+18. Commit changes
+19. Return results based on plan.md
 
 ---
 
@@ -155,10 +163,16 @@ pnpm lint --fix
 
 ```
 {hooksRoot}/
-├── apis/          # API hooks (queries/, mutations/)
-├── utils/         # Utility hooks (useDebounce, useLocalStorage)
-└── {feature}/     # Page-specific hooks (필요 시)
+├── apis/
+│   ├── queries/       # GET (데이터 조회): useFetchOrder, useGetUser
+│   └── mutations/     # POST/PUT/DELETE (데이터 변경): useLogin, useCreateMemo
+├── utils/             # Utility hooks (useDebounce, useLocalStorage)
+└── {feature}/         # Page-specific hooks (필요 시)
 ```
+
+API 훅은 반드시 queries/ 또는 mutations/ 하위에 배치하고 apis/ 직하에 두지 않는다.
+로그인, 회원가입 등 인증 관련 훅은 데이터를 변경하는 동작이므로 mutations/에 배치한다.
+각 훅은 `{hookName}/index.ts` 디렉토리 패턴으로 생성한다.
 
 ---
 
