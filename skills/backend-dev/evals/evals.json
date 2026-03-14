@@ -3,43 +3,66 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "사용자 인증 API 엔드포인트를 NestJS로 구현해줘",
-      "expected_output": "auth.controller.ts, auth.service.ts, auth.module.ts 생성. coding-rules 준수",
-      "files": ["../../features/nest-api/package.json", "../../features/nest-api/src/app.module.ts", "../../features/nest-api/src/main.ts"],
+      "prompt": "plans/sample-backend-profile-summary-api/plan.md의 Phase 1을 실행해줘. AppService에 buildProfileSummary를 추가하고 GET /profile-summary 엔드포인트 연결해줘",
+      "expected_output": "app.service.ts에 buildProfileSummary 추가, app.controller.ts에 GET /profile-summary 엔드포인트 연결, Jest unit test 생성",
+      "files": [
+        "../../features/nest-api/package.json",
+        "../../features/nest-api/src/app.module.ts",
+        "../../features/nest-api/src/app.service.ts",
+        "../../features/nest-api/src/app.controller.ts",
+        "../../plans/sample-backend-profile-summary-api/plan.md",
+        "../../plans/sample-backend-profile-summary-api/tests/manifest.md"
+      ],
       "expectations": [
-        "Reads skills/backend-dev/SKILL.md via Read tool",
-        "Detects NestJS framework from package.json",
-        "Creates controller file with @Controller decorator",
-        "Creates service file with @Injectable decorator",
-        "Creates module file with @Module decorator",
-        "Reads coding-rules/folder-structure.md for project conventions"
+        {"id": "service-boundary", "text": "AppService에 buildProfileSummary 메서드가 존재한다"},
+        {"id": "response-shape", "text": "응답이 userName, pendingTodos, completedTodos, unreadNotifications 필드를 포함한다"},
+        {"id": "normalization-defense", "text": "누락/잘못된 숫자 seed를 0으로 정규화하는 방어 로직이 코드에 포함된다"},
+        {"id": "controller-endpoint", "text": "GET /profile-summary 엔드포인트가 @Get 데코레이터로 등록되어 있다"},
+        {"id": "controller-passthrough", "text": "controller가 service 결과를 래핑 없이 그대로 반환한다"},
+        {"id": "test-service-spec", "text": "profile-summary.service.spec.ts 파일이 생성된다"},
+        {"id": "test-controller-spec", "text": "profile-summary.controller.spec.ts 파일이 생성된다"},
+        {"id": "test-placement", "text": "테스트 파일이 src/**/*.spec.ts 경로에 배치된다"},
+        {"id": "camelcase-methods", "text": "메서드명이 camelCase를 따른다 (buildProfileSummary, getProfileSummary 등)"}
       ]
     },
     {
       "id": 2,
-      "prompt": "상품 CRUD API를 만들어줘. TypeORM으로 DB 연동하고 DTO 검증도 포함해줘",
-      "expected_output": "products CRUD endpoints, CreateProductDto with class-validator, TypeORM Entity",
-      "files": ["../../features/nest-api/package.json", "../../features/nest-api/src/app.module.ts", "../../features/nest-api/src/main.ts"],
+      "prompt": "주문 관리 모듈을 새로 만들어줘. orders 모듈 구조를 생성하고 기본 CRUD 넣어줘",
+      "expected_output": "generate.mjs로 모듈 스캐폴딩, CRUD 구현, coding-rules 준수",
+      "files": [
+        "../../features/nest-api/package.json",
+        "../../features/nest-api/src/app.module.ts"
+      ],
       "expectations": [
-        "Reads skills/backend-dev/SKILL.md via Read tool",
-        "Creates all 4 CRUD endpoints (GET, POST, PUT/PATCH, DELETE)",
-        "Creates DTO class with class-validator decorators (@IsString, @IsNumber, etc.)",
-        "Creates TypeORM Entity with @Entity and @Column decorators",
-        "Uses snake_case for DB column naming",
-        "Reads coding-rules reference for conventions"
+        {"id": "generate-script-executed", "text": "generate.mjs structure orders 명령의 실행 결과(스캐폴딩 파일)가 존재한다"},
+        {"id": "crud-get", "text": "GET 엔드포인트가 구현되어 있다"},
+        {"id": "crud-post", "text": "POST 엔드포인트가 구현되어 있다"},
+        {"id": "crud-patch", "text": "PUT 또는 PATCH 엔드포인트가 구현되어 있다"},
+        {"id": "crud-delete", "text": "DELETE 엔드포인트가 구현되어 있다"},
+        {"id": "module-registered", "text": "OrdersModule이 app.module.ts의 imports 배열에 등록되어 있다"},
+        {"id": "module-structure", "text": "controller, service, module 파일이 하나의 모듈 디렉토리 안에 배치된다"},
+        {"id": "db-snake-case", "text": "DB 컬럼명이 snake_case를 따른다 (created_at, order_id 등)"},
+        {"id": "test-exists", "text": "orders 모듈에 대한 .spec.ts 테스트 파일이 존재한다"}
       ]
     },
     {
       "id": 3,
-      "prompt": "주문 관리 모듈을 새로 만들어줘. orders 모듈 구조를 생성하고 기본 CRUD 넣어줘",
-      "expected_output": "generate.mjs로 모듈 스캐폴딩 또는 수동 생성, CRUD 구현",
-      "files": ["../../features/nest-api/package.json", "../../features/nest-api/src/app.module.ts"],
+      "prompt": "사용자 인증 API 엔드포인트를 NestJS로 구현해줘. JWT 토큰 기반으로 login, register 엔드포인트 만들어줘",
+      "expected_output": "auth 모듈 생성, JWT 인증 로직, coding-rules 준수",
+      "files": [
+        "../../features/nest-api/package.json",
+        "../../features/nest-api/src/app.module.ts",
+        "../../features/nest-api/src/main.ts"
+      ],
       "expectations": [
-        "Reads skills/backend-dev/SKILL.md via Read tool",
-        "Attempts generate.mjs structure command for scaffolding",
-        "Creates controller, service, module files for orders",
-        "Implements CRUD endpoints in the controller",
-        "Registers OrdersModule in app.module.ts imports"
+        {"id": "generate-script-executed", "text": "generate.mjs structure auth 실행 결과(스캐폴딩 파일)가 존재한다"},
+        {"id": "controller-file", "text": "@Controller 데코레이터가 포함된 auth controller 파일이 존재한다"},
+        {"id": "service-file", "text": "@Injectable 데코레이터가 포함된 auth service 파일이 존재한다"},
+        {"id": "module-file", "text": "@Module 데코레이터가 포함된 auth module 파일이 존재한다"},
+        {"id": "login-endpoint", "text": "login 엔드포인트가 구현되어 있다"},
+        {"id": "register-endpoint", "text": "register 엔드포인트가 구현되어 있다"},
+        {"id": "module-directory", "text": "auth 관련 파일이 하나의 모듈 디렉토리 안에 배치된다"},
+        {"id": "test-exists", "text": "auth service 또는 controller에 대한 .spec.ts 파일이 존재한다"}
       ]
     }
   ]
