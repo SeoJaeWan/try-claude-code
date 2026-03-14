@@ -83,10 +83,28 @@ When execution mode is not sequential:
   - `plans/{task-name}/tests/manifest.md` (track manifest index)
   - `plans/{task-name}/e2e/manifest.md` (track manifest index)
 
+### Planning-time Test Artifact Layout
+
+When unit/E2E plan artifacts are generated:
+
+- Keep planning artifacts flat and intent-oriented inside `tests/` or `e2e/`
+- Do not mirror or freeze the final source-tree placement inside `plans/`
+- Unit test manifests must record:
+  - `boundary_type`
+  - `boundary_name`
+  - `placement_intent`
+  - `implementation_placement_rule`
+- E2E manifests must record:
+  - `runner`
+  - `surface_id` or `flow_id`
+  - `placement_intent`
+  - `implementation_placement_rule`
+  - `locator_contract`
+
 ### Phase Metadata Rules
 
 - Every execution block (`Phase n`, `Tn`) must include `owner_agent`
-- `owner_agent` must map to `./agents/{owner_agent}.md`
+- `owner_agent` must exist in `references/agents-lite.md`
 - Use exactly one execution agent per block
 - Add `primary_skill` only when the phase must pin a specific skill
 - Do not rely on heading text like `(Owner: ...)`
@@ -153,8 +171,8 @@ These tests are frozen at planning time. Implementation must satisfy them.
 
 Default organization for planning-time E2E artifacts:
 
-- Playwright: `e2e/{domain}/{domain}.spec.ts`
-- Maestro: `e2e/maestro/{flow}.yaml`
+- Playwright: `e2e/{surface-id}.spec.ts`
+- Maestro: `e2e/{flow-id}.yaml`
 - Split only when setup or fixtures diverge materially or file size becomes unmanageable
 
 ### `playwright-guard`
@@ -214,7 +232,7 @@ For conflict-risk details, use `parallel-safety.md`.
 
 Before finalizing:
 
-1. Every phase/task has a concrete `owner_agent` that maps to `./agents/{agent-name}.md`
+1. Every phase/task has a concrete `owner_agent` listed in `references/agents-lite.md`
 2. No unresolved blocking policy/contract/schema/UX ambiguity remains
 3. No `TBD` assignee or unresolved critical dependency remains
 4. Every executable plan file includes a `Branch` header
@@ -223,12 +241,13 @@ Before finalizing:
 7. `Resolved Decisions` contains blocking choices; `Explicit Defaults` contains only non-blocking defaults
 8. Failure Escalation Policy is explicit
 9. Visual/design work is assigned to `publisher`; logic work is assigned to developer agents
-10. For UI feature scope, `plan-e2e-test` artifacts exist with runner-appropriate frozen E2E files and locator registry
+10. For UI feature scope, `plan-e2e-test` artifacts exist with runner-appropriate frozen E2E files, locator registry, and implementation placement handoff
 11. For UI/user-journey or regression-hardening scope, a later `playwright-guard` phase exists with explicit trigger, scope, and exit criteria
 12. For UI scope, the five UI contracts are resolved before implementation planning or `plan-e2e-test`
 13. Non-sequential mode uses `plan-{track}/plan.md` folder layout (no flat `plan-{track}.md`)
 14. Every implementation track has matching `plan/tests/e2e` artifacts or explicit `N/A`
 15. Root `tests/manifest.md` and `e2e/manifest.md` are maintained as track indexes
+16. Planning-time test artifacts remain flat; final source-tree placement is deferred to implementation via manifest handoff
 
 ---
 
@@ -239,7 +258,7 @@ After drafting plan artifacts:
 1. Scope, goals, and acceptance criteria are internally consistent
 2. No unresolved blocking ambiguity remains
 3. `Resolved Decisions` and `Explicit Defaults` are correctly separated
-4. Every phase/task has valid `owner_agent`
+4. Every phase/task has valid `owner_agent` from `references/agents-lite.md`
 5. Every executable plan file includes `Branch`
 6. Validation commands and exit criteria are explicit and executable
 7. Rollback/fallback strategy is concrete and testable
@@ -248,12 +267,13 @@ After drafting plan artifacts:
 10. No circular dependencies exist in the track graph
 11. Failure escalation is actionable
 12. Visual/design work is not mixed with logic in the same execution block
-13. For UI feature scope, `plan-e2e-test` artifacts exist with frozen runner-appropriate E2E artifacts and locator registry
+13. For UI feature scope, `plan-e2e-test` artifacts exist with frozen runner-appropriate E2E artifacts, locator registry, and implementation placement handoff
 14. For UI/user-journey or regression-hardening scope, a later `playwright-guard` phase is planned
 15. For UI scope, `Resolved Decisions` explicitly defines route or navigation/surface, user state, action, visible outcome, and locator/testability contracts
 16. Non-sequential mode uses folderized track plan paths (`plan-{track}/plan.md`)
 17. Every implementation track has its own `tests` and `e2e` manifest (or explicit `N/A`)
 18. Root test/e2e manifests provide track-level index links only
+19. Planning-time test artifacts do not freeze final source-tree placement
 
 Do not request execution before this checklist passes.
 
@@ -274,3 +294,4 @@ Provide a concise handoff summary with:
    - final merge goes into each file's `Branch` with `--no-ff`
 5. For UI/user-flow scope, state whether `plan-e2e-test` artifacts are included and whether a later `playwright-guard` phase is scheduled
 6. Explicit defaults and deferred low-risk choices recorded in the plan
+7. Implementation agents must resolve final test placement from coding rules and local conventions before copying flat plan artifacts into the source tree

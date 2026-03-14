@@ -62,6 +62,7 @@ UI feature scope인 경우 planning 단계에서 `plan-e2e-test` 스킬로 runne
 
 - `plans/{task-name}/plan-{track}/e2e/manifest.md` + track-local runner-appropriate E2E artifacts
 - 상세 기준은 `references/planning-policy.md`를 따름
+- 최종 소스 트리 배치는 구현 단계에서 coding-rules 및 로컬 관례로 resolve
 
 UI/user-journey 또는 regression-hardening scope인 경우 후속 execution track/phase에 아래를 추가:
 
@@ -142,8 +143,8 @@ UI/user-journey 또는 regression-hardening scope인 경우 후속 execution tra
 - owner_agent: `{agent-name}`
 - primary_skill: `{skill-name}` (선택)
 - 작업:
-- 단위 테스트: `tests/{mirrored-source-path}` (해당 시, plan-unit-test artifact)
-- E2E 테스트: runner-appropriate artifact (`e2e/{domain}/{domain}.spec.ts` 또는 `e2e/maestro/{flow}.yaml`) (해당 시, plan-e2e-test artifact)
+- 단위 테스트 의도: `boundary={hook|service|validator|component}`, `placement_intent={component-local|page-local|shared|api}`, `artifact={boundary-id}.test.ts` (해당 시, plan-unit-test artifact)
+- E2E 테스트 의도: `runner={Playwright|Maestro}`, `surface={surface-id}`, `artifact={surface-id}.spec.ts` 또는 `{flow-id}.yaml` (해당 시, plan-e2e-test artifact)
 
 ### T2
 

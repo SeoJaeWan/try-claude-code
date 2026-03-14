@@ -11,7 +11,7 @@ Generate spec-oriented unit/logic test files as plan artifacts during the planni
 <Instructions>
 # plan-unit-test
 
-Generate stack-aware unit/logic test files mapped to `plan.md` constraint IDs. These tests become plan artifacts that developers later copy into the source tree for Red-Green TDD.
+Generate stack-aware unit/logic test files mapped to `plan.md` constraint IDs. These tests become flat plan artifacts that implementation agents later place into the source tree for Red-Green TDD using coding rules and local test conventions.
 
 The goal is not to optimize for "easy passing." The goal is to make the required logic explicit enough that implementation can be judged against a concrete behavioral contract.
 
@@ -85,14 +85,15 @@ For each testable unit, generate a test file following these rules:
 - **Boundary-first testing**: prefer direct logic verification over broader UI or end-to-end coverage
 - **Mocking**: mock only external boundaries, using the tools already established in the repo
 - **Hook naming**: hook tests must target `useXxx` boundaries and keep `use` prefix
-- **Hook path convention (default)**: `src/hooks/useXxx/test/useXxx.test.ts` (avoid grouping multiple hooks in one folder)
-- **File naming**: prefer concise file names (`useXxx.test.ts`), keep contract detail in `describe`/`it` text
+- **Planning artifact naming**: use concise flat boundary-oriented file names such as `use-login.test.ts` or `auth-service.test.ts`
+- **Final placement**: do not encode the eventual source-tree destination in the plan artifact path
+- **File naming**: keep contract detail in `describe` / `it` text, not in long artifact file names
 
 These tests may be unit-style, slice-style, or lightweight boundary tests depending on the narrowest layer that can specify the logic correctly.
 
 ### Step 5. Save test files as plan artifacts
 
-Save generated tests with source path mirroring:
+Save generated tests as flat plan artifacts:
 
 - sequential: `./plans/{task-name}/tests/`
 - non-sequential: `./plans/{task-name}/plan-{track}/tests/`
@@ -100,12 +101,13 @@ Save generated tests with source path mirroring:
 ```text
 plans/{task-name}/tests/
 |- manifest.md
-|- src/hooks/useLogin/test/useLogin.test.ts
-|- src/services/authService/test/authService.test.ts
-`- src/test/java/com/example/auth/AuthServiceTest.java
+|- use-login.test.ts
+|- auth-service.test.ts
+`- auth-service.test.java
 ```
 
-The path under `tests/` mirrors the eventual destination path in the source tree. Developers strip the `tests/` prefix to determine where to copy each file.
+Plan artifacts under `tests/` do not mirror the final source-tree destination.
+Implementation agents resolve the final destination later using coding rules, local test conventions, and the placement intent recorded in `manifest.md`.
 When execution mode is not sequential, maintain one manifest per track and keep root `tests/manifest.md` as an index.
 
 ### Step 6. Write `manifest.md`
@@ -117,10 +119,16 @@ Create `tests/manifest.md` with:
 
 ## Files
 
-| Test File                                   | Destination                                 | Constraints                | Scenario Types                 |
-| ------------------------------------------- | ------------------------------------------- | -------------------------- | ------------------------------ |
-| `src/services/auth/test/auth.test.ts` | `src/services/auth/test/auth.test.ts` | [C-AUTH-001], [C-AUTH-002] | expected, defensive, exception |
-| ...                                         | ...                                         | ...                        | ...                            |
+| Artifact File | Boundary Type | Boundary Name | Placement Intent | Constraints | Scenario Types |
+| --- | --- | --- | --- | --- | --- |
+| `auth-service.test.ts` | `service` | `AuthService` | `shared` | [C-AUTH-001], [C-AUTH-002] | expected, defensive, exception |
+| ... | ... | ... | ... | ... | ... |
+
+## Implementation Placement
+
+- Resolve final destination during implementation using coding rules and local test layout
+- Keep assertions and scenarios unchanged when relocating plan artifacts
+- If destination is still unclear after reading local conventions, stop and ask the user
 
 ## Coverage
 
@@ -148,10 +156,10 @@ If a category is intentionally omitted for a constraint, note the reason in the 
 
 - Sequential:
   - `./plans/{task-name}/tests/manifest.md`
-  - `./plans/{task-name}/tests/{mirrored-destination-paths}`
+  - `./plans/{task-name}/tests/{flat-artifact-files}`
 - Non-sequential:
   - `./plans/{task-name}/plan-{track}/tests/manifest.md`
-  - `./plans/{task-name}/plan-{track}/tests/{mirrored-destination-paths}`
+  - `./plans/{task-name}/plan-{track}/tests/{flat-artifact-files}`
   - `./plans/{task-name}/tests/manifest.md` (track index)
 - Output language: Korean (test specs)
 
@@ -160,6 +168,7 @@ If a category is intentionally omitted for a constraint, note the reason in the 
 - **Test files only**: Do not write implementation or production code
 - **No E2E tests**: E2E is handled by `plan-e2e-test` skill
 - **Plan artifacts only**: Tests are stored in `plans/`, not in the source tree
+- **Deferred placement**: final source-tree destination is resolved during implementation, not planning
 - **No default stack assumptions**: Detect local conventions first, ask the user if unclear
 - **Constraint coverage 100%**: Mandatory before completion
 - **Spec-first mindset**: Tests are planning contracts for required logic, not a checklist written only to pass
