@@ -43,7 +43,7 @@ Pick exactly one runner per bounded surface unless the plan explicitly requires 
 
 ### Structure
 
-- Group by domain/component: `e2e/{domain}/{domain}.spec.ts`
+- During planning, keep one flat spec per bounded surface: `e2e/{surface-id}.spec.ts`
 - Use `test.describe`
 - Put constraint IDs in test names
 - Use Page Objects when interaction count is 3+
@@ -68,10 +68,11 @@ Pick exactly one runner per bounded surface unless the plan explicitly requires 
 
 ### Structure
 
-- Group under `e2e/maestro/`
-- One YAML flow per bounded surface or acceptance scenario
+- During planning, keep one flat YAML flow per bounded surface or acceptance scenario
 - Reuse with `runFlow` when a base flow exists
 - Keep file names concise and surface-oriented
+
+Final source-tree E2E placement is resolved during implementation using repo conventions, not frozen during planning.
 
 ---
 

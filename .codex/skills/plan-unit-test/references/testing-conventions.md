@@ -98,23 +98,24 @@ These are examples only. Use them only when the repository already points to tha
 
 ## File Location Convention
 
-- Follow the destination layout already used by the project
-- Mirror that destination path under `plans/{task-name}/tests/`
+- Determine the final destination layout from the project during implementation
+- Keep planning artifacts flat under `plans/{task-name}/tests/`
+- Record placement intent and implementation placement rules in `manifest.md`
 - If the repo has no clear convention, ask the user instead of inventing one
 - In non-sequential mode, generate files per track under `plans/{task-name}/plan-{track}/tests/`
 - Keep root `plans/{task-name}/tests/manifest.md` as a track index in non-sequential mode
 
 Examples:
 
-- TypeScript repo (default): `src/hooks/useXxx/test/useXxx.test.ts`, `src/services/xxx/test/xxx.test.ts`
-- Java / Spring repo: `src/test/java/.../*Test.java`
+- Planning artifact names: `use-login.test.ts`, `auth-service.test.ts`
+- Java / Spring planning artifact names: `AuthServiceTest.java`
 
 ### Hook-specific convention (default)
 
 - Treat each hook as its own test boundary
-- Use one hook folder per hook name: `useXxx`
-- Use concise test filename: `useXxx.test.ts`
-- Do not group unrelated hooks into one folder or one file unless the repository already enforces that pattern
+- Use one flat planning artifact per hook boundary
+- Use concise test filename derived from the hook name
+- Do not group unrelated hooks into one planning artifact unless the repository already enforces that pattern
 
 ---
 

@@ -113,7 +113,7 @@ Generate `.spec.ts` files with these rules:
 - Page Object pattern when a page has 3+ interactions
 - No hardcoded waits
 - AAA-style structure with clear arrange/act/assert sections
-- Default structure: one spec per domain/component/surface
+- Planning artifact structure: one flat spec per bounded surface
 
 #### When runner is `Maestro`
 
@@ -124,7 +124,7 @@ Generate `.yaml` flows with these rules:
 - Use deterministic commands only: `launchApp`, `tapOn`, `inputText`, `assertVisible`, `assertNotVisible`, `runFlow`
 - No timing-based sleeps unless the runner absolutely requires them and the plan justifies it
 - Keep flows short and composable; use `runFlow` for reuse
-- File names should be concise and surface-oriented
+- Keep file names concise and surface-oriented in a flat planning-artifact layout
 
 ### Step 5. Save artifacts as plan files
 
@@ -133,8 +133,11 @@ Generate `.yaml` flows with these rules:
 
 Default output layout:
 
-- Playwright: `e2e/{domain}/{domain}.spec.ts`
-- Maestro: `e2e/maestro/{flow}.yaml`
+- Playwright: `e2e/{surface-id}.spec.ts`
+- Maestro: `e2e/{flow-id}.yaml`
+
+Do not freeze the final source-tree E2E placement here.
+Implementation agents resolve the final destination later using repo E2E conventions, coding rules, and the placement handoff recorded in `manifest.md`.
 
 ### Step 6. Write `manifest.md`
 
@@ -150,8 +153,14 @@ Create `manifest.md` with:
 
 ## Files
 
-| File | Target Flow | Constraints | Scenario Types |
-| --- | --- | --- | --- |
+| Artifact File | Runner | Surface / Flow | Placement Intent | Constraints | Scenario Types |
+| --- | --- | --- | --- | --- | --- |
+
+## Implementation Placement
+
+- Resolve final destination during implementation using repo E2E layout and naming conventions
+- Keep assertions, locators, and scenario scope unchanged when relocating plan artifacts
+- If destination is still unclear after reading local conventions, stop and ask the user
 
 ## Locator Registry
 
@@ -190,8 +199,8 @@ Use a runner-appropriate locator label:
 
 - Sequential:
   - `./plans/{task-name}/e2e/manifest.md`
-  - Playwright: `./plans/{task-name}/e2e/{domain}/{domain}.spec.ts`
-  - Maestro: `./plans/{task-name}/e2e/maestro/{flow}.yaml`
+  - Playwright: `./plans/{task-name}/e2e/{surface-id}.spec.ts`
+  - Maestro: `./plans/{task-name}/e2e/{flow-id}.yaml`
 - Non-sequential:
   - `./plans/{task-name}/plan-{track}/e2e/manifest.md`
   - Track-local runner-specific artifacts
@@ -204,6 +213,7 @@ Use a runner-appropriate locator label:
 - No unit tests here: use `plan-unit-test`
 - No live browser/device exploration required
 - Frozen at planning time
+- Deferred placement: final source-tree destination is resolved during implementation, not planning
 - Constraint coverage 100% required for in-scope E2E constraints
 - Prefer `data-testid` / `testID` locators over brittle selectors
 - No speculative contract authoring

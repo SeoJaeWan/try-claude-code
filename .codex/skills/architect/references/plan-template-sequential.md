@@ -57,6 +57,7 @@
 ## 단계별 실행
 
 상세 routing, `owner_agent`, `primary_skill`, merge 규칙은 `references/planning-policy.md`를 따른다.
+테스트 아티팩트는 planning 단계에서 flat하게 유지하고, 최종 소스 트리 배치는 구현 단계에서 coding-rules 및 로컬 관례로 resolve한다.
 
 ### Phase 1
 
@@ -64,8 +65,8 @@
 - primary_skill: `{skill-name}` (선택)
 - 작업:
 - 산출물:
-- 단위 테스트: `tests/{mirrored-source-path}` (해당 시, plan-unit-test artifact)
-- E2E 테스트: runner-appropriate artifact (`e2e/{domain}/{domain}.spec.ts` 또는 `e2e/maestro/{flow}.yaml`) (해당 시, plan-e2e-test artifact)
+- 단위 테스트 의도: `boundary={hook|service|validator|component}`, `placement_intent={component-local|page-local|shared|api}`, `artifact={boundary-id}.test.ts` (해당 시, plan-unit-test artifact)
+- E2E 테스트 의도: `runner={Playwright|Maestro}`, `surface={surface-id}`, `artifact={surface-id}.spec.ts` 또는 `{flow-id}.yaml` (해당 시, plan-e2e-test artifact)
 
 ### Phase 2
 
@@ -86,6 +87,7 @@
 상세 기준은 `references/planning-policy.md`를 따른다.
 
 - 산출물 위치: `plans/{task-name}/e2e/manifest.md`, plus runner-appropriate E2E artifacts
+- 최종 배치: 구현 단계에서 repo E2E 관례와 coding-rules로 resolve
 - 메모:
 
 전체 사용자 여정 또는 회귀 hardening이 필요하면 별도 phase를 추가:
