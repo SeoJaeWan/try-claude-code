@@ -1,8 +1,5 @@
 # Code Style Rules
 
-> This document covers only "judgment-required rules" that ESLint/Prettier cannot enforce automatically.
-> Mechanical rules are applied by `init-coding-rules` through conversational diff + approval based on this coding-rules folder.
-
 ---
 
 ## Props Handling -- Destructure Inside the Function Body
@@ -73,8 +70,3 @@ if (hasError) return <Error />;
 if (!data) return <Empty />;
 return <Content data={data} />;
 ```
-
-
-
-
-

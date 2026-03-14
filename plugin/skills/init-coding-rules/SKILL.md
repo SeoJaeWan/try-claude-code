@@ -1,13 +1,13 @@
 ---
 name: init-coding-rules
-description: coding-rules 기반 ESLint + commitlint + husky + lint-staged + TSConfig 설정 동적 생성
+description: coding-rules 기반 ESLint + husky + lint-staged + TSConfig 설정 동적 생성
 model: sonnet
 allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion, Bash(pnpm *), Bash(git *)
 ---
 
 <Skill_Guide>
 <Purpose>
-Read coding-rules documents and dynamically generate ESLint, commitlint, husky, lint-staged, and TSConfig configurations.
+Read coding-rules documents and dynamically generate ESLint, husky, lint-staged, and TSConfig configurations.
 Replaces the former config-governor conversational workflow with a one-shot generation approach.
 </Purpose>
 
@@ -20,9 +20,18 @@ Use this skill when the user asks to generate or initialize lint/type/commit/hoo
 
 ### Step 1 — Read coding-rules
 
-Read all documents under `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/` (9 files):
-- typescript.md, naming.md, code-style.md, folder-structure.md, comments.md
-- git.md, testing.md, package-manager.md, completion.md
+Read the following references:
+
+**이 스킬에 번들된 references:**
+- `${CLAUDE_SKILL_ROOT}/references/typescript.md` — TSConfig, 타입 가드, 제네릭
+- `${CLAUDE_SKILL_ROOT}/references/comments.md` — JSDoc, TODO/FIXME
+- `${CLAUDE_SKILL_ROOT}/references/package-manager.md` — pnpm, .npmrc
+
+**각 dev 스킬의 naming/folder-structure references:**
+- `${CLAUDE_PLUGIN_ROOT}/skills/frontend-dev/references/naming.md` — 프론트엔드 네이밍
+- `${CLAUDE_PLUGIN_ROOT}/skills/frontend-dev/references/folder-structure.md` — 프론트엔드 폴더 구조
+- `${CLAUDE_PLUGIN_ROOT}/skills/backend-dev/references/naming.md` — 백엔드 네이밍
+- `${CLAUDE_PLUGIN_ROOT}/skills/backend-dev/references/folder-structure.md` — 백엔드 폴더 구조
 
 These are the **single source of truth**. Do not invent rules beyond what is documented.
 
@@ -46,7 +55,6 @@ Check for existing configuration files:
 - `eslint.config.*` (flat config)
 - `.eslintrc.*` (legacy — suggest migration)
 - `tsconfig.json`, `tsconfig.*.json`
-- `commitlint.config.*`
 - `.husky/` directory
 - `.lintstagedrc.*` or `lint-staged` in `package.json`
 - `package.json` scripts
@@ -69,8 +77,7 @@ Use AskUserQuestion to request approval for each file group independently:
 
 1. **ESLint** — `eslint.config.mjs` + plugins
 2. **TSConfig** — `tsconfig.json` strict options
-3. **commitlint** — `commitlint.config.mjs`
-4. **husky + lint-staged** — `.husky/pre-commit`, lint-staged config
+3. **husky + lint-staged** — `.husky/pre-commit`, lint-staged config
 
 Each group can be approved or skipped independently. Only apply approved groups.
 

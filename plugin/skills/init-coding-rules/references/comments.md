@@ -1,7 +1,6 @@
 # Comment Rules
 
 > This document covers only "judgment-required rules" that ESLint/Prettier cannot enforce.
-> Mechanical rules are applied by `init-coding-rules` through conversational diff + approval based on this coding-rules folder.
 
 ## JSDoc
 
@@ -35,8 +34,3 @@ const fetchGitHubUser = async (username: string) => { ... };
 // TODO(담당자): 설명 (#이슈번호)
 // FIXME(담당자): 설명 (#이슈번호)
 ```
-
-
-
-
-

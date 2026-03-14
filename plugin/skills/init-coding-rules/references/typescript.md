@@ -143,9 +143,3 @@ type Paginated<T> = { items: T[]; total: number; page: number; pageSize: number 
 const STATUS = ['pending', 'success', 'error'] as const;
 type Status = typeof STATUS[number]; // 'pending' | 'success' | 'error'
 ```
-
-
-
-
-
-
