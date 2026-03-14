@@ -55,11 +55,10 @@ node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs componen
 
 ## Layout-First Principle
 
-**Focus on visual structure, NOT functionality:**
-- Create UI components without business logic
-- Leave onClick, onSubmit handlers empty or with placeholder props
-- DO NOT implement: API calls, state management, form validation, auth logic
-- Frontend-dev skill will add functionality later
+**Focus on visual structure, NOT business logic:**
+- UI interaction state is allowed (sidebar toggle, accordion, modal open/close, tab selection)
+- DO NOT implement: API calls, form data management, auth logic, data filtering
+- Leave data-dependent handlers as placeholder props — frontend-dev skill will add functionality later
 
 ---
 
