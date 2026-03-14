@@ -22,10 +22,10 @@ Expert frontend development workflow for React, Next.js, and React Native.
 
 **Read first:**
 
-- `.claude/try-claude/references/coding-rules/` - All coding rules
-- `.claude/try-claude/references/design/` - Design system (structure, principles)
-- `.claude/try-claude/codemaps/frontend.md` - Existing pages, routes, components (if present)
-- `.claude/try-claude/references/domain.md` - User scenarios and business logic
+- `references/coding-rules/` - All coding rules
+- `references/design/` - Design system (structure, principles)
+- `codemaps/frontend.md` - Existing pages, routes, components (if present)
+- `references/domain.md` - User scenarios and business logic
 
 **Read actual values:**
 
@@ -35,7 +35,7 @@ Expert frontend development workflow for React, Next.js, and React Native.
 
 **Read plan:**
 
-- `.claude/try-claude/plans/{task-name}/plan.md` - Implementation plan
+- `plans/{task-name}/plan.md` - Implementation plan
 
 **For latest docs, use WebSearch/WebFetch (official docs first).**
 
@@ -47,19 +47,17 @@ Before implementing hooks, **always attempt to generate boilerplate first** usin
 
 ```bash
 # Custom hook boilerplate
-node .claude/try-claude/references/coding-rules/scripts/generate.mjs hook <hookName> [--form]
+node references/coding-rules/scripts/generate.mjs hook <hookName> [--form]
 
 # API hook boilerplate (query)
-node .claude/try-claude/references/coding-rules/scripts/generate.mjs api-hook <hookName> --method query
+node references/coding-rules/scripts/generate.mjs api-hook <hookName> --method query
 
 # API hook boilerplate (mutation)
-node .claude/try-claude/references/coding-rules/scripts/generate.mjs api-hook <hookName> --method mutation
+node references/coding-rules/scripts/generate.mjs api-hook <hookName> --method mutation
 
 # Test suite boilerplate
-node .claude/try-claude/references/coding-rules/scripts/generate.mjs test-suite <targetName> --type hook
+node references/coding-rules/scripts/generate.mjs test-suite <targetName> --type hook
 ```
-
-> If scripts are not found (init-try not run), skip boilerplate generation and implement manually.
 
 ---
 
@@ -84,10 +82,10 @@ node .claude/try-claude/references/coding-rules/scripts/generate.mjs test-suite 
 
 ## TDD Workflow
 
-1. **Copy unit test files** from `.claude/try-claude/plans/{task-name}/tests/` to source tree
+1. **Copy unit test files** from `plans/{task-name}/tests/` to source tree
    - Read `tests/manifest.md` for file list and destination paths
    - Strip `tests/` prefix to get destination path
-2. **Copy E2E test files** from `.claude/try-claude/plans/{task-name}/e2e/` to the project's e2e test directory
+2. **Copy E2E test files** from `plans/{task-name}/e2e/` to the project's e2e test directory
    - Read `e2e/manifest.md` (if present) for file list and destination paths
    - E2E tests are plan artifacts (contract-first) — do NOT modify them
 3. **Red verification**: `pnpm test` — tests must FAIL
@@ -99,9 +97,9 @@ node .claude/try-claude/references/coding-rules/scripts/generate.mjs test-suite 
 
 ## Implementation Steps
 
-1. Read plan from `.claude/try-claude/plans/{task-name}/plan.md`
-2. Copy unit test files from `.claude/try-claude/plans/{task-name}/tests/` to source tree (read `manifest.md` for paths)
-3. Copy E2E test files from `.claude/try-claude/plans/{task-name}/e2e/` to the project's e2e test directory (if present)
+1. Read plan from `plans/{task-name}/plan.md`
+2. Copy unit test files from `plans/{task-name}/tests/` to source tree (read `manifest.md` for paths)
+3. Copy E2E test files from `plans/{task-name}/e2e/` to the project's e2e test directory (if present)
 4. Red verification: `pnpm test` — confirm tests FAIL (no implementation yet)
 5. Read domain.md (user scenarios)
 6. Read CODEMAPS/frontend.md (if present)

@@ -128,7 +128,7 @@ components/layouts/        # 레이아웃 컴포넌트
 **프로젝트의 실제 페이지 목록과 구조:**
 
 ```
-.claude/try-claude/codemaps/frontend.md   # 자동 생성된 페이지 구조
+codemaps/frontend.md   # 자동 생성된 페이지 구조
 ```
 
 ---

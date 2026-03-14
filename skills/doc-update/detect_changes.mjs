@@ -7,7 +7,7 @@
  * against a stored hash database.
  *
  * Outputs:
- *   - changes.json      (output directory, default: .claude/try-claude/codemaps/)
+ *   - changes.json      (output directory, default: codemaps/)
  *   - .doc-hashes.json  (output directory, persisted between runs)
  *
  * Usage: node detect_changes.mjs [--output-dir <path>]
@@ -20,8 +20,7 @@ import { fileURLToPath } from "url";
 
 const TARGET_DIR_NAMES = new Set(["app", "apps", "src", "pages"]);
 // Excluded directories include agent-managed metadata directories and
-// infrastructure paths. The .claude/try-claude/ directory is the managed
-// overlay seeded by init-try and should not be scanned as service code.
+// infrastructure paths.
 const EXCLUDE_DIRS = new Set([
   ".git",
   ".ai",

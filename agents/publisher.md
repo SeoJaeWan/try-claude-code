@@ -18,6 +18,6 @@ You are an expert UI publisher who creates production-ready React components for
 
 For detailed workflow, see `skills/ui-publish/SKILL.md`.
 
-**Completion criteria:** See `.claude/try-claude/references/coding-rules/completion.md`
+**Completion criteria:** See `references/coding-rules/completion.md`
 </Instructions>
 </Agent_Prompt>

@@ -1,6 +1,6 @@
 ---
 name: doc-update
-description: CODEMAPS and HUMANMAPS auto-generation. Scans service code structure and generates documentation. Outputs to .claude/try-claude/codemaps/ and .claude/try-claude/humanmaps/.
+description: CODEMAPS and HUMANMAPS auto-generation. Scans service code structure and generates documentation. Outputs to codemaps/ and humanmaps/.
 model: sonnet
 context: fork
 agent: doc-updater
@@ -8,7 +8,7 @@ agent: doc-updater
 
 <Skill_Guide>
 <Purpose>
-CODEMAPS and HUMANMAPS auto-generation. Scans service code structure and generates documentation. Outputs to .claude/try-claude/codemaps/ and .claude/try-claude/humanmaps/.
+CODEMAPS and HUMANMAPS auto-generation. Scans service code structure and generates documentation. Outputs to codemaps/ and humanmaps/.
 </Purpose>
 
 <Instructions>
@@ -27,10 +27,10 @@ Service code structure documentation (CODEMAPS + HUMANMAPS auto-generation).
 
 ## Output Location
 
-**CODEMAPS:** `.claude/try-claude/codemaps/`
+**CODEMAPS:** `codemaps/`
 
 ```
-.claude/try-claude/codemaps/
+codemaps/
 ├── INDEX.md          # Project overview
 ├── backend.md        # API endpoints (if backend detected)
 ├── frontend.md       # Pages, routes, components (if frontend detected)
@@ -47,8 +47,8 @@ Service code structure documentation (CODEMAPS + HUMANMAPS auto-generation).
       → Output: `changes.json` (changed/added/deleted list + discovery metadata)
    b. `node <plugin-root>/skills/doc-update/extract_structure.mjs`
       → Output: `extracted_structure.json` (Next.js routes + Prisma models)
-1. Read `.claude/try-claude/codemaps/changes.json` — identify the list of changed files
-2. Read `.claude/try-claude/codemaps/extracted_structure.json` — use pre-extracted structure
+1. Read `codemaps/changes.json` — identify the list of changed files
+2. Read `codemaps/extracted_structure.json` — use pre-extracted structure
 3. Scan only changed files (not the entire codebase)
 4. Update only the CODEMAPS sections for changed files
    - Unchanged files: skip
@@ -179,7 +179,7 @@ SHA256 hash-based change detection script.
 node <plugin-root>/skills/doc-update/detect_changes.mjs
 ```
 
-**Output:** `.claude/try-claude/codemaps/changes.json`
+**Output:** `codemaps/changes.json`
 ```json
 {
   "changed": ["repo/..."],
@@ -193,7 +193,7 @@ node <plugin-root>/skills/doc-update/detect_changes.mjs
 }
 ```
 
-**Store:** `.claude/try-claude/codemaps/.doc-hashes.json` (persisted between runs)
+**Store:** `codemaps/.doc-hashes.json` (persisted between runs)
 
 **Fallback:** On error, outputs empty changes.json → LLM performs full regeneration
 
@@ -210,7 +210,7 @@ node <plugin-root>/skills/doc-update/extract_structure.mjs
 
 **Prerequisite:** `changes.json` must be generated first
 
-**Output:** `.claude/try-claude/codemaps/extracted_structure.json`
+**Output:** `codemaps/extracted_structure.json`
 
 **Fallback:** If extraction fails for a file, it is added to `fallback_files` → LLM processes that file's raw source
 
@@ -291,7 +291,7 @@ Task({
 
 After CODEMAPS generation, generate HUMANMAPS HTML **directly** within this skill (no publisher delegation).
 
-**Output location:** `.claude/try-claude/humanmaps/`
+**Output location:** `humanmaps/`
 
 CODEMAPS to HUMANMAPS 1:1 mapping:
 

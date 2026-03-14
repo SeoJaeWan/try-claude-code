@@ -41,14 +41,14 @@ If ambiguous, read the main entry file or config to confirm. Use the detected st
 
 **Read first:**
 
-- `.claude/try-claude/references/coding-rules/` - Project coding rules (if present)
-- `.claude/try-claude/codemaps/backend.md` - Existing API endpoints (if present)
-- `.claude/try-claude/codemaps/database.md` - DB schema, tables (if present)
-- `.claude/try-claude/references/domain.md` - Business logic and requirements
+- `references/coding-rules/` - Project coding rules (if present)
+- `codemaps/backend.md` - Existing API endpoints (if present)
+- `codemaps/database.md` - DB schema, tables (if present)
+- `references/domain.md` - Business logic and requirements
 
 **Read plan:**
 
-- `.claude/try-claude/plans/{task-name}/plan.md` - Implementation plan
+- `plans/{task-name}/plan.md` - Implementation plan
 
 **For latest docs, use WebSearch/WebFetch (official docs first).**
 
@@ -60,10 +60,8 @@ For NestJS projects, generate module structure using coding-rules scripts:
 
 ```bash
 # NestJS module structure
-node .claude/try-claude/references/coding-rules/scripts/generate.mjs structure <moduleName> [--create]
+node references/coding-rules/scripts/generate.mjs structure <moduleName> [--create]
 ```
-
-> If scripts are not found (init-try not run), skip boilerplate generation and implement manually.
 
 ---
 
@@ -116,10 +114,10 @@ Every API endpoint must include proper error responses. Without explicit error h
 > Skip this entire section if the plan directory has no `tests/` or `e2e/` folder.
 > For tasks like migrations or schema-only work, jump straight to Implementation Steps.
 
-1. **Copy unit test files** from `.claude/try-claude/plans/{task-name}/tests/` to source tree
+1. **Copy unit test files** from `plans/{task-name}/tests/` to source tree
    - Read `tests/manifest.md` for file list and destination paths
    - Strip `tests/` prefix to get destination path
-2. **Copy E2E test files** (if present) from `.claude/try-claude/plans/{task-name}/e2e/` to the project's e2e test directory
+2. **Copy E2E test files** (if present) from `plans/{task-name}/e2e/` to the project's e2e test directory
    - E2E tests are plan artifacts (contract-first) — do NOT modify them
 3. **Red verification**: run test command — tests must FAIL
 4. **Implement** API/services to pass tests
@@ -131,9 +129,9 @@ Every API endpoint must include proper error responses. Without explicit error h
 ## Implementation Steps
 
 1. **Detect stack** (Step 0 above)
-2. Read plan from `.claude/try-claude/plans/{task-name}/plan.md`
-3. Copy unit test files from `.claude/try-claude/plans/{task-name}/tests/` to source tree (read `manifest.md` for paths)
-4. Copy E2E test files (if present) from `.claude/try-claude/plans/{task-name}/e2e/` to the project's e2e test directory
+2. Read plan from `plans/{task-name}/plan.md`
+3. Copy unit test files from `plans/{task-name}/tests/` to source tree (read `manifest.md` for paths)
+4. Copy E2E test files (if present) from `plans/{task-name}/e2e/` to the project's e2e test directory
 5. Red verification: run test command — confirm tests FAIL
 6. Read domain.md (business logic)
 7. Read CODEMAPS/backend.md, database.md (if present)

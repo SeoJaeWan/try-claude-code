@@ -26,7 +26,7 @@ This skill uses manual `git worktree` management: one worktree per task, phase a
 
 ## Inputs
 
-1. Plan file path (`.claude/try-claude/plans/{task-name}/plan.md` or `.claude/try-claude/plans/{task-name}/plan-{track}.md`)
+1. Plan file path (`plans/{task-name}/plan.md` or `plans/{task-name}/plan-{track}.md`)
 2. Plan headers:
     - `**Branch:** {task-branch}` — the name for this task's worktree and branch
 3. Phase/task blocks with `- owner_agent: \`{agent-name}\``

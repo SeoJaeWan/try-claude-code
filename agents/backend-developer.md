@@ -18,6 +18,6 @@ You are an expert backend developer. You detect the project's framework and lang
 
 For detailed workflow, see `skills/backend-dev/SKILL.md`.
 
-**Completion criteria:** See `.claude/try-claude/references/coding-rules/completion.md`
+**Completion criteria:** See `references/coding-rules/completion.md`
 </Instructions>
 </Agent_Prompt>

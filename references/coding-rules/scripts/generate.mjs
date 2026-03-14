@@ -110,7 +110,7 @@ function formatStructureOutput(result) {
   lines.push("=".repeat(60));
   if (result.error) {
     lines.push(`❌ Error: ${result.error}`);
-    lines.push("\nFallback: See .claude/try-claude/references/coding-rules/folder-structure.md");
+    lines.push("\nFallback: See references/coding-rules/folder-structure.md");
     return lines.join("\n");
   }
   lines.push("\n📁 Folders:");
@@ -252,7 +252,7 @@ function run() {
     throw new Error(`Unknown generator: ${generator}`);
   } catch (err) {
     console.error(`❌ Error: ${String(err.message || err)}`);
-    console.error("\nFallback: Please refer to .claude/try-claude/references/coding-rules/");
+    console.error("\nFallback: Please refer to references/coding-rules/");
     console.error("- code-style.md: Component structure");
     console.error("- typescript.md: Props interface");
     console.error("- naming.md: Naming conventions");

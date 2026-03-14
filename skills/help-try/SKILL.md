@@ -1,6 +1,6 @@
 ---
 name: help-try
-description: try-claude 설정, init/migration, 런타임 구조, MCP 정책 관련 질문에 FAQ 형식으로 답변합니다.
+description: try-claude 플러그인 구조, 경로, MCP 정책 관련 질문에 FAQ 형식으로 답변합니다.
 model: haiku
 ---
 
@@ -16,7 +16,6 @@ try-claude 플러그인 운영 방법을 FAQ 형식으로 안내한다.
 
 - `try-claude`가 어떻게 동작하는지
 - 어느 경로를 수정해야 하는지
-- `init-try`와 `migration`이 무엇을 하는지
 - MCP 설정을 어떻게 나눠야 하는지
 
 ## 우선 참조
@@ -25,11 +24,10 @@ try-claude 플러그인 운영 방법을 FAQ 형식으로 안내한다.
 
 ## 반드시 유지할 핵심 답변
 
-1. 프로젝트별 수정은 `<repo>/.claude/try-claude/references/`에서 한다.
-2. `init-try`는 `.claude/try-claude/`를 만들고 managed reference를 시드한다.
-3. `migration`은 수정하지 않은 markdown section만 업데이트하고, 수정한 section은 보존한다.
-4. 공유 `.mcp.json`은 가능하면 cross-platform하게 유지한다.
-5. OS 의존 MCP launcher는 문서화하고 로컬 설정으로 안내한다.
+1. 프로젝트별 수정은 플러그인 루트의 `references/`에서 한다.
+2. 출력 디렉터리(`codemaps/`, `humanmaps/`, `plans/`, `reports/`, `logs/`)는 프로젝트 루트에 위치한다.
+3. 공유 `.mcp.json`은 가능하면 cross-platform하게 유지한다.
+4. OS 의존 MCP launcher는 문서화하고 로컬 설정으로 안내한다.
 
 ## MCP 정책 답변 원칙
 
