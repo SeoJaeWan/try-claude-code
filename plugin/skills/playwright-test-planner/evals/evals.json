@@ -1,0 +1,91 @@
+{
+  "skill_name": "playwright-test-planner",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "현재 웹 앱을 탐색해서 E2E 테스트 플랜을 작성해줘",
+      "expected_output": "planner_setup_page로 브라우저 초기화, browser_snapshot으로 페이지 구조 탐색, 사용자 흐름 매핑, planner_save_plan으로 specs/ 저장",
+      "files": ["../../../features/next-app/package.json", "../../../features/next-app/app/page.tsx"],
+      "expectations": [
+        "Uses planner_setup_page to initialize the browser with the target URL",
+        "Explores at least 3 different pages or sections using browser_snapshot and browser_click",
+        "Identifies and documents happy path and edge case user flows",
+        "Each test scenario includes numbered steps, expected outcomes, and success criteria",
+        "Test scenarios are grouped under numbered category headings",
+        "Saves the plan using planner_save_plan to specs/ directory"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "로그인이 필요한 관리자 페이지의 테스트 플랜을 작성해줘",
+      "expected_output": "인증 흐름 포함, 로그인 전제조건, 권한별 시나리오, 비인증 접근 에지케이스",
+      "files": ["../../../features/next-app/package.json", "../../../features/next-app/app/page.tsx"],
+      "expectations": [
+        "Uses planner_setup_page to initialize the browser",
+        "Explores the login page and attempts authentication flow in the browser",
+        "Includes authentication as a prerequisite step in test scenarios",
+        "Describes both authorized access and unauthorized/unauthenticated access scenarios",
+        "Includes session-related edge cases (expired session, invalid token, or logout)",
+        "Saves the plan using planner_save_plan to specs/ directory"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "CRUD 기능이 있는 할 일 관리 앱인데, 폼 유효성 검증이랑 빈 상태 처리도 테스트해야 해. 테스트 시나리오 정리해줘",
+      "expected_output": "CRUD 각 동작별 시나리오, 폼 validation 에지케이스(빈 값/특수문자/최대길이), 빈 리스트 상태 UI 검증, 시나리오 간 독립성 보장",
+      "files": ["../../../features/next-app/package.json", "../../../features/next-app/app/page.tsx"],
+      "expectations": [
+        "Uses planner_setup_page to initialize the browser",
+        "Covers all four CRUD operations (Create, Read, Update, Delete) as separate test scenarios",
+        "Includes form validation edge cases: empty input, special characters, and max length",
+        "Includes empty state scenario (what the UI shows when no items exist)",
+        "Test scenarios are independent of each other and can run in any order",
+        "Each scenario has a seed file reference in the plan",
+        "Saves the plan using planner_save_plan to specs/ directory"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "SPA인데 클라이언트 사이드 라우팅으로 페이지 전환돼. 네비게이션이랑 뒤로가기 버튼도 테스트해야 하거든. 플랜 만들어줘",
+      "expected_output": "SPA 라우팅 테스트: 클라이언트 사이드 네비게이션, 브라우저 뒤로/앞으로, 직접 URL 접근, 딥링크",
+      "files": ["../../../features/next-app/package.json", "../../../features/next-app/app/page.tsx"],
+      "expectations": [
+        "Uses planner_setup_page to initialize the browser",
+        "Explores navigation by clicking links and observing URL changes without full page reload",
+        "Includes test scenarios for client-side route transitions",
+        "Includes browser back/forward button navigation scenarios",
+        "Includes direct URL access (deep linking) scenario to verify the page renders correctly",
+        "Saves the plan using planner_save_plan to specs/ directory"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Create a test plan for this web app. Pay special attention to form interactions - there are file uploads, date pickers, and multi-select dropdowns",
+      "expected_output": "복잡한 폼 인터랙션 테스트 플랜: 파일 업로드, 날짜 선택기, 멀티셀렉트 드롭다운 각각의 시나리오",
+      "files": ["../../../features/next-app/package.json", "../../../features/next-app/app/page.tsx"],
+      "expectations": [
+        "Uses planner_setup_page to initialize the browser",
+        "Explores form elements by interacting with them in the browser (click, type, upload)",
+        "Includes file upload test scenarios (valid file, invalid type, size limit)",
+        "Includes date picker interaction scenarios",
+        "Includes multi-select dropdown scenarios (select multiple, deselect, clear all)",
+        "Each complex form element has both happy path and error scenarios",
+        "Saves the plan using planner_save_plan to specs/ directory"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "반응형 웹앱이라 모바일이랑 데스크톱에서 UI가 좀 달라. 햄버거 메뉴도 있고. 뷰포트별로 테스트 시나리오 나눠서 정리해줘",
+      "expected_output": "반응형 테스트 플랜: 모바일/데스크톱 뷰포트별 시나리오, 햄버거 메뉴, 레이아웃 차이점",
+      "files": ["../../../features/next-app/package.json", "../../../features/next-app/app/page.tsx"],
+      "expectations": [
+        "Uses planner_setup_page to initialize the browser",
+        "Explores the app at different viewport sizes or mentions responsive breakpoints",
+        "Includes mobile-specific scenarios (hamburger menu, touch-friendly interactions)",
+        "Includes desktop-specific scenarios (hover states, sidebar navigation)",
+        "Identifies layout differences between mobile and desktop views",
+        "Saves the plan using planner_save_plan to specs/ directory"
+      ]
+    }
+  ]
+}
