@@ -41,9 +41,25 @@ user_id UUID REFERENCES users(id)
 problem_id INTEGER NOT NULL
 ```
 
-### DB to API Conversion
+### Entity/Interface Fields — snake_case
 
-DB는 snake_case, API 응답은 camelCase. Entity/interface의 DB 필드는 snake_case로 정의하고, API 응답 시 별도 계층에서 camelCase로 변환한다.
+TypeScript interface/entity fields representing DB columns must use snake_case. Convert to camelCase in a separate API response layer.
+
+```typescript
+// ❌ Wrong — using TypeScript camelCase for DB fields
+interface Order {
+  customerName: string;
+  totalAmount: number;
+  createdAt: Date;
+}
+
+// ✅ Correct — DB columns use snake_case
+interface Order {
+  customer_name: string;
+  total_amount: number;
+  created_at: Date;
+}
+```
 
 ---
 
@@ -65,7 +81,7 @@ Keys follow the `VERB_RESOURCE` pattern; values are RESTful paths.
 
 ## General Naming
 
-- 메서드명: camelCase (`buildProfileSummary`, `findOrderById`)
-- 클래스명: PascalCase (`OrdersService`, `AuthController`)
-- 상수: UPPER_SNAKE_CASE (`JWT_SECRET`, `MAX_RETRY_COUNT`)
-- 파일명: kebab-case 또는 프레임워크 관례 (`orders.service.ts`, `auth.controller.ts`)
+- Methods: camelCase (`buildProfileSummary`, `findOrderById`)
+- Classes: PascalCase (`OrdersService`, `AuthController`)
+- Constants: UPPER_SNAKE_CASE (`JWT_SECRET`, `MAX_RETRY_COUNT`)
+- Files: kebab-case or framework convention (`orders.service.ts`, `auth.controller.ts`)

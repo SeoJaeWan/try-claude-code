@@ -6,10 +6,10 @@
 
 ```
 components/
-├── common/              # 공통 (2+ 페이지에서 사용)
+├── common/              # Shared (used in 2+ pages)
 │   ├── header/index.tsx
 │   └── button/index.tsx
-├── {domain}/            # 도메인별
+├── {domain}/            # Domain-specific
 │   └── problemCard/index.tsx
 └── providers/index.tsx  # Context Providers
 ```
@@ -37,7 +37,7 @@ must be **moved to the shared location immediately the moment they are used anyw
 
 ## Component File Convention
 
-컴포넌트는 디렉토리 패턴으로 생성한다: `{ComponentName}/index.tsx`
+Components use the directory pattern: `{ComponentName}/index.tsx`
 
 ```
 components/
@@ -53,11 +53,11 @@ components/
 
 ## UI Component Principle
 
-UI 컴포넌트는 **레이아웃만** 담당한다. 로직(useState, useEffect, fetch)은 포함하지 않고, props로만 데이터를 받는다.
+UI components handle **layout only**. They contain no logic (useState, useEffect, fetch) and receive data exclusively through props.
 
-| 허용 | 금지 |
+| Allowed | Prohibited |
 |---|---|
 | Props destructuring | `useState` |
 | Tailwind CSS classes | `useEffect` |
-| Conditional rendering (props 기반) | `fetch` / API 호출 |
-| Event handler props (`onClick`) | 직접 상태 관리 |
+| Conditional rendering (props-based) | `fetch` / API calls |
+| Event handler props (`onClick`) | Direct state management |
