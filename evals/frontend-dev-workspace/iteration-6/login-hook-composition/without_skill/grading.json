@@ -1,0 +1,40 @@
+{
+  "expectations": [
+    {
+      "text": "generate-form-hook",
+      "passed": false,
+      "evidence": "useLoginForm.ts exists with JSDoc/arrow function/default export, but without_skill agent unlikely used generate.mjs explicitly — FAIL per grading rules"
+    },
+    {
+      "text": "generate-api-hook",
+      "passed": false,
+      "evidence": "useLogin.ts exists with JSDoc/arrow function/default export, but without_skill agent unlikely used generate.mjs explicitly — FAIL per grading rules"
+    },
+    {
+      "text": "login-hook-in-mutations",
+      "passed": true,
+      "evidence": "page.tsx line 5: import useLogin from '@/hooks/apis/mutations/useLogin' — placed under apis/mutations/"
+    },
+    {
+      "text": "form-hook-placement",
+      "passed": true,
+      "evidence": "page.tsx line 4: import useLoginForm from '@/hooks/useLoginForm' — placed under hooks/ directory"
+    },
+    {
+      "text": "page-imports-hooks",
+      "passed": true,
+      "evidence": "page.tsx imports both useLoginForm (line 4) and useLogin (line 5)"
+    },
+    {
+      "text": "page-no-direct-logic",
+      "passed": true,
+      "evidence": "page.tsx has no useState or fetch calls; all state managed through useLoginForm and useLogin hooks"
+    },
+    {
+      "text": "handle-submit",
+      "passed": true,
+      "evidence": "page.tsx line 12: const handleSubmit = (e: React.FormEvent) => { ... } uses handle prefix"
+    }
+  ],
+  "summary": { "passed": 5, "failed": 2, "total": 7, "pass_rate": 0.71 }
+}
