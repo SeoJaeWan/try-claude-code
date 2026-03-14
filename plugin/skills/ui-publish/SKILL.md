@@ -79,12 +79,11 @@ node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs componen
 4. Read actual values: `tailwind.config.js`, `app/globals.css`, `components/ui/`
 5. Run boilerplate script — build on top of the generated files
 6. Create component following project conventions
-7. Use shadcn/ui components — locate existing shared UI component path first
-8. Export as default export (Props 타입은 named export, 컴포넌트는 default export)
-9. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
-10. Run typecheck: `pnpm run typecheck` (or `pnpm exec tsc --noEmit`)
-11. Verify and auto-fix lint: `pnpm lint --fix`
-12. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
-13. Return results based on plan.md
+7. Export as default export (Props interface as named export, component as default export)
+8. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
+9. Run typecheck: `pnpm run typecheck` (or `pnpm exec tsc --noEmit`)
+10. Verify and auto-fix lint: `pnpm lint --fix`
+11. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
+12. Return results based on plan.md
   </Instructions>
   </Skill_Guide>
