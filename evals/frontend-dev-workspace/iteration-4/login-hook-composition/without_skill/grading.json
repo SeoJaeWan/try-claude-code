@@ -1,0 +1,40 @@
+{
+  "eval_name": "login-hook-composition/without_skill",
+  "expectations": [
+    {
+      "text": "generate-form-hook: generate.mjs hook useLoginForm 실행 결과로 생성된 파일이 존재한다",
+      "passed": false,
+      "evidence": "Summary makes no mention of running generate.mjs. Files were manually created. No evidence of generate.mjs execution."
+    },
+    {
+      "text": "generate-api-hook: generate.mjs api-hook useLogin 실행 결과로 생성된 파일이 존재한다",
+      "passed": false,
+      "evidence": "Same as above - no generate.mjs execution mentioned or evidenced"
+    },
+    {
+      "text": "login-hook-in-mutations: useLogin 훅이 apis/mutations/ 경로 하위에 배치된다",
+      "passed": false,
+      "evidence": "useLogin.ts is in outputs/ directory. Summary target path is 'features/next-app/hooks/useLogin.ts' - directly in hooks/, not in apis/mutations/"
+    },
+    {
+      "text": "form-hook-placement: useLoginForm이 hooks/ 하위에 배치된다",
+      "passed": true,
+      "evidence": "useLoginForm.ts exists in outputs/ and summary target path is 'features/next-app/hooks/useLoginForm.ts', which is under hooks/"
+    },
+    {
+      "text": "page-imports-hooks: 로그인 페이지 파일이 useLoginForm과 useLogin을 import한다",
+      "passed": true,
+      "evidence": "page.tsx imports from '@/hooks/useLoginForm' and '@/hooks/useLogin'"
+    },
+    {
+      "text": "page-no-direct-logic: 로그인 페이지 컴포넌트에 직접적인 useState/fetch 로직이 없고 훅 조합만 한다",
+      "passed": true,
+      "evidence": "page.tsx contains no useState, useEffect, or fetch calls - only composes useLoginForm and useLogin hooks"
+    },
+    {
+      "text": "handle-submit: 폼 제출 핸들러가 handleSubmit 등 handle 접두사를 사용한다",
+      "passed": true,
+      "evidence": "Line 20: 'const handleSubmit = (e: React.FormEvent) =>' uses handle prefix"
+    }
+  ]
+}
