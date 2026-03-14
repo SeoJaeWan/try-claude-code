@@ -53,11 +53,19 @@ components/
 
 ## UI Component Principle
 
-UI components handle **layout only**. They contain no logic (useState, useEffect, fetch) and receive data exclusively through props.
+UI components handle **layout and visual interactions only**.
 
-| Allowed | Prohibited |
-|---|---|
-| Props destructuring | `useState` |
-| Tailwind CSS classes | `useEffect` |
-| Conditional rendering (props-based) | `fetch` / API calls |
-| Event handler props (`onClick`) | Direct state management |
+**Allowed state** — purely visual interactions that don't involve data:
+- Sidebar open/close toggle
+- Accordion expand/collapse
+- Tab/panel selection
+- Modal visibility
+- Tooltip/dropdown toggle
+
+**Prohibited** — business logic that belongs in frontend-dev hooks:
+- Form data (email, password values)
+- API loading/error states (`isLoading`, `error`)
+- Authentication state
+- Data filtering/sorting logic
+- `fetch` / `axios` calls
+- `useEffect` for data fetching

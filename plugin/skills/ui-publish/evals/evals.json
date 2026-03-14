@@ -64,7 +64,7 @@
         {"id": "responsive-breakpoints", "text": "반응형 breakpoint 클래스가 사용된다 (md:, lg: 등 Tailwind 접두사)"},
         {"id": "children-prop", "text": "메인 콘텐츠 영역이 children prop을 받는다"},
         {"id": "tailwind-classes", "text": "Tailwind CSS 클래스가 스타일링에 사용된다"},
-        {"id": "no-usestate", "text": "컴포넌트 파일에 useState 호출이 없다"},
+        {"id": "no-business-logic", "text": "컴포넌트에 비즈니스 로직(form data, API loading, auth state, fetch)이 없다 (UI 인터랙션 상태인 sidebar toggle, modal open 등은 허용)"},
         {"id": "no-fetch", "text": "컴포넌트 파일에 fetch/axios 호출이 없다"},
         {"id": "default-export", "text": "컴포넌트가 export default로 내보내진다"}
       ]
