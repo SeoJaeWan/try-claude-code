@@ -1,18 +1,39 @@
 "use client";
 
-import { useState } from "react";
-import useGetNotifications from "@/hooks/apis/queries/useGetNotifications";
+import { useEffect, useState } from "react";
+
+interface Notification {
+  id: string;
+  message: string;
+  time: string;
+  read: boolean;
+}
 
 type FilterType = "all" | "unread";
 
 export default function NotificationList() {
-  const { notifications, isLoading, error } = useGetNotifications();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
 
-  const handleFilterAll = () => setFilter("all");
-  const handleFilterUnread = () => setFilter("unread");
+  useEffect(() => {
+    fetch("/api/notifications")
+      .then((res) => {
+        if (!res.ok) throw new Error("알림을 불러올 수 없습니다");
+        return res.json();
+      })
+      .then((data) => {
+        setNotifications(data.notifications);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div data-testid="notifications-loading" className="animate-pulse space-y-2">
         {[1, 2, 3].map((i) => (
@@ -40,7 +61,7 @@ export default function NotificationList() {
       <div className="mb-4 flex gap-2">
         <button
           data-testid="notifications-filter-all"
-          onClick={handleFilterAll}
+          onClick={() => setFilter("all")}
           className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
             filter === "all"
               ? "bg-blue-600 text-white"
@@ -51,7 +72,7 @@ export default function NotificationList() {
         </button>
         <button
           data-testid="notifications-filter-unread"
-          onClick={handleFilterUnread}
+          onClick={() => setFilter("unread")}
           className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
             filter === "unread"
               ? "bg-blue-600 text-white"

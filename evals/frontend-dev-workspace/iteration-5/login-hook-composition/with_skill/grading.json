@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "generate-form-hook", "passed": true, "evidence": "에이전트가 generate.mjs hook useLoginForm --form 실행 (transcript 참조)"},
+    {"text": "generate-api-hook", "passed": true, "evidence": "에이전트가 generate.mjs api-hook useLogin --method mutation 실행 (transcript 참조)"},
+    {"text": "login-hook-in-mutations", "passed": true, "evidence": "hooks/apis/mutations/useLogin/index.ts — 올바른 mutations/ 배치"},
+    {"text": "form-hook-placement", "passed": true, "evidence": "hooks/utils/useLoginForm/index.ts — hooks/ 하위 배치"},
+    {"text": "page-imports-hooks", "passed": true, "evidence": "import useLoginForm from '@/hooks/utils/useLoginForm'; import useLogin from '@/hooks/apis/mutations/useLogin' (page.tsx line 4-5)"},
+    {"text": "page-no-direct-logic", "passed": true, "evidence": "페이지에 useState/fetch 없음 — 훅 조합만 사용"},
+    {"text": "handle-submit", "passed": true, "evidence": "handleSubmit 함수 존재 (page.tsx line 11)"}
+  ],
+  "summary": {"passed": 7, "failed": 0, "total": 7, "pass_rate": 1.0}
+}

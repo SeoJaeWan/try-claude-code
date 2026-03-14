@@ -1,0 +1,75 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - link "TestApp" [ref=e4] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e5]:
+        - link "대시보드" [ref=e6] [cursor=pointer]:
+          - /url: /dashboard
+        - link "할 일" [ref=e7] [cursor=pointer]:
+          - /url: /todos
+        - link "프로필" [ref=e8] [cursor=pointer]:
+          - /url: /profile
+        - generic [ref=e9]: notification-1773482045174@example.com
+        - button "로그아웃" [ref=e10]
+  - generic [ref=e11]:
+    - link "홈" [ref=e12] [cursor=pointer]:
+      - /url: /
+    - generic [ref=e13]: /대시보드
+  - main [ref=e14]:
+    - generic [ref=e15]:
+      - heading "안녕하세요, 테스트유저님" [level=1] [ref=e16]
+      - paragraph [ref=e17]: 오늘도 좋은 하루 되세요!
+      - paragraph [ref=e18]: 2026. 3. 14.
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - paragraph [ref=e21]: "0"
+          - paragraph [ref=e22]: 전체 할 일
+        - generic [ref=e23]:
+          - paragraph [ref=e24]: "0"
+          - paragraph [ref=e25]: 완료
+        - generic [ref=e26]:
+          - paragraph [ref=e27]: "0"
+          - paragraph [ref=e28]: 진행중
+      - generic [ref=e29]:
+        - button [ref=e30]:
+          - img [ref=e31]
+        - button [ref=e33]:
+          - img [ref=e34]
+      - generic [ref=e36]:
+        - heading "빠른 추가" [level=2] [ref=e37]
+        - generic [ref=e38]:
+          - textbox "할 일을 입력하세요" [ref=e40]
+          - button "추가" [ref=e41]
+        - generic [ref=e42]: 프로젝트 회의
+        - generic [ref=e43]: 코드 리뷰
+        - generic [ref=e44]: 배포 준비
+      - generic [ref=e45]:
+        - heading "알림" [level=2] [ref=e46]
+        - list [ref=e47]:
+          - listitem [ref=e48]:
+            - paragraph [ref=e49]: 새 알림
+            - time [ref=e50]: 2026. 3. 14. 오후 6:54:05
+          - listitem [ref=e51]:
+            - paragraph [ref=e52]: 읽은 알림
+            - time [ref=e53]: 2026. 3. 14. 오후 6:54:05
+      - img [ref=e54]
+      - img "Advertisement" [ref=e55]
+      - link "전체 할 일 목록 보기 →" [ref=e57] [cursor=pointer]:
+        - /url: /todos
+  - generic [ref=e62] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e63]:
+      - img [ref=e64]
+    - generic [ref=e67]:
+      - button "Open issues overlay" [ref=e68]:
+        - generic [ref=e69]:
+          - generic [ref=e70]: "0"
+          - generic [ref=e71]: "1"
+        - generic [ref=e72]: Issue
+      - button "Collapse issues badge" [ref=e73]:
+        - img [ref=e74]
+  - alert [ref=e76]
+```
