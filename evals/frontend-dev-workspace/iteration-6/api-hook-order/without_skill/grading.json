@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "generate-output-exists",
+      "passed": false,
+      "evidence": "useFetchOrder.ts exists with JSDoc/arrow function/default export matching generate.mjs conventions, but without_skill unlikely used generate.mjs explicitly — FAIL per grading rules"
+    },
+    {
+      "text": "hook-file-exists",
+      "passed": true,
+      "evidence": "useFetchOrder.ts exists in outputs directory"
+    },
+    {
+      "text": "hook-in-queries",
+      "passed": true,
+      "evidence": "Test file imports from '../index' implying hook is at apis/queries/useFetchOrder/index.ts path structure"
+    },
+    {
+      "text": "index-export",
+      "passed": true,
+      "evidence": "Test file imports useFetchOrder from '../index', confirming the hook file serves as index.ts with default export"
+    },
+    {
+      "text": "returns-loading",
+      "passed": true,
+      "evidence": "useFetchOrder.ts line 47: returns { isLoading: query.isLoading }"
+    },
+    {
+      "text": "returns-error",
+      "passed": true,
+      "evidence": "useFetchOrder.ts lines 48-49: returns { isError: query.isError, error: query.error }"
+    }
+  ],
+  "summary": { "passed": 5, "failed": 1, "total": 6, "pass_rate": 0.83 }
+}

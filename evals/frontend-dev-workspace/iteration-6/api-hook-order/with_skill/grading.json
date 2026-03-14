@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "generate-output-exists",
+      "passed": true,
+      "evidence": "useFetchOrder.ts exists with JSDoc comments, arrow function syntax (const useFetchOrder = ...), and default export — follows generate.mjs conventions"
+    },
+    {
+      "text": "hook-file-exists",
+      "passed": true,
+      "evidence": "useFetchOrder.ts exists in outputs directory"
+    },
+    {
+      "text": "hook-in-queries",
+      "passed": true,
+      "evidence": "Test file imports from '../index' which implies the hook is placed at apis/queries/useFetchOrder/index.ts; the generate.mjs convention places query hooks under apis/queries/"
+    },
+    {
+      "text": "index-export",
+      "passed": true,
+      "evidence": "Test file imports useFetchOrder from '../index', confirming the hook file serves as index.ts with default export"
+    },
+    {
+      "text": "returns-loading",
+      "passed": true,
+      "evidence": "useFetchOrder.ts line 47: returns { isLoading: query.isLoading } in the return object"
+    },
+    {
+      "text": "returns-error",
+      "passed": true,
+      "evidence": "useFetchOrder.ts lines 48-49: returns { isError: query.isError, error: query.error } in the return object"
+    }
+  ],
+  "summary": { "passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0 }
+}
