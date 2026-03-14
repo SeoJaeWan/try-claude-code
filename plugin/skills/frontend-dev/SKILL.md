@@ -20,15 +20,15 @@ Expert frontend development workflow for React, Next.js, and React Native.
 
 ## Documentation References
 
-**Read first (플러그인 번들 참조):**
+**Read first (스킬 번들 참조):**
 
-- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/` - All coding rules
-- `${CLAUDE_PLUGIN_ROOT}/references/design/` - Design system (structure, principles)
+- `${CLAUDE_SKILL_ROOT}/references/naming.md` — 훅 네이밍, handle 접두사, 배열 변수
+- `${CLAUDE_SKILL_ROOT}/references/folder-structure.md` — 훅/컴포넌트 배치 규칙, queries/ vs mutations/
+- `${CLAUDE_SKILL_ROOT}/references/code-style.md` — Props 처리, Early Return
 
 **Read from consumer repo (프로젝트 루트 기준):**
 
 - `codemaps/frontend.md` - Existing pages, routes, components (if present)
-- `references/domain.md` - User scenarios and business logic (if present)
 
 **Read actual values:**
 
@@ -66,12 +66,13 @@ node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs test-sui
 
 ---
 
-## Coding Rules 준수
+## Coding Rules
 
-파일이나 폴더를 생성·배치할 때 반드시 아래 문서를 읽고 따른다:
+코드를 작성할 때 반드시 이 스킬에 번들된 references를 읽고 따른다:
 
-- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/folder-structure.md` — 훅/컴포넌트 배치 규칙, index.ts export 패턴, queries/ vs mutations/ 구분
-- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/naming.md` — use{Verb}{Resource} 훅 네이밍, handle 접두사, 배열 변수 복수형
+- `${CLAUDE_SKILL_ROOT}/references/naming.md` — use{Verb}{Resource} 훅 네이밍, handle 접두사, 배열 변수 복수형
+- `${CLAUDE_SKILL_ROOT}/references/folder-structure.md` — 훅/컴포넌트 배치 규칙, index.ts export 패턴, queries/ vs mutations/ 구분
+- `${CLAUDE_SKILL_ROOT}/references/code-style.md` — Props 처리, Early Return, 삼항 연산자 규칙
 
 ---
 

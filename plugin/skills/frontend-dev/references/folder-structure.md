@@ -1,7 +1,4 @@
-# Folder Structure Rules
-
-> This document covers only "judgment-required rules" that ESLint/Prettier cannot enforce automatically.
-> Mechanical rules are applied by `init-coding-rules` through conversational diff + approval based on this coding-rules folder.
+# Frontend Folder Structure Rules
 
 ---
 
@@ -63,45 +60,13 @@ components/
 
 ## Sub-component Extraction Rules
 
-Sub-components (or component-specific hooks) nested inside a parent component folder
+Sub-components nested inside a parent component folder
 must be **moved to the shared location immediately the moment they are used anywhere else**.
-
-### Migration Criteria
 
 | Target | Initial Location | Location After Reuse |
 | ---- | --------- | ------------------- |
 | Sub-component exclusive to parent | `components/{domain}/{parent}/{child}/index.tsx` | `components/common/{child}/index.tsx` |
 | Hook exclusive to parent component | `components/{domain}/{parent}/hooks/{hook}/index.ts` | `{hooksRoot}/utils/{hook}/index.ts` |
-
-### Example
-
-```
-# 초기: tableOfContents 전용으로 treeItem 중첩
-components/
-└── docs/
-    └── tableOfContents/
-        ├── index.tsx
-        └── treeItem/         ← tableOfContents 전용
-            └── index.tsx
-
-# sidebar에서도 treeItem 사용 필요 → 즉시 이동
-components/
-├── common/
-│   └── treeItem/             ← common으로 프로모션
-│       └── index.tsx
-└── docs/
-    └── tableOfContents/
-        └── index.tsx         ← common/treeItem을 import
-```
-
-For hooks: `tableOfContents/hooks/useTreeItem` → `{hooksRoot}/utils/useTreeItem`
-
-### Decision Summary
-
-- **Used in only 1 place** → keep nested inside parent folder (OK)
-- **Used in 2 or more places** → move to `components/common/` immediately (regardless of domain)
-- **Hooks inside components follow the same rule** → move to `{hooksRoot}/utils/` when reused
-- **API hooks are an exception** → always fixed at `{hooksRoot}/apis/` (existing rule applies)
 
 ---
 
@@ -151,32 +116,3 @@ All hook path rules in this document are expressed relative to `{hooksRoot}`.
 ├── queries/       # 데이터 조회 (GET): useGetUser, useGetProblems
 └── mutations/     # 데이터 변경 (POST/PUT/DELETE): useLogin, useCreateMemo
 ```
-
----
-
-## Next.js App Router Structure
-
-```
-app/
-├── (auth)/              # 라우트 그룹
-│   ├── login/
-│   │   ├── page.tsx
-│   │   ├── components/
-│   │   └── hooks/
-│   └── layout.tsx
-├── (main)/
-│   ├── page.tsx
-│   ├── problems/[id]/
-│   │   ├── page.tsx
-│   │   ├── components/
-│   │   └── hooks/
-│   └── layout.tsx
-├── api/                 # API Routes
-├── layout.tsx           # 루트 레이아웃
-└── globals.css
-```
-
-
-
-
-

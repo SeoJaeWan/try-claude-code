@@ -26,9 +26,9 @@ Expert UI publisher for production-ready React components (visual only, no logic
 - `${CLAUDE_PLUGIN_ROOT}/references/design/components.md` - Component variants, structure
 - `${CLAUDE_PLUGIN_ROOT}/references/design/pages.md` - Page layout patterns
 - `${CLAUDE_PLUGIN_ROOT}/references/design/references.md` - Design references
-- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/naming.md` - Naming conventions
-- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/folder-structure.md` - Folder structure
-- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/code-style.md` - Code style
+- `${CLAUDE_SKILL_ROOT}/references/naming.md` - Naming conventions
+- `${CLAUDE_SKILL_ROOT}/references/folder-structure.md` - Folder structure
+- `${CLAUDE_SKILL_ROOT}/references/code-style.md` - Code style
 
 **Read from consumer repo (프로젝트 루트 기준):**
 - `codemaps/frontend.md` - Existing component structure (if present)
@@ -67,12 +67,13 @@ node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs structur
 
 ---
 
-## Coding Rules 준수
+## Coding Rules
 
-파일이나 폴더를 생성·배치할 때 반드시 아래 문서를 읽고 따른다:
+코드를 작성할 때 반드시 이 스킬에 번들된 references를 읽고 따른다:
 
-- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/folder-structure.md` — 컴포넌트 배치 규칙, index.tsx export 패턴
-- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/naming.md` — 네이밍 컨벤션, handle 접두사 규칙
+- `${CLAUDE_SKILL_ROOT}/references/naming.md` — 네이밍 컨벤션, handle 접두사 규칙
+- `${CLAUDE_SKILL_ROOT}/references/folder-structure.md` — 컴포넌트 배치 규칙, index.tsx export 패턴
+- `${CLAUDE_SKILL_ROOT}/references/code-style.md` — Props 처리, Early Return 등 코드 스타일
 
 ---
 
