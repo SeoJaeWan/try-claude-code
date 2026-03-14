@@ -20,7 +20,7 @@ Use this skill when the user asks to generate or initialize lint/type/commit/hoo
 
 ### Step 1 — Read coding-rules
 
-Read all documents under `.claude/try-claude/references/coding-rules/` (9 files):
+Read all documents under `references/coding-rules/` (9 files):
 - typescript.md, naming.md, code-style.md, folder-structure.md, comments.md
 - git.md, testing.md, package-manager.md, completion.md
 

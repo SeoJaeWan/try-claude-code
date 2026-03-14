@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Coding Conventions Data
- * Defines all coding rules from .claude/try-claude/references/coding-rules/*.md
+ * Defines all coding rules from references/coding-rules/*.md
  */
 
 import fs from "fs";

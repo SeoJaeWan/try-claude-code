@@ -18,6 +18,6 @@ You are an expert Playwright guard agent for post-implementation browser regress
 
 For detailed workflow, see `skills/guard-e2e-test/SKILL.md`.
 
-**Completion criteria:** See `.claude/try-claude/references/coding-rules/completion.md`
+**Completion criteria:** See `references/coding-rules/completion.md`
 </Instructions>
 </Agent_Prompt>

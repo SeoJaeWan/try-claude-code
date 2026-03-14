@@ -4,61 +4,37 @@
 
 ## 다루는 내용
 
-- 플러그인 설치 후 첫 설정
-- `init-try`와 `migration`의 역할
+- 플러그인 구조와 경로
 - 프로젝트별 레퍼런스를 어디서 수정해야 하는지
 - MCP 설정 정책
 - OS 의존 MCP 설정 가이드
 
 ## FAQ
 
-### 1. 플러그인을 설치하면 바로 무엇이 생기나?
+### 1. 플러그인 구조는 어떻게 되어 있나?
 
-플러그인 자체에는 기본 자산만 들어 있습니다.
+플러그인은 다음과 같은 디렉터리로 구성됩니다.
 
-- `agents/`
-- `skills/`
-- `commands/`
-- `references/`
+- `agents/` - 에이전트 정의
+- `skills/` - 스킬 워크플로우
+- `commands/` - CLI 명령
+- `references/` - 코딩 규칙, 디자인, 도메인 문서
 
-이 시점에는 아직 소비자 저장소의 실제 운영 상태가 없습니다. 소비자 저장소에서
-`init-try`를 실행해야 `.claude/try-claude/`가 생성됩니다.
+출력 디렉터리는 프로젝트 루트에 위치합니다.
 
-### 2. `init-try`는 무엇을 만들까?
+- `codemaps/` - 자동 생성된 코드 구조 문서
+- `humanmaps/` - 사람용 HTML 문서
+- `plans/` - 구현 계획
+- `reports/` - 보고서
+- `logs/` - 로그
 
-`init-try`는 소비자 저장소 안에 repo-local runtime을 만듭니다.
+### 2. 프로젝트에 맞는 설정은 어디서 수정해야 하나?
 
-- `.claude/try-claude/project.json`
-- `.claude/try-claude/references/`
-- `.claude/try-claude/plans/`
-- `.claude/try-claude/reports/`
-- `.claude/try-claude/logs/`
-- `.claude/try-claude/codemaps/`
-- `.claude/try-claude/humanmaps/`
+프로젝트별 커스터마이즈는 플러그인 루트의 아래 경로에서 합니다.
 
-추가로 플러그인 기본 `references/**`를 소비자 저장소 런타임으로 시드하고,
-`project.json`에 관리 대상 reference 메타데이터를 기록합니다.
+- `references/` - 코딩 규칙, 디자인, 도메인 문서
 
-### 3. 프로젝트에 맞는 설정은 어디서 수정해야 하나?
-
-프로젝트별 커스터마이즈는 소비자 저장소의 아래 경로에서 해야 합니다.
-
-- `.claude/try-claude/references/`
-
-팀별 규칙이나 도메인 문서를 만들 목적이라면, 플러그인 설치 위치의 기본
-`references/`를 직접 수정하지 않는 편이 맞습니다.
-
-### 4. `migration`은 무엇을 업데이트하나?
-
-`migration`은 현재 플러그인 기본값과 소비자 저장소 런타임을 비교해서 동기화합니다.
-
-- 수정하지 않은 markdown section은 업데이트
-- 사용자가 수정한 markdown section은 보존
-- 플러그인에 새로 생긴 section은 추가
-- 플러그인에 새로 생긴 reference 파일은 다시 시드
-- 로컬 전용 파일이나 section은 자동 삭제하지 않음
-
-### 5. 왜 일부 MCP 서버는 공유 `.mcp.json`에 넣지 않나?
+### 3. 왜 일부 MCP 서버는 공유 `.mcp.json`에 넣지 않나?
 
 일부 MCP 서버는 공유용 cross-platform 파일에 하드코딩하기에 적합하지 않기
 때문입니다.

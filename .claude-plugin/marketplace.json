@@ -20,9 +20,7 @@
         "./skills/guard-e2e-test",
         "./skills/commit",
         "./skills/pr",
-        "./skills/init-try",
         "./skills/init-coding-rules",
-        "./skills/migration",
         "./skills/doc-update",
         "./skills/planner-lite",
         "./skills/help-try"

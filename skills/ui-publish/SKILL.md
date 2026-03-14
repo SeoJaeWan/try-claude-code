@@ -21,15 +21,15 @@ Expert UI publisher for production-ready React components (visual only, no logic
 ## Documentation References
 
 **Read first (structure and principles):**
-- `.claude/try-claude/references/design/theme-tokens.md` - Color/spacing structure, design principles (required)
-- `.claude/try-claude/references/design/font.md` - Typography system, font loading (required)
-- `.claude/try-claude/references/design/components.md` - Component variants, structure
-- `.claude/try-claude/references/design/pages.md` - Page layout patterns
-- `.claude/try-claude/references/design/references.md` - Design references
-- `.claude/try-claude/references/coding-rules/naming.md` - Naming conventions
-- `.claude/try-claude/references/coding-rules/folder-structure.md` - Folder structure
-- `.claude/try-claude/references/coding-rules/code-style.md` - Code style
-- `.claude/try-claude/codemaps/frontend.md` - Existing component structure (if present)
+- `references/design/theme-tokens.md` - Color/spacing structure, design principles (required)
+- `references/design/font.md` - Typography system, font loading (required)
+- `references/design/components.md` - Component variants, structure
+- `references/design/pages.md` - Page layout patterns
+- `references/design/references.md` - Design references
+- `references/coding-rules/naming.md` - Naming conventions
+- `references/coding-rules/folder-structure.md` - Folder structure
+- `references/coding-rules/code-style.md` - Code style
+- `codemaps/frontend.md` - Existing component structure (if present)
 
 **Read actual implementation values:**
 - `tailwind.config.js` - Actual colors, spacing, fontSize, borderRadius
@@ -46,13 +46,11 @@ Before creating components, **always attempt to generate boilerplate first** usi
 
 ```bash
 # Component boilerplate (generates default export, Props interface, etc.)
-node .claude/try-claude/references/coding-rules/scripts/generate.mjs component <ComponentName>
+node references/coding-rules/scripts/generate.mjs component <ComponentName>
 
 # Next.js page structure
-node .claude/try-claude/references/coding-rules/scripts/generate.mjs structure <pagePath> [--create]
+node references/coding-rules/scripts/generate.mjs structure <pagePath> [--create]
 ```
-
-> If scripts are not found (init-try not run), skip boilerplate generation and implement manually following the export pattern below.
 
 ---
 

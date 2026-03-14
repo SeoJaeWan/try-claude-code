@@ -2,7 +2,7 @@
 /**
  * extract_structure.mjs - Next.js routes and Prisma schema pre-extraction.
  *
- * Reads changes.json (from output directory, default: .claude/try-claude/codemaps/) and for each
+ * Reads changes.json (from output directory, default: codemaps/) and for each
  * changed/added file:
  *   - Detects Next.js page/layout/route files and extracts route from path
  *   - Detects Prisma schema files and parses model names and fields

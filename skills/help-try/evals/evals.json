@@ -3,14 +3,13 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "try-claude 설정은 어떻게 하나요? init-try랑 migration 차이가 뭐예요?",
-      "expected_output": "init-try는 초기 설치, migration은 동기화. .claude/try-claude/ 경로 설명",
+      "prompt": "try-claude 플러그인 구조가 어떻게 되어있어?",
+      "expected_output": "references/, codemaps/, humanmaps/, plans/ 등 디렉토리 구조와 역할 설명",
       "files": [],
       "expectations": [
         "Reads skills/help-try/SKILL.md via Read tool",
         "Reads references/faq.md for FAQ answers",
-        "Explains init-try creates .claude/try-claude/ directory structure",
-        "Explains migration syncs existing references with latest defaults",
+        "Explains directory structure (references/, codemaps/, humanmaps/)",
         "Answers in Korean"
       ]
     },
