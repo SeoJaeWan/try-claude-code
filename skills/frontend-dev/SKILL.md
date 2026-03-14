@@ -45,19 +45,34 @@ Expert frontend development workflow for React, Next.js, and React Native.
 
 Before implementing hooks, **always attempt to generate boilerplate first** using coding-rules scripts. The generated boilerplate includes correct hook structure, naming conventions, and test scaffolding — building on top of it prevents common mistakes like inconsistent patterns.
 
+generate.mjs는 이 스킬과 같은 플러그인 안에 있다. 이 SKILL.md 파일의 위치에서 `../../references/coding-rules/scripts/generate.mjs`로 접근할 수 있다.
+
 ```bash
 # Custom hook boilerplate
-node references/coding-rules/scripts/generate.mjs hook <hookName> [--form]
+node ../../references/coding-rules/scripts/generate.mjs hook <hookName> [--form]
 
 # API hook boilerplate (query)
-node references/coding-rules/scripts/generate.mjs api-hook <hookName> --method query
+node ../../references/coding-rules/scripts/generate.mjs api-hook <hookName> --method query
 
 # API hook boilerplate (mutation)
-node references/coding-rules/scripts/generate.mjs api-hook <hookName> --method mutation
+node ../../references/coding-rules/scripts/generate.mjs api-hook <hookName> --method mutation
 
 # Test suite boilerplate
-node references/coding-rules/scripts/generate.mjs test-suite <targetName> --type hook
+node ../../references/coding-rules/scripts/generate.mjs test-suite <targetName> --type hook
 ```
+
+> 위 경로는 이 SKILL.md 기준 상대경로다. 실행 시 이 SKILL.md의 실제 위치를 기준으로 절대경로를 구성하라.
+
+---
+
+## Coding Rules 준수
+
+파일이나 폴더를 생성·배치할 때 반드시 아래 문서를 읽고 따른다:
+
+- `references/coding-rules/folder-structure.md` — 훅/컴포넌트 배치 규칙, index.ts export 패턴, queries/ vs mutations/ 구분
+- `references/coding-rules/naming.md` — use{Verb}{Resource} 훅 네이밍, handle 접두사, 배열 변수 복수형
+
+이 문서들은 이 SKILL.md 기준 `../../references/coding-rules/`에 있다.
 
 ---
 
@@ -67,6 +82,7 @@ node references/coding-rules/scripts/generate.mjs test-suite <targetName> --type
 
 - ui-publish creates layout (no logic)
 - YOU add functionality via custom hooks
+- 기존 컴포넌트에 인라인 로직(fetch, useState)이 있으면, 새 기능 추가 전에 먼저 커스텀 훅으로 추출한다
 
 ---
 
@@ -110,12 +126,13 @@ node references/coding-rules/scripts/generate.mjs test-suite <targetName> --type
     - Custom hooks (use `{hooksRoot}` rules from `folder-structure.md`)
     - State management integration
     - Connect to UI components from ui-publish
-11. Run tests: `pnpm test` — confirm ALL pass (Green)
-12. Run E2E tests: `pnpm exec playwright test` — confirm E2E pass. If E2E fails, fix implementation, NOT tests.
-13. Run typecheck:
+11. **테스트 파일 생성**: 플랜에 테스트가 없는 경우에도 생성한 훅에 대한 테스트 파일을 작성한다. generate.mjs의 `test-suite` 명령으로 보일러플레이트를 생성한 후 테스트 케이스를 추가한다.
+12. Run tests: `pnpm test` — confirm ALL pass (Green)
+13. Run E2E tests: `pnpm exec playwright test` — confirm E2E pass. If E2E fails, fix implementation, NOT tests.
+14. Run typecheck:
     - `pnpm run typecheck` (if no script exists, use `pnpm exec tsc --noEmit`)
     - No type errors allowed before proceeding to the next step
-14. Verify and auto-fix lint:
+15. Verify and auto-fix lint:
 
 ```bash
 pnpm lint --fix
@@ -124,11 +141,11 @@ pnpm lint --fix
 - Manually fix any errors that cannot be auto-fixed
 - Repeat until lint is clean
 
-15. Run build verification (`pnpm build`)
+16. Run build verification (`pnpm build`)
     - 목적: TypeScript/ESLint에서 놓치는 프레임워크 설정 충돌을 조기 탐지
     - 기준: build exit code 0, blocking 에러 없음
-16. Commit changes
-17. Return results based on plan.md
+17. Commit changes
+18. Return results based on plan.md
 
 ---
 

@@ -56,12 +56,27 @@ If ambiguous, read the main entry file or config to confirm. Use the detected st
 
 ## Boilerplate Generation
 
-For NestJS projects, generate module structure using coding-rules scripts:
+For NestJS projects, generate module structure using coding-rules scripts.
+
+generate.mjs는 이 스킬과 같은 플러그인 안에 있다. 이 SKILL.md 파일의 위치에서 `../../references/coding-rules/scripts/generate.mjs`로 접근할 수 있다.
 
 ```bash
 # NestJS module structure
-node references/coding-rules/scripts/generate.mjs structure <moduleName> [--create]
+node ../../references/coding-rules/scripts/generate.mjs structure <moduleName> [--create]
 ```
+
+> 위 경로는 이 SKILL.md 기준 상대경로다. 실행 시 이 SKILL.md의 실제 위치를 기준으로 절대경로를 구성하라.
+
+---
+
+## Coding Rules 준수
+
+파일이나 폴더를 생성·배치할 때 반드시 아래 문서를 읽고 따른다:
+
+- `references/coding-rules/folder-structure.md` — 모듈 구조, index.ts export 패턴
+- `references/coding-rules/naming.md` — DB 네이밍(snake_case), API 네이밍 규칙
+
+이 문서들은 이 SKILL.md 기준 `../../references/coding-rules/`에 있다.
 
 ---
 
@@ -71,10 +86,7 @@ node references/coding-rules/scripts/generate.mjs structure <moduleName> [--crea
 - Database integration (ORM/query builder, migrations, schema)
 - Authentication and authorization
 - Caching strategy (where applicable)
-- Running existing tests (unit, integration) — this skill does NOT author new test files
-
-> **Scope note:** This skill implements production code and runs pre-written tests from the plan.
-> It does not create test files from scratch. If no tests exist in the plan, skip the TDD steps and implement directly.
+- Unit test 작성 — 플랜에 테스트가 없는 경우에도 생성한 service/controller에 대한 기본 unit test를 작성한다
 
 ---
 
