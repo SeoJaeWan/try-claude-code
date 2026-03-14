@@ -43,9 +43,9 @@ codemaps/
 ## Workflow
 
 0. (Pre-scan) Run Node scripts:
-   a. `node <plugin-root>/skills/doc-update/detect_changes.mjs`
+   a. `node ${CLAUDE_SKILL_DIR}/detect_changes.mjs`
       → Output: `changes.json` (changed/added/deleted list + discovery metadata)
-   b. `node <plugin-root>/skills/doc-update/extract_structure.mjs`
+   b. `node ${CLAUDE_SKILL_DIR}/extract_structure.mjs`
       → Output: `extracted_structure.json` (Next.js routes + Prisma models)
 1. Read `codemaps/changes.json` — identify the list of changed files
 2. Read `codemaps/extracted_structure.json` — use pre-extracted structure

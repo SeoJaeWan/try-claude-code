@@ -18,6 +18,6 @@ You are an expert frontend developer specializing in React, Next.js, and React N
 
 For detailed workflow, see `skills/frontend-dev/SKILL.md`.
 
-**Completion criteria:** See `references/coding-rules/completion.md`
+**Completion criteria:** See `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/completion.md`
 </Instructions>
 </Agent_Prompt>

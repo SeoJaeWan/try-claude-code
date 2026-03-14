@@ -20,15 +20,17 @@ Expert UI publisher for production-ready React components (visual only, no logic
 
 ## Documentation References
 
-**Read first (structure and principles):**
-- `references/design/theme-tokens.md` - Color/spacing structure, design principles (required)
-- `references/design/font.md` - Typography system, font loading (required)
-- `references/design/components.md` - Component variants, structure
-- `references/design/pages.md` - Page layout patterns
-- `references/design/references.md` - Design references
-- `references/coding-rules/naming.md` - Naming conventions
-- `references/coding-rules/folder-structure.md` - Folder structure
-- `references/coding-rules/code-style.md` - Code style
+**Read first (플러그인 번들 참조):**
+- `${CLAUDE_PLUGIN_ROOT}/references/design/theme-tokens.md` - Color/spacing structure, design principles (required)
+- `${CLAUDE_PLUGIN_ROOT}/references/design/font.md` - Typography system, font loading (required)
+- `${CLAUDE_PLUGIN_ROOT}/references/design/components.md` - Component variants, structure
+- `${CLAUDE_PLUGIN_ROOT}/references/design/pages.md` - Page layout patterns
+- `${CLAUDE_PLUGIN_ROOT}/references/design/references.md` - Design references
+- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/naming.md` - Naming conventions
+- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/folder-structure.md` - Folder structure
+- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/code-style.md` - Code style
+
+**Read from consumer repo (프로젝트 루트 기준):**
 - `codemaps/frontend.md` - Existing component structure (if present)
 
 **Read actual implementation values:**
@@ -44,17 +46,15 @@ Expert UI publisher for production-ready React components (visual only, no logic
 
 Before creating components, **always attempt to generate boilerplate first** using coding-rules scripts. The generated boilerplate includes correct default export pattern and project conventions — building on top of it prevents common mistakes like missing default exports or wrong file structure.
 
-generate.mjs는 이 스킬과 같은 플러그인 안에 있다. 이 SKILL.md 파일의 위치에서 `../../references/coding-rules/scripts/generate.mjs`로 접근할 수 있다.
+generate.mjs는 이 플러그인에 번들된 스크립트다. `${CLAUDE_PLUGIN_ROOT}` 변수로 접근한다.
 
 ```bash
 # Component boilerplate (generates default export, Props interface, etc.)
-node ../../references/coding-rules/scripts/generate.mjs component <ComponentName>
+node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs component <ComponentName>
 
 # Next.js page structure
-node ../../references/coding-rules/scripts/generate.mjs structure <pagePath> [--create]
+node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs structure <pagePath> [--create]
 ```
-
-> 위 경로는 이 SKILL.md 기준 상대경로다. 실행 시 이 SKILL.md의 실제 위치를 기준으로 절대경로를 구성하라.
 
 ---
 
@@ -71,10 +71,8 @@ node ../../references/coding-rules/scripts/generate.mjs structure <pagePath> [--
 
 파일이나 폴더를 생성·배치할 때 반드시 아래 문서를 읽고 따른다:
 
-- `references/coding-rules/folder-structure.md` — 컴포넌트 배치 규칙, index.tsx export 패턴
-- `references/coding-rules/naming.md` — 네이밍 컨벤션, handle 접두사 규칙
-
-이 문서들은 이 SKILL.md 기준 `../../references/coding-rules/`에 있다.
+- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/folder-structure.md` — 컴포넌트 배치 규칙, index.tsx export 패턴
+- `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/naming.md` — 네이밍 컨벤션, handle 접두사 규칙
 
 ---
 

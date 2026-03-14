@@ -17,14 +17,14 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = path.resolve(SCRIPT_DIR, "..", "..", "..");
+const PROJECT_ROOT = process.cwd();
 
 function resolveOutputDir() {
   const idx = process.argv.indexOf("--output-dir");
   if (idx !== -1 && process.argv[idx + 1]) {
     return path.resolve(process.argv[idx + 1]);
   }
-  return path.join(PROJECT_ROOT, ".claude", "try-claude", "codemaps");
+  return path.join(PROJECT_ROOT, "codemaps");
 }
 
 const OUTPUT_DIR = resolveOutputDir();
