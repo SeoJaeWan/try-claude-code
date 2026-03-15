@@ -1,0 +1,55 @@
+{
+  "expectations": [
+    {
+      "text": "locator-empty-state",
+      "passed": true,
+      "evidence": "EmptyState.tsx line 5: data-testid='empty-state' on the root div element"
+    },
+    {
+      "text": "locator-title",
+      "passed": true,
+      "evidence": "EmptyState.tsx line 9: data-testid='empty-state-title' on h3 element"
+    },
+    {
+      "text": "locator-description",
+      "passed": true,
+      "evidence": "EmptyState.tsx line 10: data-testid='empty-state-description' on p element"
+    },
+    {
+      "text": "default-empty-copy",
+      "passed": true,
+      "evidence": "todos_page.tsx line 81: EmptyState title='아직 할 일이 없습니다'"
+    },
+    {
+      "text": "filter-empty-copy",
+      "passed": true,
+      "evidence": "todos_page.tsx line 83: EmptyState title='검색 결과가 없습니다'"
+    },
+    {
+      "text": "centered-layout",
+      "passed": true,
+      "evidence": "EmptyState.tsx uses 'flex flex-col items-center justify-center py-16 text-center' for both cases via the same component"
+    },
+    {
+      "text": "no-usestate",
+      "passed": true,
+      "evidence": "EmptyState.tsx has no useState import or call; it is a pure presentational component"
+    },
+    {
+      "text": "no-useeffect",
+      "passed": true,
+      "evidence": "EmptyState.tsx has no useEffect import or call"
+    },
+    {
+      "text": "tailwind-classes",
+      "passed": true,
+      "evidence": "EmptyState.tsx uses Tailwind classes: flex, flex-col, items-center, justify-center, py-16, text-center, mb-4, h-16, w-16, text-lg, font-medium, text-sm, text-zinc-500"
+    },
+    {
+      "text": "e2e-spec-path",
+      "passed": true,
+      "evidence": "todos-empty-state.spec.ts exists in outputs with Playwright E2E tests for both default and filter empty states"
+    }
+  ],
+  "summary": { "passed": 10, "failed": 0, "total": 10, "pass_rate": 1.0 }
+}
