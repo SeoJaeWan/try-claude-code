@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "generate-form-hook", "passed": false, "evidence": "without_skill does not use tcf CLI; useLoginForm.ts exists but was not generated via generate.mjs"},
+    {"text": "generate-api-hook", "passed": false, "evidence": "without_skill does not use tcf CLI; useLogin.ts exists but was not generated via generate.mjs"},
+    {"text": "login-hook-in-mutations", "passed": false, "evidence": "page.tsx imports useLogin from './useLogin' (relative path), not from apis/mutations/ path"},
+    {"text": "form-hook-placement", "passed": false, "evidence": "page.tsx imports useLoginForm from './useLoginForm' (same directory as page), not from hooks/ subdirectory"},
+    {"text": "page-imports-hooks", "passed": true, "evidence": "page.tsx line 4-5 imports both useLoginForm and useLogin"},
+    {"text": "page-no-direct-logic", "passed": true, "evidence": "page.tsx has no useState or fetch calls; it only composes useLoginForm and useLogin hooks"},
+    {"text": "handle-submit", "passed": true, "evidence": "handleSubmit function defined at line 22 of page.tsx with handle prefix"}
+  ],
+  "summary": {"passed": 3, "failed": 4, "total": 7, "pass_rate": 0.43}
+}

@@ -1,0 +1,15 @@
+{
+  "expectations": [
+    {"text": "locator-empty-state", "passed": true, "evidence": "data-testid='empty-state' present on the root div of EmptyState.tsx line 5"},
+    {"text": "locator-title", "passed": true, "evidence": "data-testid='empty-state-title' present on h3 element in EmptyState.tsx line 9"},
+    {"text": "locator-description", "passed": true, "evidence": "data-testid='empty-state-description' present on p element in EmptyState.tsx line 10"},
+    {"text": "default-empty-copy", "passed": true, "evidence": "todos-page.tsx line 81: title='아직 할 일이 없습니다'"},
+    {"text": "filter-empty-copy", "passed": true, "evidence": "todos-page.tsx line 83: title='검색 결과가 없습니다'"},
+    {"text": "centered-layout", "passed": true, "evidence": "EmptyState uses 'flex flex-col items-center justify-center' for centered layout, shared by both empty cases via the same component"},
+    {"text": "no-usestate", "passed": true, "evidence": "EmptyState.tsx has no useState import or call"},
+    {"text": "no-useeffect", "passed": true, "evidence": "EmptyState.tsx has no useEffect import or call"},
+    {"text": "tailwind-classes", "passed": true, "evidence": "EmptyState.tsx uses Tailwind classes: flex, flex-col, items-center, justify-center, py-16, text-center, mb-4, h-16, w-16, etc."},
+    {"text": "e2e-spec-path", "passed": false, "evidence": "No E2E spec file exists in without_skill outputs"}
+  ],
+  "summary": {"passed": 9, "failed": 1, "total": 10, "pass_rate": 0.90}
+}

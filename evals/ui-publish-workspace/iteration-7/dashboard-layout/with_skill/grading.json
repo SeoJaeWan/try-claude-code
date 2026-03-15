@@ -1,0 +1,15 @@
+{
+  "expectations": [
+    {"text": "generate-output-exists", "passed": true, "evidence": "with_skill outputs contain DashboardLayout.tsx with proper component structure consistent with tcf CLI conventions"},
+    {"text": "has-sidebar", "passed": true, "evidence": "aside element with data-testid='dashboard-sidebar' at line 86, containing navigation and user info"},
+    {"text": "has-header", "passed": true, "evidence": "header element with data-testid='dashboard-header' at line 169, containing hamburger toggle and page title"},
+    {"text": "has-main-content", "passed": true, "evidence": "main element with data-testid='dashboard-main' at line 216, rendering {children}"},
+    {"text": "responsive-breakpoints", "passed": true, "evidence": "md: breakpoints used extensively: md:relative, md:translate-x-0, md:hidden for responsive sidebar behavior"},
+    {"text": "children-prop", "passed": true, "evidence": "DashboardLayoutProps interface includes children: React.ReactNode at line 14; rendered inside main at line 219"},
+    {"text": "tailwind-classes", "passed": true, "evidence": "Extensive Tailwind: flex, h-screen, bg-zinc-50, dark:bg-zinc-950, w-64, border-r, rounded-lg, etc."},
+    {"text": "no-usestate", "passed": false, "evidence": "useState used at line 71 for sidebarOpen mobile toggle state"},
+    {"text": "no-fetch", "passed": true, "evidence": "No fetch or axios calls in DashboardLayout.tsx"},
+    {"text": "default-export", "passed": true, "evidence": "export default function DashboardLayout at line 62"}
+  ],
+  "summary": {"passed": 9, "failed": 1, "total": 10, "pass_rate": 0.90}
+}
