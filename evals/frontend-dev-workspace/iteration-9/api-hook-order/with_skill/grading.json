@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "generate-output-exists", "passed": true, "evidence": "with_skill: useFetchOrder.ts follows generate.mjs conventions — proper interface definitions, structured hook with queryKey pattern, test file with createWrapper pattern"},
+    {"text": "hook-file-exists", "passed": true, "evidence": "useFetchOrder.ts exists in outputs/"},
+    {"text": "hook-in-queries", "passed": false, "evidence": "File is in outputs/ directory; no apis/queries/ path structure visible in the output files"},
+    {"text": "index-export", "passed": true, "evidence": "Test file imports from '../index' (line 4), implying an index.ts re-export pattern is used"},
+    {"text": "returns-loading", "passed": true, "evidence": "Hook returns isLoading (line 47: isLoading: query.isLoading)"},
+    {"text": "returns-error", "passed": true, "evidence": "Hook returns isError and error (lines 48-49: isError: query.isError, error: query.error)"}
+  ],
+  "summary": {"passed": 5, "failed": 1, "total": 6, "pass_rate": 0.83}
+}

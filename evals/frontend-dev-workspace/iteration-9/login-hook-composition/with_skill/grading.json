@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "generate-form-hook", "passed": true, "evidence": "with_skill: useLoginForm.ts follows tcf generate.mjs conventions — proper interface, useCallback patterns, validators imported from @/lib/validators"},
+    {"text": "generate-api-hook", "passed": true, "evidence": "with_skill: useLogin.ts follows tcf generate.mjs conventions — proper UseLoginReturn interface, useCallback with auth context integration"},
+    {"text": "login-hook-in-mutations", "passed": false, "evidence": "page.tsx imports useLogin from '@/hooks/useLogin', not from apis/mutations/ path"},
+    {"text": "form-hook-placement", "passed": true, "evidence": "page.tsx imports useLoginForm from '@/hooks/useLoginForm' — placed in hooks/ subdirectory"},
+    {"text": "page-imports-hooks", "passed": true, "evidence": "page.tsx lines 4-5: imports useLoginForm and useLogin"},
+    {"text": "page-no-direct-logic", "passed": true, "evidence": "page.tsx has no useState/fetch calls; all state comes from useLoginForm and useLogin hooks"},
+    {"text": "handle-submit", "passed": true, "evidence": "page.tsx line 20: const handleSubmit = (e: React.FormEvent) => {...}"}
+  ],
+  "summary": {"passed": 6, "failed": 1, "total": 7, "pass_rate": 0.86}
+}
