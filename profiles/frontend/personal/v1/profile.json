@@ -5,15 +5,10 @@
   "extends": ["shared/personal/v1"],
   "commands": {
     "hook": {
-      "description": "Generate a non-API hook",
-      "arguments": {
-        "name": {
-          "required": true,
-          "pattern": "^use[A-Z].*$"
-        },
-        "path": {
-          "required": true
-        }
+      "description": "Generate a non-API hook file",
+      "inputMode": "json",
+      "execution": {
+        "kind": "file"
       },
       "generator": {
         "kind": "singleFile"
@@ -31,34 +26,17 @@
             "functionStyle": "arrow",
             "exportStyle": "default"
           }
-        },
-        "guidance": {
-          "placementRules": [
-            "Reusable business hooks go under hooks/utils.",
-            "Page-specific hooks may live under {page}/hooks.",
-            "Component-specific hooks may live under components/.../hooks."
-          ]
         }
       },
       "examples": [
-        "tcf hook useScroll --path hooks/utils",
-        "tcf hook useToggle --path components/common/toggle/hooks"
+        "tcf hook --json '{\"name\":\"useScroll\",\"path\":\"hooks/utils\"}'"
       ]
     },
     "apiHook": {
-      "description": "Generate a TanStack Query API hook",
-      "arguments": {
-        "name": {
-          "required": true,
-          "pattern": "^use[A-Z].*$"
-        },
-        "path": {
-          "required": true
-        },
-        "kind": {
-          "required": true,
-          "enum": ["query", "mutation"]
-        }
+      "description": "Generate a TanStack Query API hook file",
+      "inputMode": "json",
+      "execution": {
+        "kind": "file"
       },
       "generator": {
         "kind": "singleFile"
@@ -78,17 +56,64 @@
           "library": {
             "queryClient": "@tanstack/react-query"
           }
-        },
-        "guidance": {
-          "placementRules": [
-            "API hooks live under hooks/apis/{domain}/queries or hooks/apis/{domain}/mutations.",
-            "Use query for reads and mutation for writes."
-          ]
         }
       },
       "examples": [
-        "tcf apiHook useGetProduct --path hooks/apis/product/queries --kind query",
-        "tcf apiHook useCreateProduct --path hooks/apis/product/mutations --kind mutation"
+        "tcf apiHook --json '{\"name\":\"useGetProduct\",\"path\":\"hooks/apis/product/queries\",\"kind\":\"query\"}'"
+      ]
+    },
+    "queryKey": {
+      "description": "Render a TanStack Query key snippet",
+      "inputMode": "json",
+      "execution": {
+        "kind": "snippet",
+        "language": "ts"
+      },
+      "examples": [
+        "tcf queryKey --json '{\"domain\":\"product\",\"scope\":\"detail\",\"params\":[\"productId\"]}'"
+      ]
+    },
+    "endpoint": {
+      "description": "Render an API endpoint constant snippet",
+      "inputMode": "json",
+      "execution": {
+        "kind": "snippet",
+        "language": "ts"
+      },
+      "examples": [
+        "tcf endpoint --json '{\"method\":\"GET\",\"resource\":\"product\",\"path\":\"/products/:productId\"}'"
+      ]
+    },
+    "mapper": {
+      "description": "Render a mapper function snippet",
+      "inputMode": "json",
+      "execution": {
+        "kind": "snippet",
+        "language": "ts"
+      },
+      "examples": [
+        "tcf mapper --json '{\"sourceType\":\"ProductResponse\",\"targetType\":\"ProductViewModel\"}'"
+      ]
+    },
+    "hookReturn": {
+      "description": "Render a hook return snippet",
+      "inputMode": "json",
+      "execution": {
+        "kind": "snippet",
+        "language": "ts"
+      },
+      "examples": [
+        "tcf hookReturn --json '{\"values\":[{\"name\":\"product\",\"type\":\"ProductViewModel | null\"}],\"actions\":[{\"name\":\"refetch\",\"type\":\"() => Promise<void>\"}]}'"
+      ]
+    },
+    "batch": {
+      "description": "Execute multiple frontend ops in one request",
+      "inputMode": "json",
+      "execution": {
+        "kind": "batch"
+      },
+      "examples": [
+        "tcf batch --json '{\"ops\":[{\"id\":\"hook\",\"command\":\"hook\",\"spec\":{\"name\":\"useScroll\",\"path\":\"hooks/utils\"}}]}'"
       ]
     }
   }

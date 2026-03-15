@@ -65,7 +65,7 @@ export async function validateBackendRequest({
       if (!detectedBasePackage) {
         throw createValidationError(
           "ROOT_PACKAGE_NOT_FOUND",
-          "Spring root package could not be detected. Provide --base-package.",
+          "Spring root package could not be detected. Provide basePackage in the JSON spec.",
           {
             command: commandName
           }

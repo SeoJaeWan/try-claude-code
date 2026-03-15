@@ -1,4 +1,5 @@
 interface {{interfaceName}} {
+{{propsMembers}}
 }
 
 const {{componentName}} = (props: {{interfaceName}}) => {

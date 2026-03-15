@@ -47,14 +47,43 @@ Expert UI publisher for production-ready React components (visual only, no busin
    tcp --help
    tcp --help --text
 
-   # Component
-   tcp component <ComponentName> --path page/homePage
+   # Single component preview
+   tcp component --json '{"name":"HomePage","path":"page/homePage"}'
 
-   # Shared type
-   tcp type <TypeName> --path types/common
+   # Shared type snippet
+   tcp type --json '{"name":"TableColumn","kind":"interface"}'
 
-   # Validate content against active profile
-   tcp validate component --content "const HomePage = () => { return <div />; }"
+   # Batch publisher shells for one component task
+   tcp batch --json '{
+     "ops": [
+       {
+         "id": "component",
+         "command": "component",
+         "spec": {
+           "name": "HomePage",
+           "path": "page/homePage"
+         }
+       },
+       {
+         "id": "props",
+         "command": "props",
+         "spec": {
+           "members": [
+             { "kind": "value", "name": "title", "type": "string", "required": true }
+           ]
+         }
+       },
+       {
+         "id": "ui-state",
+         "command": "uiState",
+         "spec": {
+           "category": "uiInteraction",
+           "pattern": "toggle",
+           "name": "menu"
+         }
+       }
+     ]
+   }'
    ```
 5. Implement visual layout inside the generated files
 6. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
@@ -65,7 +94,8 @@ Expert UI publisher for production-ready React components (visual only, no busin
 
 - `tcp --help` defaults to JSON for agent consumption.
 - Use `tcp --help --text` only when you need a human-readable summary.
-- `tcp component` requires `--path`.
+- Use `--json` only for spec-driven commands.
+- Preview is the default. Use `--apply` only when you want files written.
 - Publisher must not add business logic. `useEffect`, `fetch`, `axios`, `useQuery`, `useMutation` are blocked by CLI rules.
   </Instructions>
   </Skill_Guide>

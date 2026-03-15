@@ -8,7 +8,20 @@ export async function writeGeneratedFiles({
   dryRun,
   force
 }) {
-  const results = [];
+  const seenPaths = new Set();
+
+  for (const file of files) {
+    if (seenPaths.has(file.path)) {
+      const error = new Error(`Duplicate generated path: ${file.path}`);
+      error.code = "DUPLICATE_GENERATED_PATH";
+      error.details = {
+        path: file.path
+      };
+      throw error;
+    }
+
+    seenPaths.add(file.path);
+  }
 
   for (const file of files) {
     const absolutePath = path.join(repoRoot, file.path);
@@ -20,6 +33,12 @@ export async function writeGeneratedFiles({
       };
       throw error;
     }
+  }
+
+  const results = [];
+
+  for (const file of files) {
+    const absolutePath = path.join(repoRoot, file.path);
 
     if (!dryRun) {
       await mkdir(path.dirname(absolutePath), { recursive: true });

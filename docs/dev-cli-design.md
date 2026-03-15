@@ -2,29 +2,20 @@
 
 ## Summary
 
-`tcp`, `tcf`, `tcb`는 하나의 `@try-claude/dev-cli` 엔진 위에서 동작한다.  
-실제 규칙과 scaffold 정의는 repo-local `profiles/`에서 읽고, CLI는 JSON 기본 help, non-interactive 실행, deterministic error payload, `--dry-run`을 제공한다.
+`tcp`, `tcf`, `tcb`는 하나의 `@try-claude/dev-cli` 엔진 위에서 동작한다.
+규칙, 템플릿, 명령 표면은 repo-local `profiles/`에서 읽고, CLI는 spec-driven JSON 입력과 batch 실행을 기본으로 제공한다.
 
-이 구조는 Justin Poehnelt의 agent-first CLI 원칙을 따른다.
+이 구조는 agent-first CLI 원칙을 따른다.
 
-- machine-readable output 기본값
-- 사람용 출력은 명시 opt-in
-- prompt 없이 명시적 입력만 받음
-- 실패 시 안정적인 JSON error contract 제공
+- 입력은 명시적인 `--json` only
+- 출력 기본값은 JSON
+- preview가 기본값이고 실제 write는 `--apply`
+- 실패는 deterministic JSON error payload로 반환
+- 여러 scaffold/snippet 요청은 `batch`로 한 번에 처리
 
-## Goals
-
-- 에이전트가 수동으로 scaffold를 만들지 않고 반드시 CLI를 먼저 통과하게 한다.
-- profile/version에 따라 경로 규칙, 파일 패턴, 템플릿, validator를 바꿀 수 있게 한다.
-- `publisher`, `frontend`, `backend` 스킬이 같은 core runtime을 공유하게 한다.
-- help와 generator가 같은 profile 정의를 읽게 해 drift를 줄인다.
-
-## Package Layout
+## Layout
 
 ```text
-package.json
-pnpm-workspace.yaml
-
 packages/
   dev-cli/
     bin/
@@ -32,7 +23,6 @@ packages/
       tcf.mjs
       tcb.mjs
     src/
-      run-cli.mjs
       core/
       validators/
     tests/
@@ -51,27 +41,27 @@ profiles/
 ## Alias Surface
 
 `tcp`
-- publisher profile 사용
-- `component`, `type`, `validate`, `mode`, `--help`
+- role: `publisher`
+- commands: `component`, `type`, `props`, `function`, `uiState`, `batch`
 
 `tcf`
-- frontend profile 사용
-- `hook`, `apiHook`, `type`, `validate`, `mode`, `--help`
+- role: `frontend`
+- commands: `hook`, `apiHook`, `type`, `props`, `function`, `queryKey`, `endpoint`, `mapper`, `hookReturn`, `batch`
 
 `tcb`
-- backend profile 사용
-- `module`, `requestDto`, `responseDto`, `entity`, `validate`, `mode`, `--help`
+- role: `backend`
+- commands: `module`, `requestDto`, `responseDto`, `entity`, `batch`
 
 ## Profile Resolution
 
-active profile 우선순위는 아래와 같다.
+active profile 우선순위:
 
-1. 명시 옵션: `--profile`, `--mode`, `--version`
-2. repo-local pin: `<repo-root>/.try-claude-dev-cli.json`
+1. 명시 옵션: `--mode`, `--version`
+2. repo-local pin: `.try-claude-dev-cli.json`
 3. global default: `~/.try-claude-dev-cli.json`
 4. fallback: `personal/v1`
 
-예:
+예시:
 
 ```bash
 tcp mode set --mode personal --version v1
@@ -97,60 +87,128 @@ tcf --help --text
 tcb --help --text
 ```
 
-예시 JSON shape:
+## Execution Model
+
+단일 command는 항상 `--json` spec을 받는다.
+
+```bash
+tcp component --json "{\"name\":\"HomePage\",\"path\":\"page/homePage\"}"
+tcf hook --json "{\"name\":\"useScroll\",\"path\":\"hooks/utils\"}"
+tcb requestDto --json "{\"name\":\"CreateProductRequest\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}"
+```
+
+preview가 기본이며 실제 파일 생성은 `--apply`일 때만 수행한다.
+
+```bash
+tcp component --json "{\"name\":\"HomePage\",\"path\":\"page/homePage\"}"
+tcp component --json "{\"name\":\"HomePage\",\"path\":\"page/homePage\"}" --apply
+```
+
+## Batch Contract
+
+`batch`는 ordered `ops[]`를 순차 실행한다.
+각 op는 앞 op 결과를 제한적으로 참조할 수 있다.
+
+```bash
+tcp batch --json "{
+  \"ops\": [
+    {
+      \"id\": \"component\",
+      \"command\": \"component\",
+      \"spec\": {
+        \"name\": \"HomePage\",
+        \"path\": \"page/homePage\"
+      }
+    },
+    {
+      \"id\": \"props\",
+      \"command\": \"props\",
+      \"spec\": {
+        \"members\": [
+          { \"kind\": \"value\", \"name\": \"title\", \"type\": \"string\", \"required\": true },
+          { \"kind\": \"callback\", \"name\": \"click\", \"params\": [] }
+        ]
+      }
+    },
+    {
+      \"id\": \"uiState\",
+      \"command\": \"uiState\",
+      \"spec\": {
+        \"category\": \"uiInteraction\",
+        \"pattern\": \"toggle\",
+        \"name\": \"menu\"
+      }
+    }
+  ]
+}"
+```
+
+`$ref` 형식:
+
+- `opId.field.path`
+- backward reference만 허용
+- forward, self, unknown reference는 실패
+
+예시:
 
 ```json
 {
-  "ok": true,
-  "alias": "tcp",
-  "role": "publisher",
-  "id": "publisher/personal/v1",
-  "activeProfile": {
-    "source": "default",
-    "mode": "personal",
-    "version": "v1"
-  },
-  "commands": {
-    "component": {
-      "description": "Generate a publisher UI component",
-      "output": {
-        "filePattern": "{path}/index.tsx"
-      }
-    }
+  "componentName": {
+    "$ref": "component.normalizedSpec.name"
   }
 }
 ```
 
+batch 정책:
+
+- 기본값은 preview
+- 실제 write는 `--apply`
+- write는 마지막에 한 번만 수행
+- 하나라도 실패하면 전체 write 취소
+- 기존 파일 patch/insert는 이번 범위에 포함하지 않음
+
 ## Shared Personal v1
 
-`shared/personal/v1`는 `publisher`와 `frontend`가 공통으로 읽는다.
+`shared/personal/v1`는 `publisher`와 `frontend`가 공통으로 사용한다.
 
 - path segment: `camelCase`
 - 함수 스타일: 화살표 함수
 - 내부 handler: `handle*`
 - props callback: `on*`
 - 배열 이름: 복수형, `List`/`Array` suffix 금지
-- shared type path: `types/common`, `types/{domain}`
+- shared type path guidance: `types/common`, `types/{domain}`
 
-공통 `type` 명령도 shared profile에 있다.
+공통 snippet command:
+
+- `type`
+- `props`
+- `function`
+
+예시:
 
 ```bash
-tcp type TableColumn --path types/common
-tcf type ProductSummary --path types/product --kind interface
+tcp type --json "{\"name\":\"TableColumn\",\"kind\":\"interface\"}"
+tcf props --json "{\"members\":[{\"kind\":\"value\",\"name\":\"title\",\"type\":\"string\",\"required\":true}]}"
+tcf function --json "{\"kind\":\"internalHandler\",\"name\":\"onClick\"}"
 ```
 
 ## Publisher Personal v1
 
-`tcp component <Name> --path <path>`
+`tcp component`
 
+- 입력: `name`, `path`, optional `role`, optional `props`
 - 출력: `{path}/index.tsx`
-- 예: `page/homePage/index.tsx`
 - 이름: PascalCase
 - path segment: `camelCase`
 - 컴포넌트: 화살표 함수
 - `export default`
 - `Props` 인터페이스 포함
-- props 구조분해는 함수 본문 첫 줄에서 수행
+- props 구조분해는 함수 본문 첫 줄
+
+`tcp uiState`
+
+- UI interaction intent를 받아 state + handler snippet 반환
+- whitelist 강제 대신 UI state shell을 정규화
 
 publisher 금지 패턴:
 
@@ -160,57 +218,60 @@ publisher 금지 패턴:
 - `useQuery(`
 - `useMutation(`
 
-허용 state는 UI interaction only:
-
-- toggle
-- sidebar
-- accordion
-- modal
-- tab
-
-예:
+예시:
 
 ```bash
-tcp component HomePage --path page/homePage
-tcp component Table --path components/common/table
+tcp component --json "{\"name\":\"HomePage\",\"path\":\"page/homePage\",\"props\":[{\"kind\":\"value\",\"name\":\"title\",\"type\":\"string\",\"required\":true}]}"
+tcp uiState --json "{\"category\":\"uiInteraction\",\"pattern\":\"toggle\",\"name\":\"menu\"}"
 ```
 
 ## Frontend Personal v1
 
-`tcf hook <Name> --path <path>`
+`tcf hook`
 
+- 입력: `name`, `path`
 - 출력: `{path}/{name}/index.ts`
-- 이름은 반드시 `use*`
+- 이름은 `use*`
 - 화살표 함수
 - `export default`
 
-`tcf apiHook <Name> --path <path> --kind query|mutation`
+`tcf apiHook`
 
+- 입력: `name`, `path`, `kind`
 - TanStack Query baseline
-- query path: `hooks/apis/{domain}/queries/...`
-- mutation path: `hooks/apis/{domain}/mutations/...`
+- `queries|mutations` 경로 규칙 강제
 
-예:
+snippet command:
+
+- `type`
+- `props`
+- `function`
+- `queryKey`
+- `endpoint`
+- `mapper`
+- `hookReturn`
+
+예시:
 
 ```bash
-tcf hook useScroll --path hooks/utils
-tcf hook useToggle --path components/common/toggle/hooks
-tcf apiHook useGetProduct --path hooks/apis/product/queries --kind query
-tcf apiHook useCreateProduct --path hooks/apis/product/mutations --kind mutation
+tcf hook --json "{\"name\":\"useScroll\",\"path\":\"hooks/utils\"}"
+tcf apiHook --json "{\"name\":\"useGetProduct\",\"path\":\"hooks/apis/product/queries\",\"kind\":\"query\"}"
+tcf queryKey --json "{\"domain\":\"product\",\"scope\":\"detail\",\"params\":[\"productId\"]}"
+tcf endpoint --json "{\"method\":\"GET\",\"resource\":\"product\",\"path\":\"/products/:productId\"}"
 ```
 
 ## Backend Personal v1
 
-`tcb`는 Spring Boot baseline이다.
+`tcb` personal v1은 Spring Boot baseline이다.
 
-사실 기반 defaults:
+source-backed defaults:
 
 - default package 회피
-- application class는 root package 상단
+- application class는 root package 하위에 둠
 - request validation은 `@Valid`
 - REST error baseline은 `@ControllerAdvice`
 
-v1 선택:
+v1 choices:
 
 - package-by-feature
 - path segment는 lower-case
@@ -221,48 +282,55 @@ v1 선택:
   - `entity`
   - `repository`
 
-예:
+예시:
 
 ```bash
-tcb module Product --path product --base-package com.example.app
-tcb requestDto CreateProductRequest --path product --base-package com.example.app
-tcb responseDto ProductResponse --path product --base-package com.example.app
-tcb entity Product --path product --base-package com.example.app
+tcb module --json "{\"name\":\"Product\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}"
+tcb requestDto --json "{\"name\":\"CreateProductRequest\",\"path\":\"product\",\"basePackage\":\"com.example.app\",\"fields\":[{\"name\":\"name\",\"type\":\"String\",\"validations\":[\"NotBlank\"]}]}"
+tcb responseDto --json "{\"name\":\"ProductResponse\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}"
+tcb entity --json "{\"name\":\"Product\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}"
 ```
 
-`--base-package`가 없으면 CLI는 Spring root package를 감지하려고 시도하고, 실패하면 명시적 JSON error를 반환한다.
+`basePackage`가 없으면 CLI는 Spring root package를 감지하려고 시도하고, 실패하면 명시적 JSON error를 반환한다.
 
-## Validation and Generation
+## Success and Error Payloads
 
-생성 책임:
+성공 응답:
 
-- 폴더 생성
-- 파일 생성
-- 템플릿 렌더링
-- path/name 규칙 검증
-- 금지 패턴 검증
-
-검증 책임:
-
-- 명령 입력 검증
-- 생성 전 path/name 검증
-- profile 금지 패턴 검증
-- backend root package 검증
-
-예:
-
-```bash
-tcp validate component --content "const HomePage = () => { return <div />; }"
-tcf validate apiHook --path hooks/apis/product/queries --name useGetProduct --kind query
-tcb validate module --path product --name Product --base-package com.example.app
+```json
+{
+  "ok": true,
+  "command": "function",
+  "profile": "frontend/personal/v1",
+  "normalizedSpec": {
+    "kind": "internalHandler",
+    "name": "handleClick"
+  },
+  "normalizations": [
+    {
+      "field": "name",
+      "from": "onClick",
+      "to": "handleClick",
+      "reason": "internal handlers use handle*"
+    }
+  ],
+  "result": {
+    "kind": "snippet",
+    "language": "ts",
+    "code": "const handleClick = () => {\n};"
+  }
+}
 ```
 
-## Why This Structure
+오류 응답:
 
-기존 `3개 npm 패키지` 방식보다 유지비가 낮다.
-
-- 배포 단위는 `packages/dev-cli` 하나
-- 확장 단위는 `profiles/...` 여러 개
-- `company/v1`, `company/v2` 추가 시 engine 재구현이 필요 없다
-
-즉, 바뀌는 것은 profile이고, engine은 안정적으로 유지한다.
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "JSON_SPEC_REQUIRED",
+    "message": "Command component requires --json with a valid JSON object.",
+    "details": {}
+  }
+}
+```

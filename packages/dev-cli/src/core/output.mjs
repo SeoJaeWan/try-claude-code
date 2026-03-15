@@ -22,6 +22,10 @@ export function formatOutput(payload, format, fields) {
     const textPayload =
       typeof payload.payload === "string"
         ? payload.payload
+        : payload.ok !== false && payload.result?.kind === "snippet"
+          ? payload.result.code
+          : payload.ok !== false && Array.isArray(payload.files)
+            ? payload.files.map((file) => file.path).join("\n")
         : payload.ok === false
           ? `${payload.error.code}: ${payload.error.message}`
           : JSON.stringify(pickFields(payload, fields), null, 2);

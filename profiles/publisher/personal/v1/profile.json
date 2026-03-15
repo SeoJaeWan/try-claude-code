@@ -14,15 +14,10 @@
   },
   "commands": {
     "component": {
-      "description": "Generate a publisher UI component",
-      "arguments": {
-        "name": {
-          "required": true,
-          "case": "PascalCase"
-        },
-        "path": {
-          "required": true
-        }
+      "description": "Generate a publisher UI component file",
+      "inputMode": "json",
+      "execution": {
+        "kind": "file"
       },
       "generator": {
         "kind": "singleFile"
@@ -43,26 +38,34 @@
           },
           "logicBoundary": {
             "allowUiState": true,
-            "allowedUiStateExamples": [
-              "toggle",
-              "sidebar",
-              "accordion",
-              "modal",
-              "tab"
-            ],
-            "forbiddenPatterns": [
-              "useEffect(",
-              "fetch(",
-              "axios.",
-              "useQuery(",
-              "useMutation("
-            ]
+            "allowedUiStateExamples": ["toggle", "sidebar", "accordion", "modal", "tab"],
+            "forbiddenPatterns": ["useEffect(", "fetch(", "axios.", "useQuery(", "useMutation("]
           }
         }
       },
       "examples": [
-        "tcp component HomePage --path page/homePage",
-        "tcp component Table --path components/common/table"
+        "tcp component --json '{\"name\":\"HomePage\",\"path\":\"page/homePage\"}'"
+      ]
+    },
+    "uiState": {
+      "description": "Render UI interaction state and handlers snippet",
+      "inputMode": "json",
+      "execution": {
+        "kind": "snippet",
+        "language": "ts"
+      },
+      "examples": [
+        "tcp uiState --json '{\"category\":\"uiInteraction\",\"pattern\":\"toggle\",\"name\":\"menu\"}'"
+      ]
+    },
+    "batch": {
+      "description": "Execute multiple publisher ops in one request",
+      "inputMode": "json",
+      "execution": {
+        "kind": "batch"
+      },
+      "examples": [
+        "tcp batch --json '{\"ops\":[{\"id\":\"component\",\"command\":\"component\",\"spec\":{\"name\":\"HomePage\",\"path\":\"page/homePage\"}}]}'"
       ]
     }
   }

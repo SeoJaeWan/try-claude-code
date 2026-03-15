@@ -21,17 +21,9 @@
   "commands": {
     "module": {
       "description": "Generate a Spring feature module skeleton",
-      "arguments": {
-        "name": {
-          "required": true,
-          "case": "PascalCase"
-        },
-        "path": {
-          "required": true
-        },
-        "basePackage": {
-          "required": false
-        }
+      "inputMode": "json",
+      "execution": {
+        "kind": "file"
       },
       "generator": {
         "kind": "springModule"
@@ -50,22 +42,14 @@
         }
       },
       "examples": [
-        "tcb module Product --path product --base-package com.example.app"
+        "tcb module --json '{\"name\":\"Product\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}'"
       ]
     },
     "requestDto": {
       "description": "Generate a Spring request DTO",
-      "arguments": {
-        "name": {
-          "required": true,
-          "case": "PascalCase"
-        },
-        "path": {
-          "required": true
-        },
-        "basePackage": {
-          "required": false
-        }
+      "inputMode": "json",
+      "execution": {
+        "kind": "file"
       },
       "generator": {
         "kind": "singleFile",
@@ -76,22 +60,14 @@
       },
       "templateFile": "templates/request-dto.java",
       "examples": [
-        "tcb requestDto CreateProductRequest --path product --base-package com.example.app"
+        "tcb requestDto --json '{\"name\":\"CreateProductRequest\",\"path\":\"product\",\"basePackage\":\"com.example.app\",\"fields\":[{\"name\":\"name\",\"type\":\"String\",\"validations\":[\"NotBlank\"]}]}'"
       ]
     },
     "responseDto": {
       "description": "Generate a Spring response DTO",
-      "arguments": {
-        "name": {
-          "required": true,
-          "case": "PascalCase"
-        },
-        "path": {
-          "required": true
-        },
-        "basePackage": {
-          "required": false
-        }
+      "inputMode": "json",
+      "execution": {
+        "kind": "file"
       },
       "generator": {
         "kind": "singleFile",
@@ -102,22 +78,14 @@
       },
       "templateFile": "templates/response-dto.java",
       "examples": [
-        "tcb responseDto ProductResponse --path product --base-package com.example.app"
+        "tcb responseDto --json '{\"name\":\"ProductResponse\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}'"
       ]
     },
     "entity": {
       "description": "Generate a Spring entity",
-      "arguments": {
-        "name": {
-          "required": true,
-          "case": "PascalCase"
-        },
-        "path": {
-          "required": true
-        },
-        "basePackage": {
-          "required": false
-        }
+      "inputMode": "json",
+      "execution": {
+        "kind": "file"
       },
       "generator": {
         "kind": "singleFile",
@@ -128,7 +96,17 @@
       },
       "templateFile": "templates/entity.java",
       "examples": [
-        "tcb entity Product --path product --base-package com.example.app"
+        "tcb entity --json '{\"name\":\"Product\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}'"
+      ]
+    },
+    "batch": {
+      "description": "Execute multiple backend file ops in one request",
+      "inputMode": "json",
+      "execution": {
+        "kind": "batch"
+      },
+      "examples": [
+        "tcb batch --json '{\"ops\":[{\"id\":\"request-dto\",\"command\":\"requestDto\",\"spec\":{\"name\":\"CreateProductRequest\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}}]}'"
       ]
     }
   }

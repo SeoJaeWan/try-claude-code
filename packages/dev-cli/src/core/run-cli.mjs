@@ -1,8 +1,8 @@
 import { parseArgv } from "./arg-parser.mjs";
+import { executeBatch, executeSpecCommand } from "./batch-executor.mjs";
 import { routeCommand } from "./command-router.mjs";
 import { writeProfileSelection } from "./config-store.mjs";
 import { errorToPayload } from "./error-formatter.mjs";
-import { generateFiles } from "./file-generator.mjs";
 import { writeGeneratedFiles } from "./file-writer.mjs";
 import { createHelpPayload, renderHelpText } from "./help-renderer.mjs";
 import { resolveActiveProfile } from "./mode-resolver.mjs";
@@ -10,20 +10,12 @@ import { formatOutput } from "./output.mjs";
 import { findRepoRoot } from "./path-utils.mjs";
 import { loadActiveProfile } from "./profile-loader.mjs";
 import { validateRequest } from "./profile-validator.mjs";
+import { parseBatchSpec, parseCommandSpec } from "./spec-parser.mjs";
 
 function createSuccessPayload(payload) {
   return {
     ok: true,
     ...payload
-  };
-}
-
-function normalizeArgs(name, route) {
-  return {
-    name,
-    path: route.options.path,
-    kind: route.options.kind,
-    basePackage: route.options.basePackage
   };
 }
 
@@ -128,29 +120,69 @@ async function handleGenerateCommand({ alias, role, route, repoRoot }) {
     mode: activeProfile.mode,
     version: activeProfile.version
   });
-  const args = normalizeArgs(route.name, route);
-  const files = await generateFiles({
+  const spec = parseCommandSpec(route);
+  const result = await executeSpecCommand({
     role,
     profile,
+    profileId: profile.id,
     commandName: route.commandName,
-    args,
+    spec,
     repoRoot
   });
+
+  if (!result.files?.length) {
+    return createSuccessPayload({
+      alias,
+      role,
+      apply: Boolean(route.options.apply),
+      ...result
+    });
+  }
+
   const writtenFiles = await writeGeneratedFiles({
     repoRoot,
-    files,
-    dryRun: Boolean(route.options.dryRun),
+    files: result.files,
+    dryRun: !Boolean(route.options.apply),
     force: Boolean(route.options.force)
   });
 
   return createSuccessPayload({
     alias,
     role,
-    action: "generate",
-    command: route.commandName,
-    activeProfile,
-    dryRun: Boolean(route.options.dryRun),
+    apply: Boolean(route.options.apply),
+    ...result,
     files: writtenFiles
+  });
+}
+
+async function handleBatchCommand({ alias, role, route, repoRoot }) {
+  const activeProfile = await resolveActiveProfile({
+    role,
+    repoRoot,
+    options: route.options
+  });
+  const { profile } = await loadActiveProfile({
+    repoRoot,
+    role,
+    mode: activeProfile.mode,
+    version: activeProfile.version
+  });
+  const batchSpec = parseBatchSpec(route);
+  const result = await executeBatch({
+    profile,
+    profileId: profile.id,
+    role,
+    batchSpec,
+    repoRoot,
+    apply: Boolean(route.options.apply),
+    force: Boolean(route.options.force)
+  });
+
+  return createSuccessPayload({
+    alias,
+    role,
+    activeProfile,
+    ...result
   });
 }
 
@@ -225,6 +257,13 @@ export async function runCli({
       });
     } else if (route.action === "validate") {
       payload = await handleValidateCommand({
+        alias,
+        role: route.role,
+        route,
+        repoRoot
+      });
+    } else if (route.action === "batch") {
+      payload = await handleBatchCommand({
         alias,
         role: route.role,
         route,
