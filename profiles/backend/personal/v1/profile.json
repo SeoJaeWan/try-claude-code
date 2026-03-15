@@ -25,21 +25,70 @@
       "execution": {
         "kind": "file"
       },
+      "inputSchema": {
+        "required": ["name", "path"]
+      },
       "generator": {
-        "kind": "springModule"
+        "kind": "multiFile",
+        "requiresBasePackage": true
       },
-      "templateFiles": {
-        "controller": "templates/module.controller.java",
-        "service": "templates/module.service.java",
-        "repository": "templates/module.repository.java",
-        "globalExceptionHandler": "templates/module.global-exception-handler.java"
-      },
-      "rules": {
-        "enforced": {
-          "pathPolicy": {
-            "segmentCase": "lower-case"
-          }
+      "normalizationRules": [
+        {
+          "kind": "case",
+          "field": "name",
+          "style": "pascal",
+          "reason": "classes use PascalCase"
+        },
+        {
+          "kind": "path",
+          "field": "path"
         }
+      ],
+      "validatorRules": [
+        {
+          "kind": "nameCase",
+          "field": "name",
+          "style": "pascal",
+          "message": "Class name must use PascalCase"
+        },
+        {
+          "kind": "pathSegmentCase",
+          "field": "path",
+          "style": "lower",
+          "code": "INVALID_PACKAGE_SEGMENT",
+          "message": "Backend package segments must use lower-case"
+        },
+        {
+          "kind": "springBasePackage",
+          "field": "basePackage"
+        }
+      ],
+      "render": {
+        "templateFiles": {
+          "controller": "templates/module.controller.java",
+          "service": "templates/module.service.java",
+          "repository": "templates/module.repository.java",
+          "globalExceptionHandler": "templates/module.global-exception-handler.java"
+        },
+        "fileEntries": [
+          {
+            "templateKey": "controller",
+            "filePattern": "src/main/java/{basePackagePath}/{path}/controller/{name}Controller.java"
+          },
+          {
+            "templateKey": "service",
+            "filePattern": "src/main/java/{basePackagePath}/{path}/service/{name}Service.java"
+          },
+          {
+            "templateKey": "repository",
+            "filePattern": "src/main/java/{basePackagePath}/{path}/repository/{name}Repository.java"
+          },
+          {
+            "templateKey": "globalExceptionHandler",
+            "filePattern": "src/main/java/{basePackagePath}/global/exception/GlobalExceptionHandler.java"
+          }
+        ],
+        "contextTokens": ["className", "featurePackage", "featurePath", "basePackage", "packagePathDot", "basePackagePath"]
       },
       "examples": [
         "tcb module --json '{\"name\":\"Product\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}'"
@@ -51,14 +100,61 @@
       "execution": {
         "kind": "file"
       },
+      "inputSchema": {
+        "required": ["name", "path"],
+        "arrays": ["fields"]
+      },
+      "defaults": {
+        "fields": []
+      },
       "generator": {
         "kind": "singleFile",
         "requiresBasePackage": true
       },
-      "output": {
-        "filePattern": "src/main/java/{basePackagePath}/{path}/dto/{name}.java"
+      "normalizationRules": [
+        {
+          "kind": "case",
+          "field": "name",
+          "style": "pascal",
+          "reason": "classes use PascalCase"
+        },
+        {
+          "kind": "path",
+          "field": "path"
+        },
+        {
+          "kind": "listItemNames",
+          "field": "fields",
+          "style": "camel",
+          "reason": "field names use camelCase"
+        }
+      ],
+      "validatorRules": [
+        {
+          "kind": "nameCase",
+          "field": "name",
+          "style": "pascal",
+          "message": "Class name must use PascalCase"
+        },
+        {
+          "kind": "pathSegmentCase",
+          "field": "path",
+          "style": "lower",
+          "code": "INVALID_PACKAGE_SEGMENT",
+          "message": "Backend package segments must use lower-case"
+        },
+        {
+          "kind": "springBasePackage",
+          "field": "basePackage"
+        }
+      ],
+      "render": {
+        "templateFile": "templates/request-dto.java",
+        "output": {
+          "filePattern": "src/main/java/{basePackagePath}/{path}/dto/{name}.java"
+        },
+        "contextTokens": ["className", "basePackage", "packagePathDot", "basePackagePath", "recordFields"]
       },
-      "templateFile": "templates/request-dto.java",
       "examples": [
         "tcb requestDto --json '{\"name\":\"CreateProductRequest\",\"path\":\"product\",\"basePackage\":\"com.example.app\",\"fields\":[{\"name\":\"name\",\"type\":\"String\",\"validations\":[\"NotBlank\"]}]}'"
       ]
@@ -69,14 +165,61 @@
       "execution": {
         "kind": "file"
       },
+      "inputSchema": {
+        "required": ["name", "path"],
+        "arrays": ["fields"]
+      },
+      "defaults": {
+        "fields": []
+      },
       "generator": {
         "kind": "singleFile",
         "requiresBasePackage": true
       },
-      "output": {
-        "filePattern": "src/main/java/{basePackagePath}/{path}/dto/{name}.java"
+      "normalizationRules": [
+        {
+          "kind": "case",
+          "field": "name",
+          "style": "pascal",
+          "reason": "classes use PascalCase"
+        },
+        {
+          "kind": "path",
+          "field": "path"
+        },
+        {
+          "kind": "listItemNames",
+          "field": "fields",
+          "style": "camel",
+          "reason": "field names use camelCase"
+        }
+      ],
+      "validatorRules": [
+        {
+          "kind": "nameCase",
+          "field": "name",
+          "style": "pascal",
+          "message": "Class name must use PascalCase"
+        },
+        {
+          "kind": "pathSegmentCase",
+          "field": "path",
+          "style": "lower",
+          "code": "INVALID_PACKAGE_SEGMENT",
+          "message": "Backend package segments must use lower-case"
+        },
+        {
+          "kind": "springBasePackage",
+          "field": "basePackage"
+        }
+      ],
+      "render": {
+        "templateFile": "templates/response-dto.java",
+        "output": {
+          "filePattern": "src/main/java/{basePackagePath}/{path}/dto/{name}.java"
+        },
+        "contextTokens": ["className", "basePackage", "packagePathDot", "basePackagePath", "recordFields"]
       },
-      "templateFile": "templates/response-dto.java",
       "examples": [
         "tcb responseDto --json '{\"name\":\"ProductResponse\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}'"
       ]
@@ -87,14 +230,61 @@
       "execution": {
         "kind": "file"
       },
+      "inputSchema": {
+        "required": ["name", "path"],
+        "arrays": ["fields"]
+      },
+      "defaults": {
+        "fields": []
+      },
       "generator": {
         "kind": "singleFile",
         "requiresBasePackage": true
       },
-      "output": {
-        "filePattern": "src/main/java/{basePackagePath}/{path}/entity/{name}.java"
+      "normalizationRules": [
+        {
+          "kind": "case",
+          "field": "name",
+          "style": "pascal",
+          "reason": "classes use PascalCase"
+        },
+        {
+          "kind": "path",
+          "field": "path"
+        },
+        {
+          "kind": "listItemNames",
+          "field": "fields",
+          "style": "camel",
+          "reason": "field names use camelCase"
+        }
+      ],
+      "validatorRules": [
+        {
+          "kind": "nameCase",
+          "field": "name",
+          "style": "pascal",
+          "message": "Class name must use PascalCase"
+        },
+        {
+          "kind": "pathSegmentCase",
+          "field": "path",
+          "style": "lower",
+          "code": "INVALID_PACKAGE_SEGMENT",
+          "message": "Backend package segments must use lower-case"
+        },
+        {
+          "kind": "springBasePackage",
+          "field": "basePackage"
+        }
+      ],
+      "render": {
+        "templateFile": "templates/entity.java",
+        "output": {
+          "filePattern": "src/main/java/{basePackagePath}/{path}/entity/{name}.java"
+        },
+        "contextTokens": ["className", "basePackage", "packagePathDot", "basePackagePath", "entityFields"]
       },
-      "templateFile": "templates/entity.java",
       "examples": [
         "tcb entity --json '{\"name\":\"Product\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}'"
       ]

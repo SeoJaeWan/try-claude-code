@@ -19,29 +19,72 @@
       "execution": {
         "kind": "file"
       },
+      "inputSchema": {
+        "required": ["name", "path"],
+        "arrays": ["props"]
+      },
+      "defaults": {
+        "role": "component",
+        "props": []
+      },
+      "namingPolicy": {
+        "suffixes": {
+          "interfaceName": "Props"
+        }
+      },
       "generator": {
         "kind": "singleFile"
       },
-      "output": {
-        "filePattern": "{path}/index.tsx"
-      },
-      "templateFile": "templates/component.default.tsx",
-      "rules": {
-        "enforced": {
-          "pathPolicy": {
-            "allowedRoots": ["components", "page", "app"]
-          },
-          "componentStyle": {
-            "functionStyle": "arrow",
-            "exportStyle": "default",
-            "propsDestructure": "insideBody"
-          },
-          "logicBoundary": {
-            "allowUiState": true,
-            "allowedUiStateExamples": ["toggle", "sidebar", "accordion", "modal", "tab"],
-            "forbiddenPatterns": ["useEffect(", "fetch(", "axios.", "useQuery(", "useMutation("]
-          }
+      "normalizationRules": [
+        {
+          "kind": "case",
+          "field": "name",
+          "style": "pascal",
+          "reason": "components use PascalCase"
+        },
+        {
+          "kind": "path",
+          "field": "path"
+        },
+        {
+          "kind": "members",
+          "field": "props",
+          "callbackPrefixKey": "propCallback",
+          "callbackCase": "pascal",
+          "valueCase": "camel",
+          "callbackReason": "props callbacks use on*",
+          "valueReason": "prop members use camelCase"
         }
+      ],
+      "validatorRules": [
+        {
+          "kind": "pathRoots",
+          "field": "path",
+          "allowedRoots": ["components", "page", "app"]
+        },
+        {
+          "kind": "pathSegmentCase",
+          "field": "path",
+          "style": "camel",
+          "message": "Path segments must use camelCase"
+        },
+        {
+          "kind": "nameCase",
+          "field": "name",
+          "style": "pascal",
+          "message": "Component name must use PascalCase"
+        },
+        {
+          "kind": "forbiddenContentPatterns",
+          "patterns": ["useEffect(", "fetch(", "axios.", "useQuery(", "useMutation("]
+        }
+      ],
+      "render": {
+        "templateFile": "templates/component.default.tsx",
+        "output": {
+          "filePattern": "{path}/index.tsx"
+        },
+        "contextTokens": ["interfaceName", "componentName", "propsMembers"]
       },
       "examples": [
         "tcp component --json '{\"name\":\"HomePage\",\"path\":\"page/homePage\"}'"
@@ -53,6 +96,53 @@
       "execution": {
         "kind": "snippet",
         "language": "ts"
+      },
+      "inputSchema": {
+        "required": ["name"]
+      },
+      "defaults": {
+        "category": "uiInteraction",
+        "pattern": "toggle",
+        "initial": false
+      },
+      "namingPolicy": {
+        "prefixes": {
+          "uiStateBoolean": "is",
+          "uiStateSetter": "setIs",
+          "uiStateToggleHandler": "handleToggle",
+          "uiStateOpenHandler": "handleOpen",
+          "uiStateCloseHandler": "handleClose"
+        },
+        "suffixes": {
+          "uiState": "Open"
+        }
+      },
+      "normalizationRules": [
+        {
+          "kind": "case",
+          "field": "name",
+          "style": "camel",
+          "reason": "ui state names use camelCase"
+        }
+      ],
+      "render": {
+        "templateFiles": {
+          "toggle": "templates/ui-state.toggle.ts",
+          "default": "templates/ui-state.default.ts"
+        },
+        "templateVariantField": "pattern",
+        "templateVariantMap": {
+          "toggle": "toggle"
+        },
+        "defaultVariant": "default",
+        "contextTokens": [
+          "uiStateName",
+          "uiStateSetterName",
+          "uiStateToggleHandlerName",
+          "uiStateOpenHandlerName",
+          "uiStateCloseHandlerName",
+          "initial"
+        ]
       },
       "examples": [
         "tcp uiState --json '{\"category\":\"uiInteraction\",\"pattern\":\"toggle\",\"name\":\"menu\"}'"

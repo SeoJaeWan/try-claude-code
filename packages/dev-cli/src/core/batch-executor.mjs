@@ -18,7 +18,13 @@ export async function executeSpecCommand({
   spec,
   repoRoot
 }) {
-  const command = profile.commands?.[commandName];
+  const baseCommand = profile.commands?.[commandName];
+  const command = baseCommand
+    ? {
+        name: commandName,
+        ...baseCommand
+      }
+    : null;
   if (!command) {
     throw createCliError("UNKNOWN_COMMAND", `Unknown command: ${commandName}`, {
       command: commandName,
@@ -27,15 +33,13 @@ export async function executeSpecCommand({
   }
 
   const { normalizedSpec, normalizations } = normalizeSpec({
-    role,
-    commandName,
+    command,
     spec
   });
 
   if ((command.execution?.kind ?? "file") === "snippet") {
     const result = await renderSnippet({
       command,
-      commandName,
       normalizedSpec
     });
 

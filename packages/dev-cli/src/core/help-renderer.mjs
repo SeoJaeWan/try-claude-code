@@ -11,8 +11,8 @@ function formatTextCommand(name, command) {
     lines.push(`  mode: ${command.execution.kind}`);
   }
 
-  if (command.output?.filePattern) {
-    lines.push(`  output: ${command.output.filePattern}`);
+  if (command.render?.output?.filePattern) {
+    lines.push(`  output: ${command.render.output.filePattern}`);
   }
 
   const requiredArgs = Object.entries(command.arguments ?? {})
@@ -37,10 +37,27 @@ function sanitizeCommand(command) {
   const {
     templatePath,
     templatePaths,
+    render,
     ...rest
   } = command;
 
-  return rest;
+  const sanitizedRender = render
+    ? {
+        ...render,
+        snippetTemplatePath: undefined,
+        templatePath: undefined,
+        templatePaths: undefined
+      }
+    : undefined;
+
+  return sanitizedRender
+    ? {
+        ...rest,
+        render: Object.fromEntries(
+          Object.entries(sanitizedRender).filter(([, value]) => value !== undefined)
+        )
+      }
+    : rest;
 }
 
 export function createHelpPayload({
