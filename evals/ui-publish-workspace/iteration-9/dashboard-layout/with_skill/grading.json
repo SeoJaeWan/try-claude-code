@@ -1,0 +1,17 @@
+{
+  "eval_id": 3,
+  "eval_name": "dashboard-layout",
+  "config": "with_skill",
+  "expectations": [
+    {"text": "component-index-tsx", "passed": false, "evidence": "DashboardLayout.tsx (flat 파일) — DashboardLayout/index.tsx 패턴이 아님. tcp CLI 미적용"},
+    {"text": "props-interface-suffix", "passed": true, "evidence": "DashboardLayoutProps 인터페이스"},
+    {"text": "default-export", "passed": true, "evidence": "export default function DashboardLayout"},
+    {"text": "has-sidebar", "passed": true, "evidence": "aside data-testid='dashboard-sidebar' 존재"},
+    {"text": "has-header", "passed": true, "evidence": "header data-testid='dashboard-header' 존재"},
+    {"text": "has-main-content", "passed": true, "evidence": "main data-testid='dashboard-main' 존재"},
+    {"text": "responsive-breakpoints", "passed": true, "evidence": "md:flex, md:w-60, lg:w-64, md:hidden 등"},
+    {"text": "children-prop", "passed": true, "evidence": "children: ReactNode, <main>{children}</main>"},
+    {"text": "tailwind-classes", "passed": true, "evidence": "Tailwind 클래스 전면 사용"},
+    {"text": "no-forbidden-patterns", "passed": true, "evidence": "useState(mobileMenuOpen)만 있으며 이는 UI interaction state로 허용됨"}
+  ]
+}

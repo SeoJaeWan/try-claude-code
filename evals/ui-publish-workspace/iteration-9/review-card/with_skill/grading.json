@@ -1,0 +1,17 @@
+{
+  "eval_id": 2,
+  "eval_name": "review-card",
+  "config": "with_skill",
+  "expectations": [
+    {"text": "component-file-exists", "passed": true, "evidence": "ReviewCard.tsx 존재"},
+    {"text": "component-index-tsx", "passed": false, "evidence": "ReviewCard.tsx (flat 파일) — ReviewCard/index.tsx 패턴이 아님. tcp CLI가 적용되지 않은 것으로 보임"},
+    {"text": "component-pascal-case", "passed": true, "evidence": "ReviewCard — PascalCase"},
+    {"text": "props-interface-suffix", "passed": true, "evidence": "ReviewCardProps 인터페이스"},
+    {"text": "default-export", "passed": true, "evidence": "export default function ReviewCard"},
+    {"text": "has-avatar-section", "passed": true, "evidence": "img + fallback avatar div 존재"},
+    {"text": "has-rating-section", "passed": true, "evidence": "data-testid='review-card-rating' 별점 SVG"},
+    {"text": "has-review-text", "passed": true, "evidence": "data-testid='review-card-text' 리뷰 텍스트"},
+    {"text": "tailwind-classes", "passed": true, "evidence": "rounded-xl, border, p-5 등 Tailwind 클래스"},
+    {"text": "no-forbidden-patterns", "passed": true, "evidence": "useEffect, fetch, axios, useQuery, useMutation 없음"}
+  ]
+}

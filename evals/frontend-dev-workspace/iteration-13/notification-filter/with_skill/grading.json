@@ -1,0 +1,16 @@
+{
+  "eval_id": 1,
+  "eval_name": "notification-filter",
+  "config": "with_skill",
+  "expectations": [
+    {"text": "filter-all-unread", "passed": true, "evidence": "all/unread filter state present"},
+    {"text": "hook-extracted", "passed": true, "evidence": "useGetNotifications extracted to separate file via tcf CLI"},
+    {"text": "hook-use-prefix", "passed": true, "evidence": "useGetNotifications — use prefix"},
+    {"text": "hook-index-ts", "passed": true, "evidence": "hooks at index.ts pattern"},
+    {"text": "empty-state-rendered", "passed": true, "evidence": "notifications-empty testid present"},
+    {"text": "error-over-filter", "passed": true, "evidence": "error rendered before filter buttons"},
+    {"text": "locator-filter-all", "passed": true, "evidence": "data-testid='notifications-filter-all' present"},
+    {"text": "locator-filter-unread", "passed": true, "evidence": "data-testid='notifications-filter-unread' present"},
+    {"text": "handler-handle-prefix", "passed": true, "evidence": "handle* prefix on handlers"}
+  ]
+}

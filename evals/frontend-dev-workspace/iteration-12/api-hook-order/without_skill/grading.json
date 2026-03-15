@@ -1,0 +1,14 @@
+{
+  "eval_id": 2,
+  "eval_name": "api-hook-order",
+  "config": "without_skill",
+  "expectations": [
+    {"text": "hook-file-exists", "passed": true, "evidence": "useFetchOrder.ts 존재"},
+    {"text": "hook-use-prefix", "passed": true, "evidence": "useFetchOrder — use 접두사"},
+    {"text": "hook-in-apis-queries", "passed": false, "evidence": "flat 파일 useFetchOrder.ts — /apis/나 /queries/ 경로 없음"},
+    {"text": "hook-index-ts", "passed": false, "evidence": "useFetchOrder.ts (flat 파일, index.ts 패턴 아님)"},
+    {"text": "arrow-function", "passed": true, "evidence": "const useFetchOrder = (params: UseFetchOrderParams = {}) => { ... }"},
+    {"text": "returns-loading", "passed": true, "evidence": "isLoading 반환"},
+    {"text": "returns-error", "passed": true, "evidence": "isError, error 반환"}
+  ]
+}

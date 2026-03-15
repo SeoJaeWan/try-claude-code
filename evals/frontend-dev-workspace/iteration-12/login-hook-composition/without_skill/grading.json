@@ -1,0 +1,13 @@
+{
+  "eval_id": 3,
+  "eval_name": "login-hook-composition",
+  "config": "without_skill",
+  "expectations": [
+    {"text": "login-hook-in-mutations", "passed": false, "evidence": "hooks/apis/mutations/useLogin/index.ts — domain(auth) 경로 누락, /apis/{domain}/mutations 패턴 불일치"},
+    {"text": "form-hook-placement", "passed": true, "evidence": "hooks/login/useLoginForm.ts — hooks/ 하위"},
+    {"text": "hooks-index-ts", "passed": false, "evidence": "useLoginForm.ts는 flat 파일 (index.ts 아님), useLogin은 index.ts"},
+    {"text": "page-imports-hooks", "passed": true, "evidence": "import useLoginForm, import useLogin 존재"},
+    {"text": "page-no-direct-logic", "passed": true, "evidence": "페이지에 직접 로직 없음"},
+    {"text": "handle-submit", "passed": true, "evidence": "handleSubmit 사용"}
+  ]
+}

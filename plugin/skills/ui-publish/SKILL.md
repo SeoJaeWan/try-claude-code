@@ -16,35 +16,36 @@ UI/UX component creation (layout-first, no logic). Use for all visual work, layo
 
 Expert UI publisher for production-ready React components (visual only, no business logic).
 
-All file creation goes through `tcp` CLI. Never create component files manually — the CLI enforces naming, folder structure (index.tsx pattern), and export conventions that are impossible to get right by hand.
-
 ---
 
-## CLI-First Workflow
+## Step 0 — Run tcp CLI (before anything else)
 
-Every component must be created via `tcp`. Run `tcp --help` first to see available commands.
+The very first thing you do — before reading existing code, before writing any file — is scaffold every new component through `tcp`. The CLI generates the correct folder structure (`ComponentName/index.tsx`), Props interface, and export pattern. Skipping this step and creating files manually will produce the wrong file layout.
 
 ```bash
-# See all commands and rules
+# 1. Check available commands (do this once per session)
 tcp --help
 
-# Create a component (generates ComponentName/index.tsx)
+# 2. Create a component — always use --apply so the file is written to disk
 tcp component --json '{"name":"ReviewCard","path":"components/reviewCard"}' --apply
+#    → creates components/reviewCard/index.tsx
 
-# Create UI state snippet
-tcp uiState --json '{"category":"uiInteraction","pattern":"toggle","name":"menu"}'
-
-# Batch multiple operations
-tcp batch --json '{"ops":[...]}' --apply
+# 3. For multiple components, use batch
+tcp batch --json '{"ops":[
+  {"id":"card","command":"component","spec":{"name":"ReviewCard","path":"components/reviewCard"}},
+  {"id":"layout","command":"component","spec":{"name":"DashboardLayout","path":"components/dashboardLayout"}}
+]}' --apply
 ```
 
-After `tcp` creates the scaffold, implement the visual layout inside the generated files.
+**Why this matters:** The project is migrating from flat `ComponentName.tsx` files to a directory-based `ComponentName/index.tsx` pattern. You will see old flat files in the codebase — ignore that pattern. All new components go through `tcp` which enforces the new standard. If you create a flat `.tsx` file instead of using the CLI, the component will not match the project's target structure.
+
+After `tcp` writes the scaffold, open the generated `index.tsx` and implement the visual layout inside it.
 
 ---
 
 ## Layout-First Principle
 
-**Focus on visual structure, NOT business logic:**
+Focus on visual structure, NOT business logic:
 - UI interaction state is allowed (sidebar toggle, accordion, modal open/close, tab selection)
 - DO NOT implement: API calls, form data management, auth logic, data filtering
 - Leave data-dependent handlers as placeholder props — frontend-dev skill will add functionality later
@@ -64,8 +65,8 @@ After `tcp` creates the scaffold, implement the visual layout inside the generat
 1. Read plan from `plans/{task-name}/plan.md` (if present)
 2. Read `codemaps/frontend.md` (if present)
 3. Read project theme/style: `tailwind.config.js`, `app/globals.css`
-4. **Run `tcp` CLI to create all component scaffolds with `--apply`** — this is the first action before writing any code
-5. Implement visual layout inside the generated files
+4. **Run `tcp --help`, then `tcp component --apply` (or `tcp batch --apply`) for every new component** — this is the first action before writing any code
+5. Open each generated `index.tsx` and implement the visual layout inside it
 6. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
 7. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
 8. Return results based on plan.md

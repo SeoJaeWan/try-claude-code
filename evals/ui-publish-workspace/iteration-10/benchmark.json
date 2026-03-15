@@ -1,0 +1,197 @@
+{
+  "metadata": {
+    "skill_name": "ui-publish",
+    "skill_path": "plugin/skills/ui-publish",
+    "executor_model": "claude-opus-4-6",
+    "analyzer_model": "claude-opus-4-6",
+    "timestamp": "2026-03-15T18:00:00Z",
+    "evals_run": [1, 2, 3],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "eval_name": "empty-state",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 98.8,
+        "tokens": 21983,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "locator-empty-state", "passed": true, "evidence": "present"},
+        {"text": "locator-title", "passed": true, "evidence": "present"},
+        {"text": "locator-description", "passed": true, "evidence": "present"},
+        {"text": "default-empty-copy", "passed": true, "evidence": "existing code modified"},
+        {"text": "filter-empty-copy", "passed": true, "evidence": "existing code modified"},
+        {"text": "centered-layout", "passed": true, "evidence": "centered layout applied"},
+        {"text": "no-usestate", "passed": true, "evidence": "no useState"},
+        {"text": "no-useeffect", "passed": true, "evidence": "no useEffect"},
+        {"text": "tailwind-classes", "passed": true, "evidence": "Tailwind used"}
+      ]
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "empty-state",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 124.9,
+        "tokens": 21339,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "locator-empty-state", "passed": true, "evidence": "present"},
+        {"text": "locator-title", "passed": true, "evidence": "present"},
+        {"text": "locator-description", "passed": true, "evidence": "present"},
+        {"text": "default-empty-copy", "passed": true, "evidence": "existing code modified"},
+        {"text": "filter-empty-copy", "passed": true, "evidence": "existing code modified"},
+        {"text": "centered-layout", "passed": true, "evidence": "centered layout applied"},
+        {"text": "no-usestate", "passed": true, "evidence": "no useState"},
+        {"text": "no-useeffect", "passed": true, "evidence": "no useEffect"},
+        {"text": "tailwind-classes", "passed": true, "evidence": "Tailwind used"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "review-card",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "failed": 0,
+        "total": 10,
+        "time_seconds": 63.2,
+        "tokens": 19419,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "component-file-exists", "passed": true, "evidence": "file exists"},
+        {"text": "component-index-tsx", "passed": true, "evidence": "output is index.tsx via tcp CLI"},
+        {"text": "component-pascal-case", "passed": true, "evidence": "ReviewCard"},
+        {"text": "props-interface-suffix", "passed": true, "evidence": "ReviewCardProps interface"},
+        {"text": "default-export", "passed": true, "evidence": "export default"},
+        {"text": "has-avatar-section", "passed": true, "evidence": "avatar section present"},
+        {"text": "has-rating-section", "passed": true, "evidence": "rating section present"},
+        {"text": "has-review-text", "passed": true, "evidence": "review text present"},
+        {"text": "tailwind-classes", "passed": true, "evidence": "Tailwind used"},
+        {"text": "no-forbidden-patterns", "passed": true, "evidence": "no forbidden patterns"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "review-card",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.9,
+        "passed": 9,
+        "failed": 1,
+        "total": 10,
+        "time_seconds": 48.0,
+        "tokens": 14681,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "component-file-exists", "passed": true, "evidence": "file exists"},
+        {"text": "component-index-tsx", "passed": false, "evidence": "flat ReviewCard.tsx, not index.tsx"},
+        {"text": "component-pascal-case", "passed": true, "evidence": "ReviewCard"},
+        {"text": "props-interface-suffix", "passed": true, "evidence": "ReviewCardProps interface"},
+        {"text": "default-export", "passed": true, "evidence": "export default"},
+        {"text": "has-avatar-section", "passed": true, "evidence": "avatar section present"},
+        {"text": "has-rating-section", "passed": true, "evidence": "rating section present"},
+        {"text": "has-review-text", "passed": true, "evidence": "review text present"},
+        {"text": "tailwind-classes", "passed": true, "evidence": "Tailwind used"},
+        {"text": "no-forbidden-patterns", "passed": true, "evidence": "no forbidden patterns"}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "dashboard-layout",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "failed": 0,
+        "total": 10,
+        "time_seconds": 162.3,
+        "tokens": 23944,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "component-index-tsx", "passed": true, "evidence": "tcp CLI invoked, source tree had components/dashboardLayout/index.tsx"},
+        {"text": "props-interface-suffix", "passed": true, "evidence": "DashboardLayoutProps"},
+        {"text": "default-export", "passed": true, "evidence": "export default"},
+        {"text": "has-sidebar", "passed": true, "evidence": "sidebar present"},
+        {"text": "has-header", "passed": true, "evidence": "header present"},
+        {"text": "has-main-content", "passed": true, "evidence": "main content present"},
+        {"text": "responsive-breakpoints", "passed": true, "evidence": "md:, lg: breakpoints used"},
+        {"text": "children-prop", "passed": true, "evidence": "children prop present"},
+        {"text": "tailwind-classes", "passed": true, "evidence": "Tailwind used"},
+        {"text": "no-forbidden-patterns", "passed": true, "evidence": "no forbidden patterns"}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "dashboard-layout",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.9,
+        "passed": 9,
+        "failed": 1,
+        "total": 10,
+        "time_seconds": 88.4,
+        "tokens": 31786,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "component-index-tsx", "passed": false, "evidence": "flat DashboardLayout.tsx, not index.tsx"},
+        {"text": "props-interface-suffix", "passed": true, "evidence": "DashboardLayoutProps"},
+        {"text": "default-export", "passed": true, "evidence": "export default"},
+        {"text": "has-sidebar", "passed": true, "evidence": "sidebar present"},
+        {"text": "has-header", "passed": true, "evidence": "header present"},
+        {"text": "has-main-content", "passed": true, "evidence": "main content present"},
+        {"text": "responsive-breakpoints", "passed": true, "evidence": "md:, lg: breakpoints used"},
+        {"text": "children-prop", "passed": true, "evidence": "children prop present"},
+        {"text": "tailwind-classes", "passed": true, "evidence": "Tailwind used"},
+        {"text": "no-forbidden-patterns", "passed": true, "evidence": "no forbidden patterns"}
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0},
+      "time_seconds": {"mean": 108.1, "stddev": 41.0, "min": 63.2, "max": 162.3},
+      "tokens": {"mean": 21782, "stddev": 1853, "min": 19419, "max": 23944}
+    },
+    "without_skill": {
+      "pass_rate": {"mean": 0.93, "stddev": 0.05, "min": 0.9, "max": 1.0},
+      "time_seconds": {"mean": 87.1, "stddev": 31.4, "min": 48.0, "max": 124.9},
+      "tokens": {"mean": 22602, "stddev": 7040, "min": 14681, "max": 31786}
+    },
+    "delta": {
+      "pass_rate": "+0.07",
+      "time_seconds": "+21.0",
+      "tokens": "-820"
+    }
+  },
+  "notes": [
+    "with_skill achieves 100% pass rate across all 3 evals — first time for ui-publish since tcp CLI integration",
+    "review-card with_skill 10/10: tcp CLI correctly outputs index.tsx; without_skill fails component-index-tsx (flat ReviewCard.tsx)",
+    "dashboard-layout with_skill 10/10: tcp CLI invoked, source tree confirms components/dashboardLayout/index.tsx despite output copy saved as flat file",
+    "empty-state eval remains non-discriminative: existing code modification, both configurations 9/9",
+    "with_skill tokens slightly lower than without_skill on average (-820) — tcp CLI overhead offset by more focused generation"
+  ]
+}

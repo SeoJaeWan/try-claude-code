@@ -1,0 +1,16 @@
+{
+  "eval_id": 1,
+  "eval_name": "empty-state",
+  "config": "with_skill",
+  "expectations": [
+    {"text": "locator-empty-state", "passed": true, "evidence": "data-testid='empty-state' 존재"},
+    {"text": "locator-title", "passed": true, "evidence": "data-testid='empty-state-title' 존재"},
+    {"text": "locator-description", "passed": true, "evidence": "data-testid='empty-state-description' 존재"},
+    {"text": "default-empty-copy", "passed": true, "evidence": "기존 코드에 이미 구현됨"},
+    {"text": "filter-empty-copy", "passed": true, "evidence": "기존 코드에 이미 구현됨"},
+    {"text": "centered-layout", "passed": true, "evidence": "동일 EmptyState 컴포넌트 사용"},
+    {"text": "no-usestate", "passed": true, "evidence": "EmptyState에 useState 없음"},
+    {"text": "no-useeffect", "passed": true, "evidence": "EmptyState에 useEffect 없음"},
+    {"text": "tailwind-classes", "passed": true, "evidence": "flex, items-center, py-16 등 Tailwind 클래스 사용"}
+  ]
+}
