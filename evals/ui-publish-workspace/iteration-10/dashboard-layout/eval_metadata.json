@@ -1,0 +1,17 @@
+{
+  "eval_id": 3,
+  "eval_name": "dashboard-layout",
+  "prompt": "대시보드 레이아웃 컴포넌트를 만들어줘. 사이드바, 헤더, 메인 콘텐츠 영역 포함하고 반응형으로 해줘",
+  "assertions": [
+    {"id": "component-index-tsx", "text": "컴포넌트가 {ComponentName}/index.tsx 패턴으로 생성된다 (tcp profile: output = {path}/index.tsx)"},
+    {"id": "props-interface-suffix", "text": "Props 인터페이스가 {Name}Props 접미사를 따른다 (tcp profile: props suffix = Props)"},
+    {"id": "default-export", "text": "컴포넌트가 export default로 내보내진다"},
+    {"id": "has-sidebar", "text": "사이드바 영역이 코드에 존재한다"},
+    {"id": "has-header", "text": "헤더 영역이 코드에 존재한다"},
+    {"id": "has-main-content", "text": "메인 콘텐츠 영역이 코드에 존재한다"},
+    {"id": "responsive-breakpoints", "text": "반응형 breakpoint 클래스가 사용된다 (md:, lg: 등)"},
+    {"id": "children-prop", "text": "메인 콘텐츠 영역이 children prop을 받는다"},
+    {"id": "tailwind-classes", "text": "Tailwind CSS 클래스가 스타일링에 사용된다"},
+    {"id": "no-forbidden-patterns", "text": "컴포넌트에 useEffect, fetch, axios, useQuery, useMutation 호출이 없다 (tcp profile: forbidden patterns)"}
+  ]
+}
