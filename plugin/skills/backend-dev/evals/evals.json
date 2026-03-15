@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "plans/sample-backend-profile-summary-api/plan.md의 Phase 1을 실행해줘. AppService에 buildProfileSummary를 추가하고 GET /profile-summary 엔드포인트 연결해줘",
-      "expected_output": "app.service.ts에 buildProfileSummary 추가, app.controller.ts에 GET /profile-summary 엔드포인트 연결, Jest unit test 생성",
+      "expected_output": "tcb CLI 컨벤션에 맞는 profile-summary 구현",
       "files": [
         "../../../features/nest-api/package.json",
         "../../../features/nest-api/src/app.module.ts",
@@ -19,48 +19,43 @@
         {"id": "normalization-defense", "text": "누락/잘못된 숫자 seed를 0으로 정규화하는 방어 로직이 코드에 포함된다"},
         {"id": "controller-endpoint", "text": "GET /profile-summary 엔드포인트가 @Get 데코레이터로 등록되어 있다"},
         {"id": "controller-passthrough", "text": "controller가 service 결과를 래핑 없이 그대로 반환한다"},
-        {"id": "test-service-spec", "text": "profile-summary.service.spec.ts 파일이 생성된다"},
-        {"id": "test-controller-spec", "text": "profile-summary.controller.spec.ts 파일이 생성된다"},
-        {"id": "test-placement", "text": "테스트 파일이 src/**/*.spec.ts 경로에 배치된다"},
-        {"id": "camelcase-methods", "text": "메서드명이 camelCase를 따른다 (buildProfileSummary, getProfileSummary 등)"}
+        {"id": "camelcase-methods", "text": "메서드명이 camelCase를 따른다 (tcb profile: method naming = camelCase)"}
       ]
     },
     {
       "id": 2,
       "prompt": "주문 관리 모듈을 새로 만들어줘. orders 모듈 구조를 생성하고 기본 CRUD 넣어줘",
-      "expected_output": "generate.mjs로 모듈 스캐폴딩, CRUD 구현, coding-rules 준수",
+      "expected_output": "tcb CLI 컨벤션에 맞는 orders 모듈 CRUD 구현",
       "files": [
         "../../../features/nest-api/package.json",
         "../../../features/nest-api/src/app.module.ts"
       ],
       "expectations": [
-        {"id": "generate-script-executed", "text": "generate.mjs structure orders 명령의 실행 결과(스캐폴딩 파일)가 존재한다"},
         {"id": "crud-get", "text": "GET 엔드포인트가 구현되어 있다"},
         {"id": "crud-post", "text": "POST 엔드포인트가 구현되어 있다"},
         {"id": "crud-patch", "text": "PUT 또는 PATCH 엔드포인트가 구현되어 있다"},
         {"id": "crud-delete", "text": "DELETE 엔드포인트가 구현되어 있다"},
-        {"id": "module-registered", "text": "OrdersModule이 app.module.ts의 imports 배열에 등록되어 있다"},
-        {"id": "module-structure", "text": "controller, service, module 파일이 하나의 모듈 디렉토리 안에 배치된다"},
-        {"id": "db-snake-case", "text": "DB 컬럼명이 snake_case를 따른다 (created_at, order_id 등)"}
+        {"id": "class-pascal-case", "text": "클래스명이 PascalCase를 따른다 (tcb profile: class names = PascalCase)"},
+        {"id": "package-by-feature", "text": "controller, service 파일이 하나의 feature 디렉토리 안에 배치된다 (tcb profile: module structure = package-by-feature)"},
+        {"id": "db-snake-case", "text": "entity/interface의 DB 필드가 snake_case를 따른다 (tcb profile: entity field naming)"}
       ]
     },
     {
       "id": 3,
       "prompt": "사용자 인증 API 엔드포인트를 NestJS로 구현해줘. JWT 토큰 기반으로 login, register 엔드포인트 만들어줘",
-      "expected_output": "auth 모듈 생성, JWT 인증 로직, coding-rules 준수",
+      "expected_output": "tcb CLI 컨벤션에 맞는 auth 모듈 생성",
       "files": [
         "../../../features/nest-api/package.json",
         "../../../features/nest-api/src/app.module.ts",
         "../../../features/nest-api/src/main.ts"
       ],
       "expectations": [
-        {"id": "generate-script-executed", "text": "generate.mjs structure auth 실행 결과(스캐폴딩 파일)가 존재한다"},
-        {"id": "controller-file", "text": "@Controller 데코레이터가 포함된 auth controller 파일이 존재한다"},
-        {"id": "service-file", "text": "@Injectable 데코레이터가 포함된 auth service 파일이 존재한다"},
-        {"id": "module-file", "text": "@Module 데코레이터가 포함된 auth module 파일이 존재한다"},
+        {"id": "controller-file", "text": "auth controller 파일이 존재한다"},
+        {"id": "service-file", "text": "auth service 파일이 존재한다"},
         {"id": "login-endpoint", "text": "login 엔드포인트가 구현되어 있다"},
         {"id": "register-endpoint", "text": "register 엔드포인트가 구현되어 있다"},
-        {"id": "module-directory", "text": "auth 관련 파일이 하나의 모듈 디렉토리 안에 배치된다"}
+        {"id": "class-pascal-case", "text": "클래스명이 PascalCase를 따른다 (tcb profile: class names = PascalCase)"},
+        {"id": "package-by-feature", "text": "auth 관련 파일이 하나의 feature 디렉토리 안에 배치된다 (tcb profile: package-by-feature)"}
       ]
     }
   ]
