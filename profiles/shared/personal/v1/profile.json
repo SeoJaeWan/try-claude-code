@@ -36,12 +36,43 @@
         "kind": "snippet",
         "language": "ts"
       },
+      "inputSchema": {
+        "required": ["name"],
+        "enums": {
+          "kind": ["interface", "type"]
+        }
+      },
       "defaults": {
         "kind": "interface"
       },
-      "templateFiles": {
-        "interface": "templates/type.interface.ts",
-        "type": "templates/type.alias.ts"
+      "namingPolicy": {
+        "cases": {
+          "typeName": "pascal"
+        }
+      },
+      "normalizationRules": [
+        {
+          "kind": "case",
+          "field": "name",
+          "style": "pascal",
+          "reason": "types use PascalCase"
+        }
+      ],
+      "validatorRules": [
+        {
+          "kind": "nameCase",
+          "field": "name",
+          "style": "pascal",
+          "message": "Type name must use PascalCase"
+        }
+      ],
+      "render": {
+        "templateFiles": {
+          "interface": "templates/type.interface.ts",
+          "type": "templates/type.alias.ts"
+        },
+        "templateVariantField": "kind",
+        "contextTokens": ["typeName"]
       },
       "examples": [
         "tcp type --json '{\"name\":\"TableColumn\",\"kind\":\"interface\"}'",
@@ -55,6 +86,36 @@
         "kind": "snippet",
         "language": "ts"
       },
+      "inputSchema": {
+        "arrays": ["members"]
+      },
+      "defaults": {
+        "members": []
+      },
+      "namingPolicy": {
+        "prefixes": {
+          "propCallback": "on"
+        },
+        "cases": {
+          "propValue": "camel",
+          "propCallback": "pascal"
+        }
+      },
+      "normalizationRules": [
+        {
+          "kind": "members",
+          "field": "members",
+          "callbackPrefixKey": "propCallback",
+          "callbackCase": "pascal",
+          "valueCase": "camel",
+          "callbackReason": "props callbacks use on*",
+          "valueReason": "prop members use camelCase"
+        }
+      ],
+      "render": {
+        "snippetTemplate": "templates/props.members.ts",
+        "contextTokens": ["membersOnly"]
+      },
       "examples": [
         "tcp props --json '{\"members\":[{\"kind\":\"value\",\"name\":\"title\",\"type\":\"string\",\"required\":true}]}'"
       ]
@@ -65,6 +126,53 @@
       "execution": {
         "kind": "snippet",
         "language": "ts"
+      },
+      "inputSchema": {
+        "requiredAny": [["name", "action"]],
+        "arrays": ["params"],
+        "enums": {
+          "kind": ["internalHandler", "utility"]
+        }
+      },
+      "defaults": {
+        "kind": "utility",
+        "returns": "void",
+        "async": false,
+        "params": []
+      },
+      "namingPolicy": {
+        "prefixes": {
+          "internalHandler": "handle",
+          "propCallback": "on"
+        },
+        "cases": {
+          "utility": "camel",
+          "internalHandler": "pascal"
+        }
+      },
+      "normalizationRules": [
+        {
+          "kind": "intentName",
+          "field": "name",
+          "intentField": "kind",
+          "actionField": "action",
+          "intents": {
+            "internalHandler": {
+              "prefixKey": "internalHandler",
+              "stripPrefixKeys": ["propCallback"],
+              "style": "pascal",
+              "reason": "internal handlers use handle*"
+            },
+            "utility": {
+              "style": "camel",
+              "reason": "utility functions use camelCase"
+            }
+          }
+        }
+      ],
+      "render": {
+        "snippetTemplate": "templates/function.default.ts",
+        "contextTokens": ["functionName", "asyncToken", "functionSignature", "functionReturnType"]
       },
       "examples": [
         "tcf function --json '{\"kind\":\"internalHandler\",\"name\":\"onClick\"}'"

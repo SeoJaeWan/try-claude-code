@@ -1,17 +1,12 @@
 import { renderTemplateFile } from "./template-engine.mjs";
 import { normalizeCliPath } from "./path-utils.mjs";
 import { validateRequest } from "./profile-validator.mjs";
+import { buildRenderContext } from "./render-context.mjs";
+import { createCliError, ensureString } from "./recipe-utils.mjs";
 import { detectSpringBasePackage } from "../validators/backend-utils.mjs";
 
 function replacePattern(pattern, values) {
   return pattern.replace(/\{([A-Za-z0-9_]+)\}/g, (_, key) => values[key] ?? "");
-}
-
-function createCliError(code, message, details = {}) {
-  const error = new Error(message);
-  error.code = code;
-  error.details = details;
-  return error;
 }
 
 function requireArgument(command, argumentName, providedValue) {
@@ -27,237 +22,71 @@ function requireArgument(command, argumentName, providedValue) {
   }
 }
 
-function resolveTypeName(name, kind) {
-  if (kind === "type") {
-    return name;
+function resolveTemplatePath(render, spec, key = null) {
+  if (key && render.templatePaths?.[key]) {
+    return render.templatePaths[key];
   }
 
-  return name.endsWith("Props") || name.endsWith("Response") || name.endsWith("Request")
-    ? name
-    : `${name}`;
-}
-
-function formatIndentedBlock(lines, indent = "  ") {
-  if (!lines.length) {
-    return "";
+  if (render.templatePath) {
+    return render.templatePath;
   }
 
-  return lines.map((line) => `${indent}${line}`).join("\n");
-}
-
-function createPropsMembers(props = []) {
-  if (!Array.isArray(props) || props.length === 0) {
-    return "";
+  if (!render.templatePaths) {
+    throw createCliError("MISSING_TEMPLATE", `Missing template for ${render.name ?? "command"}`);
   }
 
-  const lines = props.map((prop) => {
-    if (prop.kind === "callback") {
-      const signature = (prop.params ?? [])
-        .map((param) => `${param.name}: ${param.type ?? "unknown"}`)
-        .join(", ");
-      const optional = prop.required ? "" : "?";
-      return `${prop.name}${optional}: (${signature}) => ${prop.returns ?? "void"};`;
-    }
-
-    const optional = prop.required ? "" : "?";
-    return `${prop.name}${optional}: ${prop.type};`;
-  });
-
-  return formatIndentedBlock(lines);
-}
-
-function createRecordFields(fields = []) {
-  if (!Array.isArray(fields) || fields.length === 0) {
-    return "  String value";
-  }
-
-  return fields
-    .map((field) => {
-      const validations = (field.validations ?? [])
-        .map((validation) => `@${validation}`)
-        .join(" ");
-      const prefix = validations ? `${validations} ` : "";
-      return `  ${prefix}${field.type} ${field.name}`;
-    })
-    .join(",\n");
-}
-
-function createEntityFields(fields = []) {
-  if (!Array.isArray(fields) || fields.length === 0) {
-    return "  private String name;";
-  }
-
-  return formatIndentedBlock(
-    fields.map((field) => `private ${field.type} ${field.name};`)
-  );
-}
-
-async function createSingleFileGeneration({
-  role,
-  profile,
-  commandName,
-  command,
-  args,
-  repoRoot
-}) {
-  requireArgument(command, "name", args.name);
-  requireArgument(command, "path", args.path);
-
-  let basePackage = args.basePackage;
-  if (role === "backend" && command.generator?.requiresBasePackage && !basePackage) {
-    basePackage = await detectSpringBasePackage(repoRoot);
-    if (!basePackage) {
-      throw createCliError(
-        "ROOT_PACKAGE_NOT_FOUND",
-        "Spring root package could not be detected. Provide basePackage in the JSON spec.",
-        {
-          command: commandName
-        }
-      );
-    }
-  }
-
-  const templatePath =
-    command.templatePaths?.[args.kind ?? command.defaults?.kind] ??
-    command.templatePath;
+  const variantField = render.templateVariantField;
+  const variantRawValue = variantField ? spec[variantField] : undefined;
+  const variantKey = render.templateVariantMap?.[variantRawValue] ?? variantRawValue ?? render.defaultVariant;
+  const templatePath = render.templatePaths[variantKey];
 
   if (!templatePath) {
-    throw createCliError("MISSING_TEMPLATE", `Missing template for ${commandName}`);
-  }
-
-  const context = {
-    ...args,
-    basePackage,
-    name: args.name,
-    className: args.name,
-    componentName: args.name,
-    hookName: args.name,
-    typeName: resolveTypeName(args.name, args.kind),
-    interfaceName:
-      commandName === "component" ? `${args.name}Props` : `${args.name}`,
-    basePackagePath: basePackage ? basePackage.replaceAll(".", "/") : "",
-    basePackage: basePackage ?? "",
-    packagePath: args.path,
-    packagePathDot: args.path ? args.path.replaceAll("/", ".") : "",
-    featurePath: args.path,
-    domainName: args.path.split("/").filter(Boolean).slice(-1)[0] ?? args.path,
-    queryKind: args.kind,
-    propsMembers: createPropsMembers(args.props),
-    recordFields: createRecordFields(args.fields),
-    entityFields: createEntityFields(args.fields)
-  };
-
-  const filePath = normalizeCliPath(
-    replacePattern(command.output.filePattern, {
-      path: args.path,
-      name: args.name,
-      basePackagePath: basePackage ? basePackage.replaceAll(".", "/") : ""
-    })
-  );
-
-  const content = await renderTemplateFile(templatePath, context);
-  const files = [
-    {
-      path: filePath,
-      content
-    }
-  ];
-
-  await validateRequest({
-    role,
-    profile,
-    commandName,
-    args: {
-      ...args,
-      basePackage
-    },
-    files,
-    repoRoot
-  });
-
-  return files;
-}
-
-async function createSpringModuleGeneration({
-  role,
-  profile,
-  commandName,
-  command,
-  args,
-  repoRoot
-}) {
-  requireArgument(command, "name", args.name);
-  requireArgument(command, "path", args.path);
-
-  let basePackage = args.basePackage;
-  if (!basePackage) {
-    basePackage = await detectSpringBasePackage(repoRoot);
-    if (!basePackage) {
-      throw createCliError(
-        "ROOT_PACKAGE_NOT_FOUND",
-        "Spring root package could not be detected. Provide basePackage in the JSON spec.",
-        {
-          command: commandName
-        }
-      );
-    }
-  }
-
-  const templateKeys = ["controller", "service", "repository", "globalExceptionHandler"];
-  const fileEntries = [
-    {
-      key: "controller",
-      path: `src/main/java/${basePackage.replaceAll(".", "/")}/${args.path}/controller/${args.name}Controller.java`
-    },
-    {
-      key: "service",
-      path: `src/main/java/${basePackage.replaceAll(".", "/")}/${args.path}/service/${args.name}Service.java`
-    },
-    {
-      key: "repository",
-      path: `src/main/java/${basePackage.replaceAll(".", "/")}/${args.path}/repository/${args.name}Repository.java`
-    },
-    {
-      key: "globalExceptionHandler",
-      path: `src/main/java/${basePackage.replaceAll(".", "/")}/global/exception/GlobalExceptionHandler.java`
-    }
-  ];
-
-  const context = {
-    ...args,
-    basePackage,
-    className: args.name,
-    featurePackage: `${basePackage}.${args.path.replaceAll("/", ".")}`,
-    packagePathDot: args.path.replaceAll("/", ".")
-  };
-
-  const files = [];
-  for (const templateKey of templateKeys) {
-    const templatePath = command.templatePaths?.[templateKey];
-    if (!templatePath) {
-      throw createCliError("MISSING_TEMPLATE", `Missing template variant: ${templateKey}`);
-    }
-
-    const entry = fileEntries.find((item) => item.key === templateKey);
-    files.push({
-      path: normalizeCliPath(entry.path),
-      content: await renderTemplateFile(templatePath, context)
+    throw createCliError("MISSING_TEMPLATE", `Missing template variant: ${variantKey}`, {
+      variantKey
     });
   }
 
-  await validateRequest({
-    role,
-    profile,
-    commandName,
-    args: {
-      ...args,
-      basePackage
-    },
-    files,
-    repoRoot
-  });
+  return templatePath;
+}
 
-  return files;
+async function resolveBasePackage(command, args, repoRoot, commandName) {
+  if (!command.generator?.requiresBasePackage) {
+    return args.basePackage;
+  }
+
+  if (args.basePackage) {
+    return ensureString(args.basePackage, "basePackage");
+  }
+
+  const detectedBasePackage = await detectSpringBasePackage(repoRoot);
+  if (!detectedBasePackage) {
+    throw createCliError(
+      "ROOT_PACKAGE_NOT_FOUND",
+      "Spring root package could not be detected. Provide basePackage in the JSON spec.",
+      {
+        command: commandName
+      }
+    );
+  }
+
+  return detectedBasePackage;
+}
+
+async function renderFileEntry({
+  command,
+  args,
+  entry,
+  context
+}) {
+  const templatePath = resolveTemplatePath(command.render, args, entry.templateKey ?? null);
+  const filePath = normalizeCliPath(
+    replacePattern(entry.filePattern, context)
+  );
+
+  return {
+    path: filePath,
+    content: await renderTemplateFile(templatePath, context)
+  };
 }
 
 export async function generateFiles({
@@ -267,47 +96,61 @@ export async function generateFiles({
   args,
   repoRoot
 }) {
-  const command = profile.commands?.[commandName];
-  if (!command) {
+  const baseCommand = profile.commands?.[commandName];
+  if (!baseCommand) {
     throw createCliError("UNKNOWN_COMMAND", `Unknown command: ${commandName}`, {
       command: commandName
     });
   }
 
-  const generatorKind = command.generator?.kind ?? "singleFile";
-  const enrichedCommand = {
-    ...command,
-    name: commandName
+  const command = {
+    name: commandName,
+    ...baseCommand
   };
 
-  if (generatorKind === "singleFile") {
-    return createSingleFileGeneration({
-      role,
-      profile,
-      commandName,
-      command: enrichedCommand,
-      args,
-      repoRoot
-    });
+  requireArgument(command, "name", args.name);
+  if ((command.execution?.kind ?? "file") === "file" && command.render?.output?.filePattern) {
+    requireArgument(command, "path", args.path);
   }
 
-  if (generatorKind === "springModule") {
-    return createSpringModuleGeneration({
-      role,
-      profile,
-      commandName,
-      command: enrichedCommand,
-      args,
-      repoRoot
-    });
-  }
+  const basePackage = await resolveBasePackage(command, args, repoRoot, commandName);
+  const enrichedArgs = {
+    ...args,
+    basePackage
+  };
+  const context = buildRenderContext(command, enrichedArgs);
+  const render = command.render ?? {};
 
-  throw createCliError(
-    "UNSUPPORTED_GENERATOR",
-    `Unsupported generator kind: ${generatorKind}`,
-    {
-      command: commandName,
-      generatorKind
-    }
-  );
+  const files = render.fileEntries?.length
+    ? await Promise.all(
+        render.fileEntries.map((entry) =>
+          renderFileEntry({
+            command,
+            args: enrichedArgs,
+            entry,
+            context
+          })
+        )
+      )
+    : [
+        await renderFileEntry({
+          command,
+          args: enrichedArgs,
+          entry: {
+            filePattern: render.output?.filePattern
+          },
+          context
+        })
+      ];
+
+  await validateRequest({
+    role,
+    profile,
+    commandName,
+    args: enrichedArgs,
+    files,
+    repoRoot
+  });
+
+  return files;
 }

@@ -4,6 +4,7 @@
 
 `tcp`, `tcf`, `tcb`는 하나의 `@try-claude/dev-cli` 엔진 위에서 동작한다.
 규칙, 템플릿, 명령 표면은 repo-local `profiles/`에서 읽고, CLI는 spec-driven JSON 입력과 batch 실행을 기본으로 제공한다.
+이때 engine은 실행기 역할만 맡고, command semantics는 `profile/version`의 recipe가 소유한다.
 
 이 구조는 agent-first CLI 원칙을 따른다.
 
@@ -12,6 +13,7 @@
 - preview가 기본값이고 실제 write는 `--apply`
 - 실패는 deterministic JSON error payload로 반환
 - 여러 scaffold/snippet 요청은 `batch`로 한 번에 처리
+- `handle/on/use`, case, snippet shape, validator rule, template context는 profile recipe가 소유
 
 ## Layout
 
@@ -37,6 +39,33 @@ profiles/
   backend/
     personal/v1/
 ```
+
+## Recipe Contract
+
+각 profile command는 단순 help metadata가 아니라 recipe를 가진다.
+
+- `inputSchema`
+- `defaults`
+- `namingPolicy`
+- `normalizationRules`
+- `validatorRules`
+- `render`
+
+`render`는 아래를 포함할 수 있다.
+
+- `snippetTemplate`
+- `templateFile`
+- `templateFiles`
+- `output.filePattern`
+- `contextTokens`
+
+shared override 규칙:
+
+- object는 deep merge
+- scalar는 override
+- array는 append 후 dedupe
+
+즉 core는 parser, batch executor, `$ref`, preview/apply, error envelope를 유지하고, 실제 command 규칙은 profile recipe를 해석해서 실행한다.
 
 ## Alias Surface
 
@@ -173,8 +202,8 @@ batch 정책:
 
 - path segment: `camelCase`
 - 함수 스타일: 화살표 함수
-- 내부 handler: `handle*`
-- props callback: `on*`
+- 내부 handler prefix: `handle`
+- props callback prefix: `on`
 - 배열 이름: 복수형, `List`/`Array` suffix 금지
 - shared type path guidance: `types/common`, `types/{domain}`
 
@@ -231,7 +260,7 @@ tcp uiState --json "{\"category\":\"uiInteraction\",\"pattern\":\"toggle\",\"nam
 
 - 입력: `name`, `path`
 - 출력: `{path}/{name}/index.ts`
-- 이름은 `use*`
+- hook prefix는 profile recipe 기준으로 `use`
 - 화살표 함수
 - `export default`
 
@@ -321,6 +350,19 @@ tcb entity --json "{\"name\":\"Product\",\"path\":\"product\",\"basePackage\":\"
   }
 }
 ```
+
+## Ownership Notes
+
+현재 v1에서는 아래 요소가 모두 profile recipe 기준으로 동작한다.
+
+- `function`의 internal handler prefix
+- `props`의 callback prefix
+- `hook`과 `apiHook`의 hook prefix
+- `uiState`의 state, setter, handler naming
+- `queryKey`, `endpoint`, `mapper`, `hookReturn` snippet shape
+- file template context와 validator rule
+
+즉 `personal/v2`나 `company/v1`에서 prefix, shape, validation이 달라지면 core 수정 없이 recipe 변경으로 대응하는 구조다.
 
 오류 응답:
 

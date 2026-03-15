@@ -10,23 +10,55 @@
       "execution": {
         "kind": "file"
       },
+      "inputSchema": {
+        "required": ["name", "path"]
+      },
+      "namingPolicy": {
+        "prefixes": {
+          "hook": "use"
+        }
+      },
       "generator": {
         "kind": "singleFile"
       },
-      "output": {
-        "filePattern": "{path}/{name}/index.ts"
-      },
-      "templateFile": "templates/hook.default.ts",
-      "rules": {
-        "enforced": {
-          "pathPolicy": {
-            "allowedRoots": ["hooks", "src", "app", "components"]
-          },
-          "hookStyle": {
-            "functionStyle": "arrow",
-            "exportStyle": "default"
-          }
+      "normalizationRules": [
+        {
+          "kind": "prefixedName",
+          "field": "name",
+          "prefixKey": "hook",
+          "style": "pascal",
+          "reason": "hooks use use*"
+        },
+        {
+          "kind": "path",
+          "field": "path"
         }
+      ],
+      "validatorRules": [
+        {
+          "kind": "pathRoots",
+          "field": "path",
+          "allowedRoots": ["hooks", "src", "app", "components"]
+        },
+        {
+          "kind": "pathSegmentCase",
+          "field": "path",
+          "style": "camel",
+          "message": "Path segments must use camelCase"
+        },
+        {
+          "kind": "namePrefix",
+          "field": "name",
+          "prefixKey": "hook",
+          "message": "Hook name must start with use"
+        }
+      ],
+      "render": {
+        "templateFile": "templates/hook.default.ts",
+        "output": {
+          "filePattern": "{path}/{name}/index.ts"
+        },
+        "contextTokens": ["hookName"]
       },
       "examples": [
         "tcf hook --json '{\"name\":\"useScroll\",\"path\":\"hooks/utils\"}'"
@@ -38,25 +70,73 @@
       "execution": {
         "kind": "file"
       },
+      "inputSchema": {
+        "required": ["name", "path", "kind"],
+        "enums": {
+          "kind": ["query", "mutation"]
+        }
+      },
+      "namingPolicy": {
+        "prefixes": {
+          "hook": "use"
+        }
+      },
       "generator": {
         "kind": "singleFile"
       },
-      "output": {
-        "filePattern": "{path}/{name}/index.ts"
-      },
-      "templateFiles": {
-        "query": "templates/api-hook.query.ts",
-        "mutation": "templates/api-hook.mutation.ts"
-      },
-      "rules": {
-        "enforced": {
-          "pathPolicy": {
-            "allowedRoots": ["hooks", "src", "app"]
-          },
-          "library": {
-            "queryClient": "@tanstack/react-query"
+      "normalizationRules": [
+        {
+          "kind": "prefixedName",
+          "field": "name",
+          "prefixKey": "hook",
+          "style": "pascal",
+          "reason": "hooks use use*"
+        },
+        {
+          "kind": "path",
+          "field": "path"
+        }
+      ],
+      "validatorRules": [
+        {
+          "kind": "pathRoots",
+          "field": "path",
+          "allowedRoots": ["hooks", "src", "app"]
+        },
+        {
+          "kind": "pathSegmentCase",
+          "field": "path",
+          "style": "camel",
+          "message": "Path segments must use camelCase"
+        },
+        {
+          "kind": "namePrefix",
+          "field": "name",
+          "prefixKey": "hook",
+          "message": "Hook name must start with use"
+        },
+        {
+          "kind": "apiHookPath",
+          "field": "path",
+          "kindField": "kind",
+          "apiRoot": "hooks/apis",
+          "requiredSegment": "/apis/",
+          "suffixMap": {
+            "query": "queries",
+            "mutation": "mutations"
           }
         }
+      ],
+      "render": {
+        "templateFiles": {
+          "query": "templates/api-hook.query.ts",
+          "mutation": "templates/api-hook.mutation.ts"
+        },
+        "templateVariantField": "kind",
+        "output": {
+          "filePattern": "{path}/{name}/index.ts"
+        },
+        "contextTokens": ["hookName", "domainName"]
       },
       "examples": [
         "tcf apiHook --json '{\"name\":\"useGetProduct\",\"path\":\"hooks/apis/product/queries\",\"kind\":\"query\"}'"
@@ -69,6 +149,43 @@
         "kind": "snippet",
         "language": "ts"
       },
+      "inputSchema": {
+        "required": ["domain"],
+        "arrays": ["params"]
+      },
+      "defaults": {
+        "scope": "detail",
+        "params": []
+      },
+      "namingPolicy": {
+        "suffixes": {
+          "queryKeyFunction": "QueryKey"
+        }
+      },
+      "normalizationRules": [
+        {
+          "kind": "case",
+          "field": "domain",
+          "style": "camel",
+          "reason": "query key domain uses camelCase"
+        },
+        {
+          "kind": "case",
+          "field": "scope",
+          "style": "camel",
+          "reason": "query key scope uses camelCase"
+        },
+        {
+          "kind": "stringList",
+          "field": "params",
+          "style": "camel",
+          "reason": "query key params use camelCase"
+        }
+      ],
+      "render": {
+        "snippetTemplate": "templates/query-key.ts",
+        "contextTokens": ["queryKeyFunctionName", "queryKeyParamsSignature", "queryKeyMembers"]
+      },
       "examples": [
         "tcf queryKey --json '{\"domain\":\"product\",\"scope\":\"detail\",\"params\":[\"productId\"]}'"
       ]
@@ -79,6 +196,31 @@
       "execution": {
         "kind": "snippet",
         "language": "ts"
+      },
+      "inputSchema": {
+        "required": ["method", "resource", "path"]
+      },
+      "normalizationRules": [
+        {
+          "kind": "uppercase",
+          "field": "method",
+          "reason": "HTTP method uses uppercase"
+        },
+        {
+          "kind": "case",
+          "field": "resource",
+          "style": "camel",
+          "reason": "endpoint resource uses camelCase"
+        },
+        {
+          "kind": "derive",
+          "field": "constantName",
+          "kindName": "httpConstant"
+        }
+      ],
+      "render": {
+        "snippetTemplate": "templates/endpoint.ts",
+        "contextTokens": ["endpointConstantName", "path"]
       },
       "examples": [
         "tcf endpoint --json '{\"method\":\"GET\",\"resource\":\"product\",\"path\":\"/products/:productId\"}'"
@@ -91,6 +233,29 @@
         "kind": "snippet",
         "language": "ts"
       },
+      "inputSchema": {
+        "required": ["sourceType", "targetType"]
+      },
+      "namingPolicy": {
+        "prefixes": {
+          "mapper": "map"
+        },
+        "joiners": {
+          "mapper": "To"
+        }
+      },
+      "normalizationRules": [
+        {
+          "kind": "derive",
+          "field": "name",
+          "kindName": "mapperName",
+          "reason": "mapper names use camelCase"
+        }
+      ],
+      "render": {
+        "snippetTemplate": "templates/mapper.ts",
+        "contextTokens": ["mapperName", "sourceType", "targetType"]
+      },
       "examples": [
         "tcf mapper --json '{\"sourceType\":\"ProductResponse\",\"targetType\":\"ProductViewModel\"}'"
       ]
@@ -101,6 +266,31 @@
       "execution": {
         "kind": "snippet",
         "language": "ts"
+      },
+      "inputSchema": {
+        "arrays": ["values", "actions"]
+      },
+      "defaults": {
+        "values": [],
+        "actions": []
+      },
+      "normalizationRules": [
+        {
+          "kind": "listItemNames",
+          "field": "values",
+          "style": "camel",
+          "reason": "hook return values use camelCase"
+        },
+        {
+          "kind": "listItemNames",
+          "field": "actions",
+          "style": "camel",
+          "reason": "hook return actions use camelCase"
+        }
+      ],
+      "render": {
+        "snippetTemplate": "templates/hook-return.ts",
+        "contextTokens": ["hookReturnMembers"]
       },
       "examples": [
         "tcf hookReturn --json '{\"values\":[{\"name\":\"product\",\"type\":\"ProductViewModel | null\"}],\"actions\":[{\"name\":\"refetch\",\"type\":\"() => Promise<void>\"}]}'"

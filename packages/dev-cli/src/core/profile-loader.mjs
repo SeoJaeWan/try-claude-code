@@ -5,9 +5,30 @@ function isPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+function getArrayKey(value) {
+  if (value && typeof value === "object") {
+    return JSON.stringify(value);
+  }
+
+  return `${typeof value}:${String(value)}`;
+}
+
 function mergeValues(baseValue, nextValue) {
   if (Array.isArray(baseValue) && Array.isArray(nextValue)) {
-    return [...new Set([...baseValue, ...nextValue])];
+    const seen = new Set();
+    const merged = [];
+
+    for (const value of [...baseValue, ...nextValue]) {
+      const key = getArrayKey(value);
+      if (seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      merged.push(value);
+    }
+
+    return merged;
   }
 
   if (isPlainObject(baseValue) && isPlainObject(nextValue)) {
@@ -31,8 +52,12 @@ function mergeObjects(baseObject, nextObject) {
   return result;
 }
 
-function resolveCommandTemplatePaths(profileDir, command) {
-  const resolved = { ...command };
+function resolveRenderPaths(profileDir, render = {}) {
+  const resolved = { ...render };
+
+  if (resolved.snippetTemplate) {
+    resolved.snippetTemplatePath = path.join(profileDir, resolved.snippetTemplate);
+  }
 
   if (resolved.templateFile) {
     resolved.templatePath = path.join(profileDir, resolved.templateFile);
@@ -45,6 +70,18 @@ function resolveCommandTemplatePaths(profileDir, command) {
         path.join(profileDir, value)
       ])
     );
+  }
+
+  return resolved;
+}
+
+function resolveCommandTemplatePaths(profileDir, command) {
+  const resolved = {
+    ...command
+  };
+
+  if (resolved.render) {
+    resolved.render = resolveRenderPaths(profileDir, resolved.render);
   }
 
   return resolved;

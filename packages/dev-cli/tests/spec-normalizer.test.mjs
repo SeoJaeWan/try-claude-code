@@ -2,11 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { normalizeSpec, renderSnippet } from "../src/core/spec-normalizer.mjs";
+import { loadProfile } from "./test-utils.mjs";
 
-test("internalHandler 이름은 handle 규칙으로 정규화된다", () => {
+test("internalHandler 이름은 profile recipe 기준으로 정규화된다", async () => {
+  const profile = await loadProfile("frontend");
+  const command = profile.commands.function;
   const result = normalizeSpec({
-    role: "frontend",
-    commandName: "function",
+    command,
     spec: {
       kind: "internalHandler",
       name: "onClick"
@@ -24,12 +26,13 @@ test("internalHandler 이름은 handle 규칙으로 정규화된다", () => {
   ]);
 });
 
-test("internalHandler 의도와 이름이 충돌하면 SPEC_CONFLICT로 실패한다", () => {
+test("internalHandler 의도와 이름이 충돌하면 SPEC_CONFLICT로 실패한다", async () => {
+  const profile = await loadProfile("frontend");
+  const command = profile.commands.function;
   assert.throws(
     () =>
       normalizeSpec({
-        role: "frontend",
-        commandName: "function",
+        command,
         spec: {
           kind: "internalHandler",
           name: "handleSubmit",
@@ -41,9 +44,10 @@ test("internalHandler 의도와 이름이 충돌하면 SPEC_CONFLICT로 실패�
 });
 
 test("props command는 members only snippet을 만든다", async () => {
+  const profile = await loadProfile("publisher");
+  const command = profile.commands.props;
   const { normalizedSpec } = normalizeSpec({
-    role: "publisher",
-    commandName: "props",
+    command,
     spec: {
       members: [
         {
@@ -62,8 +66,7 @@ test("props command는 members only snippet을 만든다", async () => {
   });
 
   const snippet = await renderSnippet({
-    command: {},
-    commandName: "props",
+    command,
     normalizedSpec
   });
 
@@ -74,9 +77,10 @@ test("props command는 members only snippet을 만든다", async () => {
 });
 
 test("uiState는 state와 handler snippet을 함께 만든다", async () => {
+  const profile = await loadProfile("publisher");
+  const command = profile.commands.uiState;
   const { normalizedSpec } = normalizeSpec({
-    role: "publisher",
-    commandName: "uiState",
+    command,
     spec: {
       category: "uiInteraction",
       pattern: "toggle",
@@ -85,8 +89,7 @@ test("uiState는 state와 handler snippet을 함께 만든다", async () => {
   });
 
   const snippet = await renderSnippet({
-    command: {},
-    commandName: "uiState",
+    command,
     normalizedSpec
   });
 
