@@ -1,0 +1,42 @@
+function pickFields(payload, fields) {
+  if (!fields) {
+    return payload;
+  }
+
+  const requested = fields
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  return requested.reduce((accumulator, field) => {
+    if (field in payload) {
+      accumulator[field] = payload[field];
+    }
+    return accumulator;
+  }, {});
+}
+
+export function formatOutput(payload, format, fields) {
+  const exitCode = payload.ok === false ? payload.exitCode ?? 1 : 0;
+  if (format === "text") {
+    const textPayload =
+      typeof payload.payload === "string"
+        ? payload.payload
+        : payload.ok === false
+          ? `${payload.error.code}: ${payload.error.message}`
+          : JSON.stringify(pickFields(payload, fields), null, 2);
+
+    return {
+      exitCode,
+      text: `${textPayload}\n`
+    };
+  }
+
+  const jsonPayload =
+    payload.format === "json" && "payload" in payload ? payload.payload : payload;
+
+  return {
+    exitCode,
+    text: `${JSON.stringify(pickFields(jsonPayload, fields), null, 2)}\n`
+  };
+}

@@ -1,0 +1,69 @@
+{
+  "id": "publisher/personal/v1",
+  "kind": "publisher-profile",
+  "alias": "tcp",
+  "extends": ["shared/personal/v1"],
+  "rules": {
+    "guidance": {
+      "placementRules": [
+        "Use components/common when reused in 2 or more domains or pages.",
+        "Use components/{domain} for domain-specific components.",
+        "Nested UI parts may live under the parent component folder."
+      ]
+    }
+  },
+  "commands": {
+    "component": {
+      "description": "Generate a publisher UI component",
+      "arguments": {
+        "name": {
+          "required": true,
+          "case": "PascalCase"
+        },
+        "path": {
+          "required": true
+        }
+      },
+      "generator": {
+        "kind": "singleFile"
+      },
+      "output": {
+        "filePattern": "{path}/index.tsx"
+      },
+      "templateFile": "templates/component.default.tsx",
+      "rules": {
+        "enforced": {
+          "pathPolicy": {
+            "allowedRoots": ["components", "page", "app"]
+          },
+          "componentStyle": {
+            "functionStyle": "arrow",
+            "exportStyle": "default",
+            "propsDestructure": "insideBody"
+          },
+          "logicBoundary": {
+            "allowUiState": true,
+            "allowedUiStateExamples": [
+              "toggle",
+              "sidebar",
+              "accordion",
+              "modal",
+              "tab"
+            ],
+            "forbiddenPatterns": [
+              "useEffect(",
+              "fetch(",
+              "axios.",
+              "useQuery(",
+              "useMutation("
+            ]
+          }
+        }
+      },
+      "examples": [
+        "tcp component HomePage --path page/homePage",
+        "tcp component Table --path components/common/table"
+      ]
+    }
+  }
+}

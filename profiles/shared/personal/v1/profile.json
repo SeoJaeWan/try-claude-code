@@ -1,0 +1,79 @@
+{
+  "id": "shared/personal/v1",
+  "kind": "shared-profile",
+  "extends": [],
+  "help": {
+    "defaultFormat": "json",
+    "supportedFormats": ["json", "text"]
+  },
+  "rules": {
+    "enforced": {
+      "folderCase": "camelCase",
+      "functionStyle": "arrow",
+      "handlerNaming": {
+        "internal": "^handle[A-Z].*$",
+        "propCallback": "^on[A-Z].*$"
+      },
+      "arrayNaming": {
+        "pluralRequired": true,
+        "forbiddenSuffixes": ["List", "Array"]
+      },
+      "typeNaming": {
+        "interface": "PascalCase",
+        "typeAlias": "PascalCase"
+      },
+      "typePlacement": {
+        "localSingleUse": "same-file-or-local-folder",
+        "globalSharedRoots": ["types/common", "types/{domain}"]
+      }
+    }
+  },
+  "commands": {
+    "type": {
+      "description": "Generate a shared type definition",
+      "arguments": {
+        "name": {
+          "required": true,
+          "case": "PascalCase"
+        },
+        "path": {
+          "required": true
+        },
+        "kind": {
+          "required": false,
+          "enum": ["interface", "type"]
+        }
+      },
+      "defaults": {
+        "kind": "interface"
+      },
+      "generator": {
+        "kind": "singleFile"
+      },
+      "output": {
+        "filePattern": "{path}/{name}.ts"
+      },
+      "templateFiles": {
+        "interface": "templates/type.interface.ts",
+        "type": "templates/type.alias.ts"
+      },
+      "rules": {
+        "enforced": {
+          "pathPolicy": {
+            "allowedRoots": ["types"]
+          }
+        },
+        "guidance": {
+          "notes": [
+            "Single-use types stay local.",
+            "Shared types move to types/common or types/{domain}."
+          ]
+        }
+      },
+      "examples": [
+        "tcp type TableColumn --path types/common",
+        "tcf type ProductSummary --path types/product --kind interface"
+      ]
+    }
+  }
+}

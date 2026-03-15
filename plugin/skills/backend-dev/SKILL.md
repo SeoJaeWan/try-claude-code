@@ -33,26 +33,7 @@ Scan project root for framework signals before any implementation:
 | `go.mod` | Go (Gin/Echo/Fiber) | Go | go mod | `go test ./...` |
 | `Gemfile` + `rails` | Rails | Ruby | bundler | `bundle exec rspec` |
 
-If ambiguous, read the main entry file or config to confirm. Use the detected stack for all subsequent commands.
-
----
-
-## Coding Rules
-
-Read `${CLAUDE_SKILL_ROOT}/references/coding-rules.md` before writing code — it covers DB naming (snake_case), module structure, file naming conventions, and API patterns.
-
----
-
-## Boilerplate Generation
-
-For NestJS projects, generate module structure using coding-rules scripts.
-
-generate.mjs는 플러그인에 번들된 스크립트다. `${CLAUDE_PLUGIN_ROOT}` 변수로 접근한다.
-
-```bash
-# NestJS module structure
-node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs structure <moduleName> [--create]
-```
+If ambiguous, read the main entry file or config to confirm.
 
 ---
 
@@ -82,13 +63,33 @@ Every API endpoint must include proper error responses.
 1. **Detect stack** (Step 0 above)
 2. Read plan from `plans/{task-name}/plan.md`
 3. Read `codemaps/backend.md`, `codemaps/database.md` (if present)
-4. Read coding rules (`${CLAUDE_SKILL_ROOT}/references/coding-rules.md`)
-5. If plan includes `tests/`: copy test files to source tree (read `manifest.md` for paths), run Red verification
-6. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
-7. Implement according to detected framework's conventions
+4. If plan includes `tests/`: copy test files to source tree (read `manifest.md` for paths), run Red verification
+5. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
+6. **Use `tcb` CLI to create module scaffolds** — do NOT create module files manually:
+   ```bash
+   # Inspect current backend rules
+   tcb --help
+   tcb --help --text
+
+   # Feature module
+   tcb module <ModuleName> --path product --base-package com.example.app
+
+   # DTOs and entity
+   tcb requestDto <RequestName> --path product --base-package com.example.app
+   tcb responseDto <ResponseName> --path product --base-package com.example.app
+   tcb entity <EntityName> --path product --base-package com.example.app
+   ```
+7. Implement logic inside the generated files according to detected framework's conventions
 8. Run tests — confirm ALL pass (Green)
 9. If plan includes `e2e/`: if E2E fails, fix implementation, NOT tests
 10. Commit changes
 11. Return results based on plan.md
+
+## CLI Notes
+
+- `tcb --help` defaults to JSON for agent consumption.
+- `tcb` personal v1 is Spring Boot oriented.
+- Package path segments must be lower-case.
+- If Spring root package cannot be auto-detected, pass `--base-package`.
   </Instructions>
   </Skill_Guide>
