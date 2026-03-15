@@ -1,0 +1,13 @@
+{
+  "eval_id": 3,
+  "eval_name": "login-hook-composition",
+  "config": "new_skill",
+  "expectations": [
+    {"text": "login-hook-in-mutations", "passed": true, "evidence": "hooks/apis/auth/mutations/useLogin/index.ts via tcf CLI"},
+    {"text": "form-hook-placement", "passed": true, "evidence": "hooks/login/useLoginForm/index.ts"},
+    {"text": "hooks-index-ts", "passed": true, "evidence": "both hooks use index.ts pattern"},
+    {"text": "page-imports-hooks", "passed": true, "evidence": "import confirmed"},
+    {"text": "page-no-direct-logic", "passed": true, "evidence": "hook composition only"},
+    {"text": "handle-submit", "passed": true, "evidence": "handleSubmit present"}
+  ]
+}

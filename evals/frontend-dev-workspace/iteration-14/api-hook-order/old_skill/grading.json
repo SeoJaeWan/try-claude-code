@@ -1,0 +1,14 @@
+{
+  "eval_id": 2,
+  "eval_name": "api-hook-order",
+  "config": "old_skill",
+  "expectations": [
+    {"text": "hook-file-exists", "passed": true, "evidence": "file exists"},
+    {"text": "hook-use-prefix", "passed": true, "evidence": "useFetchOrder"},
+    {"text": "hook-in-apis-queries", "passed": true, "evidence": "hooks/apis/queries/useFetchOrder/ — no domain segment but contains /apis/ and /queries/"},
+    {"text": "hook-index-ts", "passed": true, "evidence": "index.ts pattern"},
+    {"text": "arrow-function", "passed": true, "evidence": "const useFetchOrder = ..."},
+    {"text": "returns-loading", "passed": true, "evidence": "isLoading returned"},
+    {"text": "returns-error", "passed": true, "evidence": "error returned"}
+  ]
+}
