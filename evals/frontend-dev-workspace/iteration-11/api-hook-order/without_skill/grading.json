@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "hook-file-exists", "passed": true, "evidence": "useFetchOrder hook exists in useFetchOrder.ts file"},
+    {"text": "hook-use-prefix", "passed": true, "evidence": "Hook is named useFetchOrder, which starts with 'use'"},
+    {"text": "hook-in-apis-queries", "passed": false, "evidence": "Output file is useFetchOrder.ts in outputs/ directory; no /apis/ or /queries/ path structure visible in file paths or imports"},
+    {"text": "hook-index-ts", "passed": false, "evidence": "Hook file is named useFetchOrder.ts, not index.ts"},
+    {"text": "arrow-function", "passed": false, "evidence": "Hook is defined as a regular function declaration: export function useFetchOrder(...)"},
+    {"text": "returns-loading", "passed": true, "evidence": "Returns { isLoading: state.isLoading } in the return object"},
+    {"text": "returns-error", "passed": true, "evidence": "Returns { isError: state.isError, error: state.error } in the return object"}
+  ],
+  "summary": {"passed": 4, "failed": 3, "total": 7, "pass_rate": 0.57}
+}

@@ -1,0 +1,15 @@
+{
+  "expectations": [
+    {"text": "component-index-tsx", "passed": false, "evidence": "Component file is named DashboardLayout.tsx, not index.tsx"},
+    {"text": "props-interface-suffix", "passed": true, "evidence": "export interface DashboardLayoutProps is defined with the {Name}Props suffix"},
+    {"text": "default-export", "passed": true, "evidence": "export default function DashboardLayout(...) is used"},
+    {"text": "has-sidebar", "passed": true, "evidence": "Sidebar sub-component rendered with data-testid='dashboard-sidebar', contains nav items and user section"},
+    {"text": "has-header", "passed": true, "evidence": "Header sub-component rendered with data-testid='dashboard-header', contains page title and notifications"},
+    {"text": "has-main-content", "passed": true, "evidence": "<main data-testid='dashboard-main'> element renders children or placeholder content"},
+    {"text": "responsive-breakpoints", "passed": true, "evidence": "Uses lg:hidden, lg:flex, sm:block, sm:p-6, sm:grid-cols-2, lg:grid-cols-3 responsive breakpoints"},
+    {"text": "children-prop", "passed": true, "evidence": "children?: React.ReactNode is in DashboardLayoutProps and rendered inside <main>: {children ?? (...)}"},
+    {"text": "tailwind-classes", "passed": true, "evidence": "Extensive Tailwind usage throughout: flex, h-screen, overflow-hidden, rounded-lg, border, shadow-sm, etc."},
+    {"text": "no-forbidden-patterns", "passed": false, "evidence": "DashboardLayout.tsx uses useState twice: const [sidebarCollapsed, setSidebarCollapsed] = useState(false) and const [mobileMenuOpen, setMobileMenuOpen] = useState(false). However, no fetch/axios/useQuery/useMutation present."}
+  ],
+  "summary": {"passed": 8, "failed": 2, "total": 10, "pass_rate": 0.80}
+}

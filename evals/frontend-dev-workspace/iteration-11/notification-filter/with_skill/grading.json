@@ -1,0 +1,14 @@
+{
+  "expectations": [
+    {"text": "filter-all-unread", "passed": true, "evidence": "NotificationList.tsx implements FilterType = 'all' | 'unread' with useState<FilterType>('all'), filter buttons toggle between states, and filtered list applies .filter((n) => !n.read) for unread"},
+    {"text": "hook-extracted", "passed": false, "evidence": "Fetch logic (useEffect + fetch('/api/notifications')) is inline in NotificationList.tsx, not extracted to a separate hook file"},
+    {"text": "hook-use-prefix", "passed": false, "evidence": "No separate hook file was created; fetch logic remains inline in the component"},
+    {"text": "hook-index-ts", "passed": false, "evidence": "No hook directory with index.ts pattern exists; no hook was extracted"},
+    {"text": "empty-state-rendered", "passed": true, "evidence": "data-testid='notifications-empty' is rendered when filtered.length === 0"},
+    {"text": "error-over-filter", "passed": true, "evidence": "Error check (if (error) return ...) with data-testid='notifications-error' is an early return before the filter UI is rendered"},
+    {"text": "locator-filter-all", "passed": true, "evidence": "data-testid='notifications-filter-all' exists on the 'all' filter button"},
+    {"text": "locator-filter-unread", "passed": true, "evidence": "data-testid='notifications-filter-unread' exists on the 'unread' filter button"},
+    {"text": "handler-handle-prefix", "passed": false, "evidence": "onClick handlers use inline arrow functions: onClick={() => setFilter('all')} and onClick={() => setFilter('unread')}; no handle* prefixed functions defined"}
+  ],
+  "summary": {"passed": 5, "failed": 4, "total": 9, "pass_rate": 0.56}
+}
