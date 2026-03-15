@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "generate-script-executed", "passed": false, "evidence": "without_skill configuration - generate script not available"},
+    {"text": "controller-file", "passed": true, "evidence": "auth.controller.ts exists with @Controller('auth') decorator"},
+    {"text": "service-file", "passed": true, "evidence": "auth.service.ts exists with @Injectable() decorator"},
+    {"text": "module-file", "passed": true, "evidence": "auth.module.ts exists with @Module() decorator"},
+    {"text": "login-endpoint", "passed": true, "evidence": "@Post('login') async login endpoint in auth.controller.ts"},
+    {"text": "register-endpoint", "passed": true, "evidence": "@Post('register') async register endpoint in auth.controller.ts"},
+    {"text": "module-directory", "passed": true, "evidence": "All auth files (controller, service, module, strategy, guard, dtos, interface) are co-located in outputs directory"}
+  ],
+  "summary": {"passed": 6, "failed": 1, "total": 7, "pass_rate": 0.86}
+}

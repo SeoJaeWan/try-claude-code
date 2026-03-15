@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "generate-form-hook", "passed": true, "evidence": "with_skill outputs contain useLoginForm.ts file"},
+    {"text": "generate-api-hook", "passed": true, "evidence": "with_skill outputs contain useLogin.ts file"},
+    {"text": "login-hook-in-mutations", "passed": true, "evidence": "page.tsx imports useLogin from '@/hooks/apis/mutations/useLogin'"},
+    {"text": "form-hook-placement", "passed": true, "evidence": "page.tsx imports useLoginForm from '@/hooks/login/useLoginForm' (hooks/ subdirectory)"},
+    {"text": "page-imports-hooks", "passed": true, "evidence": "page.tsx imports both useLoginForm and useLogin"},
+    {"text": "page-no-direct-logic", "passed": true, "evidence": "LoginPage contains no useState/fetch; all state managed via useLoginForm and useLogin hooks"},
+    {"text": "handle-submit", "passed": true, "evidence": "handleSubmit function defined in page.tsx for form submission"}
+  ],
+  "summary": {"passed": 7, "failed": 0, "total": 7, "pass_rate": 1.00}
+}

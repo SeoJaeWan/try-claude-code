@@ -1,0 +1,15 @@
+{
+  "expectations": [
+    {"text": "locator-empty-state", "passed": true, "evidence": "data-testid='empty-state' on root div in EmptyState.tsx"},
+    {"text": "locator-title", "passed": true, "evidence": "data-testid='empty-state-title' on h3 element in EmptyState.tsx"},
+    {"text": "locator-description", "passed": true, "evidence": "data-testid='empty-state-description' on p element in EmptyState.tsx"},
+    {"text": "default-empty-copy", "passed": true, "evidence": "page.tsx uses EmptyState with title='아직 할 일이 없습니다'"},
+    {"text": "filter-empty-copy", "passed": true, "evidence": "page.tsx uses EmptyState with title='검색 결과가 없습니다'"},
+    {"text": "centered-layout", "passed": true, "evidence": "Both cases use same EmptyState component with 'flex flex-col items-center justify-center' centered layout"},
+    {"text": "no-usestate", "passed": true, "evidence": "EmptyState.tsx contains no useState call"},
+    {"text": "no-useeffect", "passed": true, "evidence": "EmptyState.tsx contains no useEffect call"},
+    {"text": "tailwind-classes", "passed": true, "evidence": "Tailwind classes used throughout: flex, items-center, justify-center, py-16, text-lg, etc."},
+    {"text": "e2e-spec-path", "passed": false, "evidence": "No E2E spec file found in outputs"}
+  ],
+  "summary": {"passed": 9, "failed": 1, "total": 10, "pass_rate": 0.90}
+}

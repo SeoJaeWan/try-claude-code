@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "generate-output-exists", "passed": true, "evidence": "with_skill outputs contain useFetchOrder.ts, useFetchOrder.test.ts, and types.ts boilerplate files"},
+    {"text": "hook-file-exists", "passed": true, "evidence": "useFetchOrder.ts exists in outputs"},
+    {"text": "hook-in-queries", "passed": false, "evidence": "Files are in outputs/ root; no apis/queries/ directory structure visible in output"},
+    {"text": "index-export", "passed": false, "evidence": "No index.ts file found in outputs; hook exported directly from useFetchOrder.ts"},
+    {"text": "returns-loading", "passed": true, "evidence": "Hook returns isLoading state in UseFetchOrderReturn interface"},
+    {"text": "returns-error", "passed": true, "evidence": "Hook returns error (Error | null) and isError boolean in UseFetchOrderReturn interface"}
+  ],
+  "summary": {"passed": 4, "failed": 2, "total": 6, "pass_rate": 0.67}
+}

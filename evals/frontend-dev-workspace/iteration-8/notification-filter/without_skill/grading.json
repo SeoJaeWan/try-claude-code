@@ -1,0 +1,14 @@
+{
+  "expectations": [
+    {"text": "filter-all-unread", "passed": true, "evidence": "NotificationList.tsx implements FilterType = 'all' | 'unread' with state toggling and filtering logic"},
+    {"text": "hook-extracted", "passed": true, "evidence": "NotificationList.tsx imports useGetNotifications from @/hooks/apis/queries/useGetNotifications; no direct fetch in component"},
+    {"text": "hook-name-pattern", "passed": true, "evidence": "Hook named useGetNotifications follows use{Verb}{Resource} pattern"},
+    {"text": "empty-state-rendered", "passed": true, "evidence": "data-testid='notifications-empty' rendered when filteredNotifications.length === 0"},
+    {"text": "error-over-filter", "passed": true, "evidence": "Error check renders data-testid='notifications-error' before filter buttons; filter UI not rendered in error state"},
+    {"text": "locator-filter-all", "passed": true, "evidence": "data-testid=\"notifications-filter-all\" present on button element"},
+    {"text": "locator-filter-unread", "passed": true, "evidence": "data-testid=\"notifications-filter-unread\" present on button element"},
+    {"text": "handler-prefix", "passed": true, "evidence": "handleFilterAll and handleFilterUnread functions used as event handlers"},
+    {"text": "e2e-spec-path", "passed": true, "evidence": "dashboard-notification-filter.spec.ts exists in outputs (convention: features/next-app/tests/)"}
+  ],
+  "summary": {"passed": 9, "failed": 0, "total": 9, "pass_rate": 1.00}
+}
