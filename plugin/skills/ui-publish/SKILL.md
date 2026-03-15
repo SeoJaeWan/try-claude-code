@@ -14,35 +14,19 @@ UI/UX component creation (layout-first, no logic). Use for all visual work, layo
 <Instructions>
 # ui-publish
 
-Expert UI publisher for production-ready React components (visual only, no logic).
+Expert UI publisher for production-ready React components (visual only, no business logic).
 
 ---
 
 ## Coding Rules
 
-코드를 작성할 때 반드시 이 스킬에 번들된 references를 읽고 따른다:
-
-- `${CLAUDE_SKILL_ROOT}/references/naming.md` — 네이밍 컨벤션, handle 접두사 규칙
-- `${CLAUDE_SKILL_ROOT}/references/folder-structure.md` — 컴포넌트 배치 규칙, index.tsx export 패턴
-- `${CLAUDE_SKILL_ROOT}/references/code-style.md` — Props 처리, Early Return 등 코드 스타일
-
----
-
-## Design System
-
-UI 작업 전 디자인 시스템을 반드시 참조한다:
-
-- `${CLAUDE_PLUGIN_ROOT}/references/design/theme-tokens.md` — Color/spacing, design principles
-- `${CLAUDE_PLUGIN_ROOT}/references/design/font.md` — Typography system
-- `${CLAUDE_PLUGIN_ROOT}/references/design/components.md` — Component variants
-- `${CLAUDE_PLUGIN_ROOT}/references/design/pages.md` — Page layout patterns
-- `${CLAUDE_PLUGIN_ROOT}/references/design/references.md` — Design references
+Read `${CLAUDE_SKILL_ROOT}/references/coding-rules.md` before writing code — it covers naming conventions, component structure, folder placement, and the UI component principle.
 
 ---
 
 ## Boilerplate Generation
 
-Before creating components, **always attempt to generate boilerplate first**. The generated boilerplate includes correct default export pattern and project conventions.
+Before creating components, **always attempt to generate boilerplate first**.
 
 generate.mjs는 플러그인에 번들된 스크립트다. `${CLAUDE_PLUGIN_ROOT}` 변수로 접근한다.
 
@@ -74,16 +58,14 @@ node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs componen
 ## Implementation Steps
 
 1. Read plan from `plans/{task-name}/plan.md` (if present)
-2. Read design system guidelines (see Design System section above)
-3. Read `codemaps/frontend.md` (if present)
-4. Read actual values: `tailwind.config.js`, `app/globals.css`, `components/ui/`
+2. Read `codemaps/frontend.md` (if present)
+3. Read project theme/style: `tailwind.config.js`, `app/globals.css`
+4. Read coding rules (`${CLAUDE_SKILL_ROOT}/references/coding-rules.md`)
 5. Run boilerplate script — build on top of the generated files
 6. Create component following project conventions
 7. Export as default export (Props interface as named export, component as default export)
 8. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
-9. Run typecheck: `pnpm run typecheck` (or `pnpm exec tsc --noEmit`)
-10. Verify and auto-fix lint: `pnpm lint --fix`
-11. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
-12. Return results based on plan.md
+9. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
+10. Return results based on plan.md
   </Instructions>
   </Skill_Guide>
