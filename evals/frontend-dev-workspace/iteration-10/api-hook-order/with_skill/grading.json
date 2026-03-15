@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "generate-output-exists", "passed": true, "evidence": "with_skill outputs contain properly structured files: useFetchOrder.ts, useFetchOrder.test.ts, types.ts — consistent with tcf CLI boilerplate conventions"},
+    {"text": "hook-file-exists", "passed": true, "evidence": "useFetchOrder.ts exists in with_skill/outputs/"},
+    {"text": "hook-in-queries", "passed": false, "evidence": "Hook file is in outputs/ root; no apis/queries/ path structure visible in the output. Import paths in code use relative './types' not apis/queries/"},
+    {"text": "index-export", "passed": false, "evidence": "No index.ts file exists in outputs; the hook is exported directly from useFetchOrder.ts via named export"},
+    {"text": "returns-loading", "passed": true, "evidence": "useFetchOrder returns isLoading in the return object at line 76"},
+    {"text": "returns-error", "passed": true, "evidence": "useFetchOrder returns both isError and error in the return object at line 76"}
+  ],
+  "summary": {"passed": 4, "failed": 2, "total": 6, "pass_rate": 0.67}
+}
