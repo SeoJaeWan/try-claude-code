@@ -27,11 +27,10 @@ Read the following references:
 - `${CLAUDE_SKILL_ROOT}/references/comments.md` — JSDoc, TODO/FIXME
 - `${CLAUDE_SKILL_ROOT}/references/package-manager.md` — pnpm, .npmrc
 
-**각 dev 스킬의 naming/folder-structure references:**
-- `${CLAUDE_PLUGIN_ROOT}/skills/frontend-dev/references/naming.md` — 프론트엔드 네이밍
-- `${CLAUDE_PLUGIN_ROOT}/skills/frontend-dev/references/folder-structure.md` — 프론트엔드 폴더 구조
-- `${CLAUDE_PLUGIN_ROOT}/skills/backend-dev/references/naming.md` — 백엔드 네이밍
-- `${CLAUDE_PLUGIN_ROOT}/skills/backend-dev/references/folder-structure.md` — 백엔드 폴더 구조
+**각 dev 스킬의 coding-rules references:**
+- `${CLAUDE_PLUGIN_ROOT}/skills/frontend-dev/references/coding-rules.md` — 프론트엔드 코딩 규칙
+- `${CLAUDE_PLUGIN_ROOT}/skills/backend-dev/references/coding-rules.md` — 백엔드 코딩 규칙
+- `${CLAUDE_PLUGIN_ROOT}/skills/ui-publish/references/coding-rules.md` — UI 컴포넌트 코딩 규칙
 
 These are the **single source of truth**. Do not invent rules beyond what is documented.
 
