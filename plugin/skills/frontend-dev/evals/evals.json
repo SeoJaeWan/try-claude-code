@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "plans/sample-frontend-dashboard-notification-filter/plan.md의 Phase 1을 실행해줘. NotificationList에 all/unread 필터를 추가하고 empty state, error 처리까지 해줘",
-      "expected_output": "NotificationList에 필터 state 추가, empty/error state 구현, locator 추가, E2E spec 배치",
+      "expected_output": "NotificationList에 필터 state 추가, empty/error state 구현, locator 추가",
       "files": [
         "../../../features/next-app/package.json",
         "../../../features/next-app/app/dashboard/page.tsx",
@@ -15,28 +15,29 @@
       "expectations": [
         {"id": "filter-all-unread", "text": "all/unread 두 가지 필터 상태 전환이 코드에 구현되어 있다"},
         {"id": "hook-extracted", "text": "기존 인라인 fetch 로직이 별도 커스텀 훅 파일로 분리되어 있다 (컴포넌트에 직접 fetch 없음)"},
-        {"id": "hook-name-pattern", "text": "추출된 훅 이름이 use{Verb}{Resource} 패턴을 따른다"},
+        {"id": "hook-use-prefix", "text": "추출된 훅 이름이 use 접두사로 시작한다 (tcf profile: hook prefix = use)"},
+        {"id": "hook-index-ts", "text": "추출된 훅이 {hookName}/index.ts 디렉토리 패턴으로 생성된다 (tcf profile: output = {path}/{name}/index.ts)"},
         {"id": "empty-state-rendered", "text": "unread 필터 결과 0건 시 data-testid='notifications-empty' 요소가 렌더링된다"},
         {"id": "error-over-filter", "text": "error 상태일 때 필터 결과 대신 data-testid='notifications-error' 요소가 우선 렌더링된다"},
         {"id": "locator-filter-all", "text": "data-testid='notifications-filter-all' 속성이 코드에 존재한다"},
         {"id": "locator-filter-unread", "text": "data-testid='notifications-filter-unread' 속성이 코드에 존재한다"},
-        {"id": "handler-prefix", "text": "이벤트 핸들러 함수명이 handle 접두사를 사용한다 (handleFilter, handleClick 등)"},
-        {"id": "e2e-spec-path", "text": "E2E spec 파일이 features/next-app/tests/ 하위에 배치된다"}
+        {"id": "handler-handle-prefix", "text": "이벤트 핸들러 함수명이 handle 접두사를 사용한다 (shared profile: internal handler = handle*)"}
       ]
     },
     {
       "id": 2,
       "prompt": "useFetchOrder라는 API 훅을 만들어줘. query 방식으로 주문 데이터를 가져오는 훅이야",
-      "expected_output": "generate.mjs api-hook으로 보일러플레이트 생성 후 구현, apis/queries/ 배치",
+      "expected_output": "tcf CLI 컨벤션에 맞는 API query 훅 생성",
       "files": [
         "../../../features/next-app/package.json",
         "../../../features/next-app/app/page.tsx"
       ],
       "expectations": [
-        {"id": "generate-output-exists", "text": "generate.mjs api-hook 실행 결과로 생성된 보일러플레이트 파일이 존재한다"},
         {"id": "hook-file-exists", "text": "useFetchOrder 훅 파일이 존재한다"},
-        {"id": "hook-in-queries", "text": "훅 파일이 apis/queries/ 경로 하위에 배치된다"},
-        {"id": "index-export", "text": "훅이 index.ts 파일에서 export된다"},
+        {"id": "hook-use-prefix", "text": "훅 이름이 use 접두사로 시작한다 (tcf profile: hook prefix = use)"},
+        {"id": "hook-in-apis-queries", "text": "훅 경로에 /apis/ 와 /queries/ 가 포함된다 (tcf profile: API query hook → apis/{domain}/queries)"},
+        {"id": "hook-index-ts", "text": "훅이 {hookName}/index.ts 패턴으로 생성된다 (tcf profile: output = {path}/{name}/index.ts)"},
+        {"id": "arrow-function", "text": "훅이 화살표 함수로 정의된다 (shared profile: function style = arrow)"},
         {"id": "returns-loading", "text": "훅 반환값에 loading/isLoading 상태가 포함된다"},
         {"id": "returns-error", "text": "훅 반환값에 error 상태가 포함된다"}
       ]
@@ -44,20 +45,19 @@
     {
       "id": 3,
       "prompt": "로그인 페이지에 useLoginForm 커스텀 훅이랑 useLogin API 훅을 만들고 페이지에서 조합해줘",
-      "expected_output": "useLoginForm 유틸 훅 + useLogin API 훅 생성, 로그인 페이지에서 훅 조합",
+      "expected_output": "tcf CLI 컨벤션에 맞는 훅 생성 및 페이지 조합",
       "files": [
         "../../../features/next-app/package.json",
         "../../../features/next-app/app/page.tsx",
         "../../../features/next-app/app/layout.tsx"
       ],
       "expectations": [
-        {"id": "generate-form-hook", "text": "generate.mjs hook useLoginForm 실행 결과로 생성된 파일이 존재한다"},
-        {"id": "generate-api-hook", "text": "generate.mjs api-hook useLogin 실행 결과로 생성된 파일이 존재한다"},
-        {"id": "login-hook-in-mutations", "text": "useLogin 훅이 apis/mutations/ 경로 하위에 배치된다"},
-        {"id": "form-hook-placement", "text": "useLoginForm이 hooks/ 하위에 배치된다 (페이지 전용 또는 utils/)"},
+        {"id": "login-hook-in-mutations", "text": "useLogin 훅 경로에 /apis/ 와 /mutations/ 가 포함된다 (tcf profile: API mutation hook → apis/{domain}/mutations)"},
+        {"id": "form-hook-placement", "text": "useLoginForm이 hooks/ 하위에 배치된다"},
+        {"id": "hooks-index-ts", "text": "두 훅 모두 {hookName}/index.ts 패턴으로 생성된다 (tcf profile: output pattern)"},
         {"id": "page-imports-hooks", "text": "로그인 페이지 파일이 useLoginForm과 useLogin을 import한다"},
         {"id": "page-no-direct-logic", "text": "로그인 페이지 컴포넌트에 직접적인 useState/fetch 로직이 없고 훅 조합만 한다"},
-        {"id": "handle-submit", "text": "폼 제출 핸들러가 handleSubmit 등 handle 접두사를 사용한다"}
+        {"id": "handle-submit", "text": "폼 제출 핸들러가 handle 접두사를 사용한다 (shared profile: internal handler = handle*)"}
       ]
     }
   ]
