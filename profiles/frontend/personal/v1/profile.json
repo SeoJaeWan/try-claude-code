@@ -1,0 +1,95 @@
+{
+  "id": "frontend/personal/v1",
+  "kind": "frontend-profile",
+  "alias": "tcf",
+  "extends": ["shared/personal/v1"],
+  "commands": {
+    "hook": {
+      "description": "Generate a non-API hook",
+      "arguments": {
+        "name": {
+          "required": true,
+          "pattern": "^use[A-Z].*$"
+        },
+        "path": {
+          "required": true
+        }
+      },
+      "generator": {
+        "kind": "singleFile"
+      },
+      "output": {
+        "filePattern": "{path}/{name}/index.ts"
+      },
+      "templateFile": "templates/hook.default.ts",
+      "rules": {
+        "enforced": {
+          "pathPolicy": {
+            "allowedRoots": ["hooks", "src", "app", "components"]
+          },
+          "hookStyle": {
+            "functionStyle": "arrow",
+            "exportStyle": "default"
+          }
+        },
+        "guidance": {
+          "placementRules": [
+            "Reusable business hooks go under hooks/utils.",
+            "Page-specific hooks may live under {page}/hooks.",
+            "Component-specific hooks may live under components/.../hooks."
+          ]
+        }
+      },
+      "examples": [
+        "tcf hook useScroll --path hooks/utils",
+        "tcf hook useToggle --path components/common/toggle/hooks"
+      ]
+    },
+    "apiHook": {
+      "description": "Generate a TanStack Query API hook",
+      "arguments": {
+        "name": {
+          "required": true,
+          "pattern": "^use[A-Z].*$"
+        },
+        "path": {
+          "required": true
+        },
+        "kind": {
+          "required": true,
+          "enum": ["query", "mutation"]
+        }
+      },
+      "generator": {
+        "kind": "singleFile"
+      },
+      "output": {
+        "filePattern": "{path}/{name}/index.ts"
+      },
+      "templateFiles": {
+        "query": "templates/api-hook.query.ts",
+        "mutation": "templates/api-hook.mutation.ts"
+      },
+      "rules": {
+        "enforced": {
+          "pathPolicy": {
+            "allowedRoots": ["hooks", "src", "app"]
+          },
+          "library": {
+            "queryClient": "@tanstack/react-query"
+          }
+        },
+        "guidance": {
+          "placementRules": [
+            "API hooks live under hooks/apis/{domain}/queries or hooks/apis/{domain}/mutations.",
+            "Use query for reads and mutation for writes."
+          ]
+        }
+      },
+      "examples": [
+        "tcf apiHook useGetProduct --path hooks/apis/product/queries --kind query",
+        "tcf apiHook useCreateProduct --path hooks/apis/product/mutations --kind mutation"
+      ]
+    }
+  }
+}

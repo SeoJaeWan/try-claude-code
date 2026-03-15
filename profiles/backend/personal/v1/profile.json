@@ -1,0 +1,135 @@
+{
+  "id": "backend/personal/v1",
+  "kind": "backend-profile",
+  "alias": "tcb",
+  "extends": [],
+  "help": {
+    "defaultFormat": "json",
+    "supportedFormats": ["json", "text"]
+  },
+  "metadata": {
+    "sourceBackedDefaults": [
+      "Avoid the default package and keep the application class at the root package.",
+      "Use @Valid for request validation.",
+      "Use @ControllerAdvice and ResponseEntityExceptionHandler for REST errors."
+    ],
+    "inferredChoices": [
+      "Use package-by-feature.",
+      "Split feature packages into controller, service, dto, entity, repository."
+    ]
+  },
+  "commands": {
+    "module": {
+      "description": "Generate a Spring feature module skeleton",
+      "arguments": {
+        "name": {
+          "required": true,
+          "case": "PascalCase"
+        },
+        "path": {
+          "required": true
+        },
+        "basePackage": {
+          "required": false
+        }
+      },
+      "generator": {
+        "kind": "springModule"
+      },
+      "templateFiles": {
+        "controller": "templates/module.controller.java",
+        "service": "templates/module.service.java",
+        "repository": "templates/module.repository.java",
+        "globalExceptionHandler": "templates/module.global-exception-handler.java"
+      },
+      "rules": {
+        "enforced": {
+          "pathPolicy": {
+            "segmentCase": "lower-case"
+          }
+        }
+      },
+      "examples": [
+        "tcb module Product --path product --base-package com.example.app"
+      ]
+    },
+    "requestDto": {
+      "description": "Generate a Spring request DTO",
+      "arguments": {
+        "name": {
+          "required": true,
+          "case": "PascalCase"
+        },
+        "path": {
+          "required": true
+        },
+        "basePackage": {
+          "required": false
+        }
+      },
+      "generator": {
+        "kind": "singleFile",
+        "requiresBasePackage": true
+      },
+      "output": {
+        "filePattern": "src/main/java/{basePackagePath}/{path}/dto/{name}.java"
+      },
+      "templateFile": "templates/request-dto.java",
+      "examples": [
+        "tcb requestDto CreateProductRequest --path product --base-package com.example.app"
+      ]
+    },
+    "responseDto": {
+      "description": "Generate a Spring response DTO",
+      "arguments": {
+        "name": {
+          "required": true,
+          "case": "PascalCase"
+        },
+        "path": {
+          "required": true
+        },
+        "basePackage": {
+          "required": false
+        }
+      },
+      "generator": {
+        "kind": "singleFile",
+        "requiresBasePackage": true
+      },
+      "output": {
+        "filePattern": "src/main/java/{basePackagePath}/{path}/dto/{name}.java"
+      },
+      "templateFile": "templates/response-dto.java",
+      "examples": [
+        "tcb responseDto ProductResponse --path product --base-package com.example.app"
+      ]
+    },
+    "entity": {
+      "description": "Generate a Spring entity",
+      "arguments": {
+        "name": {
+          "required": true,
+          "case": "PascalCase"
+        },
+        "path": {
+          "required": true
+        },
+        "basePackage": {
+          "required": false
+        }
+      },
+      "generator": {
+        "kind": "singleFile",
+        "requiresBasePackage": true
+      },
+      "output": {
+        "filePattern": "src/main/java/{basePackagePath}/{path}/entity/{name}.java"
+      },
+      "templateFile": "templates/entity.java",
+      "examples": [
+        "tcb entity Product --path product --base-package com.example.app"
+      ]
+    }
+  }
+}

@@ -18,31 +18,6 @@ Expert frontend logic workflow — hooks, state management, and API integration.
 
 ---
 
-## Coding Rules
-
-Read `${CLAUDE_SKILL_ROOT}/references/coding-rules.md` before writing code — it covers hook naming, folder structure, and placement rules.
-
----
-
-## Boilerplate Generation
-
-Before implementing hooks, **always attempt to generate boilerplate first**.
-
-generate.mjs는 플러그인에 번들된 스크립트다. `${CLAUDE_PLUGIN_ROOT}` 변수로 접근한다.
-
-```bash
-# Custom hook boilerplate
-node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs hook <hookName> [--form]
-
-# API hook boilerplate (query)
-node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs api-hook <hookName> --method query
-
-# API hook boilerplate (mutation)
-node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs api-hook <hookName> --method mutation
-```
-
----
-
 ## Core Principle
 
 **Publisher creates components (UI/layout/styling). You fill in the logic.**
@@ -58,12 +33,28 @@ node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs api-hook
 
 1. Read plan from `plans/{task-name}/plan.md`
 2. Read `codemaps/frontend.md` (if present)
-3. Read coding rules (`${CLAUDE_SKILL_ROOT}/references/coding-rules.md`)
-4. If plan includes `tests/`: copy test files to source tree (read `manifest.md` for paths), run Red verification (`pnpm test`)
-5. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
-6. **Extract inline logic**: if target component has inline fetch, useState (for business data), useEffect — extract into custom hooks first
-7. Implement:
-    - Custom hooks (use `{hooksRoot}` rules from `coding-rules.md`)
+3. If plan includes `tests/`: copy test files to source tree (read `manifest.md` for paths), run Red verification (`pnpm test`)
+4. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
+5. **Extract inline logic**: if target component has inline fetch, useState (for business data), useEffect — extract into custom hooks first
+6. **Use `tcf` CLI to create hook scaffolds** — do NOT create hook files manually:
+   ```bash
+   # Inspect current frontend rules
+   tcf --help
+   tcf --help --text
+
+   # Custom hook
+   tcf hook <hookName> --path hooks/utils
+
+   # API query hook
+   tcf apiHook <hookName> --path hooks/apis/product/queries --kind query
+
+   # API mutation hook
+   tcf apiHook <hookName> --path hooks/apis/product/mutations --kind mutation
+
+   # Shared type
+   tcf type <TypeName> --path types/product
+   ```
+7. Implement logic inside the generated files:
     - State management integration
     - Connect hooks to components created by publisher
 8. Run tests: `pnpm test` — confirm ALL pass (Green)
@@ -71,24 +62,12 @@ node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs api-hook
 10. Commit changes
 11. Return results based on plan.md
 
----
+## CLI Notes
 
-## Folder Structure
-
-`coding-rules.md`의 `{hooksRoot}` 규칙을 단일 기준으로 사용:
-
-```
-{hooksRoot}/
-├── apis/
-│   ├── queries/       # GET (data fetching): useFetchOrder, useGetUser
-│   └── mutations/     # POST/PUT/DELETE (data modification): useLogin, useCreateMemo
-├── utils/             # Utility hooks (useDebounce, useLocalStorage)
-└── {feature}/         # Page-specific hooks (when needed)
-```
-
-API hooks must be placed under queries/ or mutations/, never directly under apis/.
-Auth-related hooks (login, register) are mutations (they modify data).
-Each hook uses the `{hookName}/index.ts` directory pattern.
+- `tcf --help` defaults to JSON for agent consumption.
+- Hook names must start with `use`.
+- `tcf hook` and `tcf apiHook` both require `--path`.
+- API hooks must use TanStack Query and live under `hooks/apis/{domain}/queries|mutations`.
 
 ---
 

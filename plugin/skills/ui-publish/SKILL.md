@@ -18,25 +18,6 @@ Expert UI publisher for production-ready React components (visual only, no busin
 
 ---
 
-## Coding Rules
-
-Read `${CLAUDE_SKILL_ROOT}/references/coding-rules.md` before writing code — it covers naming conventions, component structure, folder placement, and the UI component principle.
-
----
-
-## Boilerplate Generation
-
-Before creating components, **always attempt to generate boilerplate first**.
-
-generate.mjs는 플러그인에 번들된 스크립트다. `${CLAUDE_PLUGIN_ROOT}` 변수로 접근한다.
-
-```bash
-# Component boilerplate
-node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs component <ComponentName>
-```
-
----
-
 ## Layout-First Principle
 
 **Focus on visual structure, NOT business logic:**
@@ -60,12 +41,31 @@ node ${CLAUDE_PLUGIN_ROOT}/references/coding-rules/scripts/generate.mjs componen
 1. Read plan from `plans/{task-name}/plan.md` (if present)
 2. Read `codemaps/frontend.md` (if present)
 3. Read project theme/style: `tailwind.config.js`, `app/globals.css`
-4. Read coding rules (`${CLAUDE_SKILL_ROOT}/references/coding-rules.md`)
-5. Run boilerplate script — build on top of the generated files
-6. Create component following project conventions
-7. Export as default export (Props interface as named export, component as default export)
-8. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
-9. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
-10. Return results based on plan.md
+4. **Use `tcp` CLI to create component scaffolds** — do NOT create component files manually:
+   ```bash
+   # Inspect current publisher rules
+   tcp --help
+   tcp --help --text
+
+   # Component
+   tcp component <ComponentName> --path page/homePage
+
+   # Shared type
+   tcp type <TypeName> --path types/common
+
+   # Validate content against active profile
+   tcp validate component --content "const HomePage = () => { return <div />; }"
+   ```
+5. Implement visual layout inside the generated files
+6. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
+7. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
+8. Return results based on plan.md
+
+## CLI Notes
+
+- `tcp --help` defaults to JSON for agent consumption.
+- Use `tcp --help --text` only when you need a human-readable summary.
+- `tcp component` requires `--path`.
+- Publisher must not add business logic. `useEffect`, `fetch`, `axios`, `useQuery`, `useMutation` are blocked by CLI rules.
   </Instructions>
   </Skill_Guide>

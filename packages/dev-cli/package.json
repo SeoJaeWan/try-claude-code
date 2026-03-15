@@ -1,0 +1,20 @@
+{
+  "name": "@try-claude/dev-cli",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "tcp": "./bin/tcp.mjs",
+    "tcf": "./bin/tcf.mjs",
+    "tcb": "./bin/tcb.mjs"
+  },
+  "scripts": {
+    "test": "node --test ./tests/*.test.mjs",
+    "tcp": "node ./bin/tcp.mjs",
+    "tcf": "node ./bin/tcf.mjs",
+    "tcb": "node ./bin/tcb.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
