@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "filter-all-unread",
+      "passed": true,
+      "evidence": "NotificationList.tsx implements FilterType = 'all' | 'unread' with useState, handleFilterAll and handleFilterUnread switch between states"
+    },
+    {
+      "text": "hook-extracted",
+      "passed": true,
+      "evidence": "Fetch logic is in separate useGetNotifications.ts hook file; NotificationList.tsx imports via '@/hooks/apis/queries/useGetNotifications' with no direct fetch calls in the component"
+    },
+    {
+      "text": "hook-name-pattern",
+      "passed": true,
+      "evidence": "Hook is named useGetNotifications which follows use{Verb}{Resource} pattern (useGet + Notifications)"
+    },
+    {
+      "text": "empty-state-rendered",
+      "passed": true,
+      "evidence": "NotificationList.tsx line 66-71: data-testid='notifications-empty' element rendered when filteredNotifications.length === 0"
+    },
+    {
+      "text": "error-over-filter",
+      "passed": true,
+      "evidence": "NotificationList.tsx lines 25-31: error check returns notifications-error element before filter UI renders, so error takes priority over filters"
+    },
+    {
+      "text": "locator-filter-all",
+      "passed": true,
+      "evidence": "NotificationList.tsx line 42: data-testid='notifications-filter-all' on button element"
+    },
+    {
+      "text": "locator-filter-unread",
+      "passed": true,
+      "evidence": "NotificationList.tsx line 53: data-testid='notifications-filter-unread' on button element"
+    },
+    {
+      "text": "handler-prefix",
+      "passed": true,
+      "evidence": "NotificationList.tsx lines 12-13: handleFilterAll and handleFilterUnread use handle prefix"
+    },
+    {
+      "text": "e2e-spec-path",
+      "passed": true,
+      "evidence": "dashboard-notification-filter.spec.ts exists in outputs with Playwright E2E tests covering all/unread filter, empty state, and error scenarios"
+    }
+  ],
+  "summary": { "passed": 9, "failed": 0, "total": 9, "pass_rate": 1.0 }
+}

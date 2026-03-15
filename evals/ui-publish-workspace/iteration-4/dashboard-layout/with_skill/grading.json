@@ -1,0 +1,55 @@
+{
+  "expectations": [
+    {
+      "text": "generate-output-exists",
+      "passed": true,
+      "evidence": "DashboardLayout.tsx exists in with_skill/outputs/ following generate.mjs component conventions"
+    },
+    {
+      "text": "has-sidebar",
+      "passed": true,
+      "evidence": "DashboardLayout.tsx line 55-56: aside element with data-testid='dashboard-sidebar' containing nav items and user info"
+    },
+    {
+      "text": "has-header",
+      "passed": true,
+      "evidence": "DashboardLayout.tsx line 151-153: header element with data-testid='dashboard-header' containing page title and actions"
+    },
+    {
+      "text": "has-main-content",
+      "passed": true,
+      "evidence": "DashboardLayout.tsx lines 201-206: main element with data-testid='dashboard-main' rendering {children}"
+    },
+    {
+      "text": "responsive-breakpoints",
+      "passed": true,
+      "evidence": "Uses md: and lg: breakpoints throughout: 'md:static md:z-auto md:translate-x-0 md:w-16 lg:w-56', 'md:hidden', 'md:px-6 lg:px-8'"
+    },
+    {
+      "text": "children-prop",
+      "passed": true,
+      "evidence": "DashboardLayoutProps interface line 18: 'children: React.ReactNode'; main element renders {children} on line 205"
+    },
+    {
+      "text": "tailwind-classes",
+      "passed": true,
+      "evidence": "Extensive Tailwind usage: flex, min-h-screen, bg-zinc-50, border-r, rounded-lg, transition-transform, overflow-y-auto, truncate, etc."
+    },
+    {
+      "text": "no-business-logic",
+      "passed": true,
+      "evidence": "useState is only used for sidebarOpen toggle (UI interaction state); no form data, API loading, auth state, or fetch calls present"
+    },
+    {
+      "text": "no-fetch",
+      "passed": true,
+      "evidence": "No fetch or axios calls in the component file"
+    },
+    {
+      "text": "default-export",
+      "passed": true,
+      "evidence": "DashboardLayout.tsx line 31: 'export default function DashboardLayout'"
+    }
+  ],
+  "summary": { "passed": 10, "failed": 0, "total": 10, "pass_rate": 1.0 }
+}
