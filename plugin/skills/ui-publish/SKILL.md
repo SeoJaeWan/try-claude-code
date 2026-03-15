@@ -45,7 +45,8 @@ Expert UI publisher for production-ready React components (visual only, no busin
    ```bash
    # Inspect current publisher rules
    tcp --help
-   tcp --help --text
+   tcp guide
+   tcp guide component
 
    # Single component preview
    tcp component --json '{"name":"HomePage","path":"page/homePage"}'
@@ -93,7 +94,7 @@ Expert UI publisher for production-ready React components (visual only, no busin
 ## CLI Notes
 
 - `tcp --help` defaults to JSON for agent consumption.
-- Use `tcp --help --text` only when you need a human-readable summary.
+- Use `tcp guide` when you need a human-readable summary.
 - Use `--json` only for spec-driven commands.
 - Preview is the default. Use `--apply` only when you want files written.
 - Publisher must not add business logic. `useEffect`, `fetch`, `axios`, `useQuery`, `useMutation` are blocked by CLI rules.

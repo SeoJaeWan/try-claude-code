@@ -40,7 +40,8 @@ Expert frontend logic workflow — hooks, state management, and API integration.
    ```bash
    # Inspect current frontend rules
    tcf --help
-   tcf --help --text
+   tcf guide
+   tcf guide hook
 
    # Custom hook preview
    tcf hook --json '{"name":"useScroll","path":"hooks/utils"}'
@@ -94,6 +95,7 @@ Expert frontend logic workflow — hooks, state management, and API integration.
 ## CLI Notes
 
 - `tcf --help` defaults to JSON for agent consumption.
+- Use `tcf guide` when you need a human-readable summary.
 - Hook names must start with `use`.
 - Use `--json` only for spec-driven commands.
 - Preview is the default. Use `--apply` only when you want files written.

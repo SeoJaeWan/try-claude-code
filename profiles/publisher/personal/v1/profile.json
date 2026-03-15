@@ -3,6 +3,14 @@
   "kind": "publisher-profile",
   "alias": "tcp",
   "extends": ["shared/personal/v1"],
+  "guide": {
+    "요약": "퍼블리셔 personal v1 규칙이다. UI 껍질과 상호작용 상태만 다룬다.",
+    "공통규칙": [
+      "퍼블리셔는 비즈니스 로직을 구현하지 않는다.",
+      "toggle, sidebar, modal 같은 UI 상호작용 state는 허용한다.",
+      "domain 전용 컴포넌트는 components/{domain}, 여러 도메인에서 쓰면 components/common을 사용한다."
+    ]
+  },
   "rules": {
     "guidance": {
       "placementRules": [
@@ -15,6 +23,28 @@
   "commands": {
     "component": {
       "description": "Generate a publisher UI component file",
+      "guide": {
+        "목적": "UI 컴포넌트 파일 껍질을 생성한다.",
+        "입력규칙": [
+          "name과 path는 필수다.",
+          "props는 value 또는 callback 멤버 배열로 전달한다."
+        ],
+        "이름규칙": [
+          "컴포넌트 이름은 PascalCase를 사용한다.",
+          "props callback은 on* 규칙을 따른다."
+        ],
+        "출력규칙": [
+          "출력 파일은 {path}/index.tsx 이다.",
+          "Props 인터페이스와 export default를 포함한다."
+        ],
+        "금지규칙": [
+          "useEffect(",
+          "fetch(",
+          "axios.",
+          "useQuery(",
+          "useMutation("
+        ]
+      },
       "inputMode": "json",
       "execution": {
         "kind": "file"
@@ -92,6 +122,24 @@
     },
     "uiState": {
       "description": "Render UI interaction state and handlers snippet",
+      "guide": {
+        "목적": "UI 상호작용 state와 handler 껍질을 생성한다.",
+        "입력규칙": [
+          "name은 필수다.",
+          "pattern으로 toggle 또는 기본 패턴을 선택할 수 있다."
+        ],
+        "이름규칙": [
+          "state 이름은 is*Open 규칙을 기본으로 사용한다.",
+          "setter는 setIs*Open 규칙을 기본으로 사용한다.",
+          "handler는 handleToggle*, handleOpen*, handleClose* 규칙을 사용한다."
+        ],
+        "출력규칙": [
+          "state 선언과 handler 껍질을 함께 반환한다."
+        ],
+        "주의사항": [
+          "비즈니스 상태가 아니라 UI 상호작용 상태에만 사용한다."
+        ]
+      },
       "inputMode": "json",
       "execution": {
         "kind": "snippet",
@@ -150,6 +198,18 @@
     },
     "batch": {
       "description": "Execute multiple publisher ops in one request",
+      "guide": {
+        "목적": "여러 퍼블리셔 작업을 한 번의 요청으로 순차 실행한다.",
+        "입력규칙": [
+          "ops 배열은 순서대로 실행된다.",
+          "앞선 op 결과는 $ref로 뒤 op에서 참조할 수 있다."
+        ],
+        "출력규칙": [
+          "기본은 preview다.",
+          "--apply일 때만 마지막에 한 번 write 한다.",
+          "하나라도 실패하면 전체 write를 취소한다."
+        ]
+      },
       "inputMode": "json",
       "execution": {
         "kind": "batch"

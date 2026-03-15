@@ -100,7 +100,7 @@ tcp --help
 
 ## Help Contract
 
-기본 help는 JSON이다.
+기본 help는 AI용 JSON이다.
 
 ```bash
 tcp --help
@@ -108,13 +108,18 @@ tcf --help
 tcb --help
 ```
 
-사람용은 `--text`를 사용한다.
+사람용 가이드는 별도 `guide` 명령으로 본다.
 
 ```bash
-tcp --help --text
-tcf --help --text
-tcb --help --text
+tcp guide
+tcf guide
+tcb guide
+tcp guide component
+tcf guide hook
 ```
+
+`guide`의 source of truth도 profile 안의 `guide` 속성이다.
+즉 machine rule과 human guide를 같은 `profile.json` 안에서 함께 관리한다.
 
 ## Execution Model
 

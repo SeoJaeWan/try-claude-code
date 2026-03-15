@@ -1,3 +1,5 @@
+import { normalizeCommandName } from "./arg-parser.mjs";
+
 const ROLE_BY_ALIAS = {
   tcp: "publisher",
   tcf: "frontend",
@@ -6,6 +8,14 @@ const ROLE_BY_ALIAS = {
 
 function normalizeFormat(options) {
   return options.text ? "text" : "json";
+}
+
+function normalizeGuideFormat(options) {
+  if (options.json === true) {
+    return "json";
+  }
+
+  return "text";
 }
 
 export function getRoleForAlias(alias) {
@@ -52,6 +62,16 @@ export function routeCommand(alias, parsed) {
       action: "validate",
       format,
       target: normalizeCommandName(parsed.positionals[1] ?? "") || null,
+      options: parsed.options
+    };
+  }
+
+  if (first === "guide") {
+    return {
+      role,
+      action: "guide",
+      format: normalizeGuideFormat(parsed.options),
+      commandName: normalizeCommandName(parsed.positionals[1] ?? "") || null,
       options: parsed.options
     };
   }

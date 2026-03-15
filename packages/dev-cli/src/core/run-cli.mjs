@@ -4,6 +4,7 @@ import { routeCommand } from "./command-router.mjs";
 import { writeProfileSelection } from "./config-store.mjs";
 import { errorToPayload } from "./error-formatter.mjs";
 import { writeGeneratedFiles } from "./file-writer.mjs";
+import { createGuidePayload, renderGuideText } from "./guide-renderer.mjs";
 import { createHelpPayload, renderHelpText } from "./help-renderer.mjs";
 import { resolveActiveProfile } from "./mode-resolver.mjs";
 import { formatOutput } from "./output.mjs";
@@ -102,6 +103,37 @@ async function handleHelpCommand({ alias, role, route, repoRoot }) {
       ok: true,
       format: "text",
       payload: renderHelpText(payload)
+    };
+  }
+
+  return payload;
+}
+
+async function handleGuideCommand({ alias, role, route, repoRoot }) {
+  const activeProfile = await resolveActiveProfile({
+    role,
+    repoRoot,
+    options: route.options
+  });
+  const { profile } = await loadActiveProfile({
+    repoRoot,
+    role,
+    mode: activeProfile.mode,
+    version: activeProfile.version
+  });
+  const payload = createGuidePayload({
+    alias,
+    role,
+    activeProfile,
+    profile,
+    commandName: route.commandName
+  });
+
+  if (route.format === "text") {
+    return {
+      ok: true,
+      format: "text",
+      payload: renderGuideText(payload)
     };
   }
 
@@ -244,6 +276,13 @@ export async function runCli({
     let payload;
     if (route.action === "help") {
       payload = await handleHelpCommand({
+        alias,
+        role: route.role,
+        route,
+        repoRoot
+      });
+    } else if (route.action === "guide") {
+      payload = await handleGuideCommand({
         alias,
         role: route.role,
         route,

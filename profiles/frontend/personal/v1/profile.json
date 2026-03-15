@@ -3,9 +3,30 @@
   "kind": "frontend-profile",
   "alias": "tcf",
   "extends": ["shared/personal/v1"],
+  "guide": {
+    "요약": "프론트엔드 personal v1 규칙이다. 훅, API 훅, 프론트엔드용 snippet을 다룬다.",
+    "공통규칙": [
+      "훅은 use prefix를 사용한다.",
+      "API 요청 로직은 apiHook으로 만들고 TanStack Query 기준을 따른다.",
+      "컴포넌트 전용 훅은 로컬 경로에 두고, 재사용되면 공유 훅으로 승격한다."
+    ]
+  },
   "commands": {
     "hook": {
       "description": "Generate a non-API hook file",
+      "guide": {
+        "목적": "일반 훅 파일 껍질을 생성한다.",
+        "입력규칙": [
+          "name과 path는 필수다."
+        ],
+        "이름규칙": [
+          "훅 이름은 use* 규칙을 사용한다."
+        ],
+        "출력규칙": [
+          "출력 파일은 {path}/{name}/index.ts 이다.",
+          "화살표 함수와 export default를 사용한다."
+        ]
+      },
       "inputMode": "json",
       "execution": {
         "kind": "file"
@@ -66,6 +87,23 @@
     },
     "apiHook": {
       "description": "Generate a TanStack Query API hook file",
+      "guide": {
+        "목적": "TanStack Query 기반 API 훅 파일을 생성한다.",
+        "입력규칙": [
+          "name, path, kind는 필수다.",
+          "kind는 query 또는 mutation만 허용한다."
+        ],
+        "이름규칙": [
+          "훅 이름은 use* 규칙을 사용한다."
+        ],
+        "출력규칙": [
+          "출력 파일은 {path}/{name}/index.ts 이다.",
+          "query는 queries, mutation은 mutations 경로를 사용해야 한다."
+        ],
+        "주의사항": [
+          "API 훅은 서버 요청 로직에만 사용한다."
+        ]
+      },
       "inputMode": "json",
       "execution": {
         "kind": "file"
@@ -144,6 +182,20 @@
     },
     "queryKey": {
       "description": "Render a TanStack Query key snippet",
+      "guide": {
+        "목적": "TanStack Query key 함수 껍질을 만든다.",
+        "입력규칙": [
+          "domain은 필수다.",
+          "scope와 params는 선택값이지만 규칙에 맞게 정규화된다."
+        ],
+        "이름규칙": [
+          "domain과 scope는 camelCase를 사용한다.",
+          "함수명 suffix는 현재 profile recipe를 따른다."
+        ],
+        "출력규칙": [
+          "query key 함수와 배열 멤버 구성을 함께 반환한다."
+        ]
+      },
       "inputMode": "json",
       "execution": {
         "kind": "snippet",
@@ -192,6 +244,20 @@
     },
     "endpoint": {
       "description": "Render an API endpoint constant snippet",
+      "guide": {
+        "목적": "API endpoint 상수 껍질을 만든다.",
+        "입력규칙": [
+          "method, resource, path는 필수다."
+        ],
+        "이름규칙": [
+          "method는 대문자로 정규화한다.",
+          "resource는 camelCase를 사용한다.",
+          "상수명은 현재 profile의 prefix, suffix 규칙으로 생성한다."
+        ],
+        "출력규칙": [
+          "상수명과 endpoint path를 함께 반환한다."
+        ]
+      },
       "inputMode": "json",
       "execution": {
         "kind": "snippet",
@@ -228,6 +294,19 @@
     },
     "mapper": {
       "description": "Render a mapper function snippet",
+      "guide": {
+        "목적": "응답 타입을 뷰 모델로 바꾸는 mapper 함수 껍질을 만든다.",
+        "입력규칙": [
+          "sourceType과 targetType은 필수다."
+        ],
+        "이름규칙": [
+          "mapper 이름은 profile의 prefix와 joiner 규칙으로 생성한다.",
+          "최종 함수명은 camelCase를 사용한다."
+        ],
+        "출력규칙": [
+          "mapper 함수 시그니처와 기본 본문을 반환한다."
+        ]
+      },
       "inputMode": "json",
       "execution": {
         "kind": "snippet",
@@ -262,6 +341,18 @@
     },
     "hookReturn": {
       "description": "Render a hook return snippet",
+      "guide": {
+        "목적": "훅이 반환할 값과 액션 구조를 만든다.",
+        "입력규칙": [
+          "values와 actions 배열을 전달할 수 있다."
+        ],
+        "이름규칙": [
+          "반환 값과 액션 이름은 camelCase를 사용한다."
+        ],
+        "출력규칙": [
+          "return object에 들어갈 멤버 목록을 반환한다."
+        ]
+      },
       "inputMode": "json",
       "execution": {
         "kind": "snippet",
@@ -298,6 +389,18 @@
     },
     "batch": {
       "description": "Execute multiple frontend ops in one request",
+      "guide": {
+        "목적": "여러 프론트엔드 작업을 한 번의 요청으로 순차 실행한다.",
+        "입력규칙": [
+          "ops 배열은 순서대로 실행된다.",
+          "앞선 op 결과는 $ref로 뒤 op에서 참조할 수 있다."
+        ],
+        "출력규칙": [
+          "기본은 preview다.",
+          "--apply일 때만 마지막에 한 번 write 한다.",
+          "하나라도 실패하면 전체 write를 취소한다."
+        ]
+      },
       "inputMode": "json",
       "execution": {
         "kind": "batch"
