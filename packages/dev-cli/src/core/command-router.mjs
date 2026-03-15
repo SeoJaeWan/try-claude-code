@@ -14,7 +14,7 @@ export function getRoleForAlias(alias) {
 
 export function routeCommand(alias, parsed) {
   const role = getRoleForAlias(alias);
-  const [first = "", second = "", third = ""] = parsed.positionals;
+  const [first = ""] = parsed.positionals;
   const format = normalizeFormat(parsed.options);
 
   if (!role) {
@@ -28,7 +28,10 @@ export function routeCommand(alias, parsed) {
       role,
       action: "help",
       format,
-      commandName: first === "help" ? second : first || parsed.options.command || null,
+      commandName:
+        first === "help"
+          ? normalizeCommandName(parsed.positionals[1] ?? "")
+          : first || parsed.options.command || null,
       options: parsed.options
     };
   }
@@ -38,7 +41,7 @@ export function routeCommand(alias, parsed) {
       role,
       action: "mode",
       format,
-      modeAction: second || "show",
+      modeAction: normalizeCommandName(parsed.positionals[1] ?? "") || "show",
       options: parsed.options
     };
   }
@@ -48,7 +51,7 @@ export function routeCommand(alias, parsed) {
       role,
       action: "validate",
       format,
-      target: second || null,
+      target: normalizeCommandName(parsed.positionals[1] ?? "") || null,
       options: parsed.options
     };
   }
@@ -58,18 +61,28 @@ export function routeCommand(alias, parsed) {
       role,
       action: "help",
       format,
-      commandName: second || null,
+      commandName: normalizeCommandName(parsed.positionals[1] ?? "") || null,
+      options: parsed.options
+    };
+  }
+
+  if (first === "batch") {
+    return {
+      role,
+      action: "batch",
+      format,
+      commandName: "batch",
+      extraPositionals: parsed.positionals.slice(1),
       options: parsed.options
     };
   }
 
   return {
     role,
-    action: "generate",
+    action: "execute",
     format,
     commandName: first,
-    name: second || parsed.options.name || null,
-    extraArg: third || null,
+    extraPositionals: parsed.positionals.slice(1),
     options: parsed.options
   };
 }

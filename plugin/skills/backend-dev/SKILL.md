@@ -71,13 +71,37 @@ Every API endpoint must include proper error responses.
    tcb --help
    tcb --help --text
 
-   # Feature module
-   tcb module <ModuleName> --path product --base-package com.example.app
+   # Feature module preview
+   tcb module --json '{"name":"Product","path":"product","basePackage":"com.example.app"}'
 
-   # DTOs and entity
-   tcb requestDto <RequestName> --path product --base-package com.example.app
-   tcb responseDto <ResponseName> --path product --base-package com.example.app
-   tcb entity <EntityName> --path product --base-package com.example.app
+   # DTOs and entity preview
+   tcb requestDto --json '{"name":"CreateProductRequest","path":"product","basePackage":"com.example.app","fields":[{"name":"name","type":"String","validations":["NotBlank"]}]}'
+   tcb responseDto --json '{"name":"ProductResponse","path":"product","basePackage":"com.example.app"}'
+   tcb entity --json '{"name":"Product","path":"product","basePackage":"com.example.app"}'
+
+   # Batch one backend scaffold request
+   tcb batch --json '{
+     "ops": [
+       {
+         "id": "request-dto",
+         "command": "requestDto",
+         "spec": {
+           "name": "CreateProductRequest",
+           "path": "product",
+           "basePackage": "com.example.app"
+         }
+       },
+       {
+         "id": "entity",
+         "command": "entity",
+         "spec": {
+           "name": "Product",
+           "path": "product",
+           "basePackage": "com.example.app"
+         }
+       }
+     ]
+   }'
    ```
 7. Implement logic inside the generated files according to detected framework's conventions
 8. Run tests — confirm ALL pass (Green)
@@ -89,7 +113,9 @@ Every API endpoint must include proper error responses.
 
 - `tcb --help` defaults to JSON for agent consumption.
 - `tcb` personal v1 is Spring Boot oriented.
+- Use `--json` only for spec-driven commands.
+- Preview is the default. Use `--apply` only when you want files written.
 - Package path segments must be lower-case.
-- If Spring root package cannot be auto-detected, pass `--base-package`.
+- If Spring root package cannot be auto-detected, provide `basePackage` in the JSON spec.
   </Instructions>
   </Skill_Guide>

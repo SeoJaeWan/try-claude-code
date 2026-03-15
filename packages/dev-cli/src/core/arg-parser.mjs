@@ -40,7 +40,7 @@ export function parseArgv(argv) {
   return {
     options,
     positionals: positionals.map((value, index) =>
-      index <= 1 ? normalizeCommandName(value) : value
+      index === 0 ? normalizeCommandName(value) : value
     )
   };
 }

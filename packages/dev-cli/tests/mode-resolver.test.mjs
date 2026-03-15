@@ -11,7 +11,7 @@ async function writeJson(filePath, value) {
   await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
-test("resolveActiveProfile prefers explicit over repo and global", async () => {
+test("resolveActiveProfile은 explicit 설정을 repo와 global보다 우선한다", async () => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-mode-"));
   const tempHome = path.join(tempRoot, "home");
   const repoRoot = path.join(tempRoot, "repo");
@@ -60,7 +60,7 @@ test("resolveActiveProfile prefers explicit over repo and global", async () => {
   process.env.USERPROFILE = originalUserProfile;
 });
 
-test("resolveActiveProfile falls back to repo and then global", async () => {
+test("resolveActiveProfile은 repo 설정이 없으면 global 설정으로 fallback한다", async () => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-mode-"));
   const tempHome = path.join(tempRoot, "home");
   const repoRoot = path.join(tempRoot, "repo");

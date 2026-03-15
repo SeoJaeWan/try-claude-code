@@ -3,6 +3,14 @@ function formatTextCommand(name, command) {
     `${name}: ${command.description}`
   ];
 
+  if (command.inputMode === "json") {
+    lines.push("  input: --json");
+  }
+
+  if (command.execution?.kind) {
+    lines.push(`  mode: ${command.execution.kind}`);
+  }
+
   if (command.output?.filePattern) {
     lines.push(`  output: ${command.output.filePattern}`);
   }
@@ -70,6 +78,7 @@ export function renderHelpText(payload) {
   const lines = [
     `${payload.alias} -> ${payload.id}`,
     `mode: ${payload.activeProfile.mode}@${payload.activeProfile.version}`,
+    "default input: --json",
     ""
   ];
 

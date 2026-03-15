@@ -37,6 +37,61 @@ function resolveTypeName(name, kind) {
     : `${name}`;
 }
 
+function formatIndentedBlock(lines, indent = "  ") {
+  if (!lines.length) {
+    return "";
+  }
+
+  return lines.map((line) => `${indent}${line}`).join("\n");
+}
+
+function createPropsMembers(props = []) {
+  if (!Array.isArray(props) || props.length === 0) {
+    return "";
+  }
+
+  const lines = props.map((prop) => {
+    if (prop.kind === "callback") {
+      const signature = (prop.params ?? [])
+        .map((param) => `${param.name}: ${param.type ?? "unknown"}`)
+        .join(", ");
+      const optional = prop.required ? "" : "?";
+      return `${prop.name}${optional}: (${signature}) => ${prop.returns ?? "void"};`;
+    }
+
+    const optional = prop.required ? "" : "?";
+    return `${prop.name}${optional}: ${prop.type};`;
+  });
+
+  return formatIndentedBlock(lines);
+}
+
+function createRecordFields(fields = []) {
+  if (!Array.isArray(fields) || fields.length === 0) {
+    return "  String value";
+  }
+
+  return fields
+    .map((field) => {
+      const validations = (field.validations ?? [])
+        .map((validation) => `@${validation}`)
+        .join(" ");
+      const prefix = validations ? `${validations} ` : "";
+      return `  ${prefix}${field.type} ${field.name}`;
+    })
+    .join(",\n");
+}
+
+function createEntityFields(fields = []) {
+  if (!Array.isArray(fields) || fields.length === 0) {
+    return "  private String name;";
+  }
+
+  return formatIndentedBlock(
+    fields.map((field) => `private ${field.type} ${field.name};`)
+  );
+}
+
 async function createSingleFileGeneration({
   role,
   profile,
@@ -54,7 +109,7 @@ async function createSingleFileGeneration({
     if (!basePackage) {
       throw createCliError(
         "ROOT_PACKAGE_NOT_FOUND",
-        "Spring root package could not be detected. Provide --base-package.",
+        "Spring root package could not be detected. Provide basePackage in the JSON spec.",
         {
           command: commandName
         }
@@ -86,7 +141,10 @@ async function createSingleFileGeneration({
     packagePathDot: args.path ? args.path.replaceAll("/", ".") : "",
     featurePath: args.path,
     domainName: args.path.split("/").filter(Boolean).slice(-1)[0] ?? args.path,
-    queryKind: args.kind
+    queryKind: args.kind,
+    propsMembers: createPropsMembers(args.props),
+    recordFields: createRecordFields(args.fields),
+    entityFields: createEntityFields(args.fields)
   };
 
   const filePath = normalizeCliPath(
@@ -137,7 +195,7 @@ async function createSpringModuleGeneration({
     if (!basePackage) {
       throw createCliError(
         "ROOT_PACKAGE_NOT_FOUND",
-        "Spring root package could not be detected. Provide --base-package.",
+        "Spring root package could not be detected. Provide basePackage in the JSON spec.",
         {
           command: commandName
         }

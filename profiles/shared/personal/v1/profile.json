@@ -30,49 +30,44 @@
   },
   "commands": {
     "type": {
-      "description": "Generate a shared type definition",
-      "arguments": {
-        "name": {
-          "required": true,
-          "case": "PascalCase"
-        },
-        "path": {
-          "required": true
-        },
-        "kind": {
-          "required": false,
-          "enum": ["interface", "type"]
-        }
+      "description": "Render a shared type snippet",
+      "inputMode": "json",
+      "execution": {
+        "kind": "snippet",
+        "language": "ts"
       },
       "defaults": {
         "kind": "interface"
-      },
-      "generator": {
-        "kind": "singleFile"
-      },
-      "output": {
-        "filePattern": "{path}/{name}.ts"
       },
       "templateFiles": {
         "interface": "templates/type.interface.ts",
         "type": "templates/type.alias.ts"
       },
-      "rules": {
-        "enforced": {
-          "pathPolicy": {
-            "allowedRoots": ["types"]
-          }
-        },
-        "guidance": {
-          "notes": [
-            "Single-use types stay local.",
-            "Shared types move to types/common or types/{domain}."
-          ]
-        }
+      "examples": [
+        "tcp type --json '{\"name\":\"TableColumn\",\"kind\":\"interface\"}'",
+        "tcf type --json '{\"name\":\"ProductSummary\",\"kind\":\"type\"}'"
+      ]
+    },
+    "props": {
+      "description": "Render props members only snippet",
+      "inputMode": "json",
+      "execution": {
+        "kind": "snippet",
+        "language": "ts"
       },
       "examples": [
-        "tcp type TableColumn --path types/common",
-        "tcf type ProductSummary --path types/product --kind interface"
+        "tcp props --json '{\"members\":[{\"kind\":\"value\",\"name\":\"title\",\"type\":\"string\",\"required\":true}]}'"
+      ]
+    },
+    "function": {
+      "description": "Render a shared function snippet",
+      "inputMode": "json",
+      "execution": {
+        "kind": "snippet",
+        "language": "ts"
+      },
+      "examples": [
+        "tcf function --json '{\"kind\":\"internalHandler\",\"name\":\"onClick\"}'"
       ]
     }
   }

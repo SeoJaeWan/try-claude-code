@@ -42,17 +42,46 @@ Expert frontend logic workflow — hooks, state management, and API integration.
    tcf --help
    tcf --help --text
 
-   # Custom hook
-   tcf hook <hookName> --path hooks/utils
+   # Custom hook preview
+   tcf hook --json '{"name":"useScroll","path":"hooks/utils"}'
 
-   # API query hook
-   tcf apiHook <hookName> --path hooks/apis/product/queries --kind query
+   # API query hook preview
+   tcf apiHook --json '{"name":"useGetProduct","path":"hooks/apis/product/queries","kind":"query"}'
 
-   # API mutation hook
-   tcf apiHook <hookName> --path hooks/apis/product/mutations --kind mutation
+   # Snippet helpers
+   tcf function --json '{"kind":"internalHandler","name":"onSubmit"}'
+   tcf queryKey --json '{"domain":"product","scope":"detail","params":["productId"]}'
 
-   # Shared type
-   tcf type <TypeName> --path types/product
+   # Batch one logic task together
+   tcf batch --json '{
+     "ops": [
+       {
+         "id": "hook",
+         "command": "hook",
+         "spec": {
+           "name": "useScroll",
+           "path": "hooks/utils"
+         }
+       },
+       {
+         "id": "function",
+         "command": "function",
+         "spec": {
+           "kind": "internalHandler",
+           "name": "onScroll"
+         }
+       },
+       {
+         "id": "query-key",
+         "command": "queryKey",
+         "spec": {
+           "domain": "product",
+           "scope": "detail",
+           "params": ["productId"]
+         }
+       }
+     ]
+   }'
    ```
 7. Implement logic inside the generated files:
     - State management integration
@@ -66,7 +95,8 @@ Expert frontend logic workflow — hooks, state management, and API integration.
 
 - `tcf --help` defaults to JSON for agent consumption.
 - Hook names must start with `use`.
-- `tcf hook` and `tcf apiHook` both require `--path`.
+- Use `--json` only for spec-driven commands.
+- Preview is the default. Use `--apply` only when you want files written.
 - API hooks must use TanStack Query and live under `hooks/apis/{domain}/queries|mutations`.
 
 ---

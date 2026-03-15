@@ -1,0 +1,134 @@
+import { generateFiles } from "./file-generator.mjs";
+import { writeGeneratedFiles } from "./file-writer.mjs";
+import { resolveRefs } from "./ref-resolver.mjs";
+import { normalizeSpec, renderSnippet } from "./spec-normalizer.mjs";
+
+function createCliError(code, message, details = {}) {
+  const error = new Error(message);
+  error.code = code;
+  error.details = details;
+  return error;
+}
+
+export async function executeSpecCommand({
+  profile,
+  profileId,
+  role,
+  commandName,
+  spec,
+  repoRoot
+}) {
+  const command = profile.commands?.[commandName];
+  if (!command) {
+    throw createCliError("UNKNOWN_COMMAND", `Unknown command: ${commandName}`, {
+      command: commandName,
+      profile: profileId
+    });
+  }
+
+  const { normalizedSpec, normalizations } = normalizeSpec({
+    role,
+    commandName,
+    spec
+  });
+
+  if ((command.execution?.kind ?? "file") === "snippet") {
+    const result = await renderSnippet({
+      command,
+      commandName,
+      normalizedSpec
+    });
+
+    return {
+      ok: true,
+      command: commandName,
+      profile: profileId,
+      normalizedSpec,
+      normalizations,
+      result
+    };
+  }
+
+  const files = await generateFiles({
+    role,
+    profile,
+    commandName,
+    args: normalizedSpec,
+    repoRoot
+  });
+
+  return {
+    ok: true,
+    command: commandName,
+    profile: profileId,
+    normalizedSpec,
+    normalizations,
+    files
+  };
+}
+
+export async function executeBatch({
+  profile,
+  profileId,
+  role,
+  batchSpec,
+  repoRoot,
+  apply,
+  force
+}) {
+  const priorResults = {};
+  const batchResults = [];
+  const collectedFiles = [];
+
+  for (const op of batchSpec.ops) {
+    const resolvedSpec = resolveRefs(op.spec, priorResults);
+    const opResult = await executeSpecCommand({
+      profile,
+      profileId,
+      role,
+      commandName: op.command,
+      spec: resolvedSpec,
+      repoRoot
+    });
+
+    const resultWithId = {
+      id: op.id,
+      ...opResult
+    };
+    batchResults.push(resultWithId);
+    priorResults[op.id] = resultWithId;
+
+    if (opResult.files?.length) {
+      for (const file of opResult.files) {
+        collectedFiles.push({
+          opId: op.id,
+          ...file
+        });
+      }
+    }
+  }
+
+  const fileWriteResults = await writeGeneratedFiles({
+    repoRoot,
+    files: collectedFiles.map(({ opId, ...file }) => file),
+    dryRun: !apply,
+    force
+  });
+  const fileResultByPath = new Map(fileWriteResults.map((file) => [file.path, file]));
+
+  return {
+    ok: true,
+    command: "batch",
+    profile: profileId,
+    apply,
+    batchResults: batchResults.map((result) =>
+      result.files
+        ? {
+            ...result,
+            files: result.files.map((file) => fileResultByPath.get(file.path) ?? file)
+          }
+        : result
+    ),
+    files: fileWriteResults
+  };
+}
