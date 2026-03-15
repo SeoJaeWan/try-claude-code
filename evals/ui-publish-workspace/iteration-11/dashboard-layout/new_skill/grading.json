@@ -1,0 +1,17 @@
+{
+  "eval_id": 3,
+  "eval_name": "dashboard-layout",
+  "config": "new_skill",
+  "expectations": [
+    {"text": "component-index-tsx", "passed": true, "evidence": "components/dashboardLayout/index.tsx via tcp CLI"},
+    {"text": "props-interface-suffix", "passed": true, "evidence": "DashboardLayoutProps"},
+    {"text": "default-export", "passed": true, "evidence": "export default"},
+    {"text": "has-sidebar", "passed": true, "evidence": "sidebar present"},
+    {"text": "has-header", "passed": true, "evidence": "header present"},
+    {"text": "has-main-content", "passed": true, "evidence": "main content present"},
+    {"text": "responsive-breakpoints", "passed": true, "evidence": "md:, lg: breakpoints used"},
+    {"text": "children-prop", "passed": true, "evidence": "children prop present"},
+    {"text": "tailwind-classes", "passed": true, "evidence": "Tailwind used"},
+    {"text": "no-forbidden-patterns", "passed": true, "evidence": "no forbidden patterns"}
+  ]
+}
