@@ -35,6 +35,7 @@ function formatTextCommand(name, command) {
 
 function sanitizeCommand(command) {
   const {
+    guide,
     templatePath,
     templatePaths,
     render,

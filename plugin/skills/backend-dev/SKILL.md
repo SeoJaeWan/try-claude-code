@@ -18,25 +18,6 @@ Expert backend development workflow. Framework and language are auto-detected fr
 
 ---
 
-## Step 0. Detect Project Stack
-
-Scan project root for framework signals before any implementation:
-
-| Signal file | Framework | Language | Package manager | Test command |
-|---|---|---|---|---|
-| `package.json` + `@nestjs/core` | NestJS | TypeScript | pnpm/npm/yarn | `pnpm test` |
-| `package.json` + `express` | Express | JS/TS | pnpm/npm/yarn | `pnpm test` |
-| `package.json` + `fastify` | Fastify | JS/TS | pnpm/npm/yarn | `pnpm test` |
-| `build.gradle` or `build.gradle.kts` | Spring Boot | Java/Kotlin | gradle | `./gradlew test` |
-| `pom.xml` | Spring Boot | Java | maven | `mvn test` |
-| `requirements.txt` or `pyproject.toml` | Django/FastAPI/Flask | Python | pip/poetry | `pytest` |
-| `go.mod` | Go (Gin/Echo/Fiber) | Go | go mod | `go test ./...` |
-| `Gemfile` + `rails` | Rails | Ruby | bundler | `bundle exec rspec` |
-
-If ambiguous, read the main entry file or config to confirm.
-
----
-
 ## HTTP Error Response Handling
 
 Every API endpoint must include proper error responses.
@@ -60,8 +41,7 @@ Every API endpoint must include proper error responses.
 
 ## Implementation Steps
 
-1. **Detect stack** (Step 0 above)
-2. Read plan from `plans/{task-name}/plan.md`
+1. Read plan from `plans/{task-name}/plan.md`
 3. Read `codemaps/backend.md`, `codemaps/database.md` (if present)
 4. If plan includes `tests/`: copy test files to source tree (read `manifest.md` for paths), run Red verification
 5. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
@@ -69,7 +49,8 @@ Every API endpoint must include proper error responses.
    ```bash
    # Inspect current backend rules
    tcb --help
-   tcb --help --text
+   tcb guide
+   tcb guide module
 
    # Feature module preview
    tcb module --json '{"name":"Product","path":"product","basePackage":"com.example.app"}'
@@ -112,6 +93,7 @@ Every API endpoint must include proper error responses.
 ## CLI Notes
 
 - `tcb --help` defaults to JSON for agent consumption.
+- Use `tcb guide` when you need a human-readable summary.
 - `tcb` personal v1 is Spring Boot oriented.
 - Use `--json` only for spec-driven commands.
 - Preview is the default. Use `--apply` only when you want files written.

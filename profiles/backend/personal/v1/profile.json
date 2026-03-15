@@ -3,6 +3,14 @@
   "kind": "backend-profile",
   "alias": "tcb",
   "extends": [],
+  "guide": {
+    "요약": "백엔드 personal v1 규칙이다. Spring Boot 기준 파일 생성 규칙을 다룬다.",
+    "공통규칙": [
+      "basePackage가 없으면 Spring root package를 감지한다.",
+      "패키지 경로 segment는 lower-case를 사용한다.",
+      "module은 package-by-feature 구조를 기본으로 한다."
+    ]
+  },
   "help": {
     "defaultFormat": "json",
     "supportedFormats": ["json", "text"]
@@ -21,6 +29,20 @@
   "commands": {
     "module": {
       "description": "Generate a Spring feature module skeleton",
+      "guide": {
+        "목적": "Spring feature module 기본 파일 세트를 생성한다.",
+        "입력규칙": [
+          "name과 path는 필수다.",
+          "basePackage는 없으면 자동 감지를 시도한다."
+        ],
+        "이름규칙": [
+          "클래스 이름은 PascalCase를 사용한다.",
+          "패키지 경로는 lower-case를 사용한다."
+        ],
+        "출력규칙": [
+          "controller, service, repository, global exception handler 파일을 생성한다."
+        ]
+      },
       "inputMode": "json",
       "execution": {
         "kind": "file"
@@ -96,6 +118,20 @@
     },
     "requestDto": {
       "description": "Generate a Spring request DTO",
+      "guide": {
+        "목적": "Spring request DTO 파일을 생성한다.",
+        "입력규칙": [
+          "name과 path는 필수다.",
+          "fields 배열로 record 필드를 전달할 수 있다."
+        ],
+        "이름규칙": [
+          "클래스 이름은 PascalCase를 사용한다.",
+          "필드 이름은 camelCase를 사용한다."
+        ],
+        "출력규칙": [
+          "dto 경로 아래 request DTO 파일을 생성한다."
+        ]
+      },
       "inputMode": "json",
       "execution": {
         "kind": "file"
@@ -161,6 +197,20 @@
     },
     "responseDto": {
       "description": "Generate a Spring response DTO",
+      "guide": {
+        "목적": "Spring response DTO 파일을 생성한다.",
+        "입력규칙": [
+          "name과 path는 필수다.",
+          "fields 배열로 record 필드를 전달할 수 있다."
+        ],
+        "이름규칙": [
+          "클래스 이름은 PascalCase를 사용한다.",
+          "필드 이름은 camelCase를 사용한다."
+        ],
+        "출력규칙": [
+          "dto 경로 아래 response DTO 파일을 생성한다."
+        ]
+      },
       "inputMode": "json",
       "execution": {
         "kind": "file"
@@ -226,6 +276,20 @@
     },
     "entity": {
       "description": "Generate a Spring entity",
+      "guide": {
+        "목적": "Spring entity 파일을 생성한다.",
+        "입력규칙": [
+          "name과 path는 필수다.",
+          "fields 배열로 엔티티 필드를 전달할 수 있다."
+        ],
+        "이름규칙": [
+          "클래스 이름은 PascalCase를 사용한다.",
+          "필드 이름은 camelCase를 사용한다."
+        ],
+        "출력규칙": [
+          "entity 경로 아래 엔티티 파일을 생성한다."
+        ]
+      },
       "inputMode": "json",
       "execution": {
         "kind": "file"
@@ -291,6 +355,18 @@
     },
     "batch": {
       "description": "Execute multiple backend file ops in one request",
+      "guide": {
+        "목적": "여러 백엔드 파일 생성 작업을 한 번의 요청으로 순차 실행한다.",
+        "입력규칙": [
+          "ops 배열은 순서대로 실행된다.",
+          "앞선 op 결과는 $ref로 뒤 op에서 참조할 수 있다."
+        ],
+        "출력규칙": [
+          "기본은 preview다.",
+          "--apply일 때만 마지막에 한 번 write 한다.",
+          "하나라도 실패하면 전체 write를 취소한다."
+        ]
+      },
       "inputMode": "json",
       "execution": {
         "kind": "batch"
