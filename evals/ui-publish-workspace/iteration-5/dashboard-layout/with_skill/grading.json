@@ -1,0 +1,15 @@
+{
+  "expectations": [
+    {"text": "generate-output-exists", "passed": true, "evidence": "with_skill outputs contain DashboardLayout.tsx file"},
+    {"text": "has-sidebar", "passed": true, "evidence": "aside element with data-testid='sidebar' containing nav links and user info"},
+    {"text": "has-header", "passed": true, "evidence": "header element with data-testid='dashboard-header' containing breadcrumbs and actions"},
+    {"text": "has-main-content", "passed": true, "evidence": "main element with data-testid='dashboard-main' renders {children}"},
+    {"text": "responsive-breakpoints", "passed": true, "evidence": "md: breakpoints used: md:relative, md:translate-x-0, md:hidden, md:px-6, lg:px-8"},
+    {"text": "children-prop", "passed": true, "evidence": "children: React.ReactNode in DashboardLayoutProps, rendered inside main element"},
+    {"text": "tailwind-classes", "passed": true, "evidence": "Tailwind classes used throughout: flex, h-screen, overflow-hidden, rounded-xl, etc."},
+    {"text": "no-business-logic", "passed": true, "evidence": "Only useState for sidebarOpen toggle (UI state allowed); no business logic"},
+    {"text": "no-fetch", "passed": true, "evidence": "No fetch or axios calls in the component"},
+    {"text": "default-export", "passed": true, "evidence": "export default function DashboardLayout"}
+  ],
+  "summary": {"passed": 10, "failed": 0, "total": 10, "pass_rate": 1.00}
+}

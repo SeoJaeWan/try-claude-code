@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "generate-output-exists", "passed": false, "evidence": "without_skill configuration - generate script not available"},
+    {"text": "hook-file-exists", "passed": true, "evidence": "useFetchOrder.ts exists in outputs"},
+    {"text": "hook-in-queries", "passed": false, "evidence": "Files are in outputs/ root; no apis/queries/ directory structure visible. Test imports from '../index' suggesting some structure but not queries/"},
+    {"text": "index-export", "passed": true, "evidence": "useFetchOrder.test.tsx imports from '../index', indicating an index.ts re-export exists"},
+    {"text": "returns-loading", "passed": true, "evidence": "Hook returns isLoading via useQuery destructuring"},
+    {"text": "returns-error", "passed": true, "evidence": "Hook returns isError and error via useQuery destructuring"}
+  ],
+  "summary": {"passed": 4, "failed": 2, "total": 6, "pass_rate": 0.67}
+}

@@ -1,0 +1,13 @@
+{
+  "expectations": [
+    {"text": "generate-script-executed", "passed": false, "evidence": "without_skill configuration - generate script not available"},
+    {"text": "crud-get", "passed": true, "evidence": "@Get() findAll and @Get(':id') findOne endpoints in orders.controller.ts"},
+    {"text": "crud-post", "passed": true, "evidence": "@Post() create endpoint in orders.controller.ts"},
+    {"text": "crud-patch", "passed": true, "evidence": "@Patch(':id') update endpoint in orders.controller.ts"},
+    {"text": "crud-delete", "passed": true, "evidence": "@Delete(':id') remove endpoint in orders.controller.ts"},
+    {"text": "module-registered", "passed": true, "evidence": "app.module.ts imports OrdersModule in imports array"},
+    {"text": "module-structure", "passed": true, "evidence": "Controller, service, module, interface, and dto files all present in outputs directory"},
+    {"text": "db-snake-case", "passed": false, "evidence": "Order interface uses camelCase: customerName, totalAmount, createdAt, updatedAt - no snake_case like created_at"}
+  ],
+  "summary": {"passed": 6, "failed": 2, "total": 8, "pass_rate": 0.75}
+}
