@@ -16,6 +16,37 @@ React/Next.js/Expo development with custom hooks and state management. Use for f
 
 Expert frontend logic workflow — hooks, state management, and API integration.
 
+All file creation goes through `tcf` CLI. Never create hook files manually — the CLI enforces naming, folder structure, and export patterns that are impossible to get right by hand.
+
+---
+
+## CLI-First Workflow
+
+Every hook file must be created via `tcf`. Run `tcf --help` first to see available commands.
+
+```bash
+# See all commands and rules
+tcf --help
+
+# Create a custom hook
+tcf hook --json '{"name":"useScroll","path":"hooks/utils"}' --apply
+
+# Create an API query hook
+tcf apiHook --json '{"name":"useGetProduct","path":"hooks/apis/product/queries","kind":"query"}' --apply
+
+# Create an API mutation hook
+tcf apiHook --json '{"name":"useLogin","path":"hooks/apis/auth/mutations","kind":"mutation"}' --apply
+
+# Snippet helpers
+tcf function --json '{"kind":"internalHandler","name":"onSubmit"}'
+tcf queryKey --json '{"domain":"product","scope":"detail","params":["productId"]}'
+
+# Batch multiple operations
+tcf batch --json '{"ops":[...]}' --apply
+```
+
+After `tcf` creates the scaffold, implement the business logic inside the generated files.
+
 ---
 
 ## Core Principle
@@ -23,9 +54,8 @@ Expert frontend logic workflow — hooks, state management, and API integration.
 **Publisher creates components (UI/layout/styling). You fill in the logic.**
 
 - DO NOT create component files — publisher handles that
-- YOU create custom hooks and connect them to existing components
+- YOU create custom hooks via `tcf` and connect them to existing components
 - If a component has inline logic (fetch, useState for business data), extract it into custom hooks first
-- If publisher left UI interaction state (sidebar toggle, modal) in a component and it can be cleanly abstracted into a hook, do so — but only when it improves testability or reusability
 
 ---
 
@@ -33,73 +63,14 @@ Expert frontend logic workflow — hooks, state management, and API integration.
 
 1. Read plan from `plans/{task-name}/plan.md`
 2. Read `codemaps/frontend.md` (if present)
-3. If plan includes `tests/`: copy test files to source tree (read `manifest.md` for paths), run Red verification (`pnpm test`)
-4. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
-5. **Extract inline logic**: if target component has inline fetch, useState (for business data), useEffect — extract into custom hooks first
-6. **Use `tcf` CLI to create hook scaffolds** — do NOT create hook files manually:
-   ```bash
-   # Inspect current frontend rules
-   tcf --help
-   tcf guide
-   tcf guide hook
-
-   # Custom hook preview
-   tcf hook --json '{"name":"useScroll","path":"hooks/utils"}'
-
-   # API query hook preview
-   tcf apiHook --json '{"name":"useGetProduct","path":"hooks/apis/product/queries","kind":"query"}'
-
-   # Snippet helpers
-   tcf function --json '{"kind":"internalHandler","name":"onSubmit"}'
-   tcf queryKey --json '{"domain":"product","scope":"detail","params":["productId"]}'
-
-   # Batch one logic task together
-   tcf batch --json '{
-     "ops": [
-       {
-         "id": "hook",
-         "command": "hook",
-         "spec": {
-           "name": "useScroll",
-           "path": "hooks/utils"
-         }
-       },
-       {
-         "id": "function",
-         "command": "function",
-         "spec": {
-           "kind": "internalHandler",
-           "name": "onScroll"
-         }
-       },
-       {
-         "id": "query-key",
-         "command": "queryKey",
-         "spec": {
-           "domain": "product",
-           "scope": "detail",
-           "params": ["productId"]
-         }
-       }
-     ]
-   }'
-   ```
-7. Implement logic inside the generated files:
-    - State management integration
-    - Connect hooks to components created by publisher
-8. Run tests: `pnpm test` — confirm ALL pass (Green)
-9. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
-10. Commit changes
-11. Return results based on plan.md
-
-## CLI Notes
-
-- `tcf --help` defaults to JSON for agent consumption.
-- Use `tcf guide` when you need a human-readable summary.
-- Hook names must start with `use`.
-- Use `--json` only for spec-driven commands.
-- Preview is the default. Use `--apply` only when you want files written.
-- API hooks must use TanStack Query and live under `hooks/apis/{domain}/queries|mutations`.
+3. **Run `tcf` CLI to create all hook scaffolds with `--apply`** — this is the first action before writing any code
+4. If plan includes `tests/`: copy test files to source tree, run Red verification (`pnpm test`)
+5. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
+6. Implement logic inside the generated files
+7. Run tests: `pnpm test` — confirm ALL pass (Green)
+8. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
+9. Commit changes
+10. Return results based on plan.md
 
 ---
 

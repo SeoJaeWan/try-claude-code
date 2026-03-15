@@ -1,0 +1,14 @@
+{
+  "expectations": [
+    {"text": "filter-all-unread", "passed": true, "evidence": "NotificationList.tsx implements FilterType 'all'|'unread' with two buttons and conditional filtering logic on line 33-36"},
+    {"text": "hook-extracted", "passed": true, "evidence": "NotificationList.tsx imports useGetNotifications from '@/hooks/apis/queries/useGetNotifications' — fetch logic is in a separate hook file, not inline"},
+    {"text": "hook-name-pattern", "passed": true, "evidence": "Hook is named useGetNotifications, following use{Verb}{Resource} pattern (useGet + Notifications)"},
+    {"text": "empty-state-rendered", "passed": true, "evidence": "Line 67: data-testid='notifications-empty' rendered when filteredNotifications.length === 0"},
+    {"text": "error-over-filter", "passed": true, "evidence": "Lines 25-31: error check with data-testid='notifications-error' returns early before filter UI is rendered"},
+    {"text": "locator-filter-all", "passed": true, "evidence": "Line 43: data-testid='notifications-filter-all'"},
+    {"text": "locator-filter-unread", "passed": true, "evidence": "Line 53: data-testid='notifications-filter-unread'"},
+    {"text": "handler-prefix", "passed": true, "evidence": "Lines 12-13: handleFilterAll and handleFilterUnread functions use handle prefix"},
+    {"text": "e2e-spec-path", "passed": false, "evidence": "Spec file is in outputs/ as dashboard-notification-filter.spec.ts, not under features/next-app/tests/"}
+  ],
+  "summary": {"passed": 8, "failed": 1, "total": 9, "pass_rate": 0.89}
+}
