@@ -51,3 +51,13 @@ test("help --text는 필수 필드와 주요 계약 힌트를 함께 보여준�
     /legacy: if a legacy component path differs from the current convention, migrate the path first/
   );
 });
+
+test("command-scoped help --text는 요청한 명령만 요약해서 보여준다", () => {
+  const result = runCli(tcpBin, ["help", "component", "--text"]);
+
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /component: Generate a publisher UI component file/);
+  assert.match(result.stdout, /required: name, path/);
+  assert.doesNotMatch(result.stdout, /^type:/m);
+  assert.doesNotMatch(result.stdout, /^uiState:/m);
+});

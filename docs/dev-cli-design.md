@@ -108,6 +108,26 @@ tcf --help
 tcb --help
 ```
 
+에이전트가 매 작업마다 top-level `--help` 전체 payload를 읽을 필요는 없다.
+토큰을 아끼려면 가능한 한 좁은 범위의 help를 먼저 조회한다.
+
+```bash
+tcp help component --text
+tcf help hook --text
+tcf help apiHook --text
+tcb help module --text
+```
+
+구조화된 필드가 실제로 필요할 때만 command-scoped JSON help를 읽는다.
+
+```bash
+tcp help component
+tcf help apiHook
+tcb help requestDto
+```
+
+top-level `tcp --help`, `tcf --help`, `tcb --help`는 command discovery나 전체 contract audit가 필요할 때만 사용한다.
+
 사람용 가이드는 별도 `guide` 명령으로 본다.
 
 ```bash
@@ -116,10 +136,20 @@ tcf guide
 tcb guide
 tcp guide component
 tcf guide hook
+tcp guide --html > profiles/publisher/personal/v1/guide.html
 ```
 
 `guide`의 source of truth도 profile 안의 `guide` 속성이다.
 즉 machine rule과 human guide를 같은 `profile.json` 안에서 함께 관리한다.
+
+현재 HTML guide는 `tcp`만 지원한다.
+
+```bash
+tcp guide --html > profiles/publisher/personal/v1/guide.html
+tcp guide component --html > profiles/publisher/personal/v1/guide.html
+```
+
+`guide.html`은 self-contained read-only 문서이며, profile이 바뀌면 위 명령으로 다시 생성한다.
 
 ## Execution Model
 

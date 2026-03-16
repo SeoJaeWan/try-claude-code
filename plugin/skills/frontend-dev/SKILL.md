@@ -22,7 +22,7 @@ All file creation goes through `tcf` CLI. Never create hook files manually — t
 
 ## CLI-First Workflow
 
-Every hook file must be created via `tcf`. Run `tcf --help` first to see available commands, path/naming policies, and examples.
+Every hook file must be created via `tcf`. Start with the narrowest help that matches the job: `tcf help hook --text` for non-API hooks or `tcf help apiHook --text` for API hooks. Use `tcf help <command>` JSON only when you need structured fields, and use top-level `tcf --help` only for command discovery.
 
 After `tcf` creates the scaffold, implement the business logic inside the generated files.
 
@@ -42,7 +42,7 @@ After `tcf` creates the scaffold, implement the business logic inside the genera
 
 1. Read plan from `plans/{task-name}/plan.md`
 2. Read `codemaps/frontend.md` (if present)
-3. **Run `tcf` CLI to create all hook scaffolds with `--apply`** — this is the first action before writing any code
+3. **Run `tcf help <target-command> --text`, then `tcf` CLI to create all hook scaffolds with `--apply`** — this is the first action before writing any code
 4. If plan includes `tests/`: copy test files to source tree, run Red verification (`pnpm test`)
 5. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
 6. Implement logic inside the generated files

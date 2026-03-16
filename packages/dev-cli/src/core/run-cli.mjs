@@ -11,6 +11,9 @@ import { formatOutput } from "./output.mjs";
 import { findRepoRoot } from "./path-utils.mjs";
 import { loadActiveProfile } from "./profile-loader.mjs";
 import { validateRequest } from "./profile-validator.mjs";
+import { createPublisherGuideModel } from "./publisher-guide-model.mjs";
+import { renderPublisherGuideHtml } from "./publisher-guide-html-renderer.mjs";
+import { createCliError } from "./recipe-utils.mjs";
 import { parseBatchSpec, parseCommandSpec } from "./spec-parser.mjs";
 
 function createSuccessPayload(payload) {
@@ -128,6 +131,34 @@ async function handleGuideCommand({ alias, role, route, repoRoot }) {
     profile,
     commandName: route.commandName
   });
+
+  if (route.format === "html") {
+    if (role !== "publisher") {
+      throw createCliError(
+        "HTML_GUIDE_UNSUPPORTED",
+        "--html guide is only supported for tcp",
+        {
+          alias,
+          role
+        }
+      );
+    }
+
+    const model = createPublisherGuideModel({
+      alias,
+      role,
+      activeProfile,
+      profile
+    });
+
+    return {
+      ok: true,
+      format: "html",
+      payload: renderPublisherGuideHtml(model, {
+        activeCommandId: route.commandName
+      })
+    };
+  }
 
   if (route.format === "text") {
     return {

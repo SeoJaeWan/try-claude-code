@@ -4,6 +4,7 @@ This CLI is agent-first.
 
 - Default output is JSON.
 - `--text` switches to human-readable output.
+- For low-token agent lookups, prefer command-scoped text help such as `tcp help component --text`; use top-level `--help` JSON only for command discovery or structured field access.
 - Spec-driven commands accept `--json` only.
 - Human-readable rule guidance is exposed through the `guide` command, not `--help`.
 - Preview is the default. `--apply` writes files.
