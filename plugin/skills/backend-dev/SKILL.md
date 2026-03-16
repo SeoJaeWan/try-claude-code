@@ -22,25 +22,7 @@ All file creation goes through `tcb` CLI. Never create module/entity/DTO files m
 
 ## CLI-First Workflow
 
-Every module, entity, and DTO must be created via `tcb`. Run `tcb --help` first to see available commands.
-
-```bash
-# See all commands and rules
-tcb --help
-
-# Create a feature module (controller + service + repository + exception handler)
-tcb module --json '{"name":"Product","path":"product","basePackage":"com.example.app"}' --apply
-
-# Create DTOs
-tcb requestDto --json '{"name":"CreateProductRequest","path":"product","basePackage":"com.example.app","fields":[{"name":"name","type":"String","validations":["NotBlank"]}]}' --apply
-tcb responseDto --json '{"name":"ProductResponse","path":"product","basePackage":"com.example.app"}' --apply
-
-# Create entity (snake_case DB fields enforced)
-tcb entity --json '{"name":"Product","path":"product","basePackage":"com.example.app"}' --apply
-
-# Batch multiple operations
-tcb batch --json '{"ops":[...]}' --apply
-```
+Every module, entity, and DTO must be created via `tcb`. Run `tcb --help` first to see available commands, naming rules, and examples.
 
 After `tcb` creates the scaffold, implement the business logic inside the generated files.
 
