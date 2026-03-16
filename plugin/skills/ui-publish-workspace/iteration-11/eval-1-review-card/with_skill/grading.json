@@ -1,0 +1,120 @@
+{
+  "expectations": [
+    {
+      "text": "ReviewCard 컴포넌트 파일이 존재한다",
+      "passed": true,
+      "evidence": "File exists at outputs/components/common/reviewCard/index.tsx with 102 lines of complete component code including props interface, arrow function, and default export."
+    },
+    {
+      "text": "컴포넌트가 {ComponentName}/index.tsx 패턴으로 생성된다",
+      "passed": true,
+      "evidence": "Component is at reviewCard/index.tsx, matching the {ComponentName}/index.tsx pattern."
+    },
+    {
+      "text": "flat ReviewCard.tsx가 아닌 ReviewCard/index.tsx로 생성된다",
+      "passed": true,
+      "evidence": "Output contains components/common/reviewCard/index.tsx. No flat ReviewCard.tsx in outputs. Transcript Step 3 notes the legacy flat file was found but the convention-compliant directory version was used."
+    },
+    {
+      "text": "컴포넌트 이름이 PascalCase이다",
+      "passed": true,
+      "evidence": "Component is declared as `const ReviewCard = (...)` (line 14) — PascalCase."
+    },
+    {
+      "text": "Props 인터페이스가 ReviewCardProps 접미사를 따른다",
+      "passed": true,
+      "evidence": "Line 3: `export interface ReviewCardProps {` — matches the *Props suffix convention."
+    },
+    {
+      "text": "사용자 아바타를 표시하는 요소가 존재한다",
+      "passed": true,
+      "evidence": "Lines 36-49: Avatar section with data-testid=\"review-card-avatar\" renders an <img> when avatarUrl is provided, or initials fallback in a styled div."
+    },
+    {
+      "text": "별점을 표시하는 요소가 존재한다",
+      "passed": true,
+      "evidence": "Lines 59-79: Star rating section with data-testid=\"review-card-rating\" renders 5 SVG stars, coloring filled stars amber and unfilled stars zinc. Rating prop typed as `1 | 2 | 3 | 4 | 5`."
+    },
+    {
+      "text": "리뷰 본문을 표시하는 요소가 존재한다",
+      "passed": true,
+      "evidence": "Lines 84-89: `<p data-testid=\"review-card-body\">{body}</p>` renders the review text."
+    },
+    {
+      "text": "작성일을 표시하는 요소가 존재한다",
+      "passed": true,
+      "evidence": "Lines 92-97: `<p data-testid=\"review-card-date\">{createdAt}</p>` renders the creation date."
+    },
+    {
+      "text": "Tailwind CSS 클래스가 스타일링에 사용된다",
+      "passed": true,
+      "evidence": "Tailwind classes used extensively throughout: flex, gap-3, rounded-xl, border, bg-white, text-sm, font-semibold, dark: variants, h-10, w-10, etc."
+    },
+    {
+      "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "passed": true,
+      "evidence": "Searched the full component file — none of useEffect, fetch, axios, useQuery, or useMutation appear. The component is purely presentational."
+    },
+    {
+      "text": "폴더명이 camelCase를 따른다 (reviewCard)",
+      "passed": true,
+      "evidence": "Folder path is components/common/reviewCard/ — 'reviewCard' is camelCase."
+    },
+    {
+      "text": "components/common/ 또는 components/{domain}/ 하위에 배치된다",
+      "passed": true,
+      "evidence": "Component is placed at components/common/reviewCard/index.tsx, directly under components/common/."
+    }
+  ],
+  "summary": {
+    "passed": 13,
+    "failed": 0,
+    "total": 13,
+    "pass_rate": 1.0
+  },
+  "timing": {
+    "total_tokens": 25947,
+    "total_duration_seconds": 142.2
+  },
+  "claims": [
+    {
+      "claim": "components/common/reviewCard/index.tsx already existed with correct convention before execution",
+      "type": "process",
+      "verified": true,
+      "evidence": "Transcript Step 3 states the file already existed. The executor validated it (Step 4, PASSED) and kept it rather than recreating it. This is legitimate — the skill recognized existing compliant work."
+    },
+    {
+      "claim": "tcp validate-file passed with no violations",
+      "type": "process",
+      "verified": true,
+      "evidence": "Transcript Steps 4 and 6 both report PASSED from tcp validate-file for the component and showcase page respectively."
+    },
+    {
+      "claim": "Showcase page import was updated from legacy path to convention path",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Output file app/showcase/page.tsx line 3: `import ReviewCard from \"@/components/common/reviewCard\"` — correct convention path."
+    },
+    {
+      "claim": "Type check errors were all pre-existing",
+      "type": "quality",
+      "verified": false,
+      "evidence": "Cannot verify from outputs alone. The transcript claims tsc errors were in test files and unrelated configs, but no tsc output is included in the outputs directory."
+    }
+  ],
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "ReviewCard 컴포넌트 파일이 존재한다",
+        "reason": "This is subsumed by the more specific 'not-flat-file' and 'component-index-tsx' assertions. It would pass even for an empty file at any path containing 'ReviewCard'. Consider checking that the file contains a valid default export."
+      },
+      {
+        "reason": "No assertion checks that the component uses an arrow function with default export (a core tcp convention). The executor ran tcp validate-file which checks this, but the eval doesn't verify it independently."
+      },
+      {
+        "reason": "No assertion verifies the showcase page was updated to import from the convention path. The transcript shows this was a key part of the work, but it goes unchecked."
+      }
+    ],
+    "overall": "Assertions are solid for structural conventions and UI element presence. Main gap is no verification of arrow-function export style or integration (showcase page import path)."
+  }
+}

@@ -12,7 +12,7 @@ export interface ProductCardProps {
   testId?: string;
 }
 
-export default function ProductCard({
+const ProductCard = ({
   imageUrl,
   imageAlt = "",
   name,
@@ -20,7 +20,7 @@ export default function ProductCard({
   currency = "₩",
   badge,
   testId,
-}: ProductCardProps) {
+}: ProductCardProps) => {
   return (
     <div
       className="group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900"
@@ -54,4 +54,6 @@ export default function ProductCard({
       </div>
     </div>
   );
-}
+};
+
+export default ProductCard;

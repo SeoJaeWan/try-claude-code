@@ -1,0 +1,111 @@
+{
+  "expectations": [
+    {
+      "text": "결과 구조가 Button/index.tsx 또는 동급 folder/index 규칙을 따른다",
+      "passed": true,
+      "evidence": "Output file is at components/Button/index.tsx, following the folder/index.tsx convention."
+    },
+    {
+      "text": "flat components/Button.tsx 파일이 그대로 남지 않는다",
+      "passed": true,
+      "evidence": "Transcript states 'Deleted components/Button.tsx — flat file, convention violation'. Only components/Button/index.tsx exists in the outputs directory."
+    },
+    {
+      "text": "Props 인터페이스가 ButtonProps 접미사를 유지한다",
+      "passed": true,
+      "evidence": "Output line 5: 'export interface ButtonProps' — the ButtonProps name is preserved."
+    },
+    {
+      "text": "컴포넌트가 화살표 함수 형태로 유지된다",
+      "passed": false,
+      "evidence": "Output uses 'export default function Button(...)' (function declaration), not an arrow function. The transcript explicitly states it changed from arrow to function declaration as a 'fix'. The original repo file used 'const Button = (...) => {...}' (arrow function) which should have been preserved per this assertion."
+    },
+    {
+      "text": "기존 label prop 동작이 보존된다",
+      "passed": false,
+      "evidence": "The output has no 'label' prop — it uses 'children: ReactNode' instead. The actual repo fixture's Button/index.tsx also uses 'children' (not 'label'), so there was never a 'label' prop to preserve. The transcript falsely claims the original Button/index.tsx used 'label: string', but the actual file uses 'children: ReactNode'. The assertion itself tests a prop that does not exist in the fixture."
+    },
+    {
+      "text": "기존 tone prop 동작이 보존된다",
+      "passed": false,
+      "evidence": "The output has no 'tone' prop — it uses 'variant' instead. The actual repo fixture's Button/index.tsx also uses 'variant' (not 'tone'). The transcript falsely claims the original used 'tone', but the real file uses 'variant'. Like the label assertion, this tests a prop that does not exist in the fixture."
+    },
+    {
+      "text": "showcase page의 import가 새 구조에 맞게 정리된다",
+      "passed": true,
+      "evidence": "The showcase page imports from '@/components/Button' which resolves to Button/index.tsx. The output preserves this structure. No import change was needed and the transcript confirms no showcase modification was made. The import remains compatible."
+    },
+    {
+      "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "passed": true,
+      "evidence": "Inspected the full output file (35 lines). None of the forbidden patterns (useEffect, fetch, axios, useQuery, useMutation) appear anywhere in the code."
+    },
+    {
+      "text": "폴더명이 camelCase를 따른다 (button)",
+      "passed": false,
+      "evidence": "Output folder is 'Button' (PascalCase), not 'button' (camelCase). The project's common/ directory uses camelCase (productCard, reviewCard), but the executor kept PascalCase from the original structure."
+    },
+    {
+      "text": "components/common/button/ 하위에 배치된다",
+      "passed": false,
+      "evidence": "Output is at components/Button/index.tsx, not components/common/button/index.tsx. The executor placed it in the top-level components directory rather than under common/. The project has a common/ directory with productCard and reviewCard, but the executor did not move Button there."
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 5,
+    "total": 10,
+    "pass_rate": 0.5
+  },
+  "timing": {
+    "total_tokens": 23341,
+    "duration_ms": 126144,
+    "total_duration_seconds": 126.1
+  },
+  "claims": [
+    {
+      "claim": "The original Button/index.tsx used label and tone props",
+      "type": "factual",
+      "verified": false,
+      "evidence": "The actual repo file at features/ui-publish-fixture/components/Button/index.tsx uses children and variant, not label and tone. The transcript's analysis is incorrect."
+    },
+    {
+      "claim": "Project convention uses export default function (not arrow functions)",
+      "type": "factual",
+      "verified": false,
+      "evidence": "The transcript cites ProductCard/index.tsx as evidence of function declaration convention, but the showcase page itself uses arrow functions (const ShowcasePage = () => {...}). Convention is inconsistent across the project."
+    },
+    {
+      "claim": "Flat Button.tsx was deleted to resolve convention violation",
+      "type": "process",
+      "verified": true,
+      "evidence": "Transcript explicitly lists deletion of components/Button.tsx. The flat file does not exist in the current repo state."
+    },
+    {
+      "claim": "TypeScript check passed with no Button-related errors",
+      "type": "process",
+      "verified": true,
+      "evidence": "Transcript reports pnpm exec tsc --noEmit found no Button-related errors."
+    }
+  ],
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "기존 label prop 동작이 보존된다",
+        "reason": "The fixture's Button/index.tsx does not have a 'label' prop — it uses 'children'. This assertion tests for something that does not exist in the source fixture, making it impossible to meaningfully pass or fail. Update to test 'children' prop preservation, or update the fixture to actually use 'label'."
+      },
+      {
+        "assertion": "기존 tone prop 동작이 보존된다",
+        "reason": "Same issue — the fixture uses 'variant', not 'tone'. The assertion is misaligned with the actual source code. Update to test 'variant' prop preservation, or update the fixture."
+      },
+      {
+        "assertion": "컴포넌트가 화살표 함수 형태로 유지된다",
+        "reason": "This assertion conflicts with the convention shown in common/productCard — if the project convention is function declarations, preserving arrow functions would itself be a convention violation. Clarify which convention should win."
+      },
+      {
+        "reason": "No assertion checks that the output component's rendered HTML structure and className logic match the original. The executor could change styling or structure and still pass all current assertions."
+      }
+    ],
+    "overall": "Three assertions (label, tone, arrow-function) are misaligned with the actual fixture source code, creating confusion about what the correct behavior should be. The eval would benefit from being re-synced with the actual Button fixture contents."
+  }
+}
