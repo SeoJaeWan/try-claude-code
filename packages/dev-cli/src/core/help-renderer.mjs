@@ -15,12 +15,22 @@ function formatTextCommand(name, command) {
     lines.push(`  output: ${command.render.output.filePattern}`);
   }
 
-  const requiredArgs = Object.entries(command.arguments ?? {})
-    .filter(([, argument]) => argument.required)
-    .map(([argumentName]) => argumentName);
+  const requiredArgs = command.inputSchema?.required ?? [];
 
   if (requiredArgs.length > 0) {
     lines.push(`  required: ${requiredArgs.join(", ")}`);
+  }
+
+  const requiredAny = command.inputSchema?.requiredAny ?? [];
+  if (requiredAny.length > 0) {
+    lines.push(
+      ...requiredAny.map((fields) => `  required any: ${fields.join(" | ")}`)
+    );
+  }
+
+  const contractLines = formatContractHints(command.contracts);
+  if (contractLines.length > 0) {
+    lines.push(...contractLines);
   }
 
   if (command.examples?.length) {
@@ -31,6 +41,57 @@ function formatTextCommand(name, command) {
   }
 
   return lines.join("\n");
+}
+
+function formatContractHints(contracts = {}) {
+  const lines = [];
+  const pathPolicy = contracts.pathPolicy ?? {};
+  const pathPatterns = pathPolicy.requiredPatterns ?? pathPolicy.allowedPatterns ?? [];
+  if (pathPatterns.length > 0) {
+    lines.push(`  path policy: ${pathPatterns.join(" | ")}`);
+  }
+
+  if (pathPolicy.domainPolicy) {
+    lines.push(`  domain: ${pathPolicy.domainPolicy}`);
+  }
+
+  const methodPolicy = contracts.methodPolicy ?? {};
+  const queryMethod = methodPolicy.query?.requiredMethod;
+  const mutationMethods = methodPolicy.mutation?.allowedMethods ?? [];
+  if (queryMethod) {
+    const mutationSummary = mutationMethods.length > 0
+      ? `, mutation=${mutationMethods.join("/")}`
+      : "";
+    lines.push(`  methods: query=${queryMethod}${mutationSummary}`);
+  }
+
+  const namingPolicy = contracts.namingPolicy ?? {};
+  const namingPatterns = [
+    namingPolicy.requiredPattern,
+    namingPolicy.queryPattern,
+    ...Object.values(namingPolicy.mutationPatterns ?? {})
+  ].filter(Boolean);
+  if (namingPatterns.length > 0) {
+    lines.push(`  naming: ${namingPatterns.join(" | ")}`);
+  }
+
+  const outputPolicy = contracts.outputPolicy ?? {};
+  if (outputPolicy.functionStyle) {
+    lines.push(`  function: ${outputPolicy.functionStyle}`);
+  }
+  if (outputPolicy.defaultExport === true) {
+    lines.push("  export: default");
+  }
+
+  const logicBoundary = contracts.logicBoundary ?? {};
+  if (logicBoundary.allowedState) {
+    lines.push(`  state: ${logicBoundary.allowedState}`);
+  }
+  if ((logicBoundary.forbiddenPatterns ?? []).length > 0) {
+    lines.push(`  forbidden: ${logicBoundary.forbiddenPatterns.join(", ")}`);
+  }
+
+  return lines;
 }
 
 function sanitizeCommand(command) {
