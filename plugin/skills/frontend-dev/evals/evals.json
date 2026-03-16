@@ -13,7 +13,7 @@
       ],
       "expectations": [
         {"id": "form-hook-created", "text": "form 상태/유효성 검증을 담당하는 훅 파일이 hooks/utils/login 경로에 생성된다 (예: hooks/utils/login/useLoginForm/index.ts)"},
-        {"id": "api-hook-created", "text": "submit/API 호출을 담당하는 훅 파일이 hooks/apis/auth/mutations/usePostLogin 경로에 생성된다"},
+        {"id": "submit-in-hook", "text": "submit 로직이 훅으로 추상화된다 (별도 훅 또는 form 훅 내부, page에 직접 남지 않음)"},
         {"id": "hook-use-prefix", "text": "훅 이름이 use 접두사로 시작한다 (tcf profile: hook prefix = use)"},
         {"id": "hook-index-ts", "text": "비 API 훅이 hooks/utils/{domain}/{hookName}/index.ts 패턴으로 생성된다 (tcf profile: output = hooks/utils/{domain}/{name}/index.ts)"},
         {"id": "page-no-usestate", "text": "page.tsx에 직접적인 useState 호출이 남지 않는다"},
