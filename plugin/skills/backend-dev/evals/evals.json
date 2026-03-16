@@ -3,59 +3,89 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "plans/sample-backend-profile-summary-api/plan.md의 Phase 1을 실행해줘. AppService에 buildProfileSummary를 추가하고 GET /profile-summary 엔드포인트 연결해줘",
-      "expected_output": "tcb CLI 컨벤션에 맞는 profile-summary 구현",
+      "prompt": "결제 기능을 프로젝트 컨벤션에 맞게 추가해줘. Spring feature 구조가 보이도록 controller, service, repository, dto, entity 경계를 분명히 나눠줘.",
+      "expected_output": "payments feature가 package-by-feature 구조로 생성되고 경계가 명확히 분리",
       "files": [
-        "../../../features/nest-api/package.json",
-        "../../../features/nest-api/src/app.module.ts",
-        "../../../features/nest-api/src/app.service.ts",
-        "../../../features/nest-api/src/app.controller.ts",
-        "../../../plans/sample-backend-profile-summary-api/plan.md",
-        "../../../plans/sample-backend-profile-summary-api/tests/manifest.md"
+        "../../../features/backend-dev-fixture/pom.xml",
+        "../../../features/backend-dev-fixture/src/main/java/com/example/app/BackendDevFixtureApplication.java",
+        "../../../features/backend-dev-fixture/src/main/java/com/example/app/orders/controller/OrdersController.java",
+        "../../../features/backend-dev-fixture/src/main/java/com/example/app/orders/service/OrdersService.java"
       ],
       "expectations": [
-        {"id": "service-boundary", "text": "AppService에 buildProfileSummary 메서드가 존재한다"},
-        {"id": "response-shape", "text": "응답이 userName, pendingTodos, completedTodos, unreadNotifications 필드를 포함한다"},
-        {"id": "normalization-defense", "text": "누락/잘못된 숫자 seed를 0으로 정규화하는 방어 로직이 코드에 포함된다"},
-        {"id": "controller-endpoint", "text": "GET /profile-summary 엔드포인트가 @Get 데코레이터로 등록되어 있다"},
-        {"id": "controller-passthrough", "text": "controller가 service 결과를 래핑 없이 그대로 반환한다"},
-        {"id": "camelcase-methods", "text": "메서드명이 camelCase를 따른다 (tcb profile: method naming = camelCase)"}
+        {"id": "feature-package-created", "text": "payments feature가 src/main/java/com/example/app/payments/ 아래에 생성된다"},
+        {"id": "controller-exists", "text": "payments controller 파일이 존재한다"},
+        {"id": "service-exists", "text": "payments service 파일이 존재한다"},
+        {"id": "repository-exists", "text": "payments repository 파일이 존재한다"},
+        {"id": "dto-separated", "text": "요청/응답 DTO가 entity와 분리되어 있다"},
+        {"id": "entity-exists", "text": "payments entity 파일이 존재한다"},
+        {"id": "package-lowercase", "text": "패키지 segment가 lower-case를 사용한다 (tcb profile: package naming = lowercase)"},
+        {"id": "class-pascal-case", "text": "클래스명이 PascalCase를 따른다 (tcb profile: class names = PascalCase)"},
+        {"id": "app-class-untouched", "text": "BackendDevFixtureApplication.java를 옮기거나 삭제하지 않는다"}
       ]
     },
     {
       "id": 2,
-      "prompt": "주문 관리 모듈을 새로 만들어줘. orders 모듈 구조를 생성하고 기본 CRUD 넣어줘",
-      "expected_output": "tcb CLI 컨벤션에 맞는 orders 모듈 CRUD 구현",
+      "prompt": "루트 패키지에 흩어져 있는 profile summary 관련 코드를 프로젝트 컨벤션에 맞게 별도 feature로 정리해줘. API 응답 계약은 유지해줘.",
+      "expected_output": "root-level profile summary 코드가 dedicated feature package로 이동하고 응답 shape 유지",
       "files": [
-        "../../../features/nest-api/package.json",
-        "../../../features/nest-api/src/app.module.ts"
+        "../../../features/backend-dev-fixture/pom.xml",
+        "../../../features/backend-dev-fixture/src/main/java/com/example/app/controller/ProfileSummaryController.java",
+        "../../../features/backend-dev-fixture/src/main/java/com/example/app/service/ProfileSummaryService.java",
+        "../../../features/backend-dev-fixture/src/main/java/com/example/app/dto/ProfileSummaryResponse.java",
+        "../../../features/backend-dev-fixture/src/test/java/com/example/app/service/ProfileSummaryServiceTest.java"
       ],
       "expectations": [
-        {"id": "crud-get", "text": "GET 엔드포인트가 구현되어 있다"},
-        {"id": "crud-post", "text": "POST 엔드포인트가 구현되어 있다"},
-        {"id": "crud-patch", "text": "PUT 또는 PATCH 엔드포인트가 구현되어 있다"},
-        {"id": "crud-delete", "text": "DELETE 엔드포인트가 구현되어 있다"},
-        {"id": "class-pascal-case", "text": "클래스명이 PascalCase를 따른다 (tcb profile: class names = PascalCase)"},
-        {"id": "package-by-feature", "text": "controller, service 파일이 하나의 feature 디렉토리 안에 배치된다 (tcb profile: module structure = package-by-feature)"},
-        {"id": "db-snake-case", "text": "entity/interface의 DB 필드가 snake_case를 따른다 (tcb profile: entity field naming)"}
+        {"id": "feature-package-created", "text": "profile summary 코드가 dedicated feature package 아래로 이동한다 (예: profilesummary, profile)"},
+        {"id": "root-controller-removed", "text": "com.example.app.controller 아래에 ProfileSummaryController가 남지 않는다"},
+        {"id": "root-service-removed", "text": "com.example.app.service 아래에 ProfileSummaryService가 남지 않는다"},
+        {"id": "root-dto-removed", "text": "com.example.app.dto 아래에 ProfileSummaryResponse가 남지 않는다"},
+        {"id": "response-shape-preserved", "text": "API 응답 DTO shape가 유지된다"},
+        {"id": "test-moved", "text": "테스트 경로가 새 feature 경계에 맞게 정리된다"},
+        {"id": "package-lowercase", "text": "feature 패키지가 lower-case를 사용한다 (tcb profile: package naming = lowercase)"},
+        {"id": "controller-thin", "text": "controller는 transport 역할만 하고 service에 위임한다"}
       ]
     },
     {
       "id": 3,
-      "prompt": "사용자 인증 API 엔드포인트를 NestJS로 구현해줘. JWT 토큰 기반으로 login, register 엔드포인트 만들어줘",
-      "expected_output": "tcb CLI 컨벤션에 맞는 auth 모듈 생성",
+      "prompt": "orders 기능을 프로젝트 컨벤션에 맞게 다시 정리해줘. controller는 더 얇게 하고 request/response DTO와 entity 경계가 명확하게 보이도록 정리해줘.",
+      "expected_output": "orders controller가 thin으로 정리되고 DTO/entity 경계가 명확히 분리",
       "files": [
-        "../../../features/nest-api/package.json",
-        "../../../features/nest-api/src/app.module.ts",
-        "../../../features/nest-api/src/main.ts"
+        "../../../features/backend-dev-fixture/pom.xml",
+        "../../../features/backend-dev-fixture/src/main/java/com/example/app/orders/controller/OrdersController.java",
+        "../../../features/backend-dev-fixture/src/main/java/com/example/app/orders/service/OrdersService.java",
+        "../../../features/backend-dev-fixture/src/main/java/com/example/app/orders/repository/OrdersRepository.java",
+        "../../../features/backend-dev-fixture/src/main/java/com/example/app/orders/entity/OrderEntity.java"
       ],
       "expectations": [
-        {"id": "controller-file", "text": "auth controller 파일이 존재한다"},
-        {"id": "service-file", "text": "auth service 파일이 존재한다"},
-        {"id": "login-endpoint", "text": "login 엔드포인트가 구현되어 있다"},
-        {"id": "register-endpoint", "text": "register 엔드포인트가 구현되어 있다"},
-        {"id": "class-pascal-case", "text": "클래스명이 PascalCase를 따른다 (tcb profile: class names = PascalCase)"},
-        {"id": "package-by-feature", "text": "auth 관련 파일이 하나의 feature 디렉토리 안에 배치된다 (tcb profile: package-by-feature)"}
+        {"id": "no-entity-in-response", "text": "controller가 entity를 API response로 그대로 반환하지 않는다"},
+        {"id": "response-dto-exists", "text": "orders 전용 response DTO가 존재한다"},
+        {"id": "request-dto-exists", "text": "orders 전용 request DTO가 존재한다"},
+        {"id": "service-owns-mapping", "text": "service가 entity-DTO 매핑을 담당한다"},
+        {"id": "controller-thin", "text": "controller는 HTTP wiring에만 집중하고 domain rule을 포함하지 않는다"},
+        {"id": "valid-annotation", "text": "@Valid 어노테이션이 request DTO에 적용된다"},
+        {"id": "endpoint-surface-preserved", "text": "기존 /orders endpoint surface가 유지된다"},
+        {"id": "class-pascal-case", "text": "클래스명이 PascalCase를 따른다 (tcb profile: class names = PascalCase)"}
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "관리자용 audit log 조회 기능을 프로젝트 컨벤션에 맞게 추가해줘. Spring feature 구조를 유지하고 조회 API 중심으로 설계해줘.",
+      "expected_output": "audit feature가 독립 package로 생성되고 controller/service/repository/dto 경계가 분리",
+      "files": [
+        "../../../features/backend-dev-fixture/pom.xml",
+        "../../../features/backend-dev-fixture/src/main/java/com/example/app/auth/controller/AuthController.java",
+        "../../../features/backend-dev-fixture/src/main/java/com/example/app/orders/controller/OrdersController.java",
+        "../../../features/backend-dev-fixture/src/main/java/com/example/app/global/exception/GlobalExceptionHandler.java"
+      ],
+      "expectations": [
+        {"id": "audit-feature-created", "text": "audit 또는 동급 lower-case feature package가 추가된다"},
+        {"id": "not-inside-auth", "text": "audit log 코드가 auth feature 안에 섞이지 않고 독립 feature에 위치한다"},
+        {"id": "controller-exists", "text": "audit controller가 존재한다"},
+        {"id": "service-exists", "text": "audit service가 존재한다"},
+        {"id": "repository-exists", "text": "audit repository가 존재한다"},
+        {"id": "response-dto-exists", "text": "조회 응답이 response DTO로 표현된다"},
+        {"id": "feature-path-convention", "text": "패키지 구조가 src/main/java/com/example/app/{feature} 기준을 따른다"},
+        {"id": "class-pascal-case", "text": "클래스명이 PascalCase를 따른다 (tcb profile: class names = PascalCase)"}
       ]
     }
   ]
