@@ -51,6 +51,62 @@ export default DashboardLayout;
   assert.equal(payload.results[0].command, "component");
 });
 
+test("tcp validate-file는 app page 같은 퍼블리셔 파일도 AST-only로 검증한다", async () => {
+  const tempRoot = await createTempRepo({
+    profiles: ["shared/personal/v1", "publisher/personal/v1"],
+    files: {
+      "app/showcase/page.tsx": `const Page = () => {
+  return <section />;
+};
+
+export default Page;
+`
+    }
+  });
+
+  const result = runCli(tcpBin, [
+    "validate-file",
+    "app/showcase/page.tsx"
+  ], {
+    cwd: tempRoot
+  });
+
+  assert.equal(result.status, 0);
+  const payload = readJson(result.stdout);
+  assert.equal(payload.ok, true);
+  assert.equal(payload.results[0].command, "component");
+  assert.deepEqual(payload.results[0].violations, []);
+});
+
+test("tcp validate-file는 prefix가 있어도 내부 components 경로 기준으로 배치 규칙을 검증한다", async () => {
+  const tempRoot = await createTempRepo({
+    profiles: ["shared/personal/v1", "publisher/personal/v1"],
+    files: {
+      "plugin/skills/ui-publish-workspace/outputs/components/common/ReviewCard/index.tsx": `interface ReviewCardProps {}
+
+const ReviewCard = (_props: ReviewCardProps) => {
+  return <section />;
+};
+
+export default ReviewCard;
+`
+    }
+  });
+
+  const result = runCli(tcpBin, [
+    "validate-file",
+    "plugin/skills/ui-publish-workspace/outputs/components/common/ReviewCard/index.tsx"
+  ], {
+    cwd: tempRoot
+  });
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stdout);
+  const codes = payload.results[0].violations.map((item) => item.code);
+
+  assert.ok(codes.includes("INVALID_PATH_SEGMENT"));
+});
+
 test("tcp validate-file는 폴더명 case와 same-file JSX helper/subcomponent를 검증한다", async () => {
   const tempRoot = await createTempRepo({
     profiles: ["shared/personal/v1", "publisher/personal/v1"],

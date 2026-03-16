@@ -141,12 +141,17 @@ test("tcp help JSON은 publisher component 계약을 AI가 읽을 수 있는 구
     "profile"
   );
   assert.equal(
-    payload.commands.validateFile.contracts.outputPolicy.entryFilePattern,
-    "index.tsx"
+    payload.commands.validateFile.description,
+    "Validate publisher UI files against placement and AST rules"
   );
   assert.deepEqual(
     payload.commands.validateFile.contracts.inputShape.acceptedModes,
     ["positional", "json"]
+  );
+  assert.ok(
+    payload.commands.validateFile.contracts.validationCoverage.includes(
+      "non-components path uses AST-only validation"
+    )
   );
 });
 
