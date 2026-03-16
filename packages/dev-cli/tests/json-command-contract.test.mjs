@@ -7,15 +7,15 @@ test("spec-driven command는 --json 입력을 받고 기본적으로 파일 prev
   const result = runCli(tcpBin, [
     "component",
     "--json",
-    "{\"name\":\"HomePage\",\"path\":\"page/homePage\"}"
+    "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}"
   ]);
 
   assert.equal(result.status, 0);
   const payload = readJson(result.stdout);
   assert.equal(payload.ok, true);
   assert.equal(payload.command, "component");
-  assert.equal(payload.normalizedSpec.name, "HomePage");
-  assert.equal(payload.files[0].path, "page/homePage/index.tsx");
+  assert.equal(payload.normalizedSpec.name, "ReviewCard");
+  assert.equal(payload.files[0].path, "components/common/reviewCard/index.tsx");
   assert.equal(payload.files[0].status, "planned");
 });
 
@@ -24,7 +24,7 @@ test("legacy positional 입력은 명시적인 JSON spec 오류를 반환한다"
     "component",
     "HomePage",
     "--path",
-    "page/homePage"
+    "components/common/homePage"
   ]);
 
   assert.equal(result.status, 1);
@@ -90,4 +90,48 @@ test("tcf help JSON은 hook/apiHook 계약을 AI가 읽을 수 있는 구조로 
     payload.commands.apiHook.contracts.pathPolicy.domainExamples["app/login/page.tsx"],
     "login"
   );
+});
+
+test("tcp help JSON은 publisher component 계약을 AI가 읽을 수 있는 구조로 노출한다", () => {
+  const result = runCli(tcpBin, ["--help"]);
+
+  assert.equal(result.status, 0);
+  const payload = readJson(result.stdout);
+  assert.equal(payload.ok, true);
+  assert.deepEqual(
+    payload.commands.component.contracts.pathPolicy.requiredPatterns,
+    [
+      "components/common/{component}",
+      "components/{domain}/{component}"
+    ]
+  );
+  assert.equal(
+    payload.commands.component.contracts.pathPolicy.domainPolicy,
+    "domain is the root page segment from app/{domain}; use common only for components shared across multiple page domains"
+  );
+  assert.equal(
+    payload.commands.component.contracts.outputPolicy.functionStyle,
+    "arrow"
+  );
+  assert.equal(
+    payload.commands.component.contracts.outputPolicy.filePattern,
+    "{path}/index.tsx"
+  );
+  assert.equal(
+    payload.commands.component.contracts.pathPolicy.domainExamples["app/profile/page.tsx"],
+    "profile"
+  );
+});
+
+test("tcp component는 common 또는 domain segment 없는 경로를 거부한다", () => {
+  const result = runCli(tcpBin, [
+    "component",
+    "--json",
+    "{\"name\":\"Button\",\"path\":\"components/button\"}"
+  ]);
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stderr);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.error.code, "INVALID_COMPONENT_PATH");
 });

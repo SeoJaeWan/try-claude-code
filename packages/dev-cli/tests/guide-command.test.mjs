@@ -31,3 +31,14 @@ test("guide 명령은 --json일 때 guide 구조를 JSON으로 반환한다", ()
   assert.equal(payload.commands.hook.guide["목적"], "일반 훅 파일 껍질을 생성한다.");
   assert.deepEqual(payload.commands.hook.required, ["name", "path"]);
 });
+
+test("help --text는 필수 필드와 주요 계약 힌트를 함께 보여준다", () => {
+  const result = runCli(tcpBin, ["--help", "--text"]);
+
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /required: name, path/);
+  assert.match(
+    result.stdout,
+    /path policy: components\/common\/\{component\} \| components\/\{domain\}\/\{component\}/
+  );
+});

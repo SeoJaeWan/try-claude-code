@@ -109,6 +109,37 @@ function assertHookPathPolicy(pathValue, rule) {
   }
 }
 
+function assertPublisherComponentPath(pathValue, rule) {
+  const segments = validateRelativePath(
+    pathValue,
+    "INVALID_COMPONENT_PATH",
+    "Component path must be a relative repo path"
+  );
+  const componentsRoot = rule.componentsRoot ?? "components";
+  const sharedSegment = rule.sharedSegment ?? "common";
+  const [root, scope, componentSegment] = segments;
+
+  if (
+    root !== componentsRoot ||
+    !scope ||
+    !componentSegment
+  ) {
+    throw createCliError(
+      "INVALID_COMPONENT_PATH",
+      "Publisher component path must be components/common/{component} or components/{domain}/{component}",
+      {
+        path: pathValue,
+        componentsRoot,
+        sharedSegment
+      }
+    );
+  }
+
+  if (scope === sharedSegment) {
+    return;
+  }
+}
+
 function assertApiHookPath(pathValue, kind, rule) {
   const suffix = rule.suffixMap?.[kind] ?? "queries";
   const segments = validateRelativePath(
@@ -261,6 +292,14 @@ async function applyValidatorRule(rule, command, args, files, repoRoot, checks) 
     if (args[rule.field]) {
       assertHookPathPolicy(args[rule.field], rule);
       checks.push(`${rule.field}.hookPathPolicy=ok`);
+    }
+    return;
+  }
+
+  if (rule.kind === "publisherComponentPathPolicy") {
+    if (args[rule.field]) {
+      assertPublisherComponentPath(args[rule.field], rule);
+      checks.push(`${rule.field}.publisherComponentPathPolicy=ok`);
     }
     return;
   }

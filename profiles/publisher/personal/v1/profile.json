@@ -8,25 +8,73 @@
     "공통규칙": [
       "퍼블리셔는 비즈니스 로직을 구현하지 않는다.",
       "toggle, sidebar, modal 같은 UI 상호작용 state는 허용한다.",
-      "domain 전용 컴포넌트는 components/{domain}, 여러 도메인에서 쓰면 components/common을 사용한다."
+      "컴포넌트 경로는 components/common/{component} 또는 components/{domain}/{component}를 사용한다.",
+      "domain은 app/{domain}/page.tsx의 root page segment를 사용한다. 여러 page domain에서 공통이면 common을 사용한다."
     ]
   },
   "rules": {
     "guidance": {
       "placementRules": [
-        "Use components/common when reused in 2 or more domains or pages.",
-        "Use components/{domain} for domain-specific components.",
+        "Use components/common/{component} when reused in 2 or more page domains.",
+        "Use components/{domain}/{component} for domain-specific components.",
         "Nested UI parts may live under the parent component folder."
-      ]
+      ],
+      "pathPolicy": {
+        "requiredPatterns": [
+          "components/common/{component}",
+          "components/{domain}/{component}"
+        ],
+        "domainPolicy": "domain is the root page segment from app/{domain}; use common only for components shared across multiple page domains",
+        "domainExamples": {
+          "app/login/page.tsx": "login",
+          "app/signup/page.tsx": "signup",
+          "app/profile/page.tsx": "profile"
+        }
+      }
     }
   },
   "commands": {
     "component": {
       "description": "Generate a publisher UI component file",
+      "contracts": {
+        "componentKind": "ui",
+        "pathPolicy": {
+          "requiredPatterns": [
+            "components/common/{component}",
+            "components/{domain}/{component}"
+          ],
+          "sharedPattern": "components/common/{component}",
+          "domainPattern": "components/{domain}/{component}",
+          "nestedPattern": "components/{domain}/{parentComponent}/{childComponent}",
+          "domainPolicy": "domain is the root page segment from app/{domain}; use common only for components shared across multiple page domains",
+          "domainExamples": {
+            "app/login/page.tsx": "login",
+            "app/signup/page.tsx": "signup",
+            "app/profile/page.tsx": "profile"
+          }
+        },
+        "outputPolicy": {
+          "filePattern": "{path}/index.tsx",
+          "functionStyle": "arrow",
+          "defaultExport": true,
+          "propsInterfaceSuffix": "Props"
+        },
+        "logicBoundary": {
+          "allowedState": "UI interaction state only",
+          "forbiddenPatterns": [
+            "useEffect(",
+            "fetch(",
+            "axios.",
+            "useQuery(",
+            "useMutation("
+          ]
+        }
+      },
       "guide": {
         "목적": "UI 컴포넌트 파일 껍질을 생성한다.",
         "입력규칙": [
           "name과 path는 필수다.",
+          "path는 components/common/{component} 또는 components/{domain}/{component} 패턴을 사용한다.",
           "props는 value 또는 callback 멤버 배열로 전달한다."
         ],
         "이름규칙": [
@@ -35,7 +83,13 @@
         ],
         "출력규칙": [
           "출력 파일은 {path}/index.tsx 이다.",
-          "Props 인터페이스와 export default를 포함한다."
+          "Props 인터페이스와 export default를 포함한다.",
+          "컴포넌트 본문은 화살표 함수 형태를 유지한다."
+        ],
+        "배치규칙": [
+          "공통 컴포넌트는 components/common/{component}를 사용한다.",
+          "도메인 전용 컴포넌트는 components/{domain}/{component}를 사용한다.",
+          "domain은 root page segment를 사용한다. 예: app/login -> login."
         ],
         "금지규칙": [
           "useEffect(",
@@ -90,13 +144,19 @@
         {
           "kind": "pathRoots",
           "field": "path",
-          "allowedRoots": ["components", "page", "app"]
+          "allowedRoots": ["components"]
         },
         {
           "kind": "pathSegmentCase",
           "field": "path",
           "style": "camel",
           "message": "Path segments must use camelCase"
+        },
+        {
+          "kind": "publisherComponentPathPolicy",
+          "field": "path",
+          "componentsRoot": "components",
+          "sharedSegment": "common"
         },
         {
           "kind": "nameCase",
@@ -117,11 +177,23 @@
         "contextTokens": ["interfaceName", "componentName", "propsMembers"]
       },
       "examples": [
-        "tcp component --json '{\"name\":\"HomePage\",\"path\":\"page/homePage\"}'"
+        "tcp component --json '{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}'",
+        "tcp component --json '{\"name\":\"ProfileHeader\",\"path\":\"components/profile/profileHeader\"}'"
       ]
     },
     "uiState": {
       "description": "Render UI interaction state and handlers snippet",
+      "contracts": {
+        "stateKind": "uiInteraction",
+        "allowedPatterns": ["toggle", "default"],
+        "namingPolicy": {
+          "state": "is{Name}Open",
+          "setter": "setIs{Name}Open",
+          "toggleHandler": "handleToggle{Name}",
+          "openHandler": "handleOpen{Name}",
+          "closeHandler": "handleClose{Name}"
+        }
+      },
       "guide": {
         "목적": "UI 상호작용 state와 handler 껍질을 생성한다.",
         "입력규칙": [
@@ -215,7 +287,7 @@
         "kind": "batch"
       },
       "examples": [
-        "tcp batch --json '{\"ops\":[{\"id\":\"component\",\"command\":\"component\",\"spec\":{\"name\":\"HomePage\",\"path\":\"page/homePage\"}}]}'"
+        "tcp batch --json '{\"ops\":[{\"id\":\"component\",\"command\":\"component\",\"spec\":{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}}]}'"
       ]
     }
   }

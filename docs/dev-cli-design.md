@@ -126,16 +126,16 @@ tcf guide hook
 단일 command는 항상 `--json` spec을 받는다.
 
 ```bash
-tcp component --json "{\"name\":\"HomePage\",\"path\":\"page/homePage\"}"
-tcf hook --json "{\"name\":\"useScroll\",\"path\":\"hooks/utils\"}"
+tcp component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}"
+tcf hook --json "{\"name\":\"useScroll\",\"path\":\"hooks/utils/common\"}"
 tcb requestDto --json "{\"name\":\"CreateProductRequest\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}"
 ```
 
 preview가 기본이며 실제 파일 생성은 `--apply`일 때만 수행한다.
 
 ```bash
-tcp component --json "{\"name\":\"HomePage\",\"path\":\"page/homePage\"}"
-tcp component --json "{\"name\":\"HomePage\",\"path\":\"page/homePage\"}" --apply
+tcp component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}"
+tcp component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}" --apply
 ```
 
 ## Batch Contract
@@ -150,8 +150,8 @@ tcp batch --json "{
       \"id\": \"component\",
       \"command\": \"component\",
       \"spec\": {
-        \"name\": \"HomePage\",
-        \"path\": \"page/homePage\"
+        \"name\": \"ReviewCard\",
+        \"path\": \"components/common/reviewCard\"
       }
     },
     {
@@ -233,6 +233,8 @@ tcf function --json "{\"kind\":\"internalHandler\",\"name\":\"onClick\"}"
 - 입력: `name`, `path`, optional `role`, optional `props`
 - 출력: `{path}/index.tsx`
 - 이름: PascalCase
+- path: `components/common/{component}` 또는 `components/{domain}/{component}`
+- domain: `app/{domain}/page.tsx`의 root page segment
 - path segment: `camelCase`
 - 컴포넌트: 화살표 함수
 - `export default`
@@ -255,7 +257,7 @@ publisher 금지 패턴:
 예시:
 
 ```bash
-tcp component --json "{\"name\":\"HomePage\",\"path\":\"page/homePage\",\"props\":[{\"kind\":\"value\",\"name\":\"title\",\"type\":\"string\",\"required\":true}]}"
+tcp component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\",\"props\":[{\"kind\":\"value\",\"name\":\"title\",\"type\":\"string\",\"required\":true}]}"
 tcp uiState --json "{\"category\":\"uiInteraction\",\"pattern\":\"toggle\",\"name\":\"menu\"}"
 ```
 
