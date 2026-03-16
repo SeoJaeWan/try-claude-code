@@ -1,0 +1,292 @@
+{
+  "metadata": {
+    "skill_name": "ui-publish",
+    "skill_path": "plugin/skills/ui-publish",
+    "executor_model": "claude-sonnet-4-6",
+    "timestamp": "2026-03-16T00:00:00Z",
+    "evals_run": [1, 2, 3, 4],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "eval_name": "review-card-creation",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.846,
+        "passed": 11,
+        "failed": 2,
+        "total": 13,
+        "time_seconds": 92.4,
+        "tokens": 33245,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "ReviewCard 컴포넌트 파일이 존재한다", "passed": true, "evidence": "components/ReviewCard/index.tsx 생성됨"},
+        {"text": "컴포넌트가 {ComponentName}/index.tsx 패턴으로 생성된다", "passed": true, "evidence": "ReviewCard/index.tsx 패턴 사용"},
+        {"text": "flat ReviewCard.tsx가 아닌 폴더 기반 index.tsx로 생성된다", "passed": true, "evidence": "폴더 기반 구조 확인"},
+        {"text": "폴더명이 camelCase이다 (tcp folderCase: camelCase)", "passed": false, "evidence": "ReviewCard/ — PascalCase (tcp가 camelCase를 PascalCase로 normalize함)"},
+        {"text": "components/common/ 또는 components/{domain}/ 하위에 배치된다", "passed": false, "evidence": "components/ReviewCard/ — tcp가 common/reviewCard를 ReviewCard로 normalize"},
+        {"text": "컴포넌트 이름이 PascalCase이다", "passed": true, "evidence": "export default function ReviewCard(...)"},
+        {"text": "Props 인터페이스가 ReviewCardProps 접미사를 따른다", "passed": true, "evidence": "export interface ReviewCardProps"},
+        {"text": "사용자 아바타를 표시하는 요소가 존재한다", "passed": true, "evidence": "next/image 40px avatar + initial fallback"},
+        {"text": "별점을 표시하는 요소가 존재한다", "passed": true, "evidence": "StarRating 5개 SVG 별 amber-400"},
+        {"text": "리뷰 본문을 표시하는 요소가 존재한다", "passed": true, "evidence": "<p> body text-sm leading-relaxed"},
+        {"text": "작성일을 표시하는 요소가 존재한다", "passed": true, "evidence": "createdAt prop 표시"},
+        {"text": "Tailwind CSS 클래스가 스타일링에 사용된다", "passed": true, "evidence": "Tailwind 전반 사용"},
+        {"text": "useEffect/fetch/axios/useQuery/useMutation 없다", "passed": true, "evidence": "해당 패턴 없음"}
+      ]
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "review-card-creation",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.846,
+        "passed": 11,
+        "failed": 2,
+        "total": 13,
+        "time_seconds": 88.2,
+        "tokens": 28739,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "ReviewCard 컴포넌트 파일이 존재한다", "passed": true, "evidence": "components/ReviewCard/index.tsx 생성됨"},
+        {"text": "컴포넌트가 {ComponentName}/index.tsx 패턴으로 생성된다", "passed": true, "evidence": "ReviewCard/index.tsx 패턴"},
+        {"text": "flat ReviewCard.tsx가 아닌 폴더 기반 index.tsx로 생성된다", "passed": true, "evidence": "폴더 기반 구조 확인"},
+        {"text": "폴더명이 camelCase이다 (tcp folderCase: camelCase)", "passed": false, "evidence": "ReviewCard/ — PascalCase"},
+        {"text": "components/common/ 또는 components/{domain}/ 하위에 배치된다", "passed": false, "evidence": "components/ReviewCard/ — common/ 또는 domain/ 없음"},
+        {"text": "컴포넌트 이름이 PascalCase이다", "passed": true, "evidence": "export default function ReviewCard(...)"},
+        {"text": "Props 인터페이스가 ReviewCardProps 접미사를 따른다", "passed": true, "evidence": "export interface ReviewCardProps"},
+        {"text": "사용자 아바타를 표시하는 요소가 존재한다", "passed": true, "evidence": "next/image avatar + initial fallback"},
+        {"text": "별점을 표시하는 요소가 존재한다", "passed": true, "evidence": "StarRating 5개 SVG 별 amber-400"},
+        {"text": "리뷰 본문을 표시하는 요소가 존재한다", "passed": true, "evidence": "<p> body text-sm leading-relaxed"},
+        {"text": "작성일을 표시하는 요소가 존재한다", "passed": true, "evidence": "createdAt prop 표시"},
+        {"text": "Tailwind CSS 클래스가 스타일링에 사용된다", "passed": true, "evidence": "Tailwind 전반 사용"},
+        {"text": "useEffect/fetch/axios/useQuery/useMutation 없다", "passed": true, "evidence": "해당 패턴 없음"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "button-convention-refactor",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "failed": 0,
+        "total": 10,
+        "time_seconds": 115.7,
+        "tokens": 32656,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "결과 구조가 folder/index 규칙을 따른다", "passed": true, "evidence": "components/common/button/index.tsx"},
+        {"text": "flat Button.tsx가 남지 않는다", "passed": true, "evidence": "flat file 제거 확인"},
+        {"text": "폴더명이 camelCase이다 (button/, tcp folderCase: camelCase)", "passed": true, "evidence": "common/button/ — camelCase 확인"},
+        {"text": "components/common/ 하위에 배치된다", "passed": true, "evidence": "components/common/button/"},
+        {"text": "ButtonProps 접미사 유지", "passed": true, "evidence": "export interface ButtonProps"},
+        {"text": "화살표 함수 형태", "passed": true, "evidence": "const Button = (...) => { ... }"},
+        {"text": "label prop 보존", "passed": true, "evidence": "label: string prop 유지"},
+        {"text": "tone prop 보존", "passed": true, "evidence": "tone?: 'primary' | 'secondary' 유지"},
+        {"text": "showcase import 업데이트", "passed": true, "evidence": "import Button from \"@/components/common/button\""},
+        {"text": "forbidden 패턴 없음", "passed": true, "evidence": "해당 패턴 없음"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "button-convention-refactor",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.6,
+        "passed": 6,
+        "failed": 4,
+        "total": 10,
+        "time_seconds": 62.3,
+        "tokens": 26079,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "결과 구조가 folder/index 규칙을 따른다", "passed": true, "evidence": "components/Button/index.tsx"},
+        {"text": "flat Button.tsx가 남지 않는다", "passed": false, "evidence": "flat file 제거 미확인 — import 자동 resolve에 의존"},
+        {"text": "폴더명이 camelCase이다 (button/, tcp folderCase: camelCase)", "passed": false, "evidence": "Button/ — PascalCase"},
+        {"text": "components/common/ 하위에 배치된다", "passed": false, "evidence": "components/Button/ — common/ 없음"},
+        {"text": "ButtonProps 접미사 유지", "passed": true, "evidence": "export interface ButtonProps"},
+        {"text": "화살표 함수 형태", "passed": false, "evidence": "export default function Button(...) — function 선언문"},
+        {"text": "label prop 보존", "passed": true, "evidence": "label: string prop 유지"},
+        {"text": "tone prop 보존", "passed": true, "evidence": "tone?: 'primary' | 'secondary' 유지"},
+        {"text": "showcase import 업데이트", "passed": true, "evidence": "module resolution 자동 resolve"},
+        {"text": "forbidden 패턴 없음", "passed": true, "evidence": "해당 패턴 없음"}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "dashboard-layout-refactor",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.909,
+        "passed": 10,
+        "failed": 1,
+        "total": 11,
+        "time_seconds": 117.3,
+        "tokens": 36319,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "folder 기반 index.tsx 패턴", "passed": true, "evidence": "components/common/dashboardLayout/index.tsx"},
+        {"text": "flat DashboardLayout.tsx 제거", "passed": true, "evidence": "flat file 제거됨"},
+        {"text": "폴더명이 camelCase이다 (dashboardLayout/, tcp folderCase: camelCase)", "passed": true, "evidence": "common/dashboardLayout/ — camelCase 확인"},
+        {"text": "components/dashboard/ 하위에 배치된다", "passed": false, "evidence": "components/common/dashboardLayout/ — dashboard/ 대신 common/ 선택"},
+        {"text": "sidebar 영역 존재", "passed": true, "evidence": "Sidebar 서브컴포넌트 + <aside> dashboard-sidebar testid"},
+        {"text": "header 영역 존재", "passed": true, "evidence": "Header 서브컴포넌트 + <header> dashboard-header testid"},
+        {"text": "main 콘텐츠 영역 존재", "passed": true, "evidence": "<main> dashboard-main testid"},
+        {"text": "children shell 역할 유지", "passed": true, "evidence": "{children} in main"},
+        {"text": "responsive breakpoint 보존", "passed": true, "evidence": "md:flex, md:w-60, lg:w-64, md:px-6"},
+        {"text": "사용처 import 업데이트", "passed": true, "evidence": "dashboard page import 업데이트"},
+        {"text": "forbidden 패턴 없음", "passed": true, "evidence": "forbidden 패턴 없음"}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "dashboard-layout-refactor",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.818,
+        "passed": 9,
+        "failed": 2,
+        "total": 11,
+        "time_seconds": 88.4,
+        "tokens": 32707,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "folder 기반 index.tsx 패턴", "passed": true, "evidence": "components/DashboardLayout/index.tsx + 서브컴포넌트"},
+        {"text": "flat DashboardLayout.tsx 제거", "passed": true, "evidence": "flat file 제거됨"},
+        {"text": "폴더명이 camelCase이다 (dashboardLayout/, tcp folderCase: camelCase)", "passed": false, "evidence": "DashboardLayout/ — PascalCase"},
+        {"text": "components/dashboard/ 하위에 배치된다", "passed": false, "evidence": "components/DashboardLayout/ — 도메인 세그먼트 없음"},
+        {"text": "sidebar 영역 존재", "passed": true, "evidence": "Sidebar 서브컴포넌트"},
+        {"text": "header 영역 존재", "passed": true, "evidence": "Header 서브컴포넌트"},
+        {"text": "main 콘텐츠 영역 존재", "passed": true, "evidence": "<main> dashboard-main testid"},
+        {"text": "children shell 역할 유지", "passed": true, "evidence": "{children} in main"},
+        {"text": "responsive breakpoint 보존", "passed": true, "evidence": "md:flex, md:w-60, lg:w-64 보존"},
+        {"text": "사용처 import 업데이트", "passed": true, "evidence": "DashboardLayout/ 자동 resolve"},
+        {"text": "forbidden 패턴 없음", "passed": true, "evidence": "forbidden 패턴 없음"}
+      ]
+    },
+    {
+      "eval_id": 4,
+      "eval_name": "product-card-deduplication",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 126.0,
+        "tokens": 32395,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "단일 source of truth", "passed": true, "evidence": "common/productCard/index.tsx only; flat+old folder 제거"},
+        {"text": "flat ProductCard.tsx 제거", "passed": true, "evidence": "flat file 제거됨"},
+        {"text": "final structure follows a folder-based index.tsx pattern", "passed": true, "evidence": "components/common/productCard/index.tsx"},
+        {"text": "폴더명이 camelCase이다 (productCard/, tcp folderCase: camelCase)", "passed": true, "evidence": "common/productCard/ — camelCase 확인"},
+        {"text": "components/common/ 하위에 배치된다", "passed": true, "evidence": "components/common/productCard/"},
+        {"text": "ProductCardProps 유지", "passed": true, "evidence": "export interface ProductCardProps"},
+        {"text": "import path 일관성", "passed": true, "evidence": "사용처 없음 — N/A"},
+        {"text": "visual affordance 보존", "passed": true, "evidence": "hover:shadow-md, group-hover:scale-105, badge, line-clamp-2"},
+        {"text": "forbidden 패턴 없음", "passed": true, "evidence": "해당 패턴 없음"}
+      ]
+    },
+    {
+      "eval_id": 4,
+      "eval_name": "product-card-deduplication",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.778,
+        "passed": 7,
+        "failed": 2,
+        "total": 9,
+        "time_seconds": 37.5,
+        "tokens": 24210,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "단일 source of truth", "passed": true, "evidence": "ProductCard/index.tsx만 존재"},
+        {"text": "flat ProductCard.tsx 제거", "passed": true, "evidence": "flat file 제거됨"},
+        {"text": "final structure follows a folder-based index.tsx pattern", "passed": true, "evidence": "components/ProductCard/index.tsx"},
+        {"text": "폴더명이 camelCase이다 (productCard/, tcp folderCase: camelCase)", "passed": false, "evidence": "ProductCard/ — PascalCase"},
+        {"text": "components/common/ 하위에 배치된다", "passed": false, "evidence": "components/ProductCard/ — common/ 없음"},
+        {"text": "ProductCardProps 유지", "passed": true, "evidence": "export interface ProductCardProps"},
+        {"text": "import path 일관성", "passed": true, "evidence": "사용처 없음 — N/A"},
+        {"text": "visual affordance 보존", "passed": true, "evidence": "hover:shadow-md, group-hover:scale-105, badge, line-clamp-2"},
+        {"text": "forbidden 패턴 없음", "passed": true, "evidence": "해당 패턴 없음"}
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.939,
+        "stddev": 0.072,
+        "min": 0.846,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 112.9,
+        "stddev": 14.5,
+        "min": 92.4,
+        "max": 126.0
+      },
+      "tokens": {
+        "mean": 33654,
+        "stddev": 1682,
+        "min": 32395,
+        "max": 36319
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.761,
+        "stddev": 0.103,
+        "min": 0.6,
+        "max": 0.846
+      },
+      "time_seconds": {
+        "mean": 69.1,
+        "stddev": 23.0,
+        "min": 37.5,
+        "max": 88.4
+      },
+      "tokens": {
+        "mean": 27934,
+        "stddev": 3542,
+        "min": 24210,
+        "max": 32707
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.178",
+      "time_seconds": "+43.8",
+      "tokens": "+5720"
+    }
+  },
+  "notes": [
+    "Iteration 4 재현성 검증: with_skill 93.9% vs without_skill 76.1% (+17.8%p delta)",
+    "Eval1 (ReviewCard) REGRESSION: with_skill 84.6% (iter3: 100%) — tcp가 common/reviewCard를 ReviewCard로 normalize하여 camelCase+domain 실패. NON-DISCRIMINATING (both 84.6%)",
+    "Eval2 (Button): with_skill 100% vs without_skill 60% (+40%p) — 최대 차별화. without_skill이 flat file 미제거+function 선언문으로 iter3 대비 악화 (70%→60%)",
+    "Eval3 (Dashboard): with_skill 90.9% vs without_skill 81.8% (+9.1%p) — with_skill이 common/ 배치 (iter3에서는 dashboard/). 여전히 camelCase 차별화 유지",
+    "Eval4 (ProductCard): with_skill 100% vs without_skill 77.8% (+22.2%p) — iter3과 동일 결과",
+    "Iteration 3→4 delta 변화: +21.4%p → +17.8%p (-3.6%p). Eval1 regression이 주요 원인",
+    "tcp CLI의 normalize 동작이 불안정: iter3에서는 camelCase 유지, iter4에서는 PascalCase로 normalize — 스킬 개선 포인트",
+    "Time tradeoff: with_skill 113s vs without_skill 69s (+63% overhead). Iter3 대비 without_skill이 더 빨라짐",
+    "Token tradeoff: with_skill 34K vs without_skill 28K (+20%). Iter3 대비 둘 다 토큰 증가"
+  ]
+}
