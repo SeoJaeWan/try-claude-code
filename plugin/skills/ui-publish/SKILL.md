@@ -54,6 +54,7 @@ Focus on visual structure, NOT business logic:
 5. Open each generated `index.tsx` and implement the visual layout inside it
 6. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
 7. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
-8. Return results based on plan.md
+8. **Run `tcp validate-file` on every component file you created or modified** — pass all files at once using `--json '{"files":["path1","path2"]}'`. If any violation is reported, fix the code to satisfy the rule and re-run validation until all pass. This step is non-negotiable because tcp enforces folder casing, path policy, export patterns, and logic boundary rules that are easy to get wrong even when you scaffolded via tcp.
+9. Return results based on plan.md
   </Instructions>
   </Skill_Guide>
