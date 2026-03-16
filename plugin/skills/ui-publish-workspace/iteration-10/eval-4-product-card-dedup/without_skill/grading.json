@@ -1,0 +1,97 @@
+{
+  "expectations": [
+    {
+      "text": "ProductCard 구현이 하나의 source of truth로 정리된다",
+      "passed": true,
+      "evidence": "Transcript confirms flat file removed; single implementation at components/ProductCard/index.tsx. Output file shows one complete component with all props and rendering logic."
+    },
+    {
+      "text": "flat components/ProductCard.tsx 파일이 남지 않는다",
+      "passed": true,
+      "evidence": "Transcript states: 'Identified that components/ProductCard.tsx was already deleted from the working tree' and 'No flat ProductCard.tsx file remains'."
+    },
+    {
+      "text": "최종 구조가 ProductCard/index.tsx 패턴을 따른다",
+      "passed": true,
+      "evidence": "Transcript confirms canonical location is 'components/ProductCard/index.tsx'. Output file ProductCard_index.tsx matches the expected folder-based index pattern."
+    },
+    {
+      "text": "Props 인터페이스가 ProductCardProps를 유지한다",
+      "passed": true,
+      "evidence": "Output file line 5: 'export interface ProductCardProps' with all expected fields (imageUrl, imageAlt, name, price, currency, badge, testId)."
+    },
+    {
+      "text": "사용처 import path가 일관된다",
+      "passed": false,
+      "evidence": "No evidence that consumer files were checked or updated. The transcript does not mention scanning for import statements or verifying that all usages point to the canonical path. Without verifying consumers, import consistency cannot be confirmed."
+    },
+    {
+      "text": "hover, image, price 등 visual affordance가 보존된다",
+      "passed": true,
+      "evidence": "Output file contains: hover animation via 'group-hover:scale-105' (line 36), Image component with fill and responsive sizes (lines 31-37), price rendering with currency and toLocaleString (lines 51-52), badge support (lines 38-42)."
+    },
+    {
+      "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "passed": true,
+      "evidence": "Output file contains only 'use client' directive and a single Image import from next/image. No useEffect, fetch, axios, useQuery, or useMutation calls present anywhere in the 57-line file."
+    },
+    {
+      "text": "폴더명이 camelCase를 따른다 (productCard)",
+      "passed": false,
+      "evidence": "Transcript shows the folder as 'ProductCard/' (PascalCase), not 'productCard/' (camelCase). Output file is named ProductCard_index.tsx, confirming PascalCase. The assertion explicitly requires camelCase (productCard) but the implementation uses PascalCase."
+    },
+    {
+      "text": "components/common/productCard/ 하위에 배치된다",
+      "passed": false,
+      "evidence": "Transcript places the file at 'components/ProductCard/index.tsx', not under 'components/common/productCard/'. The 'common' directory level is entirely absent from the output path."
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 3,
+    "total": 9,
+    "pass_rate": 0.67
+  },
+  "claims": [
+    {
+      "claim": "The flat ProductCard.tsx was already deleted from the working tree before this task ran",
+      "type": "process",
+      "verified": true,
+      "evidence": "Transcript states: 'Identified that components/ProductCard.tsx was already deleted from the working tree (git shows it as unstaged deletion)'"
+    },
+    {
+      "claim": "Folder-based convention matches other evolved components like Button/index.tsx",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Cannot verify from outputs alone whether Button/index.tsx or dashboardLayout/index.tsx actually exist in the project"
+    },
+    {
+      "claim": "All visual affordances preserved",
+      "type": "quality",
+      "verified": true,
+      "evidence": "Output file contains hover scale, badge, image with aspect-square, price formatting — matching all features listed in the richer implementation"
+    },
+    {
+      "claim": "git restore --staged was used to unstage the deletion",
+      "type": "process",
+      "verified": false,
+      "evidence": "Transcript claims this action but no git command output is shown to confirm it actually ran"
+    }
+  ],
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "사용처 import path가 일관된다",
+        "reason": "This assertion is important but nearly impossible to verify without seeing the consumer files. The eval should either include consumer files in the outputs or narrow the assertion to something checkable like 're-export exists at the expected path'."
+      },
+      {
+        "assertion": "폴더명이 camelCase를 따른다 (productCard)",
+        "reason": "This assertion conflicts with the existing project structure (which uses PascalCase 'ProductCard/'). If the project convention is actually camelCase, the eval prompt should state this more explicitly so the executor knows to rename. If the convention is PascalCase, this assertion should be updated."
+      },
+      {
+        "reason": "No assertion checks whether the component's default export is maintained (export default function ProductCard), which is important for import compatibility."
+      }
+    ],
+    "overall": "The folder-camelCase and common-placement assertions test convention compliance that the executor ignored entirely — this suggests the eval prompt may need to be more explicit about target conventions, or the assertions reflect a convention not present in the test fixture."
+  }
+}

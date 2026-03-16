@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>평가 리뷰</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>평가 리뷰: <span id="skill-name"></span></h1>
+        <div class="instructions">각 출력을 검토하고 아래에 피드백을 남겨주세요. 화살표 키 또는 버튼으로 이동할 수 있습니다. 완료되면 피드백을 복사하여 Claude Code에 붙여넣으세요.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">출력 결과</button>
+      <button class="view-tab" onclick="switchView('benchmark')">벤치마크</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">프롬프트 <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">출력</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">출력 파일을 찾을 수 없습니다</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            이전 출력
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            평가 등급
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">피드백</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="이 출력에 대해 어떻게 생각하시나요? 문제점, 제안사항, 또는 잘된 점이 있나요?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">이전 피드백</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; 이전</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">모든 리뷰 제출</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">다음 &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">벤치마크 데이터가 없습니다. 벤치마크를 실행하면 여기에 정량적 결과가 표시됩니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>리뷰 완료</h2>
+      <p>피드백이 저장되었습니다. Claude Code 세션으로 돌아가서 리뷰가 끝났다고 알려주세요.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "ui-publish", "runs": [{"id": "eval-1-review-card-with_skill", "prompt": "ReviewCard 컴포넌트를 프로젝트 컨벤션에 맞게 추가해줘. 사용자 아바타, 별점(1~5), 리뷰 본문, 작성일이 필요해.", "eval_id": 1, "outputs": [], "grading": {"expectations": [{"text": "ReviewCard 컴포넌트 파일이 존재한다", "passed": true, "evidence": "File exists at outputs/components/common/reviewCard/index.tsx with a full 102-line implementation including props, avatar, rating, body, and date."}, {"text": "컴포넌트가 {ComponentName}/index.tsx 패턴으로 생성된다", "passed": true, "evidence": "Component is at components/common/reviewCard/index.tsx, matching the {ComponentName}/index.tsx directory-based pattern."}, {"text": "flat ReviewCard.tsx가 아닌 ReviewCard/index.tsx로 생성된다", "passed": true, "evidence": "The output file is components/common/reviewCard/index.tsx (directory-based). No flat ReviewCard.tsx exists in the outputs."}, {"text": "컴포넌트 이름이 PascalCase이다", "passed": true, "evidence": "The component is declared as 'const ReviewCard = (...)' (line 14) and exported as 'export default ReviewCard' (line 102). ReviewCard is PascalCase."}, {"text": "Props 인터페이스가 ReviewCardProps 접미사를 따른다", "passed": true, "evidence": "Line 3: 'export interface ReviewCardProps' - follows the {ComponentName}Props naming convention."}, {"text": "사용자 아바타를 표시하는 요소가 존재한다", "passed": true, "evidence": "Lines 36-48: A div with data-testid='review-card-avatar' renders either an <img> (when avatarUrl is provided) or an initials fallback div."}, {"text": "별점을 표시하는 요소가 존재한다", "passed": true, "evidence": "Lines 59-79: A div with data-testid='review-card-rating' and aria-label renders 5 SVG stars, colored amber for filled and zinc for unfilled based on the rating prop (1-5)."}, {"text": "리뷰 본문을 표시하는 요소가 존재한다", "passed": true, "evidence": "Lines 84-89: A <p> element with data-testid='review-card-body' renders {body}."}, {"text": "작성일을 표시하는 요소가 존재한다", "passed": true, "evidence": "Lines 92-97: A <p> element with data-testid='review-card-date' renders {createdAt}."}, {"text": "Tailwind CSS 클래스가 스타일링에 사용된다", "passed": true, "evidence": "Tailwind classes used throughout: 'flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900' (line 30), 'h-10 w-10 rounded-full' (line 42), 'text-amber-400' (line 69), etc."}, {"text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다", "passed": true, "evidence": "The component file contains none of these forbidden patterns. It is a pure presentational component with no side effects or data fetching."}, {"text": "폴더명이 camelCase를 따른다 (reviewCard)", "passed": true, "evidence": "The folder is named 'reviewCard' (lowercase 'r', uppercase 'C') at components/common/reviewCard/, which is camelCase."}, {"text": "components/common/ 또는 components/{domain}/ 하위에 배치된다", "passed": true, "evidence": "Component is placed at components/common/reviewCard/index.tsx, directly under components/common/."}], "summary": {"passed": 13, "failed": 0, "total": 13, "pass_rate": 1.0}, "timing": {"total_tokens": 29653, "total_duration_seconds": 130.9}, "claims": [{"claim": "tcp component scaffold was used to generate the initial file", "type": "process", "verified": true, "evidence": "Transcript Step 4 shows: tcp component --json '{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}' --apply"}, {"claim": "tcp validate-file passed with zero violations", "type": "quality", "verified": false, "evidence": "Claimed in transcript Step 8 but no validation output is included in the outputs directory. Cannot independently verify."}, {"claim": "Showcase page import was updated to the new path", "type": "factual", "verified": true, "evidence": "outputs/app/showcase/page.tsx line 3: import ReviewCard from '@/components/common/reviewCard'"}, {"claim": "No new lint or typecheck errors introduced", "type": "quality", "verified": false, "evidence": "Claimed in transcript Steps 7 and 9, but no lint/typecheck output artifacts are included. Cannot independently verify."}], "user_notes_summary": null, "eval_feedback": {"suggestions": [{"assertion": "별점을 표시하는 요소가 존재한다", "reason": "The assertion only checks that a rating element exists, not that it correctly renders exactly `rating` filled stars out of 5. A component that always shows 5 filled stars would also pass. Consider asserting the rating prop constrains visual output (e.g., conditional styling based on the rating value)."}, {"reason": "No assertion checks that the showcase page (or any consumer) actually imports from the new directory-based path. The component could be correctly structured but never wired up. The showcase page output shows this was done correctly, but it goes unchecked."}], "overall": "Assertions cover structural conventions well. The main gap is that UI-behavior assertions (rating rendering, avatar fallback logic) only check presence, not correctness."}}}, {"id": "eval-1-review-card-without_skill", "prompt": "ReviewCard 컴포넌트를 프로젝트 컨벤션에 맞게 추가해줘. 사용자 아바타, 별점(1~5), 리뷰 본문, 작성일이 필요해.", "eval_id": 1, "outputs": [], "grading": {"expectations": [{"text": "ReviewCard 컴포넌트 파일이 존재한다", "passed": true, "evidence": "ReviewCard component exists at both components/ReviewCard.tsx and components/common/reviewCard/index.tsx in the outputs directory. Both contain a complete ReviewCard implementation with props, avatar, rating, body, and date."}, {"text": "컴포넌트가 {ComponentName}/index.tsx 패턴으로 생성된다", "passed": true, "evidence": "components/common/reviewCard/index.tsx exists and contains the full ReviewCard component. The showcase page imports from this path: import ReviewCard from '@/components/common/reviewCard'."}, {"text": "flat ReviewCard.tsx가 아닌 ReviewCard/index.tsx로 생성된다", "passed": false, "evidence": "The flat file components/ReviewCard.tsx still exists in the outputs alongside the folder-based components/common/reviewCard/index.tsx. The transcript states 'components/ReviewCard.tsx - 이미 존재 (변경 없음)', meaning the executor kept the flat file rather than removing it. Having both creates a convention violation and potential import ambiguity."}, {"text": "컴포넌트 이름이 PascalCase이다", "passed": true, "evidence": "The component function is named 'ReviewCard' (PascalCase) in both files: 'export default function ReviewCard' in the flat file and 'const ReviewCard = ...; export default ReviewCard' in the folder version."}, {"text": "Props 인터페이스가 ReviewCardProps 접미사를 따른다", "passed": true, "evidence": "Both files declare 'export interface ReviewCardProps' with avatarUrl?, authorName, rating, body, and createdAt fields."}, {"text": "사용자 아바타를 표시하는 요소가 존재한다", "passed": true, "evidence": "Avatar section exists with data-testid='review-card-avatar'. It conditionally renders an <img> when avatarUrl is provided, or an initials fallback div when not."}, {"text": "별점을 표시하는 요소가 존재한다", "passed": true, "evidence": "Rating section exists with data-testid='review-card-rating'. Renders 5 SVG star icons using Array.from({ length: 5 }), with filled stars (text-amber-400) for i < rating and empty stars (text-zinc-300) otherwise."}, {"text": "리뷰 본문을 표시하는 요소가 존재한다", "passed": true, "evidence": "Review body paragraph exists with data-testid='review-card-body', rendering the {body} prop with Tailwind styling."}, {"text": "작성일을 표시하는 요소가 존재한다", "passed": true, "evidence": "Date paragraph exists with data-testid='review-card-date', rendering the {createdAt} prop with text-xs styling."}, {"text": "Tailwind CSS 클래스가 스타일링에 사용된다", "passed": true, "evidence": "Extensive Tailwind classes throughout: 'flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900' on the root div, plus numerous utility classes on child elements."}, {"text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다", "passed": true, "evidence": "Neither component file contains any of the forbidden patterns. The component is purely presentational, receiving all data via props with no side effects or data fetching."}, {"text": "폴더명이 camelCase를 따른다 (reviewCard)", "passed": true, "evidence": "The folder path is components/common/reviewCard/index.tsx -- 'reviewCard' is camelCase as required."}, {"text": "components/common/ 또는 components/{domain}/ 하위에 배치된다", "passed": true, "evidence": "The folder-based component is at components/common/reviewCard/index.tsx, which is under components/common/. The showcase page imports from this path."}], "summary": {"passed": 12, "failed": 1, "total": 13, "pass_rate": 0.92}, "timing": {"total_duration_seconds": 102.0}, "claims": [{"claim": "ReviewCard.tsx already existed before execution", "type": "process", "verified": true, "evidence": "Transcript states 'components/ReviewCard.tsx - 이미 존재 (변경 없음)'. The flat file in outputs matches the description of the pre-existing component."}, {"claim": "No type errors related to ReviewCard", "type": "factual", "verified": false, "evidence": "Transcript reports no ReviewCard type errors, but with two competing ReviewCard files (flat and folder-based), potential import resolution conflicts are not tested."}, {"claim": "Component follows project conventions", "type": "quality", "verified": false, "evidence": "The component uses 'use client', named export for Props, default export for component, and Tailwind -- matching existing patterns. However, keeping both the flat file and folder version violates the single-source convention."}], "eval_feedback": {"suggestions": [{"assertion": "flat ReviewCard.tsx가 아닌 ReviewCard/index.tsx로 생성된다", "reason": "This assertion could be strengthened by explicitly checking that NO flat file exists at components/ReviewCard.tsx. Currently the executor created the folder version but left the flat file, which could cause import conflicts. A separate assertion like 'components/ReviewCard.tsx flat file does not exist' would make this unambiguous."}, {"reason": "No assertion checks that the showcase page or any consumer actually imports from the folder-based path rather than the flat file. The showcase page does import from components/common/reviewCard, which is good, but verifying this would confirm the convention is truly followed end-to-end."}], "overall": "Assertions cover component structure and content well. The main gap is around cleanup of the pre-existing flat file -- the 'not-flat-file' assertion catches the intent but could be more explicit about requiring removal of duplicates."}}}, {"id": "eval-2-button-refactor-with_skill", "prompt": "Button 컴포넌트를 프로젝트 컨벤션에 맞게 정리해줘. 기존 동작은 유지하고 현재 구조상의 컨벤션 위반을 해소해줘.", "eval_id": 2, "outputs": [], "grading": {"expectations": [{"text": "결과 구조가 Button/index.tsx 또는 동급 folder/index 규칙을 따른다", "passed": true, "evidence": "Output file is at components/Button/index.tsx, following the folder/index.tsx convention."}, {"text": "flat components/Button.tsx 파일이 그대로 남지 않는다", "passed": true, "evidence": "No flat Button.tsx exists in the outputs directory. Transcript confirms: 'The flat file was already deleted from disk (untracked deletion state)' and 'retain deletion of flat file, Button/index.tsx is canonical'."}, {"text": "Props 인터페이스가 ButtonProps 접미사를 유지한다", "passed": true, "evidence": "Line 3 of Button/index.tsx: 'export interface ButtonProps'."}, {"text": "컴포넌트가 화살표 함수 형태로 유지된다", "passed": false, "evidence": "The component uses a named function declaration: 'export default function Button({ ... })' (line 10). This is NOT an arrow function (e.g., 'const Button = ({ ... }) => { ... }')."}, {"text": "기존 label prop 동작이 보존된다", "passed": true, "evidence": "label: string prop declared in ButtonProps (line 4), destructured in component params (line 11), rendered as {label} inside the button element (line 28)."}, {"text": "기존 tone prop 동작이 보존된다", "passed": true, "evidence": "tone?: 'primary' | 'secondary' declared with default 'primary' (line 12). Ternary on tone drives className with distinct primary (blue) and secondary (zinc border) styles, matching original behavior."}, {"text": "showcase page의 import가 새 구조에 맞게 정리된다", "passed": false, "evidence": "No showcase page file exists in the outputs. The transcript does not mention inspecting or updating any showcase page imports."}, {"text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다", "passed": true, "evidence": "Searched the entire Button/index.tsx output (30 lines). None of the forbidden patterns (useEffect, fetch, axios, useQuery, useMutation) appear."}, {"text": "폴더명이 camelCase를 따른다 (button)", "passed": false, "evidence": "The output folder is 'Button' (PascalCase), not 'button' (camelCase). The assertion explicitly states the expected name is 'button'."}, {"text": "components/common/button/ 하위에 배치된다", "passed": false, "evidence": "The component is placed at components/Button/index.tsx, not components/common/button/index.tsx. The 'common' intermediate directory is missing entirely."}], "summary": {"passed": 6, "failed": 4, "total": 10, "pass_rate": 0.6}, "execution_metrics": {"output_chars": 698, "transcript_chars": 1746}, "claims": [{"claim": "Flat file Button.tsx was already deleted from disk", "type": "process", "verified": true, "evidence": "The outputs directory contains only components/Button/index.tsx with no flat Button.tsx, consistent with the claim."}, {"claim": "pnpm exec eslint components/Button/index.tsx - no errors", "type": "process", "verified": false, "evidence": "Cannot verify from outputs alone; must trust transcript. No eslint output file provided."}, {"claim": "pnpm exec tsc --noEmit - no errors in Button", "type": "process", "verified": false, "evidence": "Cannot verify from outputs alone; must trust transcript. No tsc output file provided."}, {"claim": "All className values for both tones unchanged", "type": "quality", "verified": false, "evidence": "Cannot verify without the original file. The output adds disabled:cursor-not-allowed disabled:opacity-50 to both tones, which is a change from the Button/index.tsx baseline (though transcript says it was missing from that file)."}], "eval_feedback": {"suggestions": [{"assertion": "flat components/Button.tsx 파일이 그대로 남지 않는다", "reason": "This assertion passes trivially if the executor simply never creates the flat file. It tests absence, which is the default state. A stronger check would verify the executor explicitly handled the deletion (e.g., git rm) rather than just not producing the file."}, {"assertion": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다", "reason": "This assertion passes for any component that doesn't use data fetching or side effects. A minimal empty file would pass. It is not discriminating for a Button component refactor since there is no reason a Button would ever include these patterns."}, {"reason": "The folder-camelCase and common-placement assertions are closely related and both test placement. They could be combined into a single assertion: 'component is at components/common/button/index.tsx'. This would be clearer and avoid redundancy."}, {"reason": "No assertion checks that the component's visual output (className values) are preserved from the original. The tone assertion checks that the prop exists but not that the actual CSS classes match the original."}], "overall": "The eval set covers structure and behavior well, but four assertions failed due to the skill not following camelCase folder naming or common/ placement conventions, and not updating the showcase page. The arrow-function check caught a real convention violation in the output."}}}, {"id": "eval-2-button-refactor-without_skill", "prompt": "Button 컴포넌트를 프로젝트 컨벤션에 맞게 정리해줘. 기존 동작은 유지하고 현재 구조상의 컨벤션 위반을 해소해줘.", "eval_id": 2, "outputs": [{"name": "Button_index.tsx", "type": "text", "content": "\"use client\";\n\nexport interface ButtonProps {\n  label: string;\n  tone?: \"primary\" | \"secondary\";\n}\n\nexport default function Button({ label, tone = \"primary\" }: ButtonProps) {\n  return (\n    <button\n      type=\"button\"\n      className={\n        tone === \"primary\"\n          ? \"rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700\"\n          : \"rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100\"\n      }\n    >\n      {label}\n    </button>\n  );\n}\n"}], "grading": {"expectations": [{"text": "결과 구조가 Button/index.tsx 또는 동급 folder/index 규칙을 따른다", "passed": true, "evidence": "Transcript states canonical file is components/Button/index.tsx. Output file Button_index.tsx confirms the folder/index structure. Transcript: 'UNCHANGED: components/Button/index.tsx (canonical, already correct)'."}, {"text": "flat components/Button.tsx 파일이 그대로 남지 않는다", "passed": true, "evidence": "Transcript explicitly states: 'DELETED: components/Button.tsx (legacy flat file - convention violation)'. Only the folder-based file remains."}, {"text": "Props 인터페이스가 ButtonProps 접미사를 유지한다", "passed": true, "evidence": "Output file line 3: 'export interface ButtonProps'. The ButtonProps naming convention is preserved."}, {"text": "컴포넌트가 화살표 함수 형태로 유지된다", "passed": false, "evidence": "Output file line 8 uses a regular function declaration: 'export default function Button({ label, tone = \"primary\" }: ButtonProps)'. This is NOT an arrow function (e.g., const Button = ({ ... }: ButtonProps) => { ... }). The assertion requires arrow function form."}, {"text": "기존 label prop 동작이 보존된다", "passed": true, "evidence": "Output file shows label prop in ButtonProps interface (line 4: 'label: string') and rendered inside the button element (line 19: '{label}'). Behavior is preserved."}, {"text": "기존 tone prop 동작이 보존된다", "passed": true, "evidence": "Output file shows tone prop with default 'primary' (line 8: 'tone = \"primary\"') and conditional className logic for primary (blue) vs secondary (border/zinc) styling on lines 13-16. Behavior is preserved."}, {"text": "showcase page의 import가 새 구조에 맞게 정리된다", "passed": false, "evidence": "Transcript claims 'The showcase page imports @/components/Button which resolves to components/Button/index.tsx - no import changes needed.' However, no showcase page output file is provided to verify this claim. The assertion asks that imports are 'updated/organized to match the new structure', and the executor did not produce or show the showcase file. Cannot verify from available evidence."}, {"text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다", "passed": true, "evidence": "Output file Button_index.tsx contains none of these forbidden patterns. The component is a pure presentational component with only JSX rendering."}, {"text": "폴더명이 camelCase를 따른다 (button)", "passed": false, "evidence": "The folder is named 'Button' (PascalCase), not 'button' (camelCase). Transcript: 'components/Button/index.tsx'. The assertion specifically requires camelCase folder naming (e.g., 'button'), but the output uses PascalCase ('Button')."}, {"text": "components/common/button/ 하위에 배치된다", "passed": false, "evidence": "The component is placed at components/Button/index.tsx, NOT components/common/button/index.tsx. Transcript confirms: 'UNCHANGED: components/Button/index.tsx'. The 'common' subdirectory is missing entirely."}], "summary": {"passed": 6, "failed": 4, "total": 10, "pass_rate": 0.6}, "timing": {"total_tokens": 24131, "duration_ms": 140611, "total_duration_seconds": 140.6}, "claims": [{"claim": "Both components/Button.tsx and components/Button/index.tsx had identical content", "type": "factual", "verified": false, "evidence": "Only one output file is provided (Button_index.tsx). Cannot verify that the deleted flat file had identical content since it was not preserved."}, {"claim": "The showcase page imports @/components/Button which resolves correctly", "type": "factual", "verified": false, "evidence": "No showcase page file is included in outputs. Cannot verify import path resolution."}, {"claim": "No Button-related type errors after the change", "type": "quality", "verified": false, "evidence": "No typecheck output is provided in the outputs directory. Claim is based solely on transcript text."}, {"claim": "The existing folder structure follows PascalCase convention (Button/, ProductCard/, DashboardLayout/)", "type": "factual", "verified": false, "evidence": "Transcript lists these as the project convention, but no directory listing output is provided to confirm. This claim contradicts the eval assertion requiring camelCase folder names."}], "eval_feedback": {"suggestions": [{"assertion": "showcase page의 import가 새 구조에 맞게 정리된다", "reason": "This assertion is hard to grade without the showcase file in outputs. Consider requiring the executor to include the showcase page in outputs, or adding a more specific assertion like 'showcase page output file exists and imports from the new path'."}, {"assertion": "폴더명이 camelCase를 따른다 (button)", "reason": "This assertion may conflict with the actual project convention. The transcript shows the existing project uses PascalCase folders (Button/, ProductCard/, DashboardLayout/). If the real convention is PascalCase, this assertion is testing the wrong thing. Verify which convention the test workspace actually uses."}, {"assertion": "components/common/button/ 하위에 배치된다", "reason": "Similar conflict: the existing project structure appears to use components/Button/ (no 'common' subdirectory). If the workspace doesn't have a common/ folder convention, this assertion tests something the executor can't reasonably discover. Ensure the test workspace's conventions actually require common/ placement."}, {"assertion": "컴포넌트가 화살표 함수 형태로 유지된다", "reason": "The word '유지' (maintain) implies the original was an arrow function. But the output shows a regular function declaration, and the transcript says the file was 'UNCHANGED'. This suggests the original was already a regular function, making this assertion test for a convention the source code never followed. Verify whether the test workspace's Button actually uses an arrow function."}], "overall": "Four assertions failed, but at least two (camelCase folder, common/ placement) may be testing conventions that don't match the actual test workspace setup. The arrow-function assertion may also be testing something the original code never had. Recommend verifying the test workspace's actual conventions match what the assertions expect."}}}, {"id": "eval-3-dashboard-layout-with_skill", "prompt": "DashboardLayout 컴포넌트를 프로젝트 컨벤션에 맞게 정리해줘. 사이드바, 헤더, 메인 콘텐츠 영역은 유지하고 구조만 더 명확하게 정리해줘.", "eval_id": 3, "outputs": [{"name": "DashboardLayout.tsx", "type": "text", "content": "import Link from \"next/link\";\nimport { ReactNode } from \"react\";\n\n// ---------------------------------------------------------------------------\n// Types\n// ---------------------------------------------------------------------------\n\nexport interface DashboardLayoutProps {\n  children: ReactNode;\n  headerTitle?: string;\n  headerRight?: ReactNode;\n  currentPath?: string;\n}\n\ninterface NavLink {\n  href: string;\n  label: string;\n  icon: ReactNode;\n}\n\n// ---------------------------------------------------------------------------\n// Nav icon constants\n// ---------------------------------------------------------------------------\n\nconst IconHome = (\n  <svg\n    className=\"h-5 w-5\"\n    fill=\"none\"\n    viewBox=\"0 0 24 24\"\n    stroke=\"currentColor\"\n    aria-hidden=\"true\"\n  >\n    <path\n      strokeLinecap=\"round\"\n      strokeLinejoin=\"round\"\n      strokeWidth={1.5}\n      d=\"M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6\"\n    />\n  </svg>\n);\n\nconst IconTodo = (\n  <svg\n    className=\"h-5 w-5\"\n    fill=\"none\"\n    viewBox=\"0 0 24 24\"\n    stroke=\"currentColor\"\n    aria-hidden=\"true\"\n  >\n    <path\n      strokeLinecap=\"round\"\n      strokeLinejoin=\"round\"\n      strokeWidth={1.5}\n      d=\"M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4\"\n    />\n  </svg>\n);\n\nconst IconProfile = (\n  <svg\n    className=\"h-5 w-5\"\n    fill=\"none\"\n    viewBox=\"0 0 24 24\"\n    stroke=\"currentColor\"\n    aria-hidden=\"true\"\n  >\n    <path\n      strokeLinecap=\"round\"\n      strokeLinejoin=\"round\"\n      strokeWidth={1.5}\n      d=\"M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z\"\n    />\n  </svg>\n);\n\nconst IconSettings = (\n  <svg\n    className=\"h-5 w-5\"\n    fill=\"none\"\n    viewBox=\"0 0 24 24\"\n    stroke=\"currentColor\"\n    aria-hidden=\"true\"\n  >\n    <path\n      strokeLinecap=\"round\"\n      strokeLinejoin=\"round\"\n      strokeWidth={1.5}\n      d=\"M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z\"\n    />\n    <path\n      strokeLinecap=\"round\"\n      strokeLinejoin=\"round\"\n      strokeWidth={1.5}\n      d=\"M15 12a3 3 0 11-6 0 3 3 0 016 0z\"\n    />\n  </svg>\n);\n\nconst IconBell = (\n  <svg\n    className=\"h-5 w-5\"\n    fill=\"none\"\n    viewBox=\"0 0 24 24\"\n    stroke=\"currentColor\"\n    aria-hidden=\"true\"\n  >\n    <path\n      strokeLinecap=\"round\"\n      strokeLinejoin=\"round\"\n      strokeWidth={1.5}\n      d=\"M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9\"\n    />\n  </svg>\n);\n\n// ---------------------------------------------------------------------------\n// Nav data\n// ---------------------------------------------------------------------------\n\nconst navLinks: NavLink[] = [\n  { href: \"/dashboard\", label: \"대시보드\", icon: IconHome },\n  { href: \"/todos\", label: \"할 일\", icon: IconTodo },\n  { href: \"/profile\", label: \"프로필\", icon: IconProfile },\n];\n\n// ---------------------------------------------------------------------------\n// Nav link class helpers\n// ---------------------------------------------------------------------------\n\nfunction getSidebarLinkClass(isActive: boolean): string {\n  const base = \"flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors\";\n  const active = \"bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400\";\n  const inactive =\n    \"text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50\";\n  return `${base} ${isActive ? active : inactive}`;\n}\n\nfunction getMobileLinkClass(isActive: boolean): string {\n  const base = \"flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors\";\n  const active = \"text-blue-600 dark:text-blue-400\";\n  const inactive = \"text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200\";\n  return `${base} ${isActive ? active : inactive}`;\n}\n\n// ---------------------------------------------------------------------------\n// Sub-sections\n// ---------------------------------------------------------------------------\n\nfunction SidebarLogo() {\n  return (\n    <div className=\"flex h-14 items-center border-b border-zinc-200 px-5 dark:border-zinc-800\">\n      <Link\n        href=\"/\"\n        className=\"text-base font-bold text-zinc-900 dark:text-zinc-50\"\n        data-testid=\"sidebar-logo\"\n      >\n        TestApp\n      </Link>\n    </div>\n  );\n}\n\nfunction SidebarNav({ currentPath }: { currentPath: string }) {\n  return (\n    <nav className=\"flex flex-1 flex-col gap-1 px-3 py-4\">\n      {navLinks.map((link) => (\n        <Link\n          key={link.href}\n          href={link.href}\n          className={getSidebarLinkClass(currentPath === link.href)}\n          data-testid={`sidebar-nav-${link.href.slice(1)}`}\n        >\n          {link.icon}\n          {link.label}\n        </Link>\n      ))}\n    </nav>\n  );\n}\n\nfunction SidebarFooter() {\n  return (\n    <div className=\"border-t border-zinc-200 px-3 py-4 dark:border-zinc-800\">\n      <div className=\"flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400\">\n        {IconSettings}\n        설정\n      </div>\n    </div>\n  );\n}\n\nfunction Sidebar({ currentPath }: { currentPath: string }) {\n  return (\n    <aside\n      className=\"hidden md:flex md:w-60 lg:w-64 flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900\"\n      data-testid=\"dashboard-sidebar\"\n    >\n      <SidebarLogo />\n      <SidebarNav currentPath={currentPath} />\n      <SidebarFooter />\n    </aside>\n  );\n}\n\nfunction HeaderLeft({ headerTitle }: { headerTitle: string }) {\n  return (\n    <div className=\"flex items-center gap-3\">\n      <Link\n        href=\"/\"\n        className=\"text-base font-bold text-zinc-900 dark:text-zinc-50 md:hidden\"\n        data-testid=\"header-logo-mobile\"\n      >\n        TestApp\n      </Link>\n      <h1\n        className=\"hidden text-base font-semibold text-zinc-900 md:block dark:text-zinc-50\"\n        data-testid=\"dashboard-header-title\"\n      >\n        {headerTitle}\n      </h1>\n    </div>\n  );\n}\n\nfunction HeaderRightDefault() {\n  return (\n    <div className=\"flex items-center gap-2\">\n      <button\n        type=\"button\"\n        className=\"rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800\"\n        aria-label=\"알림\"\n      >\n        {IconBell}\n      </button>\n      <div\n        className=\"h-8 w-8 rounded-full bg-zinc-200 dark:bg-zinc-700\"\n        aria-label=\"사용자 아바타\"\n      />\n    </div>\n  );\n}\n\nfunction Header({\n  headerTitle,\n  headerRight,\n}: {\n  headerTitle: string;\n  headerRight: ReactNode;\n}) {\n  return (\n    <header\n      className=\"sticky top-0 z-10 flex h-14 items-center justify-between border-b border-zinc-200 bg-white px-4 md:px-6 dark:border-zinc-800 dark:bg-zinc-900\"\n      data-testid=\"dashboard-header\"\n    >\n      <HeaderLeft headerTitle={headerTitle} />\n      <div className=\"flex items-center gap-3\" data-testid=\"dashboard-header-right\">\n        {headerRight ?? <HeaderRightDefault />}\n      </div>\n    </header>\n  );\n}\n\nfunction MobileBottomNav({ currentPath }: { currentPath: string }) {\n  return (\n    <nav\n      className=\"fixed bottom-0 left-0 right-0 z-10 flex border-t border-zinc-200 bg-white md:hidden dark:border-zinc-800 dark:bg-zinc-900\"\n      data-testid=\"dashboard-mobile-nav\"\n    >\n      {navLinks.map((link) => (\n        <Link\n          key={link.href}\n          href={link.href}\n          className={getMobileLinkClass(currentPath === link.href)}\n          data-testid={`mobile-nav-${link.href.slice(1)}`}\n        >\n          {link.icon}\n          {link.label}\n        </Link>\n      ))}\n    </nav>\n  );\n}\n\n// ---------------------------------------------------------------------------\n// DashboardLayout\n// ---------------------------------------------------------------------------\n\nexport default function DashboardLayout({\n  children,\n  headerTitle = \"대시보드\",\n  headerRight,\n  currentPath = \"/dashboard\",\n}: DashboardLayoutProps) {\n  return (\n    <div className=\"flex min-h-screen bg-zinc-50 dark:bg-zinc-950\">\n      {/* Desktop sidebar */}\n      <Sidebar currentPath={currentPath} />\n\n      {/* Main area: header + content */}\n      <div className=\"flex min-w-0 flex-1 flex-col\">\n        <Header headerTitle={headerTitle} headerRight={headerRight} />\n\n        <main\n          className=\"flex-1 overflow-y-auto px-4 py-6 pb-20 md:px-6 md:pb-6 lg:px-8\"\n          data-testid=\"dashboard-main\"\n        >\n          {children}\n        </main>\n\n        {/* Mobile bottom navigation */}\n        <MobileBottomNav currentPath={currentPath} />\n      </div>\n    </div>\n  );\n}\n"}], "grading": {"expectations": [{"text": "DashboardLayout이 folder 기반 index.tsx 패턴으로 정리된다", "passed": false, "evidence": "Output is a single flat file `DashboardLayout.tsx`, not a folder with `index.tsx`. The transcript confirms: 'components/DashboardLayout.tsx — Refactored with the following structural improvements'. No folder was created."}, {"text": "flat components/DashboardLayout.tsx가 그대로 남지 않는다", "passed": false, "evidence": "The transcript shows the file was refactored in-place at `components/DashboardLayout.tsx`. The flat file still exists — it was edited, not moved or replaced by a folder-based structure."}, {"text": "sidebar 영역이 명확히 존재한다", "passed": true, "evidence": "Output lines 192-202: `Sidebar` function renders `<aside>` with `data-testid=\"dashboard-sidebar\"`, composing `SidebarLogo`, `SidebarNav`, and `SidebarFooter` sub-components."}, {"text": "header 영역이 명확히 존재한다", "passed": true, "evidence": "Output lines 243-261: `Header` function renders `<header>` with `data-testid=\"dashboard-header\"`, composing `HeaderLeft` and header-right slot."}, {"text": "main 콘텐츠 영역이 존재한다", "passed": true, "evidence": "Output lines 303-308: `<main>` element with `data-testid=\"dashboard-main\"` wraps `{children}`."}, {"text": "children 중심 shell 역할이 유지된다", "passed": true, "evidence": "Output line 9: `children: ReactNode` in `DashboardLayoutProps`. Line 307: `{children}` rendered inside `<main>`. The component is a pure shell — accepts children and renders them in the main content area."}, {"text": "responsive breakpoint class가 유지되거나 개선된다", "passed": true, "evidence": "Multiple responsive breakpoint classes present: `hidden md:flex md:w-60 lg:w-64` (sidebar, line 195), `md:hidden` (mobile logo line 211, mobile nav line 266), `md:px-6 lg:px-8` (main content line 304), `md:block` (header title line 217)."}, {"text": "사용처 import가 새 경로에 맞게 정리된다", "passed": false, "evidence": "The file was not moved — it stayed at `components/DashboardLayout.tsx`. The transcript lists `app/dashboard/page.tsx` as read but does not mention updating its imports. Since the assertions expect a folder-based restructure (which didn't happen), the import update question is moot, but there is no evidence of import path changes in the outputs."}, {"text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다", "passed": true, "evidence": "Grep of the output file for `useEffect|fetch(|axios|useQuery|useMutation` returned zero matches. The file contains only imports for `Link` and `ReactNode`."}, {"text": "폴더명이 camelCase를 따른다 (dashboardLayout)", "passed": false, "evidence": "No folder was created. The output is a single flat file `DashboardLayout.tsx`. There is no `dashboardLayout/` directory."}, {"text": "components/dashboard/ 하위에 배치된다", "passed": false, "evidence": "The file remains at `components/DashboardLayout.tsx` per the transcript. It was not moved to `components/dashboard/`. No domain subfolder was created."}], "summary": {"passed": 6, "failed": 5, "total": 11, "pass_rate": 0.55}, "execution_metrics": {"output_chars": 9563, "transcript_chars": 2805}, "timing": {"total_tokens": 24131, "executor_duration_seconds": 136.8, "total_duration_seconds": 136.8}, "claims": [{"claim": "Icon constants were extracted to remove inline SVG duplication", "type": "factual", "verified": true, "evidence": "Output lines 25-114: Five named constants (IconHome, IconTodo, IconProfile, IconSettings, IconBell) defined at the top, used by reference in navLinks and JSX."}, {"claim": "Sub-sections broken into clearly named sub-functions", "type": "factual", "verified": true, "evidence": "Output contains SidebarLogo (line 149), SidebarNav (163), SidebarFooter (181), Sidebar (192), HeaderLeft (205), HeaderRightDefault (225), Header (243), MobileBottomNav (263) — all separate named functions."}, {"claim": "All data-testid attributes preserved", "type": "quality", "verified": true, "evidence": "data-testid attributes present: sidebar-logo, sidebar-nav-*, dashboard-sidebar, header-logo-mobile, dashboard-header-title, dashboard-header, dashboard-header-right, dashboard-mobile-nav, mobile-nav-*, dashboard-main. Cannot verify against original but the output has comprehensive test IDs."}, {"claim": "Visual output unchanged — Same Tailwind classes, same responsive breakpoints, same dark mode support", "type": "quality", "verified": false, "evidence": "Cannot fully verify without the original file to diff against. Dark mode classes (dark:) are present throughout. Responsive classes (md:, lg:) are present. But exact equivalence to the original is unverifiable from the outputs alone."}, {"claim": "pnpm exec tsc --noEmit — No errors in DashboardLayout.tsx", "type": "process", "verified": false, "evidence": "Transcript states this but no TypeScript output is included in the outputs directory. Must be taken on trust from the transcript."}], "eval_feedback": {"suggestions": [{"assertion": "사용처 import가 새 경로에 맞게 정리된다", "reason": "This assertion is only meaningful if the file is actually moved. If the executor refactors in-place (no path change), imports are trivially unchanged. Consider making this assertion conditional on folder-structure passing, or rephrasing to 'consumer files import from the new folder-based path'."}, {"reason": "The five structural assertions (folder-structure, flat-file-removed, folder-camelCase, domain-placement, import-updated) all test the same underlying outcome: 'was the file reorganized into a folder under components/dashboard/'. Consider collapsing them into fewer, more targeted assertions to reduce redundancy and make the pass rate more meaningful."}, {"reason": "No assertion checks that the refactored component is functionally equivalent to the original (e.g., same exports, same prop interface, same rendered structure). The executor could produce a completely different component that happens to have sidebar/header/main sections and still pass the content assertions."}], "overall": "The assertions split into two clusters: 5 about folder reorganization (all failed) and 6 about component quality (all passed). The folder assertions are redundant with each other. The content assertions are reasonable but lack a diff-equivalence check against the original."}}}, {"id": "eval-3-dashboard-layout-without_skill", "prompt": "DashboardLayout 컴포넌트를 프로젝트 컨벤션에 맞게 정리해줘. 사이드바, 헤더, 메인 콘텐츠 영역은 유지하고 구조만 더 명확하게 정리해줘.", "eval_id": 3, "outputs": [{"name": "DashboardLayout.tsx", "type": "text", "content": "import Link from \"next/link\";\nimport { ReactNode } from \"react\";\n\n// ─── Types ────────────────────────────────────────────────────────────────────\n\nexport interface DashboardLayoutProps {\n  children: ReactNode;\n  headerTitle?: string;\n  headerRight?: ReactNode;\n  currentPath?: string;\n}\n\n// ─── Nav data ─────────────────────────────────────────────────────────────────\n\nconst navLinks = [\n  {\n    href: \"/dashboard\",\n    label: \"대시보드\",\n    icon: (\n      <svg className=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" aria-hidden=\"true\">\n        <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={1.5} d=\"M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6\" />\n      </svg>\n    ),\n  },\n  {\n    href: \"/todos\",\n    label: \"할 일\",\n    icon: (\n      <svg className=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" aria-hidden=\"true\">\n        <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={1.5} d=\"M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4\" />\n      </svg>\n    ),\n  },\n  {\n    href: \"/profile\",\n    label: \"프로필\",\n    icon: (\n      <svg className=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" aria-hidden=\"true\">\n        <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={1.5} d=\"M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z\" />\n      </svg>\n    ),\n  },\n];\n\n// ─── Sidebar ──────────────────────────────────────────────────────────────────\n\nfunction Sidebar({ currentPath }: { currentPath: string }) {\n  return (\n    <aside\n      className=\"hidden flex-col border-r border-zinc-200 bg-white md:flex md:w-60 lg:w-64 dark:border-zinc-800 dark:bg-zinc-900\"\n      data-testid=\"dashboard-sidebar\"\n    >\n      {/* Logo */}\n      <div className=\"flex h-14 items-center border-b border-zinc-200 px-5 dark:border-zinc-800\">\n        <Link\n          href=\"/\"\n          className=\"text-base font-bold text-zinc-900 dark:text-zinc-50\"\n          data-testid=\"sidebar-logo\"\n        >\n          TestApp\n        </Link>\n      </div>\n\n      {/* Navigation */}\n      <nav className=\"flex flex-1 flex-col gap-1 px-3 py-4\">\n        {navLinks.map((link) => {\n          const isActive = currentPath === link.href;\n          return (\n            <Link\n              key={link.href}\n              href={link.href}\n              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${\n                isActive\n                  ? \"bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400\"\n                  : \"text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50\"\n              }`}\n              data-testid={`sidebar-nav-${link.href.slice(1)}`}\n            >\n              {link.icon}\n              {link.label}\n            </Link>\n          );\n        })}\n      </nav>\n\n      {/* Footer */}\n      <div className=\"border-t border-zinc-200 px-3 py-4 dark:border-zinc-800\">\n        <div className=\"flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400\">\n          <svg className=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" aria-hidden=\"true\">\n            <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={1.5} d=\"M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z\" />\n            <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={1.5} d=\"M15 12a3 3 0 11-6 0 3 3 0 016 0z\" />\n          </svg>\n          설정\n        </div>\n      </div>\n    </aside>\n  );\n}\n\n// ─── Header ───────────────────────────────────────────────────────────────────\n\nfunction Header({ title, right }: { title: string; right?: ReactNode }) {\n  return (\n    <header\n      className=\"sticky top-0 z-10 flex h-14 items-center justify-between border-b border-zinc-200 bg-white px-4 md:px-6 dark:border-zinc-800 dark:bg-zinc-900\"\n      data-testid=\"dashboard-header\"\n    >\n      {/* Left: mobile logo / desktop page title */}\n      <div className=\"flex items-center gap-3\">\n        <Link\n          href=\"/\"\n          className=\"text-base font-bold text-zinc-900 md:hidden dark:text-zinc-50\"\n          data-testid=\"header-logo-mobile\"\n        >\n          TestApp\n        </Link>\n\n        <h1\n          className=\"hidden text-base font-semibold text-zinc-900 md:block dark:text-zinc-50\"\n          data-testid=\"dashboard-header-title\"\n        >\n          {title}\n        </h1>\n      </div>\n\n      {/* Right slot */}\n      <div className=\"flex items-center gap-3\" data-testid=\"dashboard-header-right\">\n        {right ?? (\n          <div className=\"flex items-center gap-2\">\n            <button\n              type=\"button\"\n              className=\"rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800\"\n              aria-label=\"알림\"\n            >\n              <svg className=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" aria-hidden=\"true\">\n                <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={1.5} d=\"M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9\" />\n              </svg>\n            </button>\n\n            <div\n              className=\"h-8 w-8 rounded-full bg-zinc-200 dark:bg-zinc-700\"\n              aria-label=\"사용자 아바타\"\n            />\n          </div>\n        )}\n      </div>\n    </header>\n  );\n}\n\n// ─── MobileNav ────────────────────────────────────────────────────────────────\n\nfunction MobileNav({ currentPath }: { currentPath: string }) {\n  return (\n    <nav\n      className=\"fixed bottom-0 left-0 right-0 z-10 flex border-t border-zinc-200 bg-white md:hidden dark:border-zinc-800 dark:bg-zinc-900\"\n      data-testid=\"dashboard-mobile-nav\"\n    >\n      {navLinks.map((link) => {\n        const isActive = currentPath === link.href;\n        return (\n          <Link\n            key={link.href}\n            href={link.href}\n            className={`flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors ${\n              isActive\n                ? \"text-blue-600 dark:text-blue-400\"\n                : \"text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200\"\n            }`}\n            data-testid={`mobile-nav-${link.href.slice(1)}`}\n          >\n            {link.icon}\n            {link.label}\n          </Link>\n        );\n      })}\n    </nav>\n  );\n}\n\n// ─── DashboardLayout ──────────────────────────────────────────────────────────\n\nexport default function DashboardLayout({\n  children,\n  headerTitle = \"대시보드\",\n  headerRight,\n  currentPath = \"/dashboard\",\n}: DashboardLayoutProps) {\n  return (\n    <div className=\"flex min-h-screen bg-zinc-50 dark:bg-zinc-950\">\n      {/* Sidebar — hidden on mobile, visible from md */}\n      <Sidebar currentPath={currentPath} />\n\n      {/* Main area: header + content */}\n      <div className=\"flex min-w-0 flex-1 flex-col\">\n        <Header title={headerTitle} right={headerRight} />\n\n        <main\n          className=\"flex-1 overflow-y-auto px-4 py-6 pb-20 md:px-6 md:pb-6 lg:px-8\"\n          data-testid=\"dashboard-main\"\n        >\n          {children}\n        </main>\n\n        {/* Mobile bottom navigation */}\n        <MobileNav currentPath={currentPath} />\n      </div>\n    </div>\n  );\n}\n"}], "grading": {"expectations": [{"text": "DashboardLayout이 folder 기반 index.tsx 패턴으로 정리된다", "passed": false, "evidence": "Output is a single flat file 'DashboardLayout.tsx', not a folder-based index.tsx pattern. The transcript confirms 'Refactored components/DashboardLayout.tsx' in place — no folder structure was created."}, {"text": "flat components/DashboardLayout.tsx가 그대로 남지 않는다", "passed": false, "evidence": "The transcript states 'Refactored components/DashboardLayout.tsx' and the sole output is 'outputs/DashboardLayout.tsx'. The flat file was modified in place rather than removed and replaced with a folder-based structure."}, {"text": "sidebar 영역이 명확히 존재한다", "passed": true, "evidence": "A dedicated Sidebar function component exists at line 47 with an <aside> element containing navigation links, logo, and footer. Has data-testid='dashboard-sidebar'."}, {"text": "header 영역이 명확히 존재한다", "passed": true, "evidence": "A dedicated Header function component exists at line 102 with a <header> element containing title and right slot. Has data-testid='dashboard-header'."}, {"text": "main 콘텐츠 영역이 존재한다", "passed": true, "evidence": "A <main> element exists at line 198 with data-testid='dashboard-main', wrapping {children}."}, {"text": "children 중심 shell 역할이 유지된다", "passed": true, "evidence": "DashboardLayoutProps includes 'children: ReactNode' (line 7). The default-exported DashboardLayout component destructures children and renders it inside <main> (line 202). The component is purely a layout shell with no data logic."}, {"text": "responsive breakpoint class가 유지되거나 개선된다", "passed": true, "evidence": "Responsive classes present throughout: sidebar uses 'hidden ... md:flex md:w-60 lg:w-64', header uses 'md:px-6', mobile nav uses 'md:hidden', main content uses 'pb-20 md:pb-6 lg:px-8'. Mobile-first ordering is consistent."}, {"text": "사용처 import가 새 경로에 맞게 정리된다", "passed": false, "evidence": "No import update is present in the outputs. The transcript mentions reading 'app/dashboard/page.tsx' as a consumer but does not include an updated version. Since the file was refactored in place (no path change), imports technically don't need updating — but the assertion implies a path change should have occurred, which it did not."}, {"text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다", "passed": true, "evidence": "Searched the entire output file: no occurrences of useEffect, fetch, axios, useQuery, or useMutation. The component is purely presentational."}, {"text": "폴더명이 camelCase를 따른다 (dashboardLayout)", "passed": false, "evidence": "No folder was created. The output is a single flat file 'DashboardLayout.tsx'. There is no dashboardLayout/ folder to evaluate."}, {"text": "components/dashboard/ 하위에 배치된다", "passed": false, "evidence": "The output file is 'DashboardLayout.tsx' at the flat components level. The transcript confirms refactoring at 'components/DashboardLayout.tsx', not under 'components/dashboard/'."}], "summary": {"passed": 6, "failed": 5, "total": 11, "pass_rate": 0.55}, "timing": {"total_tokens": 48772, "duration_ms": 189377, "total_duration_seconds": 189.4}, "claims": [{"claim": "Refactored the monolithic ~243 line component into organized sections", "type": "quality", "verified": true, "evidence": "Output file is 210 lines with clear section separators and extracted sub-components (Sidebar, Header, MobileNav). Structure is cleaner than a single render tree."}, {"claim": "Extracted shared navLinks constant to eliminate duplication", "type": "factual", "verified": true, "evidence": "A single navLinks array is defined at line 15 and consumed by both Sidebar (line 66) and MobileNav (line 159)."}, {"claim": "No new TypeScript errors introduced", "type": "process", "verified": false, "evidence": "Cannot independently verify — the transcript reports pre-existing errors only, but no type-check output is included in the outputs directory."}, {"claim": "Used project's section separator convention (─── Name ───)", "type": "factual", "verified": true, "evidence": "Section comments appear at lines 4, 13, 45, 100, 151, 181 using the ─── pattern."}], "eval_feedback": {"suggestions": [{"assertion": "사용처 import가 새 경로에 맞게 정리된다", "reason": "This assertion is ambiguous when the file isn't moved — it passes vacuously if the path doesn't change. Consider splitting into two assertions: (1) the file path changed to the folder-based location, and (2) consumer imports reference the new path. Currently, folder-structure and import-updated overlap in what they test."}, {"reason": "Five of the eleven assertions (folder-structure, flat-file-removed, import-updated, folder-camelCase, domain-placement) all test the same structural decision: whether the file was moved into a components/dashboard/dashboardLayout/ folder. A single 'file relocated to correct path' assertion plus one 'old flat file removed' assertion would cover this without redundancy. The current set inflates failure count for a single root cause."}], "overall": "The core structural assertions are sound and correctly discriminate — this without-skill run failed precisely because it refactored content without restructuring files. However, 5 of 11 assertions test a single dimension (file relocation), which skews the pass rate. Consider consolidating those and adding assertions for output quality (e.g., sub-component extraction, convention adherence) which this run actually did well."}}}, {"id": "eval-4-product-card-dedup-with_skill", "prompt": "ProductCard 관련 구조가 섞여 있는데 프로젝트 컨벤션에 맞게 하나로 정리해줘. 시각 동작은 유지하고 중복 구현은 제거해줘.", "eval_id": 4, "outputs": [], "grading": {"expectations": [{"text": "ProductCard 구현이 하나의 source of truth로 정리된다", "passed": true, "evidence": "Only one file exists in outputs: components/ProductCard/index.tsx. The flat components/ProductCard.tsx was deleted. Transcript confirms: '단일 source of truth: components/ProductCard/index.tsx'."}, {"text": "flat components/ProductCard.tsx 파일이 남지 않는다", "passed": true, "evidence": "No file at components/ProductCard.tsx in outputs directory. Only components/ProductCard/index.tsx exists. Transcript states 'DELETED: components/ProductCard.tsx'."}, {"text": "최종 구조가 ProductCard/index.tsx 패턴을 따른다", "passed": true, "evidence": "Output file is located at components/ProductCard/index.tsx, matching the folder/index pattern."}, {"text": "Props 인터페이스가 ProductCardProps를 유지한다", "passed": true, "evidence": "Line 5 of index.tsx: 'export interface ProductCardProps {'"}, {"text": "사용처 import path가 일관된다", "passed": true, "evidence": "With a single source at components/ProductCard/index.tsx, all imports resolve to '@/components/ProductCard' or '../components/ProductCard'. However, no actual import usages exist in the outputs to verify consumer-side consistency — this passes based on the structural guarantee of a single source."}, {"text": "hover, image, price 등 visual affordance가 보존된다", "passed": true, "evidence": "Hover: 'group-hover:scale-105' (line 35) and 'hover:shadow-md' (line 27). Image: Next.js Image component with aspect-square container (line 30-37). Price: '{currency}{price.toLocaleString(\"ko-KR\")}' (lines 51-52)."}, {"text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다", "passed": true, "evidence": "The full contents of index.tsx contain no useEffect, fetch, axios, useQuery, or useMutation calls. Only imports are 'use client' directive and 'next/image'."}, {"text": "폴더명이 camelCase를 따른다 (productCard)", "passed": false, "evidence": "Folder name is 'ProductCard' (PascalCase), not 'productCard' (camelCase). Output path: components/ProductCard/index.tsx."}, {"text": "components/common/productCard/ 하위에 배치된다", "passed": false, "evidence": "File is at components/ProductCard/index.tsx, not components/common/productCard/index.tsx. There is no 'common' directory in the output structure."}], "summary": {"passed": 7, "failed": 2, "total": 9, "pass_rate": 0.78}, "execution_metrics": {"output_chars": 1671, "transcript_chars": 1991}, "claims": [{"claim": "components/ProductCard.tsx (flat) had fewer features than ProductCard/index.tsx", "type": "factual", "verified": true, "evidence": "Transcript lists flat version props as (imageUrl, name, price, currency) vs folder version with additional (imageAlt, badge, testId) plus hover scale, shadow, badge, and line-clamp-2. The surviving file confirms these features."}, {"claim": "folder/index pattern is the project convention based on Button and DashboardLayout", "type": "process", "verified": true, "evidence": "Transcript documents checking components/Button/index.tsx and components/DashboardLayout/ as evidence of convention. This is a reasonable convention detection approach."}, {"claim": "All visual affordances from the flat version are preserved in the kept version", "type": "quality", "verified": true, "evidence": "Flat version had rounded corners (rounded-xl -> rounded-2xl), image display (h-48 -> aspect-square), truncation (truncate -> line-clamp-2), and price display. All preserved or improved in the surviving file."}], "eval_feedback": {"suggestions": [{"assertion": "사용처 import path가 일관된다", "reason": "No consumer files exist in the outputs, so import consistency cannot actually be verified from the output artifacts. This assertion passes on structural inference only. Including at least one file that imports ProductCard would make this assertion verifiable."}, {"assertion": "폴더명이 camelCase를 따른다 (productCard)", "reason": "This assertion conflicts with the actual project convention shown in the transcript (Button/, DashboardLayout/ are PascalCase). The eval asserts camelCase but the project itself uses PascalCase folders. Consider whether this assertion reflects the actual desired convention or is incorrect."}, {"assertion": "components/common/productCard/ 하위에 배치된다", "reason": "The transcript shows existing components live directly under components/ (Button/, DashboardLayout/), not under components/common/. This assertion may be testing an aspirational structure that differs from the actual project layout, making it likely to fail when the skill correctly follows existing conventions."}], "overall": "Two failed assertions (camelCase folder, common/ placement) appear to conflict with the actual project conventions the skill correctly detected. The skill followed existing patterns (PascalCase, components/ root) rather than the eval's expectations. Consider aligning assertions with the project's actual conventions, or clarifying that the skill should override existing conventions."}}}, {"id": "eval-4-product-card-dedup-without_skill", "prompt": "ProductCard 관련 구조가 섞여 있는데 프로젝트 컨벤션에 맞게 하나로 정리해줘. 시각 동작은 유지하고 중복 구현은 제거해줘.", "eval_id": 4, "outputs": [{"name": "ProductCard_index.tsx", "type": "text", "content": "\"use client\";\n\nimport Image from \"next/image\";\n\nexport interface ProductCardProps {\n  imageUrl: string;\n  imageAlt?: string;\n  name: string;\n  price: number;\n  currency?: string;\n  badge?: string;\n  testId?: string;\n}\n\nexport default function ProductCard({\n  imageUrl,\n  imageAlt = \"\",\n  name,\n  price,\n  currency = \"₩\",\n  badge,\n  testId,\n}: ProductCardProps) {\n  return (\n    <div\n      className=\"group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900\"\n      data-testid={testId}\n    >\n      {/* Product Image */}\n      <div className=\"relative aspect-square w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800\">\n        <Image\n          src={imageUrl}\n          alt={imageAlt || name}\n          fill\n          className=\"object-cover transition-transform duration-300 group-hover:scale-105\"\n          sizes=\"(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw\"\n        />\n        {badge && (\n          <span className=\"absolute left-3 top-3 rounded-full bg-blue-600 px-2.5 py-0.5 text-xs font-semibold text-white\">\n            {badge}\n          </span>\n        )}\n      </div>\n\n      {/* Product Info */}\n      <div className=\"flex flex-1 flex-col gap-1.5 p-4\">\n        <h3 className=\"line-clamp-2 text-sm font-medium leading-snug text-zinc-900 dark:text-zinc-50\">\n          {name}\n        </h3>\n        <p className=\"mt-auto text-base font-bold text-zinc-900 dark:text-zinc-50\">\n          {currency}\n          {price.toLocaleString(\"ko-KR\")}\n        </p>\n      </div>\n    </div>\n  );\n}\n"}], "grading": {"expectations": [{"text": "ProductCard 구현이 하나의 source of truth로 정리된다", "passed": true, "evidence": "Transcript confirms flat file removed; single implementation at components/ProductCard/index.tsx. Output file shows one complete component with all props and rendering logic."}, {"text": "flat components/ProductCard.tsx 파일이 남지 않는다", "passed": true, "evidence": "Transcript states: 'Identified that components/ProductCard.tsx was already deleted from the working tree' and 'No flat ProductCard.tsx file remains'."}, {"text": "최종 구조가 ProductCard/index.tsx 패턴을 따른다", "passed": true, "evidence": "Transcript confirms canonical location is 'components/ProductCard/index.tsx'. Output file ProductCard_index.tsx matches the expected folder-based index pattern."}, {"text": "Props 인터페이스가 ProductCardProps를 유지한다", "passed": true, "evidence": "Output file line 5: 'export interface ProductCardProps' with all expected fields (imageUrl, imageAlt, name, price, currency, badge, testId)."}, {"text": "사용처 import path가 일관된다", "passed": false, "evidence": "No evidence that consumer files were checked or updated. The transcript does not mention scanning for import statements or verifying that all usages point to the canonical path. Without verifying consumers, import consistency cannot be confirmed."}, {"text": "hover, image, price 등 visual affordance가 보존된다", "passed": true, "evidence": "Output file contains: hover animation via 'group-hover:scale-105' (line 36), Image component with fill and responsive sizes (lines 31-37), price rendering with currency and toLocaleString (lines 51-52), badge support (lines 38-42)."}, {"text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다", "passed": true, "evidence": "Output file contains only 'use client' directive and a single Image import from next/image. No useEffect, fetch, axios, useQuery, or useMutation calls present anywhere in the 57-line file."}, {"text": "폴더명이 camelCase를 따른다 (productCard)", "passed": false, "evidence": "Transcript shows the folder as 'ProductCard/' (PascalCase), not 'productCard/' (camelCase). Output file is named ProductCard_index.tsx, confirming PascalCase. The assertion explicitly requires camelCase (productCard) but the implementation uses PascalCase."}, {"text": "components/common/productCard/ 하위에 배치된다", "passed": false, "evidence": "Transcript places the file at 'components/ProductCard/index.tsx', not under 'components/common/productCard/'. The 'common' directory level is entirely absent from the output path."}], "summary": {"passed": 6, "failed": 3, "total": 9, "pass_rate": 0.67}, "claims": [{"claim": "The flat ProductCard.tsx was already deleted from the working tree before this task ran", "type": "process", "verified": true, "evidence": "Transcript states: 'Identified that components/ProductCard.tsx was already deleted from the working tree (git shows it as unstaged deletion)'"}, {"claim": "Folder-based convention matches other evolved components like Button/index.tsx", "type": "factual", "verified": false, "evidence": "Cannot verify from outputs alone whether Button/index.tsx or dashboardLayout/index.tsx actually exist in the project"}, {"claim": "All visual affordances preserved", "type": "quality", "verified": true, "evidence": "Output file contains hover scale, badge, image with aspect-square, price formatting — matching all features listed in the richer implementation"}, {"claim": "git restore --staged was used to unstage the deletion", "type": "process", "verified": false, "evidence": "Transcript claims this action but no git command output is shown to confirm it actually ran"}], "eval_feedback": {"suggestions": [{"assertion": "사용처 import path가 일관된다", "reason": "This assertion is important but nearly impossible to verify without seeing the consumer files. The eval should either include consumer files in the outputs or narrow the assertion to something checkable like 're-export exists at the expected path'."}, {"assertion": "폴더명이 camelCase를 따른다 (productCard)", "reason": "This assertion conflicts with the existing project structure (which uses PascalCase 'ProductCard/'). If the project convention is actually camelCase, the eval prompt should state this more explicitly so the executor knows to rename. If the convention is PascalCase, this assertion should be updated."}, {"reason": "No assertion checks whether the component's default export is maintained (export default function ProductCard), which is important for import compatibility."}], "overall": "The folder-camelCase and common-placement assertions test convention compliance that the executor ignored entirely — this suggests the eval prompt may need to be more explicit about target conventions, or the assertions reflect a convention not present in the test fixture."}}}], "previous_feedback": {}, "previous_outputs": {"eval-1-review-card-with_skill": [{"name": "page.tsx", "type": "text", "content": "import Button from \"@/components/Button\";\nimport EmptyState from \"@/components/EmptyState\";\nimport ReviewCard from \"@/components/ReviewCard\";\n\nexport default function ShowcasePage() {\n  return (\n    <div className=\"space-y-8\">\n      <section className=\"space-y-3\">\n        <h1 className=\"text-2xl font-bold text-zinc-900 dark:text-zinc-50\">UI Publish Showcase</h1>\n        <p className=\"text-sm text-zinc-500\">\n          Legacy seed와 visual-only component refactor surface를 모아둔 페이지다.\n        </p>\n      </section>\n\n      <section className=\"space-y-3\">\n        <h2 className=\"text-lg font-semibold text-zinc-900 dark:text-zinc-50\">Legacy Button</h2>\n        <div className=\"flex gap-3\">\n          <Button label=\"기본 버튼\" />\n          <Button label=\"보조 버튼\" tone=\"secondary\" />\n        </div>\n      </section>\n\n      <section className=\"space-y-3\">\n        <h2 className=\"text-lg font-semibold text-zinc-900 dark:text-zinc-50\">ReviewCard</h2>\n        <div className=\"grid gap-4 sm:grid-cols-2\">\n          <ReviewCard\n            authorName=\"김민준\"\n            rating={5}\n            body=\"정말 훌륭한 제품입니다. 품질도 뛰어나고 배송도 빠릅니다. 강력히 추천합니다!\"\n            createdAt=\"2026-03-10\"\n          />\n          <ReviewCard\n            avatarUrl=\"https://i.pravatar.cc/80?img=47\"\n            authorName=\"이서연\"\n            rating={3}\n            body=\"전반적으로 만족스럽지만 포장이 아쉬웠습니다. 제품 자체는 괜찮습니다.\"\n            createdAt=\"2026-02-28\"\n          />\n        </div>\n      </section>\n\n      <section className=\"rounded-2xl border border-dashed border-zinc-300 p-6 dark:border-zinc-700\">\n        <EmptyState\n          title=\"Showcase Empty State\"\n          description=\"Visual shell과 locator refactor를 확인하기 위한 seed 영역입니다.\"\n        />\n      </section>\n    </div>\n  );\n}\n"}, {"name": "ReviewCard.tsx", "type": "text", "content": "\"use client\";\n\nexport interface ReviewCardProps {\n  avatarUrl?: string;\n  authorName: string;\n  rating: 1 | 2 | 3 | 4 | 5;\n  body: string;\n  createdAt: string;\n}\n\nconst STAR_PATH =\n  \"M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z\";\n\nexport default function ReviewCard({\n  avatarUrl,\n  authorName,\n  rating,\n  body,\n  createdAt,\n}: ReviewCardProps) {\n  const initials = authorName\n    .split(\" \")\n    .map((n) => n[0])\n    .join(\"\")\n    .toUpperCase()\n    .slice(0, 2);\n\n  return (\n    <div\n      className=\"flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900\"\n      data-testid=\"review-card\"\n    >\n      {/* Header: avatar + author + star rating */}\n      <div className=\"flex items-start gap-3\">\n        {/* Avatar */}\n        <div className=\"shrink-0\" data-testid=\"review-card-avatar\">\n          {avatarUrl ? (\n            // eslint-disable-next-line @next/next/no-img-element\n            <img\n              src={avatarUrl}\n              alt={authorName}\n              className=\"h-10 w-10 rounded-full object-cover\"\n            />\n          ) : (\n            <div className=\"flex h-10 w-10 items-center justify-center rounded-full bg-zinc-200 text-sm font-semibold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300\">\n              {initials}\n            </div>\n          )}\n        </div>\n\n        {/* Author + rating */}\n        <div className=\"flex flex-1 flex-col gap-1\">\n          <p\n            className=\"text-sm font-semibold text-zinc-900 dark:text-zinc-50\"\n            data-testid=\"review-card-author\"\n          >\n            {authorName}\n          </p>\n          <div\n            className=\"flex items-center gap-0.5\"\n            aria-label={`별점 ${rating}점`}\n            data-testid=\"review-card-rating\"\n          >\n            {Array.from({ length: 5 }, (_, i) => (\n              <svg\n                key={i}\n                className={`h-4 w-4 ${\n                  i < rating\n                    ? \"text-amber-400\"\n                    : \"text-zinc-300 dark:text-zinc-600\"\n                }`}\n                fill=\"currentColor\"\n                viewBox=\"0 0 20 20\"\n                aria-hidden=\"true\"\n              >\n                <path d={STAR_PATH} />\n              </svg>\n            ))}\n          </div>\n        </div>\n      </div>\n\n      {/* Review body */}\n      <p\n        className=\"text-sm leading-relaxed text-zinc-700 dark:text-zinc-300\"\n        data-testid=\"review-card-body\"\n      >\n        {body}\n      </p>\n\n      {/* Created date */}\n      <p\n        className=\"text-xs text-zinc-400 dark:text-zinc-500\"\n        data-testid=\"review-card-date\"\n      >\n        {createdAt}\n      </p>\n    </div>\n  );\n}\n"}], "eval-1-review-card-without_skill": [{"name": "ReviewCard.tsx", "type": "text", "content": "\"use client\";\n\nexport interface ReviewCardProps {\n  avatarUrl?: string;\n  authorName: string;\n  rating: 1 | 2 | 3 | 4 | 5;\n  body: string;\n  createdAt: string;\n}\n\nconst STAR_PATH =\n  \"M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z\";\n\nexport default function ReviewCard({\n  avatarUrl,\n  authorName,\n  rating,\n  body,\n  createdAt,\n}: ReviewCardProps) {\n  const initials = authorName\n    .split(\" \")\n    .map((n) => n[0])\n    .join(\"\")\n    .toUpperCase()\n    .slice(0, 2);\n\n  return (\n    <div\n      className=\"flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900\"\n      data-testid=\"review-card\"\n    >\n      {/* Header: avatar + author + star rating */}\n      <div className=\"flex items-start gap-3\">\n        {/* Avatar */}\n        <div className=\"shrink-0\" data-testid=\"review-card-avatar\">\n          {avatarUrl ? (\n            // eslint-disable-next-line @next/next/no-img-element\n            <img\n              src={avatarUrl}\n              alt={authorName}\n              className=\"h-10 w-10 rounded-full object-cover\"\n            />\n          ) : (\n            <div className=\"flex h-10 w-10 items-center justify-center rounded-full bg-zinc-200 text-sm font-semibold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300\">\n              {initials}\n            </div>\n          )}\n        </div>\n\n        {/* Author + rating */}\n        <div className=\"flex flex-1 flex-col gap-1\">\n          <p\n            className=\"text-sm font-semibold text-zinc-900 dark:text-zinc-50\"\n            data-testid=\"review-card-author\"\n          >\n            {authorName}\n          </p>\n          <div\n            className=\"flex items-center gap-0.5\"\n            aria-label={`별점 ${rating}점`}\n            data-testid=\"review-card-rating\"\n          >\n            {Array.from({ length: 5 }, (_, i) => (\n              <svg\n                key={i}\n                className={`h-4 w-4 ${\n                  i < rating\n                    ? \"text-amber-400\"\n                    : \"text-zinc-300 dark:text-zinc-600\"\n                }`}\n                fill=\"currentColor\"\n                viewBox=\"0 0 20 20\"\n                aria-hidden=\"true\"\n              >\n                <path d={STAR_PATH} />\n              </svg>\n            ))}\n          </div>\n        </div>\n      </div>\n\n      {/* Review body */}\n      <p\n        className=\"text-sm leading-relaxed text-zinc-700 dark:text-zinc-300\"\n        data-testid=\"review-card-body\"\n      >\n        {body}\n      </p>\n\n      {/* Created date */}\n      <p\n        className=\"text-xs text-zinc-400 dark:text-zinc-500\"\n        data-testid=\"review-card-date\"\n      >\n        {createdAt}\n      </p>\n    </div>\n  );\n}\n"}, {"name": "showcase_page.tsx", "type": "text", "content": "import Button from \"@/components/Button\";\nimport EmptyState from \"@/components/EmptyState\";\nimport ReviewCard from \"@/components/ReviewCard\";\n\nexport default function ShowcasePage() {\n  return (\n    <div className=\"space-y-8\">\n      <section className=\"space-y-3\">\n        <h1 className=\"text-2xl font-bold text-zinc-900 dark:text-zinc-50\">UI Publish Showcase</h1>\n        <p className=\"text-sm text-zinc-500\">\n          Legacy seed와 visual-only component refactor surface를 모아둔 페이지다.\n        </p>\n      </section>\n\n      <section className=\"space-y-3\">\n        <h2 className=\"text-lg font-semibold text-zinc-900 dark:text-zinc-50\">Legacy Button</h2>\n        <div className=\"flex gap-3\">\n          <Button label=\"기본 버튼\" />\n          <Button label=\"보조 버튼\" tone=\"secondary\" />\n        </div>\n      </section>\n\n      <section className=\"space-y-3\">\n        <h2 className=\"text-lg font-semibold text-zinc-900 dark:text-zinc-50\">ReviewCard</h2>\n        <div className=\"grid gap-4 sm:grid-cols-2\">\n          <ReviewCard\n            authorName=\"김민준\"\n            rating={5}\n            body=\"정말 훌륭한 제품입니다. 품질도 뛰어나고 배송도 빠릅니다. 강력히 추천합니다!\"\n            createdAt=\"2026-03-10\"\n          />\n          <ReviewCard\n            avatarUrl=\"https://i.pravatar.cc/80?img=47\"\n            authorName=\"이서연\"\n            rating={3}\n            body=\"전반적으로 만족스럽지만 포장이 아쉬웠습니다. 제품 자체는 괜찮습니다.\"\n            createdAt=\"2026-02-28\"\n          />\n        </div>\n      </section>\n\n      <section className=\"rounded-2xl border border-dashed border-zinc-300 p-6 dark:border-zinc-700\">\n        <EmptyState\n          title=\"Showcase Empty State\"\n          description=\"Visual shell과 locator refactor를 확인하기 위한 seed 영역입니다.\"\n        />\n      </section>\n    </div>\n  );\n}\n"}], "eval-3-dashboard-layout-with_skill": [{"name": "DashboardLayout.tsx", "type": "text", "content": "import { ReactNode } from \"react\";\nimport Link from \"next/link\";\n\n// ---- Types ----------------------------------------------------------------\n\nexport interface DashboardLayoutProps {\n  children: ReactNode;\n  headerTitle?: string;\n  headerRight?: ReactNode;\n  currentPath?: string;\n}\n\n// ---- Constants ------------------------------------------------------------\n\nconst NAV_LINKS = [\n  {\n    href: \"/dashboard\",\n    label: \"대시보드\",\n    icon: (\n      <svg\n        className=\"h-5 w-5\"\n        fill=\"none\"\n        viewBox=\"0 0 24 24\"\n        stroke=\"currentColor\"\n        aria-hidden=\"true\"\n      >\n        <path\n          strokeLinecap=\"round\"\n          strokeLinejoin=\"round\"\n          strokeWidth={1.5}\n          d=\"M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6\"\n        />\n      </svg>\n    ),\n  },\n  {\n    href: \"/todos\",\n    label: \"할 일\",\n    icon: (\n      <svg\n        className=\"h-5 w-5\"\n        fill=\"none\"\n        viewBox=\"0 0 24 24\"\n        stroke=\"currentColor\"\n        aria-hidden=\"true\"\n      >\n        <path\n          strokeLinecap=\"round\"\n          strokeLinejoin=\"round\"\n          strokeWidth={1.5}\n          d=\"M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4\"\n        />\n      </svg>\n    ),\n  },\n  {\n    href: \"/profile\",\n    label: \"프로필\",\n    icon: (\n      <svg\n        className=\"h-5 w-5\"\n        fill=\"none\"\n        viewBox=\"0 0 24 24\"\n        stroke=\"currentColor\"\n        aria-hidden=\"true\"\n      >\n        <path\n          strokeLinecap=\"round\"\n          strokeLinejoin=\"round\"\n          strokeWidth={1.5}\n          d=\"M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z\"\n        />\n      </svg>\n    ),\n  },\n];\n\n// ---- Sub-components -------------------------------------------------------\n\nfunction Sidebar({ currentPath }: { currentPath: string }) {\n  return (\n    <aside\n      className=\"hidden flex-col border-r border-zinc-200 bg-white md:flex md:w-60 lg:w-64 dark:border-zinc-800 dark:bg-zinc-900\"\n      data-testid=\"dashboard-sidebar\"\n    >\n      {/* Logo */}\n      <div className=\"flex h-14 items-center border-b border-zinc-200 px-5 dark:border-zinc-800\">\n        <Link\n          href=\"/\"\n          className=\"text-base font-bold text-zinc-900 dark:text-zinc-50\"\n          data-testid=\"sidebar-logo\"\n        >\n          TestApp\n        </Link>\n      </div>\n\n      {/* Navigation */}\n      <nav className=\"flex flex-1 flex-col gap-1 px-3 py-4\">\n        {NAV_LINKS.map((link) => {\n          const isActive = currentPath === link.href;\n          return (\n            <Link\n              key={link.href}\n              href={link.href}\n              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${\n                isActive\n                  ? \"bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400\"\n                  : \"text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50\"\n              }`}\n              data-testid={`sidebar-nav-${link.href.slice(1)}`}\n            >\n              {link.icon}\n              {link.label}\n            </Link>\n          );\n        })}\n      </nav>\n\n      {/* Footer */}\n      <div className=\"border-t border-zinc-200 px-3 py-4 dark:border-zinc-800\">\n        <div className=\"flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400\">\n          <svg\n            className=\"h-5 w-5\"\n            fill=\"none\"\n            viewBox=\"0 0 24 24\"\n            stroke=\"currentColor\"\n            aria-hidden=\"true\"\n          >\n            <path\n              strokeLinecap=\"round\"\n              strokeLinejoin=\"round\"\n              strokeWidth={1.5}\n              d=\"M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z\"\n            />\n            <path\n              strokeLinecap=\"round\"\n              strokeLinejoin=\"round\"\n              strokeWidth={1.5}\n              d=\"M15 12a3 3 0 11-6 0 3 3 0 016 0z\"\n            />\n          </svg>\n          설정\n        </div>\n      </div>\n    </aside>\n  );\n}\n\nfunction DashboardHeader({\n  title,\n  right,\n}: {\n  title: string;\n  right?: ReactNode;\n}) {\n  return (\n    <header\n      className=\"sticky top-0 z-10 flex h-14 items-center justify-between border-b border-zinc-200 bg-white px-4 md:px-6 dark:border-zinc-800 dark:bg-zinc-900\"\n      data-testid=\"dashboard-header\"\n    >\n      {/* Left: mobile logo / desktop page title */}\n      <div className=\"flex items-center gap-3\">\n        <Link\n          href=\"/\"\n          className=\"text-base font-bold text-zinc-900 md:hidden dark:text-zinc-50\"\n          data-testid=\"header-logo-mobile\"\n        >\n          TestApp\n        </Link>\n\n        <h1\n          className=\"hidden text-base font-semibold text-zinc-900 md:block dark:text-zinc-50\"\n          data-testid=\"dashboard-header-title\"\n        >\n          {title}\n        </h1>\n      </div>\n\n      {/* Right slot */}\n      <div className=\"flex items-center gap-3\" data-testid=\"dashboard-header-right\">\n        {right ?? (\n          <div className=\"flex items-center gap-2\">\n            <button\n              type=\"button\"\n              className=\"rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800\"\n              aria-label=\"알림\"\n            >\n              <svg\n                className=\"h-5 w-5\"\n                fill=\"none\"\n                viewBox=\"0 0 24 24\"\n                stroke=\"currentColor\"\n                aria-hidden=\"true\"\n              >\n                <path\n                  strokeLinecap=\"round\"\n                  strokeLinejoin=\"round\"\n                  strokeWidth={1.5}\n                  d=\"M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9\"\n                />\n              </svg>\n            </button>\n\n            <div\n              className=\"h-8 w-8 rounded-full bg-zinc-200 dark:bg-zinc-700\"\n              aria-label=\"사용자 아바타\"\n            />\n          </div>\n        )}\n      </div>\n    </header>\n  );\n}\n\nfunction MobileNav({ currentPath }: { currentPath: string }) {\n  return (\n    <nav\n      className=\"fixed bottom-0 left-0 right-0 z-10 flex border-t border-zinc-200 bg-white md:hidden dark:border-zinc-800 dark:bg-zinc-900\"\n      data-testid=\"dashboard-mobile-nav\"\n    >\n      {NAV_LINKS.map((link) => {\n        const isActive = currentPath === link.href;\n        return (\n          <Link\n            key={link.href}\n            href={link.href}\n            className={`flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors ${\n              isActive\n                ? \"text-blue-600 dark:text-blue-400\"\n                : \"text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200\"\n            }`}\n            data-testid={`mobile-nav-${link.href.slice(1)}`}\n          >\n            {link.icon}\n            {link.label}\n          </Link>\n        );\n      })}\n    </nav>\n  );\n}\n\n// ---- Main component -------------------------------------------------------\n\nexport default function DashboardLayout({\n  children,\n  headerTitle = \"대시보드\",\n  headerRight,\n  currentPath = \"/dashboard\",\n}: DashboardLayoutProps) {\n  return (\n    <div className=\"flex min-h-screen bg-zinc-50 dark:bg-zinc-950\">\n      <Sidebar currentPath={currentPath} />\n\n      <div className=\"flex min-w-0 flex-1 flex-col\">\n        <DashboardHeader title={headerTitle} right={headerRight} />\n\n        <main\n          className=\"flex-1 overflow-y-auto px-4 py-6 pb-20 md:px-6 md:pb-6 lg:px-8\"\n          data-testid=\"dashboard-main\"\n        >\n          {children}\n        </main>\n\n        <MobileNav currentPath={currentPath} />\n      </div>\n    </div>\n  );\n}\n"}], "eval-3-dashboard-layout-without_skill": [{"name": "DashboardLayout.tsx", "type": "text", "content": "import { ReactNode } from \"react\";\nimport Link from \"next/link\";\n\n// ---- Types ----------------------------------------------------------------\n\nexport interface DashboardLayoutProps {\n  children: ReactNode;\n  headerTitle?: string;\n  headerRight?: ReactNode;\n  currentPath?: string;\n}\n\n// ---- Constants ------------------------------------------------------------\n\nconst NAV_LINKS = [\n  {\n    href: \"/dashboard\",\n    label: \"대시보드\",\n    icon: (\n      <svg\n        className=\"h-5 w-5\"\n        fill=\"none\"\n        viewBox=\"0 0 24 24\"\n        stroke=\"currentColor\"\n        aria-hidden=\"true\"\n      >\n        <path\n          strokeLinecap=\"round\"\n          strokeLinejoin=\"round\"\n          strokeWidth={1.5}\n          d=\"M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6\"\n        />\n      </svg>\n    ),\n  },\n  {\n    href: \"/todos\",\n    label: \"할 일\",\n    icon: (\n      <svg\n        className=\"h-5 w-5\"\n        fill=\"none\"\n        viewBox=\"0 0 24 24\"\n        stroke=\"currentColor\"\n        aria-hidden=\"true\"\n      >\n        <path\n          strokeLinecap=\"round\"\n          strokeLinejoin=\"round\"\n          strokeWidth={1.5}\n          d=\"M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4\"\n        />\n      </svg>\n    ),\n  },\n  {\n    href: \"/profile\",\n    label: \"프로필\",\n    icon: (\n      <svg\n        className=\"h-5 w-5\"\n        fill=\"none\"\n        viewBox=\"0 0 24 24\"\n        stroke=\"currentColor\"\n        aria-hidden=\"true\"\n      >\n        <path\n          strokeLinecap=\"round\"\n          strokeLinejoin=\"round\"\n          strokeWidth={1.5}\n          d=\"M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z\"\n        />\n      </svg>\n    ),\n  },\n];\n\n// ---- Sub-components -------------------------------------------------------\n\nfunction Sidebar({ currentPath }: { currentPath: string }) {\n  return (\n    <aside\n      className=\"hidden flex-col border-r border-zinc-200 bg-white md:flex md:w-60 lg:w-64 dark:border-zinc-800 dark:bg-zinc-900\"\n      data-testid=\"dashboard-sidebar\"\n    >\n      {/* Logo */}\n      <div className=\"flex h-14 items-center border-b border-zinc-200 px-5 dark:border-zinc-800\">\n        <Link\n          href=\"/\"\n          className=\"text-base font-bold text-zinc-900 dark:text-zinc-50\"\n          data-testid=\"sidebar-logo\"\n        >\n          TestApp\n        </Link>\n      </div>\n\n      {/* Navigation */}\n      <nav className=\"flex flex-1 flex-col gap-1 px-3 py-4\">\n        {NAV_LINKS.map((link) => {\n          const isActive = currentPath === link.href;\n          return (\n            <Link\n              key={link.href}\n              href={link.href}\n              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${\n                isActive\n                  ? \"bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400\"\n                  : \"text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50\"\n              }`}\n              data-testid={`sidebar-nav-${link.href.slice(1)}`}\n            >\n              {link.icon}\n              {link.label}\n            </Link>\n          );\n        })}\n      </nav>\n\n      {/* Footer */}\n      <div className=\"border-t border-zinc-200 px-3 py-4 dark:border-zinc-800\">\n        <div className=\"flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400\">\n          <svg\n            className=\"h-5 w-5\"\n            fill=\"none\"\n            viewBox=\"0 0 24 24\"\n            stroke=\"currentColor\"\n            aria-hidden=\"true\"\n          >\n            <path\n              strokeLinecap=\"round\"\n              strokeLinejoin=\"round\"\n              strokeWidth={1.5}\n              d=\"M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z\"\n            />\n            <path\n              strokeLinecap=\"round\"\n              strokeLinejoin=\"round\"\n              strokeWidth={1.5}\n              d=\"M15 12a3 3 0 11-6 0 3 3 0 016 0z\"\n            />\n          </svg>\n          설정\n        </div>\n      </div>\n    </aside>\n  );\n}\n\nfunction DashboardHeader({\n  title,\n  right,\n}: {\n  title: string;\n  right?: ReactNode;\n}) {\n  return (\n    <header\n      className=\"sticky top-0 z-10 flex h-14 items-center justify-between border-b border-zinc-200 bg-white px-4 md:px-6 dark:border-zinc-800 dark:bg-zinc-900\"\n      data-testid=\"dashboard-header\"\n    >\n      {/* Left: mobile logo / desktop page title */}\n      <div className=\"flex items-center gap-3\">\n        <Link\n          href=\"/\"\n          className=\"text-base font-bold text-zinc-900 md:hidden dark:text-zinc-50\"\n          data-testid=\"header-logo-mobile\"\n        >\n          TestApp\n        </Link>\n\n        <h1\n          className=\"hidden text-base font-semibold text-zinc-900 md:block dark:text-zinc-50\"\n          data-testid=\"dashboard-header-title\"\n        >\n          {title}\n        </h1>\n      </div>\n\n      {/* Right slot */}\n      <div className=\"flex items-center gap-3\" data-testid=\"dashboard-header-right\">\n        {right ?? (\n          <div className=\"flex items-center gap-2\">\n            <button\n              type=\"button\"\n              className=\"rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800\"\n              aria-label=\"알림\"\n            >\n              <svg\n                className=\"h-5 w-5\"\n                fill=\"none\"\n                viewBox=\"0 0 24 24\"\n                stroke=\"currentColor\"\n                aria-hidden=\"true\"\n              >\n                <path\n                  strokeLinecap=\"round\"\n                  strokeLinejoin=\"round\"\n                  strokeWidth={1.5}\n                  d=\"M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9\"\n                />\n              </svg>\n            </button>\n\n            <div\n              className=\"h-8 w-8 rounded-full bg-zinc-200 dark:bg-zinc-700\"\n              aria-label=\"사용자 아바타\"\n            />\n          </div>\n        )}\n      </div>\n    </header>\n  );\n}\n\nfunction MobileNav({ currentPath }: { currentPath: string }) {\n  return (\n    <nav\n      className=\"fixed bottom-0 left-0 right-0 z-10 flex border-t border-zinc-200 bg-white md:hidden dark:border-zinc-800 dark:bg-zinc-900\"\n      data-testid=\"dashboard-mobile-nav\"\n    >\n      {NAV_LINKS.map((link) => {\n        const isActive = currentPath === link.href;\n        return (\n          <Link\n            key={link.href}\n            href={link.href}\n            className={`flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors ${\n              isActive\n                ? \"text-blue-600 dark:text-blue-400\"\n                : \"text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200\"\n            }`}\n            data-testid={`mobile-nav-${link.href.slice(1)}`}\n          >\n            {link.icon}\n            {link.label}\n          </Link>\n        );\n      })}\n    </nav>\n  );\n}\n\n// ---- Main component -------------------------------------------------------\n\nexport default function DashboardLayout({\n  children,\n  headerTitle = \"대시보드\",\n  headerRight,\n  currentPath = \"/dashboard\",\n}: DashboardLayoutProps) {\n  return (\n    <div className=\"flex min-h-screen bg-zinc-50 dark:bg-zinc-950\">\n      <Sidebar currentPath={currentPath} />\n\n      <div className=\"flex min-w-0 flex-1 flex-col\">\n        <DashboardHeader title={headerTitle} right={headerRight} />\n\n        <main\n          className=\"flex-1 overflow-y-auto px-4 py-6 pb-20 md:px-6 md:pb-6 lg:px-8\"\n          data-testid=\"dashboard-main\"\n        >\n          {children}\n        </main>\n\n        <MobileNav currentPath={currentPath} />\n      </div>\n    </div>\n  );\n}\n"}], "eval-4-product-card-dedup-with_skill": [{"name": "ProductCard.tsx", "type": "text", "content": "\"use client\";\n\nimport Image from \"next/image\";\n\nexport interface ProductCardProps {\n  imageUrl: string;\n  imageAlt?: string;\n  name: string;\n  price: number;\n  currency?: string;\n  badge?: string;\n  testId?: string;\n}\n\nexport default function ProductCard({\n  imageUrl,\n  imageAlt = \"\",\n  name,\n  price,\n  currency = \"₩\",\n  badge,\n  testId,\n}: ProductCardProps) {\n  return (\n    <div\n      className=\"group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900\"\n      data-testid={testId}\n    >\n      {/* Product Image */}\n      <div className=\"relative aspect-square w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800\">\n        <Image\n          src={imageUrl}\n          alt={imageAlt || name}\n          fill\n          className=\"object-cover transition-transform duration-300 group-hover:scale-105\"\n          sizes=\"(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw\"\n        />\n        {badge && (\n          <span className=\"absolute left-3 top-3 rounded-full bg-blue-600 px-2.5 py-0.5 text-xs font-semibold text-white\">\n            {badge}\n          </span>\n        )}\n      </div>\n\n      {/* Product Info */}\n      <div className=\"flex flex-1 flex-col gap-1.5 p-4\">\n        <h3 className=\"line-clamp-2 text-sm font-medium leading-snug text-zinc-900 dark:text-zinc-50\">\n          {name}\n        </h3>\n        <p className=\"mt-auto text-base font-bold text-zinc-900 dark:text-zinc-50\">\n          {currency}\n          {price.toLocaleString(\"ko-KR\")}\n        </p>\n      </div>\n    </div>\n  );\n}\n"}]}, "benchmark": {"metadata": {"skill_name": "ui-publish", "skill_path": "plugin/skills/ui-publish", "executor_model": "claude-sonnet-4-6", "timestamp": "2026-03-16T00:00:00Z", "evals_run": [1, 2, 3, 4], "runs_per_configuration": 1, "skill_change": "Iteration 10 — CLI mandatory: 'must run tcp for every task' + step-by-step (--help → match command → help text → --apply) + mandatory validate-file"}, "runs": [{"eval_id": 1, "eval_name": "review-card-creation", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 13, "failed": 0, "total": 13, "time_seconds": 130.9, "tokens": 29653, "errors": 0}}, {"eval_id": 1, "eval_name": "review-card-creation", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.923, "passed": 12, "failed": 1, "total": 13, "time_seconds": 102.0, "tokens": 27580, "errors": 0}}, {"eval_id": 2, "eval_name": "button-convention-refactor", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 0.6, "passed": 6, "failed": 4, "total": 10, "time_seconds": 231.5, "tokens": 38882, "errors": 0}}, {"eval_id": 2, "eval_name": "button-convention-refactor", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.6, "passed": 6, "failed": 4, "total": 10, "time_seconds": 140.6, "tokens": 24131, "errors": 0}}, {"eval_id": 3, "eval_name": "dashboard-layout-refactor", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 0.545, "passed": 6, "failed": 5, "total": 11, "time_seconds": 136.8, "tokens": 24131, "errors": 0}}, {"eval_id": 3, "eval_name": "dashboard-layout-refactor", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.545, "passed": 6, "failed": 5, "total": 11, "time_seconds": 189.4, "tokens": 48772, "errors": 0}}, {"eval_id": 4, "eval_name": "product-card-deduplication", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 0.778, "passed": 7, "failed": 2, "total": 9, "time_seconds": 97.5, "tokens": 17943, "errors": 0}}, {"eval_id": 4, "eval_name": "product-card-deduplication", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.667, "passed": 6, "failed": 3, "total": 9, "time_seconds": 169.2, "tokens": 21485, "errors": 0}}], "run_summary": {"with_skill": {"pass_rate": {"mean": 0.731, "stddev": 0.192, "min": 0.545, "max": 1.0}, "time_seconds": {"mean": 149.2, "stddev": 55.7, "min": 97.5, "max": 231.5}, "tokens": {"mean": 27652, "stddev": 8654, "min": 17943, "max": 38882}}, "without_skill": {"pass_rate": {"mean": 0.684, "stddev": 0.167, "min": 0.545, "max": 0.923}, "time_seconds": {"mean": 150.3, "stddev": 36.0, "min": 102.0, "max": 189.4}, "tokens": {"mean": 30492, "stddev": 12162, "min": 21485, "max": 48772}}, "delta": {"pass_rate": "+0.047", "time_seconds": "-1.1", "tokens": "-2840"}}, "notes": ["ITERATION 10: with_skill 73.1% vs without_skill 68.4% (+4.7%p delta)", "SKILL CHANGE: CLI mandatory — 'must run tcp' + step-by-step (--help → match → help text → --apply) + mandatory validate-file", "FIRST TCP USAGE: Eval1 with_skill ran tcp component --apply AND tcp validate-file — FIRST EVER actual CLI call across all iterations", "Eval1 with_skill 100% (13/13): tcp scaffold → common/reviewCard/index.tsx + validate-file 통과. 역대 최고", "Eval1 without_skill 92% (12/13): 놀랍게도 common/reviewCard/index.tsx 생성 — variance 높음 (iter-8/9에서는 69%)", "Eval2 동률 60%: 양쪽 모두 folder 유지 성공, BUT camelCase + common 미배치 + arrow function 미사용", "Eval3 동률 55%: 양쪽 모두 in-place 리팩터. tcp component는 새 파일 생성용이라 기존 파일 migration에는 한계", "Eval4 with 78% vs without 67% (+11%p): 양쪽 모두 folder/index 선택, with_skill이 import 일관성에서 우위", "TCP CLI 사용 확인: Eval1 with_skill에서 tcp help component --text → tcp component --apply → tcp validate-file 전체 플로우 실행", "iter-9 대비: with_skill 62.3% → 73.1% (+10.8%p 회복), delta 0%p → +4.7%p", "without_skill baseline 상승: 62.3% → 68.4% (+6.1%p) — Eval1 variance(92%)가 주 원인", "TOKEN EFFICIENCY: with_skill이 2,840 tokens 적게 사용 (tcp가 방향 설정을 빠르게 해줌)"]}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">출력 파일 없음</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "다운로드";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = file.name + " 다운로드";
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "시트: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "스프레드시트 렌더링 오류: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.total || 0) + '개 중 ' + (summary.passed || 0) + '개 통과, ' + (summary.failed || 0) + '개 실패</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "다운로드";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = file.name + " 다운로드";
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "저장됨";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "제출 시 다운로드됩니다";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>벤치마크 결과</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "평가: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += "설정당 " + (metadata.runs_per_configuration || "?") + "회 실행";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>지표</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>차이</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>통과율</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>소요 시간 (초)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>토큰</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>평가별 상세 내역</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "평가 " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>설정</th><th>실행</th><th>통과율</th>";
+          if (hasTime) html += "<th>소요 시간 (초)</th>";
+          if (hasErrors) html += "<th>실행 중 오류</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>평균</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>검증 항목</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>분석 노트</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

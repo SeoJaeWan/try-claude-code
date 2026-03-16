@@ -1,0 +1,135 @@
+{
+  "expectations": [
+    {
+      "text": "DashboardLayout이 folder 기반 index.tsx 패턴으로 정리된다",
+      "passed": false,
+      "evidence": "The output is a single DashboardLayout.tsx file with inline sub-components (Sidebar, DashboardHeader, MobileNav defined as private functions). No folder-based index.tsx pattern was created. The transcript confirms: 'Sub-components extracted inline — Sidebar, DashboardHeader, MobileNav as private functions within the file, keeping the file self-contained.'"
+    },
+    {
+      "text": "flat components/DashboardLayout.tsx가 그대로 남지 않는다",
+      "passed": false,
+      "evidence": "The output file is still components/DashboardLayout.tsx. The transcript states the file was refactored in place: 'Refactored the monolithic component following project conventions' but the output path remains outputs/DashboardLayout.tsx, and the transcript does not mention creating a folder or removing the flat file."
+    },
+    {
+      "text": "sidebar 영역이 명확히 존재한다",
+      "passed": true,
+      "evidence": "A dedicated Sidebar sub-component exists at line 80 with <aside> element, data-testid='dashboard-sidebar', containing logo, navigation links, and footer sections."
+    },
+    {
+      "text": "header 영역이 명확히 존재한다",
+      "passed": true,
+      "evidence": "A dedicated DashboardHeader sub-component exists at line 149 with <header> element, data-testid='dashboard-header', containing title, mobile logo, and right slot."
+    },
+    {
+      "text": "main 콘텐츠 영역이 존재한다",
+      "passed": true,
+      "evidence": "A <main> element exists at line 258 with data-testid='dashboard-main', wrapping {children} with appropriate padding and overflow classes."
+    },
+    {
+      "text": "children 중심 shell 역할이 유지된다",
+      "passed": true,
+      "evidence": "DashboardLayoutProps includes 'children: ReactNode' (line 7). The main component accepts children and renders them inside <main> at line 262: '{children}'. The component acts as a shell composing Sidebar, DashboardHeader, main content, and MobileNav."
+    },
+    {
+      "text": "responsive breakpoint class가 유지되거나 개선된다",
+      "passed": true,
+      "evidence": "Multiple responsive breakpoint classes present: md:flex, md:w-60, lg:w-64, md:hidden, md:block, md:px-6, lg:px-8, md:pb-6. The transcript notes Tailwind class ordering was improved to follow mobile-first convention."
+    },
+    {
+      "text": "사용처 import가 새 경로에 맞게 정리된다",
+      "passed": false,
+      "evidence": "The file was not moved to a new path (no folder-based restructuring occurred), so there is no new path to update imports to. The transcript mentions reading app/dashboard/page.tsx as a consumer but does not show any import path changes. No updated consumer file is in the outputs."
+    },
+    {
+      "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "passed": true,
+      "evidence": "Searched the full output DashboardLayout.tsx (270 lines). None of useEffect, fetch, axios, useQuery, or useMutation appear anywhere in the file. Only imports are ReactNode from 'react' and Link from 'next/link'."
+    },
+    {
+      "text": "폴더명이 camelCase를 따른다 (dashboardLayout)",
+      "passed": false,
+      "evidence": "No folder was created. The output remains a flat DashboardLayout.tsx file. The transcript notes the project already has a reference pattern at components/dashboard/dashboardLayout/ but the executor chose to refactor in-place rather than move to that folder structure."
+    },
+    {
+      "text": "components/dashboard/ 하위에 배치된다",
+      "passed": false,
+      "evidence": "The output file is components/DashboardLayout.tsx, not under components/dashboard/. The transcript confirms reading the existing components/dashboard/dashboardLayout/ reference pattern but did not move the file there."
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 5,
+    "total": 11,
+    "pass_rate": 0.55
+  },
+  "execution_metrics": {
+    "output_chars": 8691,
+    "transcript_chars": 2814
+  },
+  "timing": {
+    "total_tokens": 29892,
+    "executor_duration_seconds": 133.0,
+    "total_duration_seconds": 133.0
+  },
+  "claims": [
+    {
+      "claim": "The original DashboardLayout.tsx was a monolithic 242-line component",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Cannot verify — the original file is not included in outputs. The transcript states this but the source file is not available for verification."
+    },
+    {
+      "claim": "Sub-components extracted inline as private functions",
+      "type": "process",
+      "verified": true,
+      "evidence": "Output file contains Sidebar (line 80), DashboardHeader (line 149), and MobileNav (line 215) as non-exported functions within the same file."
+    },
+    {
+      "claim": "Constant renamed to SCREAMING_SNAKE_CASE (NAV_LINKS)",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Line 15 of output: 'const NAV_LINKS = [...]'"
+    },
+    {
+      "claim": "TypeScript: no new errors introduced",
+      "type": "quality",
+      "verified": false,
+      "evidence": "No TypeScript check output is included in the outputs directory. Must trust the transcript claim."
+    },
+    {
+      "claim": "ESLint: no errors in DashboardLayout.tsx",
+      "type": "quality",
+      "verified": false,
+      "evidence": "No ESLint output is included in the outputs directory. Must trust the transcript claim."
+    },
+    {
+      "claim": "Tailwind class ordering fixed to follow mobile-first convention",
+      "type": "quality",
+      "verified": true,
+      "evidence": "Output shows mobile-first patterns like 'hidden flex-col ... md:flex md:w-60 lg:w-64' (line 83) where base styles come before breakpoint overrides."
+    },
+    {
+      "claim": "Props interface exported separately, component as default export",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Line 6: 'export interface DashboardLayoutProps' and line 245: 'export default function DashboardLayout'"
+    }
+  ],
+  "user_notes_summary": null,
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "sidebar 영역이 명확히 존재한다",
+        "reason": "This passes even though the component wasn't restructured as required — it merely checks that a sidebar exists, which was already true in the original monolithic file. Consider combining structural assertions (folder-based, domain-placement) with content assertions to avoid partial credit for incomplete refactors."
+      },
+      {
+        "reason": "Five of eleven assertions test the file/folder restructuring, which all failed together as a block because the executor chose in-place refactoring over folder-based splitting. Consider a single higher-level assertion like 'component is split into separate files under components/dashboard/dashboardLayout/' that covers folder-structure, flat-file-removed, folder-camelCase, domain-placement, and import-updated in one discriminating check."
+      },
+      {
+        "assertion": "사용처 import가 새 경로에 맞게 정리된다",
+        "reason": "This assertion is effectively untestable from the output alone — even if the file had been moved, the consumer page.tsx is not in the outputs directory. Consider requiring the updated consumer file in outputs."
+      }
+    ],
+    "overall": "The assertions split into two clean clusters: structural/organizational (5 assertions, all failed) and functional/content (6 assertions, all passed). The structural cluster is redundant — they all test facets of the same decision (move to folder structure). The functional cluster passes trivially because the original file already had sidebar, header, and main content. Consider adding assertions that test the actual refactoring quality: sub-component isolation, prop interface design, or removal of duplication."
+  }
+}

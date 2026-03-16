@@ -1,0 +1,112 @@
+{
+  "expectations": [
+    {
+      "text": "결과 구조가 Button/index.tsx 또는 동급 folder/index 규칙을 따른다",
+      "passed": true,
+      "evidence": "Transcript states canonical file is components/Button/index.tsx. Output file Button_index.tsx confirms the folder/index structure. Transcript: 'UNCHANGED: components/Button/index.tsx (canonical, already correct)'."
+    },
+    {
+      "text": "flat components/Button.tsx 파일이 그대로 남지 않는다",
+      "passed": true,
+      "evidence": "Transcript explicitly states: 'DELETED: components/Button.tsx (legacy flat file - convention violation)'. Only the folder-based file remains."
+    },
+    {
+      "text": "Props 인터페이스가 ButtonProps 접미사를 유지한다",
+      "passed": true,
+      "evidence": "Output file line 3: 'export interface ButtonProps'. The ButtonProps naming convention is preserved."
+    },
+    {
+      "text": "컴포넌트가 화살표 함수 형태로 유지된다",
+      "passed": false,
+      "evidence": "Output file line 8 uses a regular function declaration: 'export default function Button({ label, tone = \"primary\" }: ButtonProps)'. This is NOT an arrow function (e.g., const Button = ({ ... }: ButtonProps) => { ... }). The assertion requires arrow function form."
+    },
+    {
+      "text": "기존 label prop 동작이 보존된다",
+      "passed": true,
+      "evidence": "Output file shows label prop in ButtonProps interface (line 4: 'label: string') and rendered inside the button element (line 19: '{label}'). Behavior is preserved."
+    },
+    {
+      "text": "기존 tone prop 동작이 보존된다",
+      "passed": true,
+      "evidence": "Output file shows tone prop with default 'primary' (line 8: 'tone = \"primary\"') and conditional className logic for primary (blue) vs secondary (border/zinc) styling on lines 13-16. Behavior is preserved."
+    },
+    {
+      "text": "showcase page의 import가 새 구조에 맞게 정리된다",
+      "passed": false,
+      "evidence": "Transcript claims 'The showcase page imports @/components/Button which resolves to components/Button/index.tsx - no import changes needed.' However, no showcase page output file is provided to verify this claim. The assertion asks that imports are 'updated/organized to match the new structure', and the executor did not produce or show the showcase file. Cannot verify from available evidence."
+    },
+    {
+      "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "passed": true,
+      "evidence": "Output file Button_index.tsx contains none of these forbidden patterns. The component is a pure presentational component with only JSX rendering."
+    },
+    {
+      "text": "폴더명이 camelCase를 따른다 (button)",
+      "passed": false,
+      "evidence": "The folder is named 'Button' (PascalCase), not 'button' (camelCase). Transcript: 'components/Button/index.tsx'. The assertion specifically requires camelCase folder naming (e.g., 'button'), but the output uses PascalCase ('Button')."
+    },
+    {
+      "text": "components/common/button/ 하위에 배치된다",
+      "passed": false,
+      "evidence": "The component is placed at components/Button/index.tsx, NOT components/common/button/index.tsx. Transcript confirms: 'UNCHANGED: components/Button/index.tsx'. The 'common' subdirectory is missing entirely."
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 4,
+    "total": 10,
+    "pass_rate": 0.6
+  },
+  "timing": {
+    "total_tokens": 24131,
+    "duration_ms": 140611,
+    "total_duration_seconds": 140.6
+  },
+  "claims": [
+    {
+      "claim": "Both components/Button.tsx and components/Button/index.tsx had identical content",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Only one output file is provided (Button_index.tsx). Cannot verify that the deleted flat file had identical content since it was not preserved."
+    },
+    {
+      "claim": "The showcase page imports @/components/Button which resolves correctly",
+      "type": "factual",
+      "verified": false,
+      "evidence": "No showcase page file is included in outputs. Cannot verify import path resolution."
+    },
+    {
+      "claim": "No Button-related type errors after the change",
+      "type": "quality",
+      "verified": false,
+      "evidence": "No typecheck output is provided in the outputs directory. Claim is based solely on transcript text."
+    },
+    {
+      "claim": "The existing folder structure follows PascalCase convention (Button/, ProductCard/, DashboardLayout/)",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Transcript lists these as the project convention, but no directory listing output is provided to confirm. This claim contradicts the eval assertion requiring camelCase folder names."
+    }
+  ],
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "showcase page의 import가 새 구조에 맞게 정리된다",
+        "reason": "This assertion is hard to grade without the showcase file in outputs. Consider requiring the executor to include the showcase page in outputs, or adding a more specific assertion like 'showcase page output file exists and imports from the new path'."
+      },
+      {
+        "assertion": "폴더명이 camelCase를 따른다 (button)",
+        "reason": "This assertion may conflict with the actual project convention. The transcript shows the existing project uses PascalCase folders (Button/, ProductCard/, DashboardLayout/). If the real convention is PascalCase, this assertion is testing the wrong thing. Verify which convention the test workspace actually uses."
+      },
+      {
+        "assertion": "components/common/button/ 하위에 배치된다",
+        "reason": "Similar conflict: the existing project structure appears to use components/Button/ (no 'common' subdirectory). If the workspace doesn't have a common/ folder convention, this assertion tests something the executor can't reasonably discover. Ensure the test workspace's conventions actually require common/ placement."
+      },
+      {
+        "assertion": "컴포넌트가 화살표 함수 형태로 유지된다",
+        "reason": "The word '유지' (maintain) implies the original was an arrow function. But the output shows a regular function declaration, and the transcript says the file was 'UNCHANGED'. This suggests the original was already a regular function, making this assertion test for a convention the source code never followed. Verify whether the test workspace's Button actually uses an arrow function."
+      }
+    ],
+    "overall": "Four assertions failed, but at least two (camelCase folder, common/ placement) may be testing conventions that don't match the actual test workspace setup. The arrow-function assertion may also be testing something the original code never had. Recommend verifying the test workspace's actual conventions match what the assertions expect."
+  }
+}
