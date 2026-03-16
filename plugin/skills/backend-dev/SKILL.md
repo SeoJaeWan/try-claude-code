@@ -18,20 +18,15 @@ Expert backend development workflow.
 
 ---
 
-## CLI 필수 사용
+## Required CLI Usage
 
-이 프로젝트는 `tcb` CLI로 module, entity, DTO를 관리한다. **모든 작업에서 반드시 `tcb`를 실행해야 한다.**
-
-1. 먼저 `tcb --help`를 실행하여 사용 가능한 명령어를 확인한다
-2. 요청받은 작업에 맞는 `tcb` 명령어를 매칭한다 (module, entity, requestDto, responseDto, batch 등)
-3. 해당 명령어의 `tcb help <command> --text`로 사용법을 읽는다
-4. `tcb <command> --apply`로 실행한다
+Use the `tcb` CLI when developing backend modules. All project module, entity, and DTO rules are defined in `tcb help --text` — read it before starting any work. Use `tcb <command> --apply` when scaffolding is needed.
 
 ---
 
 ## HTTP Error Response Handling
 
-모든 API endpoint에 적절한 에러 응답을 포함한다.
+Every API endpoint must include proper error responses.
 
 | Status | When to use | Example |
 |---|---|---|
@@ -47,13 +42,12 @@ Expert backend development workflow.
 
 1. Read plan from `plans/{task-name}/plan.md`
 2. Read `codemaps/backend.md`, `codemaps/database.md` (if present)
-3. **`tcb --help`를 실행**하고 요청에 맞는 명령어를 찾는다
-4. **`tcb help <command> --text`로 사용법을 읽고, `tcb <command> --apply`로 scaffold를 생성**한다
-5. 생성된 파일 안에서 로직을 구현한다
-6. If plan includes `tests/`: copy test files to source tree, run Red verification
-7. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
-8. Run tests — confirm ALL pass (Green)
-9. If plan includes `e2e/`: if E2E fails, fix implementation, NOT tests
-10. Return results based on plan.md
+3. **Run `tcb help --text`** to learn the module rules, then use `tcb` throughout development
+4. Implement logic inside the generated files
+5. If plan includes `tests/`: copy test files to source tree, run Red verification
+6. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
+7. Run tests — confirm ALL pass (Green)
+8. If plan includes `e2e/`: if E2E fails, fix implementation, NOT tests
+9. Return results based on plan.md
   </Instructions>
   </Skill_Guide>
