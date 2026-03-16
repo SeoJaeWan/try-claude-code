@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "order query 훅 파일이 존재한다",
+      "passed": true,
+      "evidence": "hooks/apis/queries/useFetchOrderDetail/index.ts 파일이 존재하며, useQuery를 사용하는 order detail query 훅이 구현되어 있다."
+    },
+    {
+      "text": "훅 이름이 use 접두사로 시작한다 (tcf profile: hook prefix = use)",
+      "passed": true,
+      "evidence": "훅 이름이 useFetchOrderDetail로 'use' 접두사로 시작한다."
+    },
+    {
+      "text": "훅 경로에 /apis/ 와 /queries/ 가 포함된다 (tcf profile: API query hook -> apis/{domain}/queries)",
+      "passed": true,
+      "evidence": "파일 경로가 hooks/apis/queries/useFetchOrderDetail/index.ts로 /apis/와 /queries/가 모두 포함된다."
+    },
+    {
+      "text": "훅이 {hookName}/index.ts 패턴으로 생성된다 (tcf profile: output = {path}/{name}/index.ts)",
+      "passed": true,
+      "evidence": "파일이 useFetchOrderDetail/index.ts 패턴으로 생성되었다 (폴더명이 훅 이름, 파일명이 index.ts)."
+    },
+    {
+      "text": "훅이 화살표 함수로 정의된다 (shared profile: function style = arrow)",
+      "passed": true,
+      "evidence": "line 37: 'const useFetchOrderDetail = (params: UseFetchOrderDetailParams) => {' — 화살표 함수로 정의되어 있다."
+    },
+    {
+      "text": "훅 반환값에 loading/isLoading 상태가 포함된다",
+      "passed": true,
+      "evidence": "line 56: 'isLoading: query.isLoading' — 반환 객체에 isLoading이 포함된다."
+    },
+    {
+      "text": "훅 반환값에 error 상태가 포함된다",
+      "passed": true,
+      "evidence": "line 57-58: 'isError: query.isError, error: query.error' — 반환 객체에 error 관련 상태가 포함된다."
+    },
+    {
+      "text": "page에서 직접적인 fetch/business logic이 없고 훅 소비만 한다",
+      "passed": false,
+      "evidence": "출력물에 page 파일이 포함되어 있지 않아 page에서 훅만 소비하는지 확인할 수 없다. 훅 자체는 잘 분리되어 있으나, page 컴포넌트가 생성되지 않았으므로 이 기대사항을 충족했다고 판단할 수 없다."
+    }
+  ],
+  "summary": {
+    "passed": 7,
+    "failed": 1,
+    "total": 8,
+    "pass_rate": 0.88
+  }
+}
