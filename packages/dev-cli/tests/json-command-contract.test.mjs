@@ -59,3 +59,27 @@ test("실패 payload도 deterministic error envelope를 유지한다", () => {
   assert.equal(payload.ok, false);
   assert.equal(payload.error.code, "SPEC_CONFLICT");
 });
+
+test("tcf help JSON은 hook/apiHook 계약을 AI가 읽을 수 있는 구조로 노출한다", () => {
+  const result = runCli(tcfBin, ["--help"]);
+
+  assert.equal(result.status, 0);
+  const payload = readJson(result.stdout);
+  assert.equal(payload.ok, true);
+  assert.deepEqual(
+    payload.commands.hook.contracts.pathPolicy.allowedPatterns,
+    ["hooks/utils/{domain}", "hooks/utils/common"]
+  );
+  assert.equal(
+    payload.commands.apiHook.contracts.methodPolicy.query.requiredMethod,
+    "GET"
+  );
+  assert.deepEqual(
+    payload.commands.apiHook.contracts.methodPolicy.mutation.allowedMethods,
+    ["POST", "PUT", "PATCH", "DELETE"]
+  );
+  assert.equal(
+    payload.commands.apiHook.contracts.namingPolicy.mutationPatterns.PATCH,
+    "^usePatch[A-Z][A-Za-z0-9]*$"
+  );
+});

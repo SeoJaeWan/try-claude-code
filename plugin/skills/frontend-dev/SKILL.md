@@ -16,7 +16,7 @@ React/Next.js/Expo development with custom hooks and state management. Use for f
 
 Expert frontend logic workflow — hooks, state management, and API integration.
 
-All file creation goes through `tcf` CLI. Never create hook files manually — the CLI enforces naming, folder structure, and export patterns that are impossible to get right by hand.
+All file creation goes through `tcf` CLI. Never create hook files manually — the CLI enforces naming, folder structure, export patterns, and API hook naming rules that are impossible to get right by hand.
 
 ---
 
@@ -29,13 +29,13 @@ Every hook file must be created via `tcf`. Run `tcf --help` first to see availab
 tcf --help
 
 # Create a custom hook
-tcf hook --json '{"name":"useScroll","path":"hooks/utils"}' --apply
+tcf hook --json '{"name":"useScroll","path":"hooks/utils/common"}' --apply
 
 # Create an API query hook
-tcf apiHook --json '{"name":"useGetProduct","path":"hooks/apis/product/queries","kind":"query"}' --apply
+tcf apiHook --json '{"name":"useGetProduct","path":"hooks/apis/product/queries","kind":"query","method":"GET"}' --apply
 
 # Create an API mutation hook
-tcf apiHook --json '{"name":"useLogin","path":"hooks/apis/auth/mutations","kind":"mutation"}' --apply
+tcf apiHook --json '{"name":"usePostLogin","path":"hooks/apis/auth/mutations","kind":"mutation","method":"POST"}' --apply
 
 # Snippet helpers
 tcf function --json '{"kind":"internalHandler","name":"onSubmit"}'
@@ -46,6 +46,14 @@ tcf batch --json '{"ops":[...]}' --apply
 ```
 
 After `tcf` creates the scaffold, implement the business logic inside the generated files.
+
+Path policy:
+- Non-API hooks: `hooks/utils/{domain}` or `hooks/utils/common`
+- API hooks: `hooks/apis/{domain}/queries` or `hooks/apis/{domain}/mutations`
+
+Naming policy:
+- Query hooks: `useGet*`
+- Mutation hooks: `usePost*`, `usePut*`, `usePatch*`, `useDelete*`
 
 ---
 

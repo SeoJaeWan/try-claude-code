@@ -6,18 +6,18 @@
 
 ## Seed Context
 
-- `hooks/apis/queries/useFetchOrder/index.ts`
+- `hooks/apis/order/queries/useGetOrderDetail/index.ts`
 - `lib/types.ts`
 - `app/page.tsx`
 
 ## Expected Outcome
 
-- order query 훅이 명확한 이름과 반환 shape를 가진다.
+- order query 훅이 `hooks/apis/order/queries/useGetOrderDetail` 규칙에 맞는 이름과 반환 shape를 가진다.
 - loading / error / refetch 같은 소비 포인트가 드러난다.
 - 필요하면 호출 surface를 새로 만들되 page는 조합 역할을 유지한다.
 
 ## Review Points
 
-- query 훅 경로 규칙을 따른다.
+- query 훅 경로와 이름이 `hooks/apis/{domain}/queries/useGet*` 규칙을 따른다.
 - 훅 반환값 이름이 일관된다.
 - view와 data fetching 책임이 섞이지 않는다.

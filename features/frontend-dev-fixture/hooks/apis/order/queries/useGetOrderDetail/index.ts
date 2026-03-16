@@ -11,8 +11,8 @@ interface Order {
   updatedAt: string;
 }
 
-/** useFetchOrder 파라미터 */
-interface UseFetchOrderParams {
+/** useGetOrderDetail 파라미터 */
+interface UseGetOrderDetailParams {
   orderId?: string;
   enabled?: boolean;
 }
@@ -24,7 +24,7 @@ interface UseFetchOrderParams {
  * @param params.enabled - 쿼리 활성화 여부 (기본값: true)
  * @returns 주문 데이터, 로딩 상태, 에러 정보
  */
-const useFetchOrder = (params: UseFetchOrderParams = {}) => {
+const useGetOrderDetail = (params: UseGetOrderDetailParams = {}) => {
   const { orderId, enabled = true } = params;
 
   const query = useQuery<Order>({
@@ -51,4 +51,4 @@ const useFetchOrder = (params: UseFetchOrderParams = {}) => {
   };
 };
 
-export default useFetchOrder;
+export default useGetOrderDetail;

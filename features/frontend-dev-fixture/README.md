@@ -23,9 +23,9 @@
   - 프로필 draft 상태와 저장 로직이 page 내부에 있다.
 - `components/NotificationList.tsx`
   - query 결과와 filter UI를 소비하는 surface다.
-- `hooks/apis/queries/useGetNotifications/index.ts`
+- `hooks/apis/notification/queries/useGetNotifications/index.ts`
   - `useEffect + fetch` 기반 legacy query seed다.
-- `hooks/apis/queries/useFetchOrder/index.ts`
+- `hooks/apis/order/queries/useGetOrderDetail/index.ts`
   - query-style seed다.
 
 ## 시나리오

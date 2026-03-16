@@ -14,12 +14,12 @@
 
 ## Expected Outcome
 
-- draft 상태, validation, save/cancel 흐름이 별도 훅으로 정리된다.
+- draft 상태, validation, save/cancel 흐름이 `hooks/utils/profile` 아래 별도 훅으로 정리된다.
 - page에는 섹션 렌더링과 handler 연결만 남는다.
 - 저장 성공/에러 상태가 더 읽기 쉬운 경계로 정리된다.
 
 ## Review Points
 
 - page에 다수의 인라인 `useState`가 그대로 남지 않는다.
-- 훅이 profile edit use case를 대표하는 이름을 가진다.
+- 훅이 `hooks/utils/profile/use*` 경로와 profile edit use case를 대표하는 이름을 가진다.
 - 기존 testid와 저장 흐름이 유지된다.

@@ -238,6 +238,7 @@ async function handleValidateCommand({ alias, role, route, repoRoot }) {
       name: route.options.name,
       path: route.options.path,
       kind: route.options.kind,
+      method: route.options.method,
       content: route.options.content
     },
     files: route.options.content

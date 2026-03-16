@@ -12,12 +12,12 @@
 
 ## Expected Outcome
 
-- form 상태/유효성 검증 훅과 submit/API 훅 경계가 분리된다.
+- form 상태/유효성 검증 훅은 `hooks/utils/auth`, submit/API 훅은 `hooks/apis/auth/mutations` 경계로 분리된다.
 - page는 훅 import와 view wiring 중심으로 정리된다.
 - `handleSubmit` 같은 내부 핸들러 규칙을 따른다.
 
 ## Review Points
 
 - page에 직접적인 `useState`와 비즈니스 로직이 남지 않는다.
-- 훅 이름이 `use*`로 시작한다.
-- 새 훅이 hook 경로 컨벤션에 맞게 배치된다.
+- form 훅은 `use*`, API mutation 훅은 `usePost*` 이름 규칙을 따른다.
+- 새 훅이 `hooks/utils/{domain}` 또는 `hooks/apis/{domain}/mutations` 경로 컨벤션에 맞게 배치된다.
