@@ -1,0 +1,18 @@
+{
+  "eval_id": 2,
+  "configuration": "with_skill",
+  "pass_rate": 1.0,
+  "passed": 8,
+  "failed": 0,
+  "total": 8,
+  "expectations": [
+    {"text": "결과 구조가 folder/index 규칙을 따른다", "passed": true, "evidence": "components/common/button/index.tsx"},
+    {"text": "flat Button.tsx가 남지 않는다", "passed": true, "evidence": "flat file 미존재"},
+    {"text": "ButtonProps 접미사 유지", "passed": true, "evidence": "export interface ButtonProps"},
+    {"text": "화살표 함수 형태", "passed": true, "evidence": "const Button = (...) => { ... }"},
+    {"text": "label prop 보존", "passed": true, "evidence": "label: string prop 유지"},
+    {"text": "tone prop 보존", "passed": true, "evidence": "tone?: 'primary' | 'secondary' 유지"},
+    {"text": "showcase import 업데이트", "passed": true, "evidence": "@/components/common/button 으로 변경"},
+    {"text": "forbidden 패턴 없음", "passed": true, "evidence": "해당 패턴 없음"}
+  ]
+}

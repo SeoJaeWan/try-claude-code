@@ -1,0 +1,19 @@
+{
+  "eval_id": 3,
+  "configuration": "with_skill",
+  "pass_rate": 1.0,
+  "passed": 9,
+  "failed": 0,
+  "total": 9,
+  "expectations": [
+    {"text": "folder 기반 index.tsx 패턴", "passed": true, "evidence": "components/dashboard/dashboardLayout/index.tsx"},
+    {"text": "flat DashboardLayout.tsx 제거", "passed": true, "evidence": "flat file 미존재"},
+    {"text": "sidebar 영역 존재", "passed": true, "evidence": "<aside> with dashboard-sidebar testid"},
+    {"text": "header 영역 존재", "passed": true, "evidence": "<header> with dashboard-header testid"},
+    {"text": "main 콘텐츠 영역 존재", "passed": true, "evidence": "<main> with dashboard-main testid"},
+    {"text": "children shell 역할 유지", "passed": true, "evidence": "{children} in main"},
+    {"text": "responsive breakpoint 보존", "passed": true, "evidence": "md:flex, md:w-60, lg:w-64, md:px-6"},
+    {"text": "사용처 import 업데이트", "passed": true, "evidence": "@/components/dashboard/dashboardLayout"},
+    {"text": "forbidden 패턴 없음", "passed": true, "evidence": "해당 패턴 없음 — 컴포넌트에 useState 등 없음"}
+  ]
+}

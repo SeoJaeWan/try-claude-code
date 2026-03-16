@@ -1,0 +1,17 @@
+{
+  "eval_id": 4,
+  "configuration": "with_skill",
+  "pass_rate": 1.0,
+  "passed": 7,
+  "failed": 0,
+  "total": 7,
+  "expectations": [
+    {"text": "단일 source of truth", "passed": true, "evidence": "common/productCard/index.tsx만 존재"},
+    {"text": "flat ProductCard.tsx 제거", "passed": true, "evidence": "flat file 제거됨"},
+    {"text": "ProductCard/index.tsx 패턴", "passed": true, "evidence": "components/common/productCard/index.tsx"},
+    {"text": "ProductCardProps 유지", "passed": true, "evidence": "export interface ProductCardProps"},
+    {"text": "import path 일관성", "passed": true, "evidence": "사용처 없음 — N/A"},
+    {"text": "visual affordance 보존", "passed": true, "evidence": "hover:shadow-md, group-hover:scale-105, Image, price, badge, line-clamp-2"},
+    {"text": "forbidden 패턴 없음", "passed": true, "evidence": "해당 패턴 없음"}
+  ]
+}
