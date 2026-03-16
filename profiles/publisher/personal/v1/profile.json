@@ -9,7 +9,9 @@
       "퍼블리셔는 비즈니스 로직을 구현하지 않는다.",
       "toggle, sidebar, modal 같은 UI 상호작용 state는 허용한다.",
       "컴포넌트 경로는 components/common/{component} 또는 components/{domain}/{component}를 사용한다.",
-      "domain은 app/{domain}/page.tsx의 root page segment를 사용한다. 여러 page domain에서 공통이면 common을 사용한다."
+      "domain은 app/{domain}/page.tsx의 root page segment를 사용한다. 여러 page domain에서 공통이면 common을 사용한다.",
+      "레거시 컴포넌트 경로가 현재 컨벤션과 다르면 기존 위치를 유지하지 말고 먼저 현재 컨벤션 경로로 마이그레이션한다.",
+      "레거시 경로가 이미 현재 컨벤션과 같으면 경로는 유지하고 내부 구현만 수정한다."
     ]
   },
   "rules": {
@@ -47,6 +49,8 @@
           "domainPattern": "components/{domain}/{component}",
           "nestedPattern": "components/{domain}/{parentComponent}/{childComponent}",
           "domainPolicy": "domain is the root page segment from app/{domain}; use common only for components shared across multiple page domains",
+          "placementDecision": "common is only for components reused in 2 or more root page domains; otherwise choose the single matching domain path",
+          "legacyPolicy": "if a legacy component path differs from the current convention, migrate the path first; if it already matches, keep the path and only update internals",
           "domainExamples": {
             "app/login/page.tsx": "login",
             "app/signup/page.tsx": "signup",
@@ -89,7 +93,14 @@
         "배치규칙": [
           "공통 컴포넌트는 components/common/{component}를 사용한다.",
           "도메인 전용 컴포넌트는 components/{domain}/{component}를 사용한다.",
-          "domain은 root page segment를 사용한다. 예: app/login -> login."
+          "domain은 root page segment를 사용한다. 예: app/login -> login.",
+          "common은 2개 이상 root page domain에서 재사용될 때만 사용한다.",
+          "레거시 경로가 현재 컨벤션과 다르면 기존 PascalCase 폴더나 top-level components/{Component} 경로를 유지하지 말고 현재 경로 규칙으로 이동한다.",
+          "레거시 경로가 이미 현재 컨벤션과 같으면 경로는 유지하고 index.tsx 내부 구현만 수정한다."
+        ],
+        "안티패턴": [
+          "dashboard 전용인데 components/common/dashboardLayout에 두는 것",
+          "범용 카드인데 components/ProductCard 같은 PascalCase top-level 폴더를 유지하는 것"
         ],
         "금지규칙": [
           "useEffect(",

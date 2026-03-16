@@ -51,8 +51,27 @@ function formatContractHints(contracts = {}) {
     lines.push(`  path policy: ${pathPatterns.join(" | ")}`);
   }
 
+  if (pathPolicy.sharedPattern || pathPolicy.domainPattern) {
+    const parts = [];
+    if (pathPolicy.sharedPattern) {
+      parts.push(`shared=${pathPolicy.sharedPattern}`);
+    }
+    if (pathPolicy.domainPattern) {
+      parts.push(`domain=${pathPolicy.domainPattern}`);
+    }
+    lines.push(`  placement: ${parts.join(" | ")}`);
+  }
+
   if (pathPolicy.domainPolicy) {
     lines.push(`  domain: ${pathPolicy.domainPolicy}`);
+  }
+
+  if (pathPolicy.placementDecision) {
+    lines.push(`  choose path: ${pathPolicy.placementDecision}`);
+  }
+
+  if (pathPolicy.legacyPolicy) {
+    lines.push(`  legacy: ${pathPolicy.legacyPolicy}`);
   }
 
   const methodPolicy = contracts.methodPolicy ?? {};
