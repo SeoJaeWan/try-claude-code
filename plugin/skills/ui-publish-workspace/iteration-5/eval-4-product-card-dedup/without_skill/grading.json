@@ -1,0 +1,20 @@
+{
+  "eval_id": 4,
+  "eval_name": "product-card-deduplication",
+  "configuration": "without_skill",
+  "pass_rate": 0.778,
+  "passed": 7,
+  "failed": 2,
+  "total": 9,
+  "expectations": [
+    {"text": "단일 source of truth", "passed": true, "evidence": "ProductCard/index.tsx만 존재"},
+    {"text": "flat ProductCard.tsx 제거", "passed": true, "evidence": "flat file 제거됨"},
+    {"text": "final structure follows a folder-based index.tsx pattern", "passed": true, "evidence": "components/ProductCard/index.tsx"},
+    {"text": "폴더명이 camelCase이다 (productCard/, tcp folderCase: camelCase)", "passed": false, "evidence": "ProductCard/ — PascalCase"},
+    {"text": "components/common/ 하위에 배치된다", "passed": false, "evidence": "components/ProductCard/ — common/ 없음"},
+    {"text": "ProductCardProps 유지", "passed": true, "evidence": "export interface ProductCardProps"},
+    {"text": "import path 일관성", "passed": true, "evidence": "사용처 없음 — N/A"},
+    {"text": "visual affordance 보존", "passed": true, "evidence": "hover:shadow-md, group-hover:scale-105, badge, line-clamp-2"},
+    {"text": "forbidden 패턴 없음", "passed": true, "evidence": "해당 패턴 없음"}
+  ]
+}
