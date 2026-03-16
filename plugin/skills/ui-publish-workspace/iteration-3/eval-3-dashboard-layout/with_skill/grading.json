@@ -1,0 +1,66 @@
+{
+  "eval_id": 3,
+  "eval_name": "dashboard-layout-refactor",
+  "configuration": "with_skill",
+  "pass_rate": 1,
+  "passed": 11,
+  "failed": 0,
+  "total": 11,
+  "expectations": [
+    {
+      "text": "DashboardLayout이 folder 기반 index.tsx 패턴으로 정리된다",
+      "passed": true,
+      "evidence": "components/dashboard/dashboardLayout/index.tsx"
+    },
+    {
+      "text": "flat components/DashboardLayout.tsx가 그대로 남지 않는다",
+      "passed": true,
+      "evidence": "flat file 미존재"
+    },
+    {
+      "text": "폴더명이 camelCase이다 (dashboardLayout/, tcp folderCase: camelCase)",
+      "passed": true,
+      "evidence": "dashboard/dashboardLayout/ - camelCase confirmed"
+    },
+    {
+      "text": "components/dashboard/ 하위에 배치된다 (dashboard 도메인 전용 컴포넌트이므로)",
+      "passed": true,
+      "evidence": "components/dashboard/dashboardLayout/ - placed under dashboard domain"
+    },
+    {
+      "text": "sidebar 영역이 명확히 존재한다",
+      "passed": true,
+      "evidence": "<aside> with dashboard-sidebar testid + SidebarNav/SidebarFooter 서브컴포넌트"
+    },
+    {
+      "text": "header 영역이 명확히 존재한다",
+      "passed": true,
+      "evidence": "<header> with dashboard-header testid + DefaultHeaderRight"
+    },
+    {
+      "text": "main 콘텐츠 영역이 존재한다",
+      "passed": true,
+      "evidence": "<main> with dashboard-main testid"
+    },
+    {
+      "text": "children 중심 shell 역할이 유지된다",
+      "passed": true,
+      "evidence": "{children} in main"
+    },
+    {
+      "text": "responsive breakpoint class가 유지되거나 개선된다 (md:, lg: 등)",
+      "passed": true,
+      "evidence": "md:flex, md:w-60, lg:w-64, md:px-6, md:pb-6, lg:px-8"
+    },
+    {
+      "text": "사용처 import가 새 경로에 맞게 정리된다",
+      "passed": true,
+      "evidence": "import DashboardLayout from \"@/components/dashboard/dashboardLayout\""
+    },
+    {
+      "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "passed": true,
+      "evidence": "컴포넌트에 forbidden 패턴 없음 (useState UI state만 사용)"
+    }
+  ]
+}

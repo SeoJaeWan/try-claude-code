@@ -1,0 +1,56 @@
+{
+  "eval_id": 4,
+  "eval_name": "product-card-deduplication",
+  "configuration": "without_skill",
+  "pass_rate": 0.778,
+  "passed": 7,
+  "failed": 2,
+  "total": 9,
+  "expectations": [
+    {
+      "text": "ProductCard 구현이 하나의 source of truth로 정리된다",
+      "passed": true,
+      "evidence": "ProductCard/index.tsx만 존재 (flat 제거)"
+    },
+    {
+      "text": "flat components/ProductCard.tsx 파일이 남지 않는다",
+      "passed": true,
+      "evidence": "flat file 제거됨"
+    },
+    {
+      "text": "final structure follows a folder-based index.tsx pattern",
+      "passed": true,
+      "evidence": "components/ProductCard/index.tsx"
+    },
+    {
+      "text": "폴더명이 camelCase이다 (productCard/, tcp folderCase: camelCase)",
+      "passed": false,
+      "evidence": "ProductCard/ — PascalCase 사용 (camelCase productCard/ 아님)"
+    },
+    {
+      "text": "components/common/ 하위에 배치된다 (범용 컴포넌트이므로 common)",
+      "passed": false,
+      "evidence": "components/ProductCard/ — common/ 세그먼트 없음"
+    },
+    {
+      "text": "Props 인터페이스가 ProductCardProps를 유지한다",
+      "passed": true,
+      "evidence": "export interface ProductCardProps"
+    },
+    {
+      "text": "사용처 import path가 일관된다",
+      "passed": true,
+      "evidence": "사용처 없음 — N/A"
+    },
+    {
+      "text": "hover, image, price 등 visual affordance가 보존된다",
+      "passed": true,
+      "evidence": "hover:shadow-md, group-hover:scale-105, badge, line-clamp-2"
+    },
+    {
+      "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "passed": true,
+      "evidence": "해당 패턴 없음"
+    }
+  ]
+}
