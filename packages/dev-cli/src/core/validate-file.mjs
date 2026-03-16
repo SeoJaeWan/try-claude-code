@@ -325,13 +325,32 @@ function deriveMutationMethod(name) {
   return null;
 }
 
-function inferPublisherTarget(normalizedFilePath, dirSegments) {
+function inferPublisherTarget(normalizedFilePath, fileSegments) {
+  const componentsIndex = fileSegments.lastIndexOf("components");
+  if (componentsIndex === -1) {
+    return {
+      commandName: "component",
+      expectedEntryFileName: null,
+      expectedName: null,
+      validationArgs: {},
+      enforceExportNameMatch: false,
+      requirePropsType: false,
+      runPlacementValidation: false,
+      isDirectChild: false,
+      parentBaseDir: null,
+      violations: []
+    };
+  }
+
+  const scopedFileSegments = fileSegments.slice(componentsIndex);
+  const scopedDirSegments = scopedFileSegments.slice(0, -1);
+  const fullDirSegments = fileSegments.slice(0, -1);
   const violations = [];
-  const expectedName = dirSegments.at(-1)
-    ? applyCaseTransform(dirSegments.at(-1), "pascal")
+  const expectedName = scopedDirSegments.at(-1)
+    ? applyCaseTransform(scopedDirSegments.at(-1), "pascal")
     : null;
 
-  if (dirSegments.length < 3 || dirSegments.length > 4) {
+  if (scopedDirSegments.length < 3 || scopedDirSegments.length > 4) {
     violations.push(
       createViolation(
         "INVALID_COMPONENT_ENTRY_PATH",
@@ -347,24 +366,49 @@ function inferPublisherTarget(normalizedFilePath, dirSegments) {
     commandName: "component",
     expectedEntryFileName: "index.tsx",
     expectedName,
+    enforceExportNameMatch: true,
+    requirePropsType: true,
+    runPlacementValidation: true,
     validationArgs: {
       name: expectedName,
-      path: dirSegments.join("/")
+      path: scopedDirSegments.join("/")
     },
-    isDirectChild: dirSegments.length === 4,
-    parentBaseDir: dirSegments.length >= 4
-      ? dirSegments.slice(0, 3).join("/")
-      : dirSegments.join("/"),
+    isDirectChild: scopedDirSegments.length === 4,
+    parentBaseDir: scopedDirSegments.length >= 4
+      ? fullDirSegments.slice(0, -1).join("/")
+      : fullDirSegments.join("/"),
     violations
   };
 }
 
-function inferFrontendTarget(normalizedFilePath, dirSegments) {
-  if (dirSegments[1] === "utils") {
-    const expectedName = dirSegments.at(-1) ?? null;
+function inferFrontendTarget(normalizedFilePath, fileSegments) {
+  const hooksIndex = fileSegments.lastIndexOf("hooks");
+  if (hooksIndex === -1) {
+    return {
+      commandName: null,
+      expectedEntryFileName: null,
+      expectedName: null,
+      validationArgs: {},
+      violations: [
+        createViolation(
+          "UNSUPPORTED_VALIDATION_TARGET",
+          "Frontend validate-file only supports hooks/utils/* and hooks/apis/* files",
+          {
+            file: normalizedFilePath
+          }
+        )
+      ]
+    };
+  }
+
+  const scopedFileSegments = fileSegments.slice(hooksIndex);
+  const scopedDirSegments = scopedFileSegments.slice(0, -1);
+
+  if (scopedDirSegments[1] === "utils") {
+    const expectedName = scopedDirSegments.at(-1) ?? null;
     const violations = [];
 
-    if (dirSegments.length !== 4) {
+    if (scopedDirSegments.length !== 4) {
       violations.push(
         createViolation(
           "INVALID_HOOK_ENTRY_PATH",
@@ -382,15 +426,15 @@ function inferFrontendTarget(normalizedFilePath, dirSegments) {
       expectedName,
       validationArgs: {
         name: expectedName,
-        path: dirSegments.slice(0, -1).join("/")
+        path: scopedDirSegments.slice(0, -1).join("/")
       },
       violations
     };
   }
 
-  if (dirSegments[1] === "apis") {
-    const expectedName = dirSegments.at(-1) ?? null;
-    const kindSegment = dirSegments[3];
+  if (scopedDirSegments[1] === "apis") {
+    const expectedName = scopedDirSegments.at(-1) ?? null;
+    const kindSegment = scopedDirSegments[3];
     const kind = kindSegment === "queries"
       ? "query"
       : kindSegment === "mutations"
@@ -398,7 +442,7 @@ function inferFrontendTarget(normalizedFilePath, dirSegments) {
         : null;
     const violations = [];
 
-    if (dirSegments.length !== 5) {
+    if (scopedDirSegments.length !== 5) {
       violations.push(
         createViolation(
           "INVALID_API_HOOK_ENTRY_PATH",
@@ -430,7 +474,7 @@ function inferFrontendTarget(normalizedFilePath, dirSegments) {
         kind,
         method: kind === "query" ? "GET" : deriveMutationMethod(expectedName ?? ""),
         name: expectedName,
-        path: dirSegments.slice(0, -1).join("/")
+        path: scopedDirSegments.slice(0, -1).join("/")
       },
       violations
     };
@@ -479,44 +523,10 @@ function inferValidationTarget(role, rawFilePath) {
   }
 
   const segments = splitCliPath(normalizedFilePath);
-  const dirSegments = segments.slice(0, -1);
-  const firstSegment = segments[0];
   const target = role === "publisher"
-    ? firstSegment === "components"
-      ? inferPublisherTarget(normalizedFilePath, dirSegments)
-      : {
-          commandName: null,
-          expectedEntryFileName: null,
-          expectedName: null,
-          validationArgs: {},
-          violations: [
-            createViolation(
-              "UNSUPPORTED_VALIDATION_TARGET",
-              "Publisher validate-file only supports components/* files",
-              {
-                file: normalizedFilePath
-              }
-            )
-          ]
-        }
+    ? inferPublisherTarget(normalizedFilePath, segments)
     : role === "frontend"
-      ? firstSegment === "hooks"
-        ? inferFrontendTarget(normalizedFilePath, dirSegments)
-        : {
-            commandName: null,
-            expectedEntryFileName: null,
-            expectedName: null,
-            validationArgs: {},
-            violations: [
-              createViolation(
-                "UNSUPPORTED_VALIDATION_TARGET",
-                "Frontend validate-file only supports hooks/* files",
-                {
-                  file: normalizedFilePath
-                }
-              )
-            ]
-          }
+      ? inferFrontendTarget(normalizedFilePath, segments)
       : {
           commandName: null,
           expectedEntryFileName: null,
@@ -544,7 +554,9 @@ function getNamedDefaultExportViolations({
   commandName,
   defaultExport,
   expectedName,
-  typeNames
+  typeNames,
+  enforceExportNameMatch = true,
+  requirePropsType = commandName === "component"
 }) {
   const violations = [];
 
@@ -599,7 +611,12 @@ function getNamedDefaultExportViolations({
     return violations;
   }
 
-  if (defaultExport.name && expectedName && defaultExport.name !== expectedName) {
+  if (
+    enforceExportNameMatch &&
+    defaultExport.name &&
+    expectedName &&
+    defaultExport.name !== expectedName
+  ) {
     violations.push(
       createViolation(
         "EXPORT_NAME_MISMATCH",
@@ -624,7 +641,7 @@ function getNamedDefaultExportViolations({
     );
   }
 
-  if (commandName === "component") {
+  if (requirePropsType && expectedName) {
     const expectedPropsType = `${expectedName}Props`;
     if (!typeNames.has(expectedPropsType)) {
       violations.push(
@@ -642,11 +659,39 @@ function getNamedDefaultExportViolations({
   return violations;
 }
 
-function getTopLevelPublisherViolations(topLevelFunctions, expectedName) {
+function getForbiddenPatterns(profile, commandName) {
+  const command = profile.commands?.[commandName];
+  if (!command) {
+    return [];
+  }
+
+  const validatorPatterns = (command.validatorRules ?? [])
+    .filter((rule) => rule.kind === "forbiddenContentPatterns")
+    .flatMap((rule) => rule.patterns ?? []);
+  const contractPatterns = command.contracts?.logicBoundary?.forbiddenPatterns ?? [];
+
+  return [...new Set([...validatorPatterns, ...contractPatterns])];
+}
+
+function getForbiddenPatternViolations(filePath, content, patterns) {
+  return patterns
+    .filter((pattern) => content.includes(pattern))
+    .map((pattern) => createViolation(
+      "FORBIDDEN_PATTERN",
+      `Forbidden pattern found: ${pattern}`,
+      {
+        path: filePath,
+        pattern
+      }
+    ));
+}
+
+function getTopLevelPublisherViolations(topLevelFunctions, expectedName, defaultExport) {
   const violations = [];
+  const entryName = defaultExport?.name ?? expectedName ?? null;
 
   for (const declaration of topLevelFunctions.values()) {
-    if (declaration.name === expectedName || !functionReturnsJsx(declaration.node)) {
+    if (declaration.name === entryName || !functionReturnsJsx(declaration.node)) {
       continue;
     }
 
@@ -659,10 +704,12 @@ function getTopLevelPublisherViolations(topLevelFunctions, expectedName) {
           ? "Publisher component file must not define additional top-level subcomponents"
           : "Publisher component file must not define additional top-level JSX helpers",
         {
-          component: expectedName,
+          component: entryName,
           name: declaration.name
         },
-        `Move ${declaration.name} into its own component folder under ${expectedName}`
+        entryName
+          ? `Move ${declaration.name} into its own component folder under ${entryName}`
+          : `Move ${declaration.name} into its own file`
       )
     );
   }
@@ -695,7 +742,9 @@ function getPublisherStructureViolations(defaultExport, expectedName) {
           component: defaultExport.name ?? expectedName,
           name: declaration.name
         },
-        `Move ${declaration.name} into its own component folder under ${expectedName}`
+        defaultExport.name ?? expectedName
+          ? `Move ${declaration.name} into its own component folder under ${defaultExport.name ?? expectedName}`
+          : `Move ${declaration.name} into its own file`
       )
     );
   }
@@ -1109,16 +1158,6 @@ async function analyzeSingleFile({
     return result;
   }
 
-  const pathValidation = await validateRequest({
-    profile,
-    commandName: target.commandName,
-    args: target.validationArgs,
-    files: [],
-    repoRoot,
-    collectViolations: true
-  });
-  result.violations.push(...pathValidation.violations);
-
   let content;
   try {
     content = await readFile(absoluteFilePath, "utf8");
@@ -1137,20 +1176,40 @@ async function analyzeSingleFile({
     return result;
   }
 
-  const contentValidation = await validateRequest({
-    profile,
-    commandName: target.commandName,
-    args: target.validationArgs,
-    files: [
-      {
-        path: normalizedFilePath,
-        content
-      }
-    ],
-    repoRoot,
-    collectViolations: true
-  });
-  result.violations.push(...contentValidation.violations);
+  if (target.runPlacementValidation !== false) {
+    const pathValidation = await validateRequest({
+      profile,
+      commandName: target.commandName,
+      args: target.validationArgs,
+      files: [],
+      repoRoot,
+      collectViolations: true
+    });
+    result.violations.push(...pathValidation.violations);
+
+    const contentValidation = await validateRequest({
+      profile,
+      commandName: target.commandName,
+      args: target.validationArgs,
+      files: [
+        {
+          path: normalizedFilePath,
+          content
+        }
+      ],
+      repoRoot,
+      collectViolations: true
+    });
+    result.violations.push(...contentValidation.violations);
+  } else {
+    result.violations.push(
+      ...getForbiddenPatternViolations(
+        normalizedFilePath,
+        content,
+        getForbiddenPatterns(profile, target.commandName)
+      )
+    );
+  }
 
   let ast;
   try {
@@ -1176,13 +1235,19 @@ async function analyzeSingleFile({
       commandName: target.commandName,
       defaultExport: metadata.defaultExport,
       expectedName: target.expectedName,
-      typeNames: metadata.typeNames
+      typeNames: metadata.typeNames,
+      enforceExportNameMatch: target.enforceExportNameMatch,
+      requirePropsType: target.requirePropsType
     })
   );
 
   if (target.commandName === "component") {
     result.violations.push(
-      ...getTopLevelPublisherViolations(metadata.topLevelFunctions, target.expectedName)
+      ...getTopLevelPublisherViolations(
+        metadata.topLevelFunctions,
+        target.expectedName,
+        metadata.defaultExport
+      )
     );
     result.violations.push(
       ...getPublisherStructureViolations(metadata.defaultExport, target.expectedName)

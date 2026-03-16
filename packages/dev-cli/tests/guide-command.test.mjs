@@ -66,8 +66,9 @@ test("validate-file help --text는 파일 입력 형태와 검증 범위를 보�
   const result = runCli(tcpBin, ["help", "validate-file", "--text"]);
 
   assert.equal(result.status, 0);
-  assert.match(result.stdout, /validateFile: Validate publisher component files against path and AST rules/);
+  assert.match(result.stdout, /validateFile: Validate publisher UI files against placement and AST rules/);
   assert.match(result.stdout, /files: files\[\] \(positional \| json\)/);
   assert.match(result.stdout, /entry file: index\.tsx/);
+  assert.match(result.stdout, /validates: .*non-components path uses AST-only validation/);
   assert.match(result.stdout, /validates: folder segment camelCase/);
 });
