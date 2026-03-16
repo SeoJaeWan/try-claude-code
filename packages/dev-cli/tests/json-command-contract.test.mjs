@@ -7,15 +7,18 @@ test("spec-driven command는 --json 입력을 받고 기본적으로 파일 prev
   const result = runCli(tcpBin, [
     "component",
     "--json",
-    "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}"
+    "{\"name\":\"HelpContractPreviewCard\",\"path\":\"components/common/helpContractPreviewCard\"}"
   ]);
 
   assert.equal(result.status, 0);
   const payload = readJson(result.stdout);
   assert.equal(payload.ok, true);
   assert.equal(payload.command, "component");
-  assert.equal(payload.normalizedSpec.name, "ReviewCard");
-  assert.equal(payload.files[0].path, "components/common/reviewCard/index.tsx");
+  assert.equal(payload.normalizedSpec.name, "HelpContractPreviewCard");
+  assert.equal(
+    payload.files[0].path,
+    "components/common/helpContractPreviewCard/index.tsx"
+  );
   assert.equal(payload.files[0].status, "planned");
 });
 
@@ -108,6 +111,14 @@ test("tcp help JSON은 publisher component 계약을 AI가 읽을 수 있는 구
   assert.equal(
     payload.commands.component.contracts.pathPolicy.domainPolicy,
     "domain is the root page segment from app/{domain}; use common only for components shared across multiple page domains"
+  );
+  assert.equal(
+    payload.commands.component.contracts.pathPolicy.placementDecision,
+    "common is only for components reused in 2 or more root page domains; otherwise choose the single matching domain path"
+  );
+  assert.equal(
+    payload.commands.component.contracts.pathPolicy.legacyPolicy,
+    "if a legacy component path differs from the current convention, migrate the path first; if it already matches, keep the path and only update internals"
   );
   assert.equal(
     payload.commands.component.contracts.outputPolicy.functionStyle,
