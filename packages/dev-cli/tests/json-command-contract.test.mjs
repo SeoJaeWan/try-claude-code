@@ -82,4 +82,12 @@ test("tcf help JSON은 hook/apiHook 계약을 AI가 읽을 수 있는 구조로 
     payload.commands.apiHook.contracts.namingPolicy.mutationPatterns.PATCH,
     "^usePatch[A-Z][A-Za-z0-9]*$"
   );
+  assert.equal(
+    payload.commands.hook.contracts.pathPolicy.domainPolicy,
+    "domain is the root page segment from app/{domain}; use common only for hooks shared across multiple page domains"
+  );
+  assert.equal(
+    payload.commands.apiHook.contracts.pathPolicy.domainExamples["app/login/page.tsx"],
+    "login"
+  );
 });
