@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import useGetNotifications from "@/hooks/apis/queries/useGetNotifications";
+import useGetNotifications from "@/hooks/apis/notification/queries/useGetNotifications";
 
 type FilterType = "all" | "unread";
 

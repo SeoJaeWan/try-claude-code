@@ -8,12 +8,26 @@
     "공통규칙": [
       "훅은 use prefix를 사용한다.",
       "API 요청 로직은 apiHook으로 만들고 TanStack Query 기준을 따른다.",
-      "컴포넌트 전용 훅은 로컬 경로에 두고, 재사용되면 공유 훅으로 승격한다."
+      "비 API 훅은 hooks/utils/{domain} 또는 hooks/utils/common 경로에 둔다.",
+      "API 훅은 hooks/apis/{domain}/queries 또는 hooks/apis/{domain}/mutations 경로에 둔다.",
+      "domain은 owner feature root를 사용하고, 여러 도메인에서 공통이면 common을 사용한다."
     ]
   },
   "commands": {
     "hook": {
       "description": "Generate a non-API hook file",
+      "contracts": {
+        "hookKind": "custom",
+        "pathPolicy": {
+          "allowedPatterns": ["hooks/utils/{domain}", "hooks/utils/common"],
+          "forbiddenExamples": ["hooks/login", "app/login/hooks", "components/toggle/hooks"],
+          "domainPolicy": "domain is the owner feature root; use common only for cross-domain shared hooks"
+        },
+        "namingPolicy": {
+          "requiredPrefix": "use",
+          "requiredPattern": "^use[A-Z][A-Za-z0-9]*$"
+        }
+      },
       "guide": {
         "목적": "일반 훅 파일 껍질을 생성한다.",
         "입력규칙": [
@@ -24,6 +38,7 @@
         ],
         "출력규칙": [
           "출력 파일은 {path}/{name}/index.ts 이다.",
+          "경로는 hooks/utils/{domain} 또는 hooks/utils/common 만 허용한다.",
           "화살표 함수와 export default를 사용한다."
         ]
       },
@@ -59,7 +74,7 @@
         {
           "kind": "pathRoots",
           "field": "path",
-          "allowedRoots": ["hooks", "src", "app", "components"]
+          "allowedRoots": ["hooks"]
         },
         {
           "kind": "pathSegmentCase",
@@ -72,6 +87,12 @@
           "field": "name",
           "prefixKey": "hook",
           "message": "Hook name must start with use"
+        },
+        {
+          "kind": "hookPathPolicy",
+          "field": "path",
+          "baseSegments": ["hooks", "utils"],
+          "sharedSegment": "common"
         }
       ],
       "render": {
@@ -82,22 +103,54 @@
         "contextTokens": ["hookName"]
       },
       "examples": [
-        "tcf hook --json '{\"name\":\"useScroll\",\"path\":\"hooks/utils\"}'"
+        "tcf hook --json '{\"name\":\"useScroll\",\"path\":\"hooks/utils/common\"}'"
       ]
     },
     "apiHook": {
       "description": "Generate a TanStack Query API hook file",
+      "contracts": {
+        "hookKind": "api",
+        "pathPolicy": {
+          "requiredPattern": "hooks/apis/{domain}/{queries|mutations}",
+          "domainPolicy": "domain is the owner feature root",
+          "kindSegments": {
+            "query": "queries",
+            "mutation": "mutations"
+          }
+        },
+        "methodPolicy": {
+          "query": {
+            "requiredMethod": "GET"
+          },
+          "mutation": {
+            "allowedMethods": ["POST", "PUT", "PATCH", "DELETE"]
+          }
+        },
+        "namingPolicy": {
+          "queryPattern": "^useGet[A-Z][A-Za-z0-9]*$",
+          "mutationPatterns": {
+            "POST": "^usePost[A-Z][A-Za-z0-9]*$",
+            "PUT": "^usePut[A-Z][A-Za-z0-9]*$",
+            "PATCH": "^usePatch[A-Z][A-Za-z0-9]*$",
+            "DELETE": "^useDelete[A-Z][A-Za-z0-9]*$"
+          },
+          "forbiddenPrefixes": ["useFetch", "useSave", "useSubmit"]
+        }
+      },
       "guide": {
         "목적": "TanStack Query 기반 API 훅 파일을 생성한다.",
         "입력규칙": [
           "name, path, kind는 필수다.",
-          "kind는 query 또는 mutation만 허용한다."
+          "kind는 query 또는 mutation만 허용한다.",
+          "method는 query면 GET, mutation이면 POST/PUT/PATCH/DELETE를 사용한다."
         ],
         "이름규칙": [
-          "훅 이름은 use* 규칙을 사용한다."
+          "query 훅 이름은 useGet* 규칙을 사용한다.",
+          "mutation 훅 이름은 usePost*, usePut*, usePatch*, useDelete* 규칙을 사용한다."
         ],
         "출력규칙": [
           "출력 파일은 {path}/{name}/index.ts 이다.",
+          "경로는 hooks/apis/{domain}/queries 또는 hooks/apis/{domain}/mutations 만 허용한다.",
           "query는 queries, mutation은 mutations 경로를 사용해야 한다."
         ],
         "주의사항": [
@@ -113,6 +166,9 @@
         "enums": {
           "kind": ["query", "mutation"]
         }
+      },
+      "defaults": {
+        "method": "GET"
       },
       "namingPolicy": {
         "prefixes": {
@@ -131,6 +187,11 @@
           "reason": "hooks use use*"
         },
         {
+          "kind": "uppercase",
+          "field": "method",
+          "reason": "HTTP method uses uppercase"
+        },
+        {
           "kind": "path",
           "field": "path"
         }
@@ -139,7 +200,7 @@
         {
           "kind": "pathRoots",
           "field": "path",
-          "allowedRoots": ["hooks", "src", "app"]
+          "allowedRoots": ["hooks"]
         },
         {
           "kind": "pathSegmentCase",
@@ -154,6 +215,13 @@
           "message": "Hook name must start with use"
         },
         {
+          "kind": "apiHookMethodPolicy",
+          "kindField": "kind",
+          "methodField": "method",
+          "queryMethod": "GET",
+          "mutationMethods": ["POST", "PUT", "PATCH", "DELETE"]
+        },
+        {
           "kind": "apiHookPath",
           "field": "path",
           "kindField": "kind",
@@ -163,6 +231,20 @@
             "query": "queries",
             "mutation": "mutations"
           }
+        },
+        {
+          "kind": "apiHookNamePolicy",
+          "field": "name",
+          "kindField": "kind",
+          "methodField": "method",
+          "queryPrefix": "useGet",
+          "mutationPrefixMap": {
+            "POST": "usePost",
+            "PUT": "usePut",
+            "PATCH": "usePatch",
+            "DELETE": "useDelete"
+          },
+          "forbiddenPrefixes": ["useFetch", "useSave", "useSubmit"]
         }
       ],
       "render": {
@@ -177,7 +259,7 @@
         "contextTokens": ["hookName", "domainName"]
       },
       "examples": [
-        "tcf apiHook --json '{\"name\":\"useGetProduct\",\"path\":\"hooks/apis/product/queries\",\"kind\":\"query\"}'"
+        "tcf apiHook --json '{\"name\":\"useGetProduct\",\"path\":\"hooks/apis/product/queries\",\"kind\":\"query\",\"method\":\"GET\"}'"
       ]
     },
     "queryKey": {
@@ -406,7 +488,7 @@
         "kind": "batch"
       },
       "examples": [
-        "tcf batch --json '{\"ops\":[{\"id\":\"hook\",\"command\":\"hook\",\"spec\":{\"name\":\"useScroll\",\"path\":\"hooks/utils\"}}]}'"
+        "tcf batch --json '{\"ops\":[{\"id\":\"hook\",\"command\":\"hook\",\"spec\":{\"name\":\"useScroll\",\"path\":\"hooks/utils/common\"}}]}'"
       ]
     }
   }

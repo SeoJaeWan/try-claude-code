@@ -6,7 +6,7 @@
 
 ## Seed Context
 
-- `hooks/apis/queries/useGetNotifications/index.ts`
+- `hooks/apis/notification/queries/useGetNotifications/index.ts`
 - `components/NotificationList.tsx`
 - `app/dashboard/page.tsx`
 
@@ -19,5 +19,5 @@
 ## Review Points
 
 - 조회 로직이 component로 역류하지 않는다.
-- 훅 이름과 경로가 일관된다.
+- 훅 이름과 경로가 `hooks/apis/{domain}/queries/useGet*` 규칙과 일관된다.
 - `notifications-loading`, `notifications-error`, `notifications-empty` locator 계약이 깨지지 않는다.

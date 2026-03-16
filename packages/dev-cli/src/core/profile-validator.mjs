@@ -82,23 +82,141 @@ function assertNamePrefix(name, prefix, code, message) {
   }
 }
 
-function assertApiHookPath(pathValue, kind, rule) {
-  const normalized = normalizeCliPath(pathValue);
-  const suffix = rule.suffixMap?.[kind] ?? "queries";
+function assertHookPathPolicy(pathValue, rule) {
+  const segments = validateRelativePath(
+    pathValue,
+    "INVALID_HOOK_PATH",
+    "Hook path must be a relative repo path"
+  );
+  const expectedBaseSegments = rule.baseSegments ?? ["hooks", "utils"];
+  const [root, bucket, domain, ...rest] = segments;
 
-  if (!normalized.includes(rule.requiredSegment ?? "/apis/") && !normalized.startsWith(rule.apiRoot ?? "hooks/apis")) {
-    throw createCliError("INVALID_API_PATH", "API hook path must include hooks/apis", {
-      path: pathValue
-    });
+  if (
+    root !== expectedBaseSegments[0] ||
+    bucket !== expectedBaseSegments[1] ||
+    !domain ||
+    rest.length > 0
+  ) {
+    throw createCliError(
+      "INVALID_HOOK_PATH",
+      "Custom hook path must be hooks/utils/{domain} or hooks/utils/common",
+      {
+        path: pathValue,
+        expectedBaseSegments,
+        sharedSegment: rule.sharedSegment ?? "common"
+      }
+    );
+  }
+}
+
+function assertApiHookPath(pathValue, kind, rule) {
+  const suffix = rule.suffixMap?.[kind] ?? "queries";
+  const segments = validateRelativePath(
+    pathValue,
+    "INVALID_API_PATH",
+    "API hook path must be a relative repo path"
+  );
+  const [root, apisSegment, domain, pathSuffix, ...rest] = segments;
+
+  if (
+    root !== "hooks" ||
+    apisSegment !== "apis" ||
+    !domain ||
+    !pathSuffix ||
+    rest.length > 0
+  ) {
+    throw createCliError(
+      "INVALID_API_PATH",
+      "API hook path must be hooks/apis/{domain}/queries or hooks/apis/{domain}/mutations",
+      {
+        path: pathValue
+      }
+    );
   }
 
-  if (!normalized.endsWith(`/${suffix}`)) {
+  if (pathSuffix !== suffix) {
     throw createCliError(
       "INVALID_API_PATH",
       `API hook path must end with ${suffix}`,
       {
         path: pathValue,
         kind
+      }
+    );
+  }
+}
+
+function assertApiHookMethodPolicy(kind, method, rule) {
+  if (kind === "query") {
+    if (method !== rule.queryMethod) {
+      throw createCliError(
+        "INVALID_API_METHOD",
+        `Query API hooks must use ${rule.queryMethod}`,
+        {
+          kind,
+          method
+        }
+      );
+    }
+    return;
+  }
+
+  if (kind === "mutation") {
+    if (!(rule.mutationMethods ?? []).includes(method)) {
+      throw createCliError(
+        "INVALID_API_METHOD",
+        "Mutation API hooks must use POST, PUT, PATCH, or DELETE",
+        {
+          kind,
+          method,
+          allowedMethods: rule.mutationMethods ?? []
+        }
+      );
+    }
+    return;
+  }
+
+  throw createCliError("INVALID_API_METHOD", "Unsupported API hook kind", {
+    kind
+  });
+}
+
+function assertApiHookNamePolicy(name, kind, method, rule) {
+  for (const forbiddenPrefix of rule.forbiddenPrefixes ?? []) {
+    if (name.startsWith(forbiddenPrefix)) {
+      throw createCliError(
+        "INVALID_HOOK_NAME",
+        `API hook name must not start with ${forbiddenPrefix}`,
+        {
+          name,
+          forbiddenPrefix
+        }
+      );
+    }
+  }
+
+  const expectedPrefix = kind === "query"
+    ? rule.queryPrefix
+    : rule.mutationPrefixMap?.[method];
+
+  if (!expectedPrefix) {
+    throw createCliError("INVALID_HOOK_NAME", "Unsupported API hook naming policy", {
+      name,
+      kind,
+      method
+    });
+  }
+
+  const pattern = new RegExp(`^${expectedPrefix}[A-Z][A-Za-z0-9]*$`);
+  if (!pattern.test(name)) {
+    throw createCliError(
+      "INVALID_HOOK_NAME",
+      `API hook name must match ${expectedPrefix}*`,
+      {
+        name,
+        kind,
+        method,
+        expectedPrefix
       }
     );
   }
@@ -139,6 +257,14 @@ async function applyValidatorRule(rule, command, args, files, repoRoot, checks) 
     return;
   }
 
+  if (rule.kind === "hookPathPolicy") {
+    if (args[rule.field]) {
+      assertHookPathPolicy(args[rule.field], rule);
+      checks.push(`${rule.field}.hookPathPolicy=ok`);
+    }
+    return;
+  }
+
   if (rule.kind === "nameCase") {
     if (args[rule.field]) {
       assertNameCase(
@@ -168,10 +294,29 @@ async function applyValidatorRule(rule, command, args, files, repoRoot, checks) 
     return;
   }
 
+  if (rule.kind === "apiHookMethodPolicy") {
+    assertApiHookMethodPolicy(args[rule.kindField], args[rule.methodField], rule);
+    checks.push(`${rule.methodField}.apiHookMethodPolicy=ok`);
+    return;
+  }
+
   if (rule.kind === "apiHookPath") {
     if (args[rule.field]) {
       assertApiHookPath(args[rule.field], args[rule.kindField], rule);
       checks.push(`${rule.field}.apiHookPath=ok`);
+    }
+    return;
+  }
+
+  if (rule.kind === "apiHookNamePolicy") {
+    if (args[rule.field]) {
+      assertApiHookNamePolicy(
+        args[rule.field],
+        args[rule.kindField],
+        args[rule.methodField],
+        rule
+      );
+      checks.push(`${rule.field}.apiHookNamePolicy=ok`);
     }
     return;
   }

@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import useFetchOrder from "../index";
+import useGetOrderDetail from "../index";
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -12,7 +12,7 @@ const createWrapper = () => {
   );
 };
 
-describe("useFetchOrder", () => {
+describe("useGetOrderDetail", () => {
   beforeEach(() => {
     global.fetch = jest.fn();
   });
@@ -37,7 +37,7 @@ describe("useFetchOrder", () => {
 
     // Act
     const { result } = renderHook(
-      () => useFetchOrder({ orderId: "order-1" }),
+      () => useGetOrderDetail({ orderId: "order-1" }),
       { wrapper: createWrapper() },
     );
 
@@ -56,7 +56,7 @@ describe("useFetchOrder", () => {
 
     // Act
     const { result } = renderHook(
-      () => useFetchOrder({ orderId: "invalid-id" }),
+      () => useGetOrderDetail({ orderId: "invalid-id" }),
       { wrapper: createWrapper() },
     );
 
@@ -68,7 +68,7 @@ describe("useFetchOrder", () => {
   it("enabled가 false이면 쿼리를 실행하지 않는다", () => {
     // Arrange & Act
     const { result } = renderHook(
-      () => useFetchOrder({ orderId: "order-1", enabled: false }),
+      () => useGetOrderDetail({ orderId: "order-1", enabled: false }),
       { wrapper: createWrapper() },
     );
 
@@ -85,7 +85,7 @@ describe("useFetchOrder", () => {
     });
 
     // Act
-    const { result } = renderHook(() => useFetchOrder(), {
+    const { result } = renderHook(() => useGetOrderDetail(), {
       wrapper: createWrapper(),
     });
 
