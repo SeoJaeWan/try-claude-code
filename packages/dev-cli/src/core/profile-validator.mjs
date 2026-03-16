@@ -389,12 +389,22 @@ async function applyValidatorRule(rule, command, args, files, repoRoot, checks) 
   });
 }
 
+function toValidationViolation(error) {
+  return {
+    code: error?.code ?? "UNHANDLED_VALIDATION_ERROR",
+    severity: "error",
+    message: error instanceof Error ? error.message : String(error),
+    details: error?.details ?? {}
+  };
+}
+
 export async function validateRequest({
   profile,
   commandName,
   args,
   files,
-  repoRoot
+  repoRoot,
+  collectViolations = false
 }) {
   const baseCommand = profile.commands?.[commandName];
   const command = baseCommand
@@ -406,17 +416,28 @@ export async function validateRequest({
   if (!command) {
     return {
       ok: true,
-      checks: []
+      checks: [],
+      violations: []
     };
   }
 
   const checks = [];
+  const violations = [];
   for (const rule of command.validatorRules ?? []) {
-    await applyValidatorRule(rule, command, args, files, repoRoot, checks);
+    try {
+      await applyValidatorRule(rule, command, args, files, repoRoot, checks);
+    } catch (error) {
+      if (!collectViolations) {
+        throw error;
+      }
+
+      violations.push(toValidationViolation(error));
+    }
   }
 
   return {
-    ok: true,
-    checks
+    ok: violations.length === 0,
+    checks,
+    violations
   };
 }

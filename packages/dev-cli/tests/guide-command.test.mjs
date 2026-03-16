@@ -61,3 +61,13 @@ test("command-scoped help --text는 요청한 명령만 요약해서 보여준�
   assert.doesNotMatch(result.stdout, /^type:/m);
   assert.doesNotMatch(result.stdout, /^uiState:/m);
 });
+
+test("validate-file help --text는 파일 입력 형태와 검증 범위를 보여준다", () => {
+  const result = runCli(tcpBin, ["help", "validate-file", "--text"]);
+
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /validateFile: Validate publisher component files against path and AST rules/);
+  assert.match(result.stdout, /files: files\[\] \(positional \| json\)/);
+  assert.match(result.stdout, /entry file: index\.tsx/);
+  assert.match(result.stdout, /validates: folder segment camelCase/);
+});

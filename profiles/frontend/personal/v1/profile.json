@@ -260,6 +260,62 @@
             },
             "examples": ["tcf apiHook --json '{\"name\":\"useGetProduct\",\"path\":\"hooks/apis/product/queries\",\"kind\":\"query\",\"method\":\"GET\"}'"]
         },
+        "validateFile": {
+            "description": "Validate frontend hook files against path and AST rules",
+            "contracts": {
+                "inputShape": {
+                    "filesField": "files[]",
+                    "acceptedModes": ["positional", "json"]
+                },
+                "pathPolicy": {
+                    "requiredPatterns": [
+                        "hooks/utils/{domain}/{hookName}/index.ts",
+                        "hooks/utils/common/{hookName}/index.ts",
+                        "hooks/apis/{domain}/queries/{hookName}/index.ts",
+                        "hooks/apis/{domain}/mutations/{hookName}/index.ts"
+                    ]
+                },
+                "outputPolicy": {
+                    "entryFilePattern": "index.ts",
+                    "functionStyle": "arrow",
+                    "defaultExport": true
+                },
+                "validationCoverage": [
+                    "folder segment camelCase",
+                    "hook/apiHook path policy",
+                    "default export name/path match",
+                    "pure helper allowed",
+                    "JSX helper forbidden",
+                    "React component forbidden",
+                    "additional hook forbidden"
+                ]
+            },
+            "guide": {
+                "목적": "기존 훅 파일이 경로와 AST 규칙을 지키는지 검증한다.",
+                "입력규칙": [
+                    "파일 경로 1개 이상을 positional 또는 files 배열 JSON으로 전달한다."
+                ],
+                "출력규칙": [
+                    "results 배열로 파일별 위반 목록을 반환한다."
+                ],
+                "주의사항": [
+                    "entry file은 index.ts만 허용한다.",
+                    "buildParams, mapResponse 같은 순수 helper는 허용한다."
+                ]
+            },
+            "inputMode": "json",
+            "execution": {
+                "kind": "analysis"
+            },
+            "inputSchema": {
+                "required": ["files"],
+                "arrays": ["files"]
+            },
+            "examples": [
+                "tcf validate-file hooks/utils/common/useScroll/index.ts",
+                "tcf validate-file --json '{\"files\":[\"hooks/apis/auth/queries/useGetUser/index.ts\",\"hooks/utils/common/useScroll/index.ts\"]}'"
+            ]
+        },
         "queryKey": {
             "description": "Render a TanStack Query key snippet",
             "guide": {

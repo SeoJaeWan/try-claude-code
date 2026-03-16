@@ -9,7 +9,7 @@ test("publisher profile은 shared snippet command와 component uiState batch를 
 
   assert.deepEqual(
     Object.keys(profile.commands).sort(),
-    ["batch", "component", "function", "props", "type", "uiState"].sort()
+    ["batch", "component", "function", "props", "type", "uiState", "validateFile"].sort()
   );
 });
 
@@ -28,7 +28,8 @@ test("frontend profile은 계획된 file command와 snippet command를 모두 �
       "mapper",
       "props",
       "queryKey",
-      "type"
+      "type",
+      "validateFile"
     ].sort()
   );
 });

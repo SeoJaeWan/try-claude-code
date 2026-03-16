@@ -14,6 +14,10 @@
     "tcf": "node ./bin/tcf.mjs",
     "tcb": "node ./bin/tcb.mjs"
   },
+  "dependencies": {
+    "@babel/parser": "^7.29.0",
+    "@babel/traverse": "^7.29.0"
+  },
   "engines": {
     "node": ">=20"
   }

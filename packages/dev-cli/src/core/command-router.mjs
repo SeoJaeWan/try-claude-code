@@ -70,6 +70,17 @@ export function routeCommand(alias, parsed) {
     };
   }
 
+  if (first === "validateFile") {
+    return {
+      role,
+      action: "validateFile",
+      format,
+      commandName: "validateFile",
+      extraPositionals: parsed.positionals.slice(1),
+      options: parsed.options
+    };
+  }
+
   if (first === "guide") {
     return {
       role,
