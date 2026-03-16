@@ -6,6 +6,7 @@ export function normalizeCommandName(name) {
   const normalized = name ?? "";
   const map = {
     "api-hook": "apiHook",
+    "validate-file": "validateFile",
     "request-dto": "requestDto",
     "response-dto": "responseDto"
   };

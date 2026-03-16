@@ -93,6 +93,14 @@ test("tcf help JSON은 hook/apiHook 계약을 AI가 읽을 수 있는 구조로 
     payload.commands.apiHook.contracts.pathPolicy.domainExamples["app/login/page.tsx"],
     "login"
   );
+  assert.equal(
+    payload.commands.validateFile.contracts.outputPolicy.entryFilePattern,
+    "index.ts"
+  );
+  assert.deepEqual(
+    payload.commands.validateFile.contracts.inputShape.acceptedModes,
+    ["positional", "json"]
+  );
 });
 
 test("tcp help JSON은 publisher component 계약을 AI가 읽을 수 있는 구조로 노출한다", () => {
@@ -131,6 +139,14 @@ test("tcp help JSON은 publisher component 계약을 AI가 읽을 수 있는 구
   assert.equal(
     payload.commands.component.contracts.pathPolicy.domainExamples["app/profile/page.tsx"],
     "profile"
+  );
+  assert.equal(
+    payload.commands.validateFile.contracts.outputPolicy.entryFilePattern,
+    "index.tsx"
+  );
+  assert.deepEqual(
+    payload.commands.validateFile.contracts.inputShape.acceptedModes,
+    ["positional", "json"]
   );
 });
 

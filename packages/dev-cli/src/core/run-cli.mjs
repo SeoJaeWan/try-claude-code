@@ -11,10 +11,11 @@ import { formatOutput } from "./output.mjs";
 import { findRepoRoot } from "./path-utils.mjs";
 import { loadActiveProfile } from "./profile-loader.mjs";
 import { validateRequest } from "./profile-validator.mjs";
+import { validateFiles } from "./validate-file.mjs";
 import { createPublisherGuideModel } from "./publisher-guide-model.mjs";
 import { renderPublisherGuideHtml } from "./publisher-guide-html-renderer.mjs";
 import { createCliError } from "./recipe-utils.mjs";
-import { parseBatchSpec, parseCommandSpec } from "./spec-parser.mjs";
+import { parseBatchSpec, parseCommandSpec, parseValidateFileSpec } from "./spec-parser.mjs";
 
 function createSuccessPayload(payload) {
   return {
@@ -292,6 +293,36 @@ async function handleValidateCommand({ alias, role, route, repoRoot }) {
   });
 }
 
+async function handleValidateFileCommand({ alias, role, route, repoRoot }) {
+  const activeProfile = await resolveActiveProfile({
+    role,
+    repoRoot,
+    options: route.options
+  });
+  const { profile } = await loadActiveProfile({
+    repoRoot,
+    role,
+    mode: activeProfile.mode,
+    version: activeProfile.version
+  });
+  const spec = parseValidateFileSpec(route);
+  const validation = await validateFiles({
+    role,
+    profile,
+    filePaths: spec.files,
+    repoRoot
+  });
+
+  return {
+    alias,
+    role,
+    action: "validate-file",
+    activeProfile,
+    exitCode: validation.ok ? 0 : 1,
+    ...validation
+  };
+}
+
 export async function runCli({
   alias,
   argv = process.argv.slice(2),
@@ -328,6 +359,13 @@ export async function runCli({
       });
     } else if (route.action === "validate") {
       payload = await handleValidateCommand({
+        alias,
+        role: route.role,
+        route,
+        repoRoot
+      });
+    } else if (route.action === "validateFile") {
+      payload = await handleValidateFileCommand({
         alias,
         role: route.role,
         route,

@@ -132,3 +132,46 @@ export function parseBatchSpec(route) {
     ops
   };
 }
+
+export function parseValidateFileSpec(route) {
+  if (route.options.json) {
+    const parsed = parseJson(route.options.json, "validate-file");
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw createCliError(
+        "INVALID_JSON_SPEC",
+        "Command validate-file expects a JSON object.",
+        {
+          command: "validate-file"
+        }
+      );
+    }
+
+    if (!Array.isArray(parsed.files) || parsed.files.length === 0) {
+      throw createCliError(
+        "INVALID_VALIDATE_FILE_SPEC",
+        "Command validate-file requires a non-empty files array.",
+        {
+          command: "validate-file"
+        }
+      );
+    }
+
+    return {
+      files: parsed.files
+    };
+  }
+
+  if (!route.extraPositionals?.length) {
+    throw createCliError(
+      "VALIDATE_FILE_SPEC_REQUIRED",
+      "Command validate-file requires one or more file paths or --json.",
+      {
+        command: "validate-file"
+      }
+    );
+  }
+
+  return {
+    files: route.extraPositionals
+  };
+}

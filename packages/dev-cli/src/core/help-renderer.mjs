@@ -45,6 +45,18 @@ function formatTextCommand(name, command) {
 
 function formatContractHints(contracts = {}) {
   const lines = [];
+  const inputShape = contracts.inputShape ?? {};
+  if (inputShape.filesField) {
+    const acceptedModes = Array.isArray(inputShape.acceptedModes)
+      ? inputShape.acceptedModes.join(" | ")
+      : null;
+    lines.push(
+      acceptedModes
+        ? `  files: ${inputShape.filesField} (${acceptedModes})`
+        : `  files: ${inputShape.filesField}`
+    );
+  }
+
   const pathPolicy = contracts.pathPolicy ?? {};
   const pathPatterns = pathPolicy.requiredPatterns ?? pathPolicy.allowedPatterns ?? [];
   if (pathPatterns.length > 0) {
@@ -98,8 +110,14 @@ function formatContractHints(contracts = {}) {
   if (outputPolicy.functionStyle) {
     lines.push(`  function: ${outputPolicy.functionStyle}`);
   }
+  if (outputPolicy.entryFilePattern) {
+    lines.push(`  entry file: ${outputPolicy.entryFilePattern}`);
+  }
   if (outputPolicy.defaultExport === true) {
     lines.push("  export: default");
+  }
+  if (outputPolicy.propsInterfaceSuffix) {
+    lines.push(`  props: *${outputPolicy.propsInterfaceSuffix}`);
   }
 
   const logicBoundary = contracts.logicBoundary ?? {};
@@ -108,6 +126,11 @@ function formatContractHints(contracts = {}) {
   }
   if ((logicBoundary.forbiddenPatterns ?? []).length > 0) {
     lines.push(`  forbidden: ${logicBoundary.forbiddenPatterns.join(", ")}`);
+  }
+
+  const validationCoverage = contracts.validationCoverage ?? [];
+  if (validationCoverage.length > 0) {
+    lines.push(`  validates: ${validationCoverage.join(" | ")}`);
   }
 
   return lines;
