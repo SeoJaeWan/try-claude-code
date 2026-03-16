@@ -48,8 +48,9 @@ After `tcf` creates the scaffold, implement the business logic inside the genera
 6. Implement logic inside the generated files
 7. Run tests: `pnpm test` — confirm ALL pass (Green)
 8. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
-9. Commit changes
-10. Return results based on plan.md
+9. **Run `tcf validate-file` on every hook file you created or modified** — pass all files at once using `--json '{"files":["path1","path2"]}'`. If any violation is reported, fix the code to satisfy the rule and re-run validation until all pass. This step is non-negotiable because tcf enforces folder casing, path policy, export patterns, and naming rules that are easy to get wrong even when you scaffolded via tcf.
+10. Commit changes
+11. Return results based on plan.md
 
 ---
 
