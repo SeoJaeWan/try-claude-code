@@ -1,0 +1,98 @@
+{
+  "expectations": [
+    {
+      "text": "ProductCard 구현이 하나의 source of truth로 정리된다",
+      "passed": true,
+      "evidence": "Output contains a single ProductCard.tsx file. Transcript confirms the folder version (ProductCard/index.tsx) was deleted, leaving one implementation."
+    },
+    {
+      "text": "flat components/ProductCard.tsx 파일이 남지 않는다",
+      "passed": false,
+      "evidence": "The executor chose the flat-file pattern as the project convention. The output IS components/ProductCard.tsx — the flat file remains. The assertion expected the flat file to be removed in favor of the folder/index pattern, but the opposite happened."
+    },
+    {
+      "text": "최종 구조가 ProductCard/index.tsx 패턴을 따른다",
+      "passed": false,
+      "evidence": "The final output is components/ProductCard.tsx (flat file), not ProductCard/index.tsx. Transcript explicitly states: 'Project convention (per skill guide) is flat-file: ComponentName.tsx with export default function pattern.' The folder/index pattern was deleted."
+    },
+    {
+      "text": "Props 인터페이스가 ProductCardProps를 유지한다",
+      "passed": true,
+      "evidence": "Line 5 of ProductCard.tsx: 'export interface ProductCardProps' with all merged props (imageUrl, imageAlt, name, price, currency, badge, testId)."
+    },
+    {
+      "text": "사용처 import path가 일관된다",
+      "passed": true,
+      "evidence": "With only one ProductCard.tsx file remaining, all imports resolve to the same path. Transcript confirms typecheck passes with zero errors on ProductCard.tsx. No contradicting evidence, though the output directory only contains the component itself, not consumer files."
+    },
+    {
+      "text": "hover, image, price 등 visual affordance가 보존된다",
+      "passed": true,
+      "evidence": "ProductCard.tsx contains: group-hover:scale-105 (hover image zoom), aspect-square image container, hover:shadow-md (shadow transition), badge overlay with absolute positioning, price formatted with toLocaleString('ko-KR') and currency prefix."
+    },
+    {
+      "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "passed": true,
+      "evidence": "ProductCard.tsx contains no useEffect, fetch, axios, useQuery, or useMutation calls. The only import is 'next/image'. The component is purely presentational."
+    },
+    {
+      "text": "폴더명이 camelCase를 따른다 (productCard)",
+      "passed": false,
+      "evidence": "There is no folder — the output is a flat file (components/ProductCard.tsx). The assertion expected a productCard/ folder with camelCase naming, but the executor chose the flat-file convention instead."
+    },
+    {
+      "text": "components/common/productCard/ 하위에 배치된다",
+      "passed": false,
+      "evidence": "The output file is at components/ProductCard.tsx, not components/common/productCard/. The executor placed it directly under components/ as a flat file, not under common/."
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 4,
+    "total": 9,
+    "pass_rate": 0.56
+  },
+  "timing": {
+    "total_tokens": 20627,
+    "duration_ms": 117492,
+    "total_duration_seconds": 117.5
+  },
+  "claims": [
+    {
+      "claim": "Project convention is flat-file ComponentName.tsx with export default function pattern",
+      "type": "process",
+      "verified": false,
+      "evidence": "The transcript states this as fact from 'the skill guide', but four eval assertions (no-flat-file, folder-index-tsx, folder-camelCase, common-placement) all expect the folder/index pattern under components/common/. The skill guide and eval expectations are in direct conflict, or the executor misread the convention."
+    },
+    {
+      "claim": "components/ProductCard.tsx has zero type errors",
+      "type": "quality",
+      "verified": false,
+      "evidence": "Cannot independently verify — no typecheck output is included in outputs_dir. Must take transcript at face value."
+    },
+    {
+      "claim": "components/ProductCard.tsx is lint-clean",
+      "type": "quality",
+      "verified": false,
+      "evidence": "No lint output in outputs_dir. Transcript asserts this but it cannot be independently confirmed."
+    },
+    {
+      "claim": "All visual features from the richer version were merged",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Output file contains hover zoom (group-hover:scale-105), shadow transition (hover:shadow-md), badge overlay, aspect-square image, data-testid — all features listed from the folder/index version."
+    }
+  ],
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "reason": "Four of nine assertions (no-flat-file, folder-index-tsx, folder-camelCase, common-placement) all test the same underlying decision: whether the output uses folder/index under common/. These are highly correlated — if one fails, all four fail. This inflates the failure count without adding discriminating power. Consider collapsing into one structural assertion and adding assertions for other dimensions (e.g., verifying the deleted file is actually gone, or checking that consumer imports compile)."
+      },
+      {
+        "assertion": "사용처 import path가 일관된다",
+        "reason": "This assertion cannot be meaningfully verified because the outputs directory only contains ProductCard.tsx, not the files that import it. It trivially passes for any single-file output. Consider including a consumer file or import map in the outputs."
+      }
+    ],
+    "overall": "The eval has a structural bias: 4 of 9 assertions test the same folder-layout decision, so a single wrong convention choice causes a 44% failure rate. Meanwhile, important outcomes like 'deleted duplicate is actually gone' and 'consumer imports still compile' are not directly tested from the outputs."
+  }
+}

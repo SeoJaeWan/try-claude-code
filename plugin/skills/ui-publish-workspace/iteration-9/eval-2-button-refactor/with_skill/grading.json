@@ -1,0 +1,113 @@
+{
+  "expectations": [
+    {
+      "text": "결과 구조가 Button/index.tsx 또는 동급 folder/index 규칙을 따른다",
+      "passed": true,
+      "evidence": "Output file is at components/Button/index.tsx, following the folder/index.tsx convention consistent with ProductCard/index.tsx reference."
+    },
+    {
+      "text": "flat components/Button.tsx 파일이 그대로 남지 않는다",
+      "passed": true,
+      "evidence": "Transcript states flat file was already absent from filesystem (confirmed with ls). Fixture directory listing shows only Button/ folder, no Button.tsx flat file."
+    },
+    {
+      "text": "Props 인터페이스가 ButtonProps 접미사를 유지한다",
+      "passed": true,
+      "evidence": "Output file line 3: 'export interface ButtonProps { label: string; tone?: \"primary\" | \"secondary\"; }'"
+    },
+    {
+      "text": "컴포넌트가 화살표 함수 형태로 유지된다",
+      "passed": false,
+      "evidence": "The output uses 'export default function Button(...)' — a named function declaration, NOT an arrow function. The transcript explicitly describes converting FROM arrow function TO named function declaration as a convention fix. The assertion required the arrow function form to be preserved, but it was intentionally removed."
+    },
+    {
+      "text": "기존 label prop 동작이 보존된다",
+      "passed": true,
+      "evidence": "Output file line 8: Button accepts 'label: string' prop and renders it as button text via '{label}' on line 19, identical to original behavior."
+    },
+    {
+      "text": "기존 tone prop 동작이 보존된다",
+      "passed": true,
+      "evidence": "Output file line 8: 'tone = \"primary\"' default preserved. Lines 12-15: identical conditional Tailwind classes for primary (blue-600) vs secondary (border + zinc) tones."
+    },
+    {
+      "text": "showcase page의 import가 새 구조에 맞게 정리된다",
+      "passed": true,
+      "evidence": "Showcase page.tsx imports 'import Button from \"@/components/Button\"' which resolves correctly to Button/index.tsx. No change was needed since the import path already works with the folder-based structure."
+    },
+    {
+      "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "passed": true,
+      "evidence": "Output file contains none of these patterns. The component is a pure presentational component with only JSX rendering."
+    },
+    {
+      "text": "폴더명이 camelCase를 따른다 (button)",
+      "passed": false,
+      "evidence": "The output folder is 'Button' (PascalCase), not 'button' (camelCase). The assertion explicitly states camelCase with example 'button', but the actual output uses PascalCase 'Button'. The executor followed the existing ProductCard convention (PascalCase) rather than enforcing camelCase."
+    },
+    {
+      "text": "components/common/button/ 하위에 배치된다",
+      "passed": false,
+      "evidence": "Output is placed at components/Button/index.tsx, not components/common/button/index.tsx. The executor kept the component in its existing location rather than moving it under common/."
+    }
+  ],
+  "summary": {
+    "passed": 7,
+    "failed": 3,
+    "total": 10,
+    "pass_rate": 0.7
+  },
+  "execution_metrics": {
+    "output_chars": 492,
+    "transcript_chars": 2691
+  },
+  "timing": {
+    "total_tokens": 31702,
+    "executor_duration_seconds": 171.3,
+    "total_duration_seconds": 171.3
+  },
+  "claims": [
+    {
+      "claim": "The project convention requires 'export default function ComponentName' instead of const arrow functions",
+      "type": "process",
+      "verified": true,
+      "evidence": "ProductCard/index.tsx uses 'export default function ProductCard' pattern, confirming the convention claim. However, the eval assertion explicitly required arrow function form to be kept."
+    },
+    {
+      "claim": "The flat Button.tsx file was already absent from the filesystem",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Fixture directory listing shows no Button.tsx flat file, only Button/ folder."
+    },
+    {
+      "claim": "pnpm exec tsc --noEmit passed with no errors in Button or showcase files",
+      "type": "process",
+      "verified": false,
+      "evidence": "Cannot verify from outputs alone — only the transcript claims this. No tsc output captured in output files."
+    },
+    {
+      "claim": "Visual output is identical (same Tailwind classes, same conditional logic)",
+      "type": "quality",
+      "verified": true,
+      "evidence": "Comparing output Button/index.tsx to the original described in transcript — same Tailwind classes for primary (bg-blue-600) and secondary (border-zinc-300) tones, same conditional logic."
+    }
+  ],
+  "user_notes_summary": null,
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "컴포넌트가 화살표 함수 형태로 유지된다",
+        "reason": "This assertion conflicts with the actual project convention (which uses named function declarations). The executor correctly identified that arrow functions were a convention VIOLATION. Either the assertion should be updated to match the project convention, or the eval prompt should explicitly require preserving arrow function syntax."
+      },
+      {
+        "assertion": "폴더명이 camelCase를 따른다 (button)",
+        "reason": "The existing project convention uses PascalCase folders (ProductCard/, Button/). Asserting camelCase conflicts with the observable convention in the fixture. If camelCase is truly the desired convention, the fixture should include at least one reference component using camelCase folders."
+      },
+      {
+        "assertion": "components/common/button/ 하위에 배치된다",
+        "reason": "The fixture has no existing components under common/ that would establish this as a convention. The executor had no signal to move Button into common/. If this is the desired convention, the fixture should include reference components in common/ to make the convention discoverable."
+      }
+    ],
+    "overall": "Three assertions failed, but all three appear to test conventions that are not established by the fixture's reference implementations. The eval prompt says 'fix convention violations' but the conventions tested by these assertions are not inferable from the codebase. Consider either updating the fixture to establish these conventions explicitly, or aligning assertions with the conventions actually present in the fixture."
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "expectations": [
+    {
+      "text": "ReviewCard 컴포넌트 파일이 존재한다",
+      "passed": true,
+      "evidence": "components/ReviewCard.tsx exists in outputs with a full 100-line implementation including ReviewCardProps interface and default export function."
+    },
+    {
+      "text": "컴포넌트가 {ComponentName}/index.tsx 패턴으로 생성된다",
+      "passed": false,
+      "evidence": "The component is a flat file at components/ReviewCard.tsx, not components/ReviewCard/index.tsx (or reviewCard/index.tsx). The transcript confirms 'components/ReviewCard.tsx (already existed, no changes needed)' — no folder-based structure was created."
+    },
+    {
+      "text": "flat ReviewCard.tsx가 아닌 ReviewCard/index.tsx로 생성된다",
+      "passed": false,
+      "evidence": "The output is components/ReviewCard.tsx — a flat file. The executor found this pre-existing file and kept it as-is rather than restructuring into a folder pattern."
+    },
+    {
+      "text": "컴포넌트 이름이 PascalCase이다",
+      "passed": true,
+      "evidence": "The component is named 'ReviewCard' (PascalCase) as seen in 'export default function ReviewCard' on line 14 of ReviewCard.tsx."
+    },
+    {
+      "text": "Props 인터페이스가 ReviewCardProps 접미사를 따른다",
+      "passed": true,
+      "evidence": "Line 3 of ReviewCard.tsx: 'export interface ReviewCardProps' — matches the {ComponentName}Props naming convention."
+    },
+    {
+      "text": "사용자 아바타를 표시하는 요소가 존재한다",
+      "passed": true,
+      "evidence": "Lines 36-49 of ReviewCard.tsx: a div with data-testid='review-card-avatar' containing either an <img> element (when avatarUrl is provided) or an initials-based fallback div."
+    },
+    {
+      "text": "별점을 표시하는 요소가 존재한다",
+      "passed": true,
+      "evidence": "Lines 59-79 of ReviewCard.tsx: a div with data-testid='review-card-rating' and aria-label containing star rating. Renders 5 SVG stars, amber-colored for filled and zinc for empty based on the rating prop."
+    },
+    {
+      "text": "리뷰 본문을 표시하는 요소가 존재한다",
+      "passed": true,
+      "evidence": "Lines 84-89 of ReviewCard.tsx: a <p> element with data-testid='review-card-body' rendering the {body} prop."
+    },
+    {
+      "text": "작성일을 표시하는 요소가 존재한다",
+      "passed": true,
+      "evidence": "Lines 92-97 of ReviewCard.tsx: a <p> element with data-testid='review-card-date' rendering the {createdAt} prop."
+    },
+    {
+      "text": "Tailwind CSS 클래스가 스타일링에 사용된다",
+      "passed": true,
+      "evidence": "Tailwind classes are used extensively throughout ReviewCard.tsx: 'flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900', 'h-10 w-10 rounded-full', 'text-amber-400', etc."
+    },
+    {
+      "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "passed": true,
+      "evidence": "ReviewCard.tsx contains none of these forbidden patterns. The component is purely presentational — it receives props and renders JSX with no side effects or data fetching."
+    },
+    {
+      "text": "폴더명이 camelCase를 따른다 (reviewCard)",
+      "passed": false,
+      "evidence": "There is no folder at all. The component is a flat file at components/ReviewCard.tsx. Since assertions 2 and 3 about folder structure also failed, there is no camelCase folder to evaluate."
+    },
+    {
+      "text": "components/common/ 또는 components/{domain}/ 하위에 배치된다",
+      "passed": false,
+      "evidence": "The component is placed at components/ReviewCard.tsx — directly under the components/ root, not under components/common/ or components/{domain}/. The transcript shows the executor followed existing flat-file conventions (EmptyState.tsx, Button.tsx) rather than the expected nested structure."
+    }
+  ],
+  "summary": {
+    "passed": 9,
+    "failed": 4,
+    "total": 13,
+    "pass_rate": 0.69
+  },
+  "execution_metrics": {
+    "output_chars": 5063,
+    "transcript_chars": 3337
+  },
+  "timing": {
+    "executor_duration_seconds": 106.4,
+    "total_duration_seconds": 106.4
+  },
+  "claims": [
+    {
+      "claim": "ReviewCard.tsx already existed before execution",
+      "type": "process",
+      "verified": false,
+      "evidence": "The transcript states 'Found that components/ReviewCard.tsx already existed with a complete implementation' and 'already existed, no changes needed'. This is plausible but cannot be independently verified from the outputs alone — it could mean the skill's scaffold step created it, or it was truly pre-existing."
+    },
+    {
+      "claim": "TypeScript typecheck passed with no new errors",
+      "type": "process",
+      "verified": true,
+      "evidence": "Transcript Step 5 states 'Ran pnpm exec tsc --noEmit. All errors were pre-existing in unrelated files' with specific files listed. The component code uses proper TypeScript with typed props (union type for rating: 1|2|3|4|5)."
+    },
+    {
+      "claim": "Lint passed with no new errors",
+      "type": "process",
+      "verified": true,
+      "evidence": "Transcript Step 6 confirms 'Ran pnpm lint --fix. All errors were pre-existing in unrelated files. No errors in ReviewCard.tsx or the updated showcase page.'"
+    },
+    {
+      "claim": "Component follows existing project conventions (EmptyState.tsx pattern)",
+      "type": "quality",
+      "verified": true,
+      "evidence": "The component matches EmptyState.tsx conventions: 'use client' directive, named Props interface export, default function export, data-testid attributes, Tailwind styling. However, this contradicts the eval's expected convention of folder-based structure."
+    }
+  ],
+  "user_notes_summary": null,
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "컴포넌트가 {ComponentName}/index.tsx 패턴으로 생성된다",
+        "reason": "This assertion expects a folder/index.tsx pattern, but the eval workspace's existing components (EmptyState.tsx, Button.tsx) use flat files. The skill correctly mimicked the actual project convention. If the intent is to test folder-based structure, the workspace should already have examples of that pattern so the skill can learn from them — otherwise the assertion is testing whether the skill ignores project conventions."
+      },
+      {
+        "assertion": "폴더명이 camelCase를 따른다 (reviewCard)",
+        "reason": "This is logically dependent on the folder/index.tsx assertion. If the workspace doesn't use folder-based components, this assertion will always fail together with assertion 2. Consider making it conditional or consolidating with the folder structure assertion."
+      },
+      {
+        "assertion": "components/common/ 또는 components/{domain}/ 하위에 배치된다",
+        "reason": "The workspace has components at the root level (components/EmptyState.tsx, components/Button.tsx). If no components/common/ or components/{domain}/ structure exists in the project, the skill would have to invent this structure rather than follow existing conventions. The assertion tests something the workspace doesn't demonstrate."
+      }
+    ],
+    "overall": "Four assertions failed, but all four relate to directory structure conventions that the project workspace itself does not follow. The skill correctly matched the actual project conventions (flat files under components/). If these structural conventions are important, the workspace should contain at least one example of the expected pattern so the skill can learn from it. The content-level assertions (avatar, rating, body, date, Tailwind, no forbidden patterns) are well-designed and genuinely verify the component was built correctly."
+  }
+}

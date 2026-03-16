@@ -1,0 +1,60 @@
+{
+  "metadata": {
+    "skill_name": "ui-publish",
+    "skill_path": "plugin/skills/ui-publish",
+    "executor_model": "claude-sonnet-4-6",
+    "timestamp": "2026-03-16T00:00:00Z",
+    "evals_run": [1, 2, 3, 4],
+    "runs_per_configuration": 1,
+    "skill_change": "Iteration 10 — CLI mandatory: 'must run tcp for every task' + step-by-step (--help → match command → help text → --apply) + mandatory validate-file"
+  },
+  "runs": [
+    {"eval_id": 1, "eval_name": "review-card-creation", "configuration": "with_skill", "run_number": 1,
+     "result": {"pass_rate": 1.0, "passed": 13, "failed": 0, "total": 13, "time_seconds": 130.9, "tokens": 29653, "errors": 0}},
+    {"eval_id": 1, "eval_name": "review-card-creation", "configuration": "without_skill", "run_number": 1,
+     "result": {"pass_rate": 0.923, "passed": 12, "failed": 1, "total": 13, "time_seconds": 102.0, "tokens": 27580, "errors": 0}},
+    {"eval_id": 2, "eval_name": "button-convention-refactor", "configuration": "with_skill", "run_number": 1,
+     "result": {"pass_rate": 0.6, "passed": 6, "failed": 4, "total": 10, "time_seconds": 231.5, "tokens": 38882, "errors": 0}},
+    {"eval_id": 2, "eval_name": "button-convention-refactor", "configuration": "without_skill", "run_number": 1,
+     "result": {"pass_rate": 0.6, "passed": 6, "failed": 4, "total": 10, "time_seconds": 140.6, "tokens": 24131, "errors": 0}},
+    {"eval_id": 3, "eval_name": "dashboard-layout-refactor", "configuration": "with_skill", "run_number": 1,
+     "result": {"pass_rate": 0.545, "passed": 6, "failed": 5, "total": 11, "time_seconds": 136.8, "tokens": 24131, "errors": 0}},
+    {"eval_id": 3, "eval_name": "dashboard-layout-refactor", "configuration": "without_skill", "run_number": 1,
+     "result": {"pass_rate": 0.545, "passed": 6, "failed": 5, "total": 11, "time_seconds": 189.4, "tokens": 48772, "errors": 0}},
+    {"eval_id": 4, "eval_name": "product-card-deduplication", "configuration": "with_skill", "run_number": 1,
+     "result": {"pass_rate": 0.778, "passed": 7, "failed": 2, "total": 9, "time_seconds": 97.5, "tokens": 17943, "errors": 0}},
+    {"eval_id": 4, "eval_name": "product-card-deduplication", "configuration": "without_skill", "run_number": 1,
+     "result": {"pass_rate": 0.667, "passed": 6, "failed": 3, "total": 9, "time_seconds": 169.2, "tokens": 21485, "errors": 0}}
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 0.731, "stddev": 0.192, "min": 0.545, "max": 1.0},
+      "time_seconds": {"mean": 149.2, "stddev": 55.7, "min": 97.5, "max": 231.5},
+      "tokens": {"mean": 27652, "stddev": 8654, "min": 17943, "max": 38882}
+    },
+    "without_skill": {
+      "pass_rate": {"mean": 0.684, "stddev": 0.167, "min": 0.545, "max": 0.923},
+      "time_seconds": {"mean": 150.3, "stddev": 36.0, "min": 102.0, "max": 189.4},
+      "tokens": {"mean": 30492, "stddev": 12162, "min": 21485, "max": 48772}
+    },
+    "delta": {
+      "pass_rate": "+0.047",
+      "time_seconds": "-1.1",
+      "tokens": "-2840"
+    }
+  },
+  "notes": [
+    "ITERATION 10: with_skill 73.1% vs without_skill 68.4% (+4.7%p delta)",
+    "SKILL CHANGE: CLI mandatory — 'must run tcp' + step-by-step (--help → match → help text → --apply) + mandatory validate-file",
+    "FIRST TCP USAGE: Eval1 with_skill ran tcp component --apply AND tcp validate-file — FIRST EVER actual CLI call across all iterations",
+    "Eval1 with_skill 100% (13/13): tcp scaffold → common/reviewCard/index.tsx + validate-file 통과. 역대 최고",
+    "Eval1 without_skill 92% (12/13): 놀랍게도 common/reviewCard/index.tsx 생성 — variance 높음 (iter-8/9에서는 69%)",
+    "Eval2 동률 60%: 양쪽 모두 folder 유지 성공, BUT camelCase + common 미배치 + arrow function 미사용",
+    "Eval3 동률 55%: 양쪽 모두 in-place 리팩터. tcp component는 새 파일 생성용이라 기존 파일 migration에는 한계",
+    "Eval4 with 78% vs without 67% (+11%p): 양쪽 모두 folder/index 선택, with_skill이 import 일관성에서 우위",
+    "TCP CLI 사용 확인: Eval1 with_skill에서 tcp help component --text → tcp component --apply → tcp validate-file 전체 플로우 실행",
+    "iter-9 대비: with_skill 62.3% → 73.1% (+10.8%p 회복), delta 0%p → +4.7%p",
+    "without_skill baseline 상승: 62.3% → 68.4% (+6.1%p) — Eval1 variance(92%)가 주 원인",
+    "TOKEN EFFICIENCY: with_skill이 2,840 tokens 적게 사용 (tcp가 방향 설정을 빠르게 해줌)"
+  ]
+}

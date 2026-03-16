@@ -1,0 +1,121 @@
+{
+  "expectations": [
+    {
+      "text": "DashboardLayout이 folder 기반 index.tsx 패턴으로 정리된다",
+      "passed": false,
+      "evidence": "Output is a single flat file `DashboardLayout.tsx`, not a folder with `index.tsx`. The transcript confirms: 'components/DashboardLayout.tsx — Refactored with the following structural improvements'. No folder was created."
+    },
+    {
+      "text": "flat components/DashboardLayout.tsx가 그대로 남지 않는다",
+      "passed": false,
+      "evidence": "The transcript shows the file was refactored in-place at `components/DashboardLayout.tsx`. The flat file still exists — it was edited, not moved or replaced by a folder-based structure."
+    },
+    {
+      "text": "sidebar 영역이 명확히 존재한다",
+      "passed": true,
+      "evidence": "Output lines 192-202: `Sidebar` function renders `<aside>` with `data-testid=\"dashboard-sidebar\"`, composing `SidebarLogo`, `SidebarNav`, and `SidebarFooter` sub-components."
+    },
+    {
+      "text": "header 영역이 명확히 존재한다",
+      "passed": true,
+      "evidence": "Output lines 243-261: `Header` function renders `<header>` with `data-testid=\"dashboard-header\"`, composing `HeaderLeft` and header-right slot."
+    },
+    {
+      "text": "main 콘텐츠 영역이 존재한다",
+      "passed": true,
+      "evidence": "Output lines 303-308: `<main>` element with `data-testid=\"dashboard-main\"` wraps `{children}`."
+    },
+    {
+      "text": "children 중심 shell 역할이 유지된다",
+      "passed": true,
+      "evidence": "Output line 9: `children: ReactNode` in `DashboardLayoutProps`. Line 307: `{children}` rendered inside `<main>`. The component is a pure shell — accepts children and renders them in the main content area."
+    },
+    {
+      "text": "responsive breakpoint class가 유지되거나 개선된다",
+      "passed": true,
+      "evidence": "Multiple responsive breakpoint classes present: `hidden md:flex md:w-60 lg:w-64` (sidebar, line 195), `md:hidden` (mobile logo line 211, mobile nav line 266), `md:px-6 lg:px-8` (main content line 304), `md:block` (header title line 217)."
+    },
+    {
+      "text": "사용처 import가 새 경로에 맞게 정리된다",
+      "passed": false,
+      "evidence": "The file was not moved — it stayed at `components/DashboardLayout.tsx`. The transcript lists `app/dashboard/page.tsx` as read but does not mention updating its imports. Since the assertions expect a folder-based restructure (which didn't happen), the import update question is moot, but there is no evidence of import path changes in the outputs."
+    },
+    {
+      "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "passed": true,
+      "evidence": "Grep of the output file for `useEffect|fetch(|axios|useQuery|useMutation` returned zero matches. The file contains only imports for `Link` and `ReactNode`."
+    },
+    {
+      "text": "폴더명이 camelCase를 따른다 (dashboardLayout)",
+      "passed": false,
+      "evidence": "No folder was created. The output is a single flat file `DashboardLayout.tsx`. There is no `dashboardLayout/` directory."
+    },
+    {
+      "text": "components/dashboard/ 하위에 배치된다",
+      "passed": false,
+      "evidence": "The file remains at `components/DashboardLayout.tsx` per the transcript. It was not moved to `components/dashboard/`. No domain subfolder was created."
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 5,
+    "total": 11,
+    "pass_rate": 0.55
+  },
+  "execution_metrics": {
+    "output_chars": 9563,
+    "transcript_chars": 2805
+  },
+  "timing": {
+    "total_tokens": 24131,
+    "executor_duration_seconds": 136.8,
+    "total_duration_seconds": 136.8
+  },
+  "claims": [
+    {
+      "claim": "Icon constants were extracted to remove inline SVG duplication",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Output lines 25-114: Five named constants (IconHome, IconTodo, IconProfile, IconSettings, IconBell) defined at the top, used by reference in navLinks and JSX."
+    },
+    {
+      "claim": "Sub-sections broken into clearly named sub-functions",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Output contains SidebarLogo (line 149), SidebarNav (163), SidebarFooter (181), Sidebar (192), HeaderLeft (205), HeaderRightDefault (225), Header (243), MobileBottomNav (263) — all separate named functions."
+    },
+    {
+      "claim": "All data-testid attributes preserved",
+      "type": "quality",
+      "verified": true,
+      "evidence": "data-testid attributes present: sidebar-logo, sidebar-nav-*, dashboard-sidebar, header-logo-mobile, dashboard-header-title, dashboard-header, dashboard-header-right, dashboard-mobile-nav, mobile-nav-*, dashboard-main. Cannot verify against original but the output has comprehensive test IDs."
+    },
+    {
+      "claim": "Visual output unchanged — Same Tailwind classes, same responsive breakpoints, same dark mode support",
+      "type": "quality",
+      "verified": false,
+      "evidence": "Cannot fully verify without the original file to diff against. Dark mode classes (dark:) are present throughout. Responsive classes (md:, lg:) are present. But exact equivalence to the original is unverifiable from the outputs alone."
+    },
+    {
+      "claim": "pnpm exec tsc --noEmit — No errors in DashboardLayout.tsx",
+      "type": "process",
+      "verified": false,
+      "evidence": "Transcript states this but no TypeScript output is included in the outputs directory. Must be taken on trust from the transcript."
+    }
+  ],
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "사용처 import가 새 경로에 맞게 정리된다",
+        "reason": "This assertion is only meaningful if the file is actually moved. If the executor refactors in-place (no path change), imports are trivially unchanged. Consider making this assertion conditional on folder-structure passing, or rephrasing to 'consumer files import from the new folder-based path'."
+      },
+      {
+        "reason": "The five structural assertions (folder-structure, flat-file-removed, folder-camelCase, domain-placement, import-updated) all test the same underlying outcome: 'was the file reorganized into a folder under components/dashboard/'. Consider collapsing them into fewer, more targeted assertions to reduce redundancy and make the pass rate more meaningful."
+      },
+      {
+        "reason": "No assertion checks that the refactored component is functionally equivalent to the original (e.g., same exports, same prop interface, same rendered structure). The executor could produce a completely different component that happens to have sidebar/header/main sections and still pass the content assertions."
+      }
+    ],
+    "overall": "The assertions split into two clusters: 5 about folder reorganization (all failed) and 6 about component quality (all passed). The folder assertions are redundant with each other. The content assertions are reasonable but lack a diff-equivalence check against the original."
+  }
+}
