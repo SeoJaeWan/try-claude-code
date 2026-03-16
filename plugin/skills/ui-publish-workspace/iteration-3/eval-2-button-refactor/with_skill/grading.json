@@ -1,0 +1,21 @@
+{
+  "eval_id": 2,
+  "eval_name": "button-convention-refactor",
+  "configuration": "with_skill",
+  "pass_rate": 1.0,
+  "passed": 10,
+  "failed": 0,
+  "total": 10,
+  "expectations": [
+    {"text": "결과 구조가 folder/index.tsx 규칙을 따른다", "passed": true, "evidence": "components/common/button/index.tsx"},
+    {"text": "flat components/Button.tsx 파일이 그대로 남지 않는다", "passed": true, "evidence": "flat file 미존재"},
+    {"text": "폴더명이 camelCase이다 (button/, tcp folderCase: camelCase)", "passed": true, "evidence": "common/button/ — camelCase 확인"},
+    {"text": "components/common/ 하위에 배치된다", "passed": true, "evidence": "components/common/button/ — common 하위 배치"},
+    {"text": "Props 인터페이스가 ButtonProps 접미사를 유지한다", "passed": true, "evidence": "export interface ButtonProps"},
+    {"text": "컴포넌트가 화살표 함수 형태로 유지된다", "passed": true, "evidence": "const Button = ({ label, tone = \"primary\" }: ButtonProps) => { ... }"},
+    {"text": "기존 label prop 동작이 보존된다", "passed": true, "evidence": "label: string prop 유지"},
+    {"text": "기존 tone prop 동작이 보존된다", "passed": true, "evidence": "tone?: \"primary\" | \"secondary\" 유지"},
+    {"text": "showcase page의 import가 새 구조에 맞게 정리된다", "passed": true, "evidence": "import Button from \"@/components/common/button\""},
+    {"text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다", "passed": true, "evidence": "해당 패턴 없음"}
+  ]
+}
