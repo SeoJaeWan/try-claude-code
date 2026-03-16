@@ -1,0 +1,26 @@
+{
+  "publisher": {
+    "personal": {
+      "v1": {
+        "resolvedVersion": "v1.0.0",
+        "ref": "f0d6fa0cf92dee319efc4eb51e001ba8cfc488ec"
+      }
+    }
+  },
+  "frontend": {
+    "personal": {
+      "v1": {
+        "resolvedVersion": "v1.0.0",
+        "ref": "f0d6fa0cf92dee319efc4eb51e001ba8cfc488ec"
+      }
+    }
+  },
+  "backend": {
+    "personal": {
+      "v1": {
+        "resolvedVersion": "v1.0.0",
+        "ref": "f0d6fa0cf92dee319efc4eb51e001ba8cfc488ec"
+      }
+    }
+  }
+}

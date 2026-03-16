@@ -2,6 +2,12 @@ import {
   getProfileSelection,
   readConfigs
 } from "./config-store.mjs";
+import {
+  assertProfileVersion,
+  createProfileRef,
+  extractMajorProfileVersion,
+  isExactProfileVersion
+} from "./version-utils.mjs";
 
 function parseProfileInput(rawValue) {
   if (!rawValue) {
@@ -30,7 +36,7 @@ function parseProfileInput(rawValue) {
 
   return {
     mode: rawValue,
-    version: null
+    requestedVersion: null
   };
 }
 
@@ -41,52 +47,113 @@ export async function resolveActiveProfile({
 }) {
   const explicitProfile = parseProfileInput(options.profile);
   if (explicitProfile?.mode) {
+    const requestedVersion = assertProfileVersion(
+      explicitProfile.version ?? explicitProfile.requestedVersion ?? options.version ?? "v1"
+    );
+
     return {
       source: "explicit",
       mode: explicitProfile.mode,
-      version: explicitProfile.version ?? options.version ?? "v1"
+      version: requestedVersion,
+      requestedVersion,
+      majorVersion: extractMajorProfileVersion(requestedVersion),
+      ...(isExactProfileVersion(requestedVersion)
+        ? {
+            resolvedVersion: requestedVersion,
+            resolvedRef: createProfileRef({
+              role,
+              mode: explicitProfile.mode,
+              resolvedVersion: requestedVersion
+            })
+          }
+        : {})
     };
   }
 
   if (options.mode) {
     const explicitMode = parseProfileInput(options.mode);
+    const requestedVersion = assertProfileVersion(
+      explicitMode.version ?? explicitMode.requestedVersion ?? options.version ?? "v1"
+    );
+
     return {
       source: "explicit",
       mode: explicitMode.mode,
-      version: explicitMode.version ?? options.version ?? "v1"
+      version: requestedVersion,
+      requestedVersion,
+      majorVersion: extractMajorProfileVersion(requestedVersion),
+      ...(isExactProfileVersion(requestedVersion)
+        ? {
+            resolvedVersion: requestedVersion,
+            resolvedRef: createProfileRef({
+              role,
+              mode: explicitMode.mode,
+              resolvedVersion: requestedVersion
+            })
+          }
+        : {})
     };
   }
 
   if (options.version) {
+    const requestedVersion = assertProfileVersion(options.version);
+
     return {
       source: "explicit",
       mode: "personal",
-      version: options.version
+      version: requestedVersion,
+      requestedVersion,
+      majorVersion: extractMajorProfileVersion(requestedVersion),
+      ...(isExactProfileVersion(requestedVersion)
+        ? {
+            resolvedVersion: requestedVersion,
+            resolvedRef: createProfileRef({
+              role,
+              mode: "personal",
+              resolvedVersion: requestedVersion
+            })
+          }
+        : {})
     };
   }
 
   const { globalConfig, repoConfig } = await readConfigs(repoRoot);
   const repoSelection = getProfileSelection(repoConfig, role);
-  if (repoSelection?.mode && repoSelection?.version) {
+  if (repoSelection?.mode && repoSelection?.requestedVersion) {
+    const requestedVersion = assertProfileVersion(repoSelection.requestedVersion);
+
     return {
       source: "repo",
       mode: repoSelection.mode,
-      version: repoSelection.version
+      version: requestedVersion,
+      requestedVersion,
+      majorVersion: extractMajorProfileVersion(requestedVersion),
+      resolvedVersion: repoSelection.resolvedVersion ?? null,
+      resolvedRef: repoSelection.resolvedRef ?? null
     };
   }
 
   const globalSelection = getProfileSelection(globalConfig, role);
-  if (globalSelection?.mode && globalSelection?.version) {
+  if (globalSelection?.mode && globalSelection?.requestedVersion) {
+    const requestedVersion = assertProfileVersion(globalSelection.requestedVersion);
+
     return {
       source: "global",
       mode: globalSelection.mode,
-      version: globalSelection.version
+      version: requestedVersion,
+      requestedVersion,
+      majorVersion: extractMajorProfileVersion(requestedVersion),
+      resolvedVersion: globalSelection.resolvedVersion ?? null,
+      resolvedRef: globalSelection.resolvedRef ?? null
     };
   }
 
+  const requestedVersion = "v1";
   return {
     source: "default",
     mode: "personal",
-    version: "v1"
+    version: requestedVersion,
+    requestedVersion,
+    majorVersion: requestedVersion
   };
 }

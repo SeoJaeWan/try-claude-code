@@ -1,5 +1,5 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import os from "node:os";
 import { cp, mkdtemp, mkdir, writeFile } from "node:fs/promises";
@@ -9,15 +9,33 @@ import { loadActiveProfile } from "../src/core/profile-loader.mjs";
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 
 export const repoRoot = path.resolve(currentDir, "..", "..", "..");
-export const tcpBin = path.join(repoRoot, "packages", "dev-cli", "bin", "tcp.mjs");
-export const tcfBin = path.join(repoRoot, "packages", "dev-cli", "bin", "tcf.mjs");
-export const tcbBin = path.join(repoRoot, "packages", "dev-cli", "bin", "tcb.mjs");
+export const tcpBin = path.join(repoRoot, "packages", "tcp", "bin", "tcp.mjs");
+export const tcfBin = path.join(repoRoot, "packages", "tcf", "bin", "tcf.mjs");
+export const tcbBin = path.join(repoRoot, "packages", "tcb", "bin", "tcb.mjs");
+export const profileRegistryUrl = pathToFileURL(
+  path.join(repoRoot, "profiles", "registry.json")
+).href;
+export const profileRawBaseUrl = pathToFileURL(repoRoot).href;
+export const profileCacheDir = path.join(os.tmpdir(), "try-claude-dev-cli-test-cache");
+
+export function createCliEnv(additional = {}) {
+  return {
+    ...process.env,
+    TRY_CLAUDE_PROFILE_REGISTRY_URL: profileRegistryUrl,
+    TRY_CLAUDE_PROFILE_RAW_BASE_URL: profileRawBaseUrl,
+    TRY_CLAUDE_PROFILE_CACHE_DIR: profileCacheDir,
+    ...additional
+  };
+}
 
 export function runCli(binPath, argv, options = {}) {
+  const { env, ...restOptions } = options;
+
   return spawnSync(process.execPath, [binPath, ...argv], {
     cwd: repoRoot,
     encoding: "utf8",
-    ...options
+    env: createCliEnv(env),
+    ...restOptions
   });
 }
 
@@ -30,7 +48,8 @@ export async function loadProfile(role, mode = "personal", version = "v1") {
     repoRoot,
     role,
     mode,
-    version
+    version,
+    localProfileRoot: repoRoot
   });
 
   return profile;
