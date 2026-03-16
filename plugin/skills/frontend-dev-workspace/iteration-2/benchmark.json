@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "skill_name": "frontend-dev",
+    "skill_path": "plugin/skills/frontend-dev",
+    "baseline_skill_path": "plugin/skills/old-frontend-dev",
+    "executor_model": "claude-opus-4-6",
+    "timestamp": "2026-03-16T00:00:00Z",
+    "iteration": 2,
+    "change_description": "SKILL.md에서 tcf CLI 사용 예시/Path policy/Naming policy 제거, tcf --help로 위임",
+    "evals_run": [1, 2, 3, 4, 5],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 1, "eval_name": "login-hook-split", "configuration": "with_skill", "run_number": 1,
+      "result": {"pass_rate": 0.875, "passed": 7, "failed": 1, "total": 8, "time_seconds": 149.3, "tokens": 32939, "errors": 0}
+    },
+    {
+      "eval_id": 1, "eval_name": "login-hook-split", "configuration": "without_skill", "run_number": 1,
+      "result": {"pass_rate": 0.625, "passed": 5, "failed": 3, "total": 8, "time_seconds": 158.4, "tokens": 37074, "errors": 0}
+    },
+    {
+      "eval_id": 2, "eval_name": "notification-query", "configuration": "with_skill", "run_number": 1,
+      "result": {"pass_rate": 1.0, "passed": 8, "failed": 0, "total": 8, "time_seconds": 154.1, "tokens": 34695, "errors": 0}
+    },
+    {
+      "eval_id": 2, "eval_name": "notification-query", "configuration": "without_skill", "run_number": 1,
+      "result": {"pass_rate": 1.0, "passed": 8, "failed": 0, "total": 8, "time_seconds": 128.1, "tokens": 26456, "errors": 0}
+    },
+    {
+      "eval_id": 3, "eval_name": "order-query-hook", "configuration": "with_skill", "run_number": 1,
+      "result": {"pass_rate": 1.0, "passed": 8, "failed": 0, "total": 8, "time_seconds": 182.2, "tokens": 36447, "errors": 0}
+    },
+    {
+      "eval_id": 3, "eval_name": "order-query-hook", "configuration": "without_skill", "run_number": 1,
+      "result": {"pass_rate": 1.0, "passed": 8, "failed": 0, "total": 8, "time_seconds": 134.4, "tokens": 29526, "errors": 0}
+    },
+    {
+      "eval_id": 4, "eval_name": "profile-edit", "configuration": "with_skill", "run_number": 1,
+      "result": {"pass_rate": 1.0, "passed": 8, "failed": 0, "total": 8, "time_seconds": 194.8, "tokens": 44110, "errors": 0}
+    },
+    {
+      "eval_id": 4, "eval_name": "profile-edit", "configuration": "without_skill", "run_number": 1,
+      "result": {"pass_rate": 0.625, "passed": 5, "failed": 3, "total": 8, "time_seconds": 139.3, "tokens": 32371, "errors": 0}
+    },
+    {
+      "eval_id": 5, "eval_name": "signup-hook-split", "configuration": "with_skill", "run_number": 1,
+      "result": {"pass_rate": 1.0, "passed": 8, "failed": 0, "total": 8, "time_seconds": 185.2, "tokens": 39840, "errors": 0}
+    },
+    {
+      "eval_id": 5, "eval_name": "signup-hook-split", "configuration": "without_skill", "run_number": 1,
+      "result": {"pass_rate": 1.0, "passed": 8, "failed": 0, "total": 8, "time_seconds": 152.9, "tokens": 36751, "errors": 0}
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 0.975, "stddev": 0.06, "min": 0.875, "max": 1.0},
+      "time_seconds": {"mean": 173.1, "stddev": 19.4, "min": 149.3, "max": 194.8},
+      "tokens": {"mean": 37606, "stddev": 4216, "min": 32939, "max": 44110}
+    },
+    "without_skill": {
+      "pass_rate": {"mean": 0.85, "stddev": 0.18, "min": 0.625, "max": 1.0},
+      "time_seconds": {"mean": 142.6, "stddev": 12.5, "min": 128.1, "max": 158.4},
+      "tokens": {"mean": 32436, "stddev": 4243, "min": 26456, "max": 37074}
+    },
+    "delta": {
+      "pass_rate": "+0.125",
+      "time_seconds": "+30.5",
+      "tokens": "+5170"
+    }
+  },
+  "comparison_with_iteration_1": {
+    "iteration_1": {"with_skill_pass_rate": 0.93, "old_skill_pass_rate": 0.88, "delta": "+0.05"},
+    "iteration_2": {"with_skill_pass_rate": 0.975, "old_skill_pass_rate": 0.85, "delta": "+0.125"},
+    "observation": "CLI 예시 제거 후 with_skill pass_rate 0.93→0.975 상승 (domain assertion 보정 반영), old_skill은 0.88→0.85 하락. 격차 0.05→0.125로 확대."
+  },
+  "notes": [
+    "with_skill(frontend-dev/tcf --help 위임)은 old_skill 대비 pass_rate +12.5%p 향상 (0.975 vs 0.85)",
+    "iteration-1 대비 with_skill pass_rate 상승 (0.93→0.975): CLI 예시 제거가 성능을 저하시키지 않음 (domain assertion 보정 포함)",
+    "old_skill은 Eval1에서 hooks/utils 대신 app/login/hooks/에 배치 (coding-rules.md의 page-specific 규칙 우선적용)",
+    "old_skill은 Eval4에서 function declaration 사용 (arrow function 컨벤션 미준수)",
+    "with_skill은 Eval1에서 domain을 auth 대신 login으로 선택 — tcf 경로 규칙은 준수하나 기대 domain과 다름",
+    "with_skill은 평균 30.5초 더 소요 — tcf --help 읽기 + CLI scaffold 실행 오버헤드",
+    "Eval2, Eval3은 양쪽 모두 100% — 비차별적 eval (iteration-1과 동일 패턴)",
+    "Eval5 signup에서 old_skill도 8/8 달성 — coding-rules.md에서 auth=mutation 규칙을 정확히 따름"
+  ]
+}

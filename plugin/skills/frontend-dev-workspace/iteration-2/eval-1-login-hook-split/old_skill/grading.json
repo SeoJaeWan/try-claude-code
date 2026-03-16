@@ -1,0 +1,13 @@
+{
+  "expectations": [
+    {"text": "form 상태/유효성 검증을 담당하는 훅 파일이 hooks/utils/login 경로에 생성된다", "passed": false, "evidence": "app/login/hooks/useLoginForm/index.ts에 생성됨. hooks/utils/login이 아닌 app/login/hooks/ 경로 사용."},
+    {"text": "submit/API 호출을 담당하는 훅 파일이 hooks/apis/auth/mutations/usePostLogin 경로에 생성된다", "passed": false, "evidence": "별도의 submit/API 훅이 생성되지 않음. handleSubmit이 useLoginForm 내부에 포함됨."},
+    {"text": "훅 이름이 use 접두사로 시작한다", "passed": true, "evidence": "useLoginForm — use 접두사 사용"},
+    {"text": "비 API 훅이 hooks/utils/{domain}/{hookName}/index.ts 패턴으로 생성된다", "passed": false, "evidence": "app/login/hooks/useLoginForm/index.ts — hooks/utils/{domain} 패턴이 아닌 app/ 하위 경로에 배치"},
+    {"text": "page.tsx에 직접적인 useState 호출이 남지 않는다", "passed": true, "evidence": "page.tsx에서 useState가 모두 제거됨"},
+    {"text": "page.tsx가 생성된 훅을 import하여 조합한다", "passed": true, "evidence": "import useLoginForm from './hooks/useLoginForm' 사용"},
+    {"text": "이벤트 핸들러가 handle 접두사를 사용한다", "passed": true, "evidence": "handleSubmit, handleEmailBlur, handlePasswordBlur 사용"},
+    {"text": "훅이 화살표 함수로 정의된다", "passed": true, "evidence": "const useLoginForm = (): UseLoginFormReturn => { ... }"}
+  ],
+  "summary": {"passed": 5, "failed": 3, "total": 8, "pass_rate": 0.625}
+}
