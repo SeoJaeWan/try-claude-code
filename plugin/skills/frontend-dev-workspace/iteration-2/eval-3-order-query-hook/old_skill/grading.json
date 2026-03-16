@@ -1,0 +1,13 @@
+{
+  "expectations": [
+    {"text": "order query 훅 파일이 존재한다", "passed": true, "evidence": "hooks/apis/order/queries/useGetOrderDetail/index.ts 생성됨"},
+    {"text": "query 훅 이름이 useGet 접두사를 사용한다", "passed": true, "evidence": "useGetOrderDetail"},
+    {"text": "훅 경로가 hooks/apis/{domain}/queries 패턴을 따른다", "passed": true, "evidence": "hooks/apis/order/queries/"},
+    {"text": "훅이 hooks/apis/{domain}/queries/{hookName}/index.ts 패턴으로 생성된다", "passed": true, "evidence": "hooks/apis/order/queries/useGetOrderDetail/index.ts"},
+    {"text": "훅이 화살표 함수로 정의된다", "passed": true, "evidence": "const useGetOrderDetail = (params...) => { ... }"},
+    {"text": "훅 반환값에 loading/isLoading 상태가 포함된다", "passed": true, "evidence": "return { data, isLoading, isError, error, refetch }"},
+    {"text": "훅 반환값에 error 상태가 포함된다", "passed": true, "evidence": "error: query.error 반환"},
+    {"text": "page에서 직접적인 fetch/business logic이 없고 훅 소비만 한다", "passed": true, "evidence": "page.tsx 미변경 — 원래 fetch 로직 없음"}
+  ],
+  "summary": {"passed": 8, "failed": 0, "total": 8, "pass_rate": 1.0}
+}
