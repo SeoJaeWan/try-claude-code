@@ -1,0 +1,113 @@
+{
+  "expectations": [
+    {
+      "text": "DashboardLayout이 folder 기반 index.tsx 패턴으로 정리된다",
+      "passed": true,
+      "evidence": "Output contains components/dashboard/dashboardLayout/index.tsx as the root entry point, with Sidebar.tsx, Header.tsx, MobileNav.tsx, and navLinks.tsx as sibling files in the same folder."
+    },
+    {
+      "text": "flat components/DashboardLayout.tsx가 그대로 남지 않는다",
+      "passed": true,
+      "evidence": "No file at components/DashboardLayout.tsx exists in the outputs directory. Only the folder-based structure under components/dashboard/dashboardLayout/ is present."
+    },
+    {
+      "text": "sidebar 영역이 명확히 존재한다",
+      "passed": true,
+      "evidence": "Sidebar.tsx exports a dedicated Sidebar component with <aside> element containing logo, navigation, and footer sections. index.tsx renders <Sidebar currentPath={currentPath} /> with comment '{/* Sidebar — hidden on mobile, visible from md */}'."
+    },
+    {
+      "text": "header 영역이 명확히 존재한다",
+      "passed": true,
+      "evidence": "Header.tsx exports a dedicated Header component with <header> element containing mobile logo, desktop title, and right slot. index.tsx renders <Header title={headerTitle} right={headerRight} /> with comment '{/* Header */}'."
+    },
+    {
+      "text": "main 콘텐츠 영역이 존재한다",
+      "passed": true,
+      "evidence": "index.tsx contains <main className=\"flex-1 overflow-y-auto px-4 py-6 pb-20 md:px-6 md:pb-6 lg:px-8\" data-testid=\"dashboard-main\">{children}</main> with comment '{/* Page content */}'."
+    },
+    {
+      "text": "children 중심 shell 역할이 유지된다",
+      "passed": true,
+      "evidence": "DashboardLayout accepts 'children: ReactNode' as a prop and renders it inside <main>. The component is a pure layout shell: Sidebar + Header + main({children}) + MobileNav. No data fetching or business logic."
+    },
+    {
+      "text": "responsive breakpoint class가 유지되거나 개선된다",
+      "passed": true,
+      "evidence": "Multiple responsive breakpoints across files: Sidebar uses 'hidden md:flex md:w-60 lg:w-64'; Header uses 'md:px-6', 'md:hidden' for mobile logo, 'md:block' for desktop title; MobileNav uses 'md:hidden'; main uses 'md:px-6 md:pb-6 lg:px-8'."
+    },
+    {
+      "text": "사용처 import가 새 경로에 맞게 정리된다",
+      "passed": false,
+      "evidence": "No consumer files are present in the outputs. Only the dashboardLayout folder contents are provided. There is no evidence that any file importing DashboardLayout was updated to use the new path 'components/dashboard/dashboardLayout'. Internal imports within the folder are correct, but the assertion is about consumer-side import updates."
+    },
+    {
+      "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "passed": true,
+      "evidence": "Grep search for (useEffect|fetch\\(|axios|useQuery|useMutation) across all output files returned zero matches. All components are pure presentational."
+    },
+    {
+      "text": "폴더명이 camelCase를 따른다 (dashboardLayout)",
+      "passed": true,
+      "evidence": "Folder path is components/dashboard/dashboardLayout/ — 'dashboardLayout' is camelCase as required."
+    },
+    {
+      "text": "components/dashboard/ 하위에 배치된다",
+      "passed": true,
+      "evidence": "All output files are under components/dashboard/dashboardLayout/, confirming placement under components/dashboard/."
+    }
+  ],
+  "summary": {
+    "passed": 10,
+    "failed": 1,
+    "total": 11,
+    "pass_rate": 0.91
+  },
+  "timing": {
+    "total_duration_seconds": 147.1
+  },
+  "claims": [
+    {
+      "claim": "NAV_LINKS was renamed to navLinks (camelCase)",
+      "type": "factual",
+      "verified": true,
+      "evidence": "navLinks.tsx exports 'const navLinks: NavLink[]' — camelCase constant name confirmed."
+    },
+    {
+      "claim": "NavLink interface is now exported",
+      "type": "factual",
+      "verified": true,
+      "evidence": "navLinks.tsx line 3: 'export interface NavLink { href: string; label: string; icon: ReactNode; }'"
+    },
+    {
+      "claim": "\"use client\" was added to interactive files",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Sidebar.tsx, Header.tsx, and MobileNav.tsx all begin with '\"use client\";'. index.tsx and navLinks.tsx do not have it, which is correct since they have no client interactivity."
+    },
+    {
+      "claim": "Header prop names were simplified to title/right",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Header.tsx accepts '{ title, right }' props. However, index.tsx still passes 'headerTitle' and 'headerRight' as its own props — it maps them when calling Header: <Header title={headerTitle} right={headerRight} />. This is a reasonable API boundary."
+    },
+    {
+      "claim": "Sub-components are inlined with section comments instead of separate local functions",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Sidebar.tsx uses inline JSX with section comments ({/* Logo */}, {/* Navigation */}, {/* Footer */}) rather than separate SidebarLogo/SidebarNav/SidebarFooter functions."
+    }
+  ],
+  "user_notes_summary": null,
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "사용처 import가 새 경로에 맞게 정리된다",
+        "reason": "This assertion requires consumer files to be included in outputs, but the eval only produces the component folder itself. Either the eval should include a sample consumer file, or this assertion should be dropped or reworded to check that the component is properly re-exported from index.tsx (which can be verified from the outputs alone)."
+      },
+      {
+        "reason": "No assertion checks that 'use client' is applied correctly to interactive files. The executor added it to Sidebar, Header, and MobileNav — which is a meaningful convention adherence detail worth asserting."
+      }
+    ],
+    "overall": "Assertions are generally well-targeted. The import-updated assertion is unverifiable without consumer file outputs — consider replacing it with an assertion about index.tsx re-export correctness."
+  }
+}

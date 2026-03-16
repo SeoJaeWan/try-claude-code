@@ -10,13 +10,13 @@ export interface ButtonProps {
   testId?: string;
 }
 
-const Button = ({
+export default function Button({
   children,
   variant = "primary",
   disabled = false,
   onClick,
   testId,
-}: ButtonProps) => {
+}: ButtonProps) {
   return (
     <button
       type="button"
@@ -32,6 +32,4 @@ const Button = ({
       {children}
     </button>
   );
-};
-
-export default Button;
+}

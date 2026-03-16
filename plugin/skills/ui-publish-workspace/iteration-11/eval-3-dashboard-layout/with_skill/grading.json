@@ -1,0 +1,126 @@
+{
+  "expectations": [
+    {
+      "text": "DashboardLayout이 folder 기반 index.tsx 패턴으로 정리된다",
+      "passed": false,
+      "evidence": "The output is a single flat file `DashboardLayout.tsx`, not a folder with `index.tsx`. The transcript confirms the refactoring was done in-place: 'Changes made to components/DashboardLayout.tsx'. No folder-based restructuring occurred."
+    },
+    {
+      "text": "flat components/DashboardLayout.tsx가 그대로 남지 않는다",
+      "passed": false,
+      "evidence": "The transcript states the output is `components/DashboardLayout.tsx` — the flat file was refactored in place and remains at its original path. The executor explicitly says: 'Output: components/DashboardLayout.tsx — refactored to match project conventions'."
+    },
+    {
+      "text": "sidebar 영역이 명확히 존재한다",
+      "passed": true,
+      "evidence": "A dedicated `Sidebar` function component exists (line 94) rendering an `<aside>` with `data-testid=\"dashboard-sidebar\"`, containing logo, navigation, and footer sections with clear JSX comments."
+    },
+    {
+      "text": "header 영역이 명확히 존재한다",
+      "passed": true,
+      "evidence": "A dedicated `Header` function component exists (line 167) rendering a `<header>` with `data-testid=\"dashboard-header\"`, containing mobile logo, desktop title, and right slot."
+    },
+    {
+      "text": "main 콘텐츠 영역이 존재한다",
+      "passed": true,
+      "evidence": "A `<main>` element exists at line 278 with `data-testid=\"dashboard-main\"` and `className=\"flex-1 overflow-y-auto ...\"`, rendering `{children}`."
+    },
+    {
+      "text": "children 중심 shell 역할이 유지된다",
+      "passed": true,
+      "evidence": "`DashboardLayoutProps` declares `children: ReactNode` (line 11). The component renders `{children}` inside `<main>` at line 282. The component is a pure layout shell wrapping child content."
+    },
+    {
+      "text": "responsive breakpoint class가 유지되거나 개선된다",
+      "passed": true,
+      "evidence": "Responsive Tailwind classes are used throughout: sidebar uses `hidden md:flex md:w-60 lg:w-64`, header uses `md:px-6`, main uses `md:px-6 md:pb-6 lg:px-8`, mobile nav uses `md:hidden`, header title uses `md:block`/`md:hidden` for mobile/desktop switching."
+    },
+    {
+      "text": "사용처 import가 새 경로에 맞게 정리된다",
+      "passed": false,
+      "evidence": "The file was not moved to a new path — it stayed at `components/DashboardLayout.tsx`. The transcript does not mention updating any import statements. Since no folder restructuring occurred, there is no new path to update imports to."
+    },
+    {
+      "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "passed": true,
+      "evidence": "Searched the entire 290-line output file. None of the forbidden patterns (useEffect, fetch, axios, useQuery, useMutation) appear anywhere in the code. The component is purely presentational."
+    },
+    {
+      "text": "폴더명이 camelCase를 따른다 (dashboardLayout)",
+      "passed": false,
+      "evidence": "No folder was created. The output is a single flat file `DashboardLayout.tsx`. There is no `dashboardLayout/` folder to evaluate."
+    },
+    {
+      "text": "components/dashboard/ 하위에 배치된다",
+      "passed": false,
+      "evidence": "The output file is at `components/DashboardLayout.tsx`, not under `components/dashboard/`. The transcript notes that `components/dashboard/dashboardLayout/` already exists with a split pattern, but the executor refactored the flat file in place rather than moving it into that directory."
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 5,
+    "total": 11,
+    "pass_rate": 0.55
+  },
+  "execution_metrics": {
+    "output_chars": 9505,
+    "transcript_chars": 2145
+  },
+  "timing": {
+    "total_tokens": 48254,
+    "total_duration_seconds": 197.5
+  },
+  "claims": [
+    {
+      "claim": "The project convention uses folder-based index.tsx pattern (components/Button/index.tsx, etc.)",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Transcript Step 2 lists `components/Button/index.tsx`, `components/ProductCard/index.tsx` as existing patterns, and `components/dashboard/dashboardLayout/` with sub-components."
+    },
+    {
+      "claim": "Constant name changed from NAV_LINKS (SCREAMING_SNAKE_CASE) to navItems (camelCase)",
+      "type": "process",
+      "verified": true,
+      "evidence": "Output line 27: `const navItems: NavItem[] = [...]` uses camelCase naming."
+    },
+    {
+      "claim": "Prop name changed from headerTitle to title and headerRight to right",
+      "type": "process",
+      "verified": false,
+      "evidence": "The Header component uses `right` prop (line 167), but the DashboardLayoutProps interface still uses `headerRight` (line 13), not `right`. The rename was only partial — applied to the sub-component but not the public API."
+    },
+    {
+      "claim": "pnpm exec tsc --noEmit produced no errors in DashboardLayout.tsx",
+      "type": "process",
+      "verified": false,
+      "evidence": "Cannot verify from available outputs — only the final file is provided, not the typecheck output."
+    },
+    {
+      "claim": "All data-testid attributes preserved for E2E test compatibility",
+      "type": "quality",
+      "verified": false,
+      "evidence": "Cannot verify without seeing the original file's data-testid attributes. The output has data-testid attributes present, but we cannot confirm they match the originals."
+    },
+    {
+      "claim": "Sub-components reduced from 7 to 3 logical components",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Output contains exactly 3 sub-components: Sidebar (line 94), Header (line 167), MobileNav (line 231), matching the claim."
+    }
+  ],
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "사용처 import가 새 경로에 맞게 정리된다",
+        "reason": "This assertion is only meaningful if the file was actually moved. When the executor refactors in-place, it becomes vacuously true or trivially false depending on interpretation. Consider making it conditional on the folder restructure, or checking for the existence of a barrel export (re-export) from the old path."
+      },
+      {
+        "reason": "Five assertions (folder-structure, flat-file-removed, folder-camelCase, domain-placement, import-updated) all test the same underlying outcome: was the file moved into a folder under components/dashboard/? A single structural assertion plus one naming assertion would suffice. The current set creates redundant failure signals that inflate the fail count without adding information."
+      },
+      {
+        "reason": "No assertion checks whether the refactored code actually follows the project's naming conventions (camelCase constants, semantic type names, section separators). These are the substantive convention-alignment changes the executor made, yet they go unmeasured."
+      }
+    ],
+    "overall": "The assertions are heavily weighted toward file/folder placement (5 of 11) while neglecting code-level convention alignment, which is the core of the eval prompt. The executor did meaningful convention work (renaming, restructuring sub-components, adding section separators) that no assertion captures."
+  }
+}
