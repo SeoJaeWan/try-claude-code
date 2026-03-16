@@ -11,6 +11,10 @@ function normalizeFormat(options) {
 }
 
 function normalizeGuideFormat(options) {
+  if (options.html === true) {
+    return "html";
+  }
+
   if (options.json === true) {
     return "json";
   }

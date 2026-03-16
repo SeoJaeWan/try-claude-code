@@ -134,6 +134,23 @@ test("tcp help JSON은 publisher component 계약을 AI가 읽을 수 있는 구
   );
 });
 
+test("tcp help component JSON은 요청한 명령 계약만 구조적으로 노출한다", () => {
+  const result = runCli(tcpBin, ["help", "component"]);
+
+  assert.equal(result.status, 0);
+  const payload = readJson(result.stdout);
+  assert.equal(payload.ok, true);
+  assert.deepEqual(Object.keys(payload.commands), ["component"]);
+  assert.equal(
+    payload.commands.component.contracts.pathPolicy.placementDecision,
+    "common is only for components reused in 2 or more root page domains; otherwise choose the single matching domain path"
+  );
+  assert.equal(
+    payload.commands.component.contracts.pathPolicy.legacyPolicy,
+    "if a legacy component path differs from the current convention, migrate the path first; if it already matches, keep the path and only update internals"
+  );
+});
+
 test("tcp component는 common 또는 domain segment 없는 경로를 거부한다", () => {
   const result = runCli(tcpBin, [
     "component",

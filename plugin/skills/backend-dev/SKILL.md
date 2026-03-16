@@ -22,7 +22,7 @@ All file creation goes through `tcb` CLI. Never create module/entity/DTO files m
 
 ## CLI-First Workflow
 
-Every module, entity, and DTO must be created via `tcb`. Run `tcb --help` first to see available commands, naming rules, and examples.
+Every module, entity, and DTO must be created via `tcb`. Start with the narrowest help that matches the job, such as `tcb help module --text`, `tcb help entity --text`, or `tcb help requestDto --text`. Use `tcb help <command>` JSON only when you need structured fields, and use top-level `tcb --help` only for command discovery.
 
 After `tcb` creates the scaffold, implement the business logic inside the generated files.
 
@@ -46,7 +46,7 @@ Every API endpoint must include proper error responses.
 
 1. Read plan from `plans/{task-name}/plan.md`
 2. Read `codemaps/backend.md`, `codemaps/database.md` (if present)
-3. **Run `tcb` CLI to create all module scaffolds with `--apply`** — this is the first action before writing any code
+3. **Run `tcb help <target-command> --text`, then `tcb` CLI to create all module scaffolds with `--apply`** — this is the first action before writing any code
 4. If plan includes `tests/`: copy test files to source tree, run Red verification
 5. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
 6. Implement logic inside the generated files
