@@ -199,6 +199,12 @@ export function renderHelpText(payload) {
   const lines = [
     `${payload.alias} -> ${payload.id}`,
     `mode: ${payload.activeProfile.mode}@${payload.activeProfile.version}`,
+    ...(payload.activeProfile.resolvedVersion &&
+    payload.activeProfile.resolvedVersion !== payload.activeProfile.version
+      ? [
+          `pinned: ${payload.activeProfile.resolvedVersion} (${payload.activeProfile.resolvedRef})`
+        ]
+      : []),
     "default input: --json",
     ""
   ];

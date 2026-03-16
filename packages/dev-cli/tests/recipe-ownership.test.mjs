@@ -196,7 +196,8 @@ test("shared 기본 recipe는 역할 profile에서 command 단위로 override할
     repoRoot: tempRoot,
     role: "frontend",
     mode: "personal",
-    version: "v1"
+    version: "v1",
+    localProfileRoot: tempRoot
   });
 
   assert.equal(

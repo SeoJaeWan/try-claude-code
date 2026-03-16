@@ -1,21 +1,27 @@
 import { parseArgv } from "./arg-parser.mjs";
 import { executeBatch, executeSpecCommand } from "./batch-executor.mjs";
 import { routeCommand } from "./command-router.mjs";
-import { writeProfileSelection } from "./config-store.mjs";
+import {
+  getProfileSelection,
+  readConfigs,
+  writeProfileSelection
+} from "./config-store.mjs";
 import { errorToPayload } from "./error-formatter.mjs";
 import { writeGeneratedFiles } from "./file-writer.mjs";
 import { createGuidePayload, renderGuideText } from "./guide-renderer.mjs";
 import { createHelpPayload, renderHelpText } from "./help-renderer.mjs";
 import { resolveActiveProfile } from "./mode-resolver.mjs";
 import { formatOutput } from "./output.mjs";
-import { findRepoRoot } from "./path-utils.mjs";
+import { findProjectRoot } from "./path-utils.mjs";
 import { loadActiveProfile } from "./profile-loader.mjs";
+import { hydrateProfileSelection } from "./profile-registry.mjs";
 import { validateRequest } from "./profile-validator.mjs";
 import { validateFiles } from "./validate-file.mjs";
 import { createPublisherGuideModel } from "./publisher-guide-model.mjs";
 import { renderPublisherGuideHtml } from "./publisher-guide-html-renderer.mjs";
 import { createCliError } from "./recipe-utils.mjs";
 import { parseBatchSpec, parseCommandSpec, parseValidateFileSpec } from "./spec-parser.mjs";
+import { isExactProfileVersion } from "./version-utils.mjs";
 
 function createSuccessPayload(payload) {
   return {
@@ -26,16 +32,76 @@ function createSuccessPayload(payload) {
 
 async function handleModeCommand({ role, route, repoRoot }) {
   if (route.modeAction === "show") {
-    const activeProfile = await resolveActiveProfile({
+    const selection = await resolveActiveProfile({
       role,
       repoRoot,
       options: route.options
+    });
+    const activeProfile = await hydrateProfileSelection({
+      role,
+      selection
     });
 
     return createSuccessPayload({
       role,
       action: "mode",
       activeProfile
+    });
+  }
+
+  if (route.modeAction === "update") {
+    const { globalConfig, repoConfig } = await readConfigs(repoRoot);
+    const repoSelection = getProfileSelection(repoConfig, role);
+    const globalSelection = getProfileSelection(globalConfig, role);
+    const scope = route.options.repo
+      ? "repo"
+      : repoSelection
+        ? "repo"
+        : globalSelection
+          ? "global"
+          : null;
+    const currentSelection = scope === "repo" ? repoSelection : globalSelection;
+
+    if (!scope || !currentSelection) {
+      throw createCliError(
+        "PROFILE_NOT_SET",
+        "No saved profile selection found. Run mode set first.",
+        {
+          role
+        }
+      );
+    }
+
+    const refreshed = await hydrateProfileSelection({
+      role,
+      selection: {
+        source: scope,
+        ...currentSelection
+      },
+      forceRefresh: !isExactProfileVersion(currentSelection.requestedVersion)
+    });
+    const changed =
+      refreshed.resolvedVersion !== currentSelection.resolvedVersion ||
+      refreshed.resolvedRef !== currentSelection.resolvedRef;
+    const saved = await writeProfileSelection({
+      scope,
+      repoRoot,
+      role,
+      mode: refreshed.mode,
+      requestedVersion: refreshed.requestedVersion,
+      resolvedVersion: refreshed.resolvedVersion,
+      resolvedRef: refreshed.resolvedRef
+    });
+
+    return createSuccessPayload({
+      role,
+      action: "mode",
+      updated: !isExactProfileVersion(currentSelection.requestedVersion) && changed,
+      reason: isExactProfileVersion(currentSelection.requestedVersion)
+        ? "EXACT_VERSION_PINNED"
+        : undefined,
+      activeProfile: refreshed,
+      saved
     });
   }
 
@@ -54,7 +120,10 @@ async function handleModeCommand({ role, route, repoRoot }) {
     throw error;
   }
 
-  if (!route.options.version && !String(route.options.mode).includes("@")) {
+  if (
+    !route.options.version &&
+    !/[@/]/.test(String(route.options.mode))
+  ) {
     const error = new Error("Missing required option: --version");
     error.code = "MISSING_ARGUMENT";
     error.details = {
@@ -63,36 +132,69 @@ async function handleModeCommand({ role, route, repoRoot }) {
     throw error;
   }
 
-  const [mode, inlineVersion] = String(route.options.mode).split("@");
-  const version = inlineVersion ?? route.options.version;
+  const [mode, inlineVersion] = /@/.test(String(route.options.mode))
+    ? String(route.options.mode).split("@")
+    : String(route.options.mode).split("/");
+  const requestedVersion = inlineVersion ?? route.options.version;
   const scope = route.options.repo ? "repo" : "global";
+  const activeProfile = await hydrateProfileSelection({
+    role,
+    selection: {
+      source: "explicit",
+      mode,
+      requestedVersion
+    },
+    forceRefresh: true
+  });
 
   const saved = await writeProfileSelection({
     scope,
     repoRoot,
     role,
-    mode,
-    version
+    mode: activeProfile.mode,
+    requestedVersion: activeProfile.requestedVersion,
+    resolvedVersion: activeProfile.resolvedVersion,
+    resolvedRef: activeProfile.resolvedRef
   });
 
   return createSuccessPayload({
     role,
     action: "mode",
+    activeProfile,
     saved
   });
 }
 
-async function handleHelpCommand({ alias, role, route, repoRoot }) {
-  const activeProfile = await resolveActiveProfile({
+async function resolveProfileContext({ role, repoRoot, options }) {
+  const selection = await resolveActiveProfile({
     role,
     repoRoot,
-    options: route.options
+    options
+  });
+  const activeProfile = await hydrateProfileSelection({
+    role,
+    selection
   });
   const { profile } = await loadActiveProfile({
     repoRoot,
     role,
     mode: activeProfile.mode,
-    version: activeProfile.version
+    requestedVersion: activeProfile.requestedVersion,
+    resolvedVersion: activeProfile.resolvedVersion,
+    resolvedRef: activeProfile.resolvedRef
+  });
+
+  return {
+    activeProfile,
+    profile
+  };
+}
+
+async function handleHelpCommand({ alias, role, route, repoRoot }) {
+  const { activeProfile, profile } = await resolveProfileContext({
+    role,
+    repoRoot,
+    options: route.options
   });
   const payload = createHelpPayload({
     alias,
@@ -114,16 +216,10 @@ async function handleHelpCommand({ alias, role, route, repoRoot }) {
 }
 
 async function handleGuideCommand({ alias, role, route, repoRoot }) {
-  const activeProfile = await resolveActiveProfile({
+  const { activeProfile, profile } = await resolveProfileContext({
     role,
     repoRoot,
     options: route.options
-  });
-  const { profile } = await loadActiveProfile({
-    repoRoot,
-    role,
-    mode: activeProfile.mode,
-    version: activeProfile.version
   });
   const payload = createGuidePayload({
     alias,
@@ -173,16 +269,10 @@ async function handleGuideCommand({ alias, role, route, repoRoot }) {
 }
 
 async function handleGenerateCommand({ alias, role, route, repoRoot }) {
-  const activeProfile = await resolveActiveProfile({
+  const { activeProfile, profile } = await resolveProfileContext({
     role,
     repoRoot,
     options: route.options
-  });
-  const { profile } = await loadActiveProfile({
-    repoRoot,
-    role,
-    mode: activeProfile.mode,
-    version: activeProfile.version
   });
   const spec = parseCommandSpec(route);
   const result = await executeSpecCommand({
@@ -220,16 +310,10 @@ async function handleGenerateCommand({ alias, role, route, repoRoot }) {
 }
 
 async function handleBatchCommand({ alias, role, route, repoRoot }) {
-  const activeProfile = await resolveActiveProfile({
+  const { activeProfile, profile } = await resolveProfileContext({
     role,
     repoRoot,
     options: route.options
-  });
-  const { profile } = await loadActiveProfile({
-    repoRoot,
-    role,
-    mode: activeProfile.mode,
-    version: activeProfile.version
   });
   const batchSpec = parseBatchSpec(route);
   const result = await executeBatch({
@@ -251,16 +335,10 @@ async function handleBatchCommand({ alias, role, route, repoRoot }) {
 }
 
 async function handleValidateCommand({ alias, role, route, repoRoot }) {
-  const activeProfile = await resolveActiveProfile({
+  const { activeProfile, profile } = await resolveProfileContext({
     role,
     repoRoot,
     options: route.options
-  });
-  const { profile } = await loadActiveProfile({
-    repoRoot,
-    role,
-    mode: activeProfile.mode,
-    version: activeProfile.version
   });
   const checks = await validateRequest({
     role,
@@ -294,16 +372,10 @@ async function handleValidateCommand({ alias, role, route, repoRoot }) {
 }
 
 async function handleValidateFileCommand({ alias, role, route, repoRoot }) {
-  const activeProfile = await resolveActiveProfile({
+  const { activeProfile, profile } = await resolveProfileContext({
     role,
     repoRoot,
     options: route.options
-  });
-  const { profile } = await loadActiveProfile({
-    repoRoot,
-    role,
-    mode: activeProfile.mode,
-    version: activeProfile.version
   });
   const spec = parseValidateFileSpec(route);
   const validation = await validateFiles({
@@ -330,7 +402,7 @@ export async function runCli({
   stdout = process.stdout,
   stderr = process.stderr
 }) {
-  const repoRoot = findRepoRoot(cwd);
+  const repoRoot = findProjectRoot(cwd);
 
   try {
     const parsed = parseArgv(argv);

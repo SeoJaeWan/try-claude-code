@@ -1,13 +1,20 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 
-const REPO_MARKERS = [".git", "profiles", "plugin", "plans"];
+const PROJECT_MARKERS = [
+  ".git",
+  "package.json",
+  "pnpm-workspace.yaml",
+  "pom.xml",
+  "build.gradle",
+  "build.gradle.kts"
+];
 
-export function findRepoRoot(startDir) {
+export function findProjectRoot(startDir) {
   let current = path.resolve(startDir);
 
   while (true) {
-    const hasMarker = REPO_MARKERS.some((marker) =>
+    const hasMarker = PROJECT_MARKERS.some((marker) =>
       existsSync(path.join(current, marker))
     );
     if (hasMarker) {
@@ -20,6 +27,10 @@ export function findRepoRoot(startDir) {
     }
     current = parent;
   }
+}
+
+export function findRepoRoot(startDir) {
+  return findProjectRoot(startDir);
 }
 
 export function normalizeCliPath(value) {

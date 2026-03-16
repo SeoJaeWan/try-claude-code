@@ -2,8 +2,8 @@
 
 ## Summary
 
-`tcp`, `tcf`, `tcb`는 하나의 `@try-claude/dev-cli` 엔진 위에서 동작한다.
-규칙, 템플릿, 명령 표면은 repo-local `profiles/`에서 읽고, CLI는 spec-driven JSON 입력과 batch 실행을 기본으로 제공한다.
+`tcp`, `tcf`, `tcb`는 `@seojaewan/dev-cli-core` shared runtime 위에서 동작하고, 실제 배포는 `@seojaewan/tcp`, `@seojaewan/tcf`, `@seojaewan/tcb` wrapper package가 담당한다.
+규칙, 템플릿, 명령 표면은 GitHub의 `profiles/registry.json`과 pinned ref에서 읽고, CLI는 spec-driven JSON 입력과 batch 실행을 기본으로 제공한다.
 이때 engine은 실행기 역할만 맡고, command semantics는 `profile/version`의 recipe가 소유한다.
 
 이 구조는 agent-first CLI 원칙을 따른다.
@@ -20,16 +20,19 @@
 ```text
 packages/
   dev-cli/
-    bin/
-      tcp.mjs
-      tcf.mjs
-      tcb.mjs
     src/
       core/
       validators/
     tests/
+  tcp/
+    bin/tcp.mjs
+  tcf/
+    bin/tcf.mjs
+  tcb/
+    bin/tcb.mjs
 
 profiles/
+  registry.json
   shared/
     personal/v1/
   publisher/
@@ -90,13 +93,72 @@ active profile 우선순위:
 3. global default: `~/.try-claude-dev-cli.json`
 4. fallback: `personal/v1`
 
+channel과 exact pin은 분리한다.
+
+- 사용자는 `personal + v1` 또는 `company + v2` 같은 channel을 선택한다.
+- CLI는 `profiles/registry.json`에서 현재 channel의 exact revision을 조회한다.
+- config에는 `requestedVersion`, `resolvedVersion`, `resolvedRef`를 함께 저장한다.
+- 실제 profile/template fetch는 `main` live file이 아니라 `resolvedRef` 기준 raw URL만 사용한다.
+- `mode update`가 호출될 때만 channel을 다시 조회해 최신 patch로 올린다.
+
+예시 config:
+
+```json
+{
+  "profiles": {
+    "publisher": {
+      "mode": "personal",
+      "requestedVersion": "v1",
+      "resolvedVersion": "v1.0.0",
+      "resolvedRef": "f0d6fa0cf92dee319efc4eb51e001ba8cfc488ec"
+    }
+  }
+}
+```
+
 예시:
 
 ```bash
 tcp mode set --mode personal --version v1
+tcp mode show
+tcp mode update
 tcp mode set --mode personal --version v1 --repo
 tcp --help
 ```
+
+## Publish Surface
+
+publish 대상은 4개 패키지다.
+
+- `@seojaewan/dev-cli-core`
+- `@seojaewan/tcp`
+- `@seojaewan/tcf`
+- `@seojaewan/tcb`
+
+wrapper는 각각 하나의 `bin`만 노출한다.
+
+- `@seojaewan/tcp` -> `tcp`
+- `@seojaewan/tcf` -> `tcf`
+- `@seojaewan/tcb` -> `tcb`
+
+수동 publish 순서:
+
+1. `@seojaewan/dev-cli-core`
+2. `@seojaewan/tcp`
+3. `@seojaewan/tcf`
+4. `@seojaewan/tcb`
+
+중요:
+
+- wrapper를 publish하기 전에 `main` 브랜치에 `profiles/registry.json`과 해당 `resolvedRef`가 먼저 존재해야 한다.
+- 아직 원격 registry가 없는 로컬 검증 단계에서는 `TRY_CLAUDE_PROFILE_REGISTRY_URL`, `TRY_CLAUDE_PROFILE_RAW_BASE_URL` override를 사용한다.
+
+profile hotfix 순서:
+
+1. `main`에 `profiles/*` 수정 반영
+2. exact ref 또는 tag 준비
+3. `profiles/registry.json` channel alias 업데이트
+4. 사용자는 `mode update`로 최신 patch 반영
 
 ## Help Contract
 

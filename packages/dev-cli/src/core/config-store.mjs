@@ -46,8 +46,34 @@ export async function readConfigs(repoRoot) {
   };
 }
 
+function normalizeStoredSelection(selection) {
+  if (!selection?.mode) {
+    return null;
+  }
+
+  if (selection.requestedVersion) {
+    return {
+      mode: selection.mode,
+      requestedVersion: selection.requestedVersion,
+      resolvedVersion: selection.resolvedVersion ?? null,
+      resolvedRef: selection.resolvedRef ?? null
+    };
+  }
+
+  if (selection.version) {
+    return {
+      mode: selection.mode,
+      requestedVersion: selection.version,
+      resolvedVersion: null,
+      resolvedRef: null
+    };
+  }
+
+  return null;
+}
+
 export function getProfileSelection(config, role) {
-  return config?.profiles?.[role] ?? null;
+  return normalizeStoredSelection(config?.profiles?.[role] ?? null);
 }
 
 export async function writeProfileSelection({
@@ -55,7 +81,9 @@ export async function writeProfileSelection({
   repoRoot,
   role,
   mode,
-  version
+  requestedVersion,
+  resolvedVersion,
+  resolvedRef
 }) {
   const filePath =
     scope === "repo" ? getRepoConfigPath(repoRoot) : getGlobalConfigPath();
@@ -66,7 +94,9 @@ export async function writeProfileSelection({
       ...(current.profiles ?? {}),
       [role]: {
         mode,
-        version
+        requestedVersion,
+        resolvedVersion,
+        resolvedRef
       }
     }
   };
@@ -78,6 +108,8 @@ export async function writeProfileSelection({
     filePath,
     role,
     mode,
-    version
+    requestedVersion,
+    resolvedVersion,
+    resolvedRef
   };
 }
