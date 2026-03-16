@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "조회 훅이 hooks/apis/queries/ 경로 아래에 배치된다 (tcf profile: API query hook -> apis/{domain}/queries)",
+      "passed": true,
+      "evidence": "Hook file exists at hooks/apis/queries/useGetNotifications/index.ts"
+    },
+    {
+      "text": "훅이 {hookName}/index.ts 패턴으로 생성된다 (tcf profile: output = {path}/{name}/index.ts)",
+      "passed": true,
+      "evidence": "Both hooks follow the pattern: hooks/apis/queries/useGetNotifications/index.ts and hooks/utils/useNotificationFilter/index.ts"
+    },
+    {
+      "text": "NotificationList 컴포넌트에 직접적인 useEffect+fetch 패턴이 남지 않는다",
+      "passed": true,
+      "evidence": "NotificationList.tsx contains no useEffect or fetch calls. It delegates to useGetNotifications and useNotificationFilter hooks only."
+    },
+    {
+      "text": "loading 상태 분기가 유지된다",
+      "passed": true,
+      "evidence": "NotificationList.tsx line 20: 'if (isLoading)' renders a skeleton loading UI with data-testid='notifications-loading'"
+    },
+    {
+      "text": "error 상태 분기가 유지된다",
+      "passed": true,
+      "evidence": "NotificationList.tsx line 30: 'if (error)' renders error message with data-testid='notifications-error'"
+    },
+    {
+      "text": "empty state 분기가 유지된다",
+      "passed": true,
+      "evidence": "NotificationList.tsx line 65: 'filtered.length === 0' renders empty message with data-testid='notifications-empty'"
+    },
+    {
+      "text": "훅 이름이 use 접두사로 시작한다 (tcf profile: hook prefix = use)",
+      "passed": true,
+      "evidence": "Both hooks start with 'use': useGetNotifications and useNotificationFilter"
+    },
+    {
+      "text": "훅이 화살표 함수로 정의된다 (shared profile: function style = arrow)",
+      "passed": true,
+      "evidence": "useGetNotifications defined as 'const useGetNotifications = (): UseGetNotificationsResult => {' and useNotificationFilter defined as 'const useNotificationFilter = ({ notifications }: ...): UseNotificationFilterResult => {'"
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 0,
+    "total": 8,
+    "pass_rate": 1.0
+  }
+}

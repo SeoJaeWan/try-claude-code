@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "form 상태/유효성 검증을 담당하는 훅 파일이 생성된다 (예: useLoginForm)",
+      "passed": true,
+      "evidence": "hooks/login/useLoginForm/index.ts was created containing form state (email, password, errors, generalError via useState) and validation logic (validate, handleEmailBlur, handlePasswordBlur using validateEmail/validatePassword)."
+    },
+    {
+      "text": "submit/API 호출을 담당하는 훅 파일이 생성된다 (예: useLogin)",
+      "passed": false,
+      "evidence": "No separate submit/API hook file was created. The submit logic (handleSubmit calling login()) is embedded inside useLoginForm rather than extracted into a dedicated hook like useLogin. Only one hook file exists: hooks/login/useLoginForm/index.ts."
+    },
+    {
+      "text": "훅 이름이 use 접두사로 시작한다 (tcf profile: hook prefix = use)",
+      "passed": true,
+      "evidence": "The hook is named useLoginForm, which starts with the 'use' prefix."
+    },
+    {
+      "text": "훅이 {hookName}/index.ts 패턴으로 생성된다 (tcf profile: output = {path}/{name}/index.ts)",
+      "passed": true,
+      "evidence": "The hook file is at hooks/login/useLoginForm/index.ts, matching the {path}/{hookName}/index.ts pattern."
+    },
+    {
+      "text": "page.tsx에 직접적인 useState 호출이 남지 않는다",
+      "passed": true,
+      "evidence": "page.tsx contains no useState import or call. It only imports Link and useLoginForm."
+    },
+    {
+      "text": "page.tsx가 생성된 훅을 import하여 조합한다",
+      "passed": true,
+      "evidence": "page.tsx imports useLoginForm from '@/hooks/login/useLoginForm' (line 4) and destructures all values/handlers from it (lines 7-17)."
+    },
+    {
+      "text": "이벤트 핸들러가 handle 접두사를 사용한다 (shared profile: internal handler = handle*)",
+      "passed": true,
+      "evidence": "All event handlers use the handle prefix: handleEmailChange, handlePasswordChange, handleEmailBlur, handlePasswordBlur, handleSubmit."
+    },
+    {
+      "text": "훅이 화살표 함수로 정의된다 (shared profile: function style = arrow)",
+      "passed": true,
+      "evidence": "The hook is defined as 'const useLoginForm = (): UseLoginFormReturn => { ... }' — an arrow function expression."
+    }
+  ],
+  "summary": {
+    "passed": 7,
+    "failed": 1,
+    "total": 8,
+    "pass_rate": 0.88
+  }
+}

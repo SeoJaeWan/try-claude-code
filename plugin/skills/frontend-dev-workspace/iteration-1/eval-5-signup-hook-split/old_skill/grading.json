@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "signup form 상태를 담당하는 훅이 생성된다 (예: useSignupForm)",
+      "passed": true,
+      "evidence": "useSignupForm hook created at app/signup/hooks/useSignupForm/index.ts, managing all form state (name, email, password, confirmPassword, errors, generalError) via useState."
+    },
+    {
+      "text": "signup submit을 담당하는 훅이 생성된다 (예: useSignup)",
+      "passed": false,
+      "evidence": "No separate submit hook was created. The submit logic (handleSubmit calling signup from AuthContext) is embedded inside useSignupForm rather than being split into a dedicated useSignup hook."
+    },
+    {
+      "text": "훅 이름이 use 접두사로 시작한다 (tcf profile: hook prefix = use)",
+      "passed": true,
+      "evidence": "The hook is named useSignupForm, which starts with the 'use' prefix."
+    },
+    {
+      "text": "훅이 {hookName}/index.ts 패턴으로 생성된다 (tcf profile: output = {path}/{name}/index.ts)",
+      "passed": true,
+      "evidence": "Hook is created at app/signup/hooks/useSignupForm/index.ts, matching the {hookName}/index.ts directory pattern."
+    },
+    {
+      "text": "page에서 직접적인 fetch/business logic이 남지 않는다",
+      "passed": true,
+      "evidence": "page.tsx contains only JSX rendering and a call to useSignupForm(). No useState, validation, fetch, or submit logic remains in the page component."
+    },
+    {
+      "text": "confirm password validation 흐름이 보존된다",
+      "passed": true,
+      "evidence": "useSignupForm/index.ts line 24: 'if (password !== confirmPassword) errs.confirmPassword = \"비밀번호가 일치하지 않습니다\"' — confirm password validation is preserved in the validate function."
+    },
+    {
+      "text": "훅이 화살표 함수로 정의된다 (shared profile: function style = arrow)",
+      "passed": false,
+      "evidence": "useSignupForm is defined as a regular function declaration: 'export default function useSignupForm()' (line 6), not as an arrow function (e.g., const useSignupForm = () => {})."
+    },
+    {
+      "text": "이벤트 핸들러가 handle 접두사를 사용한다 (shared profile: internal handler = handle*)",
+      "passed": true,
+      "evidence": "The submit handler is named 'handleSubmit' (line 28), using the handle prefix convention."
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 2,
+    "total": 8,
+    "pass_rate": 0.75
+  }
+}
