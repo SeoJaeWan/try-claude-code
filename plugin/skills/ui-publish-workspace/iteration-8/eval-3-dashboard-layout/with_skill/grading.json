@@ -1,0 +1,113 @@
+{
+  "expectations": [
+    {
+      "text": "DashboardLayout이 folder 기반 index.tsx 패턴으로 정리된다",
+      "passed": true,
+      "evidence": "Output contains components/dashboard/dashboardLayout/index.tsx with DashboardLayout as default export, composing Sidebar, Header, and MobileNav sub-components. Matches the ProductCard/index.tsx folder-based pattern described in the transcript."
+    },
+    {
+      "text": "flat components/DashboardLayout.tsx가 그대로 남지 않는다",
+      "passed": true,
+      "evidence": "No flat DashboardLayout.tsx file exists in the outputs directory. Only the folder-based structure at components/dashboard/dashboardLayout/ is present. The transcript does not mention retaining the original flat file."
+    },
+    {
+      "text": "sidebar 영역이 명확히 존재한다",
+      "passed": true,
+      "evidence": "Sidebar.tsx contains an <aside> element with data-testid=\"dashboard-sidebar\", rendering logo, nav links, and a settings footer. It is composed into the main layout via <Sidebar currentPath={currentPath} /> in index.tsx."
+    },
+    {
+      "text": "header 영역이 명확히 존재한다",
+      "passed": true,
+      "evidence": "Header.tsx contains a <header> element with data-testid=\"dashboard-header\", rendering a mobile logo, desktop title, and right slot with notification bell and avatar. Composed via <Header title={headerTitle} right={headerRight} /> in index.tsx."
+    },
+    {
+      "text": "main 콘텐츠 영역이 존재한다",
+      "passed": true,
+      "evidence": "index.tsx contains <main className=\"flex-1 overflow-y-auto px-4 py-6 pb-20 md:px-6 md:pb-6 lg:px-8\" data-testid=\"dashboard-main\">{children}</main> rendering children content."
+    },
+    {
+      "text": "children 중심 shell 역할이 유지된다",
+      "passed": true,
+      "evidence": "DashboardLayoutProps includes 'children: ReactNode' as a required prop. The component renders {children} inside the <main> tag, acting purely as a shell/layout wrapper."
+    },
+    {
+      "text": "responsive breakpoint class가 유지되거나 개선된다",
+      "passed": true,
+      "evidence": "Responsive classes present throughout: Sidebar uses 'hidden md:flex md:w-60 lg:w-64'; Header uses 'md:px-6' and 'md:hidden'/'md:block' for mobile/desktop switching; MobileNav uses 'md:hidden'; main uses 'px-4 md:px-6 lg:px-8 pb-20 md:pb-6'."
+    },
+    {
+      "text": "사용처 import가 새 경로에 맞게 정리된다",
+      "passed": false,
+      "evidence": "The transcript notes that app/dashboard/page.tsx 'does not import DashboardLayout', so there was no existing import to update. No output file shows an updated import path. While this may mean there was nothing to fix, there is no positive evidence of import path updates in the outputs."
+    },
+    {
+      "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "passed": true,
+      "evidence": "Grep search for 'useEffect|fetch(|axios|useQuery|useMutation' across all four output files returned zero matches. The components are purely visual with no side effects or data fetching."
+    },
+    {
+      "text": "폴더명이 camelCase를 따른다 (dashboardLayout)",
+      "passed": true,
+      "evidence": "The folder path is components/dashboard/dashboardLayout/ — 'dashboardLayout' is camelCase as required."
+    },
+    {
+      "text": "components/dashboard/ 하위에 배치된다",
+      "passed": true,
+      "evidence": "All four output files are located under components/dashboard/dashboardLayout/, which is under components/dashboard/ as required."
+    }
+  ],
+  "summary": {
+    "passed": 10,
+    "failed": 1,
+    "total": 11,
+    "pass_rate": 0.91
+  },
+  "timing": {
+    "total_tokens": 31920,
+    "duration_ms": 192087,
+    "total_duration_seconds": 192.1
+  },
+  "claims": [
+    {
+      "claim": "All data-testid attributes preserved from original component",
+      "type": "quality",
+      "verified": true,
+      "evidence": "Output files contain data-testid attributes: dashboard-sidebar, sidebar-logo, sidebar-nav-*, dashboard-header, header-logo-mobile, dashboard-header-title, dashboard-header-right, dashboard-mobile-nav, mobile-nav-*, dashboard-main"
+    },
+    {
+      "claim": "Named Props export + default function export pattern matches ProductCard/index.tsx",
+      "type": "process",
+      "verified": true,
+      "evidence": "All four files export a named Props interface (DashboardLayoutProps, HeaderProps, SidebarProps, MobileNavProps) and a default function export, matching the described convention"
+    },
+    {
+      "claim": "Zero errors in new files from tsc and eslint",
+      "type": "process",
+      "verified": false,
+      "evidence": "Claimed in transcript steps 7-8 but cannot independently verify from outputs alone — no lint/tsc output files provided"
+    },
+    {
+      "claim": "Dark mode classes preserved throughout",
+      "type": "quality",
+      "verified": true,
+      "evidence": "All files contain dark: prefixed Tailwind classes (dark:bg-zinc-950, dark:border-zinc-800, dark:bg-zinc-900, dark:text-zinc-50, etc.)"
+    }
+  ],
+  "user_notes_summary": null,
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "사용처 import가 새 경로에 맞게 정리된다",
+        "reason": "The fixture's dashboard page does not import DashboardLayout, making this assertion impossible to meaningfully evaluate. Consider adding a fixture file that actually imports DashboardLayout so this assertion can test a real import path update."
+      },
+      {
+        "assertion": "flat components/DashboardLayout.tsx가 그대로 남지 않는다",
+        "reason": "This only checks absence in the outputs directory. If the executor creates new files but forgets to delete the old flat file, the outputs directory wouldn't contain evidence either way. Consider verifying via a git diff or explicit deletion step."
+      },
+      {
+        "reason": "No assertion checks that the sub-components (Sidebar, Header, MobileNav) are separate files rather than inlined in index.tsx. A component could pass all current assertions with everything in a single index.tsx."
+      }
+    ],
+    "overall": "Assertions cover structure and conventions well but have a blind spot around the import-update assertion (untestable given the fixture) and don't verify sub-component decomposition into separate files."
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "expectations": [
+    {
+      "text": "결과 구조가 Button/index.tsx 또는 동급 folder/index 규칙을 따른다",
+      "passed": false,
+      "evidence": "Output is components/Button.tsx (a flat file), not a folder/index pattern like components/Button/index.tsx or components/button/index.tsx."
+    },
+    {
+      "text": "flat components/Button.tsx 파일이 그대로 남지 않는다",
+      "passed": false,
+      "evidence": "The output file is still components/Button.tsx — the flat file remains in place (modified but not moved to a folder structure)."
+    },
+    {
+      "text": "Props 인터페이스가 ButtonProps 접미사를 유지한다",
+      "passed": true,
+      "evidence": "Button.tsx line 5: 'export interface ButtonProps' — the ButtonProps name is preserved."
+    },
+    {
+      "text": "컴포넌트가 화살표 함수 형태로 유지된다",
+      "passed": false,
+      "evidence": "Button.tsx line 13: 'export default function Button({' — this is a regular function declaration, not an arrow function (e.g., const Button = (...) => { ... })."
+    },
+    {
+      "text": "기존 label prop 동작이 보존된다",
+      "passed": false,
+      "evidence": "The label prop was removed entirely and replaced with children. ButtonProps no longer has a 'label' field. Showcase changed from '<Button label=\"기본 버튼\" />' to '<Button>기본 버튼</Button>'. Any existing consumers using label= would break."
+    },
+    {
+      "text": "기존 tone prop 동작이 보존된다",
+      "passed": false,
+      "evidence": "The tone prop was renamed to 'variant'. ButtonProps has 'variant?: \"primary\" | \"secondary\"' instead of 'tone'. Showcase changed from 'tone=\"secondary\"' to 'variant=\"secondary\"'. Any existing consumers using tone= would break."
+    },
+    {
+      "text": "showcase page의 import가 새 구조에 맞게 정리된다",
+      "passed": true,
+      "evidence": "page.tsx line 1: 'import Button from \"@/components/Button\"' — import path matches the actual output file location. However, since the structure was not reorganized into a folder, the import is unchanged from the original."
+    },
+    {
+      "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "passed": true,
+      "evidence": "Neither components/Button.tsx nor app/showcase/page.tsx contain any of useEffect, fetch, axios, useQuery, or useMutation."
+    },
+    {
+      "text": "폴더명이 camelCase를 따른다 (button)",
+      "passed": false,
+      "evidence": "No button/ folder was created. The component remains as a flat file components/Button.tsx with PascalCase filename, not a camelCase folder like components/button/."
+    },
+    {
+      "text": "components/common/button/ 하위에 배치된다",
+      "passed": false,
+      "evidence": "Output path is components/Button.tsx. There is no common/ directory and no button/ subfolder. The file was not moved to components/common/button/."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 7,
+    "total": 10,
+    "pass_rate": 0.3
+  },
+  "execution_metrics": {
+    "output_chars": 2498,
+    "transcript_chars": 2718
+  },
+  "timing": {
+    "total_tokens": 32722,
+    "executor_duration_seconds": 121.5,
+    "total_duration_seconds": 121.5
+  },
+  "claims": [
+    {
+      "claim": "All other components use children instead of label prop",
+      "type": "process",
+      "verified": true,
+      "evidence": "Transcript cites Navbar, TodoForm, ErrorMessage all using <button>text</button> pattern with children. This is plausible for standard React projects."
+    },
+    {
+      "claim": "tone is non-standard and variant is more conventional",
+      "type": "quality",
+      "verified": true,
+      "evidence": "In the broader React ecosystem (MUI, Radix, shadcn/ui), 'variant' is indeed the standard name. However, the task said to preserve existing behavior, not rename props."
+    },
+    {
+      "claim": "No new type errors introduced",
+      "type": "quality",
+      "verified": false,
+      "evidence": "Cannot verify from outputs alone. If other files in the project imported Button with label= or tone= props, those would now have type errors."
+    },
+    {
+      "claim": "Project uses data-testid consistently",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Transcript claims examples like data-testid=\"nav-logout\" exist, but we cannot verify this from the output files alone."
+    }
+  ],
+  "user_notes_summary": null,
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "showcase page의 import가 새 구조에 맞게 정리된다",
+        "reason": "This assertion passed vacuously — since the file was never moved, the import didn't need to change. Consider making this assertion conditional on the folder-structure assertion, or checking that the import resolves to a folder/index path specifically."
+      },
+      {
+        "assertion": "기존 label prop 동작이 보존된다",
+        "reason": "This assertion is ambiguous: does 'preserved' mean the label prop still exists, or that the text-rendering behavior works? Consider specifying: 'the label prop still exists in ButtonProps and renders text when used'."
+      },
+      {
+        "reason": "No assertion checks whether the original Button component used an arrow function in the first place. If the original was already a function declaration, the arrow-function assertion would be testing a convention that was never met. Consider verifying the fixture's original code to calibrate this assertion."
+      }
+    ],
+    "overall": "The without-skill run heavily refactored the API surface (label->children, tone->variant, added onClick/disabled/testId) rather than doing the structural reorganization the assertions expected (folder structure, common/ placement, camelCase folder). The agent interpreted 'convention refactor' as API normalization rather than file-structure reorganization. 7 of 10 assertions failed."
+  }
+}
