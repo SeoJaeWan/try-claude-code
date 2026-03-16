@@ -1,0 +1,15 @@
+{
+  "eval_id": 2,
+  "eval_name": "button-convention-refactor",
+  "prompt": "Button 컴포넌트를 프로젝트 컨벤션에 맞게 정리해줘. 기존 동작은 유지하고 현재 구조상의 컨벤션 위반을 해소해줘.",
+  "assertions": [
+    {"id": "folder-structure", "text": "결과 구조가 Button/index.tsx 또는 동급 folder/index 규칙을 따른다"},
+    {"id": "flat-file-removed", "text": "flat components/Button.tsx 파일이 그대로 남지 않는다"},
+    {"id": "props-interface-suffix", "text": "Props 인터페이스가 ButtonProps 접미사를 유지한다"},
+    {"id": "arrow-function", "text": "컴포넌트가 화살표 함수 형태로 유지된다"},
+    {"id": "label-behavior-preserved", "text": "기존 label prop 동작이 보존된다"},
+    {"id": "tone-behavior-preserved", "text": "기존 tone prop 동작이 보존된다"},
+    {"id": "showcase-import-updated", "text": "showcase page의 import가 새 구조에 맞게 정리된다"},
+    {"id": "no-forbidden-patterns", "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다"}
+  ]
+}
