@@ -22,38 +22,9 @@ All file creation goes through `tcf` CLI. Never create hook files manually — t
 
 ## CLI-First Workflow
 
-Every hook file must be created via `tcf`. Run `tcf --help` first to see available commands.
-
-```bash
-# See all commands and rules
-tcf --help
-
-# Create a custom hook
-tcf hook --json '{"name":"useScroll","path":"hooks/utils/common"}' --apply
-
-# Create an API query hook
-tcf apiHook --json '{"name":"useGetProduct","path":"hooks/apis/product/queries","kind":"query","method":"GET"}' --apply
-
-# Create an API mutation hook
-tcf apiHook --json '{"name":"usePostLogin","path":"hooks/apis/auth/mutations","kind":"mutation","method":"POST"}' --apply
-
-# Snippet helpers
-tcf function --json '{"kind":"internalHandler","name":"onSubmit"}'
-tcf queryKey --json '{"domain":"product","scope":"detail","params":["productId"]}'
-
-# Batch multiple operations
-tcf batch --json '{"ops":[...]}' --apply
-```
+Every hook file must be created via `tcf`. Run `tcf --help` first to see available commands, path/naming policies, and examples.
 
 After `tcf` creates the scaffold, implement the business logic inside the generated files.
-
-Path policy:
-- Non-API hooks: `hooks/utils/{domain}` or `hooks/utils/common`
-- API hooks: `hooks/apis/{domain}/queries` or `hooks/apis/{domain}/mutations`
-
-Naming policy:
-- Query hooks: `useGet*`
-- Mutation hooks: `usePost*`, `usePut*`, `usePatch*`, `useDelete*`
 
 ---
 
