@@ -1,0 +1,19 @@
+{
+  "eval_id": 1, "eval_name": "review-card-creation", "configuration": "with_skill",
+  "pass_rate": 1.0, "passed": 13, "failed": 0, "total": 13,
+  "expectations": [
+    {"text": "ReviewCard 컴포넌트 파일이 존재한다", "passed": true, "evidence": "components/common/reviewCard/index.tsx"},
+    {"text": "컴포넌트가 {ComponentName}/index.tsx 패턴으로 생성된다", "passed": true, "evidence": "reviewCard/index.tsx + starIcon/index.tsx"},
+    {"text": "flat ReviewCard.tsx가 아닌 폴더 기반 index.tsx로 생성된다", "passed": true, "evidence": "폴더 기반 구조"},
+    {"text": "폴더명이 camelCase이다 (tcp folderCase: camelCase)", "passed": true, "evidence": "common/reviewCard/ — camelCase"},
+    {"text": "components/common/ 또는 components/{domain}/ 하위에 배치된다", "passed": true, "evidence": "components/common/reviewCard/"},
+    {"text": "컴포넌트 이름이 PascalCase이다", "passed": true, "evidence": "const ReviewCard = (...)"},
+    {"text": "Props 인터페이스가 ReviewCardProps 접미사를 따른다", "passed": true, "evidence": "export interface ReviewCardProps"},
+    {"text": "사용자 아바타를 표시하는 요소가 존재한다", "passed": true, "evidence": "img avatar + initial fallback"},
+    {"text": "별점을 표시하는 요소가 존재한다", "passed": true, "evidence": "StarIcon 서브컴포넌트 5개 별"},
+    {"text": "리뷰 본문을 표시하는 요소가 존재한다", "passed": true, "evidence": "<p> body text-sm leading-relaxed"},
+    {"text": "작성일을 표시하는 요소가 존재한다", "passed": true, "evidence": "<time dateTime={publishedAt}>"},
+    {"text": "Tailwind CSS 클래스가 스타일링에 사용된다", "passed": true, "evidence": "Tailwind 전반 사용"},
+    {"text": "useEffect/fetch/axios/useQuery/useMutation 없다", "passed": true, "evidence": "해당 패턴 없음"}
+  ]
+}
