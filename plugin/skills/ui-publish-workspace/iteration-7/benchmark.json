@@ -1,0 +1,57 @@
+{
+  "metadata": {
+    "skill_name": "ui-publish",
+    "skill_path": "plugin/skills/ui-publish",
+    "executor_model": "claude-sonnet-4-6",
+    "timestamp": "2026-03-16T00:00:00Z",
+    "evals_run": [1, 2, 3, 4],
+    "runs_per_configuration": 1,
+    "skill_change": "Iteration 7 benchmark (variance confirmation against iter-6)"
+  },
+  "runs": [
+    {"eval_id": 1, "eval_name": "review-card-creation", "configuration": "with_skill", "run_number": 1,
+     "result": {"pass_rate": 1.0, "passed": 13, "failed": 0, "total": 13, "time_seconds": 201.6, "tokens": 30363, "errors": 0}},
+    {"eval_id": 1, "eval_name": "review-card-creation", "configuration": "without_skill", "run_number": 1,
+     "result": {"pass_rate": 0.692, "passed": 9, "failed": 4, "total": 13, "time_seconds": 49.0, "tokens": 20207, "errors": 0}},
+    {"eval_id": 2, "eval_name": "button-convention-refactor", "configuration": "with_skill", "run_number": 1,
+     "result": {"pass_rate": 0.7, "passed": 7, "failed": 3, "total": 10, "time_seconds": 162.4, "tokens": 27064, "errors": 0}},
+    {"eval_id": 2, "eval_name": "button-convention-refactor", "configuration": "without_skill", "run_number": 1,
+     "result": {"pass_rate": 0.3, "passed": 3, "failed": 7, "total": 10, "time_seconds": 87.2, "tokens": 22509, "errors": 0}},
+    {"eval_id": 3, "eval_name": "dashboard-layout-refactor", "configuration": "with_skill", "run_number": 1,
+     "result": {"pass_rate": 1.0, "passed": 11, "failed": 0, "total": 11, "time_seconds": 218.3, "tokens": 36484, "errors": 0}},
+    {"eval_id": 3, "eval_name": "dashboard-layout-refactor", "configuration": "without_skill", "run_number": 1,
+     "result": {"pass_rate": 0.545, "passed": 6, "failed": 5, "total": 11, "time_seconds": 103.3, "tokens": 25138, "errors": 0}},
+    {"eval_id": 4, "eval_name": "product-card-deduplication", "configuration": "with_skill", "run_number": 1,
+     "result": {"pass_rate": 1.0, "passed": 9, "failed": 0, "total": 9, "time_seconds": 232.0, "tokens": 21148, "errors": 0}},
+    {"eval_id": 4, "eval_name": "product-card-deduplication", "configuration": "without_skill", "run_number": 1,
+     "result": {"pass_rate": 0.556, "passed": 5, "failed": 4, "total": 9, "time_seconds": 130.7, "tokens": 21573, "errors": 0}}
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 0.925, "stddev": 0.150, "min": 0.7, "max": 1.0},
+      "time_seconds": {"mean": 203.6, "stddev": 28.9, "min": 162.4, "max": 232.0},
+      "tokens": {"mean": 28765, "stddev": 6372, "min": 21148, "max": 36484}
+    },
+    "without_skill": {
+      "pass_rate": {"mean": 0.523, "stddev": 0.162, "min": 0.3, "max": 0.692},
+      "time_seconds": {"mean": 92.6, "stddev": 33.9, "min": 49.0, "max": 130.7},
+      "tokens": {"mean": 22357, "stddev": 2085, "min": 20207, "max": 25138}
+    },
+    "delta": {
+      "pass_rate": "+0.402",
+      "time_seconds": "+111.0",
+      "tokens": "+6408"
+    }
+  },
+  "notes": [
+    "ITERATION 7: with_skill 92.5% vs without_skill 52.3% (+40.2%p delta)",
+    "Eval1 with_skill 100% (13/13): common/reviewCard/index.tsx + starIcon/ 서브컴포넌트 분리. 201.6s (iter-6의 567s에서 크게 개선)",
+    "Eval1 without_skill 69.2% (9/13): flat ReviewCard.tsx — folder/camelCase/domain placement 4개 실패",
+    "Eval2 with_skill 70% (7/10): showcase/button/index.tsx — folder+camelCase 성공, BUT label→children/tone→variant API 변경으로 3개 실패 (common 배치 미달 + 기존 동작 미보존)",
+    "Eval2 without_skill 30% (3/10): flat Button.tsx + function declaration + label/tone 모두 변경. iter-6 100%에서 급락 — 높은 variance 확인",
+    "Eval3 최대 차별화 (+45.5%p): with_skill 100% (dashboard/dashboardLayout/ + 서브컴포넌트) vs without_skill 54.5% (flat in-place 수정만)",
+    "Eval4 with_skill 100% (9/9): common/productCard/index.tsx 완벽 통합 vs without_skill 55.6% (flat 병합)",
+    "Eval2 variance 높음: iter-6 without_skill 100% → iter-7 30%. publisher agent의 tcp 자체 발견이 비결정적이며, label/tone 보존도 불안정",
+    "with_skill Eval2 label/tone 미보존: 스킬이 '기존 동작 유지'를 명시적으로 강조하지 않아 API modernization을 우선시"
+  ]
+}

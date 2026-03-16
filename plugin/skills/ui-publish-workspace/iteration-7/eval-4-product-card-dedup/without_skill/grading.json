@@ -1,0 +1,16 @@
+{
+  "eval_id": 4,
+  "eval_name": "product-card-deduplication",
+  "configuration": "without_skill",
+  "expectations": [
+    {"text": "단일 source of truth", "passed": true, "evidence": "flat ProductCard.tsx로 통합, 폴더 삭제"},
+    {"text": "flat ProductCard.tsx 제거", "passed": false, "evidence": "flat ProductCard.tsx로 병합 — flat 파일이 최종 결과"},
+    {"text": "final structure follows a folder-based index.tsx pattern", "passed": false, "evidence": "flat ProductCard.tsx — folder/index.tsx 아님"},
+    {"text": "폴더명이 camelCase이다 (productCard/)", "passed": false, "evidence": "폴더 미생성"},
+    {"text": "components/common/ 하위에 배치된다", "passed": false, "evidence": "components/ProductCard.tsx — common 아님"},
+    {"text": "ProductCardProps 유지", "passed": true, "evidence": "export interface ProductCardProps"},
+    {"text": "import path 일관성", "passed": true, "evidence": "단일 파일로 통합"},
+    {"text": "visual affordance 보존", "passed": true, "evidence": "hover:shadow-md, group-hover:scale-105, badge, price.toLocaleString 보존"},
+    {"text": "forbidden 패턴 없음", "passed": true, "evidence": "useEffect/fetch/axios 없음"}
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "eval_id": 1,
+  "eval_name": "review-card-creation",
+  "configuration": "without_skill",
+  "expectations": [
+    {"text": "ReviewCard 컴포넌트 파일이 존재한다", "passed": true, "evidence": "ReviewCard.tsx 존재"},
+    {"text": "컴포넌트가 {ComponentName}/index.tsx 패턴으로 생성된다", "passed": false, "evidence": "flat ReviewCard.tsx — index.tsx 패턴 아님"},
+    {"text": "flat ReviewCard.tsx가 아닌 폴더 기반 index.tsx로 생성된다", "passed": false, "evidence": "flat ReviewCard.tsx로 생성됨"},
+    {"text": "폴더명이 camelCase이다 (reviewCard/)", "passed": false, "evidence": "폴더 없음 — flat 파일"},
+    {"text": "components/common/ 또는 components/{domain}/ 하위에 배치된다", "passed": false, "evidence": "components/ReviewCard.tsx — common이나 domain 하위 아님"},
+    {"text": "컴포넌트 이름이 PascalCase이다", "passed": true, "evidence": "ReviewCard (PascalCase)"},
+    {"text": "Props 인터페이스가 ReviewCardProps 접미사를 따른다", "passed": true, "evidence": "export interface ReviewCardProps"},
+    {"text": "사용자 아바타를 표시하는 요소가 존재한다", "passed": true, "evidence": "avatarUrl img + initial fallback"},
+    {"text": "별점을 표시하는 요소가 존재한다", "passed": true, "evidence": "inline SVG star × 5, amber color"},
+    {"text": "리뷰 본문을 표시하는 요소가 존재한다", "passed": true, "evidence": "<p data-testid=\"review-card-body\">{body}</p>"},
+    {"text": "작성일을 표시하는 요소가 존재한다", "passed": true, "evidence": "<time dateTime={createdAt}>"},
+    {"text": "Tailwind CSS 클래스가 스타일링에 사용된다", "passed": true, "evidence": "rounded-xl, border, flex 등 Tailwind"},
+    {"text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다", "passed": true, "evidence": "forbidden 패턴 없음"}
+  ]
+}

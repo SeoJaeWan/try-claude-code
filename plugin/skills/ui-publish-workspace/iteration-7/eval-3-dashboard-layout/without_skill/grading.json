@@ -1,0 +1,18 @@
+{
+  "eval_id": 3,
+  "eval_name": "dashboard-layout-refactor",
+  "configuration": "without_skill",
+  "expectations": [
+    {"text": "folder 기반 index.tsx 패턴", "passed": false, "evidence": "flat DashboardLayout.tsx in-place 수정"},
+    {"text": "flat DashboardLayout.tsx 제거", "passed": false, "evidence": "flat 파일 그대로 유지 (in-place 리팩토링)"},
+    {"text": "폴더명이 camelCase이다 (dashboardLayout/)", "passed": false, "evidence": "폴더 미생성"},
+    {"text": "components/common/ 또는 components/dashboard/ 하위에 배치된다", "passed": false, "evidence": "components/DashboardLayout.tsx — 루트 level"},
+    {"text": "sidebar 영역 존재", "passed": true, "evidence": "SidebarLogo, SidebarNav, SidebarFooter 서브함수로 구조화"},
+    {"text": "header 영역 존재", "passed": true, "evidence": "DashboardHeader 서브함수 존재"},
+    {"text": "main 콘텐츠 영역 존재", "passed": true, "evidence": "<main data-testid=\"dashboard-main\">{children}</main>"},
+    {"text": "children shell 역할 유지", "passed": true, "evidence": "children: ReactNode in DashboardLayoutProps"},
+    {"text": "responsive breakpoint 보존", "passed": true, "evidence": "md:w-60, lg:w-64, md:px-6, lg:px-8 등"},
+    {"text": "사용처 import 업데이트", "passed": false, "evidence": "파일 미이동으로 import 변경 불필요하나, folder 전환 미수행"},
+    {"text": "forbidden 패턴 없음", "passed": true, "evidence": "useEffect/fetch/axios 없음"}
+  ]
+}
