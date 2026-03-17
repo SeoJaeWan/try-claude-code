@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -1523,6 +1523,1378 @@
   
     <article
       class="group-card"
+      data-testid="publisher-guide-group-validateFile-targets"
+    >
+      <div class="group-card-header">
+        <h3>Validate Targets</h3>
+      </div>
+      <div class="group-card-body">
+        
+    <ol class="guide-stack">
+      
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">1</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>commandName</dt>
+              <dd><p class="guide-text">component</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>match</dt>
+              <dd>
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>pathPatterns</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">app/{pagePath*}/page.tsx</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+    </dl>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>expectedEntryFileName</dt>
+              <dd><p class="guide-text">page.tsx</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>runPlacementValidation</dt>
+              <dd><p class="guide-text">false</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>exportPolicy</dt>
+              <dd>
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>enforceExportNameMatch</dt>
+              <dd><p class="guide-text">false</p></dd>
+            </div>
+          
+    </dl>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>pathRules</dt>
+              <dd>
+    <ol class="guide-stack">
+      
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">1</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">pathSegmentCase</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>style</dt>
+              <dd><p class="guide-text">camel</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>skipFrameworkSpecialSegments</dt>
+              <dd><p class="guide-text">true</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>allowedFileBaseNames</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">page</p></li><li><p class="guide-text">index</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>fileNameStyle</dt>
+              <dd><p class="guide-text">camel</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">INVALID_PATH_SEGMENT</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>directoryMessage</dt>
+              <dd><p class="guide-text">Publisher folder names must use camelCase</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>fileMessage</dt>
+              <dd><p class="guide-text">Publisher file names must use camelCase, except reserved entry files like page.tsx and index.tsx</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+    </ol>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>structureRules</dt>
+              <dd>
+    <ol class="guide-stack">
+      
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">1</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">forbidJsxHelpers</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">SAME_FILE_JSX_HELPER</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>message</dt>
+              <dd><p class="guide-text">Publisher component file must not define JSX helpers in the same file</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>suggestionTemplate</dt>
+              <dd><p class="guide-text">Move {name} into its own component folder under {entryName}</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">2</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">forbidSubcomponents</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">SAME_FILE_SUBCOMPONENT</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>message</dt>
+              <dd><p class="guide-text">Publisher component file must not define subcomponents in the same file</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>suggestionTemplate</dt>
+              <dd><p class="guide-text">Move {name} into its own component folder under {entryName}</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+    </ol>
+  </dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">2</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>commandName</dt>
+              <dd><p class="guide-text">component</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>match</dt>
+              <dd>
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>pathPatterns</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">{prefix*}/components/{scope}/{parentComponent}/{name}/index.tsx</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+    </dl>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>argMappings</dt>
+              <dd>
+    <ol class="guide-stack">
+      
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">1</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>field</dt>
+              <dd><p class="guide-text">path</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>source</dt>
+              <dd><p class="guide-text">template</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>template</dt>
+              <dd><p class="guide-text">{prefix}/components/{scope}/{parentComponent}/{name}</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>normalizePath</dt>
+              <dd><p class="guide-text">true</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">2</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>field</dt>
+              <dd><p class="guide-text">name</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>source</dt>
+              <dd><p class="guide-text">capture</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>capture</dt>
+              <dd><p class="guide-text">name</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>transform</dt>
+              <dd><p class="guide-text">pascal</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+    </ol>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>expectedEntryFileName</dt>
+              <dd><p class="guide-text">index.tsx</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>exportPolicy</dt>
+              <dd>
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>expectedNameField</dt>
+              <dd><p class="guide-text">name</p></dd>
+            </div>
+          
+    </dl>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>pathRules</dt>
+              <dd>
+    <ol class="guide-stack">
+      
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">1</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">pathSegmentCase</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>style</dt>
+              <dd><p class="guide-text">camel</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>skipAfterLastSegment</dt>
+              <dd><p class="guide-text">components</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>skipFrameworkSpecialSegments</dt>
+              <dd><p class="guide-text">true</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>allowedFileBaseNames</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">page</p></li><li><p class="guide-text">index</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>fileNameStyle</dt>
+              <dd><p class="guide-text">camel</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">INVALID_PATH_SEGMENT</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>directoryMessage</dt>
+              <dd><p class="guide-text">Publisher folder names must use camelCase</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>fileMessage</dt>
+              <dd><p class="guide-text">Publisher file names must use camelCase, except reserved entry files like page.tsx and index.tsx</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+    </ol>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>structureRules</dt>
+              <dd>
+    <ol class="guide-stack">
+      
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">1</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">propsTypeSuffix</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>suffix</dt>
+              <dd><p class="guide-text">Props</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">MISSING_PROPS_TYPE</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>message</dt>
+              <dd><p class="guide-text">Component file must define the expected Props interface.</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">2</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">forbidJsxHelpers</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">SAME_FILE_JSX_HELPER</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>message</dt>
+              <dd><p class="guide-text">Publisher component file must not define JSX helpers in the same file</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>suggestionTemplate</dt>
+              <dd><p class="guide-text">Move {name} into its own component folder under {entryName}</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">3</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">forbidSubcomponents</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">SAME_FILE_SUBCOMPONENT</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>message</dt>
+              <dd><p class="guide-text">Publisher component file must not define subcomponents in the same file</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>suggestionTemplate</dt>
+              <dd><p class="guide-text">Move {name} into its own component folder under {entryName}</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+    </ol>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>ownershipRule</dt>
+              <dd>
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">parentOnlyChildReuse</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>componentsRoot</dt>
+              <dd><p class="guide-text">components</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>sharedSegment</dt>
+              <dd><p class="guide-text">common</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>entryFileNames</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">index.tsx</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>entryFileName</dt>
+              <dd><p class="guide-text">index.tsx</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">PARENT_ONLY_CHILD_REUSED</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>message</dt>
+              <dd><p class="guide-text">Parent-only child component is imported outside the parent component tree</p></dd>
+            </div>
+          
+    </dl>
+  </dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">3</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>commandName</dt>
+              <dd><p class="guide-text">component</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>match</dt>
+              <dd>
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>pathPatterns</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">{prefix*}/components/{scope}/{name}/index.tsx</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+    </dl>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>argMappings</dt>
+              <dd>
+    <ol class="guide-stack">
+      
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">1</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>field</dt>
+              <dd><p class="guide-text">path</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>source</dt>
+              <dd><p class="guide-text">template</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>template</dt>
+              <dd><p class="guide-text">{prefix}/components/{scope}/{name}</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>normalizePath</dt>
+              <dd><p class="guide-text">true</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">2</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>field</dt>
+              <dd><p class="guide-text">name</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>source</dt>
+              <dd><p class="guide-text">capture</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>capture</dt>
+              <dd><p class="guide-text">name</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>transform</dt>
+              <dd><p class="guide-text">pascal</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+    </ol>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>expectedEntryFileName</dt>
+              <dd><p class="guide-text">index.tsx</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>exportPolicy</dt>
+              <dd>
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>expectedNameField</dt>
+              <dd><p class="guide-text">name</p></dd>
+            </div>
+          
+    </dl>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>pathRules</dt>
+              <dd>
+    <ol class="guide-stack">
+      
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">1</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">pathSegmentCase</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>style</dt>
+              <dd><p class="guide-text">camel</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>skipAfterLastSegment</dt>
+              <dd><p class="guide-text">components</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>skipFrameworkSpecialSegments</dt>
+              <dd><p class="guide-text">true</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>allowedFileBaseNames</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">page</p></li><li><p class="guide-text">index</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>fileNameStyle</dt>
+              <dd><p class="guide-text">camel</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">INVALID_PATH_SEGMENT</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>directoryMessage</dt>
+              <dd><p class="guide-text">Publisher folder names must use camelCase</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>fileMessage</dt>
+              <dd><p class="guide-text">Publisher file names must use camelCase, except reserved entry files like page.tsx and index.tsx</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+    </ol>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>structureRules</dt>
+              <dd>
+    <ol class="guide-stack">
+      
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">1</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">propsTypeSuffix</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>suffix</dt>
+              <dd><p class="guide-text">Props</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">MISSING_PROPS_TYPE</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>message</dt>
+              <dd><p class="guide-text">Component file must define the expected Props interface.</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">2</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">forbidJsxHelpers</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">SAME_FILE_JSX_HELPER</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>message</dt>
+              <dd><p class="guide-text">Publisher component file must not define JSX helpers in the same file</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>suggestionTemplate</dt>
+              <dd><p class="guide-text">Move {name} into its own component folder under {entryName}</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">3</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">forbidSubcomponents</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">SAME_FILE_SUBCOMPONENT</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>message</dt>
+              <dd><p class="guide-text">Publisher component file must not define subcomponents in the same file</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>suggestionTemplate</dt>
+              <dd><p class="guide-text">Move {name} into its own component folder under {entryName}</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+    </ol>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>ownershipRule</dt>
+              <dd>
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">parentOnlyChildReuse</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>componentsRoot</dt>
+              <dd><p class="guide-text">components</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>sharedSegment</dt>
+              <dd><p class="guide-text">common</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>entryFileNames</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">index.tsx</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>entryFileName</dt>
+              <dd><p class="guide-text">index.tsx</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">PARENT_ONLY_CHILD_REUSED</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>message</dt>
+              <dd><p class="guide-text">Parent-only child component is imported outside the parent component tree</p></dd>
+            </div>
+          
+    </dl>
+  </dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">4</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>commandName</dt>
+              <dd><p class="guide-text">component</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>match</dt>
+              <dd>
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>pathPatterns</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">{path*}/{name}/index.tsx</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+    </dl>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>argMappings</dt>
+              <dd>
+    <ol class="guide-stack">
+      
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">1</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>field</dt>
+              <dd><p class="guide-text">name</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>source</dt>
+              <dd><p class="guide-text">capture</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>capture</dt>
+              <dd><p class="guide-text">name</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>transform</dt>
+              <dd><p class="guide-text">pascal</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+    </ol>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>expectedEntryFileName</dt>
+              <dd><p class="guide-text">index.tsx</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>runPlacementValidation</dt>
+              <dd><p class="guide-text">false</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>exportPolicy</dt>
+              <dd>
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>expectedNameField</dt>
+              <dd><p class="guide-text">name</p></dd>
+            </div>
+          
+    </dl>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>pathRules</dt>
+              <dd>
+    <ol class="guide-stack">
+      
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">1</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">pathSegmentCase</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>style</dt>
+              <dd><p class="guide-text">camel</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>skipFrameworkSpecialSegments</dt>
+              <dd><p class="guide-text">true</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>allowedFileBaseNames</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">page</p></li><li><p class="guide-text">index</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>fileNameStyle</dt>
+              <dd><p class="guide-text">camel</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">INVALID_PATH_SEGMENT</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>directoryMessage</dt>
+              <dd><p class="guide-text">Publisher folder names must use camelCase</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>fileMessage</dt>
+              <dd><p class="guide-text">Publisher file names must use camelCase, except reserved entry files like page.tsx and index.tsx</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+    </ol>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>structureRules</dt>
+              <dd>
+    <ol class="guide-stack">
+      
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">1</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">propsTypeSuffix</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>suffix</dt>
+              <dd><p class="guide-text">Props</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">MISSING_PROPS_TYPE</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>message</dt>
+              <dd><p class="guide-text">Component file must define the expected Props interface.</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">2</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">forbidJsxHelpers</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">SAME_FILE_JSX_HELPER</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>message</dt>
+              <dd><p class="guide-text">Publisher component file must not define JSX helpers in the same file</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>suggestionTemplate</dt>
+              <dd><p class="guide-text">Move {name} into its own component folder under {entryName}</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">3</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">forbidSubcomponents</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">SAME_FILE_SUBCOMPONENT</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>message</dt>
+              <dd><p class="guide-text">Publisher component file must not define subcomponents in the same file</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>suggestionTemplate</dt>
+              <dd><p class="guide-text">Move {name} into its own component folder under {entryName}</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+    </ol>
+  </dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">5</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>commandName</dt>
+              <dd><p class="guide-text">component</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>match</dt>
+              <dd>
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>extensions</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">.tsx</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>excludeFileNames</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">page.tsx</p></li><li><p class="guide-text">index.tsx</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+    </dl>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>argMappings</dt>
+              <dd>
+    <ol class="guide-stack">
+      
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">1</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>field</dt>
+              <dd><p class="guide-text">name</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>source</dt>
+              <dd><p class="guide-text">fileName</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>withoutExtension</dt>
+              <dd><p class="guide-text">true</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>transform</dt>
+              <dd><p class="guide-text">pascal</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+    </ol>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>expectedEntryFileName</dt>
+              <dd><p class="guide-text">index.tsx</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>runPlacementValidation</dt>
+              <dd><p class="guide-text">false</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>exportPolicy</dt>
+              <dd>
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>expectedNameField</dt>
+              <dd><p class="guide-text">name</p></dd>
+            </div>
+          
+    </dl>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>pathRules</dt>
+              <dd>
+    <ol class="guide-stack">
+      
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">1</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">pathSegmentCase</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>style</dt>
+              <dd><p class="guide-text">camel</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>skipFrameworkSpecialSegments</dt>
+              <dd><p class="guide-text">true</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>allowedFileBaseNames</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">page</p></li><li><p class="guide-text">index</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>fileNameStyle</dt>
+              <dd><p class="guide-text">camel</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">INVALID_PATH_SEGMENT</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>directoryMessage</dt>
+              <dd><p class="guide-text">Publisher folder names must use camelCase</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>fileMessage</dt>
+              <dd><p class="guide-text">Publisher file names must use camelCase, except reserved entry files like page.tsx and index.tsx</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+    </ol>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>structureRules</dt>
+              <dd>
+    <ol class="guide-stack">
+      
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">1</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">propsTypeSuffix</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>suffix</dt>
+              <dd><p class="guide-text">Props</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">MISSING_PROPS_TYPE</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>message</dt>
+              <dd><p class="guide-text">Component file must define the expected Props interface.</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">2</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">forbidJsxHelpers</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">SAME_FILE_JSX_HELPER</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>message</dt>
+              <dd><p class="guide-text">Publisher component file must not define JSX helpers in the same file</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>suggestionTemplate</dt>
+              <dd><p class="guide-text">Move {name} into its own component folder under {entryName}</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+            <li class="guide-stack-item">
+              <span class="guide-stack-index">3</span>
+              <div class="guide-stack-body">
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>kind</dt>
+              <dd><p class="guide-text">forbidSubcomponents</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>code</dt>
+              <dd><p class="guide-text">SAME_FILE_SUBCOMPONENT</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>message</dt>
+              <dd><p class="guide-text">Publisher component file must not define subcomponents in the same file</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>suggestionTemplate</dt>
+              <dd><p class="guide-text">Move {name} into its own component folder under {entryName}</p></dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+    </ol>
+  </dd>
+            </div>
+          
+    </dl>
+  </div>
+            </li>
+          
+    </ol>
+  
+      </div>
+    </article>
+  
+    <article
+      class="group-card"
       data-testid="publisher-guide-group-validateFile-examples"
     >
       <div class="group-card-header">
@@ -1987,7 +3359,7 @@
       
             <div class="guide-definition-row">
               <dt>kind</dt>
-              <dd><p class="guide-text">publisherComponentPathPolicy</p></dd>
+              <dd><p class="guide-text">pathPatterns</p></dd>
             </div>
           
             <div class="guide-definition-row">
@@ -1996,13 +3368,22 @@
             </div>
           
             <div class="guide-definition-row">
-              <dt>componentsRoot</dt>
-              <dd><p class="guide-text">components</p></dd>
+              <dt>patterns</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">{prefix*}/components/common/{component}</p></li><li><p class="guide-text">{prefix*}/components/{domain}/{component}</p></li><li><p class="guide-text">{prefix*}/components/{scope}/{parentComponent}/{component}</p></li>
+    </ul>
+  </dd>
             </div>
           
             <div class="guide-definition-row">
-              <dt>sharedSegment</dt>
-              <dd><p class="guide-text">common</p></dd>
+              <dt>code</dt>
+              <dd><p class="guide-text">INVALID_COMPONENT_PATH</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>message</dt>
+              <dd><p class="guide-text">Publisher component path must live under a components segment using */components/common/{component}, */components/{domain}/{component}, or a direct child under the component folder</p></dd>
             </div>
           
     </dl>

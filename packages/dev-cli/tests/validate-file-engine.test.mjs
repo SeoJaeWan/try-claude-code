@@ -1,0 +1,98 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+
+import { validateFiles } from "../src/core/validate-file.mjs";
+import { createTempRepo } from "./test-utils.mjs";
+
+test("validateFiles는 targetRules argMapping과 fieldResolver를 함께 적용한다", async () => {
+  const tempRoot = await createTempRepo({
+    profiles: [],
+    files: {
+      "hooks/apis/auth/mutations/usePostLogin/index.ts": `const usePostLogin = () => {
+  return {};
+};
+
+export default usePostLogin;
+`
+    }
+  });
+
+  const profile = {
+    commands: {
+      apiHook: {
+        fieldResolvers: [
+          {
+            field: "method",
+            source: "namePrefixMap",
+            sourceField: "name",
+            prefixMap: {
+              usePost: "POST",
+              useGet: "GET"
+            }
+          }
+        ],
+        validatorRules: [
+          {
+            kind: "pathPatterns",
+            field: "path",
+            patterns: ["hooks/apis/{domain}/mutations"],
+            code: "INVALID_API_PATH",
+            message: "API hook path must be hooks/apis/{domain}/mutations"
+          },
+          {
+            kind: "conditionalAllowedValues",
+            field: "method",
+            selectorFields: ["kind"],
+            cases: {
+              mutation: ["POST"]
+            },
+            code: "INVALID_API_METHOD",
+            message: "Mutation API hooks must use POST"
+          }
+        ]
+      },
+      validateFile: {
+        targetRules: [
+          {
+            commandName: "apiHook",
+            match: {
+              pathPatterns: ["hooks/apis/{domain}/{kindSegment=mutations}/{name}/index.ts"]
+            },
+            argMappings: [
+              {
+                field: "path",
+                source: "template",
+                template: "hooks/apis/{domain}/{kindSegment}",
+                normalizePath: true
+              },
+              {
+                field: "kind",
+                source: "literal",
+                value: "mutation"
+              },
+              {
+                field: "name",
+                source: "capture",
+                capture: "name"
+              }
+            ],
+            expectedEntryFileName: "index.ts",
+            exportPolicy: {
+              expectedNameField: "name"
+            }
+          }
+        ]
+      }
+    }
+  };
+
+  const result = await validateFiles({
+    profile,
+    filePaths: ["hooks/apis/auth/mutations/usePostLogin/index.ts"],
+    repoRoot: tempRoot
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.results[0].command, "apiHook");
+  assert.deepEqual(result.results[0].violations, []);
+});

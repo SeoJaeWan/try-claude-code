@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { readJson, runCli, tcbBin } from "./test-utils.mjs";
+import { createTempRepo, readJson, runCli, tcbBin } from "./test-utils.mjs";
 
 test("tcb requestDto는 JSON spec으로 dry-run file plan을 만든다", () => {
   const result = runCli(tcbBin, [
@@ -41,4 +41,31 @@ test("tcb는 basePackage가 없으면 명시적인 root package 감지 실패를
   assert.equal(result.status, 1);
   const payload = readJson(result.stderr);
   assert.equal(payload.error.code, "ROOT_PACKAGE_NOT_FOUND");
+});
+
+test("tcb는 basePackage가 없으면 Spring Application.java에서 root package를 감지한다", async () => {
+  const tempRoot = await createTempRepo({
+    files: {
+      "src/main/java/com/example/app/TryClaudeApplication.java": `package com.example.app;
+
+public class TryClaudeApplication {}
+`
+    },
+    profiles: ["backend/personal/v1"]
+  });
+
+  const result = runCli(tcbBin, [
+    "requestDto",
+    "--json",
+    "{\"name\":\"CreateProductRequest\",\"path\":\"product\"}"
+  ], {
+    cwd: tempRoot
+  });
+
+  assert.equal(result.status, 0);
+  const payload = readJson(result.stdout);
+  assert.equal(
+    payload.files[0].path,
+    "src/main/java/com/example/app/product/dto/CreateProductRequest.java"
+  );
 });

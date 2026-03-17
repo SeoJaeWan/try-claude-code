@@ -3,7 +3,7 @@ import { normalizeCliPath } from "./path-utils.mjs";
 import { validateRequest } from "./profile-validator.mjs";
 import { buildRenderContext } from "./render-context.mjs";
 import { createCliError, ensureString } from "./recipe-utils.mjs";
-import { detectSpringBasePackage } from "../validators/backend-utils.mjs";
+import { resolveCommandArgs } from "./command-args-resolver.mjs";
 
 function replacePattern(pattern, values) {
   return pattern.replace(/\{([A-Za-z0-9_]+)\}/g, (_, key) => values[key] ?? "");
@@ -49,29 +49,6 @@ function resolveTemplatePath(render, spec, key = null) {
   return templatePath;
 }
 
-async function resolveBasePackage(command, args, repoRoot, commandName) {
-  if (!command.generator?.requiresBasePackage) {
-    return args.basePackage;
-  }
-
-  if (args.basePackage) {
-    return ensureString(args.basePackage, "basePackage");
-  }
-
-  const detectedBasePackage = await detectSpringBasePackage(repoRoot);
-  if (!detectedBasePackage) {
-    throw createCliError(
-      "ROOT_PACKAGE_NOT_FOUND",
-      "Spring root package could not be detected. Provide basePackage in the JSON spec.",
-      {
-        command: commandName
-      }
-    );
-  }
-
-  return detectedBasePackage;
-}
-
 async function renderFileEntry({
   command,
   args,
@@ -113,11 +90,16 @@ export async function generateFiles({
     requireArgument(command, "path", args.path);
   }
 
-  const basePackage = await resolveBasePackage(command, args, repoRoot, commandName);
-  const enrichedArgs = {
-    ...args,
-    basePackage
-  };
+  const { args: enrichedArgs } = await resolveCommandArgs({
+    command,
+    args,
+    repoRoot
+  });
+
+  if (command.generator?.requiresBasePackage && enrichedArgs.basePackage) {
+    enrichedArgs.basePackage = ensureString(enrichedArgs.basePackage, "basePackage");
+  }
+
   const context = buildRenderContext(command, enrichedArgs);
   const render = command.render ?? {};
 

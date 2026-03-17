@@ -111,6 +111,18 @@
       "inputSchema": {
         "required": ["name", "path"]
       },
+      "fieldResolvers": [
+        {
+          "field": "basePackage",
+          "source": "detector",
+          "detector": "springBasePackage",
+          "code": "ROOT_PACKAGE_NOT_FOUND",
+          "message": "Spring root package could not be detected. Provide basePackage in the JSON spec.",
+          "details": {
+            "command": "module"
+          }
+        }
+      ],
       "generator": {
         "kind": "multiFile",
         "requiresBasePackage": true
@@ -140,10 +152,6 @@
           "style": "lower",
           "code": "INVALID_PACKAGE_SEGMENT",
           "message": "Backend package segments must use lower-case"
-        },
-        {
-          "kind": "springBasePackage",
-          "field": "basePackage"
         }
       ],
       "render": {
@@ -228,6 +236,18 @@
       "defaults": {
         "fields": []
       },
+      "fieldResolvers": [
+        {
+          "field": "basePackage",
+          "source": "detector",
+          "detector": "springBasePackage",
+          "code": "ROOT_PACKAGE_NOT_FOUND",
+          "message": "Spring root package could not be detected. Provide basePackage in the JSON spec.",
+          "details": {
+            "command": "requestDto"
+          }
+        }
+      ],
       "generator": {
         "kind": "singleFile",
         "requiresBasePackage": true
@@ -263,10 +283,6 @@
           "style": "lower",
           "code": "INVALID_PACKAGE_SEGMENT",
           "message": "Backend package segments must use lower-case"
-        },
-        {
-          "kind": "springBasePackage",
-          "field": "basePackage"
         }
       ],
       "render": {
@@ -331,6 +347,18 @@
       "defaults": {
         "fields": []
       },
+      "fieldResolvers": [
+        {
+          "field": "basePackage",
+          "source": "detector",
+          "detector": "springBasePackage",
+          "code": "ROOT_PACKAGE_NOT_FOUND",
+          "message": "Spring root package could not be detected. Provide basePackage in the JSON spec.",
+          "details": {
+            "command": "responseDto"
+          }
+        }
+      ],
       "generator": {
         "kind": "singleFile",
         "requiresBasePackage": true
@@ -366,10 +394,6 @@
           "style": "lower",
           "code": "INVALID_PACKAGE_SEGMENT",
           "message": "Backend package segments must use lower-case"
-        },
-        {
-          "kind": "springBasePackage",
-          "field": "basePackage"
         }
       ],
       "render": {
@@ -434,6 +458,18 @@
       "defaults": {
         "fields": []
       },
+      "fieldResolvers": [
+        {
+          "field": "basePackage",
+          "source": "detector",
+          "detector": "springBasePackage",
+          "code": "ROOT_PACKAGE_NOT_FOUND",
+          "message": "Spring root package could not be detected. Provide basePackage in the JSON spec.",
+          "details": {
+            "command": "entity"
+          }
+        }
+      ],
       "generator": {
         "kind": "singleFile",
         "requiresBasePackage": true
@@ -469,10 +505,6 @@
           "style": "lower",
           "code": "INVALID_PACKAGE_SEGMENT",
           "message": "Backend package segments must use lower-case"
-        },
-        {
-          "kind": "springBasePackage",
-          "field": "basePackage"
         }
       ],
       "render": {
