@@ -15,5 +15,5 @@ tcf --help
 tcf mode show
 ```
 
-The CLI resolves profile channels from `profiles/registry.json` on the `main` branch of `SeoJaeWan/try-claude-code`.
-For local verification before that file is published remotely, override `TRY_CLAUDE_PROFILE_REGISTRY_URL` and `TRY_CLAUDE_PROFILE_RAW_BASE_URL`.
+The CLI resolves `profiles/**` from the `main` branch of `SeoJaeWan/try-claude-code`.
+Select the active contract with `tcf mode set --mode personal --version v1` and inspect it with `tcf mode show`.

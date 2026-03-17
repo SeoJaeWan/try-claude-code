@@ -38,7 +38,10 @@ function sanitizeRender(render = {}) {
   const {
     templatePath,
     templatePaths,
+    templateContent,
+    templateContents,
     snippetTemplatePath,
+    snippetTemplateContent,
     ...rest
   } = render ?? {};
 

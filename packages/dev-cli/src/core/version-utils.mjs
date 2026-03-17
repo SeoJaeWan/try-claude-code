@@ -1,14 +1,10 @@
 import { createCliError } from "./recipe-utils.mjs";
 
 const MAJOR_PROFILE_VERSION_PATTERN = /^v\d+$/;
-const EXACT_PROFILE_VERSION_PATTERN = /^v\d+\.\d+\.\d+$/;
+const LEGACY_EXACT_PROFILE_VERSION_PATTERN = /^v\d+\.\d+\.\d+$/;
 
 export function isMajorProfileVersion(value) {
   return typeof value === "string" && MAJOR_PROFILE_VERSION_PATTERN.test(value);
-}
-
-export function isExactProfileVersion(value) {
-  return typeof value === "string" && EXACT_PROFILE_VERSION_PATTERN.test(value);
 }
 
 export function extractMajorProfileVersion(value) {
@@ -16,7 +12,7 @@ export function extractMajorProfileVersion(value) {
     return value;
   }
 
-  if (isExactProfileVersion(value)) {
+  if (typeof value === "string" && LEGACY_EXACT_PROFILE_VERSION_PATTERN.test(value)) {
     return value.match(/^v\d+/)?.[0] ?? null;
   }
 
@@ -24,22 +20,16 @@ export function extractMajorProfileVersion(value) {
 }
 
 export function assertProfileVersion(value, field = "version") {
-  if (isMajorProfileVersion(value) || isExactProfileVersion(value)) {
+  if (isMajorProfileVersion(value)) {
     return value;
   }
 
   throw createCliError(
     "INVALID_PROFILE_VERSION",
-    `Invalid ${field}: ${value}. Use v1 or v1.0.0 style versions.`,
+    `Invalid ${field}: ${value}. Use v1 style versions.`,
     {
       field,
       value
     }
   );
-}
-
-export function createProfileRef({
-  resolvedVersion
-}) {
-  return `profiles-${resolvedVersion}`;
 }

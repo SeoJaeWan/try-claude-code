@@ -3,12 +3,13 @@
 ## Summary
 
 `tcp`, `tcf`, `tcb`는 `@seojaewan/dev-cli-core` shared runtime 위에서 동작하고, 실제 배포는 `@seojaewan/tcp`, `@seojaewan/tcf`, `@seojaewan/tcb` wrapper package가 담당한다.
-규칙, 템플릿, 명령 표면은 GitHub의 `profiles/registry.json`과 pinned ref에서 읽고, CLI는 spec-driven JSON 입력과 batch 실행을 기본으로 제공한다.
+규칙, 템플릿, 명령 표면은 GitHub `SeoJaeWan/try-claude-code`의 `main/profiles/**`에서 읽고, CLI는 spec-driven JSON 입력과 batch 실행을 기본으로 제공한다.
 이때 engine은 실행기 역할만 맡고, command semantics는 `profile/version`의 recipe가 소유한다.
 
 이 구조는 agent-first CLI 원칙을 따른다.
 
-- 입력은 명시적인 `--json` only
+- scaffold/snippet 생성 명령은 명시적인 `--json` spec을 사용한다
+- validation/help/mode 같은 운영 명령은 contract에 맞는 전용 입력 형태를 사용한다
 - 출력 기본값은 JSON
 - preview가 기본값이고 실제 write는 `--apply`
 - 실패는 deterministic JSON error payload로 반환
@@ -93,15 +94,13 @@ active profile 우선순위:
 3. global default: `~/.try-claude-dev-cli.json`
 4. fallback: `personal/v1`
 
-channel과 exact pin은 분리한다.
+공개 계약은 mode와 major version만 가진다.
 
-- 사용자는 `personal + v1` 같은 major channel 또는 `personal + v1.0.1` 같은 exact release를 선택한다.
-- `profiles/registry.json`은 major channel별 `latest` exact version과 버전 목록만 관리한다.
-- exact version은 기본적으로 `profiles-v1.0.1` 같은 release tag로 직접 fetch한다.
-- config에는 `requestedVersion`, `resolvedVersion`, `resolvedRef`를 함께 저장한다.
-- 실제 profile/template fetch는 `main` live file이 아니라 `resolvedRef` 기준 raw URL만 사용한다.
-- `mode set --version v1`를 다시 호출하면 current `latest` exact version으로 다시 resolve한다.
-- `mode update`는 저장된 `requestedVersion`을 다시 resolve하는 alias다.
+- 사용자는 `personal + v1` 같은 조합만 선택한다.
+- `profiles/registry.json`은 role별 mode와 지원 major version 배열만 관리한다.
+- config에는 `mode`, `version`만 저장한다.
+- 실제 profile/template fetch는 항상 `main/profiles/{role}/{mode}/{version}` live 경로를 직접 사용한다.
+- `mode set`과 `mode show`는 exact patch version을 받지 않는다.
 
 예시 config:
 
@@ -110,9 +109,7 @@ channel과 exact pin은 분리한다.
   "profiles": {
     "publisher": {
       "mode": "personal",
-      "requestedVersion": "v1",
-      "resolvedVersion": "v1.0.0",
-      "resolvedRef": "profiles-v1.0.0"
+      "version": "v1"
     }
   }
 }
@@ -123,12 +120,7 @@ channel과 exact pin은 분리한다.
 ```json
 {
   "publisher": {
-    "personal": {
-      "v1": {
-        "latest": "v1.0.0",
-        "versions": ["v1.0.0"]
-      }
-    }
+    "personal": ["v1"]
   }
 }
 ```
@@ -137,9 +129,7 @@ channel과 exact pin은 분리한다.
 
 ```bash
 tcp mode set --mode personal --version v1
-tcp mode set --mode personal --version v1.0.1
 tcp mode show
-tcp mode update
 tcp mode set --mode personal --version v1 --repo
 tcp --help
 ```
@@ -168,15 +158,14 @@ wrapper는 각각 하나의 `bin`만 노출한다.
 
 중요:
 
-- wrapper를 publish하기 전에 `main` 브랜치에 `profiles/registry.json`과 target exact version에 대응하는 tag가 먼저 존재해야 한다.
-- 아직 원격 registry가 없는 로컬 검증 단계에서는 `TRY_CLAUDE_PROFILE_REGISTRY_URL`, `TRY_CLAUDE_PROFILE_RAW_BASE_URL` override를 사용한다.
+- wrapper를 publish하기 전에 `main` 브랜치에 `profiles/registry.json`과 target `profiles/{role}/{mode}/{version}` 경로가 먼저 존재해야 한다.
 
 profile hotfix 순서:
 
 1. `main`에 `profiles/*` 수정 반영
-2. exact version tag 준비. 예: `profiles-v1.0.1`
-3. `profiles/registry.json`에서 major channel의 `latest`를 새 exact version으로 업데이트
-4. 사용자는 `mode set --version v1` 또는 `mode update`로 최신 patch 반영
+2. 필요한 major version 디렉터리 내용 갱신
+3. `profiles/registry.json`에서 지원 major version 배열을 유지
+4. 사용자는 `mode set --version v1`로 해당 major contract를 선택
 
 ## Help Contract
 
@@ -241,7 +230,7 @@ tcp guide component --html > profiles/publisher/personal/v1/guide.html
 
 ## Execution Model
 
-단일 command는 항상 `--json` spec을 받는다.
+spec-driven 생성 command는 `--json` spec을 받는다.
 
 ```bash
 tcp component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}"

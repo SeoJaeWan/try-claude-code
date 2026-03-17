@@ -131,12 +131,6 @@ export function renderGuideText(payload) {
   const lines = [
     `${payload.alias} guide -> ${payload.id}`,
     `mode: ${payload.activeProfile.mode}@${payload.activeProfile.version}`,
-    ...(payload.activeProfile.resolvedVersion &&
-    payload.activeProfile.resolvedVersion !== payload.activeProfile.version
-      ? [
-          `pinned: ${payload.activeProfile.resolvedVersion} (${payload.activeProfile.resolvedRef})`
-        ]
-      : []),
     ""
   ];
 

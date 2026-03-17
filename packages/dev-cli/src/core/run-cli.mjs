@@ -1,11 +1,7 @@
 import { parseArgv } from "./arg-parser.mjs";
 import { executeBatch, executeSpecCommand } from "./batch-executor.mjs";
 import { routeCommand } from "./command-router.mjs";
-import {
-  getProfileSelection,
-  readConfigs,
-  writeProfileSelection
-} from "./config-store.mjs";
+import { writeProfileSelection } from "./config-store.mjs";
 import { errorToPayload } from "./error-formatter.mjs";
 import { writeGeneratedFiles } from "./file-writer.mjs";
 import { createGuidePayload, renderGuideText } from "./guide-renderer.mjs";
@@ -21,13 +17,48 @@ import { createPublisherGuideModel } from "./publisher-guide-model.mjs";
 import { renderPublisherGuideHtml } from "./publisher-guide-html-renderer.mjs";
 import { createCliError } from "./recipe-utils.mjs";
 import { parseBatchSpec, parseCommandSpec, parseValidateFileSpec } from "./spec-parser.mjs";
-import { isExactProfileVersion } from "./version-utils.mjs";
 
 function createSuccessPayload(payload) {
   return {
     ok: true,
     ...payload
   };
+}
+
+function toOptionFlag(optionName) {
+  return optionName.replace(/[A-Z]/g, (value) => `-${value.toLowerCase()}`);
+}
+
+function assertAllowedOptions(options, allowedKeys, commandName) {
+  const unknownOptions = Object.keys(options ?? {}).filter((key) => !allowedKeys.has(key));
+
+  if (unknownOptions.length > 0) {
+    throw createCliError(
+      "UNKNOWN_OPTION",
+      `Unknown option for ${commandName}: --${toOptionFlag(unknownOptions[0])}`,
+      {
+        command: commandName,
+        option: unknownOptions[0]
+      }
+    );
+  }
+}
+
+function assertCommandExists(profile, commandName) {
+  if (!commandName) {
+    return;
+  }
+
+  if (!profile.commands?.[commandName]) {
+    throw createCliError(
+      "UNKNOWN_COMMAND",
+      `Unknown command: ${commandName}`,
+      {
+        command: commandName,
+        profileId: profile.id
+      }
+    );
+  }
 }
 
 async function handleModeCommand({ role, route, repoRoot }) {
@@ -46,62 +77,6 @@ async function handleModeCommand({ role, route, repoRoot }) {
       role,
       action: "mode",
       activeProfile
-    });
-  }
-
-  if (route.modeAction === "update") {
-    const { globalConfig, repoConfig } = await readConfigs(repoRoot);
-    const repoSelection = getProfileSelection(repoConfig, role);
-    const globalSelection = getProfileSelection(globalConfig, role);
-    const scope = route.options.repo
-      ? "repo"
-      : repoSelection
-        ? "repo"
-        : globalSelection
-          ? "global"
-          : null;
-    const currentSelection = scope === "repo" ? repoSelection : globalSelection;
-
-    if (!scope || !currentSelection) {
-      throw createCliError(
-        "PROFILE_NOT_SET",
-        "No saved profile selection found. Run mode set first.",
-        {
-          role
-        }
-      );
-    }
-
-    const refreshed = await hydrateProfileSelection({
-      role,
-      selection: {
-        source: scope,
-        ...currentSelection
-      },
-      forceRefresh: !isExactProfileVersion(currentSelection.requestedVersion)
-    });
-    const changed =
-      refreshed.resolvedVersion !== currentSelection.resolvedVersion ||
-      refreshed.resolvedRef !== currentSelection.resolvedRef;
-    const saved = await writeProfileSelection({
-      scope,
-      repoRoot,
-      role,
-      mode: refreshed.mode,
-      requestedVersion: refreshed.requestedVersion,
-      resolvedVersion: refreshed.resolvedVersion,
-      resolvedRef: refreshed.resolvedRef
-    });
-
-    return createSuccessPayload({
-      role,
-      action: "mode",
-      updated: !isExactProfileVersion(currentSelection.requestedVersion) && changed,
-      reason: isExactProfileVersion(currentSelection.requestedVersion)
-        ? "EXACT_VERSION_PINNED"
-        : undefined,
-      activeProfile: refreshed,
-      saved
     });
   }
 
@@ -142,9 +117,8 @@ async function handleModeCommand({ role, route, repoRoot }) {
     selection: {
       source: "explicit",
       mode,
-      requestedVersion
-    },
-    forceRefresh: true
+      version: requestedVersion
+    }
   });
 
   const saved = await writeProfileSelection({
@@ -152,9 +126,7 @@ async function handleModeCommand({ role, route, repoRoot }) {
     repoRoot,
     role,
     mode: activeProfile.mode,
-    requestedVersion: activeProfile.requestedVersion,
-    resolvedVersion: activeProfile.resolvedVersion,
-    resolvedRef: activeProfile.resolvedRef
+    version: activeProfile.version
   });
 
   return createSuccessPayload({
@@ -179,9 +151,7 @@ async function resolveProfileContext({ role, repoRoot, options }) {
     repoRoot,
     role,
     mode: activeProfile.mode,
-    requestedVersion: activeProfile.requestedVersion,
-    resolvedVersion: activeProfile.resolvedVersion,
-    resolvedRef: activeProfile.resolvedRef
+    version: activeProfile.version
   });
 
   return {
@@ -196,6 +166,7 @@ async function handleHelpCommand({ alias, role, route, repoRoot }) {
     repoRoot,
     options: route.options
   });
+  assertCommandExists(profile, route.commandName);
   const payload = createHelpPayload({
     alias,
     role,
@@ -222,6 +193,7 @@ async function handleGuideCommand({ alias, role, route, repoRoot }) {
     repoRoot,
     options: route.options
   });
+  assertCommandExists(profile, route.commandName);
   const payload = createGuidePayload({
     alias,
     role,
@@ -336,6 +308,24 @@ async function handleBatchCommand({ alias, role, route, repoRoot }) {
 }
 
 async function handleValidateCommand({ alias, role, route, repoRoot }) {
+  assertAllowedOptions(
+    route.options,
+    new Set([
+      "text",
+      "fields",
+      "profile",
+      "mode",
+      "version",
+      "command",
+      "name",
+      "path",
+      "kind",
+      "method",
+      "content",
+      "file"
+    ]),
+    "validate"
+  );
   const { activeProfile, profile } = await resolveProfileContext({
     role,
     repoRoot,
@@ -373,17 +363,27 @@ async function handleValidateCommand({ alias, role, route, repoRoot }) {
 }
 
 async function handleValidateFileCommand({ alias, role, route, repoRoot }) {
+  assertAllowedOptions(
+    route.options,
+    new Set([
+      "text",
+      "fields",
+      "profile",
+      "mode",
+      "version"
+    ]),
+    "validate-file"
+  );
   const { activeProfile, profile } = await resolveProfileContext({
     role,
     repoRoot,
     options: route.options
   });
+  assertCommandExists(profile, "validateFile");
   const spec = parseValidateFileSpec(route);
   const validation = await validateFiles({
-    role,
     profile,
-    filePaths: spec.files,
-    discoveryRoot: spec.root,
+    directoryPath: spec.directory,
     repoRoot
   });
 

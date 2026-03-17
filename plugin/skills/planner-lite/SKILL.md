@@ -18,7 +18,7 @@ Orchestrate plan.md execution with task-level worktree isolation and commit-base
 
 ## Why this workflow matters
 
-`Agent(isolation: "worktree")` doesn't support nested Agent calls inside the worktree, so phase-level agent specialization is impossible with it. Using it when planner-lite is already in a worktree also causes nesting (`.claude/worktrees/A/.claude/worktrees/B/`). And `EnterWorktree` has no mid-session exit, making post-work merge impossible.
+`Agent(isolation: "worktree")` doesn't support nested Agent calls inside the worktree, so phase-level agent specialization is impossible with it. Using it when planner-lite is already in a worktree also causes nesting (`worktrees/A/worktrees/B`). And `EnterWorktree` has no mid-session exit, making post-work merge impossible.
 
 This skill uses manual `git worktree` management: one worktree per task, phase agents commit sequentially within it, and the worktree branch is merged once at the end. This gives full control over the worktree lifecycle while supporting different specialized agents per phase.
 
@@ -40,7 +40,7 @@ This skill uses manual `git worktree` management: one worktree per task, phase a
 3. Task branches are created via `git worktree add -b` (one per task, not per phase).
 4. Phase agents are dispatched via `Agent` without `isolation: "worktree"` — they work directly in the worktree directory.
 5. Each phase ends with a commit. Only after the final phase does planner-lite merge.
-6. planner-lite runs from the repository root, never from inside `.claude/worktrees/**`.
+6. planner-lite runs from the repository root, never from inside `worktrees/**`.
 
 ---
 
@@ -49,7 +49,7 @@ This skill uses manual `git worktree` management: one worktree per task, phase a
 ```
 X (base branch — HEAD stays here throughout)
 │
-└── git worktree add -b task-A .claude/worktrees/task-A X
+└── git worktree add -b task-A worktrees/task-A X
     ├── commit: Phase 1 work
     ├── commit: Phase 2 work
     └── commit: Phase 3 work
@@ -68,7 +68,7 @@ X (base branch — HEAD stays here throughout)
 - Ensure `**Branch:**` header exists in the plan file.
 - Ensure each phase block includes `- owner_agent: \`{agent-name}\``.
 - Ensure every `owner_agent` maps to an existing agent in `agents/{owner_agent}.md`.
-- Ensure current working directory is the repository root (not inside `.claude/worktrees/**`).
+- Ensure current working directory is the repository root (not inside `worktrees/**`).
 - If validation fails → stop immediately.
 
 ### Step 2. Set up
@@ -79,7 +79,7 @@ BASE=$(git rev-parse --abbrev-ref HEAD)
 
 # Read task branch name from plan header
 TASK_BRANCH="{value from **Branch:**}"
-WORKTREE_DIR=".claude/worktrees/${TASK_BRANCH}"
+WORKTREE_DIR="worktrees/${TASK_BRANCH}"
 
 # Clean up stale worktree if it exists from a previous failed run
 if git worktree list --porcelain | grep -q "$WORKTREE_DIR"; then
@@ -272,7 +272,7 @@ git rev-parse --abbrev-ref HEAD
 
 1. Never pass `isolation: "worktree"` to Agent — it doesn't support nested Agent calls, making phase-level specialization impossible.
 2. Never call `EnterWorktree` — it lacks mid-session exit, making merge impossible.
-3. Never run planner-lite from inside `.claude/worktrees/**` — always from repository root.
+3. Never run planner-lite from inside `worktrees/**` — always from repository root.
 4. Never delete task branches on merge failure — keep them for manual resolution.
 5. Always verify phase commits and branch before starting the next phase.
 6. Always remove the worktree before merging — a branch checked out in a worktree cannot be merged elsewhere.

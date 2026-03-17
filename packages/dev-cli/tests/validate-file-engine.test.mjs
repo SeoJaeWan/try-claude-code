@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { validateFiles } from "../src/core/validate-file.mjs";
 import { createTempRepo } from "./test-utils.mjs";
 
-test("validateFiles는 targetRules argMapping과 fieldResolver를 함께 적용한다", async () => {
+test("validateFiles는 directory scan에서도 targetRules argMapping과 fieldResolver를 함께 적용한다", async () => {
   const tempRoot = await createTempRepo({
     profiles: [],
     files: {
@@ -18,6 +18,7 @@ export default usePostLogin;
   });
 
   const profile = {
+    id: "frontend/personal/v1",
     commands: {
       apiHook: {
         fieldResolvers: [
@@ -88,7 +89,7 @@ export default usePostLogin;
 
   const result = await validateFiles({
     profile,
-    filePaths: ["hooks/apis/auth/mutations/usePostLogin/index.ts"],
+    directoryPath: "hooks",
     repoRoot: tempRoot
   });
 
@@ -97,7 +98,7 @@ export default usePostLogin;
   assert.deepEqual(result.results[0].violations, []);
 });
 
-test("validateFiles는 discoveryRoot 스캔에서 unsupported 파일을 skip한다", async () => {
+test("validateFiles는 directory scan에서 unsupported 파일을 skip한다", async () => {
   const tempRoot = await createTempRepo({
     profiles: [],
     files: {
@@ -112,6 +113,7 @@ export default widget;
   });
 
   const profile = {
+    id: "frontend/personal/v1",
     commands: {
       hook: {
         validatorRules: []
@@ -143,7 +145,7 @@ export default widget;
 
   const result = await validateFiles({
     profile,
-    discoveryRoot: "src",
+    directoryPath: "src",
     repoRoot: tempRoot
   });
 
@@ -159,5 +161,80 @@ export default widget;
     passed: 1,
     failed: 0
   });
-  assert.equal(result.results.some((item) => item.file.endsWith("readme.ts")), false);
+});
+
+test("validateFiles는 zero-match directory에 hint-rich unsupported error를 반환한다", async () => {
+  const tempRoot = await createTempRepo({
+    profiles: [],
+    files: {
+      "docs/readme.ts": "export const readme = true;\n"
+    }
+  });
+
+  const profile = {
+    id: "publisher/personal/v1",
+    commands: {
+      validateFile: {
+        unsupportedTargetMessage: "Publisher validate-file only supports declared component/page entry files.",
+        contracts: {
+          pathPolicy: {
+            requiredPatterns: ["app/{pagePath*}/page.tsx", "components/common/{component}/index.tsx"]
+          }
+        },
+        examples: [
+          "tcp validate-file app",
+          "tcp validate-file components/common"
+        ],
+        targetRules: [
+          {
+            commandName: "component",
+            match: {
+              pathPatterns: ["app/{pagePath*}/page.tsx"]
+            },
+            runPlacementValidation: false
+          }
+        ]
+      }
+    }
+  };
+
+  await assert.rejects(
+    () => validateFiles({
+      profile,
+      directoryPath: "docs",
+      repoRoot: tempRoot
+    }),
+    (error) =>
+      error.code === "UNSUPPORTED_VALIDATION_TARGET" &&
+      error.details.directory === "docs" &&
+      Array.isArray(error.details.supportedPatterns) &&
+      Array.isArray(error.details.exampleDirectories)
+  );
+});
+
+test("validateFiles는 targetRules misconfig를 config error로 분리한다", async () => {
+  const tempRoot = await createTempRepo({
+    profiles: [],
+    files: {
+      "app/showcase/page.tsx": `const Page = () => <section />;
+export default Page;
+`
+    }
+  });
+
+  await assert.rejects(
+    () => validateFiles({
+      profile: {
+        id: "publisher/personal/v1",
+        commands: {
+          validateFile: {
+            targetRules: []
+          }
+        }
+      },
+      directoryPath: "app",
+      repoRoot: tempRoot
+    }),
+    (error) => error.code === "VALIDATION_PROFILE_CONFIG_ERROR"
+  );
 });

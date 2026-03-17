@@ -3,8 +3,7 @@ import {
   readConfigs
 } from "./config-store.mjs";
 import {
-  assertProfileVersion,
-  extractMajorProfileVersion
+  assertProfileVersion
 } from "./version-utils.mjs";
 
 function parseProfileInput(rawValue) {
@@ -34,7 +33,7 @@ function parseProfileInput(rawValue) {
 
   return {
     mode: rawValue,
-    requestedVersion: null
+    version: null
   };
 }
 
@@ -45,83 +44,73 @@ export async function resolveActiveProfile({
 }) {
   const explicitProfile = parseProfileInput(options.profile);
   if (explicitProfile?.mode) {
-    const requestedVersion = assertProfileVersion(
-      explicitProfile.version ?? explicitProfile.requestedVersion ?? options.version ?? "v1"
+    const version = assertProfileVersion(
+      explicitProfile.version ?? options.version ?? "v1"
     );
 
     return {
       source: "explicit",
       mode: explicitProfile.mode,
-      version: requestedVersion,
-      requestedVersion,
-      majorVersion: extractMajorProfileVersion(requestedVersion)
+      version,
+      majorVersion: version
     };
   }
 
   if (options.mode) {
     const explicitMode = parseProfileInput(options.mode);
-    const requestedVersion = assertProfileVersion(
-      explicitMode.version ?? explicitMode.requestedVersion ?? options.version ?? "v1"
+    const version = assertProfileVersion(
+      explicitMode.version ?? options.version ?? "v1"
     );
 
     return {
       source: "explicit",
       mode: explicitMode.mode,
-      version: requestedVersion,
-      requestedVersion,
-      majorVersion: extractMajorProfileVersion(requestedVersion)
+      version,
+      majorVersion: version
     };
   }
 
   if (options.version) {
-    const requestedVersion = assertProfileVersion(options.version);
+    const version = assertProfileVersion(options.version);
 
     return {
       source: "explicit",
       mode: "personal",
-      version: requestedVersion,
-      requestedVersion,
-      majorVersion: extractMajorProfileVersion(requestedVersion)
+      version,
+      majorVersion: version
     };
   }
 
   const { globalConfig, repoConfig } = await readConfigs(repoRoot);
   const repoSelection = getProfileSelection(repoConfig, role);
-  if (repoSelection?.mode && repoSelection?.requestedVersion) {
-    const requestedVersion = assertProfileVersion(repoSelection.requestedVersion);
+  if (repoSelection?.mode && repoSelection?.version) {
+    const version = assertProfileVersion(repoSelection.version);
 
     return {
       source: "repo",
       mode: repoSelection.mode,
-      version: requestedVersion,
-      requestedVersion,
-      majorVersion: extractMajorProfileVersion(requestedVersion),
-      resolvedVersion: repoSelection.resolvedVersion ?? null,
-      resolvedRef: repoSelection.resolvedRef ?? null
+      version,
+      majorVersion: version
     };
   }
 
   const globalSelection = getProfileSelection(globalConfig, role);
-  if (globalSelection?.mode && globalSelection?.requestedVersion) {
-    const requestedVersion = assertProfileVersion(globalSelection.requestedVersion);
+  if (globalSelection?.mode && globalSelection?.version) {
+    const version = assertProfileVersion(globalSelection.version);
 
     return {
       source: "global",
       mode: globalSelection.mode,
-      version: requestedVersion,
-      requestedVersion,
-      majorVersion: extractMajorProfileVersion(requestedVersion),
-      resolvedVersion: globalSelection.resolvedVersion ?? null,
-      resolvedRef: globalSelection.resolvedRef ?? null
+      version,
+      majorVersion: version
     };
   }
 
-  const requestedVersion = "v1";
+  const version = "v1";
   return {
     source: "default",
     mode: "personal",
-    version: requestedVersion,
-    requestedVersion,
-    majorVersion: requestedVersion
+    version,
+    majorVersion: version
   };
 }

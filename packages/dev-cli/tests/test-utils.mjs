@@ -3,6 +3,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import os from "node:os";
 import { cp, mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 
 import { loadActiveProfile } from "../src/core/profile-loader.mjs";
 
@@ -12,29 +13,36 @@ export const repoRoot = path.resolve(currentDir, "..", "..", "..");
 export const tcpBin = path.join(repoRoot, "packages", "tcp", "bin", "tcp.mjs");
 export const tcfBin = path.join(repoRoot, "packages", "tcf", "bin", "tcf.mjs");
 export const tcbBin = path.join(repoRoot, "packages", "tcb", "bin", "tcb.mjs");
-export const profileRegistryUrl = pathToFileURL(
-  path.join(repoRoot, "profiles", "registry.json")
+const fetchFixtureLoader = pathToFileURL(
+  path.join(currentDir, "test-fetch-fixture-loader.mjs")
 ).href;
-export const profileRawBaseUrl = pathToFileURL(repoRoot).href;
-export const profileCacheDir = path.join(os.tmpdir(), "try-claude-dev-cli-test-cache");
 
 export function createCliEnv(additional = {}) {
+  const currentNodeOptions = process.env.NODE_OPTIONS ?? "";
+  const importOption = `--import "${fetchFixtureLoader}"`;
+
   return {
     ...process.env,
-    TRY_CLAUDE_PROFILE_REGISTRY_URL: profileRegistryUrl,
-    TRY_CLAUDE_PROFILE_RAW_BASE_URL: profileRawBaseUrl,
-    TRY_CLAUDE_PROFILE_CACHE_DIR: profileCacheDir,
+    NODE_OPTIONS: currentNodeOptions.includes(importOption)
+      ? currentNodeOptions
+      : `${currentNodeOptions} ${importOption}`.trim(),
     ...additional
   };
 }
 
 export function runCli(binPath, argv, options = {}) {
-  const { env, ...restOptions } = options;
+  const { env, cwd = repoRoot, ...restOptions } = options;
+  const defaultProfileRoot = existsSync(path.join(cwd, "profiles", "registry.json"))
+    ? cwd
+    : repoRoot;
 
   return spawnSync(process.execPath, [binPath, ...argv], {
-    cwd: repoRoot,
+    cwd,
     encoding: "utf8",
-    env: createCliEnv(env),
+    env: createCliEnv({
+      TRY_CLAUDE_TEST_PROFILE_ROOT: env?.TRY_CLAUDE_TEST_PROFILE_ROOT ?? defaultProfileRoot,
+      ...env
+    }),
     ...restOptions
   });
 }
@@ -80,6 +88,22 @@ export async function createTempRepo({
   for (const profileId of profiles) {
     await copyProfileTree(tempRoot, profileId);
   }
+
+  await writeRepoFile(
+    tempRoot,
+    "profiles/registry.json",
+    `${JSON.stringify({
+      publisher: {
+        personal: ["v1"]
+      },
+      frontend: {
+        personal: ["v1"]
+      },
+      backend: {
+        personal: ["v1"]
+      }
+    }, null, 2)}\n`
+  );
 
   if (tsconfig) {
     await writeRepoFile(

@@ -35,6 +35,18 @@ function createViolation(code, message, details = {}, suggestion) {
   };
 }
 
+function createValidationProfileConfigError(profile, validateCommand) {
+  throw createCliError(
+    "VALIDATION_PROFILE_CONFIG_ERROR",
+    "validate-file target rules are missing or invalid for the active profile.",
+    {
+      profileId: profile.id,
+      command: "validate-file",
+      targetRules: validateCommand?.targetRules ?? null
+    }
+  );
+}
+
 function isFunctionLikeNode(node) {
   return Boolean(node) && (
     node.type === "ArrowFunctionExpression" ||
@@ -440,6 +452,10 @@ async function inferValidationTarget(profile, rawFilePath, repoRoot, options = {
 
   const validateCommand = profile.commands?.validateFile ?? {};
   const targetRules = validateCommand.targetRules ?? [];
+
+  if (!Array.isArray(targetRules) || targetRules.length === 0) {
+    createValidationProfileConfigError(profile, validateCommand);
+  }
 
   for (const rule of targetRules) {
     const matched = matchesFileRule(rule, normalizedFilePath);
@@ -1303,16 +1319,12 @@ async function analyzeSingleFile({
 function normalizeDiscoveryRoot(rawRoot) {
   const normalized = normalizeCliPath(String(rawRoot ?? "").trim());
 
-  if (!normalized || normalized === ".") {
-    return "";
-  }
-
   if (!isRelativeCliPath(normalized)) {
     throw createCliError(
-      "INVALID_DISCOVERY_ROOT",
-      "validate-file --root must be a relative repo directory",
+      "INVALID_VALIDATE_FILE_DIRECTORY",
+      "validate-file requires a relative repo directory path.",
       {
-        root: rawRoot
+        directory: rawRoot
       }
     );
   }
@@ -1320,35 +1332,120 @@ function normalizeDiscoveryRoot(rawRoot) {
   return normalized;
 }
 
+function collectSupportedPathPatterns(validateCommand) {
+  const patterns = [
+    ...(validateCommand.contracts?.pathPolicy?.requiredPatterns ?? []),
+    ...((validateCommand.targetRules ?? [])
+      .flatMap((rule) => rule.match?.pathPatterns ?? []))
+  ];
+
+  return [...new Set(patterns)].sort((left, right) => left.localeCompare(right));
+}
+
+function collectExampleDirectories(validateCommand) {
+  const examples = validateCommand.examples ?? [];
+  const directories = [];
+
+  for (const example of examples) {
+    const match = example.match(/validate-file\s+(.+)$/);
+    const rawPath = match?.[1]?.trim();
+    if (!rawPath || rawPath.startsWith("--")) {
+      continue;
+    }
+
+    const normalized = normalizeCliPath(rawPath);
+    if (!normalized) {
+      continue;
+    }
+
+    const lastSegment = splitCliPath(normalized).at(-1) ?? "";
+    if (path.extname(lastSegment)) {
+      directories.push(splitCliPath(normalized).slice(0, -1).join("/"));
+    } else {
+      directories.push(normalized);
+    }
+  }
+
+  return [...new Set(directories.filter(Boolean))];
+}
+
+function collectSupportedRoots(patterns, exampleDirectories) {
+  const roots = new Set();
+
+  for (const pattern of patterns) {
+    for (const segment of splitCliPath(pattern)) {
+      if (!segment.startsWith("{")) {
+        roots.add(segment);
+        break;
+      }
+    }
+  }
+
+  for (const directory of exampleDirectories) {
+    const root = splitCliPath(directory)[0];
+    if (root) {
+      roots.add(root);
+    }
+  }
+
+  return [...roots];
+}
+
+function createUnsupportedDirectoryError(validateCommand, directory) {
+  const supportedPatterns = collectSupportedPathPatterns(validateCommand);
+  const exampleDirectories = collectExampleDirectories(validateCommand);
+  const supportedRoots = collectSupportedRoots(supportedPatterns, exampleDirectories);
+  const suggestion = exampleDirectories[0]
+    ? `Try validate-file ${exampleDirectories[0]}`
+    : "Try a directory that contains profile-supported entry files.";
+
+  throw createCliError(
+    "UNSUPPORTED_VALIDATION_TARGET",
+    validateCommand.unsupportedTargetMessage ?? "validate-file target is not supported by the active profile.",
+    {
+      directory,
+      supportedPatterns,
+      supportedRoots,
+      exampleDirectories,
+      suggestion
+    }
+  );
+}
+
 async function resolveDiscoveryTargets({
   profile,
   repoRoot,
-  discoveryRoot
+  directoryPath
 }) {
-  const normalizedRoot = normalizeDiscoveryRoot(discoveryRoot);
-  const absoluteRoot = normalizedRoot
-    ? toFsPath(repoRoot, normalizedRoot)
-    : repoRoot;
+  const validateCommand = profile.commands?.validateFile ?? {};
+  const targetRules = validateCommand.targetRules ?? [];
+
+  if (!Array.isArray(targetRules) || targetRules.length === 0) {
+    createValidationProfileConfigError(profile, validateCommand);
+  }
+
+  const normalizedRoot = normalizeDiscoveryRoot(directoryPath);
+  const absoluteRoot = toFsPath(repoRoot, normalizedRoot);
 
   let rootStats;
   try {
     rootStats = await stat(absoluteRoot);
   } catch {
     throw createCliError(
-      "DISCOVERY_ROOT_NOT_FOUND",
-      "validate-file discovery root does not exist",
+      "VALIDATE_FILE_DIRECTORY_NOT_FOUND",
+      "validate-file directory does not exist.",
       {
-        root: normalizedRoot || "."
+        directory: normalizedRoot
       }
     );
   }
 
   if (!rootStats.isDirectory()) {
     throw createCliError(
-      "DISCOVERY_ROOT_NOT_DIRECTORY",
-      "validate-file discovery root must be a directory",
+      "VALIDATE_FILE_DIRECTORY_ONLY",
+      "validate-file accepts a directory path only.",
       {
-        root: normalizedRoot || "."
+        directory: normalizedRoot
       }
     );
   }
@@ -1372,9 +1469,13 @@ async function resolveDiscoveryTargets({
     }
   }
 
+  if (targets.length === 0) {
+    createUnsupportedDirectoryError(validateCommand, normalizedRoot);
+  }
+
   return {
     discovery: {
-      root: normalizedRoot || ".",
+      root: normalizedRoot,
       scanned: sourceFiles.length,
       matched: targets.length,
       skipped: sourceFiles.length - targets.length
@@ -1385,28 +1486,18 @@ async function resolveDiscoveryTargets({
 
 export async function validateFiles({
   profile,
-  filePaths = [],
-  discoveryRoot,
+  directoryPath,
   repoRoot
 }) {
   const configCache = new Map();
   const results = [];
-  const targets = [];
-  let discovery = null;
-
-  if (discoveryRoot !== undefined) {
-    const resolved = await resolveDiscoveryTargets({
-      profile,
-      repoRoot,
-      discoveryRoot
-    });
-    discovery = resolved.discovery;
-    targets.push(...resolved.targets);
-  } else {
-    for (const filePath of filePaths.map((item) => normalizeCliPath(item))) {
-      targets.push(await inferValidationTarget(profile, filePath, repoRoot));
-    }
-  }
+  const resolved = await resolveDiscoveryTargets({
+    profile,
+    repoRoot,
+    directoryPath
+  });
+  const discovery = resolved.discovery;
+  const targets = [...resolved.targets];
 
   for (const target of targets) {
     results.push(
