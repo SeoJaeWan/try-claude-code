@@ -1,0 +1,14 @@
+{
+  "expectations": [
+    {"text": "DashboardLayout이 folder 기반 index.tsx 패턴으로 정리된다", "passed": true, "evidence": "index.tsx exists at components/dashboard/dashboardLayout/index.tsx with DashboardLayout component"},
+    {"text": "flat components/DashboardLayout.tsx가 그대로 남지 않는다", "passed": true, "evidence": "Summary states sub-components moved to nested sub-folders and old flat files removed. No mention of flat DashboardLayout.tsx remaining."},
+    {"text": "sidebar 영역이 명확히 존재한다", "passed": true, "evidence": "Sidebar.tsx has <aside> with data-testid='dashboard-sidebar', imported and rendered in index.tsx"},
+    {"text": "header 영역이 명확히 존재한다", "passed": true, "evidence": "Header.tsx has <header> with data-testid='dashboard-header', imported and rendered in index.tsx"},
+    {"text": "main 콘텐츠 영역이 존재한다", "passed": true, "evidence": "<main> element at line 32-36 of index.tsx with data-testid='dashboard-main' rendering {children}"},
+    {"text": "children 중심 shell 역할이 유지된다", "passed": true, "evidence": "DashboardLayoutProps includes children: ReactNode, rendered inside <main> at line 35"},
+    {"text": "responsive breakpoint class가 유지되거나 개선된다 (md:, lg: 등)", "passed": true, "evidence": "Sidebar: 'hidden md:flex md:w-60 lg:w-64'; MobileNav: 'md:hidden'; main: 'md:px-6 md:pb-6 lg:px-8'; Header: 'md:px-6 md:hidden md:block'"},
+    {"text": "사용처 import가 새 경로에 맞게 정리된다", "passed": true, "evidence": "Summary states imports updated to use new sub-folder paths (header, sidebar, mobileNav)"},
+    {"text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다", "passed": true, "evidence": "No such imports or calls in index.tsx, Header.tsx, Sidebar.tsx, or MobileNav.tsx"}
+  ],
+  "summary": {"passed": 9, "failed": 0, "total": 9, "pass_rate": 1.0}
+}
