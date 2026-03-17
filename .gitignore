@@ -1,3 +1,9 @@
 
 node_modules/
 .claude
+test/**/workspace/
+test/**/origin-workspace/node_modules/
+test/**/origin-workspace/.next/
+test/**/origin-workspace/test-results/
+test/**/origin-workspace/playwright-report/
+test/**/origin-workspace/tsconfig.tsbuildinfo
