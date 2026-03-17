@@ -298,12 +298,12 @@ Provide a concise handoff summary with:
 1. Plan file path(s)
 2. First executable phase and its `owner_agent`
 3. Execution invocation commands:
-   - sequential: run `planner-lite` against `plan.md`
-   - parallel: run one `planner-lite` session per `plan-{track}/plan.md`
+   - sequential: launch the named custom agent `planner-lite` against `plan.md`
+   - parallel: launch one named custom-agent `planner-lite` session per `plan-{track}/plan.md`
 4. Merge rule:
-   - `planner-lite` enforces `Agent(... isolation: "worktree")`
-   - merge after each worker completes
-   - final merge goes into each file's `Branch` with `--no-ff`
+   - `planner-lite` owns the task worktree and phase-worker dispatch
+   - phase workers run inside the assigned task worktree without creating nested worktrees
+   - successful phases are committed inside the task branch; final merge goes into each file's `Branch` with `--no-ff`
 5. For UI/user-flow scope, state whether `plan-e2e-test` artifacts are included and whether a later `playwright-guard` phase is scheduled
 6. Explicit defaults and deferred low-risk choices recorded in the plan
 7. Implementation agents must resolve final test placement from coding rules and local conventions before copying flat plan artifacts into the source tree
