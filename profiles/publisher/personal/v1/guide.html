@@ -427,7 +427,7 @@
               <dt>공통규칙</dt>
               <dd>
     <ul class="guide-list">
-      <li><p class="guide-text">폴더 경로는 각 profile의 path 규칙을 따르며, 공통 네이밍은 recipe에서 정규화한다.</p></li><li><p class="guide-text">함수 기본 스타일은 화살표 함수다.</p></li><li><p class="guide-text">배열 이름은 복수형을 사용하고 List, Array suffix는 피한다.</p></li><li><p class="guide-text">한 곳에서만 쓰는 타입은 로컬에 두고, 여러 곳에서 쓰면 types/common 또는 types/{domain}으로 올린다.</p></li><li><p class="guide-text">퍼블리셔는 비즈니스 로직을 구현하지 않는다.</p></li><li><p class="guide-text">toggle, sidebar, modal 같은 UI 상호작용 state는 허용한다.</p></li><li><p class="guide-text">컴포넌트 경로는 components/common/{component} 또는 components/{domain}/{component}를 사용한다.</p></li><li><p class="guide-text">domain은 app/{domain}/page.tsx의 root page segment를 사용한다. 여러 page domain에서 공통이면 common을 사용한다.</p></li><li><p class="guide-text">레거시 컴포넌트 경로가 현재 컨벤션과 다르면 기존 위치를 유지하지 말고 먼저 현재 컨벤션 경로로 마이그레이션한다.</p></li><li><p class="guide-text">레거시 경로가 이미 현재 컨벤션과 같으면 경로는 유지하고 내부 구현만 수정한다.</p></li>
+      <li><p class="guide-text">폴더 경로는 각 profile의 path 규칙을 따르며, 공통 네이밍은 recipe에서 정규화한다.</p></li><li><p class="guide-text">함수 기본 스타일은 화살표 함수다.</p></li><li><p class="guide-text">배열 이름은 복수형을 사용하고 List, Array suffix는 피한다.</p></li><li><p class="guide-text">한 곳에서만 쓰는 타입은 로컬에 두고, 여러 곳에서 쓰면 types/common 또는 types/{domain}으로 올린다.</p></li><li><p class="guide-text">퍼블리셔는 비즈니스 로직을 구현하지 않는다.</p></li><li><p class="guide-text">toggle, sidebar, modal 같은 UI 상호작용 state는 허용한다.</p></li><li><p class="guide-text">React TSX 파일은 전부 컴포넌트로 본다. page.tsx는 page.tsx를 유지하고, 그 외 컴포넌트 엔트리는 index.tsx를 사용한다.</p></li><li><p class="guide-text">컴포넌트 경로는 마지막 components 세그먼트 아래에서 동일 규칙을 따른다. 예: components/common/{component}, src/components/common/{component}, features/{feature}/components/{domain}/{component}.</p></li><li><p class="guide-text">domain은 app/{domain}/page.tsx의 root page segment를 사용한다. 여러 page domain에서 공통이면 common을 사용한다.</p></li><li><p class="guide-text">레거시 컴포넌트 경로가 현재 컨벤션과 다르면 기존 위치를 유지하지 말고 먼저 현재 컨벤션 경로로 마이그레이션한다.</p></li><li><p class="guide-text">레거시 경로가 이미 현재 컨벤션과 같으면 경로는 유지하고 내부 구현만 수정한다.</p></li>
     </ul>
   </dd>
             </div>
@@ -553,7 +553,7 @@
               <dt>placementRules</dt>
               <dd>
     <ul class="guide-list">
-      <li><p class="guide-text">Use components/common/{component} when reused in 2 or more page domains.</p></li><li><p class="guide-text">Use components/{domain}/{component} for domain-specific components.</p></li><li><p class="guide-text">Nested UI parts may live under the parent component folder.</p></li>
+      <li><p class="guide-text">Use */components/common/{component} when reused in 2 or more page domains.</p></li><li><p class="guide-text">Use */components/{domain}/{component} for domain-specific components.</p></li><li><p class="guide-text">Nested UI parts may live under the parent component folder.</p></li>
     </ul>
   </dd>
             </div>
@@ -567,9 +567,14 @@
               <dt>requiredPatterns</dt>
               <dd>
     <ul class="guide-list">
-      <li><p class="guide-text">components/common/{component}</p></li><li><p class="guide-text">components/{domain}/{component}</p></li>
+      <li><p class="guide-text">*/components/common/{component}</p></li><li><p class="guide-text">*/components/{domain}/{component}</p></li>
     </ul>
   </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>componentsSegmentPolicy</dt>
+              <dd><p class="guide-text">the final components segment is the root for placement rules; prefixes like src/ or features/{feature}/ are allowed</p></dd>
             </div>
           
             <div class="guide-definition-row">
@@ -647,6 +652,16 @@
           data-testid="publisher-guide-nav-item-function"
         >
           function
+        </a>
+      
+        <a
+          href="#validateFile"
+          class="nav-item"
+          data-command-nav
+          data-command-id="validateFile"
+          data-testid="publisher-guide-nav-item-validateFile"
+        >
+          validateFile
         </a>
       
         <a
@@ -1327,6 +1342,220 @@
         </section>
       
         <section
+          id="validateFile"
+          class="command-section"
+          data-testid="publisher-guide-command-validateFile"
+        >
+          <header class="command-section-header">
+            <div class="command-section-label">Command</div>
+            <div class="command-section-title-row">
+              <h2>validateFile</h2>
+              <span class="command-description">Validate publisher UI files against placement and AST rules</span>
+            </div>
+            
+    <div class="pill-row">
+      <span class="pill">input: json</span><span class="pill">mode: analysis</span><span class="pill">required: files</span>
+    </div>
+  
+          </header>
+          <div class="group-grid">
+            
+    <article
+      class="group-card"
+      data-testid="publisher-guide-group-validateFile-guide"
+    >
+      <div class="group-card-header">
+        <h3>Guide</h3>
+      </div>
+      <div class="group-card-body">
+        
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>목적</dt>
+              <dd><p class="guide-text">기존 퍼블리셔 UI 파일이 배치 규칙과 AST 규칙을 지키는지 검증한다.</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>입력규칙</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">파일 경로 1개 이상을 positional 또는 files 배열 JSON으로 전달한다.</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>출력규칙</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">results 배열로 파일별 위반 목록을 반환한다.</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>주의사항</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">page.tsx는 프레임워크 엔트리 파일명이라 그대로 유지한다.</p></li><li><p class="guide-text">page.tsx가 아닌 React TSX 파일은 경로와 상관없이 index.tsx 엔트리를 사용한다.</p></li><li><p class="guide-text">파일/폴더 세그먼트는 camelCase를 사용한다. 단, page.tsx와 index.tsx 같은 예약 엔트리 파일명과 Next 특수 세그먼트((group), [id], @slot)는 예외다.</p></li><li><p class="guide-text">components 세그먼트 아래 파일은 prefix와 무관하게 index.tsx와 배치 규칙을 함께 검증한다.</p></li><li><p class="guide-text">components 세그먼트 밖의 React TSX 파일도 컴포넌트 AST 규칙은 동일하게 검증한다.</p></li><li><p class="guide-text">같은 파일 안의 JSX helper와 subcomponent는 금지한다.</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+    </dl>
+  
+      </div>
+    </article>
+  
+    <article
+      class="group-card"
+      data-testid="publisher-guide-group-validateFile-contracts"
+    >
+      <div class="group-card-header">
+        <h3>Contracts</h3>
+      </div>
+      <div class="group-card-body">
+        
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>inputShape</dt>
+              <dd>
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>filesField</dt>
+              <dd><p class="guide-text">files[]</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>acceptedModes</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">positional</p></li><li><p class="guide-text">json</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+    </dl>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>pathPolicy</dt>
+              <dd>
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>requiredPatterns</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">*/components/common/{component}/index.tsx</p></li><li><p class="guide-text">*/components/{domain}/{component}/index.tsx</p></li><li><p class="guide-text">*/components/{domain}/{parentComponent}/{childComponent}/index.tsx</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+    </dl>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>outputPolicy</dt>
+              <dd>
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>entryFilePattern</dt>
+              <dd><p class="guide-text">page.tsx for app pages, index.tsx for other React TSX component entries</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>functionStyle</dt>
+              <dd><p class="guide-text">arrow</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>defaultExport</dt>
+              <dd><p class="guide-text">true</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>propsInterfaceSuffix</dt>
+              <dd><p class="guide-text">Props</p></dd>
+            </div>
+          
+    </dl>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>validationCoverage</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">file/folder segment camelCase</p></li><li><p class="guide-text">component path policy</p></li><li><p class="guide-text">default export name/path match</p></li><li><p class="guide-text">same-file JSX helper forbidden</p></li><li><p class="guide-text">same-file subcomponent forbidden</p></li><li><p class="guide-text">parent-only child reuse forbidden</p></li><li><p class="guide-text">page.tsx keeps the page filename</p></li><li><p class="guide-text">non-page React TSX files use index.tsx</p></li><li><p class="guide-text">non-components TSX files skip components path placement validation</p></li><li><p class="guide-text">components segment prefixes are preserved in validation and suggestions</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>logicBoundary</dt>
+              <dd>
+    <dl class="guide-definition">
+      
+            <div class="guide-definition-row">
+              <dt>forbiddenPatterns</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">useEffect(</p></li><li><p class="guide-text">fetch(</p></li><li><p class="guide-text">axios.</p></li><li><p class="guide-text">useQuery(</p></li><li><p class="guide-text">useMutation(</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+    </dl>
+  </dd>
+            </div>
+          
+    </dl>
+  
+      </div>
+    </article>
+  
+    <article
+      class="group-card"
+      data-testid="publisher-guide-group-validateFile-examples"
+    >
+      <div class="group-card-header">
+        <h3>Examples</h3>
+      </div>
+      <div class="group-card-body">
+        
+    <div class="example-stack">
+      
+            <pre
+              class="example-block"
+              data-testid="publisher-guide-example-validateFile-0"
+            ><code>tcp validate-file components/common/dashboardLayout/index.tsx</code></pre>
+          
+            <pre
+              class="example-block"
+              data-testid="publisher-guide-example-validateFile-1"
+            ><code>tcp validate-file app/showcase/page.tsx</code></pre>
+          
+            <pre
+              class="example-block"
+              data-testid="publisher-guide-example-validateFile-2"
+            ><code>tcp validate-file --json &#39;{&quot;files&quot;:[&quot;components/common/table/index.tsx&quot;,&quot;components/common/table/th/index.tsx&quot;]}&#39;</code></pre>
+          
+    </div>
+  
+      </div>
+    </article>
+  
+          </div>
+        </section>
+      
+        <section
           id="component"
           class="command-section"
           data-testid="publisher-guide-command-component"
@@ -1365,7 +1594,7 @@
               <dt>입력규칙</dt>
               <dd>
     <ul class="guide-list">
-      <li><p class="guide-text">name과 path는 필수다.</p></li><li><p class="guide-text">path는 components/common/{component} 또는 components/{domain}/{component} 패턴을 사용한다.</p></li><li><p class="guide-text">props는 value 또는 callback 멤버 배열로 전달한다.</p></li>
+      <li><p class="guide-text">name과 path는 필수다.</p></li><li><p class="guide-text">path는 마지막 components 세그먼트 아래에서 components/common/{component} 또는 components/{domain}/{component} 패턴을 사용한다. prefix는 허용된다.</p></li><li><p class="guide-text">props는 value 또는 callback 멤버 배열로 전달한다.</p></li>
     </ul>
   </dd>
             </div>
@@ -1392,7 +1621,7 @@
               <dt>배치규칙</dt>
               <dd>
     <ul class="guide-list">
-      <li><p class="guide-text">공통 컴포넌트는 components/common/{component}를 사용한다.</p></li><li><p class="guide-text">도메인 전용 컴포넌트는 components/{domain}/{component}를 사용한다.</p></li><li><p class="guide-text">domain은 root page segment를 사용한다. 예: app/login -&gt; login.</p></li><li><p class="guide-text">common은 2개 이상 root page domain에서 재사용될 때만 사용한다.</p></li><li><p class="guide-text">레거시 경로가 현재 컨벤션과 다르면 기존 PascalCase 폴더나 top-level components/{Component} 경로를 유지하지 말고 현재 경로 규칙으로 이동한다.</p></li><li><p class="guide-text">레거시 경로가 이미 현재 컨벤션과 같으면 경로는 유지하고 index.tsx 내부 구현만 수정한다.</p></li>
+      <li><p class="guide-text">공통 컴포넌트는 */components/common/{component}를 사용한다.</p></li><li><p class="guide-text">도메인 전용 컴포넌트는 */components/{domain}/{component}를 사용한다.</p></li><li><p class="guide-text">prefix가 있어도 마지막 components 세그먼트를 기준으로 같은 규칙을 적용한다. 예: src/components/common/button, features/cart/components/cart/cartSummary.</p></li><li><p class="guide-text">domain은 root page segment를 사용한다. 예: app/login -&gt; login.</p></li><li><p class="guide-text">common은 2개 이상 root page domain에서 재사용될 때만 사용한다.</p></li><li><p class="guide-text">레거시 경로가 현재 컨벤션과 다르면 기존 PascalCase 폴더나 top-level components/{Component} 경로를 유지하지 말고 현재 경로 규칙으로 이동한다.</p></li><li><p class="guide-text">레거시 경로가 이미 현재 컨벤션과 같으면 경로는 유지하고 index.tsx 내부 구현만 수정한다.</p></li>
     </ul>
   </dd>
             </div>
@@ -1445,24 +1674,29 @@
               <dt>requiredPatterns</dt>
               <dd>
     <ul class="guide-list">
-      <li><p class="guide-text">components/common/{component}</p></li><li><p class="guide-text">components/{domain}/{component}</p></li>
+      <li><p class="guide-text">*/components/common/{component}</p></li><li><p class="guide-text">*/components/{domain}/{component}</p></li>
     </ul>
   </dd>
             </div>
           
             <div class="guide-definition-row">
               <dt>sharedPattern</dt>
-              <dd><p class="guide-text">components/common/{component}</p></dd>
+              <dd><p class="guide-text">*/components/common/{component}</p></dd>
             </div>
           
             <div class="guide-definition-row">
               <dt>domainPattern</dt>
-              <dd><p class="guide-text">components/{domain}/{component}</p></dd>
+              <dd><p class="guide-text">*/components/{domain}/{component}</p></dd>
             </div>
           
             <div class="guide-definition-row">
               <dt>nestedPattern</dt>
-              <dd><p class="guide-text">components/{domain}/{parentComponent}/{childComponent}</p></dd>
+              <dd><p class="guide-text">*/components/{domain}/{parentComponent}/{childComponent}</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>componentsSegmentPolicy</dt>
+              <dd><p class="guide-text">the final components segment is the root for placement rules; prefixes like src/ or features/{feature}/ are allowed</p></dd>
             </div>
           
             <div class="guide-definition-row">
@@ -1708,6 +1942,11 @@
   </dd>
             </div>
           
+            <div class="guide-definition-row">
+              <dt>matchAnySegment</dt>
+              <dd><p class="guide-text">true</p></dd>
+            </div>
+          
     </dl>
   </div>
             </li>
@@ -1890,7 +2129,12 @@
             <pre
               class="example-block"
               data-testid="publisher-guide-example-component-1"
-            ><code>tcp component --json &#39;{&quot;name&quot;:&quot;ProfileHeader&quot;,&quot;path&quot;:&quot;components/profile/profileHeader&quot;}&#39;</code></pre>
+            ><code>tcp component --json &#39;{&quot;name&quot;:&quot;ReviewCard&quot;,&quot;path&quot;:&quot;src/components/common/reviewCard&quot;}&#39;</code></pre>
+          
+            <pre
+              class="example-block"
+              data-testid="publisher-guide-example-component-2"
+            ><code>tcp component --json &#39;{&quot;name&quot;:&quot;ProfileHeader&quot;,&quot;path&quot;:&quot;features/account/components/profile/profileHeader&quot;}&#39;</code></pre>
           
     </div>
   
