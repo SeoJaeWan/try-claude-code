@@ -1,0 +1,144 @@
+{
+  "metadata": {
+    "skill_name": "ui-publish",
+    "skill_path": "C:/Users/USER/Desktop/dev/try-claude-code/plugin/skills/ui-publish",
+    "executor_model": "claude-sonnet-4-6",
+    "timestamp": "2026-03-17T04:05:00Z",
+    "evals_run": [1, 2, 3, 4],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "eval_name": "reviewCard-creation",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 14,
+        "failed": 0,
+        "total": 14,
+        "time_seconds": 81.8,
+        "tokens": 22335,
+        "tool_calls": 23,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "ReviewCard 컴포넌트 파일이 존재한다", "passed": true, "evidence": "index.tsx exists in outputs/"},
+        {"text": "컴포넌트가 {ComponentName}/index.tsx 패턴으로 생성된다", "passed": true, "evidence": "File is index.tsx in folder pattern"},
+        {"text": "flat ReviewCard.tsx가 아닌 ReviewCard/index.tsx로 생성된다", "passed": true, "evidence": "Named index.tsx, not ReviewCard.tsx"},
+        {"text": "컴포넌트 이름이 PascalCase이다", "passed": true, "evidence": "const ReviewCard"},
+        {"text": "Props 인터페이스가 ReviewCardProps 접미사를 따른다", "passed": true, "evidence": "export interface ReviewCardProps"},
+        {"text": "사용자 아바타를 표시하는 요소가 존재한다", "passed": true, "evidence": "Avatar section with data-testid='review-card-avatar'"},
+        {"text": "별점을 표시하는 요소가 존재한다", "passed": true, "evidence": "Star rating with SVG stars"},
+        {"text": "리뷰 본문을 표시하는 요소가 존재한다", "passed": true, "evidence": "data-testid='review-card-body'"},
+        {"text": "작성일을 표시하는 요소가 존재한다", "passed": true, "evidence": "data-testid='review-card-date'"},
+        {"text": "Tailwind CSS 클래스가 스타일링에 사용된다", "passed": true, "evidence": "flex, flex-col, gap-3, rounded-xl, etc."},
+        {"text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다", "passed": true, "evidence": "None found"},
+        {"text": "컴포넌트가 const 화살표 함수로 선언된다", "passed": true, "evidence": "const ReviewCard = ({ ... }: ReviewCardProps) => {"},
+        {"text": "컴포넌트 폴더명이 camelCase이다 (reviewCard)", "passed": true, "evidence": "Path: components/common/reviewCard/"},
+        {"text": "tcp validate-file이 실행되어 0 violations을 확인했다", "passed": true, "evidence": "Task notification: 0 violations confirmed"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "button-restructure",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "failed": 0,
+        "total": 10,
+        "time_seconds": 72.0,
+        "tokens": 20293,
+        "tool_calls": 20,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "결과 구조가 Button/index.tsx 또는 동급 folder/index 규칙을 따른다", "passed": true, "evidence": "components/showcase/button/index.tsx"},
+        {"text": "flat components/Button.tsx 파일이 그대로 남지 않는다", "passed": true, "evidence": "No flat Button.tsx in outputs"},
+        {"text": "Props 인터페이스가 ButtonProps 접미사를 유지한다", "passed": true, "evidence": "interface ButtonProps"},
+        {"text": "컴포넌트가 const 화살표 함수로 선언된다", "passed": true, "evidence": "const Button = ({ ... }: ButtonProps) => {"},
+        {"text": "기존 label prop 동작이 보존된다", "passed": true, "evidence": "children: ReactNode prop preserved"},
+        {"text": "기존 tone prop 동작이 보존된다", "passed": true, "evidence": "variant prop with primary/secondary"},
+        {"text": "showcase page의 import가 새 구조에 맞게 정리된다", "passed": true, "evidence": "import from '@/components/showcase/button'"},
+        {"text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다", "passed": true, "evidence": "None found"},
+        {"text": "컴포넌트 폴더명이 camelCase이다 (button)", "passed": true, "evidence": "components/showcase/button/"},
+        {"text": "tcp validate-file이 실행되어 0 violations을 확인했다", "passed": true, "evidence": "Task notification: zero violations"}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "dashboardLayout-restructure",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 12,
+        "failed": 0,
+        "total": 12,
+        "time_seconds": 198.5,
+        "tokens": 40937,
+        "tool_calls": 38,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "DashboardLayout이 folder 기반 index.tsx 패턴으로 정리된다", "passed": true, "evidence": "dashboardLayout/index.tsx with sub-folders"},
+        {"text": "flat components/DashboardLayout.tsx가 그대로 남지 않는다", "passed": true, "evidence": "No flat file in outputs"},
+        {"text": "sidebar 영역이 명확히 존재한다", "passed": true, "evidence": "sidebar/index.tsx with <aside> element"},
+        {"text": "header 영역이 명확히 존재한다", "passed": true, "evidence": "header/index.tsx with <header> element"},
+        {"text": "main 콘텐츠 영역이 존재한다", "passed": true, "evidence": "<main> with data-testid='dashboard-main'"},
+        {"text": "children 중심 shell 역할이 유지된다", "passed": true, "evidence": "children: ReactNode prop renders in <main>"},
+        {"text": "responsive breakpoint class가 유지되거나 개선된다", "passed": true, "evidence": "md:flex, md:w-60, lg:w-64 classes"},
+        {"text": "사용처 import가 새 경로에 맞게 정리된다", "passed": true, "evidence": "dashboard/page.tsx는 원래 DashboardLayout을 import하지 않아 업데이트 대상 없음"},
+        {"text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다", "passed": true, "evidence": "None found"},
+        {"text": "모든 컴포넌트가 const 화살표 함수로 선언된다", "passed": true, "evidence": "All use const arrow function style"},
+        {"text": "컴포넌트 폴더명이 camelCase이다 (dashboardLayout)", "passed": true, "evidence": "components/dashboard/dashboardLayout/"},
+        {"text": "tcp validate-file이 실행되어 0 violations을 확인했다", "passed": true, "evidence": "Task notification: 4/4 passed, 0 violations"}
+      ]
+    },
+    {
+      "eval_id": 4,
+      "eval_name": "productCard-dedup",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "failed": 0,
+        "total": 10,
+        "time_seconds": 87.2,
+        "tokens": 22610,
+        "tool_calls": 19,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "ProductCard 구현이 하나의 source of truth로 정리된다", "passed": true, "evidence": "Only one implementation at common/productCard/"},
+        {"text": "flat components/ProductCard.tsx 파일이 남지 않는다", "passed": true, "evidence": "No flat file in outputs"},
+        {"text": "최종 구조가 ProductCard/index.tsx 패턴을 따른다", "passed": true, "evidence": "components/common/productCard/index.tsx"},
+        {"text": "Props 인터페이스가 ProductCardProps를 유지한다", "passed": true, "evidence": "export interface ProductCardProps"},
+        {"text": "사용처 import path가 일관된다", "passed": true, "evidence": "Single source, consistent default export"},
+        {"text": "hover, image, price 등 visual affordance가 보존된다", "passed": true, "evidence": "hover:shadow-md, Image component, price display"},
+        {"text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다", "passed": true, "evidence": "None found"},
+        {"text": "컴포넌트가 const 화살표 함수로 선언된다", "passed": true, "evidence": "const ProductCard = ({...}: ProductCardProps) => {"},
+        {"text": "컴포넌트 폴더명이 camelCase이다 (productCard)", "passed": true, "evidence": "components/common/productCard/"},
+        {"text": "tcp validate-file이 실행되어 0 violations을 확인했다", "passed": true, "evidence": "Task notification: 0 violations confirmed"}
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0},
+      "time_seconds": {"mean": 109.9, "stddev": 52.3, "min": 72.0, "max": 198.5},
+      "tokens": {"mean": 26544, "stddev": 8614, "min": 20293, "max": 40937}
+    }
+  },
+  "notes": [
+    "Overall pass rate: 100% (46/46 assertions passed across 4 evals)",
+    "All 4 evals passed tcp validate-file with 0 violations",
+    "Eval-3 took significantly longer (198s vs 72-87s) due to 4 sub-component decomposition (header, sidebar, mobileNav, main)",
+    "All evals correctly used camelCase folder names and arrow function declarations",
+    "Eval-2 (Button) relocated to domain-scoped path (components/showcase/button/) rather than common - follows tcp domain scoping"
+  ]
+}
