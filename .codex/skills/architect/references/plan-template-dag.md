@@ -140,6 +140,7 @@ UI/user-journey 또는 regression-hardening scope인 경우 후속 execution tra
 
 ### T1
 
+- 목적:
 - owner_agent: `{agent-name}`
 - primary_skill: `{skill-name}` (선택)
 - 작업:
@@ -148,6 +149,7 @@ UI/user-journey 또는 regression-hardening scope인 경우 후속 execution tra
 
 ### T2
 
+- 목적:
 - owner_agent: `{agent-name}`
 - primary_skill: `{skill-name}` (선택)
 - 작업:

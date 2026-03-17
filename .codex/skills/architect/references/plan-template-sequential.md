@@ -61,6 +61,7 @@
 
 ### Phase 1
 
+- 목적:
 - owner_agent: `{agent-name}`
 - primary_skill: `{skill-name}` (선택)
 - 작업:
@@ -70,6 +71,7 @@
 
 ### Phase 2
 
+- 목적:
 - owner_agent: `{agent-name}`
 - primary_skill: `{skill-name}` (선택)
 - 작업:
@@ -77,6 +79,7 @@
 
 ### Phase 3
 
+- 목적:
 - owner_agent: `{agent-name}`
 - primary_skill: `{skill-name}` (선택)
 - 작업:
