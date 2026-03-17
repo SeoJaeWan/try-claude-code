@@ -28,6 +28,13 @@ Use this skill only after planning is complete.
 - For partial-parallel or parallel mode, execute one `plans/{task-name}/plan-{track}/plan.md` per session.
 - Do not execute the root DAG index as if it were a track implementation plan.
 
+## Session ownership
+
+- The parent or main session should hand finalized plan execution off to the named custom agent `planner-lite`.
+- After that handoff, `planner-lite` is the only session that should spawn phase workers, wait on them, run per-phase validation, commit phase work, and manage the final merge.
+- If a non-`planner-lite` session is following this skill and named custom-agent spawning is available, it must launch `planner-lite` and stop short of spawning any phase worker itself.
+- If named custom-agent spawning is unavailable, stop and report the configuration problem instead of silently collapsing orchestration back into the parent session.
+
 ## Owner mapping
 
 - `frontend-developer` -> custom agent `frontend-developer`
@@ -79,7 +86,11 @@ Use this skill only after planning is complete.
 - Let the custom agent load and apply its own configured skills and developer instructions. Do not simulate that role by injecting a substitute skill into a generic worker.
 - Require the child agent to work only inside the assigned worktree directory, avoid nested worktrees, avoid plan rewrites, and stay within the current phase scope.
 - Require the child agent to report changed files, validations it ran locally, and any blockers before planner-lite continues.
+- Record the spawned child agent id in phase state and treat that id as the only live worker for the phase.
 - Wait for the child agent to finish each sequential phase before running validation or moving on.
+- For long-running phases, call `wait_agent` with the maximum supported timeout `timeout_ms=3600000` rather than using short polling loops.
+- If a max-length wait still times out without a terminal child status, treat the phase as still running and continue waiting on the same child agent id.
+- Do not respawn a child agent because of a non-terminal wait timeout. Retry only after a terminal failure and after inspecting the current worktree diff or commit state.
 - Keep each phase bounded to the files and outcomes described by the plan.
 - Review the returned worktree changes, then run the relevant validation commands before moving to the next phase.
 - Commit after each successful phase using `git.md` conventions.
@@ -118,6 +129,7 @@ Report changed files, validations run, and blockers.
 - If planner-lite is already running as a child agent and effective config prevents another named custom-agent spawn, stop and report the nesting requirement instead of silently collapsing roles.
 - When delegating a phase, address the mapped child agent explicitly by role, for example `frontend-developer`.
 - Do not replace a missing named custom-agent path with a generic worker plus explicit skill prompt.
+- Do not treat `wait_agent` timeouts as implicit failures. Keep the same child agent alive and continue waiting with `timeout_ms=3600000` unless the child reaches a terminal state or the user cancels execution.
 
 ## Guardrails
 
