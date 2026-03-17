@@ -1,11 +1,11 @@
 ---
 name: planner-lite
-description: Execute finalized implementation plans with deterministic orchestration. Use when architect has already produced a decision-complete `plan.md` or `plan-{track}/plan.md` and the user wants execution rather than more planning, especially for branch-scoped worktree runs, phase-by-phase skill dispatch, per-phase commits, and final merge coordination.
+description: Execute finalized implementation plans with deterministic orchestration. Use when architect has already produced a decision-complete `plan.md` or `plan-{track}/plan.md` and the user wants execution rather than more planning, especially for worktree-scoped runs that must dispatch each phase to its mapped named custom agent, with per-phase validation, commits, and final merge coordination.
 ---
 
 <Skill_Guide>
 <Purpose>
-Execute one finalized plan file with git worktree isolation, phase progression, and explicit child-agent handoff.
+Execute one finalized plan file with git worktree isolation, phase progression, and mandatory named custom-agent dispatch.
 </Purpose>
 
 <Instructions>
@@ -19,7 +19,7 @@ Use this skill only after planning is complete.
 2. `./.codex/skills/architect/references/agents-lite.md`
 3. `./.codex/skills/architect/references/planning-policy.md`
 4. `./.codex/skills/architect/references/git.md`
-5. The custom agent files and skill files mapped from each encountered `owner_agent`
+5. The custom agent files mapped from each encountered `owner_agent`
 
 ## Execution scope
 
@@ -30,10 +30,10 @@ Use this skill only after planning is complete.
 
 ## Owner mapping
 
-- `frontend-developer` -> agent `frontend-developer`, skill `./.codex/skills/frontend-dev/SKILL.md`
-- `backend-developer` -> agent `backend-developer`, skill `./.codex/skills/backend-dev/SKILL.md`
-- `publisher` -> agent `publisher`, skill `./.codex/skills/ui-publish/SKILL.md`
-- `playwright-guard` -> agent `playwright-guard`, skill `./.codex/skills/guard-e2e-test/SKILL.md`
+- `frontend-developer` -> custom agent `frontend-developer`
+- `backend-developer` -> custom agent `backend-developer`
+- `publisher` -> custom agent `publisher`
+- `playwright-guard` -> custom agent `playwright-guard`
 
 ## Workflow
 
@@ -41,9 +41,10 @@ Use this skill only after planning is complete.
 
 - Require a `**Branch:**` header.
 - Require explicit `owner_agent` values for every executable block.
+- Require every executable block to have enough execution metadata to delegate safely: phase id, `owner_agent`, `작업`, `산출물`, and plan-level validation commands.
 - Refuse execution if blocking ambiguity remains or the file is only a planning index.
-- Stop if an `owner_agent` cannot be mapped to an available custom agent or execution surface.
-- If project-scoped agents are unavailable, stop and report that the repository must be trusted so Codex can load `.codex/agents/*.toml` and `.codex/config.toml`.
+- Stop if an `owner_agent` cannot be mapped to an available named custom agent.
+- Stop if project-scoped agents are unavailable, if the repository is not trusted, or if the current runtime can spawn only generic worker roles.
 
 ### Step 1. Prepare git state
 
@@ -53,17 +54,55 @@ Use this skill only after planning is complete.
 - Remove stale worktree state for the same branch before recreating it.
 - Create one task worktree branch per executable plan file.
 
-### Step 2. Execute phases in order
+### Step 2. Resolve phase dispatch before any implementation
 
-- Read the phase block and resolve both the mapped custom agent and the mapped skill for that `owner_agent`.
-- Prefer spawning the mapped custom agent for phase execution. Keep git orchestration, worktree lifecycle, and merge control in planner-lite.
-- In the delegated prompt, tell the child agent which worktree directory to use and which skill to load explicitly, for example `Use $frontend-dev`.
+- Parse executable phases in order and treat `owner_agent` as authoritative routing metadata.
+- Resolve the mapped named custom agent from `owner_agent`.
+- Treat `primary_skill` as a consistency check against the mapped custom agent, not as a worker fallback path.
+- Dispatch is mandatory for every mapped phase. Planner-lite owns orchestration only; do not implement a mapped phase directly in planner-lite.
+- Treat a missing named custom-agent spawn as an execution failure, not as an acceptable shortcut.
+- Do not fall back to `worker + skill`, `default + skill`, or any other generic role simulation.
+- Build a delegation packet for each phase with:
+  - plan path
+  - phase heading or id
+  - `owner_agent`
+  - worktree directory
+  - `목적`
+  - `작업`
+  - `산출물`
+  - relevant validation commands
+
+### Step 3. Execute phases in order via child agents
+
+- Spawn the mapped named custom agent for phase execution. Keep git orchestration, worktree lifecycle, validation, commit control, and merge control in planner-lite.
+- Address the mapped custom agent explicitly and include the resolved phase metadata in the prompt.
+- Let the custom agent load and apply its own configured skills and developer instructions. Do not simulate that role by injecting a substitute skill into a generic worker.
 - Require the child agent to work only inside the assigned worktree directory, avoid nested worktrees, avoid plan rewrites, and stay within the current phase scope.
+- Require the child agent to report changed files, validations it ran locally, and any blockers before planner-lite continues.
+- Wait for the child agent to finish each sequential phase before running validation or moving on.
 - Keep each phase bounded to the files and outcomes described by the plan.
-- Run the phase validation commands before moving to the next phase.
+- Review the returned worktree changes, then run the relevant validation commands before moving to the next phase.
 - Commit after each successful phase using `git.md` conventions.
 
-### Step 3. Merge and clean up
+Delegation prompt contract:
+
+```text
+Execute <plan path> <phase id> as the named custom agent <owner_agent>.
+Work only in <worktree path>.
+Goal: <phase 목적>
+Tasks:
+<phase 작업 bullets>
+Expected outputs:
+<phase 산출물 bullets>
+Validation to respect:
+<relevant validation commands>
+Do not create branches, worktrees, or merges.
+Do not rewrite the plan.
+Do not edit files outside this phase scope.
+Report changed files, validations run, and blockers.
+```
+
+### Step 4. Merge and clean up
 
 - After the final phase passes, remove the worktree so the task branch can merge.
 - Merge back into the recorded base branch with `--no-ff`.
@@ -73,22 +112,26 @@ Use this skill only after planning is complete.
 ## Subagent policy
 
 - Use planner-lite as the orchestrator and the mapped custom agents as phase workers.
+- For mapped phases, named custom-agent execution is required. Do not collapse a phase back into planner-lite just because planner-lite could edit the files itself.
 - For a sequential track, execute phases one at a time and wait for each child agent before continuing.
 - For partial-parallel or parallel execution, use separate planner-lite sessions per track so each track keeps its own worktree.
-- If planner-lite is already running as a child agent and effective config prevents another spawn, stop and report the nesting requirement instead of silently collapsing roles.
-- When delegating a phase, address the mapped child agent explicitly and include the mapped skill explicitly, for example `frontend-developer` with `Use $frontend-dev`.
+- If planner-lite is already running as a child agent and effective config prevents another named custom-agent spawn, stop and report the nesting requirement instead of silently collapsing roles.
+- When delegating a phase, address the mapped child agent explicitly by role, for example `frontend-developer`.
+- Do not replace a missing named custom-agent path with a generic worker plus explicit skill prompt.
 
 ## Guardrails
 
 - Do not rewrite the plan during execution except for clearly marked execution status notes if the repo already uses them.
 - Do not create nested worktrees.
 - Do not ask child agents to create branches, worktrees, or merge.
+- Do not let planner-lite directly edit application files for a mapped phase unless the user explicitly overrides the child-agent model.
+- Do not dispatch mapped phases to generic `worker`, `default`, or `explorer` roles as a substitute for the named custom agent.
 - Do not switch the main repo checkout away from the recorded base branch.
 - Do not continue past a failed phase validation.
 - Do not delete task branches on merge failure.
 
 ## Output contract
 
-- Report the executed plan path, base branch, worktree branch, commits created, validations run, merge result, and any unresolved blockers.
+- Report the executed plan path, base branch, worktree branch, which named custom agents were spawned, commits created, validations run, merge result, and any unresolved blockers.
 </Instructions>
 </Skill_Guide>
