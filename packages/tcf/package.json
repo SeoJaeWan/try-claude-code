@@ -1,32 +1,32 @@
 {
-  "name": "@seojaewan/tcf",
-  "version": "0.1.0",
-  "description": "Frontend CLI for the Try Claude Code profile system.",
-  "type": "module",
-  "bin": {
-    "tcf": "./bin/tcf.mjs"
-  },
-  "dependencies": {
-    "@seojaewan/dev-cli-core": "0.1.0"
-  },
-  "files": [
-    "bin",
-    "README.md",
-    "LICENSE"
-  ],
-  "publishConfig": {
-    "access": "public"
-  },
-  "homepage": "https://github.com/SeoJaeWan/try-claude-code",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/SeoJaeWan/try-claude-code.git"
-  },
-  "bugs": {
-    "url": "https://github.com/SeoJaeWan/try-claude-code/issues"
-  },
-  "license": "UNLICENSED",
-  "engines": {
-    "node": ">=20"
-  }
+    "name": "@seojaewan/tcf",
+    "version": "0.1.1",
+    "description": "Frontend CLI for the Try Claude Code profile system.",
+    "type": "module",
+    "bin": {
+        "tcf": "./bin/tcf.mjs"
+    },
+    "dependencies": {
+        "@seojaewan/dev-cli-core": "0.1.1"
+    },
+    "files": [
+        "bin",
+        "README.md",
+        "LICENSE"
+    ],
+    "publishConfig": {
+        "access": "public"
+    },
+    "homepage": "https://github.com/SeoJaeWan/try-claude-code",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/SeoJaeWan/try-claude-code.git"
+    },
+    "bugs": {
+        "url": "https://github.com/SeoJaeWan/try-claude-code/issues"
+    },
+    "license": "UNLICENSED",
+    "engines": {
+        "node": ">=20"
+    }
 }
