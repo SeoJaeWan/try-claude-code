@@ -35,7 +35,7 @@ test("mode set/show는 requestedVersion과 resolvedVersion/ref를 함께 저장�
   const setPayload = readJson(setResult.stdout);
   assert.equal(setPayload.activeProfile.requestedVersion, "v1");
   assert.equal(setPayload.activeProfile.resolvedVersion, "v1.0.0");
-  assert.match(setPayload.activeProfile.resolvedRef, /^[A-Fa-f0-9]{40}$/);
+  assert.match(setPayload.activeProfile.resolvedRef, /\S+/);
 
   const configPath = path.join(tempHome, ".try-claude-dev-cli.json");
   const savedConfig = JSON.parse(await readFile(configPath, "utf8"));
@@ -71,8 +71,12 @@ test("mode update는 channel selection만 최신 patch로 올린다", async () =
       publisher: {
         personal: {
           v1: {
-            resolvedVersion: "v1.0.0",
-            ref: "profile-publisher-personal-v1.0.0"
+            latest: "v1.0.0",
+            versions: {
+              "v1.0.0": {
+                ref: "profiles-v1.0.0"
+              }
+            }
           }
         }
       }
@@ -105,8 +109,15 @@ test("mode update는 channel selection만 최신 patch로 올린다", async () =
       publisher: {
         personal: {
           v1: {
-            resolvedVersion: "v1.0.1",
-            ref: "profile-publisher-personal-v1.0.1"
+            latest: "v1.0.1",
+            versions: {
+              "v1.0.0": {
+                ref: "profiles-v1.0.0"
+              },
+              "v1.0.1": {
+                ref: "profiles-v1.0.1"
+              }
+            }
           }
         }
       }
@@ -122,7 +133,94 @@ test("mode update는 channel selection만 최신 patch로 올린다", async () =
   const updatePayload = readJson(updateResult.stdout);
   assert.equal(updatePayload.updated, true);
   assert.equal(updatePayload.activeProfile.resolvedVersion, "v1.0.1");
-  assert.equal(updatePayload.activeProfile.resolvedRef, "profile-publisher-personal-v1.0.1");
+  assert.equal(updatePayload.activeProfile.resolvedRef, "profiles-v1.0.1");
+});
+
+test("mode set을 같은 major version으로 다시 호출하면 latest exact release를 다시 resolve한다", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-mode-set-latest-"));
+  const tempHome = path.join(tempRoot, "home");
+  const tempProject = path.join(tempRoot, "project");
+  const registryPath = path.join(tempRoot, "registry.json");
+
+  await mkdir(tempHome, { recursive: true });
+  await mkdir(tempProject, { recursive: true });
+  await writeFile(
+    registryPath,
+    `${JSON.stringify({
+      publisher: {
+        personal: {
+          v1: {
+            latest: "v1.0.0",
+            versions: {
+              "v1.0.0": {
+                ref: "profiles-v1.0.0"
+              }
+            }
+          }
+        }
+      }
+    }, null, 2)}\n`,
+    "utf8"
+  );
+
+  const env = {
+    HOME: tempHome,
+    USERPROFILE: tempHome,
+    TRY_CLAUDE_PROFILE_REGISTRY_URL: pathToFileURL(registryPath).href
+  };
+
+  const firstSet = runCli(tcpBin, [
+    "mode",
+    "set",
+    "--mode",
+    "personal",
+    "--version",
+    "v1"
+  ], {
+    cwd: tempProject,
+    env
+  });
+  assert.equal(firstSet.status, 0);
+  assert.equal(readJson(firstSet.stdout).activeProfile.resolvedVersion, "v1.0.0");
+
+  await writeFile(
+    registryPath,
+    `${JSON.stringify({
+      publisher: {
+        personal: {
+          v1: {
+            latest: "v1.0.2",
+            versions: {
+              "v1.0.0": {
+                ref: "profiles-v1.0.0"
+              },
+              "v1.0.2": {
+                ref: "profiles-v1.0.2"
+              }
+            }
+          }
+        }
+      }
+    }, null, 2)}\n`,
+    "utf8"
+  );
+
+  const secondSet = runCli(tcpBin, [
+    "mode",
+    "set",
+    "--mode",
+    "personal",
+    "--version",
+    "v1"
+  ], {
+    cwd: tempProject,
+    env
+  });
+  assert.equal(secondSet.status, 0);
+  const secondPayload = readJson(secondSet.stdout);
+  assert.equal(secondPayload.activeProfile.requestedVersion, "v1");
+  assert.equal(secondPayload.activeProfile.resolvedVersion, "v1.0.2");
+  assert.equal(secondPayload.activeProfile.resolvedRef, "profiles-v1.0.2");
 });
 
 test("mode update는 exact pinned version이면 no-op으로 종료한다", async () => {
@@ -160,4 +258,5 @@ test("mode update는 exact pinned version이면 no-op으로 종료한다", async
   assert.equal(updatePayload.updated, false);
   assert.equal(updatePayload.reason, "EXACT_VERSION_PINNED");
   assert.equal(updatePayload.activeProfile.resolvedVersion, "v1.0.3");
+  assert.equal(updatePayload.activeProfile.resolvedRef, "profiles-v1.0.3");
 });

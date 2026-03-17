@@ -37,6 +37,10 @@ function ensureTrailingSlash(value) {
   return value.endsWith("/") ? value : `${value}/`;
 }
 
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 function getRegistryCachePath() {
   return path.join(getProfileCacheDir(), "registry.json");
 }
@@ -100,7 +104,98 @@ async function readMutableJson(url, cachePath) {
   }
 }
 
-function normalizeRegistryEntry(role, mode, majorVersion, entry) {
+function createDefaultResolvedRef(resolvedVersion) {
+  return createProfileRef({
+    resolvedVersion
+  });
+}
+
+function assertExactReleaseVersion(value, field) {
+  const version = assertProfileVersion(value, field);
+
+  if (isExactProfileVersion(version)) {
+    return version;
+  }
+
+  throw createCliError(
+    "INVALID_PROFILE_REGISTRY",
+    `Profile registry ${field} must use an exact version like v1.0.0.`,
+    {
+      field,
+      value
+    }
+  );
+}
+
+function getChannelRegistryEntry(registry, role, mode, majorVersion) {
+  return registry?.[role]?.[mode]?.[majorVersion] ?? null;
+}
+
+function normalizeVersionCatalog(versions, latestVersion) {
+  if (versions == null) {
+    return latestVersion ? { [latestVersion]: {} } : {};
+  }
+
+  if (Array.isArray(versions)) {
+    return Object.fromEntries(
+      versions.map((value) => [
+        assertExactReleaseVersion(value, "versions"),
+        {}
+      ])
+    );
+  }
+
+  if (!isPlainObject(versions)) {
+    throw createCliError(
+      "INVALID_PROFILE_REGISTRY",
+      "Profile registry versions must be an object or array.",
+      {
+        versions
+      }
+    );
+  }
+
+  return Object.fromEntries(
+    Object.entries(versions).map(([version, value]) => {
+      const normalizedVersion = assertExactReleaseVersion(version, "versions");
+
+      if (typeof value === "string") {
+        return [normalizedVersion, { ref: value.trim() }];
+      }
+
+      if (value == null) {
+        return [normalizedVersion, {}];
+      }
+
+      if (!isPlainObject(value)) {
+        throw createCliError(
+          "INVALID_PROFILE_REGISTRY",
+          `Profile registry version entry must be an object, string, or null: ${version}`,
+          {
+            version,
+            value
+          }
+        );
+      }
+
+      return [normalizedVersion, value];
+    })
+  );
+}
+
+function resolveVersionRef(resolvedVersion, versionEntry = {}) {
+  if (typeof versionEntry === "string" && versionEntry.trim().length > 0) {
+    return versionEntry.trim();
+  }
+
+  if (isPlainObject(versionEntry) && typeof versionEntry.ref === "string" && versionEntry.ref.trim().length > 0) {
+    return versionEntry.ref.trim();
+  }
+
+  return createDefaultResolvedRef(resolvedVersion);
+}
+
+function normalizeRegistryChannel(role, mode, majorVersion, entry) {
   if (!entry || typeof entry !== "object") {
     throw createCliError(
       "INVALID_PROFILE_REGISTRY",
@@ -113,22 +208,69 @@ function normalizeRegistryEntry(role, mode, majorVersion, entry) {
     );
   }
 
-  const resolvedVersion = assertProfileVersion(
-    entry.resolvedVersion,
-    "resolvedVersion"
-  );
-  const resolvedRef = typeof entry.ref === "string" && entry.ref.trim().length > 0
-    ? entry.ref.trim()
-    : createProfileRef({
-        role,
-        mode,
-        resolvedVersion
-      });
+  if ("resolvedVersion" in entry) {
+    const resolvedVersion = assertExactReleaseVersion(
+      entry.resolvedVersion,
+      "resolvedVersion"
+    );
+
+    return {
+      latestVersion: resolvedVersion,
+      versions: {
+        [resolvedVersion]: {
+          ...(typeof entry.ref === "string" && entry.ref.trim().length > 0
+            ? {
+                ref: entry.ref.trim()
+              }
+            : {})
+        }
+      }
+    };
+  }
+
+  const latestVersion = assertExactReleaseVersion(entry.latest, "latest");
+  const versions = normalizeVersionCatalog(entry.versions, latestVersion);
+
+  if (!(latestVersion in versions)) {
+    versions[latestVersion] = {};
+  }
 
   return {
-    resolvedVersion,
-    resolvedRef
+    latestVersion,
+    versions
   };
+}
+
+function resolveChannelVersion(channel, resolvedVersion) {
+  return {
+    resolvedVersion,
+    resolvedRef: resolveVersionRef(
+      resolvedVersion,
+      channel?.versions?.[resolvedVersion]
+    )
+  };
+}
+
+async function tryResolveExactVersion(role, mode, majorVersion, requestedVersion) {
+  try {
+    const registry = await loadProfileRegistry();
+    const channelEntry = getChannelRegistryEntry(registry, role, mode, majorVersion);
+
+    if (!channelEntry) {
+      return {
+        resolvedVersion: requestedVersion,
+        resolvedRef: createDefaultResolvedRef(requestedVersion)
+      };
+    }
+
+    const channel = normalizeRegistryChannel(role, mode, majorVersion, channelEntry);
+    return resolveChannelVersion(channel, requestedVersion);
+  } catch {
+    return {
+      resolvedVersion: requestedVersion,
+      resolvedRef: createDefaultResolvedRef(requestedVersion)
+    };
+  }
 }
 
 export async function loadProfileRegistry() {
@@ -182,18 +324,37 @@ export async function hydrateProfileSelection({
   }
 
   if (isExactProfileVersion(requestedVersion)) {
+    if (
+      !forceRefresh &&
+      selection.resolvedVersion === requestedVersion &&
+      selection.resolvedRef
+    ) {
+      return {
+        ...selection,
+        mode,
+        version: requestedVersion,
+        requestedVersion,
+        majorVersion,
+        resolvedVersion: requestedVersion,
+        resolvedRef: selection.resolvedRef
+      };
+    }
+
+    const exactVersion = await tryResolveExactVersion(
+      role,
+      mode,
+      majorVersion,
+      requestedVersion
+    );
+
     return {
       ...selection,
       mode,
       version: requestedVersion,
       requestedVersion,
       majorVersion,
-      resolvedVersion: requestedVersion,
-      resolvedRef: selection.resolvedRef ?? createProfileRef({
-        role,
-        mode,
-        resolvedVersion: requestedVersion
-      })
+      resolvedVersion: exactVersion.resolvedVersion,
+      resolvedRef: exactVersion.resolvedRef
     };
   }
 
@@ -210,12 +371,13 @@ export async function hydrateProfileSelection({
   }
 
   const registry = await loadProfileRegistry();
-  const entry = normalizeRegistryEntry(
+  const channel = normalizeRegistryChannel(
     role,
     mode,
     majorVersion,
-    registry?.[role]?.[mode]?.[majorVersion]
+    getChannelRegistryEntry(registry, role, mode, majorVersion)
   );
+  const entry = resolveChannelVersion(channel, channel.latestVersion);
 
   return {
     ...selection,
