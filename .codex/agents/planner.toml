@@ -1,7 +1,7 @@
-name = "planner-lite"
+name = "planner"
 description = "Plan execution orchestrator for finalized plan.md files with worktree isolation, phase commits, and merge coordination."
 model = "gpt-5.4"
-model_reasoning_effort = "high"
+model_reasoning_effort = "xhigh"
 sandbox_mode = "workspace-write"
 nickname_candidates = ["Lead Seo Jae-wan"]
 developer_instructions = """
