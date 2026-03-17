@@ -11,7 +11,7 @@ for (const [alias, binPath] of [
   ["tcf", tcfBin],
   ["tcb", tcbBin]
 ]) {
-  test(`${alias} wrapper는 repo 밖 디렉터리에서도 기본 help JSON을 반환한다`, async () => {
+  test(`${alias} wrapper는 repo 밖 디렉터리에서도 기본 help summary JSON을 반환한다`, async () => {
     const tempProject = await mkdtemp(path.join(os.tmpdir(), `dev-cli-smoke-${alias}-`));
     const result = runCli(binPath, ["--help"], {
       cwd: tempProject
@@ -21,5 +21,6 @@ for (const [alias, binPath] of [
     const payload = readJson(result.stdout);
     assert.equal(payload.ok, true);
     assert.equal(payload.alias, alias);
+    assert.equal(payload.helpMode, "summary");
   });
 }

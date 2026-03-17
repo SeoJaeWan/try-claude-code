@@ -63,104 +63,51 @@ test("실패 payload도 deterministic error envelope를 유지한다", () => {
   assert.equal(payload.error.code, "SPEC_CONFLICT");
 });
 
-test("tcf help JSON은 hook/apiHook 계약을 AI가 읽을 수 있는 구조로 노출한다", () => {
+test("tcf 기본 help JSON은 탐색용 summary를 반환한다", () => {
   const result = runCli(tcfBin, ["--help"]);
 
   assert.equal(result.status, 0);
   const payload = readJson(result.stdout);
   assert.equal(payload.ok, true);
+  assert.equal(payload.helpMode, "summary");
+  assert.equal(payload.commands.apiHook.cliCommand, "api-hook");
+  assert.match(payload.commands.apiHook.whenToUse[0], /When you need a TanStack Query-based server request hook/);
   assert.deepEqual(
-    payload.commands.hook.contracts.pathPolicy.allowedPatterns,
-    ["hooks/utils/{domain}", "hooks/utils/common"]
+    payload.commands.apiHook.relatedCommands.map((entry) => entry.command),
+    ["query-key", "endpoint", "mapper", "hook-return", "validate-file", "batch"]
   );
-  assert.equal(
-    payload.commands.apiHook.contracts.methodPolicy.query.requiredMethod,
-    "GET"
-  );
-  assert.deepEqual(
-    payload.commands.apiHook.contracts.methodPolicy.mutation.allowedMethods,
-    ["POST", "PUT", "PATCH", "DELETE"]
-  );
-  assert.equal(
-    payload.commands.apiHook.contracts.namingPolicy.mutationPatterns.PATCH,
-    "^usePatch[A-Z][A-Za-z0-9]*$"
-  );
-  assert.equal(
-    payload.commands.hook.contracts.pathPolicy.domainPolicy,
-    "domain is the root page segment from app/{domain}; use common only for hooks shared across multiple page domains"
-  );
-  assert.equal(
-    payload.commands.apiHook.contracts.pathPolicy.domainExamples["app/login/page.tsx"],
-    "login"
-  );
-  assert.equal(
-    payload.commands.validateFile.contracts.outputPolicy.entryFilePattern,
-    "index.ts"
-  );
-  assert.deepEqual(
-    payload.commands.validateFile.contracts.inputShape.acceptedModes,
-    ["positional", "json"]
-  );
+  assert.deepEqual(payload.commands.apiHook.flowRefs, ["create-api-hook", "bulk-frontend-scaffold"]);
+  assert.equal(payload.flows["create-api-hook"].steps[0].command, "query-key");
 });
 
-test("tcp help JSON은 publisher component 계약을 AI가 읽을 수 있는 구조로 노출한다", () => {
+test("tcp 기본 help JSON은 명령 사용 맥락을 summary로 노출한다", () => {
   const result = runCli(tcpBin, ["--help"]);
 
   assert.equal(result.status, 0);
   const payload = readJson(result.stdout);
   assert.equal(payload.ok, true);
+  assert.equal(payload.helpMode, "summary");
+  assert.equal(payload.commands.component.cliCommand, "component");
+  assert.match(payload.commands.component.whenToUse[0], /When you need a new UI component shell/);
   assert.deepEqual(
-    payload.commands.component.contracts.pathPolicy.requiredPatterns,
-    [
-      "components/common/{component}",
-      "components/{domain}/{component}"
-    ]
+    payload.commands.component.relatedCommands.map((entry) => entry.command),
+    ["validate-file", "ui-state", "batch"]
   );
-  assert.equal(
-    payload.commands.component.contracts.pathPolicy.domainPolicy,
-    "domain is the root page segment from app/{domain}; use common only for components shared across multiple page domains"
-  );
-  assert.equal(
-    payload.commands.component.contracts.pathPolicy.placementDecision,
-    "common is only for components reused in 2 or more root page domains; otherwise choose the single matching domain path"
-  );
-  assert.equal(
-    payload.commands.component.contracts.pathPolicy.legacyPolicy,
-    "if a legacy component path differs from the current convention, migrate the path first; if it already matches, keep the path and only update internals"
-  );
-  assert.equal(
-    payload.commands.component.contracts.outputPolicy.functionStyle,
-    "arrow"
-  );
-  assert.equal(
-    payload.commands.component.contracts.outputPolicy.filePattern,
-    "{path}/index.tsx"
-  );
-  assert.equal(
-    payload.commands.component.contracts.pathPolicy.domainExamples["app/profile/page.tsx"],
-    "profile"
-  );
-  assert.equal(
-    payload.commands.validateFile.description,
-    "Validate publisher UI files against placement and AST rules"
-  );
-  assert.deepEqual(
-    payload.commands.validateFile.contracts.inputShape.acceptedModes,
-    ["positional", "json"]
-  );
-  assert.ok(
-    payload.commands.validateFile.contracts.validationCoverage.includes(
-      "non-components path uses AST-only validation"
-    )
-  );
+  assert.deepEqual(payload.commands.component.flowRefs, [
+    "new-component",
+    "add-ui-interaction",
+    "bulk-publisher-update"
+  ]);
+  assert.equal(payload.flows["new-component"].steps[1].command, "validate-file");
 });
 
 test("tcp help component JSON은 요청한 명령 계약만 구조적으로 노출한다", () => {
-  const result = runCli(tcpBin, ["help", "component"]);
+  const result = runCli(tcpBin, ["component", "--help"]);
 
   assert.equal(result.status, 0);
   const payload = readJson(result.stdout);
   assert.equal(payload.ok, true);
+  assert.equal(payload.helpMode, "detail");
   assert.deepEqual(Object.keys(payload.commands), ["component"]);
   assert.equal(
     payload.commands.component.contracts.pathPolicy.placementDecision,
@@ -169,6 +116,25 @@ test("tcp help component JSON은 요청한 명령 계약만 구조적으로 노�
   assert.equal(
     payload.commands.component.contracts.pathPolicy.legacyPolicy,
     "if a legacy component path differs from the current convention, migrate the path first; if it already matches, keep the path and only update internals"
+  );
+});
+
+test("tcp --help --full은 전체 command contract audit용 JSON을 반환한다", () => {
+  const result = runCli(tcpBin, ["--help", "--full"]);
+
+  assert.equal(result.status, 0);
+  const payload = readJson(result.stdout);
+  assert.equal(payload.helpMode, "detail");
+  assert.deepEqual(
+    payload.commands.component.contracts.pathPolicy.requiredPatterns,
+    [
+      "components/common/{component}",
+      "components/{domain}/{component}"
+    ]
+  );
+  assert.equal(
+    payload.commands.validateFile.contracts.outputPolicy.entryFilePattern,
+    "index.tsx (components/* only)"
   );
 });
 
