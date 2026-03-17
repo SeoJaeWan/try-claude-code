@@ -1354,7 +1354,7 @@
             </div>
             
     <div class="pill-row">
-      <span class="pill">input: json</span><span class="pill">mode: analysis</span><span class="pill">required: files</span>
+      <span class="pill">input: json</span><span class="pill">mode: analysis</span><span class="pill">required any: files | root</span>
     </div>
   
           </header>
@@ -1380,7 +1380,7 @@
               <dt>입력규칙</dt>
               <dd>
     <ul class="guide-list">
-      <li><p class="guide-text">파일 경로 1개 이상을 positional 또는 files 배열 JSON으로 전달한다.</p></li>
+      <li><p class="guide-text">파일 경로 1개 이상을 positional 또는 files 배열 JSON으로 전달하거나, root 경로를 넘겨 해당 디렉터리 아래의 검증 대상 파일을 모두 탐색한다.</p></li>
     </ul>
   </dd>
             </div>
@@ -1430,10 +1430,33 @@
             </div>
           
             <div class="guide-definition-row">
-              <dt>acceptedModes</dt>
+              <dt>filesModes</dt>
               <dd>
     <ul class="guide-list">
       <li><p class="guide-text">positional</p></li><li><p class="guide-text">json</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>rootField</dt>
+              <dd><p class="guide-text">root</p></dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>rootModes</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">--root</p></li><li><p class="guide-text">json</p></li>
+    </ul>
+  </dd>
+            </div>
+          
+            <div class="guide-definition-row">
+              <dt>acceptedModes</dt>
+              <dd>
+    <ul class="guide-list">
+      <li><p class="guide-text">positional</p></li><li><p class="guide-text">json</p></li><li><p class="guide-text">--root</p></li>
     </ul>
   </dd>
             </div>
@@ -2918,6 +2941,11 @@
               class="example-block"
               data-testid="publisher-guide-example-validateFile-2"
             ><code>tcp validate-file --json &#39;{&quot;files&quot;:[&quot;components/common/table/index.tsx&quot;,&quot;components/common/table/th/index.tsx&quot;]}&#39;</code></pre>
+          
+            <pre
+              class="example-block"
+              data-testid="publisher-guide-example-validateFile-3"
+            ><code>tcp validate-file --root app</code></pre>
           
     </div>
   

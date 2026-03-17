@@ -67,6 +67,7 @@ test("validate-file help --text는 파일 입력 형태와 검증 범위를 보�
   assert.equal(result.status, 0);
   assert.match(result.stdout, /validate-file: Validate publisher UI files against placement and AST rules/);
   assert.match(result.stdout, /files: files\[\] \(positional \| json\)/);
+  assert.match(result.stdout, /root: root \(--root \| json\)/);
   assert.match(result.stdout, /entry file: page\.tsx for app pages, index\.tsx for other React TSX component entries/);
   assert.match(result.stdout, /validates: .*page\.tsx keeps the page filename/);
   assert.match(result.stdout, /validates: .*components segment prefixes are preserved in validation and suggestions/);

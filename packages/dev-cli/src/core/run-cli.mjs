@@ -383,6 +383,7 @@ async function handleValidateFileCommand({ alias, role, route, repoRoot }) {
     role,
     profile,
     filePaths: spec.files,
+    discoveryRoot: spec.root,
     repoRoot
   });
 

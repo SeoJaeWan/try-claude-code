@@ -96,3 +96,68 @@ export default usePostLogin;
   assert.equal(result.results[0].command, "apiHook");
   assert.deepEqual(result.results[0].violations, []);
 });
+
+test("validateFiles는 discoveryRoot 스캔에서 unsupported 파일을 skip한다", async () => {
+  const tempRoot = await createTempRepo({
+    profiles: [],
+    files: {
+      "src/widget/index.ts": `const widget = () => {
+  return {};
+};
+
+export default widget;
+`,
+      "src/readme.ts": "export const readme = true;\n"
+    }
+  });
+
+  const profile = {
+    commands: {
+      hook: {
+        validatorRules: []
+      },
+      validateFile: {
+        targetRules: [
+          {
+            commandName: "hook",
+            match: {
+              pathPatterns: ["src/{name}/index.ts"]
+            },
+            argMappings: [
+              {
+                field: "name",
+                source: "capture",
+                capture: "name"
+              }
+            ],
+            expectedEntryFileName: "index.ts",
+            exportPolicy: {
+              expectedNameField: "name"
+            },
+            runPlacementValidation: false
+          }
+        ]
+      }
+    }
+  };
+
+  const result = await validateFiles({
+    profile,
+    discoveryRoot: "src",
+    repoRoot: tempRoot
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.discovery, {
+    root: "src",
+    scanned: 2,
+    matched: 1,
+    skipped: 1
+  });
+  assert.deepEqual(result.summary, {
+    total: 1,
+    passed: 1,
+    failed: 0
+  });
+  assert.equal(result.results.some((item) => item.file.endsWith("readme.ts")), false);
+});

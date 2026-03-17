@@ -496,6 +496,114 @@ export default useGetLogin;
   assert.ok(codes.includes("INVALID_HOOK_NAME"));
 });
 
+test("tcp validate-file --root는 매칭된 파일만 검증하고 unsupported 파일은 skip한다", async () => {
+  const tempRoot = await createTempRepo({
+    profiles: ["shared/personal/v1", "publisher/personal/v1"],
+    files: {
+      "app/showcase/page.tsx": `const Page = () => {
+  return <section />;
+};
+
+export default Page;
+`,
+      "app/showcase/reviewCard.tsx": `interface ReviewCardProps {}
+
+const ReviewCard = (_props: ReviewCardProps) => {
+  return <section />;
+};
+
+export default ReviewCard;
+`,
+      "app/showcase/data.ts": "export const showcaseData = [];\n"
+    }
+  });
+
+  const result = runCli(tcpBin, [
+    "validate-file",
+    "--root",
+    "app"
+  ], {
+    cwd: tempRoot
+  });
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stdout);
+
+  assert.deepEqual(payload.discovery, {
+    root: "app",
+    scanned: 3,
+    matched: 2,
+    skipped: 1
+  });
+  assert.deepEqual(payload.summary, {
+    total: 2,
+    passed: 1,
+    failed: 1
+  });
+  assert.equal(payload.results.some((item) => item.file.endsWith("data.ts")), false);
+  assert.ok(
+    payload.results
+      .find((item) => item.file.endsWith("reviewCard.tsx"))
+      .violations
+      .some((item) => item.code === "INVALID_ENTRY_FILE_NAME")
+  );
+});
+
+test("tcf validate-file --root는 hooks 하위 targetRules 매칭 파일만 검증한다", async () => {
+  const tempRoot = await createTempRepo({
+    profiles: ["shared/personal/v1", "frontend/personal/v1"],
+    files: {
+      "hooks/utils/common/useScroll/index.ts": `const useScroll = () => {
+  return {
+    value: 1
+  };
+};
+
+export default useScroll;
+`,
+      "hooks/apis/auth/mutations/useGetLogin/index.ts": `const useGetLogin = () => {
+  return {};
+};
+
+export default useGetLogin;
+`,
+      "hooks/utils/common/helper.ts": "export const toNumber = (value) => Number(value);\n"
+    }
+  });
+
+  const result = runCli(tcfBin, [
+    "validate-file",
+    "--root",
+    "hooks"
+  ], {
+    cwd: tempRoot
+  });
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stdout);
+
+  assert.deepEqual(payload.discovery, {
+    root: "hooks",
+    scanned: 3,
+    matched: 2,
+    skipped: 1
+  });
+  assert.deepEqual(payload.summary, {
+    total: 2,
+    passed: 1,
+    failed: 1
+  });
+  assert.equal(payload.results.some((item) => item.file.endsWith("helper.ts")), false);
+
+  const codes = payload.results
+    .find((item) => item.file.endsWith("useGetLogin/index.ts"))
+    .violations
+    .map((item) => item.code);
+
+  assert.ok(codes.includes("INVALID_API_METHOD"));
+  assert.ok(codes.includes("INVALID_HOOK_NAME"));
+});
+
 test("validate-file는 JSON files 배열, file not found, parse error를 함께 집계한다", async () => {
   const tempRoot = await createTempRepo({
     profiles: ["shared/personal/v1", "frontend/personal/v1"],

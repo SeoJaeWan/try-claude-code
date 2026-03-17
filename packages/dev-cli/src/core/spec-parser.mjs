@@ -146,25 +146,59 @@ export function parseValidateFileSpec(route) {
       );
     }
 
-    if (!Array.isArray(parsed.files) || parsed.files.length === 0) {
+    const hasFiles = Array.isArray(parsed.files) && parsed.files.length > 0;
+    const hasRoot = typeof parsed.root === "string" && parsed.root.trim() !== "";
+
+    if (hasFiles && hasRoot) {
       throw createCliError(
         "INVALID_VALIDATE_FILE_SPEC",
-        "Command validate-file requires a non-empty files array.",
+        "Command validate-file accepts either files or root, not both.",
         {
           command: "validate-file"
         }
       );
     }
 
+    if (!hasFiles && !hasRoot) {
+      throw createCliError(
+        "INVALID_VALIDATE_FILE_SPEC",
+        "Command validate-file requires a non-empty files array or a root path.",
+        {
+          command: "validate-file"
+        }
+      );
+    }
+
+    return hasRoot
+      ? {
+          root: parsed.root
+        }
+      : {
+          files: parsed.files
+        };
+  }
+
+  if (route.options.root) {
+    if (route.extraPositionals?.length) {
+      throw createCliError(
+        "INVALID_VALIDATE_FILE_SPEC",
+        "Command validate-file does not accept file paths together with --root.",
+        {
+          command: "validate-file",
+          positionals: route.extraPositionals
+        }
+      );
+    }
+
     return {
-      files: parsed.files
+      root: route.options.root
     };
   }
 
   if (!route.extraPositionals?.length) {
     throw createCliError(
       "VALIDATE_FILE_SPEC_REQUIRED",
-      "Command validate-file requires one or more file paths or --json.",
+      "Command validate-file requires file paths, --root, or --json.",
       {
         command: "validate-file"
       }
