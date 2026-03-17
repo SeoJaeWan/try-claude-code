@@ -1,13 +1,13 @@
 {
     "name": "@seojaewan/tcb",
-    "version": "0.1.3",
+    "version": "0.1.4",
     "description": "Backend CLI for the Try Claude Code profile system.",
     "type": "module",
     "bin": {
         "tcb": "./bin/tcb.mjs"
     },
     "dependencies": {
-        "@seojaewan/dev-cli-core": "0.1.3"
+        "@seojaewan/dev-cli-core": "0.1.4"
     },
     "files": [
         "bin",
