@@ -72,11 +72,7 @@ test("mode update는 channel selection만 최신 patch로 올린다", async () =
         personal: {
           v1: {
             latest: "v1.0.0",
-            versions: {
-              "v1.0.0": {
-                ref: "profiles-v1.0.0"
-              }
-            }
+            versions: ["v1.0.0"]
           }
         }
       }
@@ -110,14 +106,7 @@ test("mode update는 channel selection만 최신 patch로 올린다", async () =
         personal: {
           v1: {
             latest: "v1.0.1",
-            versions: {
-              "v1.0.0": {
-                ref: "profiles-v1.0.0"
-              },
-              "v1.0.1": {
-                ref: "profiles-v1.0.1"
-              }
-            }
+            versions: ["v1.0.0", "v1.0.1"]
           }
         }
       }
@@ -151,11 +140,7 @@ test("mode set을 같은 major version으로 다시 호출하면 latest exact re
         personal: {
           v1: {
             latest: "v1.0.0",
-            versions: {
-              "v1.0.0": {
-                ref: "profiles-v1.0.0"
-              }
-            }
+            versions: ["v1.0.0"]
           }
         }
       }
@@ -190,14 +175,7 @@ test("mode set을 같은 major version으로 다시 호출하면 latest exact re
         personal: {
           v1: {
             latest: "v1.0.2",
-            versions: {
-              "v1.0.0": {
-                ref: "profiles-v1.0.0"
-              },
-              "v1.0.2": {
-                ref: "profiles-v1.0.2"
-              }
-            }
+            versions: ["v1.0.0", "v1.0.2"]
           }
         }
       }
