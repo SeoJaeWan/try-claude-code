@@ -4,9 +4,7 @@ import {
 } from "./config-store.mjs";
 import {
   assertProfileVersion,
-  createProfileRef,
-  extractMajorProfileVersion,
-  isExactProfileVersion
+  extractMajorProfileVersion
 } from "./version-utils.mjs";
 
 function parseProfileInput(rawValue) {
@@ -56,17 +54,7 @@ export async function resolveActiveProfile({
       mode: explicitProfile.mode,
       version: requestedVersion,
       requestedVersion,
-      majorVersion: extractMajorProfileVersion(requestedVersion),
-      ...(isExactProfileVersion(requestedVersion)
-        ? {
-            resolvedVersion: requestedVersion,
-            resolvedRef: createProfileRef({
-              role,
-              mode: explicitProfile.mode,
-              resolvedVersion: requestedVersion
-            })
-          }
-        : {})
+      majorVersion: extractMajorProfileVersion(requestedVersion)
     };
   }
 
@@ -81,17 +69,7 @@ export async function resolveActiveProfile({
       mode: explicitMode.mode,
       version: requestedVersion,
       requestedVersion,
-      majorVersion: extractMajorProfileVersion(requestedVersion),
-      ...(isExactProfileVersion(requestedVersion)
-        ? {
-            resolvedVersion: requestedVersion,
-            resolvedRef: createProfileRef({
-              role,
-              mode: explicitMode.mode,
-              resolvedVersion: requestedVersion
-            })
-          }
-        : {})
+      majorVersion: extractMajorProfileVersion(requestedVersion)
     };
   }
 
@@ -103,17 +81,7 @@ export async function resolveActiveProfile({
       mode: "personal",
       version: requestedVersion,
       requestedVersion,
-      majorVersion: extractMajorProfileVersion(requestedVersion),
-      ...(isExactProfileVersion(requestedVersion)
-        ? {
-            resolvedVersion: requestedVersion,
-            resolvedRef: createProfileRef({
-              role,
-              mode: "personal",
-              resolvedVersion: requestedVersion
-            })
-          }
-        : {})
+      majorVersion: extractMajorProfileVersion(requestedVersion)
     };
   }
 

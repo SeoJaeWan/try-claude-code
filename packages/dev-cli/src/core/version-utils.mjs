@@ -39,9 +39,7 @@ export function assertProfileVersion(value, field = "version") {
 }
 
 export function createProfileRef({
-  role,
-  mode,
   resolvedVersion
 }) {
-  return `profile-${role}-${mode}-${resolvedVersion}`;
+  return `profiles-${resolvedVersion}`;
 }

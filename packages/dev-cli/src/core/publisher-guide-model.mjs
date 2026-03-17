@@ -112,7 +112,8 @@ export function createPublisherGuideModel({
     role,
     activeProfile,
     profile,
-    commandName: null
+    commandName: null,
+    full: true
   });
   const summary = profile.guide?.요약 ?? `${profile.id} guide`;
 

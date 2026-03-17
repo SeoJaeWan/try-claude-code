@@ -95,11 +95,14 @@ active profile 우선순위:
 
 channel과 exact pin은 분리한다.
 
-- 사용자는 `personal + v1` 또는 `company + v2` 같은 channel을 선택한다.
-- CLI는 `profiles/registry.json`에서 현재 channel의 exact revision을 조회한다.
+- 사용자는 `personal + v1` 같은 major channel 또는 `personal + v1.0.1` 같은 exact release를 선택한다.
+- `profiles/registry.json`은 major channel별 `latest` exact version과 선택적 version metadata만 관리한다.
+- exact version은 기본적으로 `profiles-v1.0.1` 같은 release tag로 직접 fetch한다.
+- registry에 특정 exact version의 `ref`가 있으면 direct tag 대신 그 ref를 우선 사용한다.
 - config에는 `requestedVersion`, `resolvedVersion`, `resolvedRef`를 함께 저장한다.
 - 실제 profile/template fetch는 `main` live file이 아니라 `resolvedRef` 기준 raw URL만 사용한다.
-- `mode update`가 호출될 때만 channel을 다시 조회해 최신 patch로 올린다.
+- `mode set --version v1`를 다시 호출하면 current `latest` exact version으로 다시 resolve한다.
+- `mode update`는 저장된 `requestedVersion`을 다시 resolve하는 compatibility alias다.
 
 예시 config:
 
@@ -110,7 +113,26 @@ channel과 exact pin은 분리한다.
       "mode": "personal",
       "requestedVersion": "v1",
       "resolvedVersion": "v1.0.0",
-      "resolvedRef": "f0d6fa0cf92dee319efc4eb51e001ba8cfc488ec"
+      "resolvedRef": "profiles-v1.0.0"
+    }
+  }
+}
+```
+
+예시 registry:
+
+```json
+{
+  "publisher": {
+    "personal": {
+      "v1": {
+        "latest": "v1.0.0",
+        "versions": {
+          "v1.0.0": {
+            "ref": "41be068936537d5bdcd419f065529abc0b9f0646"
+          }
+        }
+      }
     }
   }
 }
@@ -120,6 +142,7 @@ channel과 exact pin은 분리한다.
 
 ```bash
 tcp mode set --mode personal --version v1
+tcp mode set --mode personal --version v1.0.1
 tcp mode show
 tcp mode update
 tcp mode set --mode personal --version v1 --repo
@@ -150,15 +173,15 @@ wrapper는 각각 하나의 `bin`만 노출한다.
 
 중요:
 
-- wrapper를 publish하기 전에 `main` 브랜치에 `profiles/registry.json`과 해당 `resolvedRef`가 먼저 존재해야 한다.
+- wrapper를 publish하기 전에 `main` 브랜치에 `profiles/registry.json`과 target exact version에 대응하는 tag 또는 registry `ref` override가 먼저 존재해야 한다.
 - 아직 원격 registry가 없는 로컬 검증 단계에서는 `TRY_CLAUDE_PROFILE_REGISTRY_URL`, `TRY_CLAUDE_PROFILE_RAW_BASE_URL` override를 사용한다.
 
 profile hotfix 순서:
 
 1. `main`에 `profiles/*` 수정 반영
-2. exact ref 또는 tag 준비
-3. `profiles/registry.json` channel alias 업데이트
-4. 사용자는 `mode update`로 최신 patch 반영
+2. exact version tag 준비. 예: `profiles-v1.0.1`
+3. `profiles/registry.json`에서 major channel의 `latest`를 새 exact version으로 업데이트
+4. 사용자는 `mode set --version v1` 또는 `mode update`로 최신 patch 반영
 
 ## Help Contract
 

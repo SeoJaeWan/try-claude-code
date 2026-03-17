@@ -181,8 +181,6 @@ test("resolveActiveProfile은 exact version 입력을 바로 pinned selection으
     mode: "personal",
     version: "v1.0.3",
     requestedVersion: "v1.0.3",
-    majorVersion: "v1",
-    resolvedVersion: "v1.0.3",
-    resolvedRef: "profile-publisher-personal-v1.0.3"
+    majorVersion: "v1"
   });
 });
