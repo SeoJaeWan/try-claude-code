@@ -1,0 +1,13 @@
+{
+  "expectations": [
+    {"text": "결과 구조가 Button/index.tsx 또는 동급 folder/index 규칙을 따른다 (common/button/index.tsx is acceptable)", "passed": true, "evidence": "Summary states file created at components/common/button/index.tsx"},
+    {"text": "flat components/Button.tsx 파일이 그대로 남지 않는다", "passed": true, "evidence": "Summary: 'Removed the old components/Button/ directory' and 'components/Button/ (deleted — convention violation)'"},
+    {"text": "Props 인터페이스가 ButtonProps 접미사를 유지한다", "passed": true, "evidence": "interface ButtonProps defined at line 5 of button_index.tsx"},
+    {"text": "컴포넌트가 화살표 함수 형태로 유지된다", "passed": true, "evidence": "const Button = (props: ButtonProps) => { at line 13"},
+    {"text": "기존 children prop 동작이 보존된다", "passed": true, "evidence": "children: ReactNode in ButtonProps, rendered as {children} inside <button> at line 28"},
+    {"text": "기존 variant prop 동작이 보존된다", "passed": true, "evidence": "variant?: 'primary' | 'secondary' in props, conditional className based on variant at lines 22-25"},
+    {"text": "showcase page의 import가 새 구조에 맞게 정리된다", "passed": true, "evidence": "showcase_page.tsx line 1: import Button from '@/components/common/button'"},
+    {"text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다", "passed": true, "evidence": "No such imports or calls in button_index.tsx"}
+  ],
+  "summary": {"passed": 8, "failed": 0, "total": 8, "pass_rate": 1.0}
+}

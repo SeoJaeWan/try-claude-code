@@ -22,7 +22,10 @@
         {"id": "has-review-text", "text": "리뷰 본문을 표시하는 요소가 존재한다"},
         {"id": "has-date", "text": "작성일을 표시하는 요소가 존재한다"},
         {"id": "tailwind-classes", "text": "Tailwind CSS 클래스가 스타일링에 사용된다"},
-        {"id": "no-forbidden-patterns", "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다 (tcp profile: forbidden patterns)"}
+        {"id": "no-forbidden-patterns", "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다 (tcp profile: forbidden patterns)"},
+        {"id": "arrow-function", "text": "컴포넌트가 const 화살표 함수로 선언된다 (export default function이 아닌 const ComponentName = () => {} 형태)"},
+        {"id": "camelcase-folder", "text": "컴포넌트 폴더명이 camelCase이다 (ReviewCard가 아닌 reviewCard, tcp profile: folderCase = camelCase)"},
+        {"id": "tcp-validate-executed", "text": "tcp validate-file이 실행되어 0 violations을 확인했다 (트랜스크립트에서 tcp validate-file 실행 흔적이 존재)"}
       ]
     },
     {
@@ -38,11 +41,13 @@
         {"id": "folder-structure", "text": "결과 구조가 Button/index.tsx 또는 동급 folder/index 규칙을 따른다"},
         {"id": "flat-file-removed", "text": "flat components/Button.tsx 파일이 그대로 남지 않는다 (중복 제거)"},
         {"id": "props-interface-suffix", "text": "Props 인터페이스가 ButtonProps 접미사를 유지한다 (tcp profile: props suffix = Props)"},
-        {"id": "arrow-function", "text": "컴포넌트가 화살표 함수 형태로 유지된다 (shared profile: function style = arrow)"},
+        {"id": "arrow-function", "text": "컴포넌트가 const 화살표 함수로 선언된다 (export default function이 아닌 const ComponentName = () => {} 형태)"},
         {"id": "label-behavior-preserved", "text": "기존 label prop 동작이 보존된다"},
         {"id": "tone-behavior-preserved", "text": "기존 tone prop 동작이 보존된다"},
         {"id": "showcase-import-updated", "text": "showcase page의 import가 새 구조에 맞게 정리된다"},
-        {"id": "no-forbidden-patterns", "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다 (tcp profile: forbidden patterns)"}
+        {"id": "no-forbidden-patterns", "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다 (tcp profile: forbidden patterns)"},
+        {"id": "camelcase-folder", "text": "컴포넌트 폴더명이 camelCase이다 (Button이 아닌 button, tcp profile: folderCase = camelCase)"},
+        {"id": "tcp-validate-executed", "text": "tcp validate-file이 실행되어 0 violations을 확인했다 (트랜스크립트에서 tcp validate-file 실행 흔적이 존재)"}
       ]
     },
     {
@@ -63,7 +68,10 @@
         {"id": "children-prop", "text": "children 중심 shell 역할이 유지된다"},
         {"id": "responsive-breakpoints", "text": "responsive breakpoint class가 유지되거나 개선된다 (md:, lg: 등)"},
         {"id": "import-updated", "text": "사용처 import가 새 경로에 맞게 정리된다"},
-        {"id": "no-forbidden-patterns", "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다 (tcp profile: forbidden patterns)"}
+        {"id": "no-forbidden-patterns", "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다 (tcp profile: forbidden patterns)"},
+        {"id": "arrow-function", "text": "모든 컴포넌트가 const 화살표 함수로 선언된다 (export default function이 아닌 const ComponentName = () => {} 형태)"},
+        {"id": "camelcase-folder", "text": "컴포넌트 폴더명이 camelCase이다 (DashboardLayout이 아닌 dashboardLayout, 서브컴포넌트도 header, sidebar 등 camelCase)"},
+        {"id": "tcp-validate-executed", "text": "tcp validate-file이 실행되어 0 violations을 확인했다 (트랜스크립트에서 tcp validate-file 실행 흔적이 존재)"}
       ]
     },
     {
@@ -82,7 +90,10 @@
         {"id": "props-interface-suffix", "text": "Props 인터페이스가 ProductCardProps를 유지한다 (tcp profile: props suffix = Props)"},
         {"id": "import-path-consistent", "text": "사용처 import path가 일관된다"},
         {"id": "visual-preserved", "text": "hover, image, price 등 visual affordance가 보존된다"},
-        {"id": "no-forbidden-patterns", "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다 (tcp profile: forbidden patterns)"}
+        {"id": "no-forbidden-patterns", "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다 (tcp profile: forbidden patterns)"},
+        {"id": "arrow-function", "text": "컴포넌트가 const 화살표 함수로 선언된다 (export default function이 아닌 const ComponentName = () => {} 형태)"},
+        {"id": "camelcase-folder", "text": "컴포넌트 폴더명이 camelCase이다 (ProductCard가 아닌 productCard, tcp profile: folderCase = camelCase)"},
+        {"id": "tcp-validate-executed", "text": "tcp validate-file이 실행되어 0 violations을 확인했다 (트랜스크립트에서 tcp validate-file 실행 흔적이 존재)"}
       ]
     }
   ]
