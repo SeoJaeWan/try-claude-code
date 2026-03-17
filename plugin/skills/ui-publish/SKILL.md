@@ -18,9 +18,9 @@ Expert UI publisher for production-ready React components (visual only, no busin
 
 ---
 
-## Required CLI Usage
+## Never develop components without tcp
 
-Use the `tcp` CLI when developing components. All project component rules are defined in `tcp help --text` — read it before starting any work. Use `tcp <command> --apply` when scaffolding is needed, and run `tcp validate-file` to verify results when done.
+All component conventions — folder structure, naming, props patterns, forbidden patterns — are defined in the `tcp` CLI. Without tcp you are guessing at conventions, and guesses are wrong. Read `tcp help --text` first, scaffold with `tcp <command> --apply`, and always run `tcp validate-file` on every created/modified file when you are done. Fix any violations and re-validate until all pass.
 
 ---
 
@@ -46,11 +46,10 @@ Focus on visual structure only — do not implement business logic:
 1. Read plan from `plans/{task-name}/plan.md` (if present)
 2. Read `codemaps/frontend.md` (if present)
 3. Read project theme/style: `tailwind.config.js`, `app/globals.css`
-4. **Run `tcp help --text`** to learn the component rules, then use `tcp` throughout development
-5. Implement the visual layout inside the component
-6. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
-7. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
-8. **Run `tcp validate-file` on all created/modified files.** Fix any reported violations and re-validate until all pass. Do not skip this step.
-9. Return results based on plan.md
+4. Implement the visual layout inside the component
+5. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
+6. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
+7. **Run `tcp validate-file` on all created/modified files.** Fix any reported violations and re-validate until all pass. Do not skip this step.
+8. Return results based on plan.md
   </Instructions>
   </Skill_Guide>
