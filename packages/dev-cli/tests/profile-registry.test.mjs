@@ -28,50 +28,20 @@ test("hydrateProfileSelection은 exact version 입력을 direct ref로 해석한
   assert.equal(selection.resolvedRef, "profiles-v1.0.3");
 });
 
-test("hydrateProfileSelection은 registry에 exact version ref가 있으면 그것을 우선 사용한다", async () => {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-registry-exact-"));
-  const registryPath = path.join(tempRoot, "registry.json");
-  const originalRegistryUrl = process.env.TRY_CLAUDE_PROFILE_REGISTRY_URL;
-
-  await writeFile(
-    registryPath,
-    `${JSON.stringify({
-      publisher: {
-        personal: {
-          v1: {
-            latest: "v1.0.1",
-            versions: {
-              "v1.0.0": {
-                ref: "legacy-v1.0.0-sha"
-              },
-              "v1.0.1": {}
-            }
-          }
-        }
-      }
-    }, null, 2)}\n`,
-    "utf8"
-  );
-
-  process.env.TRY_CLAUDE_PROFILE_REGISTRY_URL = pathToFileURL(registryPath).href;
-
+test("hydrateProfileSelection은 저장된 legacy ref가 있어도 exact version tag ref로 정규화한다", async () => {
   const selection = await hydrateProfileSelection({
     role: "publisher",
     selection: {
-      source: "explicit",
+      source: "global",
       mode: "personal",
-      requestedVersion: "v1.0.0"
+      requestedVersion: "v1.0.0",
+      resolvedVersion: "v1.0.0",
+      resolvedRef: "41be068936537d5bdcd419f065529abc0b9f0646"
     }
   });
 
   assert.equal(selection.resolvedVersion, "v1.0.0");
-  assert.equal(selection.resolvedRef, "legacy-v1.0.0-sha");
-
-  if (originalRegistryUrl === undefined) {
-    delete process.env.TRY_CLAUDE_PROFILE_REGISTRY_URL;
-  } else {
-    process.env.TRY_CLAUDE_PROFILE_REGISTRY_URL = originalRegistryUrl;
-  }
+  assert.equal(selection.resolvedRef, "profiles-v1.0.0");
 });
 
 test("loadActiveProfile은 remote registry/file base에서도 extends merge와 template path 해석을 유지한다", async () => {
@@ -130,11 +100,7 @@ test("loadProfileRegistry는 remote fetch 실패 시 캐시가 있으면 cached 
             personal: {
               v1: {
                 latest: "v1.0.0",
-                versions: {
-                  "v1.0.0": {
-                    ref: "profiles-v1.0.0"
-                  }
-                }
+                versions: ["v1.0.0"]
               }
             }
           }
@@ -149,7 +115,7 @@ test("loadProfileRegistry는 remote fetch 실패 시 캐시가 있으면 cached 
   const second = await loadProfileRegistry();
 
   assert.equal(first.publisher.personal.v1.latest, "v1.0.0");
-  assert.equal(second.publisher.personal.v1.versions["v1.0.0"].ref, "profiles-v1.0.0");
+  assert.deepEqual(second.publisher.personal.v1.versions, ["v1.0.0"]);
 
   if (originalRegistryUrl === undefined) {
     delete process.env.TRY_CLAUDE_PROFILE_REGISTRY_URL;

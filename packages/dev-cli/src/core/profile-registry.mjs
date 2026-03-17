@@ -37,10 +37,6 @@ function ensureTrailingSlash(value) {
   return value.endsWith("/") ? value : `${value}/`;
 }
 
-function isPlainObject(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
 function getRegistryCachePath() {
   return path.join(getProfileCacheDir(), "registry.json");
 }
@@ -132,67 +128,34 @@ function getChannelRegistryEntry(registry, role, mode, majorVersion) {
 }
 
 function normalizeVersionCatalog(versions, latestVersion) {
-  if (versions == null) {
-    return latestVersion ? { [latestVersion]: {} } : {};
-  }
-
-  if (Array.isArray(versions)) {
-    return Object.fromEntries(
-      versions.map((value) => [
-        assertExactReleaseVersion(value, "versions"),
-        {}
-      ])
-    );
-  }
-
-  if (!isPlainObject(versions)) {
+  if (!Array.isArray(versions)) {
     throw createCliError(
       "INVALID_PROFILE_REGISTRY",
-      "Profile registry versions must be an object or array.",
+      "Profile registry versions must be an array of exact versions.",
       {
         versions
       }
     );
   }
 
-  return Object.fromEntries(
-    Object.entries(versions).map(([version, value]) => {
-      const normalizedVersion = assertExactReleaseVersion(version, "versions");
+  const normalized = [
+    ...new Set(
+      versions.map((value) => assertExactReleaseVersion(value, "versions"))
+    )
+  ];
 
-      if (typeof value === "string") {
-        return [normalizedVersion, { ref: value.trim() }];
+  if (latestVersion && !normalized.includes(latestVersion)) {
+    throw createCliError(
+      "INVALID_PROFILE_REGISTRY",
+      `Profile registry latest version ${latestVersion} must also appear in versions.`,
+      {
+        latestVersion,
+        versions: normalized
       }
-
-      if (value == null) {
-        return [normalizedVersion, {}];
-      }
-
-      if (!isPlainObject(value)) {
-        throw createCliError(
-          "INVALID_PROFILE_REGISTRY",
-          `Profile registry version entry must be an object, string, or null: ${version}`,
-          {
-            version,
-            value
-          }
-        );
-      }
-
-      return [normalizedVersion, value];
-    })
-  );
-}
-
-function resolveVersionRef(resolvedVersion, versionEntry = {}) {
-  if (typeof versionEntry === "string" && versionEntry.trim().length > 0) {
-    return versionEntry.trim();
+    );
   }
 
-  if (isPlainObject(versionEntry) && typeof versionEntry.ref === "string" && versionEntry.ref.trim().length > 0) {
-    return versionEntry.ref.trim();
-  }
-
-  return createDefaultResolvedRef(resolvedVersion);
+  return normalized;
 }
 
 function normalizeRegistryChannel(role, mode, majorVersion, entry) {
@@ -208,32 +171,8 @@ function normalizeRegistryChannel(role, mode, majorVersion, entry) {
     );
   }
 
-  if ("resolvedVersion" in entry) {
-    const resolvedVersion = assertExactReleaseVersion(
-      entry.resolvedVersion,
-      "resolvedVersion"
-    );
-
-    return {
-      latestVersion: resolvedVersion,
-      versions: {
-        [resolvedVersion]: {
-          ...(typeof entry.ref === "string" && entry.ref.trim().length > 0
-            ? {
-                ref: entry.ref.trim()
-              }
-            : {})
-        }
-      }
-    };
-  }
-
   const latestVersion = assertExactReleaseVersion(entry.latest, "latest");
   const versions = normalizeVersionCatalog(entry.versions, latestVersion);
-
-  if (!(latestVersion in versions)) {
-    versions[latestVersion] = {};
-  }
 
   return {
     latestVersion,
@@ -244,33 +183,8 @@ function normalizeRegistryChannel(role, mode, majorVersion, entry) {
 function resolveChannelVersion(channel, resolvedVersion) {
   return {
     resolvedVersion,
-    resolvedRef: resolveVersionRef(
-      resolvedVersion,
-      channel?.versions?.[resolvedVersion]
-    )
+    resolvedRef: createDefaultResolvedRef(resolvedVersion)
   };
-}
-
-async function tryResolveExactVersion(role, mode, majorVersion, requestedVersion) {
-  try {
-    const registry = await loadProfileRegistry();
-    const channelEntry = getChannelRegistryEntry(registry, role, mode, majorVersion);
-
-    if (!channelEntry) {
-      return {
-        resolvedVersion: requestedVersion,
-        resolvedRef: createDefaultResolvedRef(requestedVersion)
-      };
-    }
-
-    const channel = normalizeRegistryChannel(role, mode, majorVersion, channelEntry);
-    return resolveChannelVersion(channel, requestedVersion);
-  } catch {
-    return {
-      resolvedVersion: requestedVersion,
-      resolvedRef: createDefaultResolvedRef(requestedVersion)
-    };
-  }
 }
 
 export async function loadProfileRegistry() {
@@ -324,41 +238,18 @@ export async function hydrateProfileSelection({
   }
 
   if (isExactProfileVersion(requestedVersion)) {
-    if (
-      !forceRefresh &&
-      selection.resolvedVersion === requestedVersion &&
-      selection.resolvedRef
-    ) {
-      return {
-        ...selection,
-        mode,
-        version: requestedVersion,
-        requestedVersion,
-        majorVersion,
-        resolvedVersion: requestedVersion,
-        resolvedRef: selection.resolvedRef
-      };
-    }
-
-    const exactVersion = await tryResolveExactVersion(
-      role,
-      mode,
-      majorVersion,
-      requestedVersion
-    );
-
     return {
       ...selection,
       mode,
       version: requestedVersion,
       requestedVersion,
       majorVersion,
-      resolvedVersion: exactVersion.resolvedVersion,
-      resolvedRef: exactVersion.resolvedRef
+      resolvedVersion: requestedVersion,
+      resolvedRef: createDefaultResolvedRef(requestedVersion)
     };
   }
 
-  if (!forceRefresh && selection.resolvedVersion && selection.resolvedRef) {
+  if (!forceRefresh && selection.resolvedVersion) {
     return {
       ...selection,
       mode,
@@ -366,7 +257,7 @@ export async function hydrateProfileSelection({
       requestedVersion,
       majorVersion,
       resolvedVersion: selection.resolvedVersion,
-      resolvedRef: selection.resolvedRef
+      resolvedRef: createDefaultResolvedRef(selection.resolvedVersion)
     };
   }
 

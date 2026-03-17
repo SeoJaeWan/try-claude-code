@@ -3,11 +3,7 @@
     "personal": {
       "v1": {
         "latest": "v1.0.0",
-        "versions": {
-          "v1.0.0": {
-            "ref": "41be068936537d5bdcd419f065529abc0b9f0646"
-          }
-        }
+        "versions": ["v1.0.0"]
       }
     }
   },
@@ -15,11 +11,7 @@
     "personal": {
       "v1": {
         "latest": "v1.0.0",
-        "versions": {
-          "v1.0.0": {
-            "ref": "41be068936537d5bdcd419f065529abc0b9f0646"
-          }
-        }
+        "versions": ["v1.0.0"]
       }
     }
   },
@@ -27,11 +19,7 @@
     "personal": {
       "v1": {
         "latest": "v1.0.0",
-        "versions": {
-          "v1.0.0": {
-            "ref": "41be068936537d5bdcd419f065529abc0b9f0646"
-          }
-        }
+        "versions": ["v1.0.0"]
       }
     }
   }
