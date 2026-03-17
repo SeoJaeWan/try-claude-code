@@ -6,12 +6,12 @@ For detailed planning rules, quality gates, and UI test-phase policy, read `plan
 
 ## Canonical Execution Agents
 
-| owner_agent          | Primary skill examples | Role                                                      |
-| -------------------- | ---------------------- | --------------------------------------------------------- |
-| `frontend-developer` | `frontend-dev`         | frontend logic, integration, hooks, state                 |
-| `backend-developer`  | `backend-dev`          | API, DB, auth, server logic                               |
-| `publisher`          | `ui-publish`           | UI layout and visual structure only (no business logic)   |
-| `playwright-guard`   | `guard-e2e-test`       | post-implementation full-flow Playwright regression guard |
+| owner_agent          | Primary skill examples | CLI contract source | Role                                                      |
+| -------------------- | ---------------------- | ------------------- | --------------------------------------------------------- |
+| `frontend-developer` | `frontend-dev`         | `tcf`               | frontend logic, integration, hooks, state                 |
+| `backend-developer`  | `backend-dev`          | `tcb`               | API, DB, auth, server logic                               |
+| `publisher`          | `ui-publish`           | `tcp`               | UI layout and visual structure only (no business logic)   |
+| `playwright-guard`   | `guard-e2e-test`       | `N/A`               | post-implementation full-flow Playwright regression guard |
 
 ## Planning Skills (run by architect)
 
@@ -26,3 +26,4 @@ For detailed planning rules, quality gates, and UI test-phase policy, read `plan
 
 - Only list execution agents or skills that actually exist in this repository.
 - Do not document hypothetical utility skills here.
+- Architect should inspect the corresponding CLI help before finalizing implementation routing for `publisher`, `frontend-developer`, or `backend-developer`.
