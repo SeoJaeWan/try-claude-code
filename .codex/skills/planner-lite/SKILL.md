@@ -30,10 +30,11 @@ Use this skill only after planning is complete.
 
 ## Session ownership
 
-- The parent or main session should hand finalized plan execution off to the named custom agent `planner-lite`.
-- After that handoff, `planner-lite` is the only session that should spawn phase workers, wait on them, run per-phase validation, commit phase work, and manage the final merge.
-- If a non-`planner-lite` session is following this skill and named custom-agent spawning is available, it must launch `planner-lite` and stop short of spawning any phase worker itself.
+- The parent or main session should hand finalized plan execution off to the named custom agent `planner`.
+- After that handoff, `planner` is the only session that should spawn phase workers, wait on them, run per-phase validation, commit phase work, and manage the final merge while following this skill.
+- If a non-`planner` session is following this skill and named custom-agent spawning is available, it must launch `planner` and stop short of spawning any phase worker itself.
 - If named custom-agent spawning is unavailable, stop and report the configuration problem instead of silently collapsing orchestration back into the parent session.
+- Do not instruct users to invoke `$planner-lite` directly when the repository already exposes `/agent planner`.
 
 ## Owner mapping
 
