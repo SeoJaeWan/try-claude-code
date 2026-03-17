@@ -162,7 +162,7 @@ profile hotfix 순서:
 
 ## Help Contract
 
-기본 help는 AI용 JSON이다.
+기본 help는 탐색용 summary JSON이다.
 
 ```bash
 tcp --help
@@ -170,8 +170,8 @@ tcf --help
 tcb --help
 ```
 
-에이전트가 매 작업마다 top-level `--help` 전체 payload를 읽을 필요는 없다.
-토큰을 아끼려면 가능한 한 좁은 범위의 help를 먼저 조회한다.
+에이전트가 매 작업마다 top-level `--help`에서 모든 contract를 읽을 필요는 없다.
+top-level help는 명령 탐색, whenToUse, relatedCommands, flow discovery만 제공한다.
 
 ```bash
 tcp help component --text
@@ -180,7 +180,7 @@ tcf help apiHook --text
 tcb help module --text
 ```
 
-구조화된 필드가 실제로 필요할 때만 command-scoped JSON help를 읽는다.
+구조화된 상세 contract가 실제로 필요할 때만 command-scoped JSON help를 읽는다.
 
 ```bash
 tcp help component
@@ -189,6 +189,14 @@ tcb help requestDto
 ```
 
 top-level `tcp --help`, `tcf --help`, `tcb --help`는 command discovery나 전체 contract audit가 필요할 때만 사용한다.
+
+전체 command contract audit가 필요하면 `--full`을 사용한다.
+
+```bash
+tcp --help --full
+tcf --help --full
+tcb --help --full
+```
 
 사람용 가이드는 별도 `guide` 명령으로 본다.
 

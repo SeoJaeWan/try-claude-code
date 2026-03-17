@@ -40,6 +40,22 @@
   "commands": {
     "type": {
       "description": "Render a shared type snippet",
+      "summary": {
+        "whenToUse": [
+          "When you need a new interface or type alias shell",
+          "When you want to lock the type shape before implementation"
+        ],
+        "relatedCommands": [
+          {
+            "id": "props",
+            "reason": "Continue with the props member shell"
+          },
+          {
+            "id": "function",
+            "reason": "Continue with the function signature shell"
+          }
+        ]
+      },
       "guide": {
         "목적": "공통 타입 또는 인터페이스 껍질을 만든다.",
         "입력규칙": [
@@ -104,6 +120,21 @@
     },
     "props": {
       "description": "Render props members only snippet",
+      "summary": {
+        "whenToUse": [
+          "When you want to define only the props members for a component or hook first"
+        ],
+        "relatedCommands": [
+          {
+            "id": "type",
+            "reason": "Define the type shell referenced by props"
+          },
+          {
+            "id": "function",
+            "reason": "Define the callback signature shell"
+          }
+        ]
+      },
       "guide": {
         "목적": "Props 인터페이스 안에 들어갈 멤버만 생성한다.",
         "입력규칙": [
@@ -158,6 +189,17 @@
     },
     "function": {
       "description": "Render a shared function snippet",
+      "summary": {
+        "whenToUse": [
+          "When you need an internal handler or utility function shell"
+        ],
+        "relatedCommands": [
+          {
+            "id": "type",
+            "reason": "Define parameter and return type shells"
+          }
+        ]
+      },
       "guide": {
         "목적": "공통 함수 껍질을 만든다.",
         "입력규칙": [

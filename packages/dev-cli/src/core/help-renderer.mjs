@@ -1,7 +1,131 @@
-function formatTextCommand(name, command) {
+function toCliCommandName(name) {
+  return name.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+}
+
+function createDetailHelp(alias, commandName) {
+  return `${alias} ${toCliCommandName(commandName)} --help`;
+}
+
+function normalizeWhenToUse(command) {
+  if (Array.isArray(command.summary?.whenToUse) && command.summary.whenToUse.length > 0) {
+    return command.summary.whenToUse;
+  }
+
+  if (typeof command.guide?.목적 === "string" && command.guide.목적.trim().length > 0) {
+    return [command.guide.목적.trim()];
+  }
+
+  return command.description ? [command.description] : [];
+}
+
+function normalizeRelatedCommands(relatedCommands = []) {
+  return relatedCommands.map((entry) => {
+    const id = typeof entry === "string" ? entry : entry?.id;
+    const reason = typeof entry === "string" ? undefined : entry?.reason;
+    const command = toCliCommandName(id ?? "");
+
+    return {
+      command,
+      reason
+    };
+  }).filter((entry) => entry.command);
+}
+
+function normalizeFlowStep(step = {}) {
+  return {
+    command: toCliCommandName(step.command ?? ""),
+    purpose: step.purpose ?? ""
+  };
+}
+
+function normalizeFlowRegistry(flowRegistry = {}) {
+  return Object.fromEntries(
+    Object.entries(flowRegistry).map(([flowId, flow]) => [
+      flowId,
+      {
+        title: flow.title ?? flowId,
+        summary: flow.summary ?? "",
+        steps: Array.isArray(flow.steps)
+          ? flow.steps.map((step) => normalizeFlowStep(step))
+          : []
+      }
+    ])
+  );
+}
+
+function createSummaryCommand(alias, commandName, command, flows) {
+  const flowRefs = Array.isArray(command.summary?.flowRefs)
+    ? command.summary.flowRefs.filter((flowId) => flowId in flows)
+    : [];
+
+  return {
+    cliCommand: toCliCommandName(commandName),
+    description: command.description ?? "",
+    whenToUse: normalizeWhenToUse(command),
+    relatedCommands: normalizeRelatedCommands(command.summary?.relatedCommands ?? []),
+    flowRefs,
+    inputMode: command.inputMode ?? null,
+    executionKind: command.execution?.kind ?? null,
+    detailHelp: createDetailHelp(alias, commandName)
+  };
+}
+
+function formatSummaryTextCommand(name, command) {
   const lines = [
-    `${name}: ${command.description}`
+    `${command.cliCommand ?? toCliCommandName(name)}: ${command.description}`
   ];
+
+  if (command.whenToUse?.length) {
+    lines.push(`  when: ${command.whenToUse.join(" | ")}`);
+  }
+
+  if (command.inputMode) {
+    lines.push(`  input: --${command.inputMode}`);
+  }
+
+  if (command.executionKind) {
+    lines.push(`  mode: ${command.executionKind}`);
+  }
+
+  if (command.relatedCommands?.length) {
+    lines.push(
+      `  related: ${command.relatedCommands
+        .map((entry) => entry.reason ? `${entry.command} (${entry.reason})` : entry.command)
+        .join(" | ")}`
+    );
+  }
+
+  if (command.flowRefs?.length) {
+    lines.push(`  flows: ${command.flowRefs.join(" | ")}`);
+  }
+
+  if (command.detailHelp) {
+    lines.push(`  detail: ${command.detailHelp}`);
+  }
+
+  return lines.join("\n");
+}
+
+function formatDetailTextCommand(name, command) {
+  const lines = [
+    `${toCliCommandName(name)}: ${command.description}`
+  ];
+
+  const whenToUse = normalizeWhenToUse(command);
+  if (whenToUse.length > 0) {
+    lines.push(`  when: ${whenToUse.join(" | ")}`);
+  }
+
+  const relatedCommands = normalizeRelatedCommands(command.summary?.relatedCommands ?? [])
+    .map((entry) => entry.reason ? `${entry.command} (${entry.reason})` : entry.command);
+  if (relatedCommands.length > 0) {
+    lines.push(`  related: ${relatedCommands.join(" | ")}`);
+  }
+
+  const flowRefs = Array.isArray(command.summary?.flowRefs) ? command.summary.flowRefs : [];
+  if (flowRefs.length > 0) {
+    lines.push(`  flows: ${flowRefs.join(" | ")}`);
+  }
 
   if (command.inputMode === "json") {
     lines.push("  input: --json");
@@ -164,7 +288,37 @@ function sanitizeCommand(command) {
     : rest;
 }
 
-export function createHelpPayload({
+function createSummaryPayload({
+  alias,
+  role,
+  activeProfile,
+  profile
+}) {
+  const flows = normalizeFlowRegistry(profile.helpSummary?.flows ?? {});
+  const commands = Object.fromEntries(
+    Object.entries(profile.commands ?? {}).map(([name, command]) => [
+      name,
+      createSummaryCommand(alias, name, command, flows)
+    ])
+  );
+
+  return {
+    ok: true,
+    helpMode: "summary",
+    alias,
+    role,
+    id: profile.id,
+    activeProfile,
+    extends: profile.extends ?? [],
+    profileSummary: {
+      summary: profile.helpSummary?.summary ?? profile.guide?.요약 ?? ""
+    },
+    flows,
+    commands
+  };
+}
+
+function createDetailPayload({
   alias,
   role,
   activeProfile,
@@ -185,6 +339,7 @@ export function createHelpPayload({
 
   return {
     ok: true,
+    helpMode: "detail",
     alias,
     role,
     id: profile.id,
@@ -193,6 +348,32 @@ export function createHelpPayload({
     rules: profile.rules ?? {},
     commands
   };
+}
+
+export function createHelpPayload({
+  alias,
+  role,
+  activeProfile,
+  profile,
+  commandName,
+  full = false
+}) {
+  if (!commandName && !full) {
+    return createSummaryPayload({
+      alias,
+      role,
+      activeProfile,
+      profile
+    });
+  }
+
+  return createDetailPayload({
+    alias,
+    role,
+    activeProfile,
+    profile,
+    commandName
+  });
 }
 
 export function renderHelpText(payload) {
@@ -205,12 +386,42 @@ export function renderHelpText(payload) {
           `pinned: ${payload.activeProfile.resolvedVersion} (${payload.activeProfile.resolvedRef})`
         ]
       : []),
-    "default input: --json",
-    ""
+    "default input: --json"
   ];
 
+  if (payload.helpMode === "summary") {
+    if (payload.profileSummary?.summary) {
+      lines.push(`summary: ${payload.profileSummary.summary}`);
+    }
+
+    const flowEntries = Object.entries(payload.flows ?? {});
+    if (flowEntries.length > 0) {
+      lines.push("", "flows:");
+      for (const [flowId, flow] of flowEntries) {
+        const stepSummary = flow.steps?.length
+          ? ` (${flow.steps.map((step) => step.command).join(" -> ")})`
+          : "";
+        lines.push(`  ${flowId}: ${flow.title}${stepSummary}`);
+        if (flow.summary) {
+          lines.push(`    ${flow.summary}`);
+        }
+      }
+    }
+
+    lines.push("");
+
+    for (const [commandName, command] of Object.entries(payload.commands ?? {})) {
+      lines.push(formatSummaryTextCommand(commandName, command));
+      lines.push("");
+    }
+
+    return lines.join("\n").trimEnd();
+  }
+
+  lines.push("");
+
   for (const [commandName, command] of Object.entries(payload.commands ?? {})) {
-    lines.push(formatTextCommand(commandName, command));
+    lines.push(formatDetailTextCommand(commandName, command));
     lines.push("");
   }
 

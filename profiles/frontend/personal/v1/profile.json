@@ -14,9 +14,88 @@
             "여러 page domain에서 공통이면 common을 사용한다."
         ]
     },
+    "helpSummary": {
+        "summary": "Frontend personal v1 rules for hooks, API hooks, and frontend snippets.",
+        "flows": {
+            "create-custom-hook": {
+                "title": "Create a custom hook",
+                "summary": "Create the hook file, then validate path and AST rules with validate-file.",
+                "steps": [
+                    {
+                        "command": "hook",
+                        "purpose": "Generate the custom hook file"
+                    },
+                    {
+                        "command": "validateFile",
+                        "purpose": "Validate path and AST rules"
+                    }
+                ]
+            },
+            "create-api-hook": {
+                "title": "Create a TanStack Query hook",
+                "summary": "Combine query-key, endpoint, api-hook, mapper, and hook-return to shape an API hook, then finish with validate-file.",
+                "steps": [
+                    {
+                        "command": "queryKey",
+                        "purpose": "Generate the query key shell"
+                    },
+                    {
+                        "command": "endpoint",
+                        "purpose": "Generate the endpoint constant shell"
+                    },
+                    {
+                        "command": "apiHook",
+                        "purpose": "Generate the TanStack Query hook file"
+                    },
+                    {
+                        "command": "mapper",
+                        "purpose": "Generate the response mapping shell"
+                    },
+                    {
+                        "command": "hookReturn",
+                        "purpose": "Define the return object shape"
+                    },
+                    {
+                        "command": "validateFile",
+                        "purpose": "Validate the final hook structure"
+                    }
+                ]
+            },
+            "bulk-frontend-scaffold": {
+                "title": "Batch frontend operations",
+                "summary": "Bundle multiple hook and snippet operations in batch for preview or apply.",
+                "steps": [
+                    {
+                        "command": "batch",
+                        "purpose": "Run multiple operations in sequence"
+                    }
+                ]
+            }
+        }
+    },
     "commands": {
         "hook": {
             "description": "Generate a non-API hook file",
+            "summary": {
+                "whenToUse": [
+                    "When you want to extract reusable non-API frontend logic into a hook"
+                ],
+                "relatedCommands": [
+                    {
+                        "id": "validateFile",
+                        "reason": "Validate path and AST rules after generation"
+                    },
+                    {
+                        "id": "function",
+                        "reason": "Define internal handlers or utility shells"
+                    },
+                    {
+                        "id": "batch",
+                        "reason": "Run multiple hook tasks together"
+                    }
+                ],
+                "flowRefs": ["create-custom-hook", "bulk-frontend-scaffold"]
+            },
             "contracts": {
                 "hookKind": "custom",
                 "pathPolicy": {
@@ -108,6 +187,38 @@
         },
         "apiHook": {
             "description": "Generate a TanStack Query API hook file",
+            "summary": {
+                "whenToUse": [
+                    "When you need a TanStack Query-based server request hook"
+                ],
+                "relatedCommands": [
+                    {
+                        "id": "queryKey",
+                        "reason": "Define the query key shell"
+                    },
+                    {
+                        "id": "endpoint",
+                        "reason": "Define the resource and path constants"
+                    },
+                    {
+                        "id": "mapper",
+                        "reason": "Map the response into a view model"
+                    },
+                    {
+                        "id": "hookReturn",
+                        "reason": "Define the hook return shape"
+                    },
+                    {
+                        "id": "validateFile",
+                        "reason": "Validate path and AST rules after generation"
+                    },
+                    {
+                        "id": "batch",
+                        "reason": "Run related tasks in one request"
+                    }
+                ],
+                "flowRefs": ["create-api-hook", "bulk-frontend-scaffold"]
+            },
             "contracts": {
                 "hookKind": "api",
                 "pathPolicy": {
@@ -262,6 +373,26 @@
         },
         "validateFile": {
             "description": "Validate frontend hook files against path and AST rules",
+            "summary": {
+                "whenToUse": [
+                    "When you want to verify that a generated or edited hook file follows path and AST rules"
+                ],
+                "relatedCommands": [
+                    {
+                        "id": "hook",
+                        "reason": "Validate right after custom hook generation"
+                    },
+                    {
+                        "id": "apiHook",
+                        "reason": "Validate right after API hook generation"
+                    },
+                    {
+                        "id": "batch",
+                        "reason": "Validate the result of a batch run"
+                    }
+                ],
+                "flowRefs": ["create-custom-hook", "create-api-hook", "bulk-frontend-scaffold"]
+            },
             "contracts": {
                 "inputShape": {
                     "filesField": "files[]",
@@ -318,6 +449,22 @@
         },
         "queryKey": {
             "description": "Render a TanStack Query key snippet",
+            "summary": {
+                "whenToUse": [
+                    "When you need a query key shell for a query hook"
+                ],
+                "relatedCommands": [
+                    {
+                        "id": "apiHook",
+                        "reason": "Generate the query hook file"
+                    },
+                    {
+                        "id": "endpoint",
+                        "reason": "Define the endpoint constant for the same request"
+                    }
+                ],
+                "flowRefs": ["create-api-hook"]
+            },
             "guide": {
                 "목적": "TanStack Query key 함수 껍질을 만든다.",
                 "입력규칙": ["domain은 필수다.", "scope와 params는 선택값이지만 규칙에 맞게 정규화된다."],
@@ -370,6 +517,22 @@
         },
         "endpoint": {
             "description": "Render an API endpoint constant snippet",
+            "summary": {
+                "whenToUse": [
+                    "When you want to define API resource, method, and path constants first"
+                ],
+                "relatedCommands": [
+                    {
+                        "id": "apiHook",
+                        "reason": "Generate the hook that uses the endpoint"
+                    },
+                    {
+                        "id": "queryKey",
+                        "reason": "Define the query key for the same request"
+                    }
+                ],
+                "flowRefs": ["create-api-hook"]
+            },
             "guide": {
                 "목적": "API endpoint 상수 껍질을 만든다.",
                 "입력규칙": ["method, resource, path는 필수다."],
@@ -410,6 +573,22 @@
         },
         "mapper": {
             "description": "Render a mapper function snippet",
+            "summary": {
+                "whenToUse": [
+                    "When you need a helper shell that maps an API response into a view model"
+                ],
+                "relatedCommands": [
+                    {
+                        "id": "apiHook",
+                        "reason": "Generate a hook that needs response mapping"
+                    },
+                    {
+                        "id": "hookReturn",
+                        "reason": "Define the final return shape"
+                    }
+                ],
+                "flowRefs": ["create-api-hook"]
+            },
             "guide": {
                 "목적": "응답 타입을 뷰 모델로 바꾸는 mapper 함수 껍질을 만든다.",
                 "입력규칙": ["sourceType과 targetType은 필수다."],
@@ -448,6 +627,22 @@
         },
         "hookReturn": {
             "description": "Render a hook return snippet",
+            "summary": {
+                "whenToUse": [
+                    "When you want to define the values and actions returned by a hook"
+                ],
+                "relatedCommands": [
+                    {
+                        "id": "apiHook",
+                        "reason": "Generate the hook file to implement"
+                    },
+                    {
+                        "id": "mapper",
+                        "reason": "Define response mapping before returning"
+                    }
+                ],
+                "flowRefs": ["create-api-hook"]
+            },
             "guide": {
                 "목적": "훅이 반환할 값과 액션 구조를 만든다.",
                 "입력규칙": ["values와 actions 배열을 전달할 수 있다."],
@@ -490,6 +685,26 @@
         },
         "batch": {
             "description": "Execute multiple frontend ops in one request",
+            "summary": {
+                "whenToUse": [
+                    "When you want to run multiple frontend scaffold or snippet tasks in one request"
+                ],
+                "relatedCommands": [
+                    {
+                        "id": "hook",
+                        "reason": "Bundle custom hook generation tasks"
+                    },
+                    {
+                        "id": "apiHook",
+                        "reason": "Bundle API hook-related tasks"
+                    },
+                    {
+                        "id": "validateFile",
+                        "reason": "Validate the result at the end"
+                    }
+                ],
+                "flowRefs": ["bulk-frontend-scaffold"]
+            },
             "guide": {
                 "목적": "여러 프론트엔드 작업을 한 번의 요청으로 순차 실행한다.",
                 "입력규칙": ["ops 배열은 순서대로 실행된다.", "앞선 op 결과는 $ref로 뒤 op에서 참조할 수 있다."],

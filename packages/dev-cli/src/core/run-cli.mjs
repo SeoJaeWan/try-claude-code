@@ -201,7 +201,8 @@ async function handleHelpCommand({ alias, role, route, repoRoot }) {
     role,
     activeProfile,
     profile,
-    commandName: route.commandName
+    commandName: route.commandName,
+    full: Boolean(route.options.full)
   });
 
   if (route.format === "text") {

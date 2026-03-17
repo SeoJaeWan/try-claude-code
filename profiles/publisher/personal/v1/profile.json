@@ -14,6 +14,53 @@
       "레거시 경로가 이미 현재 컨벤션과 같으면 경로는 유지하고 내부 구현만 수정한다."
     ]
   },
+  "helpSummary": {
+    "summary": "Publisher personal v1 rules for UI shells and interaction state.",
+    "flows": {
+      "new-component": {
+        "title": "Create a new UI component",
+        "summary": "Create the component file, then validate placement and AST rules with validate-file.",
+        "steps": [
+          {
+            "command": "component",
+            "purpose": "Generate the component file"
+          },
+          {
+            "command": "validateFile",
+            "purpose": "Validate path and AST rules"
+          }
+        ]
+      },
+      "add-ui-interaction": {
+        "title": "Add UI interaction to a component",
+        "summary": "Create the interaction shell with ui-state, update the component, then validate the result.",
+        "steps": [
+          {
+            "command": "uiState",
+            "purpose": "Generate toggle/open/close state shells"
+          },
+          {
+            "command": "component",
+            "purpose": "Apply the UI interaction to the component"
+          },
+          {
+            "command": "validateFile",
+            "purpose": "Validate the final structure"
+          }
+        ]
+      },
+      "bulk-publisher-update": {
+        "title": "Batch publisher operations",
+        "summary": "Bundle multiple publisher operations in batch for preview or apply.",
+        "steps": [
+          {
+            "command": "batch",
+            "purpose": "Run multiple operations in sequence"
+          }
+        ]
+      }
+    }
+  },
   "rules": {
     "guidance": {
       "placementRules": [
@@ -38,6 +85,26 @@
   "commands": {
     "validateFile": {
       "description": "Validate publisher UI files against placement and AST rules",
+      "summary": {
+        "whenToUse": [
+          "When you want to verify that a generated or edited publisher UI file follows path and AST rules"
+        ],
+        "relatedCommands": [
+          {
+            "id": "component",
+            "reason": "Validate right after generation"
+          },
+          {
+            "id": "uiState",
+            "reason": "Validate the structure after interaction state changes"
+          },
+          {
+            "id": "batch",
+            "reason": "Validate the result of a batch run"
+          }
+        ],
+        "flowRefs": ["new-component", "add-ui-interaction", "bulk-publisher-update"]
+      },
       "contracts": {
         "inputShape": {
           "filesField": "files[]",
@@ -105,6 +172,27 @@
     },
     "component": {
       "description": "Generate a publisher UI component file",
+      "summary": {
+        "whenToUse": [
+          "When you need a new UI component shell",
+          "When you need to move a legacy component to the current path convention"
+        ],
+        "relatedCommands": [
+          {
+            "id": "validateFile",
+            "reason": "Validate after generation"
+          },
+          {
+            "id": "uiState",
+            "reason": "Add a UI interaction state shell"
+          },
+          {
+            "id": "batch",
+            "reason": "Run multiple component operations at once"
+          }
+        ],
+        "flowRefs": ["new-component", "add-ui-interaction", "bulk-publisher-update"]
+      },
       "contracts": {
         "componentKind": "ui",
         "pathPolicy": {
@@ -261,6 +349,26 @@
     },
     "uiState": {
       "description": "Render UI interaction state and handlers snippet",
+      "summary": {
+        "whenToUse": [
+          "When you need interaction state shells for UI like a modal, drawer, or dropdown"
+        ],
+        "relatedCommands": [
+          {
+            "id": "component",
+            "reason": "Apply the generated state to the component"
+          },
+          {
+            "id": "validateFile",
+            "reason": "Validate the structure after the interaction change"
+          },
+          {
+            "id": "batch",
+            "reason": "Run it together with component work"
+          }
+        ],
+        "flowRefs": ["add-ui-interaction", "bulk-publisher-update"]
+      },
       "contracts": {
         "stateKind": "uiInteraction",
         "allowedPatterns": ["toggle", "default"],
@@ -348,6 +456,26 @@
     },
     "batch": {
       "description": "Execute multiple publisher ops in one request",
+      "summary": {
+        "whenToUse": [
+          "When you want to preview or apply multiple publisher operations in one request"
+        ],
+        "relatedCommands": [
+          {
+            "id": "component",
+            "reason": "Bundle component generation work"
+          },
+          {
+            "id": "uiState",
+            "reason": "Bundle UI state shell generation"
+          },
+          {
+            "id": "validateFile",
+            "reason": "Validate the result at the end"
+          }
+        ],
+        "flowRefs": ["bulk-publisher-update"]
+      },
       "guide": {
         "목적": "여러 퍼블리셔 작업을 한 번의 요청으로 순차 실행한다.",
         "입력규칙": [

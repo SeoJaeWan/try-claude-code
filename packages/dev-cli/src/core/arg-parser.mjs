@@ -4,14 +4,7 @@ function toCamelOptionName(name) {
 
 export function normalizeCommandName(name) {
   const normalized = name ?? "";
-  const map = {
-    "api-hook": "apiHook",
-    "validate-file": "validateFile",
-    "request-dto": "requestDto",
-    "response-dto": "responseDto"
-  };
-
-  return map[normalized] ?? normalized;
+  return normalized.replace(/-([a-z])/g, (_, value) => value.toUpperCase());
 }
 
 export function parseArgv(argv) {
