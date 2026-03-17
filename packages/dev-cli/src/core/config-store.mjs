@@ -2,6 +2,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
+import { extractMajorProfileVersion } from "./version-utils.mjs";
+
 const CONFIG_FILE = ".try-claude-dev-cli.json";
 
 async function readJsonFile(filePath) {
@@ -51,25 +53,21 @@ function normalizeStoredSelection(selection) {
     return null;
   }
 
-  if (selection.requestedVersion) {
-    return {
-      mode: selection.mode,
-      requestedVersion: selection.requestedVersion,
-      resolvedVersion: selection.resolvedVersion ?? null,
-      resolvedRef: selection.resolvedRef ?? null
-    };
+  const rawVersion =
+    selection.version ??
+    selection.requestedVersion ??
+    selection.resolvedVersion ??
+    null;
+  const version = extractMajorProfileVersion(rawVersion);
+
+  if (!version) {
+    return null;
   }
 
-  if (selection.version) {
-    return {
-      mode: selection.mode,
-      requestedVersion: selection.version,
-      resolvedVersion: null,
-      resolvedRef: null
-    };
-  }
-
-  return null;
+  return {
+    mode: selection.mode,
+    version
+  };
 }
 
 export function getProfileSelection(config, role) {
@@ -81,9 +79,7 @@ export async function writeProfileSelection({
   repoRoot,
   role,
   mode,
-  requestedVersion,
-  resolvedVersion,
-  resolvedRef
+  version
 }) {
   const filePath =
     scope === "repo" ? getRepoConfigPath(repoRoot) : getGlobalConfigPath();
@@ -94,9 +90,7 @@ export async function writeProfileSelection({
       ...(current.profiles ?? {}),
       [role]: {
         mode,
-        requestedVersion,
-        resolvedVersion,
-        resolvedRef
+        version
       }
     }
   };
@@ -108,8 +102,6 @@ export async function writeProfileSelection({
     filePath,
     role,
     mode,
-    requestedVersion,
-    resolvedVersion,
-    resolvedRef
+    version
   };
 }

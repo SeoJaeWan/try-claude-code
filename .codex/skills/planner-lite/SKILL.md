@@ -58,7 +58,7 @@ Use this skill only after planning is complete.
 
 - Record the current branch as the base branch.
 - Keep the main repo checkout on the base branch.
-- Default the worktree root to `./.codex/worktrees/{branch}` unless the repository already has a stronger local convention.
+- Default the worktree root to `./worktrees/{branch}` unless the repository already has a stronger local convention.
 - Remove stale worktree state for the same branch before recreating it.
 - Create one task worktree branch per executable plan file.
 

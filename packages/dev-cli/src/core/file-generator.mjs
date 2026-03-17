@@ -23,22 +23,40 @@ function requireArgument(command, argumentName, providedValue) {
 }
 
 function resolveTemplatePath(render, spec, key = null) {
+  if (key && render.templateContents?.[key]) {
+    return {
+      content: render.templateContents[key]
+    };
+  }
+
   if (key && render.templatePaths?.[key]) {
     return render.templatePaths[key];
+  }
+
+  if (render.templateContent) {
+    return {
+      content: render.templateContent
+    };
   }
 
   if (render.templatePath) {
     return render.templatePath;
   }
 
-  if (!render.templatePaths) {
+  if (!render.templatePaths && !render.templateContents) {
     throw createCliError("MISSING_TEMPLATE", `Missing template for ${render.name ?? "command"}`);
   }
 
   const variantField = render.templateVariantField;
   const variantRawValue = variantField ? spec[variantField] : undefined;
   const variantKey = render.templateVariantMap?.[variantRawValue] ?? variantRawValue ?? render.defaultVariant;
-  const templatePath = render.templatePaths[variantKey];
+  const templatePath = render.templatePaths?.[variantKey] ?? (
+    render.templateContents?.[variantKey]
+      ? {
+          content: render.templateContents[variantKey]
+        }
+      : null
+  );
 
   if (!templatePath) {
     throw createCliError("MISSING_TEMPLATE", `Missing template variant: ${variantKey}`, {

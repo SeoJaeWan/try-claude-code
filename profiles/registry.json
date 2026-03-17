@@ -1,26 +1,11 @@
 {
   "publisher": {
-    "personal": {
-      "v1": {
-        "latest": "v1.0.0",
-        "versions": ["v1.0.0"]
-      }
-    }
+    "personal": ["v1"]
   },
   "frontend": {
-    "personal": {
-      "v1": {
-        "latest": "v1.0.0",
-        "versions": ["v1.0.0"]
-      }
-    }
+    "personal": ["v1"]
   },
   "backend": {
-    "personal": {
-      "v1": {
-        "latest": "v1.0.0",
-        "versions": ["v1.0.0"]
-      }
-    }
+    "personal": ["v1"]
   }
 }

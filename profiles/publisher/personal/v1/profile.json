@@ -109,11 +109,8 @@
       },
       "contracts": {
         "inputShape": {
-          "filesField": "files[]",
-          "filesModes": ["positional", "json"],
-          "rootField": "root",
-          "rootModes": ["--root", "json"],
-          "acceptedModes": ["positional", "json", "--root"]
+          "directoryField": "<path>",
+          "directoryModes": ["positional"]
         },
         "pathPolicy": {
           "requiredPatterns": [
@@ -153,7 +150,8 @@
       "guide": {
         "목적": "기존 퍼블리셔 UI 파일이 배치 규칙과 AST 규칙을 지키는지 검증한다.",
         "입력규칙": [
-          "파일 경로 1개 이상을 positional 또는 files 배열 JSON으로 전달하거나, root 경로를 넘겨 해당 디렉터리 아래의 검증 대상 파일을 모두 탐색한다."
+          "상대 디렉터리 경로 1개만 positional로 전달한다.",
+          "전달한 디렉터리 아래에서 profile targetRules에 매칭되는 엔트리 파일만 재귀 탐색해 검증한다."
         ],
         "출력규칙": [
           "results 배열로 파일별 위반 목록을 반환한다."
@@ -167,7 +165,7 @@
           "같은 파일 안의 JSX helper와 subcomponent는 금지한다."
         ]
       },
-      "inputMode": "json",
+      "inputMode": "positional",
       "execution": {
         "kind": "analysis"
       },
@@ -446,15 +444,10 @@
           ]
         }
       ],
-      "inputSchema": {
-        "requiredAny": [["files", "root"]],
-        "arrays": ["files"]
-      },
       "examples": [
-        "tcp validate-file components/common/dashboardLayout/index.tsx",
-        "tcp validate-file app/showcase/page.tsx",
-        "tcp validate-file --json '{\"files\":[\"components/common/table/index.tsx\",\"components/common/table/th/index.tsx\"]}'",
-        "tcp validate-file --root app"
+        "tcp validate-file components/common",
+        "tcp validate-file app",
+        "tcp validate-file src/components/common"
       ]
     },
     "component": {

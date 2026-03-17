@@ -388,15 +388,27 @@ function applyNormalizationRule(rule, command, spec, normalizations) {
 
 function resolveTemplatePath(command, spec) {
   const render = command.render ?? {};
+  if (render.snippetTemplateContent) {
+    return {
+      content: render.snippetTemplateContent
+    };
+  }
+
   if (render.snippetTemplatePath) {
     return render.snippetTemplatePath;
+  }
+
+  if (render.templateContent) {
+    return {
+      content: render.templateContent
+    };
   }
 
   if (render.templatePath) {
     return render.templatePath;
   }
 
-  if (!render.templatePaths) {
+  if (!render.templatePaths && !render.templateContents) {
     throw createCliError("MISSING_TEMPLATE", `Missing template for ${command.name}`, {
       command: command.name
     });
@@ -405,7 +417,13 @@ function resolveTemplatePath(command, spec) {
   const variantField = render.templateVariantField;
   const variantRawValue = variantField ? spec[variantField] : undefined;
   const variantKey = render.templateVariantMap?.[variantRawValue] ?? variantRawValue ?? render.defaultVariant;
-  const templatePath = render.templatePaths[variantKey];
+  const templatePath = render.templatePaths?.[variantKey] ?? (
+    render.templateContents?.[variantKey]
+      ? {
+          content: render.templateContents[variantKey]
+        }
+      : null
+  );
 
   if (!templatePath) {
     throw createCliError("MISSING_TEMPLATE", `Missing template variant: ${variantKey}`, {

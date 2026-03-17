@@ -80,7 +80,13 @@ function formatSummaryTextCommand(name, command) {
   }
 
   if (command.inputMode) {
-    lines.push(`  input: --${command.inputMode}`);
+    lines.push(
+      command.inputMode === "json"
+        ? "  input: --json"
+        : command.inputMode === "positional"
+          ? "  input: positional"
+          : `  input: ${command.inputMode}`
+    );
   }
 
   if (command.executionKind) {
@@ -127,8 +133,14 @@ function formatDetailTextCommand(name, command) {
     lines.push(`  flows: ${flowRefs.join(" | ")}`);
   }
 
-  if (command.inputMode === "json") {
-    lines.push("  input: --json");
+  if (command.inputMode) {
+    lines.push(
+      command.inputMode === "json"
+        ? "  input: --json"
+        : command.inputMode === "positional"
+          ? "  input: positional"
+          : `  input: ${command.inputMode}`
+    );
   }
 
   if (command.execution?.kind) {
@@ -180,6 +192,17 @@ function formatContractHints(contracts = {}) {
       acceptedModes
         ? `  files: ${inputShape.filesField} (${acceptedModes})`
         : `  files: ${inputShape.filesField}`
+    );
+  }
+
+  if (inputShape.directoryField) {
+    const acceptedModes = Array.isArray(inputShape.directoryModes)
+      ? inputShape.directoryModes.join(" | ")
+      : null;
+    lines.push(
+      acceptedModes
+        ? `  directory: ${inputShape.directoryField} (${acceptedModes})`
+        : `  directory: ${inputShape.directoryField}`
     );
   }
 
@@ -278,6 +301,8 @@ function sanitizeCommand(command) {
     guide,
     templatePath,
     templatePaths,
+    templateContent,
+    templateContents,
     render,
     ...rest
   } = command;
@@ -286,8 +311,11 @@ function sanitizeCommand(command) {
     ? {
         ...render,
         snippetTemplatePath: undefined,
+        snippetTemplateContent: undefined,
         templatePath: undefined,
-        templatePaths: undefined
+        templatePaths: undefined,
+        templateContent: undefined,
+        templateContents: undefined
       }
     : undefined;
 
@@ -393,12 +421,6 @@ export function renderHelpText(payload) {
   const lines = [
     `${payload.alias} -> ${payload.id}`,
     `mode: ${payload.activeProfile.mode}@${payload.activeProfile.version}`,
-    ...(payload.activeProfile.resolvedVersion &&
-    payload.activeProfile.resolvedVersion !== payload.activeProfile.version
-      ? [
-          `pinned: ${payload.activeProfile.resolvedVersion} (${payload.activeProfile.resolvedRef})`
-        ]
-      : []),
     "default input: --json"
   ];
 

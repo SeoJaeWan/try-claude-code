@@ -2,11 +2,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
-  ensurePinnedResourceFile,
   hydrateProfileSelection,
-  readPinnedJsonResource
+  readRemoteJsonResource,
+  readRemoteTextResource
 } from "./profile-registry.mjs";
-import { extractMajorProfileVersion } from "./version-utils.mjs";
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -82,30 +81,27 @@ function resolveRenderPathsLocal(profileDir, render = {}) {
   return resolved;
 }
 
-async function resolveRenderPathsRemote(profileDirRelative, resolvedRef, render = {}) {
+async function resolveRenderPathsRemote(profileDirRelative, render = {}) {
   const resolved = { ...render };
 
   if (resolved.snippetTemplate) {
-    resolved.snippetTemplatePath = await ensurePinnedResourceFile({
-      resolvedRef,
+    resolved.snippetTemplateContent = await readRemoteTextResource({
       relativePath: path.posix.join(profileDirRelative, resolved.snippetTemplate)
     });
   }
 
   if (resolved.templateFile) {
-    resolved.templatePath = await ensurePinnedResourceFile({
-      resolvedRef,
+    resolved.templateContent = await readRemoteTextResource({
       relativePath: path.posix.join(profileDirRelative, resolved.templateFile)
     });
   }
 
   if (resolved.templateFiles) {
-    resolved.templatePaths = Object.fromEntries(
+    resolved.templateContents = Object.fromEntries(
       await Promise.all(
         Object.entries(resolved.templateFiles).map(async ([key, value]) => [
           key,
-          await ensurePinnedResourceFile({
-            resolvedRef,
+          await readRemoteTextResource({
             relativePath: path.posix.join(profileDirRelative, value)
           })
         ])
@@ -128,17 +124,13 @@ function resolveCommandTemplatePathsLocal(profileDir, command) {
   return resolved;
 }
 
-async function resolveCommandTemplatePathsRemote(profileDirRelative, resolvedRef, command) {
+async function resolveCommandTemplatePathsRemote(profileDirRelative, command) {
   const resolved = {
     ...command
   };
 
   if (resolved.render) {
-    resolved.render = await resolveRenderPathsRemote(
-      profileDirRelative,
-      resolvedRef,
-      resolved.render
-    );
+    resolved.render = await resolveRenderPathsRemote(profileDirRelative, resolved.render);
   }
 
   return resolved;
@@ -182,7 +174,7 @@ async function loadLocalProfileById(localProfileRoot, profileId, seen = new Set(
   return mergeObjects(mergedBase, preparedProfile);
 }
 
-async function loadRemoteProfileById(resolvedRef, profileId, seen = new Set()) {
+async function loadRemoteProfileById(profileId, seen = new Set()) {
   if (seen.has(profileId)) {
     const error = new Error(`Circular profile dependency: ${profileId}`);
     error.code = "PROFILE_CYCLE";
@@ -193,28 +185,23 @@ async function loadRemoteProfileById(resolvedRef, profileId, seen = new Set()) {
 
   const profileDirRelative = path.posix.join("profiles", ...profileId.split("/"));
   const profilePath = path.posix.join(profileDirRelative, "profile.json");
-  const profileFilePath = await ensurePinnedResourceFile({
-    resolvedRef,
-    relativePath: profilePath
-  });
-  const rawProfile = await readPinnedJsonResource({
-    resolvedRef,
+  const rawProfile = await readRemoteJsonResource({
     relativePath: profilePath
   });
   const baseProfiles = [];
 
   for (const dependency of rawProfile.extends ?? []) {
-    baseProfiles.push(await loadRemoteProfileById(resolvedRef, dependency, seen));
+    baseProfiles.push(await loadRemoteProfileById(dependency, seen));
   }
 
   const preparedProfile = {
     ...rawProfile,
-    profileDir: path.dirname(profileFilePath),
+    profileDir: profileDirRelative,
     commands: Object.fromEntries(
       await Promise.all(
         Object.entries(rawProfile.commands ?? {}).map(async ([key, value]) => [
           key,
-          await resolveCommandTemplatePathsRemote(profileDirRelative, resolvedRef, value)
+          await resolveCommandTemplatePathsRemote(profileDirRelative, value)
         ])
       )
     )
@@ -233,42 +220,33 @@ export async function loadActiveProfile({
   role,
   mode,
   version,
-  requestedVersion,
-  resolvedVersion,
-  resolvedRef,
   localProfileRoot
 }) {
-  const requested = requestedVersion ?? version ?? resolvedVersion ?? "v1";
-  const majorVersion = extractMajorProfileVersion(requested) ?? requested;
-  const profileId = `${role}/${mode}/${majorVersion}`;
+  const activeProfile = await hydrateProfileSelection({
+    role,
+    selection: {
+      source: "runtime",
+      mode,
+      version: version ?? "v1"
+    },
+    localProfileRoot
+  });
+  const profileId = `${role}/${activeProfile.mode}/${activeProfile.version}`;
 
   if (localProfileRoot) {
     const profile = await loadLocalProfileById(localProfileRoot, profileId);
 
     return {
       profileId,
-      profile
+      profile,
+      activeProfile
     };
   }
 
-  const activeProfile = await hydrateProfileSelection({
-    role,
-    selection: {
-      source: "runtime",
-      mode,
-      requestedVersion: requested,
-      resolvedVersion,
-      resolvedRef
-    }
-  });
-  const resolvedProfileId = `${role}/${activeProfile.mode}/${activeProfile.majorVersion}`;
-  const profile = await loadRemoteProfileById(
-    activeProfile.resolvedRef,
-    resolvedProfileId
-  );
+  const profile = await loadRemoteProfileById(profileId);
 
   return {
-    profileId: resolvedProfileId,
+    profileId,
     profile,
     activeProfile
   };

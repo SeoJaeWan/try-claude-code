@@ -3,21 +3,36 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
-import { pathToFileURL } from "node:url";
 
 import { readJson, runCli, tcpBin } from "./test-utils.mjs";
 
-test("mode set/show는 requestedVersion과 resolvedVersion/ref를 함께 저장하고 보여준다", async () => {
+async function writeRegistry(root, registry) {
+  const profilesDir = path.join(root, "profiles");
+  await mkdir(profilesDir, { recursive: true });
+  await writeFile(
+    path.join(profilesDir, "registry.json"),
+    `${JSON.stringify(registry, null, 2)}\n`,
+    "utf8"
+  );
+}
+
+test("mode set/show는 mode와 major version만 저장하고 보여준다", async () => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-mode-command-"));
   const tempHome = path.join(tempRoot, "home");
   const tempProject = path.join(tempRoot, "project");
 
   await mkdir(tempHome, { recursive: true });
   await mkdir(tempProject, { recursive: true });
+  await writeRegistry(tempRoot, {
+    publisher: {
+      personal: ["v1"]
+    }
+  });
 
   const env = {
     HOME: tempHome,
-    USERPROFILE: tempHome
+    USERPROFILE: tempHome,
+    TRY_CLAUDE_TEST_PROFILE_ROOT: tempRoot
   };
 
   const setResult = runCli(tcpBin, [
@@ -33,17 +48,18 @@ test("mode set/show는 requestedVersion과 resolvedVersion/ref를 함께 저장�
   });
   assert.equal(setResult.status, 0);
   const setPayload = readJson(setResult.stdout);
-  assert.equal(setPayload.activeProfile.requestedVersion, "v1");
-  assert.equal(setPayload.activeProfile.resolvedVersion, "v1.0.0");
-  assert.match(setPayload.activeProfile.resolvedRef, /\S+/);
+  assert.deepEqual(setPayload.activeProfile, {
+    source: "explicit",
+    mode: "personal",
+    version: "v1",
+    majorVersion: "v1"
+  });
 
   const configPath = path.join(tempHome, ".try-claude-dev-cli.json");
   const savedConfig = JSON.parse(await readFile(configPath, "utf8"));
   assert.deepEqual(savedConfig.profiles.publisher, {
     mode: "personal",
-    requestedVersion: "v1",
-    resolvedVersion: "v1.0.0",
-    resolvedRef: setPayload.activeProfile.resolvedRef
+    version: "v1"
   });
 
   const showResult = runCli(tcpBin, ["mode", "show"], {
@@ -52,189 +68,115 @@ test("mode set/show는 requestedVersion과 resolvedVersion/ref를 함께 저장�
   });
   assert.equal(showResult.status, 0);
   const showPayload = readJson(showResult.stdout);
-  assert.equal(showPayload.activeProfile.requestedVersion, "v1");
-  assert.equal(showPayload.activeProfile.resolvedVersion, "v1.0.0");
-  assert.equal(showPayload.activeProfile.resolvedRef, setPayload.activeProfile.resolvedRef);
+  assert.deepEqual(showPayload.activeProfile, {
+    source: "global",
+    mode: "personal",
+    version: "v1",
+    majorVersion: "v1"
+  });
 });
 
-test("mode update는 channel selection만 최신 patch로 올린다", async () => {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-mode-update-"));
-  const tempHome = path.join(tempRoot, "home");
-  const tempProject = path.join(tempRoot, "project");
-  const registryPath = path.join(tempRoot, "registry.json");
-
-  await mkdir(tempHome, { recursive: true });
-  await mkdir(tempProject, { recursive: true });
-  await writeFile(
-    registryPath,
-    `${JSON.stringify({
-      publisher: {
-        personal: {
-          v1: {
-            latest: "v1.0.0",
-            versions: ["v1.0.0"]
-          }
-        }
-      }
-    }, null, 2)}\n`,
-    "utf8"
-  );
-
-  const env = {
-    HOME: tempHome,
-    USERPROFILE: tempHome,
-    TRY_CLAUDE_PROFILE_REGISTRY_URL: pathToFileURL(registryPath).href
-  };
-
-  const setResult = runCli(tcpBin, [
-    "mode",
-    "set",
-    "--mode",
-    "personal",
-    "--version",
-    "v1"
-  ], {
-    cwd: tempProject,
-    env
-  });
-  assert.equal(setResult.status, 0);
-
-  await writeFile(
-    registryPath,
-    `${JSON.stringify({
-      publisher: {
-        personal: {
-          v1: {
-            latest: "v1.0.1",
-            versions: ["v1.0.0", "v1.0.1"]
-          }
-        }
-      }
-    }, null, 2)}\n`,
-    "utf8"
-  );
-
-  const updateResult = runCli(tcpBin, ["mode", "update"], {
-    cwd: tempProject,
-    env
-  });
-  assert.equal(updateResult.status, 0);
-  const updatePayload = readJson(updateResult.stdout);
-  assert.equal(updatePayload.updated, true);
-  assert.equal(updatePayload.activeProfile.resolvedVersion, "v1.0.1");
-  assert.equal(updatePayload.activeProfile.resolvedRef, "profiles-v1.0.1");
-});
-
-test("mode set을 같은 major version으로 다시 호출하면 latest exact release를 다시 resolve한다", async () => {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-mode-set-latest-"));
-  const tempHome = path.join(tempRoot, "home");
-  const tempProject = path.join(tempRoot, "project");
-  const registryPath = path.join(tempRoot, "registry.json");
-
-  await mkdir(tempHome, { recursive: true });
-  await mkdir(tempProject, { recursive: true });
-  await writeFile(
-    registryPath,
-    `${JSON.stringify({
-      publisher: {
-        personal: {
-          v1: {
-            latest: "v1.0.0",
-            versions: ["v1.0.0"]
-          }
-        }
-      }
-    }, null, 2)}\n`,
-    "utf8"
-  );
-
-  const env = {
-    HOME: tempHome,
-    USERPROFILE: tempHome,
-    TRY_CLAUDE_PROFILE_REGISTRY_URL: pathToFileURL(registryPath).href
-  };
-
-  const firstSet = runCli(tcpBin, [
-    "mode",
-    "set",
-    "--mode",
-    "personal",
-    "--version",
-    "v1"
-  ], {
-    cwd: tempProject,
-    env
-  });
-  assert.equal(firstSet.status, 0);
-  assert.equal(readJson(firstSet.stdout).activeProfile.resolvedVersion, "v1.0.0");
-
-  await writeFile(
-    registryPath,
-    `${JSON.stringify({
-      publisher: {
-        personal: {
-          v1: {
-            latest: "v1.0.2",
-            versions: ["v1.0.0", "v1.0.2"]
-          }
-        }
-      }
-    }, null, 2)}\n`,
-    "utf8"
-  );
-
-  const secondSet = runCli(tcpBin, [
-    "mode",
-    "set",
-    "--mode",
-    "personal",
-    "--version",
-    "v1"
-  ], {
-    cwd: tempProject,
-    env
-  });
-  assert.equal(secondSet.status, 0);
-  const secondPayload = readJson(secondSet.stdout);
-  assert.equal(secondPayload.activeProfile.requestedVersion, "v1");
-  assert.equal(secondPayload.activeProfile.resolvedVersion, "v1.0.2");
-  assert.equal(secondPayload.activeProfile.resolvedRef, "profiles-v1.0.2");
-});
-
-test("mode update는 exact pinned version이면 no-op으로 종료한다", async () => {
+test("mode set은 exact version 입력을 거부한다", async () => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-mode-exact-"));
   const tempHome = path.join(tempRoot, "home");
   const tempProject = path.join(tempRoot, "project");
 
   await mkdir(tempHome, { recursive: true });
   await mkdir(tempProject, { recursive: true });
+  await writeRegistry(tempRoot, {
+    publisher: {
+      personal: ["v1"]
+    }
+  });
 
   const env = {
     HOME: tempHome,
-    USERPROFILE: tempHome
+    USERPROFILE: tempHome,
+    TRY_CLAUDE_TEST_PROFILE_ROOT: tempRoot
   };
 
-  const setResult = runCli(tcpBin, [
+  const result = runCli(tcpBin, [
     "mode",
     "set",
     "--mode",
     "personal",
     "--version",
-    "v1.0.3"
+    "v1.0.0"
   ], {
     cwd: tempProject,
     env
   });
-  assert.equal(setResult.status, 0);
 
-  const updateResult = runCli(tcpBin, ["mode", "update"], {
-    cwd: tempProject,
-    env
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stderr);
+  assert.equal(payload.error.code, "INVALID_PROFILE_VERSION");
+});
+
+test("mode update는 더 이상 지원하지 않는다", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-mode-update-"));
+  const tempProject = path.join(tempRoot, "project");
+
+  await mkdir(tempProject, { recursive: true });
+  await writeRegistry(tempRoot, {
+    publisher: {
+      personal: ["v1"]
+    }
   });
-  assert.equal(updateResult.status, 0);
-  const updatePayload = readJson(updateResult.stdout);
-  assert.equal(updatePayload.updated, false);
-  assert.equal(updatePayload.reason, "EXACT_VERSION_PINNED");
-  assert.equal(updatePayload.activeProfile.resolvedVersion, "v1.0.3");
-  assert.equal(updatePayload.activeProfile.resolvedRef, "profiles-v1.0.3");
+
+  const result = runCli(tcpBin, ["mode", "update"], {
+    cwd: tempProject,
+    env: {
+      TRY_CLAUDE_TEST_PROFILE_ROOT: tempRoot
+    }
+  });
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stderr);
+  assert.equal(payload.error.code, "UNSUPPORTED_MODE_ACTION");
+});
+
+test("mode show는 legacy exact-version config를 major version으로 정규화한다", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-mode-legacy-"));
+  const tempHome = path.join(tempRoot, "home");
+  const tempProject = path.join(tempRoot, "project");
+
+  await mkdir(tempHome, { recursive: true });
+  await mkdir(tempProject, { recursive: true });
+  await writeRegistry(tempRoot, {
+    publisher: {
+      personal: ["v1"]
+    }
+  });
+  await writeFile(
+    path.join(tempHome, ".try-claude-dev-cli.json"),
+    `${JSON.stringify({
+      profiles: {
+        publisher: {
+          mode: "personal",
+          requestedVersion: "v1.0.3",
+          resolvedVersion: "v1.0.3",
+          resolvedRef: "profiles-v1.0.3"
+        }
+      }
+    }, null, 2)}\n`,
+    "utf8"
+  );
+
+  const result = runCli(tcpBin, ["mode", "show"], {
+    cwd: tempProject,
+    env: {
+      HOME: tempHome,
+      USERPROFILE: tempHome,
+      TRY_CLAUDE_TEST_PROFILE_ROOT: tempRoot
+    }
+  });
+
+  assert.equal(result.status, 0);
+  const payload = readJson(result.stdout);
+  assert.deepEqual(payload.activeProfile, {
+    source: "global",
+    mode: "personal",
+    version: "v1",
+    majorVersion: "v1"
+  });
 });

@@ -134,78 +134,28 @@ export function parseBatchSpec(route) {
 }
 
 export function parseValidateFileSpec(route) {
-  if (route.options.json) {
-    const parsed = parseJson(route.options.json, "validate-file");
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      throw createCliError(
-        "INVALID_JSON_SPEC",
-        "Command validate-file expects a JSON object.",
-        {
-          command: "validate-file"
-        }
-      );
-    }
-
-    const hasFiles = Array.isArray(parsed.files) && parsed.files.length > 0;
-    const hasRoot = typeof parsed.root === "string" && parsed.root.trim() !== "";
-
-    if (hasFiles && hasRoot) {
-      throw createCliError(
-        "INVALID_VALIDATE_FILE_SPEC",
-        "Command validate-file accepts either files or root, not both.",
-        {
-          command: "validate-file"
-        }
-      );
-    }
-
-    if (!hasFiles && !hasRoot) {
-      throw createCliError(
-        "INVALID_VALIDATE_FILE_SPEC",
-        "Command validate-file requires a non-empty files array or a root path.",
-        {
-          command: "validate-file"
-        }
-      );
-    }
-
-    return hasRoot
-      ? {
-          root: parsed.root
-        }
-      : {
-          files: parsed.files
-        };
-  }
-
-  if (route.options.root) {
-    if (route.extraPositionals?.length) {
-      throw createCliError(
-        "INVALID_VALIDATE_FILE_SPEC",
-        "Command validate-file does not accept file paths together with --root.",
-        {
-          command: "validate-file",
-          positionals: route.extraPositionals
-        }
-      );
-    }
-
-    return {
-      root: route.options.root
-    };
-  }
-
   if (!route.extraPositionals?.length) {
     throw createCliError(
       "VALIDATE_FILE_SPEC_REQUIRED",
-      "Command validate-file requires file paths, --root, or --json.",
+      "Command validate-file requires exactly one directory path.",
       {
         command: "validate-file"
       }
     );
   }
 
+  if (route.extraPositionals.length !== 1) {
+    throw createCliError(
+      "INVALID_VALIDATE_FILE_SPEC",
+      "Command validate-file accepts exactly one directory path.",
+      {
+        command: "validate-file",
+        positionals: route.extraPositionals
+      }
+    );
+  }
+
   return {
-    files: route.extraPositionals
+    directory: route.extraPositionals[0]
   };
 }

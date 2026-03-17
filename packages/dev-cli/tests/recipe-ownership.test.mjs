@@ -155,6 +155,15 @@ test("shared 기본 recipe는 역할 profile에서 command 단위로 override할
   await mkdir(path.join(tempRoot, "profiles", "frontend", "personal", "v1"), {
     recursive: true
   });
+  await writeFile(
+    path.join(tempRoot, "profiles", "registry.json"),
+    `${JSON.stringify({
+      frontend: {
+        personal: ["v1"]
+      }
+    }, null, 2)}\n`,
+    "utf8"
+  );
 
   await writeFile(
     path.join(tempRoot, "profiles", "shared", "personal", "v1", "profile.json"),
