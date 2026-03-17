@@ -24,6 +24,9 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
    - `./.codex/skills/architect/references/plan-template-sequential.md`
    - `./.codex/skills/architect/references/plan-template-dag.md`
 6. `./.codex/skills/architect/references/parallel-safety.md` only when Step 4 evaluates parallel execution
+7. Relevant active CLI help only when execution routing or mode-sensitive conventions matter:
+   - prefer narrow command-scoped text help first
+   - use top-level `tcp --help`, `tcf --help`, `tcb --help` only for command discovery
 
 ## Workflow
 
@@ -62,6 +65,18 @@ Use high-level inspection only:
 - Existing policies, contracts, behaviors, and conventions that answer missing questions
 
 Do not deep-dive into implementation details.
+
+### Step 2.5. Resolve mode-sensitive CLI contracts before execution routing (required for implementation plans)
+
+- Before assigning `owner_agent` or `primary_skill` to implementation phases, inspect the relevant CLI help for the work type.
+- Read only the minimum relevant surface:
+  - UI/layout/publisher scope: `tcp help component --text`; add `tcp help validate-file --text` when planning convention cleanup or file migration
+  - frontend logic/API scope: `tcf help hook --text`; add `tcf help apiHook --text` for network/API work; add `tcf help validate-file --text` for refactor or migration scope
+  - backend scope: `tcb help module --text`; add command-scoped help for DTO/entity commands when those outputs are in scope
+- Use top-level `tcp --help`, `tcf --help`, or `tcb --help` only when command discovery is actually needed.
+- Treat the returned help as the active mode-specific contract for path policy, naming, validation, scaffold shape, and available command surface.
+- Use those contracts to confirm execution routing, phase boundaries, and `Explicit Defaults`.
+- If one request spans multiple concerns, inspect each relevant CLI instead of guessing from stale skill prose.
 
 ### Step 3. Design plan structure
 

@@ -122,6 +122,15 @@ Assign work by concern:
 
 If a phase mixes visual and logic concerns, split it into separate phases/tasks.
 
+Resolve routing and mode-sensitive conventions from active CLI help before locking implementation phases:
+
+- `publisher` routing: inspect `tcp help component --text`; add `tcp help validate-file --text` for migration, convention cleanup, or validation-heavy UI refactors
+- `frontend-developer` routing: inspect `tcf help hook --text`; add `tcf help apiHook --text` for API work; add `tcf help validate-file --text` for refactor or migration scope
+- `backend-developer` routing: inspect `tcb help module --text`; add DTO/entity command help when those outputs are part of scope
+- Use top-level `tcp --help`, `tcf --help`, `tcb --help` only when command discovery is necessary
+- Treat CLI help as the source of truth for the current active mode/profile contract, not stale examples embedded in older skill text
+- If exact mode/version matters to the plan, inspect `mode show` and record it in `Resolved Decisions` or `Explicit Defaults`
+
 See `agents-lite.md` for the canonical execution agent catalog and skill mapping.
 
 ---
