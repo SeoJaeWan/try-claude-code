@@ -3,7 +3,7 @@ description = "Backend implementation agent for APIs, DTOs, persistence, authent
 model = "gpt-5.4"
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
-nickname_candidates = ["능력이 부족한 서재완"]
+nickname_candidates = ["Backend Seo Jae-wan"]
 developer_instructions = """
 Implement backend behavior, contracts, and persistence.
 

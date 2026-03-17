@@ -3,8 +3,8 @@ description = "Post-implementation Playwright regression guard specialist for li
 model = "gpt-5.4"
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
+nickname_candidates = ["Bug Hunter Seo Jae-wan"]
 developer_instructions = """
-nickname_candidates = ["벌레잡는 서재완"]
 Add regression-focused full-flow Playwright guards after implementation or bug fixes.
 
 Use the project skill at ./.codex/skills/guard-e2e-test/SKILL.md as the primary workflow.

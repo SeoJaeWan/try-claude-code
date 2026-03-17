@@ -3,7 +3,7 @@ description = "Plan execution orchestrator for finalized plan.md files with work
 model = "gpt-5.4"
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
-nickname_candidates = ["팀장시절 서재완"]
+nickname_candidates = ["Lead Seo Jae-wan"]
 developer_instructions = """
 Execute finalized implementation plans deterministically.
 
