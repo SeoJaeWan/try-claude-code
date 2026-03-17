@@ -1,0 +1,60 @@
+{
+  "expectations": [
+    {
+      "text": "결과 구조가 Button/index.tsx 또는 동급 folder/index 규칙을 따른다",
+      "passed": true,
+      "evidence": "Output file is button_index.tsx representing button/index.tsx folder-index pattern. Showcase import confirms path @/components/common/button which resolves to common/button/index.tsx."
+    },
+    {
+      "text": "flat components/Button.tsx 파일이 그대로 남지 않는다",
+      "passed": true,
+      "evidence": "No flat Button.tsx in outputs. Only button_index.tsx (folder/index pattern) and showcase_page.tsx are present."
+    },
+    {
+      "text": "Props 인터페이스가 ButtonProps 접미사를 유지한다",
+      "passed": true,
+      "evidence": "Line 5 of button_index.tsx: 'interface ButtonProps'"
+    },
+    {
+      "text": "컴포넌트가 const 화살표 함수로 선언된다",
+      "passed": true,
+      "evidence": "Line 13 of button_index.tsx: 'const Button = ({...}: ButtonProps) => {'"
+    },
+    {
+      "text": "기존 label prop 동작이 보존된다",
+      "passed": false,
+      "evidence": "Original Button.tsx had 'label: string' prop that rendered {label} inside the button. Output replaced it with 'children?: ReactNode' and renders {children}. The label prop was removed, not preserved."
+    },
+    {
+      "text": "기존 tone prop 동작이 보존된다",
+      "passed": false,
+      "evidence": "Original Button.tsx had 'tone?: \"primary\" | \"secondary\"' prop. Output replaced it with 'variant?: \"primary\" | \"secondary\"'. The tone prop name was changed to variant, not preserved."
+    },
+    {
+      "text": "showcase page의 import가 새 구조에 맞게 정리된다",
+      "passed": true,
+      "evidence": "Showcase imports 'import Button from \"@/components/common/button\"' which matches the button_index.tsx output at common/button/index.tsx. Button usage in showcase uses children pattern consistent with the new component."
+    },
+    {
+      "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "passed": true,
+      "evidence": "Grep for useEffect|fetch(|axios|useQuery|useMutation across all output files returned no matches."
+    },
+    {
+      "text": "컴포넌트 폴더명이 camelCase이다 (button)",
+      "passed": true,
+      "evidence": "Output file button_index.tsx indicates folder name 'button' (all lowercase / camelCase). Showcase import path '@/components/common/button' confirms camelCase folder name."
+    },
+    {
+      "text": "tcp validate-file이 실행되어 0 violations을 확인했다",
+      "passed": false,
+      "evidence": "Transcript file (aea9d79f49ea5c16b.output) is empty (0 bytes). No evidence that tcp validate-file was executed."
+    }
+  ],
+  "summary": {
+    "passed": 7,
+    "failed": 3,
+    "total": 10,
+    "pass_rate": 0.70
+  }
+}
