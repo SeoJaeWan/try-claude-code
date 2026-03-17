@@ -1,0 +1,77 @@
+{
+  "expectations": [
+    {
+      "id": 1,
+      "description": "ReviewCard 컴포넌트 파일이 존재한다",
+      "result": "PASS",
+      "evidence": "components/common/reviewCard/index.tsx 파일이 존재하며 ReviewCard 컴포넌트를 export하고 있다."
+    },
+    {
+      "id": 2,
+      "description": "컴포넌트가 {ComponentName}/index.tsx 패턴으로 생성된다",
+      "result": "FAIL",
+      "evidence": "폴더명이 reviewCard (camelCase)으로 생성되었다. PascalCase인 ReviewCard/index.tsx가 아닌 reviewCard/index.tsx로 생성되어 {ComponentName}/index.tsx 패턴과 정확히 일치하지 않는다."
+    },
+    {
+      "id": 3,
+      "description": "flat ReviewCard.tsx가 아닌 ReviewCard/index.tsx로 생성된다",
+      "result": "FAIL",
+      "evidence": "flat 파일이 아닌 폴더/index.tsx 구조이므로 구조적으로는 맞지만, 폴더명이 reviewCard (camelCase)로 ReviewCard/index.tsx가 아닌 reviewCard/index.tsx이다."
+    },
+    {
+      "id": 4,
+      "description": "컴포넌트 이름이 PascalCase이다",
+      "result": "PASS",
+      "evidence": "컴포넌트 자체의 이름은 'const ReviewCard'로 PascalCase를 따른다. 다만 폴더명은 reviewCard (camelCase)이다."
+    },
+    {
+      "id": 5,
+      "description": "Props 인터페이스가 ReviewCardProps 접미사를 따른다",
+      "result": "PASS",
+      "evidence": "export interface ReviewCardProps로 정의되어 있다."
+    },
+    {
+      "id": 6,
+      "description": "사용자 아바타를 표시하는 요소가 존재한다",
+      "result": "PASS",
+      "evidence": "data-testid='review-card-avatar'로 아바타 영역이 존재하며, avatarUrl이 있으면 img 태그, 없으면 이니셜을 표시하는 fallback이 구현되어 있다."
+    },
+    {
+      "id": 7,
+      "description": "별점을 표시하는 요소가 존재한다",
+      "result": "PASS",
+      "evidence": "data-testid='review-card-rating'으로 별점 영역이 존재하며, 5개의 SVG 별을 rating 값에 따라 색상을 변경하여 표시한다."
+    },
+    {
+      "id": 8,
+      "description": "리뷰 본문을 표시하는 요소가 존재한다",
+      "result": "PASS",
+      "evidence": "data-testid='review-card-body'로 리뷰 본문을 표시하는 <p> 요소가 존재하며 body props를 렌더링한다."
+    },
+    {
+      "id": 9,
+      "description": "작성일을 표시하는 요소가 존재한다",
+      "result": "PASS",
+      "evidence": "data-testid='review-card-date'로 작성일을 표시하는 <p> 요소가 존재하며 createdAt props를 렌더링한다."
+    },
+    {
+      "id": 10,
+      "description": "Tailwind CSS 클래스가 스타일링에 사용된다",
+      "result": "PASS",
+      "evidence": "flex, rounded-xl, border, bg-white, text-sm, gap-3, dark: 등 Tailwind CSS 유틸리티 클래스가 전반적으로 사용되고 있다."
+    },
+    {
+      "id": 11,
+      "description": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "result": "PASS",
+      "evidence": "전체 출력 파일에서 useEffect, fetch(), axios, useQuery, useMutation 호출이 발견되지 않았다. 순수 프레젠테이션 컴포넌트로 구현되었다."
+    }
+  ],
+  "summary": "11개 기대사항 중 9개 PASS, 2개 FAIL. ReviewCard 컴포넌트는 기능적으로 완전하며 아바타, 별점, 리뷰 본문, 작성일 요소를 모두 포함하고 Tailwind CSS로 스타일링되었다. 데이터 fetching 호출도 없다. 다만 폴더명이 PascalCase(ReviewCard)가 아닌 camelCase(reviewCard)로 생성되어 {ComponentName}/index.tsx 패턴을 정확히 따르지 않았다.",
+  "claims": {
+    "pass_count": 9,
+    "fail_count": 2,
+    "total": 11
+  },
+  "eval_feedback": "컴포넌트 기능 구현은 우수하나, 폴더 네이밍 컨벤션에서 PascalCase 대신 camelCase를 사용하여 기대사항 2, 3을 충족하지 못했다."
+}

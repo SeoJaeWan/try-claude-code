@@ -1,0 +1,110 @@
+{
+  "metadata": {
+    "skill_name": "ui-publish",
+    "skill_path": "plugin/skills/ui-publish/SKILL.md",
+    "executor_model": "sonnet",
+    "analyzer_model": "opus-4-6",
+    "timestamp": "2026-03-17T00:10:00Z",
+    "evals_run": ["eval-1-review-card", "eval-2-button-refactor", "eval-3-dashboard-layout", "eval-4-product-card-dedup"],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_name": "review-card-creation",
+      "config": "with_skill",
+      "pass_rate": 1.0,
+      "passed": 11,
+      "total": 11,
+      "time_seconds": 420.7,
+      "tokens": 60321
+    },
+    {
+      "eval_name": "review-card-creation",
+      "config": "without_skill",
+      "pass_rate": 0.82,
+      "passed": 9,
+      "total": 11,
+      "time_seconds": 72.5,
+      "tokens": 18738
+    },
+    {
+      "eval_name": "button-refactor",
+      "config": "with_skill",
+      "pass_rate": 1.0,
+      "passed": 8,
+      "total": 8,
+      "time_seconds": 157.8,
+      "tokens": 27545
+    },
+    {
+      "eval_name": "button-refactor",
+      "config": "without_skill",
+      "pass_rate": 1.0,
+      "passed": 8,
+      "total": 8,
+      "time_seconds": 115.4,
+      "tokens": 27545
+    },
+    {
+      "eval_name": "dashboard-layout-refactor",
+      "config": "with_skill",
+      "pass_rate": 1.0,
+      "passed": 9,
+      "total": 9,
+      "time_seconds": 181.8,
+      "tokens": 38798
+    },
+    {
+      "eval_name": "dashboard-layout-refactor",
+      "config": "without_skill",
+      "pass_rate": 1.0,
+      "passed": 9,
+      "total": 9,
+      "time_seconds": 131.8,
+      "tokens": 28992
+    },
+    {
+      "eval_name": "product-card-dedup",
+      "config": "with_skill",
+      "pass_rate": 1.0,
+      "passed": 7,
+      "total": 7,
+      "time_seconds": 195.9,
+      "tokens": 30295
+    },
+    {
+      "eval_name": "product-card-dedup",
+      "config": "without_skill",
+      "pass_rate": 0.86,
+      "passed": 6,
+      "total": 7,
+      "time_seconds": 73.2,
+      "tokens": 21416
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "mean_pass_rate": 1.0,
+      "mean_time_seconds": 239.1,
+      "mean_tokens": 39240
+    },
+    "without_skill": {
+      "mean_pass_rate": 0.92,
+      "mean_time_seconds": 98.2,
+      "mean_tokens": 24173
+    },
+    "delta": {
+      "pass_rate": "+0.08",
+      "time_seconds": "+140.9",
+      "tokens": "+15067"
+    }
+  },
+  "notes": [
+    "With skill achieves 100% pass rate on all 4 evals vs 92% without skill",
+    "Without skill failed on folder naming convention (camelCase vs PascalCase) in ReviewCard and import path consistency in ProductCard",
+    "With skill is ~2.4x slower on average (239s vs 98s) due to tcp CLI usage and skill instruction reading",
+    "With skill uses ~1.6x more tokens (39K vs 24K)",
+    "Eval 1 WITH skill was unusually slow (420s) due to tcp CLI compatibility issues",
+    "Iteration 11 comparison: DashboardLayout WITH skill was 55% (now 100%), significant improvement"
+  ]
+}
