@@ -1,0 +1,77 @@
+{
+  "expectations": [
+    {
+      "id": 1,
+      "description": "ReviewCard 컴포넌트 파일이 존재한다",
+      "result": "PASS",
+      "evidence": "File exists at components/common/reviewCard/index.tsx with a fully implemented ReviewCard component."
+    },
+    {
+      "id": 2,
+      "description": "컴포넌트가 {ComponentName}/index.tsx 패턴으로 생성된다",
+      "result": "PASS",
+      "evidence": "Component is created at reviewCard/index.tsx, following the directory/index.tsx pattern."
+    },
+    {
+      "id": 3,
+      "description": "flat ReviewCard.tsx가 아닌 ReviewCard/index.tsx로 생성된다",
+      "result": "PASS",
+      "evidence": "Component is in reviewCard/index.tsx (directory-based), not a flat ReviewCard.tsx file. Note: the folder name uses camelCase (reviewCard) rather than PascalCase (ReviewCard), but the structural pattern is correct."
+    },
+    {
+      "id": 4,
+      "description": "컴포넌트 이름이 PascalCase이다",
+      "result": "PASS",
+      "evidence": "The component is exported as 'ReviewCard' (PascalCase) on line 14 and line 102."
+    },
+    {
+      "id": 5,
+      "description": "Props 인터페이스가 ReviewCardProps 접미사를 따른다",
+      "result": "PASS",
+      "evidence": "Line 3: 'export interface ReviewCardProps' follows the {ComponentName}Props naming convention."
+    },
+    {
+      "id": 6,
+      "description": "사용자 아바타를 표시하는 요소가 존재한다",
+      "result": "PASS",
+      "evidence": "Lines 36-49: Avatar element with data-testid='review-card-avatar' renders either an img (when avatarUrl is provided) or initials fallback."
+    },
+    {
+      "id": 7,
+      "description": "별점을 표시하는 요소가 존재한다",
+      "result": "PASS",
+      "evidence": "Lines 59-79: Star rating element with data-testid='review-card-rating' renders 5 SVG stars, colored based on the rating value."
+    },
+    {
+      "id": 8,
+      "description": "리뷰 본문을 표시하는 요소가 존재한다",
+      "result": "PASS",
+      "evidence": "Lines 84-89: Review body paragraph with data-testid='review-card-body' renders the body prop."
+    },
+    {
+      "id": 9,
+      "description": "작성일을 표시하는 요소가 존재한다",
+      "result": "PASS",
+      "evidence": "Lines 92-97: Date paragraph with data-testid='review-card-date' renders the createdAt prop."
+    },
+    {
+      "id": 10,
+      "description": "Tailwind CSS 클래스가 스타일링에 사용된다",
+      "result": "PASS",
+      "evidence": "Tailwind classes used extensively throughout: flex, gap-3, rounded-xl, border, bg-white, text-sm, font-semibold, dark: variants, etc."
+    },
+    {
+      "id": 11,
+      "description": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "result": "PASS",
+      "evidence": "Grep for useEffect|fetch|axios|useQuery|useMutation across all output files returned no matches. The component is purely presentational."
+    }
+  ],
+  "summary": "All 11 expectations passed. The ReviewCard component is a well-structured, presentational component following the directory/index.tsx pattern with PascalCase naming, proper Props interface, and all required UI elements (avatar, star rating, review body, date). It uses Tailwind CSS for styling and contains no data-fetching logic.",
+  "claims": {
+    "pass": 11,
+    "fail": 0,
+    "total": 11
+  },
+  "eval_feedback": "The agent produced a clean, idiomatic ReviewCard component that satisfies all requirements. The component handles avatar fallback gracefully with initials, implements an SVG-based star rating system, and includes proper dark mode support. Minor note: the folder name uses camelCase (reviewCard) rather than PascalCase (ReviewCard), but the component name itself is PascalCase as required."
+}

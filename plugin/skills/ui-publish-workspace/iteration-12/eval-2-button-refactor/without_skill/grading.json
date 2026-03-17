@@ -1,0 +1,59 @@
+{
+  "expectations": [
+    {
+      "id": 1,
+      "description": "결과 구조가 Button/index.tsx 또는 동급 folder/index 규칙을 따른다",
+      "result": "PASS",
+      "evidence": "components/Button/index.tsx exists as a re-export barrel, and components/common/button/index.tsx exists as the actual implementation. Both follow the folder/index convention."
+    },
+    {
+      "id": 2,
+      "description": "flat components/Button.tsx 파일이 그대로 남지 않는다 (중복 제거)",
+      "result": "PASS",
+      "evidence": "No flat components/Button.tsx file exists in the outputs directory. Only components/Button/index.tsx (barrel re-export) and components/common/button/index.tsx (implementation) exist."
+    },
+    {
+      "id": 3,
+      "description": "Props 인터페이스가 ButtonProps 접미사를 유지한다",
+      "result": "PASS",
+      "evidence": "components/common/button/index.tsx declares 'export interface ButtonProps' and components/Button/index.tsx re-exports 'type ButtonProps'."
+    },
+    {
+      "id": 4,
+      "description": "컴포넌트가 화살표 함수 형태로 유지된다",
+      "result": "PASS",
+      "evidence": "components/common/button/index.tsx uses 'const Button = ({ ... }: ButtonProps) => { return (...) };' which is arrow function syntax."
+    },
+    {
+      "id": 5,
+      "description": "기존 children prop 동작이 보존된다",
+      "result": "PASS",
+      "evidence": "ButtonProps includes 'children: ReactNode' and the component renders '{children}' inside the <button> element. The showcase page uses <Button>기본 버튼</Button> confirming children usage."
+    },
+    {
+      "id": 6,
+      "description": "기존 variant prop 동작이 보존된다",
+      "result": "PASS",
+      "evidence": "ButtonProps includes 'variant?: \"primary\" | \"secondary\"' with default 'primary'. The component conditionally applies different className strings based on variant. Showcase page uses both default and variant=\"secondary\"."
+    },
+    {
+      "id": 7,
+      "description": "showcase page의 import가 새 구조에 맞게 정리된다",
+      "result": "PASS",
+      "evidence": "app/showcase/page.tsx imports 'import Button from \"@/components/common/button\"' which correctly points to the new folder/index structure at components/common/button/index.tsx."
+    },
+    {
+      "id": 8,
+      "description": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "result": "PASS",
+      "evidence": "Grep search for useEffect|fetch(|axios|useQuery|useMutation across all output files returned no matches."
+    }
+  ],
+  "summary": "All 8 expectations passed. The Button component was correctly refactored from a flat file to a folder/index structure (components/common/button/index.tsx with a barrel re-export at components/Button/index.tsx). Props interface, arrow function form, children/variant behavior, and showcase imports are all preserved. No data-fetching side effects are present.",
+  "claims": {
+    "pass_count": 8,
+    "fail_count": 0,
+    "total": 8
+  },
+  "eval_feedback": "The refactoring was completed successfully. The component was moved to components/common/button/index.tsx with a barrel re-export at components/Button/index.tsx. All structural and behavioral expectations are met. The showcase page import was updated to point to the new location. No unwanted side-effect hooks or data-fetching calls were introduced."
+}

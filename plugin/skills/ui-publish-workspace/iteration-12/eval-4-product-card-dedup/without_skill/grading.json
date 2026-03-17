@@ -1,0 +1,53 @@
+{
+  "expectations": [
+    {
+      "id": "single-source",
+      "description": "ProductCard 구현이 하나의 source of truth로 정리된다",
+      "result": "PASS",
+      "evidence": "출력 디렉토리에 ProductCard 관련 파일이 components/ProductCard/index.tsx 단 하나만 존재한다. 중복 구현이 없으며 단일 source of truth로 정리되었다."
+    },
+    {
+      "id": "no-flat-file",
+      "description": "flat components/ProductCard.tsx 파일이 남지 않는다",
+      "result": "PASS",
+      "evidence": "출력 디렉토리에 components/ProductCard.tsx (flat 파일)가 존재하지 않는다. 오직 components/ProductCard/index.tsx만 존재한다."
+    },
+    {
+      "id": "folder-index-tsx",
+      "description": "최종 구조가 ProductCard/index.tsx 패턴을 따른다",
+      "result": "PASS",
+      "evidence": "파일 경로가 components/ProductCard/index.tsx로, PascalCase 폴더명 + index.tsx 패턴을 정확히 따르고 있다."
+    },
+    {
+      "id": "props-interface-suffix",
+      "description": "Props 인터페이스가 ProductCardProps를 유지한다",
+      "result": "PASS",
+      "evidence": "export interface ProductCardProps로 정의되어 있으며 imageUrl, name, price, currency, badge, testId 등의 필드를 포함한다."
+    },
+    {
+      "id": "import-path-consistent",
+      "description": "사용처 import path가 일관된다",
+      "result": "FAIL",
+      "evidence": "출력에 ProductCard를 사용하는 소비자 파일이 포함되어 있지 않다. ProductCard/index.tsx 구조는 일관된 import를 지원하지만, 실제 사용처 파일이 업데이트되었는지 확인할 수 없다. 트랜스크립트도 비어 있어(0 bytes) 프로세스 검증이 불가능하다."
+    },
+    {
+      "id": "visual-preserved",
+      "description": "hover, image, price 등 visual affordance가 보존된다",
+      "result": "PASS",
+      "evidence": "hover: hover:shadow-md와 group-hover:scale-105로 호버 효과 구현. image: Next.js Image 컴포넌트로 aspect-square 이미지 표시, object-cover 적용. price: toLocaleString('ko-KR')로 가격 포맷팅, currency 기본값 '₩'. badge도 absolute 포지션으로 표시된다."
+    },
+    {
+      "id": "no-forbidden-patterns",
+      "description": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "result": "PASS",
+      "evidence": "출력 파일 전체에서 useEffect, fetch(), axios, useQuery, useMutation 호출이 없다. 'use client' 지시문만 있으며 순수 프레젠테이션 컴포넌트로 구현되었다."
+    }
+  ],
+  "summary": "7개 기대사항 중 6개 PASS, 1개 FAIL. ProductCard가 단일 components/ProductCard/index.tsx로 정리되었고, PascalCase 폴더 패턴, ProductCardProps 인터페이스, hover/image/price visual affordance가 모두 보존되었으며, 금지된 데이터 fetching 패턴도 없다. 다만 사용처 import path 일관성은 소비자 파일이 출력에 포함되지 않아 검증할 수 없었다.",
+  "claims": {
+    "pass_count": 6,
+    "fail_count": 1,
+    "total": 7
+  },
+  "eval_feedback": "컴포넌트 구조 정리와 visual affordance 보존은 우수하다. 그러나 사용처 파일이 출력에 포함되지 않아 import path 일관성을 검증할 수 없었다. 트랜스크립트가 비어 있어(0 bytes) 작업 과정도 확인 불가능하다."
+}
