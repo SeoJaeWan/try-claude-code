@@ -1,0 +1,57 @@
+{
+  "eval_id": 4,
+  "eval_name": "productCard-dedup",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "ProductCard 구현이 하나의 source of truth로 정리된다",
+      "passed": true,
+      "evidence": "Only one ProductCard implementation exists: components/common/productCard/index.tsx. No other ProductCard files found in outputs."
+    },
+    {
+      "text": "flat components/ProductCard.tsx 파일이 남지 않는다",
+      "passed": true,
+      "evidence": "No flat ProductCard.tsx file exists in the outputs directory. Only components/common/productCard/index.tsx is present."
+    },
+    {
+      "text": "최종 구조가 ProductCard/index.tsx 패턴을 따른다",
+      "passed": true,
+      "evidence": "File is at components/common/productCard/index.tsx, following the folder/index.tsx pattern."
+    },
+    {
+      "text": "Props 인터페이스가 ProductCardProps를 유지한다",
+      "passed": true,
+      "evidence": "Line 5: 'export interface ProductCardProps' is defined and used in the component signature."
+    },
+    {
+      "text": "사용처 import path가 일관된다",
+      "passed": true,
+      "evidence": "Only one file exists in outputs so there are no import statements to check for inconsistency. The single source is a default export, consistent for consumers."
+    },
+    {
+      "text": "hover, image, price 등 visual affordance가 보존된다",
+      "passed": true,
+      "evidence": "hover: 'hover:shadow-md' and 'group-hover:scale-105'; image: Next.js Image component with src/alt/fill; price: '{currency}{price.toLocaleString(\"ko-KR\")}' rendered in a bold paragraph."
+    },
+    {
+      "text": "useEffect, fetch, axios, useQuery, useMutation 호출이 없다",
+      "passed": true,
+      "evidence": "The component contains no useEffect, fetch, axios, useQuery, or useMutation. Only import is 'next/image'."
+    },
+    {
+      "text": "컴포넌트가 const 화살표 함수로 선언된다",
+      "passed": true,
+      "evidence": "Line 15: 'const ProductCard = ({...}: ProductCardProps) => {' uses const arrow function syntax."
+    },
+    {
+      "text": "컴포넌트 폴더명이 camelCase이다 (productCard)",
+      "passed": true,
+      "evidence": "Folder path is components/common/productCard/ — 'productCard' is camelCase."
+    },
+    {
+      "text": "tcp validate-file이 실행되어 0 violations을 확인했다",
+      "passed": true,
+      "evidence": "Task notification confirms: 'Ran tcp validate-file validation - the canonical file passed all rules (0 violations)'"
+    }
+  ]
+}
