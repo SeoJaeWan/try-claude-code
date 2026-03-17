@@ -136,6 +136,17 @@ test("tcp --help --full은 전체 command contract audit용 JSON을 반환한다
     payload.commands.validateFile.contracts.outputPolicy.entryFilePattern,
     "page.tsx for app pages, index.tsx for other React TSX component entries"
   );
+  assert.equal(payload.commands.validateFile.targetRules[0].commandName, "component");
+  assert.equal(payload.commands.validateFile.targetRules[0].pathRules[0].kind, "pathSegmentCase");
+});
+
+test("tcf --help --full은 fieldResolver와 validateFile target rule도 노출한다", () => {
+  const result = runCli(tcfBin, ["--help", "--full"]);
+
+  assert.equal(result.status, 0);
+  const payload = readJson(result.stdout);
+  assert.equal(payload.commands.apiHook.fieldResolvers[0].source, "namePrefixMap");
+  assert.equal(payload.commands.validateFile.targetRules[0].commandName, "hook");
 });
 
 test("tcp component는 common 또는 domain segment 없는 경로를 거부한다", () => {

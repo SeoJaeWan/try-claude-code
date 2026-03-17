@@ -76,6 +76,8 @@ function createCommandSections(profile, guidePayload, helpPayload) {
     const groups = [
       createGroup("guide", "Guide", guideCommand.guide ?? {}),
       createGroup("contracts", "Contracts", helpCommand.contracts ?? {}),
+      createGroup("fieldResolvers", "Field Resolvers", rawCommand.fieldResolvers ?? []),
+      createGroup("targets", "Validate Targets", rawCommand.targetRules ?? []),
       createGroup("normalization", "Normalization", rawCommand.normalizationRules ?? []),
       createGroup("validators", "Validators", rawCommand.validatorRules ?? []),
       createGroup("render", "Render", renderValue),

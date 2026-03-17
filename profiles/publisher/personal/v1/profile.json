@@ -168,6 +168,281 @@
       "execution": {
         "kind": "analysis"
       },
+      "unsupportedTargetMessage": "Publisher validate-file only supports React page or component entry files declared by the active profile.",
+      "targetRules": [
+        {
+          "commandName": "component",
+          "match": {
+            "pathPatterns": ["app/{pagePath*}/page.tsx"]
+          },
+          "expectedEntryFileName": "page.tsx",
+          "runPlacementValidation": false,
+          "exportPolicy": {
+            "enforceExportNameMatch": false
+          },
+          "pathRules": [
+            {
+              "kind": "pathSegmentCase",
+              "style": "camel",
+              "skipFrameworkSpecialSegments": true,
+              "allowedFileBaseNames": ["page", "index"],
+              "fileNameStyle": "camel",
+              "code": "INVALID_PATH_SEGMENT",
+              "directoryMessage": "Publisher folder names must use camelCase",
+              "fileMessage": "Publisher file names must use camelCase, except reserved entry files like page.tsx and index.tsx"
+            }
+          ],
+          "structureRules": [
+            {
+              "kind": "forbidJsxHelpers",
+              "code": "SAME_FILE_JSX_HELPER",
+              "message": "Publisher component file must not define JSX helpers in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            },
+            {
+              "kind": "forbidSubcomponents",
+              "code": "SAME_FILE_SUBCOMPONENT",
+              "message": "Publisher component file must not define subcomponents in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            }
+          ]
+        },
+        {
+          "commandName": "component",
+          "match": {
+            "pathPatterns": ["{prefix*}/components/{scope}/{parentComponent}/{name}/index.tsx"]
+          },
+          "argMappings": [
+            {
+              "field": "path",
+              "source": "template",
+              "template": "{prefix}/components/{scope}/{parentComponent}/{name}",
+              "normalizePath": true
+            },
+            {
+              "field": "name",
+              "source": "capture",
+              "capture": "name",
+              "transform": "pascal"
+            }
+          ],
+          "expectedEntryFileName": "index.tsx",
+          "exportPolicy": {
+            "expectedNameField": "name"
+          },
+          "pathRules": [
+            {
+              "kind": "pathSegmentCase",
+              "style": "camel",
+              "skipAfterLastSegment": "components",
+              "skipFrameworkSpecialSegments": true,
+              "allowedFileBaseNames": ["page", "index"],
+              "fileNameStyle": "camel",
+              "code": "INVALID_PATH_SEGMENT",
+              "directoryMessage": "Publisher folder names must use camelCase",
+              "fileMessage": "Publisher file names must use camelCase, except reserved entry files like page.tsx and index.tsx"
+            }
+          ],
+          "structureRules": [
+            {
+              "kind": "propsTypeSuffix",
+              "suffix": "Props",
+              "code": "MISSING_PROPS_TYPE",
+              "message": "Component file must define the expected Props interface."
+            },
+            {
+              "kind": "forbidJsxHelpers",
+              "code": "SAME_FILE_JSX_HELPER",
+              "message": "Publisher component file must not define JSX helpers in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            },
+            {
+              "kind": "forbidSubcomponents",
+              "code": "SAME_FILE_SUBCOMPONENT",
+              "message": "Publisher component file must not define subcomponents in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            }
+          ],
+          "ownershipRule": {
+            "kind": "parentOnlyChildReuse",
+            "componentsRoot": "components",
+            "sharedSegment": "common",
+            "entryFileNames": ["index.tsx"],
+            "entryFileName": "index.tsx",
+            "code": "PARENT_ONLY_CHILD_REUSED",
+            "message": "Parent-only child component is imported outside the parent component tree"
+          }
+        },
+        {
+          "commandName": "component",
+          "match": {
+            "pathPatterns": ["{prefix*}/components/{scope}/{name}/index.tsx"]
+          },
+          "argMappings": [
+            {
+              "field": "path",
+              "source": "template",
+              "template": "{prefix}/components/{scope}/{name}",
+              "normalizePath": true
+            },
+            {
+              "field": "name",
+              "source": "capture",
+              "capture": "name",
+              "transform": "pascal"
+            }
+          ],
+          "expectedEntryFileName": "index.tsx",
+          "exportPolicy": {
+            "expectedNameField": "name"
+          },
+          "pathRules": [
+            {
+              "kind": "pathSegmentCase",
+              "style": "camel",
+              "skipAfterLastSegment": "components",
+              "skipFrameworkSpecialSegments": true,
+              "allowedFileBaseNames": ["page", "index"],
+              "fileNameStyle": "camel",
+              "code": "INVALID_PATH_SEGMENT",
+              "directoryMessage": "Publisher folder names must use camelCase",
+              "fileMessage": "Publisher file names must use camelCase, except reserved entry files like page.tsx and index.tsx"
+            }
+          ],
+          "structureRules": [
+            {
+              "kind": "propsTypeSuffix",
+              "suffix": "Props",
+              "code": "MISSING_PROPS_TYPE",
+              "message": "Component file must define the expected Props interface."
+            },
+            {
+              "kind": "forbidJsxHelpers",
+              "code": "SAME_FILE_JSX_HELPER",
+              "message": "Publisher component file must not define JSX helpers in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            },
+            {
+              "kind": "forbidSubcomponents",
+              "code": "SAME_FILE_SUBCOMPONENT",
+              "message": "Publisher component file must not define subcomponents in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            }
+          ],
+          "ownershipRule": {
+            "kind": "parentOnlyChildReuse",
+            "componentsRoot": "components",
+            "sharedSegment": "common",
+            "entryFileNames": ["index.tsx"],
+            "entryFileName": "index.tsx",
+            "code": "PARENT_ONLY_CHILD_REUSED",
+            "message": "Parent-only child component is imported outside the parent component tree"
+          }
+        },
+        {
+          "commandName": "component",
+          "match": {
+            "pathPatterns": ["{path*}/{name}/index.tsx"]
+          },
+          "argMappings": [
+            {
+              "field": "name",
+              "source": "capture",
+              "capture": "name",
+              "transform": "pascal"
+            }
+          ],
+          "expectedEntryFileName": "index.tsx",
+          "runPlacementValidation": false,
+          "exportPolicy": {
+            "expectedNameField": "name"
+          },
+          "pathRules": [
+            {
+              "kind": "pathSegmentCase",
+              "style": "camel",
+              "skipFrameworkSpecialSegments": true,
+              "allowedFileBaseNames": ["page", "index"],
+              "fileNameStyle": "camel",
+              "code": "INVALID_PATH_SEGMENT",
+              "directoryMessage": "Publisher folder names must use camelCase",
+              "fileMessage": "Publisher file names must use camelCase, except reserved entry files like page.tsx and index.tsx"
+            }
+          ],
+          "structureRules": [
+            {
+              "kind": "propsTypeSuffix",
+              "suffix": "Props",
+              "code": "MISSING_PROPS_TYPE",
+              "message": "Component file must define the expected Props interface."
+            },
+            {
+              "kind": "forbidJsxHelpers",
+              "code": "SAME_FILE_JSX_HELPER",
+              "message": "Publisher component file must not define JSX helpers in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            },
+            {
+              "kind": "forbidSubcomponents",
+              "code": "SAME_FILE_SUBCOMPONENT",
+              "message": "Publisher component file must not define subcomponents in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            }
+          ]
+        },
+        {
+          "commandName": "component",
+          "match": {
+            "extensions": [".tsx"],
+            "excludeFileNames": ["page.tsx", "index.tsx"]
+          },
+          "argMappings": [
+            {
+              "field": "name",
+              "source": "fileName",
+              "withoutExtension": true,
+              "transform": "pascal"
+            }
+          ],
+          "expectedEntryFileName": "index.tsx",
+          "runPlacementValidation": false,
+          "exportPolicy": {
+            "expectedNameField": "name"
+          },
+          "pathRules": [
+            {
+              "kind": "pathSegmentCase",
+              "style": "camel",
+              "skipFrameworkSpecialSegments": true,
+              "allowedFileBaseNames": ["page", "index"],
+              "fileNameStyle": "camel",
+              "code": "INVALID_PATH_SEGMENT",
+              "directoryMessage": "Publisher folder names must use camelCase",
+              "fileMessage": "Publisher file names must use camelCase, except reserved entry files like page.tsx and index.tsx"
+            }
+          ],
+          "structureRules": [
+            {
+              "kind": "propsTypeSuffix",
+              "suffix": "Props",
+              "code": "MISSING_PROPS_TYPE",
+              "message": "Component file must define the expected Props interface."
+            },
+            {
+              "kind": "forbidJsxHelpers",
+              "code": "SAME_FILE_JSX_HELPER",
+              "message": "Publisher component file must not define JSX helpers in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            },
+            {
+              "kind": "forbidSubcomponents",
+              "code": "SAME_FILE_SUBCOMPONENT",
+              "message": "Publisher component file must not define subcomponents in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            }
+          ]
+        }
+      ],
       "inputSchema": {
         "required": ["files"],
         "arrays": ["files"]
@@ -330,10 +605,15 @@
           "message": "Path segments must use camelCase"
         },
         {
-          "kind": "publisherComponentPathPolicy",
+          "kind": "pathPatterns",
           "field": "path",
-          "componentsRoot": "components",
-          "sharedSegment": "common"
+          "patterns": [
+            "{prefix*}/components/common/{component}",
+            "{prefix*}/components/{domain}/{component}",
+            "{prefix*}/components/{scope}/{parentComponent}/{component}"
+          ],
+          "code": "INVALID_COMPONENT_PATH",
+          "message": "Publisher component path must live under a components segment using */components/common/{component}, */components/{domain}/{component}, or a direct child under the component folder"
         },
         {
           "kind": "nameCase",

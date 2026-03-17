@@ -280,7 +280,12 @@ function normalizeStringList(rule, spec, normalizations) {
 }
 
 function normalizeUpperField(rule, spec, normalizations) {
-  const rawValue = ensureString(getNestedValue(spec, rule.field), rule.field);
+  const currentValue = getNestedValue(spec, rule.field);
+  if (currentValue === undefined) {
+    return;
+  }
+
+  const rawValue = ensureString(currentValue, rule.field);
   const normalizedValue = rawValue.toUpperCase();
   pushNormalization(
     normalizations,

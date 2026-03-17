@@ -5,8 +5,9 @@ import {
   normalizeCliPath,
   splitCliPath
 } from "./path-utils.mjs";
-import { createCliError, getPolicyValue } from "./recipe-utils.mjs";
-import { detectSpringBasePackage } from "../validators/backend-utils.mjs";
+import { applyFieldResolvers, resolveCommandArgs } from "./command-args-resolver.mjs";
+import { createCliError, getNestedValue, getPolicyValue } from "./recipe-utils.mjs";
+import { matchCliPathPatterns } from "./path-patterns.mjs";
 
 function validateRelativePath(pathValue, code, message) {
   const normalized = normalizeCliPath(pathValue);
@@ -23,7 +24,10 @@ function validateRelativePath(pathValue, code, message) {
     });
   }
 
-  return segments;
+  return {
+    normalized,
+    segments
+  };
 }
 
 function findPathRootMatchIndex(segments, allowedRoots, matchAnySegment = false) {
@@ -39,7 +43,7 @@ function findPathRootMatchIndex(segments, allowedRoots, matchAnySegment = false)
 }
 
 function assertPathRoots(pathValue, allowedRoots, options = {}) {
-  const segments = validateRelativePath(
+  const { segments } = validateRelativePath(
     pathValue,
     "INVALID_PATH",
     "Path must be a relative repo path"
@@ -61,7 +65,7 @@ function assertPathRoots(pathValue, allowedRoots, options = {}) {
 }
 
 function assertPathSegmentCase(pathValue, style, code, message) {
-  const segments = validateRelativePath(pathValue, code, message);
+  const { segments } = validateRelativePath(pathValue, code, message);
   const predicate = style === "lower"
     ? isLowerCasePackageSegment
     : isCamelCaseSegment;
@@ -73,6 +77,26 @@ function assertPathSegmentCase(pathValue, style, code, message) {
         segment
       });
     }
+  }
+}
+
+function assertPathPatterns(pathValue, rule) {
+  const { normalized } = validateRelativePath(
+    pathValue,
+    rule.code ?? "INVALID_PATH",
+    rule.message ?? "Path must be a relative repo path"
+  );
+  const matched = matchCliPathPatterns(rule.patterns ?? [], normalized);
+
+  if (!matched) {
+    throw createCliError(
+      rule.code ?? "INVALID_PATH",
+      rule.message ?? "Path does not match any required pattern.",
+      {
+        path: normalized,
+        patterns: rule.patterns ?? []
+      }
+    );
   }
 }
 
@@ -101,179 +125,96 @@ function assertNamePrefix(name, prefix, code, message) {
   }
 }
 
-function assertHookPathPolicy(pathValue, rule) {
-  const segments = validateRelativePath(
-    pathValue,
-    "INVALID_HOOK_PATH",
-    "Hook path must be a relative repo path"
-  );
-  const expectedBaseSegments = rule.baseSegments ?? ["hooks", "utils"];
-  const [root, bucket, domain, ...rest] = segments;
+function getSelectorKey(rule, args) {
+  const selectorFields = Array.isArray(rule.selectorFields) ? rule.selectorFields : [];
+  if (selectorFields.length === 0) {
+    return null;
+  }
 
-  if (
-    root !== expectedBaseSegments[0] ||
-    bucket !== expectedBaseSegments[1] ||
-    !domain ||
-    rest.length > 0
-  ) {
+  return selectorFields
+    .map((field) => getNestedValue(args, field))
+    .join(":");
+}
+
+function resolveCaseValue(rule, args) {
+  if (!rule.cases) {
+    return rule.defaultValue;
+  }
+
+  const selectorKey = getSelectorKey(rule, args);
+  if (selectorKey && selectorKey in rule.cases) {
+    return rule.cases[selectorKey];
+  }
+
+  return rule.defaultValue;
+}
+
+function assertFieldPattern(value, rule, args) {
+  const patternSource = resolveCaseValue(rule, args) ?? rule.pattern;
+
+  if (!patternSource) {
     throw createCliError(
-      "INVALID_HOOK_PATH",
-      "Custom hook path must be hooks/utils/{domain} or hooks/utils/common",
+      rule.code ?? "INVALID_FIELD_PATTERN",
+      rule.unsupportedMessage ?? "No pattern was configured for this input.",
       {
-        path: pathValue,
-        expectedBaseSegments,
-        sharedSegment: rule.sharedSegment ?? "common"
+        field: rule.field
+      }
+    );
+  }
+
+  const pattern = new RegExp(patternSource);
+  if (!pattern.test(String(value))) {
+    throw createCliError(
+      rule.code ?? "INVALID_FIELD_PATTERN",
+      rule.message ?? `${rule.field} does not match the required pattern.`,
+      {
+        field: rule.field,
+        value,
+        pattern: patternSource
       }
     );
   }
 }
 
-function assertPublisherComponentPath(pathValue, rule) {
-  const segments = validateRelativePath(
-    pathValue,
-    "INVALID_COMPONENT_PATH",
-    "Component path must be a relative repo path"
-  );
-  const componentsRoot = rule.componentsRoot ?? "components";
-  const sharedSegment = rule.sharedSegment ?? "common";
-  const componentsIndex = segments.lastIndexOf(componentsRoot);
-  const [root, scope, componentSegment, ...rest] = componentsIndex === -1
-    ? []
-    : segments.slice(componentsIndex);
+function assertConditionalAllowedValues(value, rule, args) {
+  const allowedValues = resolveCaseValue(rule, args) ?? rule.allowedValues ?? [];
 
-  if (
-    componentsIndex === -1 ||
-    root !== componentsRoot ||
-    !scope ||
-    !componentSegment ||
-    rest.length > 0
-  ) {
+  if (!Array.isArray(allowedValues) || allowedValues.length === 0) {
     throw createCliError(
-      "INVALID_COMPONENT_PATH",
-      "Publisher component path must live under a components segment using */components/common/{component} or */components/{domain}/{component}",
+      rule.code ?? "INVALID_ALLOWED_VALUES",
+      rule.unsupportedMessage ?? "No allowed values were configured for this input.",
       {
-        path: pathValue,
-        componentsRoot,
-        sharedSegment
+        field: rule.field
       }
     );
   }
 
-  if (scope === sharedSegment) {
-    return;
-  }
-}
-
-function assertApiHookPath(pathValue, kind, rule) {
-  const suffix = rule.suffixMap?.[kind] ?? "queries";
-  const segments = validateRelativePath(
-    pathValue,
-    "INVALID_API_PATH",
-    "API hook path must be a relative repo path"
-  );
-  const [root, apisSegment, domain, pathSuffix, ...rest] = segments;
-
-  if (
-    root !== "hooks" ||
-    apisSegment !== "apis" ||
-    !domain ||
-    !pathSuffix ||
-    rest.length > 0
-  ) {
+  if (!allowedValues.includes(value)) {
     throw createCliError(
-      "INVALID_API_PATH",
-      "API hook path must be hooks/apis/{domain}/queries or hooks/apis/{domain}/mutations",
+      rule.code ?? "INVALID_ALLOWED_VALUES",
+      rule.message ?? `${rule.field} has an unsupported value.`,
       {
-        path: pathValue
-      }
-    );
-  }
-
-  if (pathSuffix !== suffix) {
-    throw createCliError(
-      "INVALID_API_PATH",
-      `API hook path must end with ${suffix}`,
-      {
-        path: pathValue,
-        kind
+        field: rule.field,
+        value,
+        allowedValues
       }
     );
   }
 }
 
-function assertApiHookMethodPolicy(kind, method, rule) {
-  if (kind === "query") {
-    if (method !== rule.queryMethod) {
+function assertForbiddenPrefixes(value, rule) {
+  for (const forbiddenPrefix of rule.prefixes ?? []) {
+    if (String(value).startsWith(forbiddenPrefix)) {
       throw createCliError(
-        "INVALID_API_METHOD",
-        `Query API hooks must use ${rule.queryMethod}`,
+        rule.code ?? "INVALID_NAME",
+        rule.message ?? `${rule.field} must not start with ${forbiddenPrefix}`,
         {
-          kind,
-          method
-        }
-      );
-    }
-    return;
-  }
-
-  if (kind === "mutation") {
-    if (!(rule.mutationMethods ?? []).includes(method)) {
-      throw createCliError(
-        "INVALID_API_METHOD",
-        "Mutation API hooks must use POST, PUT, PATCH, or DELETE",
-        {
-          kind,
-          method,
-          allowedMethods: rule.mutationMethods ?? []
-        }
-      );
-    }
-    return;
-  }
-
-  throw createCliError("INVALID_API_METHOD", "Unsupported API hook kind", {
-    kind
-  });
-}
-
-function assertApiHookNamePolicy(name, kind, method, rule) {
-  for (const forbiddenPrefix of rule.forbiddenPrefixes ?? []) {
-    if (name.startsWith(forbiddenPrefix)) {
-      throw createCliError(
-        "INVALID_HOOK_NAME",
-        `API hook name must not start with ${forbiddenPrefix}`,
-        {
-          name,
+          field: rule.field,
+          value,
           forbiddenPrefix
         }
       );
     }
-  }
-
-  const expectedPrefix = kind === "query"
-    ? rule.queryPrefix
-    : rule.mutationPrefixMap?.[method];
-
-  if (!expectedPrefix) {
-    throw createCliError("INVALID_HOOK_NAME", "Unsupported API hook naming policy", {
-      name,
-      kind,
-      method
-    });
-  }
-
-  const pattern = new RegExp(`^${expectedPrefix}[A-Z][A-Za-z0-9]*$`);
-  if (!pattern.test(name)) {
-    throw createCliError(
-      "INVALID_HOOK_NAME",
-      `API hook name must match ${expectedPrefix}*`,
-      {
-        name,
-        kind,
-        method,
-        expectedPrefix
-      }
-    );
   }
 }
 
@@ -291,18 +232,20 @@ function assertForbiddenPatterns(files, patterns) {
 }
 
 async function applyValidatorRule(rule, command, args, files, repoRoot, checks) {
+  const fieldValue = rule.field ? getNestedValue(args, rule.field) : undefined;
+
   if (rule.kind === "pathRoots") {
-    if (args[rule.field]) {
-      assertPathRoots(args[rule.field], rule.allowedRoots, rule);
+    if (fieldValue) {
+      assertPathRoots(fieldValue, rule.allowedRoots, rule);
       checks.push(`${rule.field}.roots=ok`);
     }
     return;
   }
 
   if (rule.kind === "pathSegmentCase") {
-    if (args[rule.field]) {
+    if (fieldValue) {
       assertPathSegmentCase(
-        args[rule.field],
+        fieldValue,
         rule.style,
         rule.code ?? "INVALID_PATH_SEGMENT",
         rule.message ?? `Path segments must use ${rule.style}`
@@ -312,26 +255,18 @@ async function applyValidatorRule(rule, command, args, files, repoRoot, checks) 
     return;
   }
 
-  if (rule.kind === "hookPathPolicy") {
-    if (args[rule.field]) {
-      assertHookPathPolicy(args[rule.field], rule);
-      checks.push(`${rule.field}.hookPathPolicy=ok`);
-    }
-    return;
-  }
-
-  if (rule.kind === "publisherComponentPathPolicy") {
-    if (args[rule.field]) {
-      assertPublisherComponentPath(args[rule.field], rule);
-      checks.push(`${rule.field}.publisherComponentPathPolicy=ok`);
+  if (rule.kind === "pathPatterns") {
+    if (fieldValue) {
+      assertPathPatterns(fieldValue, rule);
+      checks.push(`${rule.field}.pathPatterns=ok`);
     }
     return;
   }
 
   if (rule.kind === "nameCase") {
-    if (args[rule.field]) {
+    if (fieldValue) {
       assertNameCase(
-        args[rule.field],
+        fieldValue,
         rule.style,
         rule.code ?? "INVALID_NAME",
         rule.message ?? `${rule.field} must use ${rule.style}`
@@ -342,12 +277,12 @@ async function applyValidatorRule(rule, command, args, files, repoRoot, checks) 
   }
 
   if (rule.kind === "namePrefix") {
-    if (args[rule.field]) {
+    if (fieldValue) {
       const prefix = rule.prefixKey
         ? getPolicyValue(command, "prefixes", rule.prefixKey, "")
         : rule.prefix;
       assertNamePrefix(
-        args[rule.field],
+        fieldValue,
         prefix,
         rule.code ?? "INVALID_NAME",
         rule.message ?? `${rule.field} must start with ${prefix}`
@@ -357,29 +292,26 @@ async function applyValidatorRule(rule, command, args, files, repoRoot, checks) 
     return;
   }
 
-  if (rule.kind === "apiHookMethodPolicy") {
-    assertApiHookMethodPolicy(args[rule.kindField], args[rule.methodField], rule);
-    checks.push(`${rule.methodField}.apiHookMethodPolicy=ok`);
-    return;
-  }
-
-  if (rule.kind === "apiHookPath") {
-    if (args[rule.field]) {
-      assertApiHookPath(args[rule.field], args[rule.kindField], rule);
-      checks.push(`${rule.field}.apiHookPath=ok`);
+  if (rule.kind === "fieldPattern") {
+    if (fieldValue !== undefined) {
+      assertFieldPattern(fieldValue, rule, args);
+      checks.push(`${rule.field}.pattern=ok`);
     }
     return;
   }
 
-  if (rule.kind === "apiHookNamePolicy") {
-    if (args[rule.field]) {
-      assertApiHookNamePolicy(
-        args[rule.field],
-        args[rule.kindField],
-        args[rule.methodField],
-        rule
-      );
-      checks.push(`${rule.field}.apiHookNamePolicy=ok`);
+  if (rule.kind === "conditionalAllowedValues") {
+    if (fieldValue !== undefined) {
+      assertConditionalAllowedValues(fieldValue, rule, args);
+      checks.push(`${rule.field}.allowed=ok`);
+    }
+    return;
+  }
+
+  if (rule.kind === "forbiddenPrefixes") {
+    if (fieldValue !== undefined) {
+      assertForbiddenPrefixes(fieldValue, rule);
+      checks.push(`${rule.field}.forbiddenPrefixes=clear`);
     }
     return;
   }
@@ -387,23 +319,6 @@ async function applyValidatorRule(rule, command, args, files, repoRoot, checks) 
   if (rule.kind === "forbiddenContentPatterns") {
     assertForbiddenPatterns(files, rule.patterns ?? []);
     checks.push("forbiddenPatterns=clear");
-    return;
-  }
-
-  if (rule.kind === "springBasePackage") {
-    if (!args[rule.field]) {
-      const detectedBasePackage = await detectSpringBasePackage(repoRoot);
-      if (!detectedBasePackage) {
-        throw createCliError(
-          "ROOT_PACKAGE_NOT_FOUND",
-          "Spring root package could not be detected. Provide basePackage in the JSON spec.",
-          {
-            command: command.name
-          }
-        );
-      }
-    }
-    checks.push(`${rule.field}.detectable=true`);
     return;
   }
 
@@ -428,7 +343,8 @@ export async function validateRequest({
   args,
   files,
   repoRoot,
-  collectViolations = false
+  collectViolations = false,
+  resolverContext = {}
 }) {
   const baseCommand = profile.commands?.[commandName];
   const command = baseCommand
@@ -441,15 +357,23 @@ export async function validateRequest({
     return {
       ok: true,
       checks: [],
-      violations: []
+      violations: [],
+      resolvedArgs: args ?? {}
     };
   }
+
+  const { args: resolvedArgs } = await resolveCommandArgs({
+    command,
+    args,
+    repoRoot,
+    context: resolverContext
+  });
 
   const checks = [];
   const violations = [];
   for (const rule of command.validatorRules ?? []) {
     try {
-      await applyValidatorRule(rule, command, args, files, repoRoot, checks);
+      await applyValidatorRule(rule, command, resolvedArgs, files, repoRoot, checks);
     } catch (error) {
       if (!collectViolations) {
         throw error;
@@ -462,6 +386,9 @@ export async function validateRequest({
   return {
     ok: violations.length === 0,
     checks,
-    violations
+    violations,
+    resolvedArgs
   };
 }
+
+export { applyFieldResolvers };

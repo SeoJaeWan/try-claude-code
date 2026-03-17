@@ -54,3 +54,16 @@ test("api mutation hook는 method와 kind 조합도 검증한다", () => {
   assert.equal(payload.ok, false);
   assert.equal(payload.error.code, "INVALID_API_METHOD");
 });
+
+test("apiHook는 method가 없으면 이름 prefix에서 HTTP method를 추론한다", () => {
+  const result = runCli(tcfBin, [
+    "apiHook",
+    "--json",
+    "{\"name\":\"usePostLogin\",\"path\":\"hooks/apis/auth/mutations\",\"kind\":\"mutation\"}"
+  ]);
+
+  assert.equal(result.status, 0);
+  const payload = readJson(result.stdout);
+  assert.equal(payload.ok, true);
+  assert.equal(payload.files[0].path, "hooks/apis/auth/mutations/usePostLogin/index.ts");
+});

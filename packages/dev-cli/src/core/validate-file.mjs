@@ -5,12 +5,13 @@ import path from "node:path";
 import { parse } from "@babel/parser";
 
 import {
-  isCamelCaseSegment,
   isRelativeCliPath,
   normalizeCliPath,
   splitCliPath
 } from "./path-utils.mjs";
-import { applyCaseTransform } from "./recipe-utils.mjs";
+import { createCliError } from "./recipe-utils.mjs";
+import { applyFieldResolvers, resolveCommandArgs } from "./command-args-resolver.mjs";
+import { renderTemplate, matchCliPathPatterns } from "./path-patterns.mjs";
 import { validateRequest } from "./profile-validator.mjs";
 
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx"]);
@@ -24,8 +25,6 @@ const EXCLUDED_DIRECTORIES = new Set([
   "dist",
   "node_modules"
 ]);
-const RESERVED_PUBLISHER_ENTRY_BASENAMES = new Set(["index", "page"]);
-
 function createViolation(code, message, details = {}, suggestion) {
   return {
     code,
@@ -303,314 +302,111 @@ function parseModule(filePath, content) {
   });
 }
 
-function deriveMutationMethod(name) {
-  if (name.startsWith("usePost")) {
-    return "POST";
-  }
-
-  if (name.startsWith("usePut")) {
-    return "PUT";
-  }
-
-  if (name.startsWith("usePatch")) {
-    return "PATCH";
-  }
-
-  if (name.startsWith("useDelete")) {
-    return "DELETE";
-  }
-
-  if (name.startsWith("useGet")) {
-    return "GET";
-  }
-
-  return null;
-}
-
-function hasReactComponentExtension(fileName) {
-  return fileName.endsWith(".tsx") || fileName.endsWith(".jsx");
-}
-
-function getComponentEntryFileName(fileName) {
-  if (fileName.endsWith(".jsx")) {
-    return "index.jsx";
-  }
-
-  return "index.tsx";
-}
-
-function getExpectedComponentName(fileSegments) {
-  const fileName = fileSegments.at(-1) ?? "";
-  const bareName = fileName.replace(/\.[^.]+$/, "");
-
-  if (bareName === "index") {
-    const parentSegment = fileSegments.at(-2);
-    return parentSegment ? applyCaseTransform(parentSegment, "pascal") : null;
-  }
-
-  return bareName ? applyCaseTransform(bareName, "pascal") : null;
-}
-
 function isFrameworkSpecialPathSegment(segment) {
   return segment.startsWith("(") || segment.startsWith("[") || segment.startsWith("@");
 }
 
-function isAllowedPublisherFileName(segment) {
-  const extension = path.extname(segment);
-  const baseName = extension ? segment.slice(0, -extension.length) : segment;
-
-  if (RESERVED_PUBLISHER_ENTRY_BASENAMES.has(baseName)) {
-    return true;
+function resolveExpectedEntryFileName(rule, context) {
+  if (!rule.expectedEntryFileName) {
+    return null;
   }
 
-  return isCamelCaseSegment(baseName);
+  if (typeof rule.expectedEntryFileName === "string") {
+    return rule.expectedEntryFileName;
+  }
+
+  if (rule.expectedEntryFileName.source === "fileName") {
+    return context.fileName;
+  }
+
+  throw createCliError(
+    "INVALID_RECIPE",
+    "Unsupported expected entry file resolver.",
+    {
+      expectedEntryFileName: rule.expectedEntryFileName
+    }
+  );
 }
 
-function shouldValidatePublisherPathSegment(segments, segmentIndex, componentsIndex) {
-  const isFileName = segmentIndex === segments.length - 1;
-  if (isFileName) {
-    return true;
+function matchesFileRule(rule, normalizedFilePath) {
+  const fileName = splitCliPath(normalizedFilePath).at(-1) ?? "";
+  const extension = path.extname(fileName);
+  const match = rule.match ?? {};
+
+  if (match.extensions?.length && !match.extensions.includes(extension)) {
+    return null;
   }
 
-  if (componentsIndex === -1) {
-    return true;
+  if (match.fileNames?.length && !match.fileNames.includes(fileName)) {
+    return null;
   }
 
-  return segmentIndex < componentsIndex;
-}
-
-function getPublisherPathCaseViolations(normalizedFilePath) {
-  const segments = splitCliPath(normalizedFilePath);
-  const componentsIndex = segments.lastIndexOf("components");
-  const violations = [];
-
-  for (const [segmentIndex, segment] of segments.entries()) {
-    if (!shouldValidatePublisherPathSegment(segments, segmentIndex, componentsIndex)) {
-      continue;
-    }
-
-    if (isFrameworkSpecialPathSegment(segment)) {
-      continue;
-    }
-
-    const isFileName = segmentIndex === segments.length - 1;
-    const isValid = isFileName
-      ? isAllowedPublisherFileName(segment)
-      : isCamelCaseSegment(segment);
-
-    if (isValid) {
-      continue;
-    }
-
-    violations.push(
-      createViolation(
-        "INVALID_PATH_SEGMENT",
-        isFileName
-          ? "Publisher file names must use camelCase, except reserved entry files like page.tsx and index.tsx"
-          : "Publisher folder names must use camelCase",
-        {
-          file: normalizedFilePath,
-          segment
-        }
-      )
-    );
+  if (match.excludeFileNames?.length && match.excludeFileNames.includes(fileName)) {
+    return null;
   }
 
-  return violations;
-}
-
-function inferPublisherTarget(normalizedFilePath, fileSegments) {
-  const fileName = fileSegments.at(-1) ?? "";
-  const componentsIndex = fileSegments.lastIndexOf("components");
-  const isPageEntry = fileName === "page.tsx" || fileName === "page.jsx";
-  const isReactComponentFile = hasReactComponentExtension(fileName);
-
-  if (isPageEntry) {
-    return {
-      commandName: "component",
-      expectedEntryFileName: fileName,
-      expectedName: null,
-      validationArgs: {},
-      enforceExportNameMatch: false,
-      requirePropsType: false,
-      runPlacementValidation: false,
-      isDirectChild: false,
-      parentBaseDir: null,
-      violations: []
-    };
-  }
-
-  if (componentsIndex === -1) {
-    return {
-      commandName: "component",
-      expectedEntryFileName: isReactComponentFile ? getComponentEntryFileName(fileName) : null,
-      expectedName: isReactComponentFile ? getExpectedComponentName(fileSegments) : null,
-      validationArgs: {},
-      enforceExportNameMatch: isReactComponentFile,
-      requirePropsType: isReactComponentFile,
-      runPlacementValidation: false,
-      isDirectChild: false,
-      parentBaseDir: null,
-      violations: []
-    };
-  }
-
-  const scopedFileSegments = fileSegments.slice(componentsIndex);
-  const scopedDirSegments = scopedFileSegments.slice(0, -1);
-  const fullDirSegments = fileSegments.slice(0, -1);
-  const violations = [];
-  const expectedName = scopedDirSegments.at(-1)
-    ? applyCaseTransform(scopedDirSegments.at(-1), "pascal")
-    : null;
-
-  if (scopedDirSegments.length < 3 || scopedDirSegments.length > 4) {
-    violations.push(
-      createViolation(
-        "INVALID_COMPONENT_ENTRY_PATH",
-        "Publisher component file must live at */components/common/{component}/index.tsx, */components/{domain}/{component}/index.tsx, or a direct child under the component folder",
-        {
-          file: normalizedFilePath
-        }
-      )
-    );
+  if (match.pathPatterns?.length) {
+    return matchCliPathPatterns(match.pathPatterns, normalizedFilePath);
   }
 
   return {
-    commandName: "component",
-    expectedEntryFileName: getComponentEntryFileName(fileName),
-    expectedName,
-    enforceExportNameMatch: true,
-    requirePropsType: true,
-    runPlacementValidation: true,
-    validationArgs: {
-      name: expectedName,
-      path: scopedDirSegments.join("/")
+    pattern: null,
+    path: normalizedFilePath,
+    captures: {}
+  };
+}
+
+async function buildValidationTarget(profile, rule, normalizedFilePath, captures, repoRoot) {
+  const baseArgs = (await applyFieldResolvers({
+    args: {},
+    resolvers: rule.argMappings ?? [],
+    repoRoot,
+    context: {
+      captures,
+      filePath: normalizedFilePath
     },
-    isDirectChild: scopedDirSegments.length === 4,
-    parentBaseDir: scopedDirSegments.length >= 4
-      ? fullDirSegments.slice(0, -1).join("/")
-      : fullDirSegments.join("/"),
-    violations
-  };
-}
-
-function inferFrontendTarget(normalizedFilePath, fileSegments) {
-  const hooksIndex = fileSegments.lastIndexOf("hooks");
-  if (hooksIndex === -1) {
-    return {
-      commandName: null,
-      expectedEntryFileName: null,
-      expectedName: null,
-      validationArgs: {},
-      violations: [
-        createViolation(
-          "UNSUPPORTED_VALIDATION_TARGET",
-          "Frontend validate-file only supports hooks/utils/* and hooks/apis/* files",
-          {
-            file: normalizedFilePath
-          }
-        )
-      ]
-    };
-  }
-
-  const scopedFileSegments = fileSegments.slice(hooksIndex);
-  const scopedDirSegments = scopedFileSegments.slice(0, -1);
-
-  if (scopedDirSegments[1] === "utils") {
-    const expectedName = scopedDirSegments.at(-1) ?? null;
-    const violations = [];
-
-    if (scopedDirSegments.length !== 4) {
-      violations.push(
-        createViolation(
-          "INVALID_HOOK_ENTRY_PATH",
-          "Custom hook file must live at hooks/utils/{domain}/{hookName}/index.ts",
-          {
-            file: normalizedFilePath
-          }
-        )
-      );
-    }
-
-    return {
-      commandName: "hook",
-      expectedEntryFileName: "index.ts",
-      expectedName,
-      validationArgs: {
-        name: expectedName,
-        path: scopedDirSegments.slice(0, -1).join("/")
-      },
-      violations
-    };
-  }
-
-  if (scopedDirSegments[1] === "apis") {
-    const expectedName = scopedDirSegments.at(-1) ?? null;
-    const kindSegment = scopedDirSegments[3];
-    const kind = kindSegment === "queries"
-      ? "query"
-      : kindSegment === "mutations"
-        ? "mutation"
-        : null;
-    const violations = [];
-
-    if (scopedDirSegments.length !== 5) {
-      violations.push(
-        createViolation(
-          "INVALID_API_HOOK_ENTRY_PATH",
-          "API hook file must live at hooks/apis/{domain}/{queries|mutations}/{hookName}/index.ts",
-          {
-            file: normalizedFilePath
-          }
-        )
-      );
-    }
-
-    if (!kind) {
-      violations.push(
-        createViolation(
-          "INVALID_API_KIND_SEGMENT",
-          "API hook path must use queries or mutations before the hook name",
-          {
-            file: normalizedFilePath
-          }
-        )
-      );
-    }
-
-    return {
-      commandName: "apiHook",
-      expectedEntryFileName: "index.ts",
-      expectedName,
-      validationArgs: {
-        kind,
-        method: kind === "query" ? "GET" : deriveMutationMethod(expectedName ?? ""),
-        name: expectedName,
-        path: scopedDirSegments.slice(0, -1).join("/")
-      },
-      violations
-    };
-  }
+    overwrite: true
+  })).args;
+  const command = profile.commands?.[rule.commandName];
+  const resolvedCommand = command
+    ? {
+        name: rule.commandName,
+        ...command
+      }
+    : null;
+  const resolvedArgs = resolvedCommand
+    ? (await resolveCommandArgs({
+        command: resolvedCommand,
+        args: baseArgs,
+        repoRoot,
+        context: {
+          captures,
+          filePath: normalizedFilePath
+        }
+      })).args
+    : baseArgs;
 
   return {
-    commandName: null,
-    expectedEntryFileName: null,
-    expectedName: null,
-    validationArgs: {},
-    violations: [
-      createViolation(
-        "UNSUPPORTED_VALIDATION_TARGET",
-        "Frontend validate-file only supports hooks/utils/* and hooks/apis/* files",
-        {
-          file: normalizedFilePath
-        }
-      )
-    ]
+    file: normalizedFilePath,
+    commandName: rule.commandName ?? null,
+    expectedEntryFileName: resolveExpectedEntryFileName(rule, {
+      captures,
+      fileName: splitCliPath(normalizedFilePath).at(-1) ?? ""
+    }),
+    expectedName: rule.exportPolicy?.expectedNameField
+      ? resolvedArgs[rule.exportPolicy.expectedNameField] ?? null
+      : null,
+    validationArgs: resolvedArgs,
+    exportPolicy: rule.exportPolicy ?? {},
+    structureRules: rule.structureRules ?? [],
+    pathRules: rule.pathRules ?? [],
+    ownershipRule: rule.ownershipRule ?? null,
+    runPlacementValidation: rule.runPlacementValidation !== false,
+    violations: []
   };
 }
 
-function inferValidationTarget(role, rawFilePath) {
+async function inferValidationTarget(profile, rawFilePath, repoRoot) {
   const normalizedFilePath = normalizeCliPath(rawFilePath);
   const violations = [];
 
@@ -631,45 +427,66 @@ function inferValidationTarget(role, rawFilePath) {
       expectedEntryFileName: null,
       expectedName: null,
       validationArgs: {},
+      exportPolicy: {},
+      structureRules: [],
+      pathRules: [],
+      ownershipRule: null,
       violations
     };
   }
 
-  const segments = splitCliPath(normalizedFilePath);
-  const target = role === "publisher"
-    ? inferPublisherTarget(normalizedFilePath, segments)
-    : role === "frontend"
-      ? inferFrontendTarget(normalizedFilePath, segments)
-      : {
-          commandName: null,
-          expectedEntryFileName: null,
-          expectedName: null,
-          validationArgs: {},
-          violations: [
-            createViolation(
-              "UNSUPPORTED_VALIDATION_TARGET",
-              "validate-file is only available for tcp and tcf",
-              {
-                file: normalizedFilePath
-              }
-            )
-          ]
-        };
+  const validateCommand = profile.commands?.validateFile ?? {};
+  const targetRules = validateCommand.targetRules ?? [];
+
+  for (const rule of targetRules) {
+    const matched = matchesFileRule(rule, normalizedFilePath);
+    if (!matched) {
+      continue;
+    }
+
+    const target = await buildValidationTarget(
+      profile,
+      rule,
+      normalizedFilePath,
+      matched.captures,
+      repoRoot
+    );
+
+    return {
+      file: normalizedFilePath,
+      ...target,
+      violations: [...violations, ...(target.violations ?? [])]
+    };
+  }
 
   return {
     file: normalizedFilePath,
-    ...target,
-    violations: [...violations, ...(target.violations ?? [])]
+    commandName: null,
+    expectedEntryFileName: null,
+    expectedName: null,
+    validationArgs: {},
+    exportPolicy: {},
+    structureRules: [],
+    pathRules: [],
+    ownershipRule: null,
+    violations: [
+      ...violations,
+      createViolation(
+        "UNSUPPORTED_VALIDATION_TARGET",
+        validateCommand.unsupportedTargetMessage ?? "validate-file target is not supported by the active profile.",
+        {
+          file: normalizedFilePath
+        }
+      )
+    ]
   };
 }
 
 function getNamedDefaultExportViolations({
-  commandName,
   defaultExport,
   expectedName,
   typeNames,
-  enforceExportNameMatch = true,
-  requirePropsType = commandName === "component"
+  enforceExportNameMatch = true
 }) {
   const violations = [];
 
@@ -754,21 +571,6 @@ function getNamedDefaultExportViolations({
     );
   }
 
-  if (requirePropsType && expectedName) {
-    const expectedPropsType = `${expectedName}Props`;
-    if (!typeNames.has(expectedPropsType)) {
-      violations.push(
-        createViolation(
-          "MISSING_PROPS_TYPE",
-          `Component file must define ${expectedPropsType}`,
-          {
-            expectedPropsType
-          }
-        )
-      );
-    }
-  }
-
   return violations;
 }
 
@@ -799,135 +601,183 @@ function getForbiddenPatternViolations(filePath, content, patterns) {
     ));
 }
 
-function getTopLevelPublisherViolations(topLevelFunctions, expectedName, defaultExport) {
-  const violations = [];
-  const entryName = defaultExport?.name ?? expectedName ?? null;
+function createRuleSuggestion(rule, values) {
+  if (!rule.suggestionTemplate) {
+    return undefined;
+  }
 
-  for (const declaration of topLevelFunctions.values()) {
-    if (declaration.name === entryName || !functionReturnsJsx(declaration.node)) {
+  return renderTemplate(rule.suggestionTemplate, values);
+}
+
+function collectStructureDeclarations(metadata, includeNested) {
+  const declarations = [...metadata.topLevelFunctions.values()];
+
+  if (!includeNested || !metadata.defaultExport?.target?.node) {
+    return declarations;
+  }
+
+  return [
+    ...declarations,
+    ...collectNestedFunctionLikeDeclarations(metadata.defaultExport.target.node.body)
+  ];
+}
+
+function getStructureRuleViolations(metadata, expectedName, filePath, rules = []) {
+  const violations = [];
+  const entryName = metadata.defaultExport?.name ?? expectedName ?? null;
+
+  for (const rule of rules) {
+    if (rule.kind === "propsTypeSuffix") {
+      if (!expectedName) {
+        continue;
+      }
+
+      const expectedPropsType = `${expectedName}${rule.suffix ?? "Props"}`;
+      if (!metadata.typeNames.has(expectedPropsType)) {
+        violations.push(
+          createViolation(
+            rule.code ?? "MISSING_PROPS_TYPE",
+            rule.message ?? `Entry file must define ${expectedPropsType}`,
+            {
+              expectedPropsType,
+              file: filePath
+            }
+          )
+        );
+      }
       continue;
     }
 
-    violations.push(
-      createViolation(
-        isPascalCaseName(declaration.name)
-          ? "SAME_FILE_SUBCOMPONENT"
-          : "SAME_FILE_JSX_HELPER",
-        isPascalCaseName(declaration.name)
-          ? "Publisher component file must not define additional top-level subcomponents"
-          : "Publisher component file must not define additional top-level JSX helpers",
-        {
-          component: entryName,
-          name: declaration.name
-        },
-        entryName
-          ? `Move ${declaration.name} into its own component folder under ${entryName}`
-          : `Move ${declaration.name} into its own file`
-      )
-    );
+    const declarations = collectStructureDeclarations(metadata, rule.includeNested !== false);
+    for (const declaration of declarations) {
+      if (declaration.name === entryName) {
+        continue;
+      }
+
+      let matches = false;
+      if (rule.kind === "forbidAdditionalHooks") {
+        matches = declaration.name.startsWith(rule.prefix ?? "use");
+      } else if (rule.kind === "forbidSubcomponents") {
+        matches = functionReturnsJsx(declaration.node) && isPascalCaseName(declaration.name);
+      } else if (rule.kind === "forbidJsxHelpers") {
+        matches = functionReturnsJsx(declaration.node) && !isPascalCaseName(declaration.name);
+      } else if (rule.kind === "forbidReactComponents") {
+        matches = functionReturnsJsx(declaration.node) && isPascalCaseName(declaration.name);
+      } else {
+        continue;
+      }
+
+      if (!matches) {
+        continue;
+      }
+
+      violations.push(
+        createViolation(
+          rule.code ?? "STRUCTURE_RULE_VIOLATION",
+          rule.message ?? "Entry file violates a structure rule.",
+          {
+            entryName,
+            file: filePath,
+            name: declaration.name
+          },
+          createRuleSuggestion(rule, {
+            entryName: entryName ?? "",
+            expectedName: expectedName ?? "",
+            filePath,
+            name: declaration.name
+          })
+        )
+      );
+    }
   }
 
   return violations;
 }
 
-function getPublisherStructureViolations(defaultExport, expectedName) {
-  if (!defaultExport?.target?.node) {
-    return [];
+function isAllowedFileName(segment, rule) {
+  if ((rule.allowedFileNames ?? []).includes(segment)) {
+    return true;
   }
 
-  const nestedViolations = [];
-  const nestedDeclarations = collectNestedFunctionLikeDeclarations(defaultExport.target.node.body);
+  const extension = path.extname(segment);
+  const baseName = extension ? segment.slice(0, -extension.length) : segment;
+  if ((rule.allowedFileBaseNames ?? []).includes(baseName)) {
+    return true;
+  }
 
-  for (const declaration of nestedDeclarations) {
-    if (!functionReturnsJsx(declaration.node)) {
+  const style = rule.fileNameStyle ?? rule.style;
+  if (style === "camel") {
+    return /^[a-z][A-Za-z0-9]*$/.test(baseName);
+  }
+
+  if (style === "lower") {
+    return /^[a-z][a-z0-9]*$/.test(baseName);
+  }
+
+  return true;
+}
+
+function shouldValidatePathRuleSegment(segments, segmentIndex, rule) {
+  const isFileName = segmentIndex === segments.length - 1;
+  if (isFileName) {
+    return rule.includeFileName !== false;
+  }
+
+  if (!rule.skipAfterLastSegment) {
+    return true;
+  }
+
+  const skipIndex = segments.lastIndexOf(rule.skipAfterLastSegment);
+  if (skipIndex === -1) {
+    return true;
+  }
+
+  return segmentIndex < skipIndex;
+}
+
+function getPathRuleViolations(normalizedFilePath, rules = []) {
+  const violations = [];
+  const segments = splitCliPath(normalizedFilePath);
+
+  for (const rule of rules) {
+    if (rule.kind !== "pathSegmentCase") {
       continue;
     }
 
-    nestedViolations.push(
-      createViolation(
-        isPascalCaseName(declaration.name)
-          ? "SAME_FILE_SUBCOMPONENT"
-          : "SAME_FILE_JSX_HELPER",
-        isPascalCaseName(declaration.name)
-          ? "Publisher component file must not define nested subcomponents in the same file"
-          : "Publisher component file must not define nested JSX helpers in the same file",
-        {
-          component: defaultExport.name ?? expectedName,
-          name: declaration.name
-        },
-        defaultExport.name ?? expectedName
-          ? `Move ${declaration.name} into its own component folder under ${defaultExport.name ?? expectedName}`
-          : `Move ${declaration.name} into its own file`
-      )
-    );
-  }
+    const predicate = rule.style === "lower"
+      ? (segment) => /^[a-z][a-z0-9]*$/.test(segment)
+      : (segment) => /^[a-z][A-Za-z0-9]*$/.test(segment);
 
-  return nestedViolations;
-}
-
-function classifyHookDeclarationViolation(name, entryName, node) {
-  if (name === entryName) {
-    return null;
-  }
-
-  if (name.startsWith("use")) {
-    return createViolation(
-      "ADDITIONAL_HOOK_DECLARATION",
-      "Hook entry file must not define additional hooks",
-      {
-        entryName,
-        name
+    for (const [segmentIndex, segment] of segments.entries()) {
+      if (!shouldValidatePathRuleSegment(segments, segmentIndex, rule)) {
+        continue;
       }
-    );
-  }
 
-  if (functionReturnsJsx(node)) {
-    return createViolation(
-      isPascalCaseName(name)
-        ? "REACT_COMPONENT_IN_HOOK_FILE"
-        : "JSX_HELPER_IN_HOOK_FILE",
-      isPascalCaseName(name)
-        ? "Hook entry file must not define React components"
-        : "Hook entry file must not define JSX-returning helpers",
-      {
-        entryName,
-        name
+      if (rule.skipFrameworkSpecialSegments !== false && isFrameworkSpecialPathSegment(segment)) {
+        continue;
       }
-    );
-  }
 
-  return null;
-}
+      const isFileName = segmentIndex === segments.length - 1;
+      const isValid = isFileName
+        ? isAllowedFileName(segment, rule)
+        : predicate(segment);
 
-function getFrontendStructureViolations(defaultExport, expectedName, topLevelFunctions) {
-  const violations = [];
+      if (isValid) {
+        continue;
+      }
 
-  for (const declaration of topLevelFunctions.values()) {
-    const violation = classifyHookDeclarationViolation(
-      declaration.name,
-      expectedName,
-      declaration.node
-    );
-
-    if (violation) {
-      violations.push(violation);
-    }
-  }
-
-  if (!defaultExport?.target?.node) {
-    return violations;
-  }
-
-  const nestedDeclarations = collectNestedFunctionLikeDeclarations(defaultExport.target.node.body);
-  for (const declaration of nestedDeclarations) {
-    const violation = classifyHookDeclarationViolation(
-      declaration.name,
-      expectedName,
-      declaration.node
-    );
-
-    if (violation) {
-      violations.push(violation);
+      violations.push(
+        createViolation(
+          rule.code ?? "INVALID_PATH_SEGMENT",
+          isFileName
+            ? rule.fileMessage ?? rule.message ?? "File name does not match the required case policy."
+            : rule.directoryMessage ?? rule.message ?? "Directory name does not match the required case policy.",
+          {
+            file: normalizedFilePath,
+            segment
+          }
+        )
+      );
     }
   }
 
@@ -1165,20 +1015,61 @@ async function buildImportIndex(repoRoot, configCache) {
   return importIndex;
 }
 
-function getPublisherOwnershipCandidates({
-  filePath,
-  isDirectChild,
-  parentBaseDir,
-  resolvedImports
-}) {
-  if (isDirectChild) {
-    return [filePath];
+function createSuggestedSharedComponentPath(childPath, ownershipRule) {
+  const segments = splitCliPath(childPath);
+  const componentsRoot = ownershipRule?.componentsRoot ?? "components";
+  const sharedSegment = ownershipRule?.sharedSegment ?? "common";
+  const entryFileName = ownershipRule?.entryFileName ?? "index.tsx";
+  const componentsIndex = segments.lastIndexOf(componentsRoot);
+  const childName = segments.at(-2);
+
+  if (componentsIndex === -1 || !childName) {
+    return childName
+      ? `${componentsRoot}/${sharedSegment}/${childName}/${entryFileName}`
+      : `${componentsRoot}/${sharedSegment}/${entryFileName}`;
   }
 
-  return resolvedImports.filter((importPath) => {
+  return [
+    ...segments.slice(0, componentsIndex + 1),
+    sharedSegment,
+    childName,
+    entryFileName
+  ].join("/");
+}
+
+function getOwnershipContext(filePath, ownershipRule, resolvedImports) {
+  if (!ownershipRule || ownershipRule.kind !== "parentOnlyChildReuse") {
+    return {
+      ownershipCandidates: [],
+      parentBaseDir: null
+    };
+  }
+
+  const fileSegments = splitCliPath(filePath);
+  const componentsRoot = ownershipRule.componentsRoot ?? "components";
+  const componentsIndex = fileSegments.lastIndexOf(componentsRoot);
+  const fullDirSegments = fileSegments.slice(0, -1);
+  const scopedDirSegments = componentsIndex === -1
+    ? []
+    : fileSegments.slice(componentsIndex, -1);
+  const entryFileNames = ownershipRule.entryFileNames ?? ["index.tsx"];
+  const isDirectChild = scopedDirSegments.length === 4;
+  const parentBaseDir = scopedDirSegments.length >= 4
+    ? fullDirSegments.slice(0, -1).join("/")
+    : fullDirSegments.join("/");
+
+  if (isDirectChild) {
+    return {
+      ownershipCandidates: [filePath],
+      parentBaseDir
+    };
+  }
+
+  const ownershipCandidates = resolvedImports.filter((importPath) => {
     const importSegments = splitCliPath(importPath);
     const parentSegments = splitCliPath(parentBaseDir);
-    if (importSegments.at(-1) !== "index.tsx") {
+
+    if (!entryFileNames.includes(importSegments.at(-1) ?? "")) {
       return false;
     }
 
@@ -1188,29 +1079,18 @@ function getPublisherOwnershipCandidates({
 
     return importSegments.slice(0, parentSegments.length).join("/") === parentBaseDir;
   });
-}
 
-function createSuggestedSharedComponentPath(childPath) {
-  const segments = splitCliPath(childPath);
-  const componentsIndex = segments.lastIndexOf("components");
-  const childName = segments.at(-2);
-
-  if (componentsIndex === -1 || !childName) {
-    return childName ? `components/common/${childName}/index.tsx` : "components/common/index.tsx";
-  }
-
-  return [
-    ...segments.slice(0, componentsIndex + 1),
-    "common",
-    childName,
-    "index.tsx"
-  ].join("/");
+  return {
+    ownershipCandidates,
+    parentBaseDir
+  };
 }
 
 function createOwnershipViolations({
   ownershipCandidates,
   importIndex,
-  parentBaseDir
+  parentBaseDir,
+  ownershipRule
 }) {
   const violations = [];
 
@@ -1222,17 +1102,29 @@ function createOwnershipViolations({
       continue;
     }
 
-    const suggestedPath = createSuggestedSharedComponentPath(childPath);
+    const suggestedPath = ownershipRule?.suggestionTemplate
+      ? renderTemplate(ownershipRule.suggestionTemplate, {
+          childName: splitCliPath(childPath).at(-2) ?? "",
+          childPath
+        }, {
+          normalizePath: true
+        })
+      : createSuggestedSharedComponentPath(childPath, ownershipRule);
 
     violations.push(
       createViolation(
-        "PARENT_ONLY_CHILD_REUSED",
-        "Parent-only child component is imported outside the parent component tree",
+        ownershipRule?.code ?? "PARENT_ONLY_CHILD_REUSED",
+        ownershipRule?.message ?? "Parent-only child component is imported outside the parent component tree",
         {
           childPath,
           importers
         },
-        `Move ${childPath} to ${suggestedPath}`
+        ownershipRule?.moveMessageTemplate
+          ? renderTemplate(ownershipRule.moveMessageTemplate, {
+              childPath,
+              suggestedPath
+            })
+          : `Move ${childPath} to ${suggestedPath}`
       )
     );
   }
@@ -1241,13 +1133,12 @@ function createOwnershipViolations({
 }
 
 async function analyzeSingleFile({
-  role,
   profile,
   filePath,
   repoRoot,
   configCache
 }) {
-  const target = inferValidationTarget(role, filePath);
+  const target = await inferValidationTarget(profile, filePath, repoRoot);
   const normalizedFilePath = target.file;
   const result = {
     file: normalizedFilePath,
@@ -1272,9 +1163,7 @@ async function analyzeSingleFile({
     );
   }
 
-  if (role === "publisher") {
-    result.violations.push(...getPublisherPathCaseViolations(normalizedFilePath));
-  }
+  result.violations.push(...getPathRuleViolations(normalizedFilePath, target.pathRules));
 
   if (!target.commandName) {
     result.ok = result.violations.length === 0;
@@ -1370,35 +1259,20 @@ async function analyzeSingleFile({
   const metadata = collectProgramMetadata(ast);
   result.violations.push(
     ...getNamedDefaultExportViolations({
-      commandName: target.commandName,
       defaultExport: metadata.defaultExport,
       expectedName: target.expectedName,
       typeNames: metadata.typeNames,
-      enforceExportNameMatch: target.enforceExportNameMatch,
-      requirePropsType: target.requirePropsType
+      enforceExportNameMatch: target.exportPolicy.enforceExportNameMatch !== false
     })
   );
-
-  if (target.commandName === "component") {
-    result.violations.push(
-      ...getTopLevelPublisherViolations(
-        metadata.topLevelFunctions,
-        target.expectedName,
-        metadata.defaultExport
-      )
-    );
-    result.violations.push(
-      ...getPublisherStructureViolations(metadata.defaultExport, target.expectedName)
-    );
-  } else {
-    result.violations.push(
-      ...getFrontendStructureViolations(
-        metadata.defaultExport,
-        target.expectedName,
-        metadata.topLevelFunctions
-      )
-    );
-  }
+  result.violations.push(
+    ...getStructureRuleViolations(
+      metadata,
+      target.expectedName,
+      normalizedFilePath,
+      target.structureRules
+    )
+  );
 
   const resolvedImports = await collectResolvedImports({
     configCache,
@@ -1407,21 +1281,19 @@ async function analyzeSingleFile({
     repoRoot
   });
 
-  result._ownershipCandidates = target.commandName === "component"
-    ? getPublisherOwnershipCandidates({
-        filePath: normalizedFilePath,
-        isDirectChild: target.isDirectChild,
-        parentBaseDir: target.parentBaseDir,
-        resolvedImports
-      })
-    : [];
-  result._parentBaseDir = target.parentBaseDir ?? null;
+  const ownershipContext = getOwnershipContext(
+    normalizedFilePath,
+    target.ownershipRule,
+    resolvedImports
+  );
+  result._ownershipCandidates = ownershipContext.ownershipCandidates;
+  result._parentBaseDir = ownershipContext.parentBaseDir;
+  result._ownershipRule = target.ownershipRule;
   result.ok = result.violations.length === 0;
   return result;
 }
 
 export async function validateFiles({
-  role,
   profile,
   filePaths,
   repoRoot
@@ -1435,19 +1307,15 @@ export async function validateFiles({
         configCache,
         filePath,
         profile,
-        repoRoot,
-        role
+        repoRoot
       })
     );
   }
 
-  if (
-    role === "publisher" &&
-    results.some((result) => result._ownershipCandidates?.length > 0)
-  ) {
+  if (results.some((result) => result._ownershipCandidates?.length > 0)) {
     const importIndex = await buildImportIndex(repoRoot, configCache);
     for (const result of results) {
-      if (!result._ownershipCandidates?.length || !result._parentBaseDir) {
+      if (!result._ownershipCandidates?.length || !result._parentBaseDir || !result._ownershipRule) {
         continue;
       }
 
@@ -1455,6 +1323,7 @@ export async function validateFiles({
         ...createOwnershipViolations({
           importIndex,
           ownershipCandidates: result._ownershipCandidates,
+          ownershipRule: result._ownershipRule,
           parentBaseDir: result._parentBaseDir
         })
       );
