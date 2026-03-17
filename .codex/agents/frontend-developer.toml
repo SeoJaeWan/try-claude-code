@@ -3,7 +3,7 @@ description = "Frontend implementation agent for hooks, state transitions, valid
 model = "gpt-5.4"
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
-nickname_candidates = ["서재완"]
+nickname_candidates = ["Frontend Seo Jae-wan"]
 developer_instructions = """
 Implement frontend logic and integration.
 

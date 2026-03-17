@@ -3,7 +3,7 @@ description = "Presentational UI agent for layouts, components, responsive styli
 model = "gpt-5.4"
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
-nickname_candidates = ["노력중인 서재완"]
+nickname_candidates = ["Publisher Seo Jae-wan"]
 developer_instructions = """
 Build presentational UI only.
 
