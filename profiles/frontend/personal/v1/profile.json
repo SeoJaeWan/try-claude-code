@@ -421,7 +421,10 @@
             "contracts": {
                 "inputShape": {
                     "filesField": "files[]",
-                    "acceptedModes": ["positional", "json"]
+                    "filesModes": ["positional", "json"],
+                    "rootField": "root",
+                    "rootModes": ["--root", "json"],
+                    "acceptedModes": ["positional", "json", "--root"]
                 },
                 "pathPolicy": {
                     "requiredPatterns": [
@@ -449,7 +452,7 @@
             "guide": {
                 "목적": "기존 훅 파일이 경로와 AST 규칙을 지키는지 검증한다.",
                 "입력규칙": [
-                    "파일 경로 1개 이상을 positional 또는 files 배열 JSON으로 전달한다."
+                    "파일 경로 1개 이상을 positional 또는 files 배열 JSON으로 전달하거나, root 경로를 넘겨 해당 디렉터리 아래의 검증 대상 훅 파일을 모두 탐색한다."
                 ],
                 "출력규칙": [
                     "results 배열로 파일별 위반 목록을 반환한다."
@@ -556,12 +559,13 @@
                 }
             ],
             "inputSchema": {
-                "required": ["files"],
+                "requiredAny": [["files", "root"]],
                 "arrays": ["files"]
             },
             "examples": [
                 "tcf validate-file hooks/utils/common/useScroll/index.ts",
-                "tcf validate-file --json '{\"files\":[\"hooks/apis/auth/queries/useGetUser/index.ts\",\"hooks/utils/common/useScroll/index.ts\"]}'"
+                "tcf validate-file --json '{\"files\":[\"hooks/apis/auth/queries/useGetUser/index.ts\",\"hooks/utils/common/useScroll/index.ts\"]}'",
+                "tcf validate-file --root hooks"
             ]
         },
         "queryKey": {

@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 
 import { parse } from "@babel/parser";
@@ -388,6 +388,7 @@ async function buildValidationTarget(profile, rule, normalizedFilePath, captures
 
   return {
     file: normalizedFilePath,
+    matchedRule: true,
     commandName: rule.commandName ?? null,
     expectedEntryFileName: resolveExpectedEntryFileName(rule, {
       captures,
@@ -406,7 +407,8 @@ async function buildValidationTarget(profile, rule, normalizedFilePath, captures
   };
 }
 
-async function inferValidationTarget(profile, rawFilePath, repoRoot) {
+async function inferValidationTarget(profile, rawFilePath, repoRoot, options = {}) {
+  const includeUnsupportedViolation = options.includeUnsupportedViolation !== false;
   const normalizedFilePath = normalizeCliPath(rawFilePath);
   const violations = [];
 
@@ -423,6 +425,7 @@ async function inferValidationTarget(profile, rawFilePath, repoRoot) {
 
     return {
       file: normalizedFilePath,
+      matchedRule: false,
       commandName: null,
       expectedEntryFileName: null,
       expectedName: null,
@@ -461,6 +464,7 @@ async function inferValidationTarget(profile, rawFilePath, repoRoot) {
 
   return {
     file: normalizedFilePath,
+    matchedRule: false,
     commandName: null,
     expectedEntryFileName: null,
     expectedName: null,
@@ -469,16 +473,18 @@ async function inferValidationTarget(profile, rawFilePath, repoRoot) {
     structureRules: [],
     pathRules: [],
     ownershipRule: null,
-    violations: [
-      ...violations,
-      createViolation(
-        "UNSUPPORTED_VALIDATION_TARGET",
-        validateCommand.unsupportedTargetMessage ?? "validate-file target is not supported by the active profile.",
-        {
-          file: normalizedFilePath
-        }
-      )
-    ]
+    violations: includeUnsupportedViolation
+      ? [
+          ...violations,
+          createViolation(
+            "UNSUPPORTED_VALIDATION_TARGET",
+            validateCommand.unsupportedTargetMessage ?? "validate-file target is not supported by the active profile.",
+            {
+              file: normalizedFilePath
+            }
+          )
+        ]
+      : violations
   };
 }
 
@@ -1136,9 +1142,10 @@ async function analyzeSingleFile({
   profile,
   filePath,
   repoRoot,
-  configCache
+  configCache,
+  target: providedTarget
 }) {
-  const target = await inferValidationTarget(profile, filePath, repoRoot);
+  const target = providedTarget ?? await inferValidationTarget(profile, filePath, repoRoot);
   const normalizedFilePath = target.file;
   const result = {
     file: normalizedFilePath,
@@ -1293,21 +1300,122 @@ async function analyzeSingleFile({
   return result;
 }
 
+function normalizeDiscoveryRoot(rawRoot) {
+  const normalized = normalizeCliPath(String(rawRoot ?? "").trim());
+
+  if (!normalized || normalized === ".") {
+    return "";
+  }
+
+  if (!isRelativeCliPath(normalized)) {
+    throw createCliError(
+      "INVALID_DISCOVERY_ROOT",
+      "validate-file --root must be a relative repo directory",
+      {
+        root: rawRoot
+      }
+    );
+  }
+
+  return normalized;
+}
+
+async function resolveDiscoveryTargets({
+  profile,
+  repoRoot,
+  discoveryRoot
+}) {
+  const normalizedRoot = normalizeDiscoveryRoot(discoveryRoot);
+  const absoluteRoot = normalizedRoot
+    ? toFsPath(repoRoot, normalizedRoot)
+    : repoRoot;
+
+  let rootStats;
+  try {
+    rootStats = await stat(absoluteRoot);
+  } catch {
+    throw createCliError(
+      "DISCOVERY_ROOT_NOT_FOUND",
+      "validate-file discovery root does not exist",
+      {
+        root: normalizedRoot || "."
+      }
+    );
+  }
+
+  if (!rootStats.isDirectory()) {
+    throw createCliError(
+      "DISCOVERY_ROOT_NOT_DIRECTORY",
+      "validate-file discovery root must be a directory",
+      {
+        root: normalizedRoot || "."
+      }
+    );
+  }
+
+  const sourceFiles = (await collectSourceFiles(absoluteRoot))
+    .sort((left, right) => left.localeCompare(right));
+  const targets = [];
+
+  for (const sourceFile of sourceFiles) {
+    const target = await inferValidationTarget(
+      profile,
+      toCliPath(repoRoot, sourceFile),
+      repoRoot,
+      {
+        includeUnsupportedViolation: false
+      }
+    );
+
+    if (target.matchedRule) {
+      targets.push(target);
+    }
+  }
+
+  return {
+    discovery: {
+      root: normalizedRoot || ".",
+      scanned: sourceFiles.length,
+      matched: targets.length,
+      skipped: sourceFiles.length - targets.length
+    },
+    targets
+  };
+}
+
 export async function validateFiles({
   profile,
-  filePaths,
+  filePaths = [],
+  discoveryRoot,
   repoRoot
 }) {
   const configCache = new Map();
   const results = [];
+  const targets = [];
+  let discovery = null;
 
-  for (const filePath of filePaths.map((item) => normalizeCliPath(item))) {
+  if (discoveryRoot !== undefined) {
+    const resolved = await resolveDiscoveryTargets({
+      profile,
+      repoRoot,
+      discoveryRoot
+    });
+    discovery = resolved.discovery;
+    targets.push(...resolved.targets);
+  } else {
+    for (const filePath of filePaths.map((item) => normalizeCliPath(item))) {
+      targets.push(await inferValidationTarget(profile, filePath, repoRoot));
+    }
+  }
+
+  for (const target of targets) {
     results.push(
       await analyzeSingleFile({
         configCache,
-        filePath,
+        filePath: target.file,
         profile,
-        repoRoot
+        repoRoot,
+        target
       })
     );
   }
@@ -1339,7 +1447,7 @@ export async function validateFiles({
   }));
   const failed = publicResults.filter((result) => !result.ok).length;
 
-  return {
+  const payload = {
     ok: failed === 0,
     results: publicResults,
     summary: {
@@ -1348,4 +1456,10 @@ export async function validateFiles({
       total: publicResults.length
     }
   };
+
+  if (discovery) {
+    payload.discovery = discovery;
+  }
+
+  return payload;
 }

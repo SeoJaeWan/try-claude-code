@@ -171,13 +171,26 @@ function formatContractHints(contracts = {}) {
   const lines = [];
   const inputShape = contracts.inputShape ?? {};
   if (inputShape.filesField) {
-    const acceptedModes = Array.isArray(inputShape.acceptedModes)
-      ? inputShape.acceptedModes.join(" | ")
-      : null;
+    const acceptedModes = Array.isArray(inputShape.filesModes)
+      ? inputShape.filesModes.join(" | ")
+      : Array.isArray(inputShape.acceptedModes)
+        ? inputShape.acceptedModes.join(" | ")
+        : null;
     lines.push(
       acceptedModes
         ? `  files: ${inputShape.filesField} (${acceptedModes})`
         : `  files: ${inputShape.filesField}`
+    );
+  }
+
+  if (inputShape.rootField) {
+    const acceptedModes = Array.isArray(inputShape.rootModes)
+      ? inputShape.rootModes.join(" | ")
+      : null;
+    lines.push(
+      acceptedModes
+        ? `  root: ${inputShape.rootField} (${acceptedModes})`
+        : `  root: ${inputShape.rootField}`
     );
   }
 
