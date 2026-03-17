@@ -69,20 +69,19 @@ Do not deep-dive into implementation details.
 ### Step 2.5. Resolve mode-sensitive CLI contracts before execution routing (required for implementation plans)
 
 - Before assigning `owner_agent` or `primary_skill` to implementation phases, inspect the relevant CLI help for the work type.
-- Read only the minimum relevant surface:
-  - UI/layout/publisher scope: `tcp help component --text`; add `tcp help validate-file --text` when planning convention cleanup or file migration
-  - frontend logic/API scope: `tcf help hook --text`; add `tcf help apiHook --text` for network/API work; add `tcf help validate-file --text` for refactor or migration scope
-  - backend scope: `tcb help module --text`; add command-scoped help for DTO/entity commands when those outputs are in scope
-- Use top-level `tcp --help`, `tcf --help`, or `tcb --help` only when command discovery is actually needed.
+- Start with top-level `tcp --help`, `tcf --help`, or `tcb --help` only when command discovery is needed.
+- Then inspect only the minimum relevant command-scoped help for the chosen work.
 - Treat the returned help as the active mode-specific contract for path policy, naming, validation, scaffold shape, and available command surface.
 - Use those contracts to confirm execution routing, phase boundaries, and `Explicit Defaults`.
 - If one request spans multiple concerns, inspect each relevant CLI instead of guessing from stale skill prose.
+- Do not explain detailed task-by-task CLI situations in the plan prompt itself; route through CLI help at execution time.
 
 ### Step 3. Design plan structure
 
 - Create plan artifacts in `./plans/{task-name}/`.
 - Draft from the sequential or DAG template reference.
 - Required sections, branch headers, `owner_agent` formatting, routing policy, browser-contract requirements, and UI test-phase split must follow `planning-policy.md`.
+- Make every phase/task purpose explicit in the plan itself so readers can see why the block exists, not just what files or commands it touches.
 - Branch names must follow `./.codex/skills/architect/references/git.md` when available; when unavailable, derive from local conventions and record the fallback in `Explicit Defaults`.
 - For `partial-parallel`/`parallel`, use track folders: `plan-{track}/plan.md` (flat `plan-{track}.md` 금지).
 

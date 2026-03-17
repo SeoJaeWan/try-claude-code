@@ -104,6 +104,8 @@ When unit/E2E plan artifacts are generated:
 ### Phase Metadata Rules
 
 - Every execution block (`Phase n`, `Tn`) must include `owner_agent`
+- Every execution block (`Phase n`, `Tn`) must include `목적`
+- `목적` must explain why the block exists, which user/problem outcome it secures, and why the work is separated from adjacent blocks
 - `owner_agent` must exist in `references/agents-lite.md`
 - Use exactly one execution agent per block
 - Add `primary_skill` only when the phase must pin a specific skill
@@ -124,12 +126,11 @@ If a phase mixes visual and logic concerns, split it into separate phases/tasks.
 
 Resolve routing and mode-sensitive conventions from active CLI help before locking implementation phases:
 
-- `publisher` routing: inspect `tcp help component --text`; add `tcp help validate-file --text` for migration, convention cleanup, or validation-heavy UI refactors
-- `frontend-developer` routing: inspect `tcf help hook --text`; add `tcf help apiHook --text` for API work; add `tcf help validate-file --text` for refactor or migration scope
-- `backend-developer` routing: inspect `tcb help module --text`; add DTO/entity command help when those outputs are part of scope
 - Use top-level `tcp --help`, `tcf --help`, `tcb --help` only when command discovery is necessary
+- Then inspect only the minimum relevant command-scoped help for the chosen work
 - Treat CLI help as the source of truth for the current active mode/profile contract, not stale examples embedded in older skill text
 - If exact mode/version matters to the plan, inspect `mode show` and record it in `Resolved Decisions` or `Explicit Defaults`
+- Do not hardcode detailed CLI task situations into the planning prompt; defer command selection details to CLI help at execution time
 
 See `agents-lite.md` for the canonical execution agent catalog and skill mapping.
 
@@ -242,21 +243,22 @@ For conflict-risk details, use `parallel-safety.md`.
 Before finalizing:
 
 1. Every phase/task has a concrete `owner_agent` listed in `references/agents-lite.md`
-2. No unresolved blocking policy/contract/schema/UX ambiguity remains
-3. No `TBD` assignee or unresolved critical dependency remains
-4. Every executable plan file includes a `Branch` header
-5. Execution Mode Decision matches generated artifacts
-6. Track dependency graph is acyclic
-7. `Resolved Decisions` contains blocking choices; `Explicit Defaults` contains only non-blocking defaults
-8. Failure Escalation Policy is explicit
-9. Visual/design work is assigned to `publisher`; logic work is assigned to developer agents
-10. For UI feature scope, `plan-e2e-test` artifacts exist with runner-appropriate frozen E2E files, locator registry, and implementation placement handoff
-11. For UI/user-journey or regression-hardening scope, a later `playwright-guard` phase exists with explicit trigger, scope, and exit criteria
-12. For UI scope, the five UI contracts are resolved before implementation planning or `plan-e2e-test`
-13. Non-sequential mode uses `plan-{track}/plan.md` folder layout (no flat `plan-{track}.md`)
-14. Every implementation track has matching `plan/tests/e2e` artifacts or explicit `N/A`
-15. Root `tests/manifest.md` and `e2e/manifest.md` are maintained as track indexes
-16. Planning-time test artifacts remain flat; final source-tree placement is deferred to implementation via manifest handoff
+2. Every phase/task has a detailed `목적` that explains user/problem outcome, not just implementation activity
+3. No unresolved blocking policy/contract/schema/UX ambiguity remains
+4. No `TBD` assignee or unresolved critical dependency remains
+5. Every executable plan file includes a `Branch` header
+6. Execution Mode Decision matches generated artifacts
+7. Track dependency graph is acyclic
+8. `Resolved Decisions` contains blocking choices; `Explicit Defaults` contains only non-blocking defaults
+9. Failure Escalation Policy is explicit
+10. Visual/design work is assigned to `publisher`; logic work is assigned to developer agents
+11. For UI feature scope, `plan-e2e-test` artifacts exist with runner-appropriate frozen E2E files, locator registry, and implementation placement handoff
+12. For UI/user-journey or regression-hardening scope, a later `playwright-guard` phase exists with explicit trigger, scope, and exit criteria
+13. For UI scope, the five UI contracts are resolved before implementation planning or `plan-e2e-test`
+14. Non-sequential mode uses `plan-{track}/plan.md` folder layout (no flat `plan-{track}.md`)
+15. Every implementation track has matching `plan/tests/e2e` artifacts or explicit `N/A`
+16. Root `tests/manifest.md` and `e2e/manifest.md` are maintained as track indexes
+17. Planning-time test artifacts remain flat; final source-tree placement is deferred to implementation via manifest handoff
 
 ---
 
@@ -267,22 +269,23 @@ After drafting plan artifacts:
 1. Scope, goals, and acceptance criteria are internally consistent
 2. No unresolved blocking ambiguity remains
 3. `Resolved Decisions` and `Explicit Defaults` are correctly separated
-4. Every phase/task has valid `owner_agent` from `references/agents-lite.md`
-5. Every executable plan file includes `Branch`
-6. Validation commands and exit criteria are explicit and executable
-7. Rollback/fallback strategy is concrete and testable
-8. Sequential mode has no track files
-9. Non-sequential mode gives every track `DependsOn` and `ReadyCheck`
-10. No circular dependencies exist in the track graph
-11. Failure escalation is actionable
-12. Visual/design work is not mixed with logic in the same execution block
-13. For UI feature scope, `plan-e2e-test` artifacts exist with frozen runner-appropriate E2E artifacts, locator registry, and implementation placement handoff
-14. For UI/user-journey or regression-hardening scope, a later `playwright-guard` phase is planned
-15. For UI scope, `Resolved Decisions` explicitly defines route or navigation/surface, user state, action, visible outcome, and locator/testability contracts
-16. Non-sequential mode uses folderized track plan paths (`plan-{track}/plan.md`)
-17. Every implementation track has its own `tests` and `e2e` manifest (or explicit `N/A`)
-18. Root test/e2e manifests provide track-level index links only
-19. Planning-time test artifacts do not freeze final source-tree placement
+4. Every phase/task has a detailed `목적` that explains why the work exists and what user/problem outcome it protects
+5. Every phase/task has valid `owner_agent` from `references/agents-lite.md`
+6. Every executable plan file includes `Branch`
+7. Validation commands and exit criteria are explicit and executable
+8. Rollback/fallback strategy is concrete and testable
+9. Sequential mode has no track files
+10. Non-sequential mode gives every track `DependsOn` and `ReadyCheck`
+11. No circular dependencies exist in the track graph
+12. Failure escalation is actionable
+13. Visual/design work is not mixed with logic in the same execution block
+14. For UI feature scope, `plan-e2e-test` artifacts exist with frozen runner-appropriate E2E artifacts, locator registry, and implementation placement handoff
+15. For UI/user-journey or regression-hardening scope, a later `playwright-guard` phase is planned
+16. For UI scope, `Resolved Decisions` explicitly defines route or navigation/surface, user state, action, visible outcome, and locator/testability contracts
+17. Non-sequential mode uses folderized track plan paths (`plan-{track}/plan.md`)
+18. Every implementation track has its own `tests` and `e2e` manifest (or explicit `N/A`)
+19. Root test/e2e manifests provide track-level index links only
+20. Planning-time test artifacts do not freeze final source-tree placement
 
 Do not request execution before this checklist passes.
 
