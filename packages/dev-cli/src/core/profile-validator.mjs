@@ -26,17 +26,36 @@ function validateRelativePath(pathValue, code, message) {
   return segments;
 }
 
-function assertPathRoots(pathValue, allowedRoots) {
+function findPathRootMatchIndex(segments, allowedRoots, matchAnySegment = false) {
+  if (!allowedRoots?.length) {
+    return 0;
+  }
+
+  if (!matchAnySegment) {
+    return allowedRoots.includes(segments[0]) ? 0 : -1;
+  }
+
+  return segments.findIndex((segment) => allowedRoots.includes(segment));
+}
+
+function assertPathRoots(pathValue, allowedRoots, options = {}) {
   const segments = validateRelativePath(
     pathValue,
     "INVALID_PATH",
     "Path must be a relative repo path"
   );
 
-  if (allowedRoots?.length && !allowedRoots.includes(segments[0])) {
+  const matchedIndex = findPathRootMatchIndex(
+    segments,
+    allowedRoots,
+    options.matchAnySegment === true
+  );
+
+  if (matchedIndex === -1) {
     throw createCliError("INVALID_PATH_ROOT", "Path root is not allowed", {
       path: pathValue,
-      allowedRoots
+      allowedRoots,
+      matchAnySegment: options.matchAnySegment === true
     });
   }
 }
@@ -117,16 +136,21 @@ function assertPublisherComponentPath(pathValue, rule) {
   );
   const componentsRoot = rule.componentsRoot ?? "components";
   const sharedSegment = rule.sharedSegment ?? "common";
-  const [root, scope, componentSegment] = segments;
+  const componentsIndex = segments.lastIndexOf(componentsRoot);
+  const [root, scope, componentSegment, ...rest] = componentsIndex === -1
+    ? []
+    : segments.slice(componentsIndex);
 
   if (
+    componentsIndex === -1 ||
     root !== componentsRoot ||
     !scope ||
-    !componentSegment
+    !componentSegment ||
+    rest.length > 0
   ) {
     throw createCliError(
       "INVALID_COMPONENT_PATH",
-      "Publisher component path must be components/common/{component} or components/{domain}/{component}",
+      "Publisher component path must live under a components segment using */components/common/{component} or */components/{domain}/{component}",
       {
         path: pathValue,
         componentsRoot,
@@ -269,7 +293,7 @@ function assertForbiddenPatterns(files, patterns) {
 async function applyValidatorRule(rule, command, args, files, repoRoot, checks) {
   if (rule.kind === "pathRoots") {
     if (args[rule.field]) {
-      assertPathRoots(args[rule.field], rule.allowedRoots);
+      assertPathRoots(args[rule.field], rule.allowedRoots, rule);
       checks.push(`${rule.field}.roots=ok`);
     }
     return;

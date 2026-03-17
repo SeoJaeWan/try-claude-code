@@ -5,6 +5,7 @@ import path from "node:path";
 import { parse } from "@babel/parser";
 
 import {
+  isCamelCaseSegment,
   isRelativeCliPath,
   normalizeCliPath,
   splitCliPath
@@ -23,6 +24,7 @@ const EXCLUDED_DIRECTORIES = new Set([
   "dist",
   "node_modules"
 ]);
+const RESERVED_PUBLISHER_ENTRY_BASENAMES = new Set(["index", "page"]);
 
 function createViolation(code, message, details = {}, suggestion) {
   return {
@@ -325,16 +327,127 @@ function deriveMutationMethod(name) {
   return null;
 }
 
-function inferPublisherTarget(normalizedFilePath, fileSegments) {
-  const componentsIndex = fileSegments.lastIndexOf("components");
+function hasReactComponentExtension(fileName) {
+  return fileName.endsWith(".tsx") || fileName.endsWith(".jsx");
+}
+
+function getComponentEntryFileName(fileName) {
+  if (fileName.endsWith(".jsx")) {
+    return "index.jsx";
+  }
+
+  return "index.tsx";
+}
+
+function getExpectedComponentName(fileSegments) {
+  const fileName = fileSegments.at(-1) ?? "";
+  const bareName = fileName.replace(/\.[^.]+$/, "");
+
+  if (bareName === "index") {
+    const parentSegment = fileSegments.at(-2);
+    return parentSegment ? applyCaseTransform(parentSegment, "pascal") : null;
+  }
+
+  return bareName ? applyCaseTransform(bareName, "pascal") : null;
+}
+
+function isFrameworkSpecialPathSegment(segment) {
+  return segment.startsWith("(") || segment.startsWith("[") || segment.startsWith("@");
+}
+
+function isAllowedPublisherFileName(segment) {
+  const extension = path.extname(segment);
+  const baseName = extension ? segment.slice(0, -extension.length) : segment;
+
+  if (RESERVED_PUBLISHER_ENTRY_BASENAMES.has(baseName)) {
+    return true;
+  }
+
+  return isCamelCaseSegment(baseName);
+}
+
+function shouldValidatePublisherPathSegment(segments, segmentIndex, componentsIndex) {
+  const isFileName = segmentIndex === segments.length - 1;
+  if (isFileName) {
+    return true;
+  }
+
   if (componentsIndex === -1) {
+    return true;
+  }
+
+  return segmentIndex < componentsIndex;
+}
+
+function getPublisherPathCaseViolations(normalizedFilePath) {
+  const segments = splitCliPath(normalizedFilePath);
+  const componentsIndex = segments.lastIndexOf("components");
+  const violations = [];
+
+  for (const [segmentIndex, segment] of segments.entries()) {
+    if (!shouldValidatePublisherPathSegment(segments, segmentIndex, componentsIndex)) {
+      continue;
+    }
+
+    if (isFrameworkSpecialPathSegment(segment)) {
+      continue;
+    }
+
+    const isFileName = segmentIndex === segments.length - 1;
+    const isValid = isFileName
+      ? isAllowedPublisherFileName(segment)
+      : isCamelCaseSegment(segment);
+
+    if (isValid) {
+      continue;
+    }
+
+    violations.push(
+      createViolation(
+        "INVALID_PATH_SEGMENT",
+        isFileName
+          ? "Publisher file names must use camelCase, except reserved entry files like page.tsx and index.tsx"
+          : "Publisher folder names must use camelCase",
+        {
+          file: normalizedFilePath,
+          segment
+        }
+      )
+    );
+  }
+
+  return violations;
+}
+
+function inferPublisherTarget(normalizedFilePath, fileSegments) {
+  const fileName = fileSegments.at(-1) ?? "";
+  const componentsIndex = fileSegments.lastIndexOf("components");
+  const isPageEntry = fileName === "page.tsx" || fileName === "page.jsx";
+  const isReactComponentFile = hasReactComponentExtension(fileName);
+
+  if (isPageEntry) {
     return {
       commandName: "component",
-      expectedEntryFileName: null,
+      expectedEntryFileName: fileName,
       expectedName: null,
       validationArgs: {},
       enforceExportNameMatch: false,
       requirePropsType: false,
+      runPlacementValidation: false,
+      isDirectChild: false,
+      parentBaseDir: null,
+      violations: []
+    };
+  }
+
+  if (componentsIndex === -1) {
+    return {
+      commandName: "component",
+      expectedEntryFileName: isReactComponentFile ? getComponentEntryFileName(fileName) : null,
+      expectedName: isReactComponentFile ? getExpectedComponentName(fileSegments) : null,
+      validationArgs: {},
+      enforceExportNameMatch: isReactComponentFile,
+      requirePropsType: isReactComponentFile,
       runPlacementValidation: false,
       isDirectChild: false,
       parentBaseDir: null,
@@ -354,7 +467,7 @@ function inferPublisherTarget(normalizedFilePath, fileSegments) {
     violations.push(
       createViolation(
         "INVALID_COMPONENT_ENTRY_PATH",
-        "Publisher component file must live at components/common/{component}/index.tsx, components/{domain}/{component}/index.tsx, or a direct child under the component folder",
+        "Publisher component file must live at */components/common/{component}/index.tsx, */components/{domain}/{component}/index.tsx, or a direct child under the component folder",
         {
           file: normalizedFilePath
         }
@@ -364,7 +477,7 @@ function inferPublisherTarget(normalizedFilePath, fileSegments) {
 
   return {
     commandName: "component",
-    expectedEntryFileName: "index.tsx",
+    expectedEntryFileName: getComponentEntryFileName(fileName),
     expectedName,
     enforceExportNameMatch: true,
     requirePropsType: true,
@@ -1064,12 +1177,34 @@ function getPublisherOwnershipCandidates({
 
   return resolvedImports.filter((importPath) => {
     const importSegments = splitCliPath(importPath);
-    if (importSegments.length !== 5 || importSegments.at(-1) !== "index.tsx") {
+    const parentSegments = splitCliPath(parentBaseDir);
+    if (importSegments.at(-1) !== "index.tsx") {
       return false;
     }
 
-    return importSegments.slice(0, 3).join("/") === parentBaseDir;
+    if (importSegments.length !== parentSegments.length + 2) {
+      return false;
+    }
+
+    return importSegments.slice(0, parentSegments.length).join("/") === parentBaseDir;
   });
+}
+
+function createSuggestedSharedComponentPath(childPath) {
+  const segments = splitCliPath(childPath);
+  const componentsIndex = segments.lastIndexOf("components");
+  const childName = segments.at(-2);
+
+  if (componentsIndex === -1 || !childName) {
+    return childName ? `components/common/${childName}/index.tsx` : "components/common/index.tsx";
+  }
+
+  return [
+    ...segments.slice(0, componentsIndex + 1),
+    "common",
+    childName,
+    "index.tsx"
+  ].join("/");
 }
 
 function createOwnershipViolations({
@@ -1087,8 +1222,7 @@ function createOwnershipViolations({
       continue;
     }
 
-    const childName = splitCliPath(childPath).at(-2);
-    const suggestedPath = `components/common/${childName}/index.tsx`;
+    const suggestedPath = createSuggestedSharedComponentPath(childPath);
 
     violations.push(
       createViolation(
@@ -1136,6 +1270,10 @@ async function analyzeSingleFile({
         }
       )
     );
+  }
+
+  if (role === "publisher") {
+    result.violations.push(...getPublisherPathCaseViolations(normalizedFilePath));
   }
 
   if (!target.commandName) {

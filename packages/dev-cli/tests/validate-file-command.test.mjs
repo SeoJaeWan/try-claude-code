@@ -51,6 +51,38 @@ export default DashboardLayout;
   assert.equal(payload.results[0].command, "component");
 });
 
+test("tcp validate-file는 src/components prefix가 있어도 index.tsx 규칙을 동일하게 적용한다", async () => {
+  const tempRoot = await createTempRepo({
+    profiles: ["shared/personal/v1", "publisher/personal/v1"],
+    files: {
+      "src/components/common/dashboardLayout/index.tsx": `interface DashboardLayoutProps {}
+
+const DashboardLayout = (_props: DashboardLayoutProps) => {
+  return <section />;
+};
+
+export default DashboardLayout;
+`
+    }
+  });
+
+  const result = runCli(tcpBin, [
+    "validate-file",
+    "src/components/common/dashboardLayout/index.tsx"
+  ], {
+    cwd: tempRoot
+  });
+
+  assert.equal(result.status, 0);
+  const payload = readJson(result.stdout);
+  assert.equal(payload.ok, true);
+  assert.deepEqual(payload.summary, {
+    total: 1,
+    passed: 1,
+    failed: 0
+  });
+});
+
 test("tcp validate-file는 app page 같은 퍼블리셔 파일도 AST-only로 검증한다", async () => {
   const tempRoot = await createTempRepo({
     profiles: ["shared/personal/v1", "publisher/personal/v1"],
@@ -78,6 +110,92 @@ export default Page;
   assert.deepEqual(payload.results[0].violations, []);
 });
 
+test("tcp validate-file는 page.tsx가 아닌 React TSX 파일이면 components 폴더 밖이어도 index.tsx를 요구한다", async () => {
+  const tempRoot = await createTempRepo({
+    profiles: ["shared/personal/v1", "publisher/personal/v1"],
+    files: {
+      "app/showcase/reviewCard.tsx": `interface ReviewCardProps {}
+
+const ReviewCard = (_props: ReviewCardProps) => {
+  return <section />;
+};
+
+export default ReviewCard;
+`
+    }
+  });
+
+  const result = runCli(tcpBin, [
+    "validate-file",
+    "app/showcase/reviewCard.tsx"
+  ], {
+    cwd: tempRoot
+  });
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stdout);
+  const codes = payload.results[0].violations.map((item) => item.code);
+
+  assert.ok(codes.includes("INVALID_ENTRY_FILE_NAME"));
+});
+
+test("tcp validate-file는 page.tsx가 아닌 React TSX 파일이면 components 폴더 밖의 index.tsx도 컴포넌트 규칙으로 검증한다", async () => {
+  const tempRoot = await createTempRepo({
+    profiles: ["shared/personal/v1", "publisher/personal/v1"],
+    files: {
+      "app/showcase/reviewCard/index.tsx": `interface ReviewCardProps {}
+
+const ReviewCard = (_props: ReviewCardProps) => {
+  return <section />;
+};
+
+export default ReviewCard;
+`
+    }
+  });
+
+  const result = runCli(tcpBin, [
+    "validate-file",
+    "app/showcase/reviewCard/index.tsx"
+  ], {
+    cwd: tempRoot
+  });
+
+  assert.equal(result.status, 0);
+  const payload = readJson(result.stdout);
+  assert.equal(payload.ok, true);
+  assert.deepEqual(payload.results[0].violations, []);
+});
+
+test("tcp validate-file는 components 밖 React 경로에서도 폴더 camelCase를 검증한다", async () => {
+  const tempRoot = await createTempRepo({
+    profiles: ["shared/personal/v1", "publisher/personal/v1"],
+    files: {
+      "app/showcase/ReviewCard/index.tsx": `interface ReviewCardProps {}
+
+const ReviewCard = (_props: ReviewCardProps) => {
+  return <section />;
+};
+
+export default ReviewCard;
+`
+    }
+  });
+
+  const result = runCli(tcpBin, [
+    "validate-file",
+    "app/showcase/ReviewCard/index.tsx"
+  ], {
+    cwd: tempRoot
+  });
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stdout);
+  const codes = payload.results[0].violations.map((item) => item.code);
+
+  assert.ok(codes.includes("INVALID_PATH_SEGMENT"));
+});
+
 test("tcp validate-file는 prefix가 있어도 내부 components 경로 기준으로 배치 규칙을 검증한다", async () => {
   const tempRoot = await createTempRepo({
     profiles: ["shared/personal/v1", "publisher/personal/v1"],
@@ -96,6 +214,35 @@ export default ReviewCard;
   const result = runCli(tcpBin, [
     "validate-file",
     "plugin/skills/ui-publish-workspace/outputs/components/common/ReviewCard/index.tsx"
+  ], {
+    cwd: tempRoot
+  });
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stdout);
+  const codes = payload.results[0].violations.map((item) => item.code);
+
+  assert.ok(codes.includes("INVALID_PATH_SEGMENT"));
+});
+
+test("tcp validate-file는 prefix 경로의 폴더명도 camelCase로 검증한다", async () => {
+  const tempRoot = await createTempRepo({
+    profiles: ["shared/personal/v1", "publisher/personal/v1"],
+    files: {
+      "plugin/skills/ui-publish-workspace/outputs/components/common/reviewCard/index.tsx": `interface ReviewCardProps {}
+
+const ReviewCard = (_props: ReviewCardProps) => {
+  return <section />;
+};
+
+export default ReviewCard;
+`
+    }
+  });
+
+  const result = runCli(tcpBin, [
+    "validate-file",
+    "plugin/skills/ui-publish-workspace/outputs/components/common/reviewCard/index.tsx"
   ], {
     cwd: tempRoot
   });
@@ -195,6 +342,57 @@ export default Card;
 
   assert.ok(ownershipViolation);
   assert.match(ownershipViolation.suggestion, /components\/common\/th\/index\.tsx/);
+});
+
+test("tcp validate-file는 prefix가 있는 components 경로에서도 parent-only child 재사용 suggestion prefix를 유지한다", async () => {
+  const tempRoot = await createTempRepo({
+    profiles: ["shared/personal/v1", "publisher/personal/v1"],
+    tsconfig,
+    files: {
+      "src/components/common/table/index.tsx": `interface TableProps {}
+import Th from "./th";
+
+const Table = (_props: TableProps) => {
+  return <table><tbody><tr><Th /></tr></tbody></table>;
+};
+
+export default Table;
+`,
+      "src/components/common/table/th/index.tsx": `interface ThProps {}
+
+const Th = (_props: ThProps) => {
+  return <th />;
+};
+
+export default Th;
+`,
+      "src/components/common/card/index.tsx": `interface CardProps {}
+import Th from "@/src/components/common/table/th";
+
+const Card = (_props: CardProps) => {
+  return <table><tbody><tr><Th /></tr></tbody></table>;
+};
+
+export default Card;
+`
+    }
+  });
+
+  const result = runCli(tcpBin, [
+    "validate-file",
+    "src/components/common/table/th/index.tsx"
+  ], {
+    cwd: tempRoot
+  });
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stdout);
+  const ownershipViolation = payload.results[0].violations.find(
+    (item) => item.code === "PARENT_ONLY_CHILD_REUSED"
+  );
+
+  assert.ok(ownershipViolation);
+  assert.match(ownershipViolation.suggestion, /src\/components\/common\/th\/index\.tsx/);
 });
 
 test("tcf validate-file는 pure helper를 허용한다", async () => {
