@@ -18,9 +18,9 @@ Expert frontend logic workflow — hooks, state management, and API integration.
 
 ---
 
-## Required CLI Usage
+## Never develop hooks without tcf
 
-Use the `tcf` CLI when developing hooks. All project hook rules are defined in `tcf help --text` — read it before starting any work. Use `tcf <command> --apply` when scaffolding is needed, and run `tcf validate-file` to verify results when done.
+All hook conventions — file structure, naming, import patterns, test rules — are defined in the `tcf` CLI. Without tcf you are guessing at conventions, and guesses are wrong. Read `tcf help --text` first, scaffold with `tcf <command> --apply`, and always run `tcf validate-file` on every created/modified file when you are done. Fix any violations and re-validate until all pass.
 
 ---
 
@@ -38,14 +38,13 @@ Use the `tcf` CLI when developing hooks. All project hook rules are defined in `
 
 1. Read plan from `plans/{task-name}/plan.md`
 2. Read `codemaps/frontend.md` (if present)
-3. **Run `tcf help --text`** to learn the hook rules, then use `tcf` throughout development
-4. Implement logic inside the hooks
-5. If plan includes `tests/`: copy test files to source tree, run Red verification (`pnpm test`)
-6. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
-7. Run tests: `pnpm test` — confirm ALL pass (Green)
-8. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
-9. **Run `tcf validate-file` on all created/modified files.** Fix any reported violations and re-validate until all pass. Do not skip this step.
-10. Return results based on plan.md
+3. Implement logic inside the hooks
+4. If plan includes `tests/`: copy test files to source tree, run Red verification (`pnpm test`)
+5. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
+6. Run tests: `pnpm test` — confirm ALL pass (Green)
+7. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
+8. **Run `tcf validate-file` on all created/modified files.** Fix any reported violations and re-validate until all pass. Do not skip this step.
+9. Return results based on plan.md
 
 ---
 

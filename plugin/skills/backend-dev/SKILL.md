@@ -18,9 +18,9 @@ Expert backend development workflow.
 
 ---
 
-## Required CLI Usage
+## Never develop backend modules without tcb
 
-Use the `tcb` CLI when developing backend modules. All project module, entity, and DTO rules are defined in `tcb help --text` — read it before starting any work. Use `tcb <command> --apply` when scaffolding is needed.
+All module, entity, and DTO conventions — directory structure, naming, decorator patterns, dependency injection rules — are defined in the `tcb` CLI. Without tcb you are guessing at conventions, and guesses are wrong. Read `tcb help --text` first, scaffold with `tcb <command> --apply`, and always run `tcb validate-file` on every created/modified file when you are done. Fix any violations and re-validate until all pass.
 
 ---
 
@@ -42,12 +42,12 @@ Every API endpoint must include proper error responses.
 
 1. Read plan from `plans/{task-name}/plan.md`
 2. Read `codemaps/backend.md`, `codemaps/database.md` (if present)
-3. **Run `tcb help --text`** to learn the module rules, then use `tcb` throughout development
-4. Implement logic inside the generated files
-5. If plan includes `tests/`: copy test files to source tree, run Red verification
-6. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
-7. Run tests — confirm ALL pass (Green)
-8. If plan includes `e2e/`: if E2E fails, fix implementation, NOT tests
+3. Implement logic inside the generated files
+4. If plan includes `tests/`: copy test files to source tree, run Red verification
+5. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
+6. Run tests — confirm ALL pass (Green)
+7. If plan includes `e2e/`: if E2E fails, fix implementation, NOT tests
+8. **Run `tcb validate-file` on all created/modified files.** Fix any reported violations and re-validate until all pass. Do not skip this step.
 9. Return results based on plan.md
   </Instructions>
   </Skill_Guide>
