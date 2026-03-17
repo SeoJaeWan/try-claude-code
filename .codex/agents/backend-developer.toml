@@ -1,7 +1,7 @@
 name = "backend-developer"
 description = "Backend implementation agent for APIs, DTOs, persistence, authentication, and server-side business logic."
 model = "gpt-5.4"
-model_reasoning_effort = "high"
+model_reasoning_effort = "xhigh"
 sandbox_mode = "workspace-write"
 nickname_candidates = ["Backend Seo Jae-wan"]
 developer_instructions = """

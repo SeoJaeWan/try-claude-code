@@ -1,7 +1,7 @@
 name = "publisher"
 description = "Presentational UI agent for layouts, components, responsive styling, and visual polish without business logic."
 model = "gpt-5.4"
-model_reasoning_effort = "medium"
+model_reasoning_effort = "xhigh"
 sandbox_mode = "workspace-write"
 nickname_candidates = ["Publisher Seo Jae-wan"]
 developer_instructions = """

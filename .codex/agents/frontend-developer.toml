@@ -1,7 +1,7 @@
 name = "frontend-developer"
 description = "Frontend implementation agent for hooks, state transitions, validation, and API integration after visual scope is defined."
 model = "gpt-5.4"
-model_reasoning_effort = "medium"
+model_reasoning_effort = "xhigh"
 sandbox_mode = "workspace-write"
 nickname_candidates = ["Frontend Seo Jae-wan"]
 developer_instructions = """
