@@ -12,8 +12,9 @@ npm i -g @seojaewan/tcp
 
 ```bash
 tcp --help
+tcp mode set --mode personal --version v1
 tcp mode show
 ```
 
-The CLI resolves `profiles/**` from the `main` branch of `SeoJaeWan/try-claude-code`.
-Select the active contract with `tcp mode set --mode personal --version v1` and inspect it with `tcp mode show`.
+The CLI resolves the active contract from `main/profiles/publisher/{mode}/{version}` on `SeoJaeWan/try-claude-code`.
+Set the active remote contract with `tcp mode set --mode personal --version v1`, inspect the stored selection with `tcp mode show`, and use `tcp --help` even before mode setup for bootstrap guidance.

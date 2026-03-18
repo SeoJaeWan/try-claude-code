@@ -12,8 +12,9 @@ npm i -g @seojaewan/tcf
 
 ```bash
 tcf --help
+tcf mode set --mode personal --version v1
 tcf mode show
 ```
 
-The CLI resolves `profiles/**` from the `main` branch of `SeoJaeWan/try-claude-code`.
-Select the active contract with `tcf mode set --mode personal --version v1` and inspect it with `tcf mode show`.
+The CLI resolves the active contract from `main/profiles/frontend/{mode}/{version}` on `SeoJaeWan/try-claude-code`.
+Set the active remote contract with `tcf mode set --mode personal --version v1`, inspect the stored selection with `tcf mode show`, and use `tcf --help` even before mode setup for bootstrap guidance.

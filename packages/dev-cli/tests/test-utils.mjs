@@ -3,7 +3,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import os from "node:os";
 import { cp, mkdtemp, mkdir, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 
 import { loadActiveProfile } from "../src/core/profile-loader.mjs";
 
@@ -16,23 +16,49 @@ export const tcbBin = path.join(repoRoot, "packages", "tcb", "bin", "tcb.mjs");
 const fetchFixtureLoader = pathToFileURL(
   path.join(currentDir, "test-fetch-fixture-loader.mjs")
 ).href;
+const defaultConfiguredHome = mkdtempSync(path.join(os.tmpdir(), "dev-cli-home-"));
+
+mkdirSync(defaultConfiguredHome, { recursive: true });
+writeFileSync(
+  path.join(defaultConfiguredHome, ".try-claude-dev-cli.json"),
+  `${JSON.stringify({
+    profiles: {
+      publisher: {
+        mode: "personal",
+        version: "v1"
+      },
+      frontend: {
+        mode: "personal",
+        version: "v1"
+      },
+      backend: {
+        mode: "personal",
+        version: "v1"
+      }
+    }
+  }, null, 2)}\n`,
+  "utf8"
+);
 
 export function createCliEnv(additional = {}) {
   const currentNodeOptions = process.env.NODE_OPTIONS ?? "";
   const importOption = `--import "${fetchFixtureLoader}"`;
+  const homeDirectory = additional.HOME ?? additional.USERPROFILE ?? defaultConfiguredHome;
 
   return {
     ...process.env,
     NODE_OPTIONS: currentNodeOptions.includes(importOption)
       ? currentNodeOptions
       : `${currentNodeOptions} ${importOption}`.trim(),
+    HOME: homeDirectory,
+    USERPROFILE: homeDirectory,
     ...additional
   };
 }
 
 export function runCli(binPath, argv, options = {}) {
   const { env, cwd = repoRoot, ...restOptions } = options;
-  const defaultProfileRoot = existsSync(path.join(cwd, "profiles", "registry.json"))
+  const defaultProfileRoot = existsSync(path.join(cwd, "profiles"))
     ? cwd
     : repoRoot;
 
@@ -49,6 +75,20 @@ export function runCli(binPath, argv, options = {}) {
 
 export function readJson(text) {
   return JSON.parse(text);
+}
+
+export async function createTempHome(config = null) {
+  const tempHome = await mkdtemp(path.join(os.tmpdir(), "dev-cli-home-"));
+
+  if (config) {
+    await writeFile(
+      path.join(tempHome, ".try-claude-dev-cli.json"),
+      `${JSON.stringify(config, null, 2)}\n`,
+      "utf8"
+    );
+  }
+
+  return tempHome;
 }
 
 export async function loadProfile(role, mode = "personal", version = "v1") {
