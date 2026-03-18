@@ -61,21 +61,107 @@ function assertCommandExists(profile, commandName) {
   }
 }
 
-async function handleModeCommand({ role, route, repoRoot }) {
+function createSuggestedModeCommand(alias) {
+  return `${alias} mode set --mode personal --version v1`;
+}
+
+function getProfileOverrideOption(options = {}) {
+  for (const option of ["profile", "mode", "version"]) {
+    if (option in options) {
+      return option;
+    }
+  }
+
+  return null;
+}
+
+function assertNoProfileOverrideOptions({ alias, role, options }) {
+  const overrideOption = getProfileOverrideOption(options);
+
+  if (!overrideOption) {
+    return;
+  }
+
+  const suggestedCommand = createSuggestedModeCommand(alias);
+  throw createCliError(
+    "PROFILE_OVERRIDE_UNSUPPORTED",
+    `This command does not accept --${toOptionFlag(overrideOption)}. Run \`${suggestedCommand}\` to change the active profile before retrying.`,
+    {
+      alias,
+      role,
+      option: overrideOption,
+      suggestedCommand
+    }
+  );
+}
+
+function createUnsetActiveProfileError(alias, role) {
+  const suggestedCommand = createSuggestedModeCommand(alias);
+  return createCliError(
+    "ACTIVE_PROFILE_NOT_SET",
+    `No active profile is configured for ${alias}. Run \`${suggestedCommand}\` first, then retry the command.`,
+    {
+      alias,
+      role,
+      suggestedCommand
+    }
+  );
+}
+
+function mapModeSetError(error, { role, mode, version }) {
+  const rootProfilePath = `profiles/${role}/${mode}/${version}/profile.json`;
+  const cause = error?.details?.cause ?? "";
+
+  if (
+    error?.code === "PROFILE_FETCH_FAILED" &&
+    error?.details?.relativePath === rootProfilePath &&
+    /^HTTP 404\b/.test(cause)
+  ) {
+    return createCliError(
+      "PROFILE_NOT_FOUND",
+      `Profile ${role}/${mode}/${version} could not be found on the remote source.`,
+      {
+        role,
+        mode,
+        version,
+        relativePath: rootProfilePath
+      }
+    );
+  }
+
+  return error;
+}
+
+async function handleModeCommand({ alias, role, route, repoRoot }) {
   if (route.modeAction === "show") {
-    const selection = await resolveActiveProfile({
-      role,
-      repoRoot,
-      options: route.options
-    });
-    const activeProfile = await hydrateProfileSelection({
-      role,
-      selection
+    assertAllowedOptions(
+      route.options,
+      new Set([
+        "text",
+        "fields"
+      ]),
+      "mode show"
+    );
+    const activeProfile = await resolveActiveProfile({
+      role
     });
 
+    if (!activeProfile) {
+      return createSuccessPayload({
+        alias,
+        role,
+        action: "mode",
+        configured: false,
+        activeProfile: null,
+        suggestedCommand: createSuggestedModeCommand(alias)
+      });
+    }
+
     return createSuccessPayload({
+      alias,
       role,
       action: "mode",
+      configured: true,
       activeProfile
     });
   }
@@ -86,6 +172,17 @@ async function handleModeCommand({ role, route, repoRoot }) {
     throw error;
   }
 
+  assertAllowedOptions(
+    route.options,
+    new Set([
+      "text",
+      "fields",
+      "mode",
+      "version"
+    ]),
+    "mode set"
+  );
+
   if (!route.options.mode) {
     const error = new Error("Missing required option: --mode");
     error.code = "MISSING_ARGUMENT";
@@ -95,10 +192,18 @@ async function handleModeCommand({ role, route, repoRoot }) {
     throw error;
   }
 
-  if (
-    !route.options.version &&
-    !/[@/]/.test(String(route.options.mode))
-  ) {
+  if (/[\/@]/.test(String(route.options.mode))) {
+    await hydrateProfileSelection({
+      role,
+      selection: {
+        source: "explicit",
+        mode: String(route.options.mode),
+        version: route.options.version ?? "v1"
+      }
+    });
+  }
+
+  if (!route.options.version) {
     const error = new Error("Missing required option: --version");
     error.code = "MISSING_ARGUMENT";
     error.details = {
@@ -107,23 +212,27 @@ async function handleModeCommand({ role, route, repoRoot }) {
     throw error;
   }
 
-  const [mode, inlineVersion] = /@/.test(String(route.options.mode))
-    ? String(route.options.mode).split("@")
-    : String(route.options.mode).split("/");
-  const requestedVersion = inlineVersion ?? route.options.version;
-  const scope = route.options.repo ? "repo" : "global";
   const activeProfile = await hydrateProfileSelection({
     role,
     selection: {
       source: "explicit",
-      mode,
-      version: requestedVersion
+      mode: String(route.options.mode),
+      version: route.options.version
     }
   });
 
+  try {
+    await loadActiveProfile({
+      repoRoot,
+      role,
+      mode: activeProfile.mode,
+      version: activeProfile.version
+    });
+  } catch (error) {
+    throw mapModeSetError(error, activeProfile);
+  }
+
   const saved = await writeProfileSelection({
-    scope,
-    repoRoot,
     role,
     mode: activeProfile.mode,
     version: activeProfile.version
@@ -137,16 +246,15 @@ async function handleModeCommand({ role, route, repoRoot }) {
   });
 }
 
-async function resolveProfileContext({ role, repoRoot, options }) {
-  const selection = await resolveActiveProfile({
-    role,
-    repoRoot,
-    options
+async function resolveProfileContext({ alias, role, repoRoot }) {
+  const activeProfile = await resolveActiveProfile({
+    role
   });
-  const activeProfile = await hydrateProfileSelection({
-    role,
-    selection
-  });
+
+  if (!activeProfile) {
+    throw createUnsetActiveProfileError(alias, role);
+  }
+
   const { profile } = await loadActiveProfile({
     repoRoot,
     role,
@@ -161,12 +269,26 @@ async function resolveProfileContext({ role, repoRoot, options }) {
 }
 
 async function handleHelpCommand({ alias, role, route, repoRoot }) {
-  const { activeProfile, profile } = await resolveProfileContext({
+  assertNoProfileOverrideOptions({
+    alias,
     role,
-    repoRoot,
     options: route.options
   });
-  assertCommandExists(profile, route.commandName);
+  const activeProfile = await resolveActiveProfile({
+    role
+  });
+  let profile = null;
+
+  if (activeProfile) {
+    ({ profile } = await loadActiveProfile({
+      repoRoot,
+      role,
+      mode: activeProfile.mode,
+      version: activeProfile.version
+    }));
+    assertCommandExists(profile, route.commandName);
+  }
+
   const payload = createHelpPayload({
     alias,
     role,
@@ -188,10 +310,15 @@ async function handleHelpCommand({ alias, role, route, repoRoot }) {
 }
 
 async function handleGuideCommand({ alias, role, route, repoRoot }) {
-  const { activeProfile, profile } = await resolveProfileContext({
+  assertNoProfileOverrideOptions({
+    alias,
     role,
-    repoRoot,
     options: route.options
+  });
+  const { activeProfile, profile } = await resolveProfileContext({
+    alias,
+    role,
+    repoRoot
   });
   assertCommandExists(profile, route.commandName);
   const payload = createGuidePayload({
@@ -242,10 +369,15 @@ async function handleGuideCommand({ alias, role, route, repoRoot }) {
 }
 
 async function handleGenerateCommand({ alias, role, route, repoRoot }) {
-  const { activeProfile, profile } = await resolveProfileContext({
+  assertNoProfileOverrideOptions({
+    alias,
     role,
-    repoRoot,
     options: route.options
+  });
+  const { activeProfile, profile } = await resolveProfileContext({
+    alias,
+    role,
+    repoRoot
   });
   const spec = parseCommandSpec(route);
   const result = await executeSpecCommand({
@@ -283,10 +415,15 @@ async function handleGenerateCommand({ alias, role, route, repoRoot }) {
 }
 
 async function handleBatchCommand({ alias, role, route, repoRoot }) {
-  const { activeProfile, profile } = await resolveProfileContext({
+  assertNoProfileOverrideOptions({
+    alias,
     role,
-    repoRoot,
     options: route.options
+  });
+  const { activeProfile, profile } = await resolveProfileContext({
+    alias,
+    role,
+    repoRoot
   });
   const batchSpec = parseBatchSpec(route);
   const result = await executeBatch({
@@ -308,14 +445,16 @@ async function handleBatchCommand({ alias, role, route, repoRoot }) {
 }
 
 async function handleValidateCommand({ alias, role, route, repoRoot }) {
+  assertNoProfileOverrideOptions({
+    alias,
+    role,
+    options: route.options
+  });
   assertAllowedOptions(
     route.options,
     new Set([
       "text",
       "fields",
-      "profile",
-      "mode",
-      "version",
       "command",
       "name",
       "path",
@@ -327,9 +466,9 @@ async function handleValidateCommand({ alias, role, route, repoRoot }) {
     "validate"
   );
   const { activeProfile, profile } = await resolveProfileContext({
+    alias,
     role,
-    repoRoot,
-    options: route.options
+    repoRoot
   });
   const checks = await validateRequest({
     role,
@@ -363,21 +502,23 @@ async function handleValidateCommand({ alias, role, route, repoRoot }) {
 }
 
 async function handleValidateFileCommand({ alias, role, route, repoRoot }) {
+  assertNoProfileOverrideOptions({
+    alias,
+    role,
+    options: route.options
+  });
   assertAllowedOptions(
     route.options,
     new Set([
       "text",
-      "fields",
-      "profile",
-      "mode",
-      "version"
+      "fields"
     ]),
     "validate-file"
   );
   const { activeProfile, profile } = await resolveProfileContext({
+    alias,
     role,
-    repoRoot,
-    options: route.options
+    repoRoot
   });
   assertCommandExists(profile, "validateFile");
   const spec = parseValidateFileSpec(route);
@@ -427,6 +568,7 @@ export async function runCli({
       });
     } else if (route.action === "mode") {
       payload = await handleModeCommand({
+        alias,
         role: route.role,
         route,
         repoRoot

@@ -1,10 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { hydrateProfileSelection, loadProfileRegistry } from "../src/core/profile-registry.mjs";
+import { hydrateProfileSelection } from "../src/core/profile-registry.mjs";
 import { loadActiveProfile } from "../src/core/profile-loader.mjs";
 
-const REGISTRY_URL = "https://raw.githubusercontent.com/SeoJaeWan/try-claude-code/main/profiles/registry.json";
 const RAW_BASE_URL = "https://raw.githubusercontent.com/SeoJaeWan/try-claude-code/main/";
 
 function createMockFetch(fixtures) {
@@ -29,32 +28,7 @@ function createMockFetch(fixtures) {
   };
 }
 
-test("loadProfileRegistry는 major-version 배열 스키마를 읽는다", async () => {
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = createMockFetch({
-    [REGISTRY_URL]: JSON.stringify({
-      publisher: {
-        personal: ["v1", "v2"]
-      }
-    })
-  });
-
-  const registry = await loadProfileRegistry();
-  assert.deepEqual(registry.publisher.personal, ["v1", "v2"]);
-
-  globalThis.fetch = originalFetch;
-});
-
-test("hydrateProfileSelection은 registry에 존재하는 major version만 허용한다", async () => {
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = createMockFetch({
-    [REGISTRY_URL]: JSON.stringify({
-      publisher: {
-        personal: ["v1"]
-      }
-    })
-  });
-
+test("hydrateProfileSelection은 registry 없이 mode와 major version만 정규화한다", async () => {
   const selection = await hydrateProfileSelection({
     role: "publisher",
     selection: {
@@ -70,30 +44,25 @@ test("hydrateProfileSelection은 registry에 존재하는 major version만 허�
     version: "v1",
     majorVersion: "v1"
   });
+});
 
+test("hydrateProfileSelection은 inline mode syntax를 거부한다", async () => {
   await assert.rejects(
     () => hydrateProfileSelection({
       role: "publisher",
       selection: {
         source: "explicit",
-        mode: "personal",
-        version: "v2"
+        mode: "personal@v1",
+        version: "v1"
       }
     }),
-    (error) => error.code === "PROFILE_VERSION_UNAVAILABLE"
+    (error) => error.code === "INVALID_PROFILE_MODE"
   );
-
-  globalThis.fetch = originalFetch;
 });
 
-test("loadActiveProfile은 main/profiles 경로에서 profile과 template content를 직접 읽는다", async () => {
+test("loadActiveProfile은 registry 없이 main/profiles 경로에서 profile과 template content를 직접 읽는다", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = createMockFetch({
-    [REGISTRY_URL]: JSON.stringify({
-      publisher: {
-        personal: ["v1"]
-      }
-    }),
     [`${RAW_BASE_URL}profiles/publisher/personal/v1/profile.json`]: JSON.stringify({
       id: "publisher/personal/v1",
       extends: ["shared/personal/v1"],

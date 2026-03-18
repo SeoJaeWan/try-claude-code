@@ -87,12 +87,25 @@ shared override 규칙:
 
 ## Profile Resolution
 
+> Current runtime contract
+>
+> - The CLI stores one global active profile per alias in `~/.try-claude-dev-cli.json`.
+> - `mode set --mode <mode> --version <major>` is the only way to change the active profile.
+> - General commands always use the stored global selection.
+> - If no active selection exists, the CLI stays unset until the user configures one.
+> - Remote `main/profiles/{role}/{mode}/{version}` is the runtime source of truth.
+> - `mode set` validates the full remote profile contract by loading `profile.json` plus its `extends` and template chain.
+> - `mode show` returns the stored value only and does not revalidate remote availability.
+> - General commands do not accept `--mode`, `--version`, or `--profile` overrides.
+> - `--help` and `help <command>` still work when mode is unset and return bootstrap guidance.
+
+> Legacy note: the older registry-first bullets below are historical context only and are superseded by the current runtime contract above.
+
 active profile 우선순위:
 
 1. 명시 옵션: `--mode`, `--version`
-2. repo-local pin: `.try-claude-dev-cli.json`
-3. global default: `~/.try-claude-dev-cli.json`
-4. fallback: `personal/v1`
+2. global active selection: `~/.try-claude-dev-cli.json`
+3. unset state until the user runs `mode set`
 
 공개 계약은 mode와 major version만 가진다.
 
@@ -130,7 +143,6 @@ active profile 우선순위:
 ```bash
 tcp mode set --mode personal --version v1
 tcp mode show
-tcp mode set --mode personal --version v1 --repo
 tcp --help
 ```
 

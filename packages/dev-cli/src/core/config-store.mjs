@@ -36,6 +36,10 @@ export async function readConfig(filePath) {
   return readJsonFile(filePath);
 }
 
+export async function readGlobalConfig() {
+  return readJsonFile(getGlobalConfigPath());
+}
+
 export async function readConfigs(repoRoot) {
   const [globalConfig, repoConfig] = await Promise.all([
     readJsonFile(getGlobalConfigPath()),
@@ -75,14 +79,11 @@ export function getProfileSelection(config, role) {
 }
 
 export async function writeProfileSelection({
-  scope,
-  repoRoot,
   role,
   mode,
   version
 }) {
-  const filePath =
-    scope === "repo" ? getRepoConfigPath(repoRoot) : getGlobalConfigPath();
+  const filePath = getGlobalConfigPath();
   const current = await readJsonFile(filePath);
   const next = {
     ...current,
@@ -98,7 +99,7 @@ export async function writeProfileSelection({
   await writeJsonFile(filePath, next);
 
   return {
-    scope,
+    scope: "global",
     filePath,
     role,
     mode,

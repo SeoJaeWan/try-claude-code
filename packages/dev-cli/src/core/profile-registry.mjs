@@ -1,10 +1,7 @@
 import { createCliError } from "./recipe-utils.mjs";
 import { assertProfileVersion } from "./version-utils.mjs";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 
 const DEFAULT_PROFILE_REPOSITORY = "SeoJaeWan/try-claude-code";
-const DEFAULT_PROFILE_REGISTRY_URL = `https://raw.githubusercontent.com/${DEFAULT_PROFILE_REPOSITORY}/main/profiles/registry.json`;
 const DEFAULT_PROFILE_RAW_BASE_URL = `https://raw.githubusercontent.com/${DEFAULT_PROFILE_REPOSITORY}/main/`;
 
 function ensureTrailingSlash(value) {
@@ -25,36 +22,26 @@ async function readResourceText(url) {
   return response.text();
 }
 
-function getModeRegistryEntry(registry, role, mode) {
-  return registry?.[role]?.[mode] ?? null;
-}
-
-function normalizeVersionCatalog(versions, role, mode) {
-  if (!Array.isArray(versions)) {
+function assertProfileMode(value, field = "mode") {
+  if (typeof value !== "string" || value.trim() === "") {
     throw createCliError(
-      "INVALID_PROFILE_REGISTRY",
-      `Profile registry entry for ${role}/${mode} must be a version array.`,
+      "INVALID_PROFILE_MODE",
+      `Invalid ${field}: ${value}. Use simple mode names like personal.`,
       {
-        role,
-        mode,
-        versions
+        field,
+        value
       }
     );
   }
 
-  const normalized = [
-    ...new Set(
-      versions.map((value) => assertProfileVersion(value, "version"))
-    )
-  ];
-
-  if (normalized.length === 0) {
+  const normalized = value.trim();
+  if (/[\/@]/.test(normalized)) {
     throw createCliError(
-      "INVALID_PROFILE_REGISTRY",
-      `Profile registry entry for ${role}/${mode} must list at least one version.`,
+      "INVALID_PROFILE_MODE",
+      `Invalid ${field}: ${value}. Use --mode personal --version v1.`,
       {
-        role,
-        mode
+        field,
+        value
       }
     );
   }
@@ -62,104 +49,14 @@ function normalizeVersionCatalog(versions, role, mode) {
   return normalized;
 }
 
-function normalizeRegistryMode(role, mode, entry) {
-  if (!Array.isArray(entry)) {
-    throw createCliError(
-      "INVALID_PROFILE_REGISTRY",
-      `Missing registry entry for ${role}/${mode}`,
-      {
-        role,
-        mode
-      }
-    );
-  }
-
-  return normalizeVersionCatalog(entry, role, mode);
-}
-
-export async function loadProfileRegistry(localProfileRoot) {
-  if (localProfileRoot) {
-    const registryPath = path.join(localProfileRoot, "profiles", "registry.json");
-
-    try {
-      const content = await readFile(registryPath, "utf8");
-      return JSON.parse(content);
-    } catch (error) {
-      if (error instanceof SyntaxError) {
-        throw createCliError(
-          "INVALID_PROFILE_REGISTRY",
-          "Profile registry JSON is invalid.",
-          {
-            registryPath
-          }
-        );
-      }
-
-      throw createCliError(
-        "PROFILE_REGISTRY_UNAVAILABLE",
-        "Profile registry could not be loaded.",
-        {
-          registryPath,
-          cause: error instanceof Error ? error.message : String(error)
-        }
-      );
-    }
-  }
-
-  try {
-    const content = await readResourceText(DEFAULT_PROFILE_REGISTRY_URL);
-    return JSON.parse(content);
-  } catch (error) {
-    if (error instanceof SyntaxError) {
-      throw createCliError(
-        "INVALID_PROFILE_REGISTRY",
-        "Profile registry JSON is invalid.",
-        {
-          registryUrl: DEFAULT_PROFILE_REGISTRY_URL
-        }
-      );
-    }
-
-    throw createCliError(
-      "PROFILE_REGISTRY_UNAVAILABLE",
-      "Profile registry could not be loaded.",
-      {
-        registryUrl: DEFAULT_PROFILE_REGISTRY_URL,
-        cause: error instanceof Error ? error.message : String(error)
-      }
-    );
-  }
-}
-
 export async function hydrateProfileSelection({
   role,
-  selection,
-  localProfileRoot
+  selection
 }) {
-  const mode = selection.mode ?? "personal";
+  const mode = assertProfileMode(selection.mode ?? "personal");
   const version = assertProfileVersion(
     selection.version ?? selection.requestedVersion ?? "v1"
   );
-
-  const registry = await loadProfileRegistry(localProfileRoot);
-  const availableVersions = normalizeRegistryMode(
-    role,
-    mode,
-    getModeRegistryEntry(registry, role, mode)
-  );
-
-  if (!availableVersions.includes(version)) {
-    throw createCliError(
-      "PROFILE_VERSION_UNAVAILABLE",
-      `Profile version ${version} is not available for ${role}/${mode}.`,
-      {
-        role,
-        mode,
-        version,
-        availableVersions
-      }
-    );
-  }
 
   return {
     ...selection,
