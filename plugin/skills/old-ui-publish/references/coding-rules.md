@@ -1,159 +1,174 @@
 # UI Component Coding Rules
 
----
-
-## Event Handler Functions
-
-Unify with the `handle` prefix. Callbacks passed as props use the `on` prefix.
-
-```typescript
-// Handlers inside the component
-const handleClick = () => {};
-const handleSubmit = (data: FormData) => {};
-const handleChange = (value: string) => {};
-
-// Props callbacks (on the calling side)
-<Button onClick={handleClick} />
-```
-
-Inconsistent naming such as `onClick`, `submit`, `changeHandler` is prohibited.
+This document is self-contained.
+Follow the rules in this file directly when generating or editing UI components.
 
 ---
 
-## Array / List Variables
+## Shared Rules
 
-Use plural nouns. The `~List` and `~Array` suffixes are prohibited.
+- Functions use arrow function style by default
+- Internal handlers use the `handle*` prefix
+- Props callbacks use the `on*` prefix
+- Array names must be plural nouns
+- `List` and `Array` suffixes are forbidden
+- Path segments must use camelCase
 
 ```typescript
-const users = [];        // ✓
-const problems = [];     // ✓
+const handleToggleMenu = () => {};
+const onClose = () => {};
+const products = [];
 
-const userList = [];     // ✗
-const itemArray = [];    // ✗
+const toggleMenu = () => {};   // Avoid
+const productList = [];        // Avoid
 ```
 
 ---
 
-## Props Handling -- Destructure Inside the Function Body
+## Core Publisher Boundary
 
-Receive props as a whole parameter, then destructure them on the first line of the function body.
+Publisher implements visual structure only.
 
-```typescript
-// Good
-const Button = (props: ButtonProps) => {
-  const { title, onClick, disabled = false } = props;
+Allowed UI-only state:
 
-  return (
-    <button onClick={onClick} disabled={disabled}>
-      {title}
-    </button>
-  );
+- sidebar open/close
+- accordion expand/collapse
+- tab selection
+- modal visibility
+- tooltip or dropdown toggle
+
+Forbidden business logic:
+
+- API calls
+- form data state
+- auth state
+- server loading/error state
+- data filtering and sorting logic
+- `useEffect(`
+- `fetch(`
+- `axios.`
+- `useQuery(`
+- `useMutation(`
+
+Leave data-dependent handlers as props for frontend logic wiring.
+
+---
+
+## Component Path Contract
+
+The final `components` segment is the root for placement rules.
+Prefixes before it are allowed.
+
+Allowed patterns:
+
+- `*/components/common/{component}`
+- `*/components/{domain}/{component}`
+- `*/components/{domain}/{parentComponent}/{childComponent}`
+
+Examples:
+
+- `components/common/reviewCard`
+- `src/components/common/button`
+- `features/account/components/profile/profileHeader`
+
+### Placement Decision
+
+- Reused in 2 or more root page domains -> `components/common/{component}`
+- Used in exactly one root page domain -> `components/{domain}/{component}`
+- Parent-only child UI part -> `components/{domain}/{parentComponent}/{childComponent}`
+
+`domain` is the root page segment from `app/{domain}/page.tsx`.
+Use `common` only for truly shared components.
+
+### Legacy Migration Rule
+
+- If a legacy component path differs from the current convention, migrate the path first
+- Do not keep top-level PascalCase paths like `components/ProductCard`
+- Do not keep `components/common/*` for a component that belongs to one domain only
+
+---
+
+## Component Entry Contract
+
+- App pages keep the filename `page.tsx`
+- Non-page React TSX component entries use `index.tsx`
+- Component name uses PascalCase
+- Props interface suffix is `Props`
+- Main component uses arrow function style
+- Main component is the default export
+
+Examples:
+
+```text
+components/common/reviewCard/index.tsx
+features/cart/components/cart/cartSummary/index.tsx
+app/dashboard/page.tsx
+```
+
+---
+
+## UI Interaction State Naming
+
+When you add UI-only interaction state, use this naming:
+
+- boolean state: `is{Name}Open`
+- setter: `setIs{Name}Open`
+- toggle handler: `handleToggle{Name}`
+- open handler: `handleOpen{Name}`
+- close handler: `handleClose{Name}`
+
+Examples:
+
+- `isMenuOpen`
+- `setIsMenuOpen`
+- `handleToggleMenu`
+- `handleOpenMenu`
+- `handleCloseMenu`
+
+---
+
+## Same-File Structure Rules
+
+The component entry file should stay focused on the main component.
+
+- Same-file JSX helpers are forbidden
+- Same-file subcomponents are forbidden
+- If a child component exists, move it into its own component folder
+- Parent-only child components must not be imported outside the parent component tree
+- If a child becomes reusable, promote it to a shared location
+
+Avoid:
+
+```tsx
+const CardHeader = () => <div />;
+
+const ReviewCard = () => {
+  return <CardHeader />;
 };
-
-// Avoid -- destructuring directly in the parameter
-const Button = ({ title, onClick, disabled = false }: ButtonProps) => {
-  // ...
-};
 ```
 
-Reason: You can log the entire `props` object during debugging, and default value assignments are explicit.
+Prefer:
 
----
-
-## Conditional Rendering -- Early Return
-
-For complex conditions, use Early Return at the top of the component instead of nesting inside JSX.
-
-```typescript
-const UserProfile = (props: UserProfileProps) => {
-  const { user } = props;
-
-  if (!user) return <div>User not found</div>;
-  if (user.isBlocked) return <div>Blocked user</div>;
-
-  return (
-    <div>
-      <h1>{user.name}</h1>
-      <p>{user.email}</p>
-    </div>
-  );
-};
-```
-
-Ternary operators are only permitted when the entire expression fits on a single line:
-
-```typescript
-{isLoading ? "Loading..." : title}
-```
-
-No nested ternary operators — use Early Return or separate variables instead.
-
----
-
-## Components Folder Structure
-
-```
-components/
-├── common/              # Shared (used in 2+ pages)
-│   ├── header/index.tsx
-│   └── button/index.tsx
-├── {domain}/            # Domain-specific
-│   └── problemCard/index.tsx
-└── providers/index.tsx  # Context Providers
-```
-
-### Component Placement Criteria
-
-| Condition | Location |
-| ------------------------ | -------------------------- |
-| Used in 2 or more pages | `components/common/` |
-| Used in a specific domain only | `components/{domain}/` |
-| Exclusive to a page | `app/{domain}/components/` |
-
----
-
-## Sub-component Extraction Rules
-
-Sub-components nested inside a parent component folder
-must be **moved to the shared location immediately the moment they are used anywhere else**.
-
-| Target | Initial Location | Location After Reuse |
-| ---- | --------- | ------------------- |
-| Sub-component exclusive to parent | `components/{domain}/{parent}/{child}/index.tsx` | `components/common/{child}/index.tsx` |
-
----
-
-## Component File Convention
-
-Components use the directory pattern: `{ComponentName}/index.tsx`
-
-```
-components/
-├── ProductCard/
-│   └── index.tsx        ← export default
-├── EmptyState/
-│   └── index.tsx
-└── StatsCard/
-    └── index.tsx
+```text
+components/common/reviewCard/index.tsx
+components/common/reviewCard/cardHeader/index.tsx
 ```
 
 ---
 
-## UI Component Principle
+## Validation Checklist
 
-UI components handle **layout and visual interactions only**.
+Before considering a component done, verify all of these:
 
-**Allowed state** — purely visual interactions that don't involve data:
-- Sidebar open/close toggle
-- Accordion expand/collapse
-- Tab/panel selection
-- Modal visibility
-- Tooltip/dropdown toggle
-
-**Prohibited** — business logic that belongs in frontend-dev hooks:
-- Form data (email, password values)
-- API loading/error states (`isLoading`, `error`)
-- Authentication state
-- Data filtering/sorting logic
-- `fetch` / `axios` calls
-- `useEffect` for data fetching
+- Path lives under a `components` segment when it is a reusable component
+- Shared components use `*/components/common/{component}/index.tsx`
+- Domain components use `*/components/{domain}/{component}/index.tsx`
+- Nested child components use `*/components/{domain}/{parentComponent}/{childComponent}/index.tsx`
+- Folder names use camelCase
+- Non-page React TSX entry files use `index.tsx`
+- Component name matches the default export
+- Props interface uses the `Props` suffix
+- Component uses arrow function style
+- Same-file JSX helpers are absent
+- Same-file subcomponents are absent
+- Forbidden business-logic patterns are absent
