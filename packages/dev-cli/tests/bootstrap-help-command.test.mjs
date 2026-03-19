@@ -17,10 +17,16 @@ test("active mode가 없으면 tcp --help는 bootstrap help JSON을 반환한다
   assert.equal(payload.helpMode, "bootstrap");
   assert.equal(payload.configured, false);
   assert.equal(payload.suggestedCommand, "tcp mode set --mode personal --version v1");
-  assert.equal(payload.commands.component.setupRequired, true);
+  assert.equal(payload.inspectCommand, "tcp mode show");
+  assert.deepEqual(payload.availableWithoutMode, [
+    "tcp --help",
+    "tcp mode show",
+    "tcp mode set --mode personal --version v1"
+  ]);
+  assert.equal(payload.command, null);
 });
 
-test("active mode가 없으면 command-scoped help --text도 setup 안내를 포함한다", async () => {
+test("active mode가 없으면 command-scoped help --text는 상세 계약 대신 setup 안내만 포함한다", async () => {
   const tempHome = await createTempHome();
   const result = runCli(tcpBin, ["help", "component", "--text"], {
     env: {
@@ -32,7 +38,9 @@ test("active mode가 없으면 command-scoped help --text도 setup 안내를 포
   assert.equal(result.status, 0);
   assert.match(result.stdout, /mode: not configured/);
   assert.match(result.stdout, /setup: tcp mode set --mode personal --version v1/);
-  assert.match(result.stdout, /component: Generate a publisher UI component file/);
+  assert.match(result.stdout, /component: setup required/);
+  assert.match(result.stdout, /Detailed contract for component is available after you run tcp mode set --mode personal --version v1\./);
+  assert.ok(!/Generate a publisher UI component file/.test(result.stdout));
 });
 
 test("active mode가 없으면 일반 명령은 ACTIVE_PROFILE_NOT_SET으로 실패한다", async () => {

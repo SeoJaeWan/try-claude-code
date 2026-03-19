@@ -17,4 +17,4 @@ tcb mode show
 ```
 
 The CLI resolves the active contract from `main/profiles/backend/{mode}/{version}` on `SeoJaeWan/try-claude-code`.
-Set the active remote contract with `tcb mode set --mode personal --version v1`, inspect the stored selection with `tcb mode show`, and use `tcb --help` even before mode setup for bootstrap guidance.
+Set the active remote contract with `tcb mode set --mode personal --version v1`, inspect the stored selection with `tcb mode show`, and use `tcb --help` even before mode setup for minimal setup guidance.

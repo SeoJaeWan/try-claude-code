@@ -229,7 +229,11 @@ async function handleModeCommand({ alias, role, route, repoRoot }) {
       version: activeProfile.version
     });
   } catch (error) {
-    throw mapModeSetError(error, activeProfile);
+    throw mapModeSetError(error, {
+      role,
+      mode: activeProfile.mode,
+      version: activeProfile.version
+    });
   }
 
   const saved = await writeProfileSelection({

@@ -7,148 +7,49 @@ function toCliCommandName(name) {
 const BOOTSTRAP_HELP_BY_ALIAS = {
   tcp: {
     summary: "No active publisher profile is configured. Set one before running publisher commands.",
-    commands: {
-      mode: {
-        description: "Set or show the active publisher profile",
-        whenToUse: ["Run this first to select the active remote profile"],
-        availableWithoutMode: true
-      },
-      help: {
-        description: "Show bootstrap help and next-step guidance",
-        whenToUse: ["Use this to discover commands before setting a profile"],
-        availableWithoutMode: true
-      },
-      component: {
-        description: "Generate a publisher UI component file",
-        whenToUse: ["Create a new UI component shell after selecting an active profile"]
-      },
-      uiState: {
-        description: "Render UI interaction state and handlers snippet",
-        whenToUse: ["Create UI state shells for modal, drawer, or dropdown interactions"]
-      },
-      type: {
-        description: "Render a shared type snippet",
-        whenToUse: ["Generate shared type shells used by publisher contracts"]
-      },
-      props: {
-        description: "Render props members only snippet",
-        whenToUse: ["Generate props members before wiring a component contract"]
-      },
-      function: {
-        description: "Render a shared function snippet",
-        whenToUse: ["Generate shared handler or utility function shells"]
-      },
-      validateFile: {
-        description: "Validate publisher UI files against placement and AST rules",
-        whenToUse: ["Verify generated or edited publisher files after setup"]
-      },
-      batch: {
-        description: "Execute multiple publisher ops in one request",
-        whenToUse: ["Bundle several publisher operations into one run"]
-      },
-      guide: {
-        description: "Show the active publisher guide",
-        whenToUse: ["Read the full profile guide after setting an active profile"]
-      }
-    }
+    supportedCommands: [
+      "mode",
+      "help",
+      "component",
+      "uiState",
+      "type",
+      "props",
+      "function",
+      "validateFile",
+      "batch",
+      "guide"
+    ]
   },
   tcf: {
     summary: "No active frontend profile is configured. Set one before running frontend commands.",
-    commands: {
-      mode: {
-        description: "Set or show the active frontend profile",
-        whenToUse: ["Run this first to select the active remote profile"],
-        availableWithoutMode: true
-      },
-      help: {
-        description: "Show bootstrap help and next-step guidance",
-        whenToUse: ["Use this to discover commands before setting a profile"],
-        availableWithoutMode: true
-      },
-      hook: {
-        description: "Generate a non-API hook file",
-        whenToUse: ["Create a frontend hook after selecting an active profile"]
-      },
-      apiHook: {
-        description: "Generate an API hook file",
-        whenToUse: ["Create query or mutation hooks after selecting an active profile"]
-      },
-      type: {
-        description: "Render a shared type snippet",
-        whenToUse: ["Generate shared frontend type shells"]
-      },
-      props: {
-        description: "Render props members only snippet",
-        whenToUse: ["Generate shared props members for hooks or components"]
-      },
-      function: {
-        description: "Render a shared function snippet",
-        whenToUse: ["Generate shared handler or utility function shells"]
-      },
-      queryKey: {
-        description: "Render a query key snippet",
-        whenToUse: ["Define stable query key shapes"]
-      },
-      endpoint: {
-        description: "Render an endpoint snippet",
-        whenToUse: ["Define API endpoint constants or metadata"]
-      },
-      mapper: {
-        description: "Render a mapper snippet",
-        whenToUse: ["Create frontend data mapping helpers"]
-      },
-      hookReturn: {
-        description: "Render a hook return snippet",
-        whenToUse: ["Define structured hook return contracts"]
-      },
-      batch: {
-        description: "Execute multiple frontend ops in one request",
-        whenToUse: ["Bundle several frontend operations into one run"]
-      },
-      guide: {
-        description: "Show the active frontend guide",
-        whenToUse: ["Read the full profile guide after setting an active profile"]
-      }
-    }
+    supportedCommands: [
+      "mode",
+      "help",
+      "hook",
+      "apiHook",
+      "type",
+      "props",
+      "function",
+      "queryKey",
+      "endpoint",
+      "mapper",
+      "hookReturn",
+      "batch",
+      "guide"
+    ]
   },
   tcb: {
     summary: "No active backend profile is configured. Set one before running backend commands.",
-    commands: {
-      mode: {
-        description: "Set or show the active backend profile",
-        whenToUse: ["Run this first to select the active remote profile"],
-        availableWithoutMode: true
-      },
-      help: {
-        description: "Show bootstrap help and next-step guidance",
-        whenToUse: ["Use this to discover commands before setting a profile"],
-        availableWithoutMode: true
-      },
-      module: {
-        description: "Generate a backend feature module",
-        whenToUse: ["Create a backend feature package after selecting an active profile"]
-      },
-      requestDto: {
-        description: "Generate a request DTO",
-        whenToUse: ["Create backend request payload contracts"]
-      },
-      responseDto: {
-        description: "Generate a response DTO",
-        whenToUse: ["Create backend response payload contracts"]
-      },
-      entity: {
-        description: "Generate an entity",
-        whenToUse: ["Create backend persistence models"]
-      },
-      batch: {
-        description: "Execute multiple backend ops in one request",
-        whenToUse: ["Bundle several backend operations into one run"]
-      },
-      guide: {
-        description: "Show the active backend guide",
-        whenToUse: ["Read the full profile guide after setting an active profile"]
-      }
-    }
+    supportedCommands: [
+      "mode",
+      "help",
+      "module",
+      "requestDto",
+      "responseDto",
+      "entity",
+      "batch",
+      "guide"
+    ]
   }
 };
 
@@ -516,6 +417,7 @@ function createBootstrapPayload({
 }) {
   const bootstrap = BOOTSTRAP_HELP_BY_ALIAS[alias];
   const suggestedCommand = `${alias} mode set --mode personal --version v1`;
+  const inspectCommand = `${alias} mode show`;
 
   if (!bootstrap) {
     throw createCliError("UNKNOWN_ALIAS", `Unknown alias: ${alias}`, {
@@ -523,28 +425,11 @@ function createBootstrapPayload({
     });
   }
 
-  if (commandName && !bootstrap.commands[commandName]) {
+  if (commandName && !bootstrap.supportedCommands.includes(commandName)) {
     throw createCliError("UNKNOWN_COMMAND", `Unknown command: ${commandName}`, {
       command: commandName
     });
   }
-
-  const commandEntries = commandName
-    ? [[commandName, bootstrap.commands[commandName]]]
-    : Object.entries(bootstrap.commands);
-  const commands = Object.fromEntries(
-    commandEntries.map(([name, command]) => [
-      name,
-      {
-        cliCommand: toCliCommandName(name),
-        description: command.description,
-        whenToUse: command.whenToUse ?? [],
-        availableWithoutMode: Boolean(command.availableWithoutMode),
-        setupRequired: !command.availableWithoutMode,
-        detailHelp: createDetailHelp(alias, name)
-      }
-    ])
-  );
 
   return {
     ok: true,
@@ -555,10 +440,25 @@ function createBootstrapPayload({
     activeProfile: null,
     configured: false,
     suggestedCommand,
+    inspectCommand,
+    availableWithoutMode: [
+      `${alias} --help`,
+      inspectCommand,
+      suggestedCommand
+    ],
+    blockedReason:
+      "Guide, generate, batch, and validate commands stay unavailable until an active mode is configured.",
+    command:
+      commandName
+        ? {
+            cliCommand: toCliCommandName(commandName),
+            setupRequired: true,
+            message: `Detailed contract for ${toCliCommandName(commandName)} is available after you run ${suggestedCommand}.`
+          }
+        : null,
     profileSummary: {
       summary: bootstrap.summary
-    },
-    commands
+    }
   };
 }
 
@@ -629,40 +529,45 @@ export function createHelpPayload({
 }
 
 export function renderHelpText(payload) {
-  const lines = [
-    `${payload.alias} -> ${payload.id ?? payload.role}`,
-    payload.activeProfile
-      ? `mode: ${payload.activeProfile.mode}@${payload.activeProfile.version}`
-      : "mode: not configured",
-    "default input: --json"
-  ];
-
   if (payload.helpMode === "bootstrap") {
+    const lines = [
+      `${payload.alias} -> ${payload.id ?? payload.role}`,
+      "mode: not configured"
+    ];
+
     if (payload.profileSummary?.summary) {
       lines.push(`summary: ${payload.profileSummary.summary}`);
     }
     if (payload.suggestedCommand) {
       lines.push(`setup: ${payload.suggestedCommand}`);
     }
+    if (payload.inspectCommand) {
+      lines.push(`inspect: ${payload.inspectCommand}`);
+    }
+    if (payload.blockedReason) {
+      lines.push(`note: ${payload.blockedReason}`);
+    }
 
     lines.push("");
 
-    for (const command of Object.values(payload.commands ?? {})) {
-      lines.push(`${command.cliCommand}: ${command.description}`);
-      if (command.whenToUse?.length) {
-        lines.push(`  when: ${command.whenToUse.join(" | ")}`);
+    if (payload.command) {
+      lines.push(`${payload.command.cliCommand}: setup required`);
+      lines.push(`  detail: ${payload.command.message}`);
+    } else {
+      lines.push("available without mode:");
+      for (const entry of payload.availableWithoutMode ?? []) {
+        lines.push(`  ${entry}`);
       }
-      if (command.setupRequired) {
-        lines.push(`  setup: run ${payload.suggestedCommand} first`);
-      }
-      if (command.detailHelp) {
-        lines.push(`  detail: ${command.detailHelp}`);
-      }
-      lines.push("");
     }
 
     return lines.join("\n").trimEnd();
   }
+
+  const lines = [
+    `${payload.alias} -> ${payload.id ?? payload.role}`,
+    `mode: ${payload.activeProfile.mode}@${payload.activeProfile.version}`,
+    "default input: --json"
+  ];
 
   if (payload.helpMode === "summary") {
     if (payload.profileSummary?.summary) {
