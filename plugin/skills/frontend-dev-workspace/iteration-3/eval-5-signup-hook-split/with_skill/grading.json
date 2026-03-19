@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "signup-form-hook: signup form 상태를 담당하는 훅이 hooks/utils/signup 경로에 생성된다 (예: hooks/utils/signup/useSignupForm/index.ts)",
+      "passed": true,
+      "evidence": "hooks/utils/signup/useSignupForm/index.ts에 생성됨. domain=signup 정확히 일치."
+    },
+    {
+      "text": "signup-api-hook: signup submit을 담당하는 훅이 hooks/apis/auth/mutations/usePostSignup 경로에 생성된다",
+      "passed": false,
+      "evidence": "No file at hooks/apis/auth/mutations/usePostSignup exists. Only two files were produced: the form hook and page.tsx. The signup/auth logic is handled directly inside useSignupForm via useAuth context."
+    },
+    {
+      "text": "hook-use-prefix: 훅 이름이 use 접두사로 시작한다",
+      "passed": true,
+      "evidence": "The hook is named 'useSignupForm' (const useSignupForm = ...) — starts with 'use' prefix."
+    },
+    {
+      "text": "hook-index-ts: 비 API 훅이 hooks/utils/{domain}/{hookName}/index.ts 패턴으로 생성된다",
+      "passed": true,
+      "evidence": "File is at hooks/utils/signup/useSignupForm/index.ts, matching the hooks/utils/{domain}/{hookName}/index.ts pattern."
+    },
+    {
+      "text": "page-no-direct-logic: page에서 직접적인 fetch/business logic이 남지 않는다",
+      "passed": true,
+      "evidence": "app/signup/page.tsx only imports useSignupForm and destructures its return values. No fetch calls, no useState, no business logic remains in the page component."
+    },
+    {
+      "text": "confirm-password-preserved: confirm password validation 흐름이 보존된다",
+      "passed": true,
+      "evidence": "validateField checks 'confirmPassword' field: value !== fields.password returns '비밀번호가 일치하지 않습니다'. The validate() function also checks password !== confirmPassword. The page renders the confirmPassword input with handleChange/handleBlur and shows errors.confirmPassword."
+    },
+    {
+      "text": "arrow-function: 훅이 화살표 함수로 정의된다",
+      "passed": true,
+      "evidence": "Hook is defined as 'const useSignupForm = (): UseSignupFormReturn => { ... }' — arrow function syntax."
+    },
+    {
+      "text": "handle-prefix: 이벤트 핸들러가 handle 접두사를 사용한다",
+      "passed": true,
+      "evidence": "All event handlers use the handle prefix: handleChange, handleBlur, handleSubmit as seen in both the hook definition and the page usage."
+    }
+  ],
+  "summary": {
+    "passed": 7,
+    "failed": 1,
+    "total": 8,
+    "pass_rate": 0.875
+  }
+}

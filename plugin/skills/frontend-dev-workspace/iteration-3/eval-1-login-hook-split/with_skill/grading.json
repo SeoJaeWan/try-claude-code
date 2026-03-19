@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "form-hook-created: form 상태/유효성 검증을 담당하는 훅 파일이 hooks/utils/login 경로에 생성된다 (예: hooks/utils/login/useLoginForm/index.ts)",
+      "passed": true,
+      "evidence": "File exists at hooks/utils/login/useLoginForm/index.ts and contains useState for email, password, errors, generalError plus validateEmail/validatePassword calls."
+    },
+    {
+      "text": "submit-in-hook: submit 로직이 훅으로 추상화된다 (별도 훅 또는 form 훅 내부, page에 직접 남지 않음)",
+      "passed": true,
+      "evidence": "handleSubmit is defined inside useLoginForm (lines 53-66 of index.ts) and page.tsx contains no submit logic — only destructures handleSubmit from the hook."
+    },
+    {
+      "text": "hook-use-prefix: 훅 이름이 use 접두사로 시작한다",
+      "passed": true,
+      "evidence": "Hook is named useLoginForm (line 12 of index.ts: `const useLoginForm = () => {`)."
+    },
+    {
+      "text": "hook-index-ts: 비 API 훅이 hooks/utils/{domain}/{hookName}/index.ts 패턴으로 생성된다",
+      "passed": true,
+      "evidence": "File path is hooks/utils/login/useLoginForm/index.ts, matching the required pattern."
+    },
+    {
+      "text": "page-no-usestate: page.tsx에 직접적인 useState 호출이 남지 않는다",
+      "passed": true,
+      "evidence": "page.tsx (all 73 lines) has no useState import or call; only imports Link and useLoginForm."
+    },
+    {
+      "text": "page-imports-hooks: page.tsx가 생성된 훅을 import하여 조합한다",
+      "passed": true,
+      "evidence": "Line 4 of page.tsx: `import useLoginForm from \"@/hooks/utils/login/useLoginForm\";` and line 7 destructures its return value."
+    },
+    {
+      "text": "handle-prefix: 이벤트 핸들러가 handle 접두사를 사용한다",
+      "passed": true,
+      "evidence": "All event handlers use handle prefix: handleEmailChange, handlePasswordChange, handleEmailBlur, handlePasswordBlur, handleSubmit (lines 29-66 of index.ts)."
+    },
+    {
+      "text": "arrow-function: 훅이 화살표 함수로 정의된다",
+      "passed": true,
+      "evidence": "Line 12 of index.ts: `const useLoginForm = () => {` — defined as a const arrow function."
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 0,
+    "total": 8,
+    "pass_rate": 1.0
+  }
+}
