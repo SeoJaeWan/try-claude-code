@@ -28,7 +28,7 @@ test("active mode가 없으면 tcp --help는 bootstrap help JSON을 반환한다
 
 test("active mode가 없으면 command-scoped help --text는 상세 계약 대신 setup 안내만 포함한다", async () => {
   const tempHome = await createTempHome();
-  const result = runCli(tcpBin, ["help", "component", "--text"], {
+  const result = runCli(tcpBin, ["component", "--help", "--text"], {
     env: {
       HOME: tempHome,
       USERPROFILE: tempHome

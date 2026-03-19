@@ -91,7 +91,6 @@ test("loadActiveProfile은 registry 없이 main/profiles 경로에서 profile과
   });
 
   const { profile, activeProfile } = await loadActiveProfile({
-    repoRoot: process.cwd(),
     role: "publisher",
     mode: "personal",
     version: "v1"

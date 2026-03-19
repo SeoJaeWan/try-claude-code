@@ -40,7 +40,7 @@ function getTemplateValues(context) {
   };
 }
 
-async function resolveDetectorValue(resolver, repoRoot) {
+async function resolveDetectorValue(resolver, projectRoot) {
   const detector = DETECTORS[resolver.detector];
   if (!detector) {
     throw createCliError(
@@ -52,7 +52,7 @@ async function resolveDetectorValue(resolver, repoRoot) {
     );
   }
 
-  const value = await detector(repoRoot);
+  const value = await detector(projectRoot);
   if (value) {
     return value;
   }
@@ -127,7 +127,7 @@ async function resolveFieldValue(resolver, context) {
       return matchedEntry[1];
     }
     case "detector":
-      return resolveDetectorValue(resolver, context.repoRoot);
+      return resolveDetectorValue(resolver, context.projectRoot);
     default:
       throw createCliError(
         "INVALID_RECIPE",
@@ -143,7 +143,7 @@ async function resolveFieldValue(resolver, context) {
 export async function applyFieldResolvers({
   args,
   resolvers = [],
-  repoRoot,
+  projectRoot,
   context = {},
   overwrite = false
 }) {
@@ -166,7 +166,7 @@ export async function applyFieldResolvers({
       resolver,
       getResolverContext(resolvedArgs, {
         ...context,
-        repoRoot
+        projectRoot
       })
     );
 
@@ -190,13 +190,13 @@ export async function applyFieldResolvers({
 export async function resolveCommandArgs({
   command,
   args,
-  repoRoot,
+  projectRoot,
   context = {}
 }) {
   return applyFieldResolvers({
     args,
     resolvers: command?.fieldResolvers ?? [],
-    repoRoot,
+    projectRoot,
     context
   });
 }

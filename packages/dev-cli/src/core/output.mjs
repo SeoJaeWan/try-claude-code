@@ -18,7 +18,7 @@ function pickFields(payload, fields) {
 
 export function formatOutput(payload, format, fields) {
   const exitCode = payload.ok === false ? payload.exitCode ?? 1 : 0;
-  if (format === "text" || format === "html") {
+  if (format === "text") {
     const textPayload =
       typeof payload.payload === "string"
         ? payload.payload

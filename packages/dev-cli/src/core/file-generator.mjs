@@ -89,7 +89,7 @@ export async function generateFiles({
   profile,
   commandName,
   args,
-  repoRoot
+  projectRoot
 }) {
   const baseCommand = profile.commands?.[commandName];
   if (!baseCommand) {
@@ -111,7 +111,7 @@ export async function generateFiles({
   const { args: enrichedArgs } = await resolveCommandArgs({
     command,
     args,
-    repoRoot
+    projectRoot
   });
 
   if (command.generator?.requiresBasePackage && enrichedArgs.basePackage) {
@@ -149,7 +149,7 @@ export async function generateFiles({
     commandName,
     args: enrichedArgs,
     files,
-    repoRoot
+    projectRoot
   });
 
   return files;

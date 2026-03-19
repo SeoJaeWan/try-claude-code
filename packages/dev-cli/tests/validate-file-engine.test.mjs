@@ -90,7 +90,7 @@ export default usePostLogin;
   const result = await validateFiles({
     profile,
     directoryPath: "hooks",
-    repoRoot: tempRoot
+    projectRoot: tempRoot
   });
 
   assert.equal(result.ok, true);
@@ -146,7 +146,7 @@ export default widget;
   const result = await validateFiles({
     profile,
     directoryPath: "src",
-    repoRoot: tempRoot
+    projectRoot: tempRoot
   });
 
   assert.equal(result.ok, true);
@@ -202,7 +202,7 @@ test("validateFiles는 zero-match directory에 hint-rich unsupported error를 �
     () => validateFiles({
       profile,
       directoryPath: "docs",
-      repoRoot: tempRoot
+      projectRoot: tempRoot
     }),
     (error) =>
       error.code === "UNSUPPORTED_VALIDATION_TARGET" &&
@@ -233,7 +233,7 @@ export default Page;
         }
       },
       directoryPath: "app",
-      repoRoot: tempRoot
+      projectRoot: tempRoot
     }),
     (error) => error.code === "VALIDATION_PROFILE_CONFIG_ERROR"
   );

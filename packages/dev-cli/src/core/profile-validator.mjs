@@ -231,7 +231,7 @@ function assertForbiddenPatterns(files, patterns) {
   }
 }
 
-async function applyValidatorRule(rule, command, args, files, repoRoot, checks) {
+async function applyValidatorRule(rule, command, args, files, projectRoot, checks) {
   const fieldValue = rule.field ? getNestedValue(args, rule.field) : undefined;
 
   if (rule.kind === "pathRoots") {
@@ -342,7 +342,7 @@ export async function validateRequest({
   commandName,
   args,
   files,
-  repoRoot,
+  projectRoot,
   collectViolations = false,
   resolverContext = {}
 }) {
@@ -365,7 +365,7 @@ export async function validateRequest({
   const { args: resolvedArgs } = await resolveCommandArgs({
     command,
     args,
-    repoRoot,
+    projectRoot,
     context: resolverContext
   });
 
@@ -373,7 +373,7 @@ export async function validateRequest({
   const violations = [];
   for (const rule of command.validatorRules ?? []) {
     try {
-      await applyValidatorRule(rule, command, resolvedArgs, files, repoRoot, checks);
+      await applyValidatorRule(rule, command, resolvedArgs, files, projectRoot, checks);
     } catch (error) {
       if (!collectViolations) {
         throw error;

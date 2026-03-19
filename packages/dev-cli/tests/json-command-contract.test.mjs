@@ -101,7 +101,7 @@ test("tcp 기본 help JSON은 명령 사용 맥락을 summary로 노출한다", 
   assert.equal(payload.flows["new-component"].steps[1].command, "validate-file");
 });
 
-test("tcp help component JSON은 요청한 명령 계약만 구조적으로 노출한다", () => {
+test("tcp component --help JSON은 요청한 명령 계약만 구조적으로 노출한다", () => {
   const result = runCli(tcpBin, ["component", "--help"]);
 
   assert.equal(result.status, 0);

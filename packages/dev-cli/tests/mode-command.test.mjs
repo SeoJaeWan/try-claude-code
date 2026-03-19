@@ -4,10 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import { cp, mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
 
-import { createTempHome, readJson, repoRoot, runCli, tcpBin } from "./test-utils.mjs";
+import { createTempHome, readJson, projectRoot, runCli, tcpBin } from "./test-utils.mjs";
 
 async function copyProfileTree(root, profileId) {
-  const source = path.join(repoRoot, "profiles", ...profileId.split("/"));
+  const source = path.join(projectRoot, "profiles", ...profileId.split("/"));
   const target = path.join(root, "profiles", ...profileId.split("/"));
   await mkdir(path.dirname(target), { recursive: true });
   await cp(source, target, {

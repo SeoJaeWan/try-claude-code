@@ -9,10 +9,10 @@ import { loadActiveProfile } from "../src/core/profile-loader.mjs";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 
-export const repoRoot = path.resolve(currentDir, "..", "..", "..");
-export const tcpBin = path.join(repoRoot, "packages", "tcp", "bin", "tcp.mjs");
-export const tcfBin = path.join(repoRoot, "packages", "tcf", "bin", "tcf.mjs");
-export const tcbBin = path.join(repoRoot, "packages", "tcb", "bin", "tcb.mjs");
+export const projectRoot = path.resolve(currentDir, "..", "..", "..");
+export const tcpBin = path.join(projectRoot, "packages", "tcp", "bin", "tcp.mjs");
+export const tcfBin = path.join(projectRoot, "packages", "tcf", "bin", "tcf.mjs");
+export const tcbBin = path.join(projectRoot, "packages", "tcb", "bin", "tcb.mjs");
 const fetchFixtureLoader = pathToFileURL(
   path.join(currentDir, "test-fetch-fixture-loader.mjs")
 ).href;
@@ -57,10 +57,10 @@ export function createCliEnv(additional = {}) {
 }
 
 export function runCli(binPath, argv, options = {}) {
-  const { env, cwd = repoRoot, ...restOptions } = options;
+  const { env, cwd = projectRoot, ...restOptions } = options;
   const defaultProfileRoot = existsSync(path.join(cwd, "profiles"))
     ? cwd
-    : repoRoot;
+    : projectRoot;
 
   return spawnSync(process.execPath, [binPath, ...argv], {
     cwd,
@@ -93,24 +93,23 @@ export async function createTempHome(config = null) {
 
 export async function loadProfile(role, mode = "personal", version = "v1") {
   const { profile } = await loadActiveProfile({
-    repoRoot,
     role,
     mode,
     version,
-    localProfileRoot: repoRoot
+    localProfileRoot: projectRoot
   });
 
   return profile;
 }
 
-async function writeRepoFile(repoRoot, relativePath, content) {
-  const filePath = path.join(repoRoot, ...relativePath.split("/"));
+async function writeRepoFile(projectRoot, relativePath, content) {
+  const filePath = path.join(projectRoot, ...relativePath.split("/"));
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, content, "utf8");
 }
 
 async function copyProfileTree(tempRoot, profileId) {
-  const source = path.join(repoRoot, "profiles", ...profileId.split("/"));
+  const source = path.join(projectRoot, "profiles", ...profileId.split("/"));
   const target = path.join(tempRoot, "profiles", ...profileId.split("/"));
   await mkdir(path.dirname(target), { recursive: true });
   await cp(source, target, {

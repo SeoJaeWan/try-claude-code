@@ -45,10 +45,10 @@ test("resolveActiveProfile은 global 설정만 읽는다", async () => {
 test("resolveActiveProfile은 repo-local config를 무시하고 global이 없으면 null을 반환한다", async () => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-mode-"));
   const tempHome = await createTempHome();
-  const repoRoot = path.join(tempRoot, "repo");
+  const projectRoot = path.join(tempRoot, "repo");
 
-  await mkdir(repoRoot, { recursive: true });
-  await writeJson(path.join(repoRoot, ".try-claude-dev-cli.json"), {
+  await mkdir(projectRoot, { recursive: true });
+  await writeJson(path.join(projectRoot, ".try-claude-dev-cli.json"), {
     profiles: {
       frontend: {
         mode: "company",
@@ -64,7 +64,7 @@ test("resolveActiveProfile은 repo-local config를 무시하고 global이 없으
 
   const resolved = await resolveActiveProfile({
     role: "frontend",
-    repoRoot
+    projectRoot
   });
 
   assert.equal(resolved, null);

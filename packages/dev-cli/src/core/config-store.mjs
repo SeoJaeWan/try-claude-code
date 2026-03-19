@@ -28,8 +28,8 @@ export function getGlobalConfigPath() {
   return path.join(os.homedir(), CONFIG_FILE);
 }
 
-export function getRepoConfigPath(repoRoot) {
-  return path.join(repoRoot, CONFIG_FILE);
+export function getRepoConfigPath(projectRoot) {
+  return path.join(projectRoot, CONFIG_FILE);
 }
 
 export async function readConfig(filePath) {
@@ -40,10 +40,10 @@ export async function readGlobalConfig() {
   return readJsonFile(getGlobalConfigPath());
 }
 
-export async function readConfigs(repoRoot) {
+export async function readConfigs(projectRoot) {
   const [globalConfig, repoConfig] = await Promise.all([
     readJsonFile(getGlobalConfigPath()),
-    readJsonFile(getRepoConfigPath(repoRoot))
+    readJsonFile(getRepoConfigPath(projectRoot))
   ]);
 
   return {

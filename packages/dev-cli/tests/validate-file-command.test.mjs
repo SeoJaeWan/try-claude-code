@@ -242,7 +242,7 @@ export default useGetLogin;
 });
 
 test("tcb validate-file는 없는 명령으로 명시적으로 실패한다", () => {
-  const result = runCli(tcbBin, ["help", "validate-file"]);
+  const result = runCli(tcbBin, ["validate-file", "--help"]);
 
   assert.equal(result.status, 1);
   const payload = readJson(result.stderr);
