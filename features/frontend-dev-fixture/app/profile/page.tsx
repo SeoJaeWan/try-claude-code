@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
 import FileUpload from "@/components/FileUpload";
 import DatePicker from "@/components/DatePicker";
 import MultiSelect from "@/components/MultiSelect";
@@ -10,8 +8,6 @@ import MultiSelect from "@/components/MultiSelect";
 const SKILL_OPTIONS = ["JavaScript", "TypeScript", "React", "Next.js", "Python", "Go", "Rust", "CSS"];
 
 export default function ProfilePage() {
-  const { user, isAuthenticated, mounted, updateProfile } = useAuth();
-  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
@@ -21,30 +17,13 @@ export default function ProfilePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    if (mounted && !isAuthenticated) router.push("/login");
-  }, [mounted, isAuthenticated, router]);
-
-  useEffect(() => {
-    if (user) {
-      setName(user.name);
-      setBio(user.bio || "");
-      setSkills(user.skills || []);
-      setBirthDate(user.birthDate || "");
-      setAvatarFileName(user.avatarFileName);
-    }
-  }, [user]);
-
-  if (!mounted || !isAuthenticated || !user) return null;
-
   const handleSave = () => {
     const errs: Record<string, string> = {};
     if (!name.trim()) errs.name = "이름을 입력해주세요";
     if (bio.length > 500) errs.bio = "자기소개는 500자 이하여야 합니다";
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
-
-    updateProfile({ name: name.trim(), bio, skills, birthDate, avatarFileName });
+    // TODO: 프로필 저장 API 호출
     setEditing(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
@@ -64,27 +43,23 @@ export default function ProfilePage() {
         <div className="mt-6 space-y-4" data-testid="profile-view">
           <div>
             <span className="text-sm text-zinc-500">이름</span>
-            <p className="text-zinc-900 dark:text-zinc-50" data-testid="profile-display-name">{user.name}</p>
-          </div>
-          <div>
-            <span className="text-sm text-zinc-500">이메일</span>
-            <p className="text-zinc-900 dark:text-zinc-50">{user.email}</p>
+            <p className="text-zinc-900 dark:text-zinc-50" data-testid="profile-display-name">{name || "-"}</p>
           </div>
           <div>
             <span className="text-sm text-zinc-500">자기소개</span>
-            <p className="text-zinc-900 dark:text-zinc-50">{user.bio || "-"}</p>
+            <p className="text-zinc-900 dark:text-zinc-50">{bio || "-"}</p>
           </div>
           <div>
             <span className="text-sm text-zinc-500">기술 스택</span>
-            <p className="text-zinc-900 dark:text-zinc-50">{user.skills?.join(", ") || "-"}</p>
+            <p className="text-zinc-900 dark:text-zinc-50">{skills.join(", ") || "-"}</p>
           </div>
           <div>
             <span className="text-sm text-zinc-500">생년월일</span>
-            <p className="text-zinc-900 dark:text-zinc-50">{user.birthDate || "-"}</p>
+            <p className="text-zinc-900 dark:text-zinc-50">{birthDate || "-"}</p>
           </div>
           <div>
             <span className="text-sm text-zinc-500">아바타</span>
-            <p className="text-zinc-900 dark:text-zinc-50">{user.avatarFileName || "-"}</p>
+            <p className="text-zinc-900 dark:text-zinc-50">{avatarFileName || "-"}</p>
           </div>
           <button
             onClick={() => setEditing(true)}
@@ -147,11 +122,6 @@ export default function ProfilePage() {
             <button
               onClick={() => {
                 setEditing(false);
-                setName(user.name);
-                setBio(user.bio || "");
-                setSkills(user.skills || []);
-                setBirthDate(user.birthDate || "");
-                setAvatarFileName(user.avatarFileName);
                 setErrors({});
               }}
               className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300"
