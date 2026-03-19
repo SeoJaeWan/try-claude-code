@@ -1,0 +1,157 @@
+{
+  "metadata": {
+    "skill_name": "old-frontend-dev",
+    "skill_path": "C:\\Users\\sjw73\\Desktop\\dev\\try-claude-code\\plugin\\skills\\old-frontend-dev",
+    "executor_model": "sonnet",
+    "timestamp": "2026-03-19T00:00:00Z",
+    "evals_run": [1, 2, 3, 4, 5],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "eval_name": "login-hook-extraction",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 184.5,
+        "tokens": 34848,
+        "tool_calls": 24,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "form 상태/유효성 검증을 담당하는 훅 파일이 hooks/utils/login 경로에 생성된다", "passed": true, "evidence": "File created at hooks/utils/login/useLoginForm/index.ts"},
+        {"text": "submit 로직이 훅으로 추상화된다 (page에 직접 남지 않음)", "passed": true, "evidence": "usePostLogin hook handles submit; page has no direct submit logic"},
+        {"text": "훅 이름이 use 접두사로 시작한다", "passed": true, "evidence": "useLoginForm, usePostLogin"},
+        {"text": "비 API 훅이 hooks/utils/{domain}/{hookName}/index.ts 패턴으로 생성된다", "passed": true, "evidence": "hooks/utils/login/useLoginForm/index.ts"},
+        {"text": "page.tsx에 직접적인 useState 호출이 남지 않는다", "passed": true, "evidence": "page.tsx has no useState"},
+        {"text": "page.tsx가 생성된 훅을 import하여 조합한다", "passed": true, "evidence": "imports useLoginForm and usePostLogin"},
+        {"text": "이벤트 핸들러가 handle 접두사를 사용한다", "passed": true, "evidence": "handleSubmit, handleEmailChange, handlePasswordChange, handleEmailBlur, handlePasswordBlur"},
+        {"text": "훅이 화살표 함수로 정의된다", "passed": true, "evidence": "const useLoginForm = () => { ... }; const usePostLogin = () => { ... }"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "notification-query-refactor",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 183.7,
+        "tokens": 32419,
+        "tool_calls": 33,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "조회 훅이 hooks/apis/{domain}/queries/ 경로 아래에 배치된다", "passed": true, "evidence": "hooks/apis/notification/queries/useGetNotifications/index.ts"},
+        {"text": "훅이 hooks/apis/{domain}/queries/{hookName}/index.ts 패턴으로 생성된다", "passed": true, "evidence": "Exact pattern match"},
+        {"text": "NotificationList 컴포넌트에 직접적인 useEffect+fetch 패턴이 남지 않는다", "passed": true, "evidence": "Component uses hooks, no direct fetch"},
+        {"text": "loading 상태 분기가 유지된다", "passed": true, "evidence": "if (isLoading) branch with skeleton UI"},
+        {"text": "error 상태 분기가 유지된다", "passed": true, "evidence": "if (error) branch with error message"},
+        {"text": "empty state 분기가 유지된다", "passed": true, "evidence": "filtered.length === 0 check"},
+        {"text": "query 훅 이름이 useGet 접두사를 사용한다", "passed": true, "evidence": "useGetNotifications"},
+        {"text": "훅이 화살표 함수로 정의된다", "passed": true, "evidence": "const useGetNotifications = (): UseGetNotificationsResult => { ... }"}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "order-query-hook",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 88.3,
+        "tokens": 24822,
+        "tool_calls": 20,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "order query 훅 파일이 존재한다", "passed": true, "evidence": "hooks/apis/order/queries/useGetOrderDetail/index.ts"},
+        {"text": "query 훅 이름이 useGet 접두사를 사용한다", "passed": true, "evidence": "useGetOrderDetail"},
+        {"text": "훅 경로가 hooks/apis/{domain}/queries 패턴을 따른다", "passed": true, "evidence": "hooks/apis/order/queries/"},
+        {"text": "훅이 hooks/apis/{domain}/queries/{hookName}/index.ts 패턴으로 생성된다", "passed": true, "evidence": "hooks/apis/order/queries/useGetOrderDetail/index.ts"},
+        {"text": "훅이 화살표 함수로 정의된다", "passed": true, "evidence": "const useGetOrderDetail = (params) => { ... }"},
+        {"text": "훅 반환값에 loading/isLoading 상태가 포함된다", "passed": true, "evidence": "returns isLoading"},
+        {"text": "훅 반환값에 error 상태가 포함된다", "passed": true, "evidence": "returns error"},
+        {"text": "page에서 직접적인 fetch/business logic이 없고 훅 소비만 한다", "passed": true, "evidence": "Page not modified"}
+      ]
+    },
+    {
+      "eval_id": 4,
+      "eval_name": "profile-edit-hook",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 310.8,
+        "tokens": 44644,
+        "tool_calls": 41,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "profile edit 전용 훅이 hooks/utils/profile 경로에 생성된다", "passed": true, "evidence": "hooks/utils/profile/useProfileEdit/index.ts"},
+        {"text": "훅 이름이 use 접두사로 시작한다", "passed": true, "evidence": "useProfileEdit"},
+        {"text": "비 API 훅이 hooks/utils/{domain}/{hookName}/index.ts 패턴으로 생성된다", "passed": true, "evidence": "hooks/utils/profile/useProfileEdit/index.ts"},
+        {"text": "page.tsx에 다수의 인라인 useState가 그대로 남지 않는다", "passed": true, "evidence": "Zero useState in page.tsx"},
+        {"text": "page에는 섹션 렌더링과 handler 연결만 남는다", "passed": true, "evidence": "Page destructures hook return and renders sections"},
+        {"text": "저장 성공/에러 상태가 훅 반환값에 포함된다", "passed": true, "evidence": "Returns saved and errors"},
+        {"text": "훅이 화살표 함수로 정의된다", "passed": true, "evidence": "const useProfileEdit = (): UseProfileEditResult => { ... }"},
+        {"text": "기존 data-testid 속성이 유지된다", "passed": true, "evidence": "All data-testid attributes preserved"}
+      ]
+    },
+    {
+      "eval_id": 5,
+      "eval_name": "signup-hooks",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.875,
+        "passed": 7,
+        "failed": 1,
+        "total": 8,
+        "time_seconds": 207.6,
+        "tokens": 38174,
+        "tool_calls": 33,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "signup form 상태를 담당하는 훅이 hooks/utils/signup 경로에 생성된다", "passed": true, "evidence": "Hook at hooks/utils/signup/useSignupForm/index.ts — domain=signup matches app/signup/page.tsx"},
+        {"text": "signup submit을 담당하는 훅이 hooks/apis/auth/mutations/usePostSignup 경로에 생성된다", "passed": false, "evidence": "No separate API mutation hook created; submit logic (signup call, router.push, generalError state) remains inline in page.tsx"},
+        {"text": "훅 이름이 use 접두사로 시작한다", "passed": true, "evidence": "useSignupForm"},
+        {"text": "비 API 훅이 hooks/utils/{domain}/{hookName}/index.ts 패턴으로 생성된다", "passed": true, "evidence": "hooks/utils/signup/useSignupForm/index.ts"},
+        {"text": "page에서 직접적인 fetch/business logic이 남지 않는다", "passed": true, "evidence": "Page uses signup from useAuth context (not direct fetch); orchestration logic remains but no raw API calls"},
+        {"text": "confirm password validation 흐름이 보존된다", "passed": true, "evidence": "validate() checks password !== confirmPassword"},
+        {"text": "훅이 화살표 함수로 정의된다", "passed": true, "evidence": "const useSignupForm = (): UseSignupFormReturn => { ... }"},
+        {"text": "이벤트 핸들러가 handle 접두사를 사용한다", "passed": true, "evidence": "handleSubmit, handleNameChange, handleEmailChange"}
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 0.975, "stddev": 0.056, "min": 0.875, "max": 1.0},
+      "time_seconds": {"mean": 194.98, "stddev": 76.7, "min": 88.3, "max": 310.8},
+      "tokens": {"mean": 34981, "stddev": 7184, "min": 24822, "max": 44644}
+    }
+  },
+  "notes": [
+    "Iteration-4: same skill (no modifications), benchmarked with frontend-developer agent type on sonnet",
+    "Evals 1-4 all achieved 100% pass rate (consistent with iteration-2 and iteration-3)",
+    "Eval 5: 87.5% pass rate — signup-form-hook now PASS (expectation corrected: signup domain is correct per coding-rules.md). Only signup-api-hook still fails (no separate usePostSignup mutation hook)",
+    "Overall pass rate: 97.5% (matches iteration-2 best, up from 95% in iteration-3)",
+    "Avg time: 195.0s (significantly higher than iter-3's 76.0s — likely due to worktree isolation overhead)",
+    "Avg tokens: 35.0K (higher than iter-3's 18.5K — likely due to worktree isolation overhead and additional file copying)"
+  ]
+}
