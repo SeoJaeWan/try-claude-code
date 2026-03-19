@@ -1,7 +1,7 @@
 ---
 name: old-frontend-dev
 description: React/Next.js/Expo development with custom hooks and state management. Use for frontend logic, API integration, and mobile app development.
-model: opus
+model: sonnet
 context: fork
 agent: frontend-developer
 ---
