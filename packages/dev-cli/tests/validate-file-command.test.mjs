@@ -231,9 +231,9 @@ export default useGetLogin;
     skipped: 1
   });
   assert.deepEqual(payload.summary, {
-    total: 2,
+    total: 3,
     passed: 1,
-    failed: 1
+    failed: 2
   });
   const invalidHook = payload.results.find((item) => item.file.endsWith("useGetLogin/index.ts"));
   const codes = invalidHook.violations.map((item) => item.code);
