@@ -1,13 +1,13 @@
 {
     "name": "@seojaewan/tcp",
-    "version": "0.1.7",
+    "version": "0.1.8",
     "description": "Publisher CLI for the Try Claude Code profile system.",
     "type": "module",
     "bin": {
         "tcp": "./bin/tcp.mjs"
     },
     "dependencies": {
-        "@seojaewan/dev-cli-core": "0.1.7"
+        "@seojaewan/dev-cli-core": "0.1.8"
     },
     "files": [
         "bin",
