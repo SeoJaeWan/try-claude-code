@@ -1,6 +1,6 @@
 {
   "name": "@seojaewan/dev-cli-core",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Shared runtime for the tcp, tcf, and tcb CLIs.",
   "type": "module",
   "exports": {
