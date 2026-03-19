@@ -13,8 +13,6 @@ import { loadActiveProfile } from "./profile-loader.mjs";
 import { hydrateProfileSelection } from "./profile-registry.mjs";
 import { validateRequest } from "./profile-validator.mjs";
 import { validateFiles } from "./validate-file.mjs";
-import { createPublisherGuideModel } from "./publisher-guide-model.mjs";
-import { renderPublisherGuideHtml } from "./publisher-guide-html-renderer.mjs";
 import { createCliError } from "./recipe-utils.mjs";
 import { parseBatchSpec, parseCommandSpec, parseValidateFileSpec } from "./spec-parser.mjs";
 
@@ -132,7 +130,7 @@ function mapModeSetError(error, { role, mode, version }) {
   return error;
 }
 
-async function handleModeCommand({ alias, role, route, repoRoot }) {
+async function handleModeCommand({ alias, role, route }) {
   if (route.modeAction === "show") {
     assertAllowedOptions(
       route.options,
@@ -223,7 +221,6 @@ async function handleModeCommand({ alias, role, route, repoRoot }) {
 
   try {
     await loadActiveProfile({
-      repoRoot,
       role,
       mode: activeProfile.mode,
       version: activeProfile.version
@@ -250,7 +247,7 @@ async function handleModeCommand({ alias, role, route, repoRoot }) {
   });
 }
 
-async function resolveProfileContext({ alias, role, repoRoot }) {
+async function resolveProfileContext({ alias, role }) {
   const activeProfile = await resolveActiveProfile({
     role
   });
@@ -260,7 +257,6 @@ async function resolveProfileContext({ alias, role, repoRoot }) {
   }
 
   const { profile } = await loadActiveProfile({
-    repoRoot,
     role,
     mode: activeProfile.mode,
     version: activeProfile.version
@@ -272,7 +268,7 @@ async function resolveProfileContext({ alias, role, repoRoot }) {
   };
 }
 
-async function handleHelpCommand({ alias, role, route, repoRoot }) {
+async function handleHelpCommand({ alias, role, route }) {
   assertNoProfileOverrideOptions({
     alias,
     role,
@@ -285,7 +281,6 @@ async function handleHelpCommand({ alias, role, route, repoRoot }) {
 
   if (activeProfile) {
     ({ profile } = await loadActiveProfile({
-      repoRoot,
       role,
       mode: activeProfile.mode,
       version: activeProfile.version
@@ -313,16 +308,24 @@ async function handleHelpCommand({ alias, role, route, repoRoot }) {
   return payload;
 }
 
-async function handleGuideCommand({ alias, role, route, repoRoot }) {
+async function handleGuideCommand({ alias, role, route }) {
   assertNoProfileOverrideOptions({
     alias,
     role,
     options: route.options
   });
+  assertAllowedOptions(
+    route.options,
+    new Set([
+      "text",
+      "json",
+      "fields"
+    ]),
+    "guide"
+  );
   const { activeProfile, profile } = await resolveProfileContext({
     alias,
-    role,
-    repoRoot
+    role
   });
   assertCommandExists(profile, route.commandName);
   const payload = createGuidePayload({
@@ -332,34 +335,6 @@ async function handleGuideCommand({ alias, role, route, repoRoot }) {
     profile,
     commandName: route.commandName
   });
-
-  if (route.format === "html") {
-    if (role !== "publisher") {
-      throw createCliError(
-        "HTML_GUIDE_UNSUPPORTED",
-        "--html guide is only supported for tcp",
-        {
-          alias,
-          role
-        }
-      );
-    }
-
-    const model = createPublisherGuideModel({
-      alias,
-      role,
-      activeProfile,
-      profile
-    });
-
-    return {
-      ok: true,
-      format: "html",
-      payload: renderPublisherGuideHtml(model, {
-        activeCommandId: route.commandName
-      })
-    };
-  }
 
   if (route.format === "text") {
     return {
@@ -372,7 +347,7 @@ async function handleGuideCommand({ alias, role, route, repoRoot }) {
   return payload;
 }
 
-async function handleGenerateCommand({ alias, role, route, repoRoot }) {
+async function handleGenerateCommand({ alias, role, route, projectRoot }) {
   assertNoProfileOverrideOptions({
     alias,
     role,
@@ -380,8 +355,7 @@ async function handleGenerateCommand({ alias, role, route, repoRoot }) {
   });
   const { activeProfile, profile } = await resolveProfileContext({
     alias,
-    role,
-    repoRoot
+    role
   });
   const spec = parseCommandSpec(route);
   const result = await executeSpecCommand({
@@ -390,7 +364,7 @@ async function handleGenerateCommand({ alias, role, route, repoRoot }) {
     profileId: profile.id,
     commandName: route.commandName,
     spec,
-    repoRoot
+    projectRoot
   });
 
   if (!result.files?.length) {
@@ -403,7 +377,7 @@ async function handleGenerateCommand({ alias, role, route, repoRoot }) {
   }
 
   const writtenFiles = await writeGeneratedFiles({
-    repoRoot,
+    projectRoot,
     files: result.files,
     dryRun: !Boolean(route.options.apply),
     force: Boolean(route.options.force)
@@ -418,7 +392,7 @@ async function handleGenerateCommand({ alias, role, route, repoRoot }) {
   });
 }
 
-async function handleBatchCommand({ alias, role, route, repoRoot }) {
+async function handleBatchCommand({ alias, role, route, projectRoot }) {
   assertNoProfileOverrideOptions({
     alias,
     role,
@@ -426,8 +400,7 @@ async function handleBatchCommand({ alias, role, route, repoRoot }) {
   });
   const { activeProfile, profile } = await resolveProfileContext({
     alias,
-    role,
-    repoRoot
+    role
   });
   const batchSpec = parseBatchSpec(route);
   const result = await executeBatch({
@@ -435,7 +408,7 @@ async function handleBatchCommand({ alias, role, route, repoRoot }) {
     profileId: profile.id,
     role,
     batchSpec,
-    repoRoot,
+    projectRoot,
     apply: Boolean(route.options.apply),
     force: Boolean(route.options.force)
   });
@@ -448,7 +421,7 @@ async function handleBatchCommand({ alias, role, route, repoRoot }) {
   });
 }
 
-async function handleValidateCommand({ alias, role, route, repoRoot }) {
+async function handleValidateCommand({ alias, role, route, projectRoot }) {
   assertNoProfileOverrideOptions({
     alias,
     role,
@@ -471,8 +444,7 @@ async function handleValidateCommand({ alias, role, route, repoRoot }) {
   );
   const { activeProfile, profile } = await resolveProfileContext({
     alias,
-    role,
-    repoRoot
+    role
   });
   const checks = await validateRequest({
     role,
@@ -493,7 +465,7 @@ async function handleValidateCommand({ alias, role, route, repoRoot }) {
           }
         ]
       : [],
-    repoRoot
+    projectRoot
   });
 
   return createSuccessPayload({
@@ -505,7 +477,7 @@ async function handleValidateCommand({ alias, role, route, repoRoot }) {
   });
 }
 
-async function handleValidateFileCommand({ alias, role, route, repoRoot }) {
+async function handleValidateFileCommand({ alias, role, route, projectRoot }) {
   assertNoProfileOverrideOptions({
     alias,
     role,
@@ -521,15 +493,14 @@ async function handleValidateFileCommand({ alias, role, route, repoRoot }) {
   );
   const { activeProfile, profile } = await resolveProfileContext({
     alias,
-    role,
-    repoRoot
+    role
   });
   assertCommandExists(profile, "validateFile");
   const spec = parseValidateFileSpec(route);
   const validation = await validateFiles({
     profile,
     directoryPath: spec.directory,
-    repoRoot
+    projectRoot
   });
 
   return {
@@ -549,7 +520,7 @@ export async function runCli({
   stdout = process.stdout,
   stderr = process.stderr
 }) {
-  const repoRoot = findProjectRoot(cwd);
+  const projectRoot = findProjectRoot(cwd);
 
   try {
     const parsed = parseArgv(argv);
@@ -560,50 +531,47 @@ export async function runCli({
       payload = await handleHelpCommand({
         alias,
         role: route.role,
-        route,
-        repoRoot
+        route
       });
     } else if (route.action === "guide") {
       payload = await handleGuideCommand({
         alias,
         role: route.role,
-        route,
-        repoRoot
+        route
       });
     } else if (route.action === "mode") {
       payload = await handleModeCommand({
         alias,
         role: route.role,
-        route,
-        repoRoot
+        route
       });
     } else if (route.action === "validate") {
       payload = await handleValidateCommand({
         alias,
         role: route.role,
         route,
-        repoRoot
+        projectRoot
       });
     } else if (route.action === "validateFile") {
       payload = await handleValidateFileCommand({
         alias,
         role: route.role,
         route,
-        repoRoot
+        projectRoot
       });
     } else if (route.action === "batch") {
       payload = await handleBatchCommand({
         alias,
         role: route.role,
         route,
-        repoRoot
+        projectRoot
       });
     } else {
       payload = await handleGenerateCommand({
         alias,
         role: route.role,
         route,
-        repoRoot
+        projectRoot
       });
     }
 

@@ -3,7 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 export async function writeGeneratedFiles({
-  repoRoot,
+  projectRoot,
   files,
   dryRun,
   force
@@ -24,7 +24,7 @@ export async function writeGeneratedFiles({
   }
 
   for (const file of files) {
-    const absolutePath = path.join(repoRoot, file.path);
+    const absolutePath = path.join(projectRoot, file.path);
     if (existsSync(absolutePath) && !force) {
       const error = new Error(`File already exists: ${file.path}`);
       error.code = "FILE_EXISTS";
@@ -38,7 +38,7 @@ export async function writeGeneratedFiles({
   const results = [];
 
   for (const file of files) {
-    const absolutePath = path.join(repoRoot, file.path);
+    const absolutePath = path.join(projectRoot, file.path);
 
     if (!dryRun) {
       await mkdir(path.dirname(absolutePath), { recursive: true });

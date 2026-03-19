@@ -11,11 +11,7 @@ function normalizeFormat(options) {
 }
 
 function normalizeGuideFormat(options) {
-  if (options.html === true) {
-    return "html";
-  }
-
-  if (options.json === true) {
+  if (options.json === true && options.text !== true) {
     return "json";
   }
 
@@ -37,15 +33,21 @@ export function routeCommand(alias, parsed) {
     throw error;
   }
 
-  if (parsed.options.help || first === "" || first === "help") {
+  if (first === "help" || first === "describe") {
+    const error = new Error(`Unknown command: ${first}`);
+    error.code = "UNKNOWN_COMMAND";
+    error.details = {
+      command: first
+    };
+    throw error;
+  }
+
+  if (parsed.options.help || first === "") {
     return {
       role,
       action: "help",
       format,
-      commandName:
-        first === "help"
-          ? normalizeCommandName(parsed.positionals[1] ?? "")
-          : first || parsed.options.command || null,
+      commandName: first || parsed.options.command || null,
       options: parsed.options
     };
   }
@@ -86,16 +88,6 @@ export function routeCommand(alias, parsed) {
       role,
       action: "guide",
       format: normalizeGuideFormat(parsed.options),
-      commandName: normalizeCommandName(parsed.positionals[1] ?? "") || null,
-      options: parsed.options
-    };
-  }
-
-  if (first === "describe") {
-    return {
-      role,
-      action: "help",
-      format,
       commandName: normalizeCommandName(parsed.positionals[1] ?? "") || null,
       options: parsed.options
     };

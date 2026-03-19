@@ -16,7 +16,7 @@ export async function executeSpecCommand({
   role,
   commandName,
   spec,
-  repoRoot
+  projectRoot
 }) {
   const baseCommand = profile.commands?.[commandName];
   const command = baseCommand
@@ -58,7 +58,7 @@ export async function executeSpecCommand({
     profile,
     commandName,
     args: normalizedSpec,
-    repoRoot
+    projectRoot
   });
 
   return {
@@ -76,7 +76,7 @@ export async function executeBatch({
   profileId,
   role,
   batchSpec,
-  repoRoot,
+  projectRoot,
   apply,
   force
 }) {
@@ -92,7 +92,7 @@ export async function executeBatch({
       role,
       commandName: op.command,
       spec: resolvedSpec,
-      repoRoot
+      projectRoot
     });
 
     const resultWithId = {
@@ -113,7 +113,7 @@ export async function executeBatch({
   }
 
   const fileWriteResults = await writeGeneratedFiles({
-    repoRoot,
+    projectRoot,
     files: collectedFiles.map(({ opId, ...file }) => file),
     dryRun: !apply,
     force

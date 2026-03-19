@@ -28,8 +28,8 @@ async function collectJavaFiles(rootDir) {
   }
 }
 
-export async function detectSpringBasePackage(repoRoot) {
-  const javaRoot = path.join(repoRoot, "src", "main", "java");
+export async function detectSpringBasePackage(projectRoot) {
+  const javaRoot = path.join(projectRoot, "src", "main", "java");
   const applicationFiles = await collectJavaFiles(javaRoot);
 
   for (const filePath of applicationFiles) {

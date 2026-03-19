@@ -216,7 +216,6 @@ async function loadRemoteProfileById(profileId, seen = new Set()) {
 }
 
 export async function loadActiveProfile({
-  repoRoot,
   role,
   mode,
   version,

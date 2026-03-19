@@ -97,7 +97,7 @@ shared override 규칙:
 > - `mode set` validates the full remote profile contract by loading `profile.json` plus its `extends` and template chain.
 > - `mode show` returns the stored value only and does not revalidate remote availability.
 > - General commands do not accept `--mode`, `--version`, or `--profile` overrides.
-> - `--help` and `help <command>` still work when mode is unset and return minimal setup guidance.
+> - `--help` still works when mode is unset and returns minimal setup guidance.
 
 > Legacy note: the older registry-first bullets below are historical context only and are superseded by the current runtime contract above.
 
@@ -193,18 +193,18 @@ tcb --help
 top-level help는 명령 탐색, whenToUse, relatedCommands, flow discovery만 제공한다.
 
 ```bash
-tcp help component --text
-tcf help hook --text
-tcf help apiHook --text
-tcb help module --text
+tcp component --help --text
+tcf hook --help --text
+tcf apiHook --help --text
+tcb module --help --text
 ```
 
 구조화된 상세 contract가 실제로 필요할 때만 command-scoped JSON help를 읽는다.
 
 ```bash
-tcp help component
-tcf help apiHook
-tcb help requestDto
+tcp component --help
+tcf apiHook --help
+tcb requestDto --help
 ```
 
 top-level `tcp --help`, `tcf --help`, `tcb --help`는 command discovery나 전체 contract audit가 필요할 때만 사용한다.
@@ -225,20 +225,10 @@ tcf guide
 tcb guide
 tcp guide component
 tcf guide hook
-tcp guide --html > profiles/publisher/personal/v1/guide.html
 ```
 
 `guide`의 source of truth도 profile 안의 `guide` 속성이다.
 즉 machine rule과 human guide를 같은 `profile.json` 안에서 함께 관리한다.
-
-현재 HTML guide는 `tcp`만 지원한다.
-
-```bash
-tcp guide --html > profiles/publisher/personal/v1/guide.html
-tcp guide component --html > profiles/publisher/personal/v1/guide.html
-```
-
-`guide.html`은 self-contained read-only 문서이며, profile이 바뀌면 위 명령으로 다시 생성한다.
 
 ## Execution Model
 

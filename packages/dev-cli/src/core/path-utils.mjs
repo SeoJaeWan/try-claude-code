@@ -29,10 +29,6 @@ export function findProjectRoot(startDir) {
   }
 }
 
-export function findRepoRoot(startDir) {
-  return findProjectRoot(startDir);
-}
-
 export function normalizeCliPath(value) {
   if (!value) {
     return "";

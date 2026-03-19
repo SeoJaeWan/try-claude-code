@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { executeSpecCommand } from "../src/core/batch-executor.mjs";
-import { loadProfile, repoRoot } from "./test-utils.mjs";
+import { loadProfile, projectRoot } from "./test-utils.mjs";
 
 test("publisher profile은 shared snippet command와 component uiState batch를 함께 노출한다", async () => {
   const profile = await loadProfile("publisher");
@@ -49,7 +49,7 @@ test("지원하지 않는 profile-command 조합은 deterministic error로 실�
           pattern: "toggle",
           name: "menu"
         },
-        repoRoot
+        projectRoot
       }),
     (error) => error.code === "UNKNOWN_COMMAND"
   );

@@ -1,7 +1,7 @@
 ---
 name: backend-dev
 description: Backend API development, database integration, and authentication. Auto-detects framework and language from project files. Use for API endpoints, DB operations, server logic, and backend testing.
-model: opus
+model: sonnet
 context: fork
 agent: backend-developer
 ---

@@ -59,12 +59,12 @@ function isPascalCaseName(name) {
   return /^[A-Z][A-Za-z0-9]*$/.test(name);
 }
 
-function toFsPath(repoRoot, cliPath) {
-  return path.join(repoRoot, ...splitCliPath(cliPath));
+function toFsPath(projectRoot, cliPath) {
+  return path.join(projectRoot, ...splitCliPath(cliPath));
 }
 
-function toCliPath(repoRoot, filePath) {
-  return normalizeCliPath(path.relative(repoRoot, filePath));
+function toCliPath(projectRoot, filePath) {
+  return normalizeCliPath(path.relative(projectRoot, filePath));
 }
 
 function isJsxNode(node) {
@@ -368,11 +368,11 @@ function matchesFileRule(rule, normalizedFilePath) {
   };
 }
 
-async function buildValidationTarget(profile, rule, normalizedFilePath, captures, repoRoot) {
+async function buildValidationTarget(profile, rule, normalizedFilePath, captures, projectRoot) {
   const baseArgs = (await applyFieldResolvers({
     args: {},
     resolvers: rule.argMappings ?? [],
-    repoRoot,
+    projectRoot,
     context: {
       captures,
       filePath: normalizedFilePath
@@ -390,7 +390,7 @@ async function buildValidationTarget(profile, rule, normalizedFilePath, captures
     ? (await resolveCommandArgs({
         command: resolvedCommand,
         args: baseArgs,
-        repoRoot,
+        projectRoot,
         context: {
           captures,
           filePath: normalizedFilePath
@@ -419,7 +419,7 @@ async function buildValidationTarget(profile, rule, normalizedFilePath, captures
   };
 }
 
-async function inferValidationTarget(profile, rawFilePath, repoRoot, options = {}) {
+async function inferValidationTarget(profile, rawFilePath, projectRoot, options = {}) {
   const includeUnsupportedViolation = options.includeUnsupportedViolation !== false;
   const normalizedFilePath = normalizeCliPath(rawFilePath);
   const violations = [];
@@ -468,7 +468,7 @@ async function inferValidationTarget(profile, rawFilePath, repoRoot, options = {
       rule,
       normalizedFilePath,
       matched.captures,
-      repoRoot
+      projectRoot
     );
 
     return {
@@ -823,8 +823,8 @@ async function readPathConfig(configPath) {
   }
 }
 
-async function findNearestPathConfig(filePath, repoRoot, cache) {
-  let current = path.dirname(toFsPath(repoRoot, filePath));
+async function findNearestPathConfig(filePath, projectRoot, cache) {
+  let current = path.dirname(toFsPath(projectRoot, filePath));
 
   while (true) {
     if (cache.has(current)) {
@@ -852,7 +852,7 @@ async function findNearestPathConfig(filePath, repoRoot, cache) {
       return config;
     }
 
-    if (current === repoRoot) {
+    if (current === projectRoot) {
       cache.set(current, null);
       return null;
     }
@@ -898,19 +898,19 @@ function resolveImportCandidateToFile(candidatePath) {
 async function resolveImportPath({
   filePath,
   source,
-  repoRoot,
+  projectRoot,
   configCache
 }) {
   if (source.startsWith(".")) {
     const basePath = path.resolve(
-      path.dirname(toFsPath(repoRoot, filePath)),
+      path.dirname(toFsPath(projectRoot, filePath)),
       source
     );
     const resolved = resolveImportCandidateToFile(basePath);
-    return resolved ? toCliPath(repoRoot, resolved) : null;
+    return resolved ? toCliPath(projectRoot, resolved) : null;
   }
 
-  const config = await findNearestPathConfig(filePath, repoRoot, configCache);
+  const config = await findNearestPathConfig(filePath, projectRoot, configCache);
   if (!config) {
     return null;
   }
@@ -931,7 +931,7 @@ async function resolveImportPath({
       const candidate = path.resolve(baseUrl, replaced);
       const resolved = resolveImportCandidateToFile(candidate);
       if (resolved) {
-        return toCliPath(repoRoot, resolved);
+        return toCliPath(projectRoot, resolved);
       }
     }
   }
@@ -942,7 +942,7 @@ async function resolveImportPath({
 async function collectResolvedImports({
   filePath,
   imports,
-  repoRoot,
+  projectRoot,
   configCache
 }) {
   const resolvedImports = [];
@@ -950,7 +950,7 @@ async function collectResolvedImports({
     const resolved = await resolveImportPath({
       configCache,
       filePath,
-      repoRoot,
+      projectRoot,
       source
     });
 
@@ -997,12 +997,12 @@ async function collectSourceFiles(rootDirectory) {
   return sourceFiles;
 }
 
-async function buildImportIndex(repoRoot, configCache) {
+async function buildImportIndex(projectRoot, configCache) {
   const importIndex = new Map();
-  const sourceFiles = await collectSourceFiles(repoRoot);
+  const sourceFiles = await collectSourceFiles(projectRoot);
 
   for (const sourceFile of sourceFiles) {
-    const filePath = toCliPath(repoRoot, sourceFile);
+    const filePath = toCliPath(projectRoot, sourceFile);
     let content;
     try {
       content = await readFile(sourceFile, "utf8");
@@ -1022,7 +1022,7 @@ async function buildImportIndex(repoRoot, configCache) {
       configCache,
       filePath,
       imports: metadata.imports,
-      repoRoot
+      projectRoot
     });
 
     for (const resolvedImport of resolvedImports) {
@@ -1157,11 +1157,11 @@ function createOwnershipViolations({
 async function analyzeSingleFile({
   profile,
   filePath,
-  repoRoot,
+  projectRoot,
   configCache,
   target: providedTarget
 }) {
-  const target = providedTarget ?? await inferValidationTarget(profile, filePath, repoRoot);
+  const target = providedTarget ?? await inferValidationTarget(profile, filePath, projectRoot);
   const normalizedFilePath = target.file;
   const result = {
     file: normalizedFilePath,
@@ -1193,7 +1193,7 @@ async function analyzeSingleFile({
     return result;
   }
 
-  const absoluteFilePath = toFsPath(repoRoot, normalizedFilePath);
+  const absoluteFilePath = toFsPath(projectRoot, normalizedFilePath);
   if (!existsSync(absoluteFilePath)) {
     result.violations.push(
       createViolation(
@@ -1232,7 +1232,7 @@ async function analyzeSingleFile({
       commandName: target.commandName,
       args: target.validationArgs,
       files: [],
-      repoRoot,
+      projectRoot,
       collectViolations: true
     });
     result.violations.push(...pathValidation.violations);
@@ -1247,7 +1247,7 @@ async function analyzeSingleFile({
           content
         }
       ],
-      repoRoot,
+      projectRoot,
       collectViolations: true
     });
     result.violations.push(...contentValidation.violations);
@@ -1301,7 +1301,7 @@ async function analyzeSingleFile({
     configCache,
     filePath: normalizedFilePath,
     imports: metadata.imports,
-    repoRoot
+    projectRoot
   });
 
   const ownershipContext = getOwnershipContext(
@@ -1414,7 +1414,7 @@ function createUnsupportedDirectoryError(validateCommand, directory) {
 
 async function resolveDiscoveryTargets({
   profile,
-  repoRoot,
+  projectRoot,
   directoryPath
 }) {
   const validateCommand = profile.commands?.validateFile ?? {};
@@ -1425,7 +1425,7 @@ async function resolveDiscoveryTargets({
   }
 
   const normalizedRoot = normalizeDiscoveryRoot(directoryPath);
-  const absoluteRoot = toFsPath(repoRoot, normalizedRoot);
+  const absoluteRoot = toFsPath(projectRoot, normalizedRoot);
 
   let rootStats;
   try {
@@ -1457,8 +1457,8 @@ async function resolveDiscoveryTargets({
   for (const sourceFile of sourceFiles) {
     const target = await inferValidationTarget(
       profile,
-      toCliPath(repoRoot, sourceFile),
-      repoRoot,
+      toCliPath(projectRoot, sourceFile),
+      projectRoot,
       {
         includeUnsupportedViolation: false
       }
@@ -1487,13 +1487,13 @@ async function resolveDiscoveryTargets({
 export async function validateFiles({
   profile,
   directoryPath,
-  repoRoot
+  projectRoot
 }) {
   const configCache = new Map();
   const results = [];
   const resolved = await resolveDiscoveryTargets({
     profile,
-    repoRoot,
+    projectRoot,
     directoryPath
   });
   const discovery = resolved.discovery;
@@ -1505,14 +1505,14 @@ export async function validateFiles({
         configCache,
         filePath: target.file,
         profile,
-        repoRoot,
+        projectRoot,
         target
       })
     );
   }
 
   if (results.some((result) => result._ownershipCandidates?.length > 0)) {
-    const importIndex = await buildImportIndex(repoRoot, configCache);
+    const importIndex = await buildImportIndex(projectRoot, configCache);
     for (const result of results) {
       if (!result._ownershipCandidates?.length || !result._parentBaseDir || !result._ownershipRule) {
         continue;

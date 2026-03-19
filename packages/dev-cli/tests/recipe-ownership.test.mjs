@@ -7,7 +7,7 @@ import path from "node:path";
 import { normalizeSpec, renderSnippet } from "../src/core/spec-normalizer.mjs";
 import { validateRequest } from "../src/core/profile-validator.mjs";
 import { loadActiveProfile } from "../src/core/profile-loader.mjs";
-import { loadProfile, repoRoot } from "./test-utils.mjs";
+import { loadProfile, projectRoot } from "./test-utils.mjs";
 
 function cloneCommand(command) {
   return JSON.parse(JSON.stringify(command));
@@ -202,7 +202,6 @@ test("shared 기본 recipe는 역할 profile에서 command 단위로 override할
   );
 
   const { profile } = await loadActiveProfile({
-    repoRoot: tempRoot,
     role: "frontend",
     mode: "personal",
     version: "v1",
@@ -259,7 +258,7 @@ test("validator는 role hardcode가 아니라 profile data를 읽는다", async 
         content: "const HomePage = () => { return <div />; };"
       }
     ],
-    repoRoot
+    projectRoot
   });
 
   assert.equal(checks.ok, true);
@@ -279,7 +278,7 @@ test("validator는 role hardcode가 아니라 profile data를 읽는다", async 
             content: "danger(() => {});"
           }
         ],
-        repoRoot
+        projectRoot
       }),
     (error) => error.code === "INVALID_PATH_ROOT"
   );
