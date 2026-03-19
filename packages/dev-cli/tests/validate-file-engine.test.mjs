@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { validateFiles } from "../src/core/validate-file.mjs";
+import { validateFiles } from "../src/core/validation/validate-file.mjs";
 import { createTempRepo } from "./test-utils.mjs";
 
 test("validateFiles는 directory scan에서도 targetRules argMapping과 fieldResolver를 함께 적용한다", async () => {
@@ -18,7 +18,7 @@ export default usePostLogin;
   });
 
   const profile = {
-    id: "frontend/personal/v1",
+    id: "tcf/personal/v1",
     commands: {
       apiHook: {
         fieldResolvers: [
@@ -113,7 +113,7 @@ export default widget;
   });
 
   const profile = {
-    id: "frontend/personal/v1",
+    id: "tcf/personal/v1",
     commands: {
       hook: {
         validatorRules: []
@@ -172,7 +172,7 @@ test("validateFiles는 zero-match directory에 hint-rich unsupported error를 �
   });
 
   const profile = {
-    id: "publisher/personal/v1",
+    id: "tcp/personal/v1",
     commands: {
       validateFile: {
         unsupportedTargetMessage: "Publisher validate-file only supports declared component/page entry files.",
@@ -225,7 +225,7 @@ export default Page;
   await assert.rejects(
     () => validateFiles({
       profile: {
-        id: "publisher/personal/v1",
+        id: "tcp/personal/v1",
         commands: {
           validateFile: {
             targetRules: []

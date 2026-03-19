@@ -1,11 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { normalizeSpec, renderSnippet } from "../src/core/spec-normalizer.mjs";
+import { normalizeSpec, renderSnippet } from "../src/core/execution/spec-normalizer.mjs";
 import { loadProfile } from "./test-utils.mjs";
 
 test("internalHandler 이름은 profile recipe 기준으로 정규화된다", async () => {
-  const profile = await loadProfile("frontend");
+  const profile = await loadProfile("tcf");
   const command = profile.commands.function;
   const result = normalizeSpec({
     command,
@@ -27,7 +27,7 @@ test("internalHandler 이름은 profile recipe 기준으로 정규화된다", as
 });
 
 test("internalHandler 의도와 이름이 충돌하면 SPEC_CONFLICT로 실패한다", async () => {
-  const profile = await loadProfile("frontend");
+  const profile = await loadProfile("tcf");
   const command = profile.commands.function;
   assert.throws(
     () =>
@@ -44,7 +44,7 @@ test("internalHandler 의도와 이름이 충돌하면 SPEC_CONFLICT로 실패�
 });
 
 test("props command는 members only snippet을 만든다", async () => {
-  const profile = await loadProfile("publisher");
+  const profile = await loadProfile("tcp");
   const command = profile.commands.props;
   const { normalizedSpec } = normalizeSpec({
     command,
@@ -77,7 +77,7 @@ test("props command는 members only snippet을 만든다", async () => {
 });
 
 test("uiState는 state와 handler snippet을 함께 만든다", async () => {
-  const profile = await loadProfile("publisher");
+  const profile = await loadProfile("tcp");
   const command = profile.commands.uiState;
   const { normalizedSpec } = normalizeSpec({
     command,

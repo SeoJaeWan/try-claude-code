@@ -823,9 +823,9 @@ flowchart LR
 | 작업 종류 | 진입점 | 실행 스킬 | 생성 엔진 | 규칙 소스 | 대표 산출물 |
 |---|---|---|---|---|---|
 | 기획/분석 | `brainstorm`, `architect` | Codex planning skills | 없음 | `.codex/skills/*` | `plans/*`, 요구사항 정리 |
-| 프론트엔드 UI | `architect` 후 `ui-publish` | `plugin/skills/ui-publish/SKILL.md` | `tcp` | `profiles/publisher/*`, `profiles/shared/*` | 컴포넌트 scaffold + UI 구현 |
-| 프론트엔드 로직 | `architect` 후 `frontend-dev` | `plugin/skills/frontend-dev/SKILL.md` | `tcf` | `profiles/frontend/*`, `profiles/shared/*` | hook/apiHook scaffold + 로직 |
-| 백엔드 | `architect` 후 `backend-dev` | `plugin/skills/backend-dev/SKILL.md` | `tcb` | `profiles/backend/*` | Spring feature package scaffold (`controller/service/repository/dto/entity`) |
+| 프론트엔드 UI | `architect` 후 `ui-publish` | `plugin/skills/ui-publish/SKILL.md` | `tcp` | `profiles/tcp/*`, `profiles/shared/*` | 컴포넌트 scaffold + UI 구현 |
+| 프론트엔드 로직 | `architect` 후 `frontend-dev` | `plugin/skills/frontend-dev/SKILL.md` | `tcf` | `profiles/tcf/*`, `profiles/shared/*` | hook/apiHook scaffold + 로직 |
+| 백엔드 | `architect` 후 `backend-dev` | `plugin/skills/backend-dev/SKILL.md` | `tcb` | `profiles/tcb/*` | Spring feature package scaffold (`controller/service/repository/dto/entity`) |
 | full-flow E2E guard | `architect` plan phase | `plugin/skills/guard-e2e-test/SKILL.md` | 테스트 실행 | E2E references + plan artifact | Playwright guard 결과 |
 | Git 작업 | 직접 실행 가능 | `commit`, `pr` | 없음 | skill doc | commit / PR 메시지 |
 
@@ -867,9 +867,9 @@ flowchart LR
 - `plugin/skills/frontend-dev/SKILL.md`
 - `plugin/skills/ui-publish/SKILL.md`
 - `plugin/agents/frontend-developer.md`
-- `packages/dev-cli/src/core/command-router.mjs`
-- `packages/dev-cli/src/core/profile-loader.mjs`
-- `packages/dev-cli/src/core/batch-executor.mjs`
+- `packages/dev-cli/src/core/cli/command-router.mjs`
+- `packages/dev-cli/src/core/profiles/profile-loader.mjs`
+- `packages/dev-cli/src/core/execution/batch-executor.mjs`
 - `profiles/shared/personal/v1/profile.json`
-- `profiles/frontend/personal/v1/profile.json`
+- `profiles/tcf/personal/v1/profile.json`
 - `docs/dev-cli-design.md`

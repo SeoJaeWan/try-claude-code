@@ -1,0 +1,789 @@
+{
+  "id": "tcp/personal/v1",
+  "kind": "publisher-profile",
+  "alias": "tcp",
+  "extends": ["shared/personal/v1"],
+  "guide": {
+    "요약": "퍼블리셔 personal v1 규칙이다. UI 껍질과 상호작용 상태만 다룬다.",
+    "공통규칙": [
+      "퍼블리셔는 비즈니스 로직을 구현하지 않는다.",
+      "toggle, sidebar, modal 같은 UI 상호작용 state는 허용한다.",
+      "React TSX 파일은 전부 컴포넌트로 본다. page.tsx는 page.tsx를 유지하고, 그 외 컴포넌트 엔트리는 index.tsx를 사용한다.",
+      "컴포넌트 경로는 마지막 components 세그먼트 아래에서 동일 규칙을 따른다. 예: components/common/{component}, src/components/common/{component}, features/{feature}/components/{domain}/{component}.",
+      "domain은 app/{domain}/page.tsx의 root page segment를 사용한다. 여러 page domain에서 공통이면 common을 사용한다.",
+      "레거시 컴포넌트 경로가 현재 컨벤션과 다르면 기존 위치를 유지하지 말고 먼저 현재 컨벤션 경로로 마이그레이션한다.",
+      "레거시 경로가 이미 현재 컨벤션과 같으면 경로는 유지하고 내부 구현만 수정한다."
+    ]
+  },
+  "helpSummary": {
+    "summary": "Publisher personal v1 rules for UI shells and interaction state.",
+    "flows": {
+      "new-component": {
+        "title": "Create a new UI component",
+        "summary": "Create the component file, then validate placement and AST rules with validate-file.",
+        "steps": [
+          {
+            "command": "component",
+            "purpose": "Generate the component file"
+          },
+          {
+            "command": "validateFile",
+            "purpose": "Validate path and AST rules"
+          }
+        ]
+      },
+      "add-ui-interaction": {
+        "title": "Add UI interaction to a component",
+        "summary": "Create the interaction shell with ui-state, update the component, then validate the result.",
+        "steps": [
+          {
+            "command": "uiState",
+            "purpose": "Generate toggle/open/close state shells"
+          },
+          {
+            "command": "component",
+            "purpose": "Apply the UI interaction to the component"
+          },
+          {
+            "command": "validateFile",
+            "purpose": "Validate the final structure"
+          }
+        ]
+      },
+      "bulk-publisher-update": {
+        "title": "Batch publisher operations",
+        "summary": "Bundle multiple publisher operations in batch for preview or apply.",
+        "steps": [
+          {
+            "command": "batch",
+            "purpose": "Run multiple operations in sequence"
+          }
+        ]
+      }
+    }
+  },
+  "rules": {
+    "guidance": {
+      "placementRules": [
+        "Use */components/common/{component} when reused in 2 or more page domains.",
+        "Use */components/{domain}/{component} for domain-specific components.",
+        "Nested UI parts may live under the parent component folder."
+      ],
+      "pathPolicy": {
+        "requiredPatterns": [
+          "*/components/common/{component}",
+          "*/components/{domain}/{component}"
+        ],
+        "componentsSegmentPolicy": "the final components segment is the root for placement rules; prefixes like src/ or features/{feature}/ are allowed",
+        "domainPolicy": "domain is the root page segment from app/{domain}; use common only for components shared across multiple page domains",
+        "domainExamples": {
+          "app/login/page.tsx": "login",
+          "app/signup/page.tsx": "signup",
+          "app/profile/page.tsx": "profile"
+        }
+      }
+    }
+  },
+  "commands": {
+    "validateFile": {
+      "description": "Validate publisher UI files against placement and AST rules",
+      "summary": {
+        "whenToUse": [
+          "When you want to verify that a generated or edited publisher UI file follows path and AST rules"
+        ],
+        "relatedCommands": [
+          {
+            "id": "component",
+            "reason": "Validate right after generation"
+          },
+          {
+            "id": "uiState",
+            "reason": "Validate the structure after interaction state changes"
+          },
+          {
+            "id": "batch",
+            "reason": "Validate the result of a batch run"
+          }
+        ],
+        "flowRefs": ["new-component", "add-ui-interaction", "bulk-publisher-update"]
+      },
+      "contracts": {
+        "inputShape": {
+          "directoryField": "<path>",
+          "directoryModes": ["positional"]
+        },
+        "pathPolicy": {
+          "requiredPatterns": [
+            "*/components/common/{component}/index.tsx",
+            "*/components/{domain}/{component}/index.tsx",
+            "*/components/{domain}/{parentComponent}/{childComponent}/index.tsx"
+          ]
+        },
+        "outputPolicy": {
+          "entryFilePattern": "page.tsx for app pages, index.tsx for other React TSX component entries",
+          "functionStyle": "arrow",
+          "defaultExport": true,
+          "propsInterfaceSuffix": "Props"
+        },
+        "validationCoverage": [
+          "file/folder segment camelCase",
+          "component path policy",
+          "default export name/path match",
+          "same-file JSX helper forbidden",
+          "same-file subcomponent forbidden",
+          "parent-only child reuse forbidden",
+          "page.tsx keeps the page filename",
+          "non-page React TSX files use index.tsx",
+          "non-components TSX files skip components path placement validation",
+          "components segment prefixes are preserved in validation and suggestions"
+        ],
+        "logicBoundary": {
+          "forbiddenPatterns": [
+            "useEffect(",
+            "fetch(",
+            "axios.",
+            "useQuery(",
+            "useMutation("
+          ]
+        }
+      },
+      "guide": {
+        "목적": "기존 퍼블리셔 UI 파일이 배치 규칙과 AST 규칙을 지키는지 검증한다.",
+        "입력규칙": [
+          "상대 디렉터리 경로 1개만 positional로 전달한다.",
+          "전달한 디렉터리 아래에서 profile targetRules에 매칭되는 엔트리 파일만 재귀 탐색해 검증한다."
+        ],
+        "출력규칙": [
+          "results 배열로 파일별 위반 목록을 반환한다."
+        ],
+        "주의사항": [
+          "page.tsx는 프레임워크 엔트리 파일명이라 그대로 유지한다.",
+          "page.tsx가 아닌 React TSX 파일은 경로와 상관없이 index.tsx 엔트리를 사용한다.",
+          "파일/폴더 세그먼트는 camelCase를 사용한다. 단, page.tsx와 index.tsx 같은 예약 엔트리 파일명과 Next 특수 세그먼트((group), [id], @slot)는 예외다.",
+          "components 세그먼트 아래 파일은 prefix와 무관하게 index.tsx와 배치 규칙을 함께 검증한다.",
+          "components 세그먼트 밖의 React TSX 파일도 컴포넌트 AST 규칙은 동일하게 검증한다.",
+          "같은 파일 안의 JSX helper와 subcomponent는 금지한다."
+        ]
+      },
+      "inputMode": "positional",
+      "execution": {
+        "kind": "analysis"
+      },
+      "unsupportedTargetMessage": "Publisher validate-file only supports React page or component entry files declared by the active profile.",
+      "targetRules": [
+        {
+          "commandName": "component",
+          "match": {
+            "pathPatterns": ["app/{pagePath*}/page.tsx"]
+          },
+          "expectedEntryFileName": "page.tsx",
+          "runPlacementValidation": false,
+          "exportPolicy": {
+            "enforceExportNameMatch": false
+          },
+          "pathRules": [
+            {
+              "kind": "pathSegmentCase",
+              "style": "camel",
+              "skipFrameworkSpecialSegments": true,
+              "allowedFileBaseNames": ["page", "index"],
+              "fileNameStyle": "camel",
+              "code": "INVALID_PATH_SEGMENT",
+              "directoryMessage": "Publisher folder names must use camelCase",
+              "fileMessage": "Publisher file names must use camelCase, except reserved entry files like page.tsx and index.tsx"
+            }
+          ],
+          "structureRules": [
+            {
+              "kind": "forbidJsxHelpers",
+              "code": "SAME_FILE_JSX_HELPER",
+              "message": "Publisher component file must not define JSX helpers in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            },
+            {
+              "kind": "forbidSubcomponents",
+              "code": "SAME_FILE_SUBCOMPONENT",
+              "message": "Publisher component file must not define subcomponents in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            }
+          ]
+        },
+        {
+          "commandName": "component",
+          "match": {
+            "pathPatterns": ["{prefix*}/components/{scope}/{parentComponent}/{name}/index.tsx"]
+          },
+          "argMappings": [
+            {
+              "field": "path",
+              "source": "template",
+              "template": "{prefix}/components/{scope}/{parentComponent}/{name}",
+              "normalizePath": true
+            },
+            {
+              "field": "name",
+              "source": "capture",
+              "capture": "name",
+              "transform": "pascal"
+            }
+          ],
+          "expectedEntryFileName": "index.tsx",
+          "exportPolicy": {
+            "expectedNameField": "name"
+          },
+          "pathRules": [
+            {
+              "kind": "pathSegmentCase",
+              "style": "camel",
+              "skipAfterLastSegment": "components",
+              "skipFrameworkSpecialSegments": true,
+              "allowedFileBaseNames": ["page", "index"],
+              "fileNameStyle": "camel",
+              "code": "INVALID_PATH_SEGMENT",
+              "directoryMessage": "Publisher folder names must use camelCase",
+              "fileMessage": "Publisher file names must use camelCase, except reserved entry files like page.tsx and index.tsx"
+            }
+          ],
+          "structureRules": [
+            {
+              "kind": "propsTypeSuffix",
+              "suffix": "Props",
+              "code": "MISSING_PROPS_TYPE",
+              "message": "Component file must define the expected Props interface."
+            },
+            {
+              "kind": "forbidJsxHelpers",
+              "code": "SAME_FILE_JSX_HELPER",
+              "message": "Publisher component file must not define JSX helpers in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            },
+            {
+              "kind": "forbidSubcomponents",
+              "code": "SAME_FILE_SUBCOMPONENT",
+              "message": "Publisher component file must not define subcomponents in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            }
+          ],
+          "ownershipRule": {
+            "kind": "parentOnlyChildReuse",
+            "componentsRoot": "components",
+            "sharedSegment": "common",
+            "entryFileNames": ["index.tsx"],
+            "entryFileName": "index.tsx",
+            "code": "PARENT_ONLY_CHILD_REUSED",
+            "message": "Parent-only child component is imported outside the parent component tree"
+          }
+        },
+        {
+          "commandName": "component",
+          "match": {
+            "pathPatterns": ["{prefix*}/components/{scope}/{name}/index.tsx"]
+          },
+          "argMappings": [
+            {
+              "field": "path",
+              "source": "template",
+              "template": "{prefix}/components/{scope}/{name}",
+              "normalizePath": true
+            },
+            {
+              "field": "name",
+              "source": "capture",
+              "capture": "name",
+              "transform": "pascal"
+            }
+          ],
+          "expectedEntryFileName": "index.tsx",
+          "exportPolicy": {
+            "expectedNameField": "name"
+          },
+          "pathRules": [
+            {
+              "kind": "pathSegmentCase",
+              "style": "camel",
+              "skipAfterLastSegment": "components",
+              "skipFrameworkSpecialSegments": true,
+              "allowedFileBaseNames": ["page", "index"],
+              "fileNameStyle": "camel",
+              "code": "INVALID_PATH_SEGMENT",
+              "directoryMessage": "Publisher folder names must use camelCase",
+              "fileMessage": "Publisher file names must use camelCase, except reserved entry files like page.tsx and index.tsx"
+            }
+          ],
+          "structureRules": [
+            {
+              "kind": "propsTypeSuffix",
+              "suffix": "Props",
+              "code": "MISSING_PROPS_TYPE",
+              "message": "Component file must define the expected Props interface."
+            },
+            {
+              "kind": "forbidJsxHelpers",
+              "code": "SAME_FILE_JSX_HELPER",
+              "message": "Publisher component file must not define JSX helpers in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            },
+            {
+              "kind": "forbidSubcomponents",
+              "code": "SAME_FILE_SUBCOMPONENT",
+              "message": "Publisher component file must not define subcomponents in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            }
+          ],
+          "ownershipRule": {
+            "kind": "parentOnlyChildReuse",
+            "componentsRoot": "components",
+            "sharedSegment": "common",
+            "entryFileNames": ["index.tsx"],
+            "entryFileName": "index.tsx",
+            "code": "PARENT_ONLY_CHILD_REUSED",
+            "message": "Parent-only child component is imported outside the parent component tree"
+          }
+        },
+        {
+          "commandName": "component",
+          "match": {
+            "pathPatterns": ["{path*}/{name}/index.tsx"]
+          },
+          "argMappings": [
+            {
+              "field": "name",
+              "source": "capture",
+              "capture": "name",
+              "transform": "pascal"
+            }
+          ],
+          "expectedEntryFileName": "index.tsx",
+          "runPlacementValidation": false,
+          "exportPolicy": {
+            "expectedNameField": "name"
+          },
+          "pathRules": [
+            {
+              "kind": "pathSegmentCase",
+              "style": "camel",
+              "skipFrameworkSpecialSegments": true,
+              "allowedFileBaseNames": ["page", "index"],
+              "fileNameStyle": "camel",
+              "code": "INVALID_PATH_SEGMENT",
+              "directoryMessage": "Publisher folder names must use camelCase",
+              "fileMessage": "Publisher file names must use camelCase, except reserved entry files like page.tsx and index.tsx"
+            }
+          ],
+          "structureRules": [
+            {
+              "kind": "propsTypeSuffix",
+              "suffix": "Props",
+              "code": "MISSING_PROPS_TYPE",
+              "message": "Component file must define the expected Props interface."
+            },
+            {
+              "kind": "forbidJsxHelpers",
+              "code": "SAME_FILE_JSX_HELPER",
+              "message": "Publisher component file must not define JSX helpers in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            },
+            {
+              "kind": "forbidSubcomponents",
+              "code": "SAME_FILE_SUBCOMPONENT",
+              "message": "Publisher component file must not define subcomponents in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            }
+          ]
+        },
+        {
+          "commandName": "component",
+          "match": {
+            "extensions": [".tsx"],
+            "excludeFileNames": ["page.tsx", "index.tsx"]
+          },
+          "argMappings": [
+            {
+              "field": "name",
+              "source": "fileName",
+              "withoutExtension": true,
+              "transform": "pascal"
+            }
+          ],
+          "expectedEntryFileName": "index.tsx",
+          "runPlacementValidation": false,
+          "exportPolicy": {
+            "expectedNameField": "name"
+          },
+          "pathRules": [
+            {
+              "kind": "pathSegmentCase",
+              "style": "camel",
+              "skipFrameworkSpecialSegments": true,
+              "allowedFileBaseNames": ["page", "index"],
+              "fileNameStyle": "camel",
+              "code": "INVALID_PATH_SEGMENT",
+              "directoryMessage": "Publisher folder names must use camelCase",
+              "fileMessage": "Publisher file names must use camelCase, except reserved entry files like page.tsx and index.tsx"
+            }
+          ],
+          "structureRules": [
+            {
+              "kind": "propsTypeSuffix",
+              "suffix": "Props",
+              "code": "MISSING_PROPS_TYPE",
+              "message": "Component file must define the expected Props interface."
+            },
+            {
+              "kind": "forbidJsxHelpers",
+              "code": "SAME_FILE_JSX_HELPER",
+              "message": "Publisher component file must not define JSX helpers in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            },
+            {
+              "kind": "forbidSubcomponents",
+              "code": "SAME_FILE_SUBCOMPONENT",
+              "message": "Publisher component file must not define subcomponents in the same file",
+              "suggestionTemplate": "Move {name} into its own component folder under {entryName}"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        "tcp validate-file components/common",
+        "tcp validate-file app",
+        "tcp validate-file src/components/common"
+      ]
+    },
+    "component": {
+      "description": "Generate a publisher UI component file",
+      "summary": {
+        "whenToUse": [
+          "When you need a new UI component shell",
+          "When you need to move a legacy component to the current path convention"
+        ],
+        "relatedCommands": [
+          {
+            "id": "validateFile",
+            "reason": "Validate after generation"
+          },
+          {
+            "id": "uiState",
+            "reason": "Add a UI interaction state shell"
+          },
+          {
+            "id": "batch",
+            "reason": "Run multiple component operations at once"
+          }
+        ],
+        "flowRefs": ["new-component", "add-ui-interaction", "bulk-publisher-update"]
+      },
+      "contracts": {
+        "componentKind": "ui",
+        "pathPolicy": {
+          "requiredPatterns": [
+            "*/components/common/{component}",
+            "*/components/{domain}/{component}"
+          ],
+          "sharedPattern": "*/components/common/{component}",
+          "domainPattern": "*/components/{domain}/{component}",
+          "nestedPattern": "*/components/{domain}/{parentComponent}/{childComponent}",
+          "componentsSegmentPolicy": "the final components segment is the root for placement rules; prefixes like src/ or features/{feature}/ are allowed",
+          "domainPolicy": "domain is the root page segment from app/{domain}; use common only for components shared across multiple page domains",
+          "placementDecision": "common is only for components reused in 2 or more root page domains; otherwise choose the single matching domain path",
+          "legacyPolicy": "if a legacy component path differs from the current convention, migrate the path first; if it already matches, keep the path and only update internals",
+          "domainExamples": {
+            "app/login/page.tsx": "login",
+            "app/signup/page.tsx": "signup",
+            "app/profile/page.tsx": "profile"
+          }
+        },
+        "outputPolicy": {
+          "filePattern": "{path}/index.tsx",
+          "functionStyle": "arrow",
+          "defaultExport": true,
+          "propsInterfaceSuffix": "Props"
+        },
+        "logicBoundary": {
+          "allowedState": "UI interaction state only",
+          "forbiddenPatterns": [
+            "useEffect(",
+            "fetch(",
+            "axios.",
+            "useQuery(",
+            "useMutation("
+          ]
+        }
+      },
+      "guide": {
+        "목적": "UI 컴포넌트 파일 껍질을 생성한다.",
+        "입력규칙": [
+          "name과 path는 필수다.",
+          "path는 마지막 components 세그먼트 아래에서 components/common/{component} 또는 components/{domain}/{component} 패턴을 사용한다. prefix는 허용된다.",
+          "props는 value 또는 callback 멤버 배열로 전달한다."
+        ],
+        "이름규칙": [
+          "컴포넌트 이름은 PascalCase를 사용한다.",
+          "props callback은 on* 규칙을 따른다."
+        ],
+        "출력규칙": [
+          "출력 파일은 {path}/index.tsx 이다.",
+          "Props 인터페이스와 export default를 포함한다.",
+          "컴포넌트 본문은 화살표 함수 형태를 유지한다."
+        ],
+        "배치규칙": [
+          "공통 컴포넌트는 */components/common/{component}를 사용한다.",
+          "도메인 전용 컴포넌트는 */components/{domain}/{component}를 사용한다.",
+          "prefix가 있어도 마지막 components 세그먼트를 기준으로 같은 규칙을 적용한다. 예: src/components/common/button, features/cart/components/cart/cartSummary.",
+          "domain은 root page segment를 사용한다. 예: app/login -> login.",
+          "common은 2개 이상 root page domain에서 재사용될 때만 사용한다.",
+          "레거시 경로가 현재 컨벤션과 다르면 기존 PascalCase 폴더나 top-level components/{Component} 경로를 유지하지 말고 현재 경로 규칙으로 이동한다.",
+          "레거시 경로가 이미 현재 컨벤션과 같으면 경로는 유지하고 index.tsx 내부 구현만 수정한다."
+        ],
+        "안티패턴": [
+          "dashboard 전용인데 components/common/dashboardLayout에 두는 것",
+          "범용 카드인데 components/ProductCard 같은 PascalCase top-level 폴더를 유지하는 것"
+        ],
+        "금지규칙": [
+          "useEffect(",
+          "fetch(",
+          "axios.",
+          "useQuery(",
+          "useMutation("
+        ]
+      },
+      "inputMode": "json",
+      "execution": {
+        "kind": "file"
+      },
+      "inputSchema": {
+        "required": ["name", "path"],
+        "arrays": ["props"]
+      },
+      "defaults": {
+        "role": "component",
+        "props": []
+      },
+      "namingPolicy": {
+        "suffixes": {
+          "interfaceName": "Props"
+        }
+      },
+      "generator": {
+        "kind": "singleFile"
+      },
+      "normalizationRules": [
+        {
+          "kind": "case",
+          "field": "name",
+          "style": "pascal",
+          "reason": "components use PascalCase"
+        },
+        {
+          "kind": "path",
+          "field": "path"
+        },
+        {
+          "kind": "members",
+          "field": "props",
+          "callbackPrefixKey": "propCallback",
+          "callbackCase": "pascal",
+          "valueCase": "camel",
+          "callbackReason": "props callbacks use on*",
+          "valueReason": "prop members use camelCase"
+        }
+      ],
+      "validatorRules": [
+        {
+          "kind": "pathRoots",
+          "field": "path",
+          "allowedRoots": ["components"],
+          "matchAnySegment": true
+        },
+        {
+          "kind": "pathSegmentCase",
+          "field": "path",
+          "style": "camel",
+          "message": "Path segments must use camelCase"
+        },
+        {
+          "kind": "pathPatterns",
+          "field": "path",
+          "patterns": [
+            "{prefix*}/components/common/{component}",
+            "{prefix*}/components/{domain}/{component}",
+            "{prefix*}/components/{scope}/{parentComponent}/{component}"
+          ],
+          "code": "INVALID_COMPONENT_PATH",
+          "message": "Publisher component path must live under a components segment using */components/common/{component}, */components/{domain}/{component}, or a direct child under the component folder"
+        },
+        {
+          "kind": "nameCase",
+          "field": "name",
+          "style": "pascal",
+          "message": "Component name must use PascalCase"
+        },
+        {
+          "kind": "forbiddenContentPatterns",
+          "patterns": ["useEffect(", "fetch(", "axios.", "useQuery(", "useMutation("]
+        }
+      ],
+      "render": {
+        "templateFile": "templates/component.default.tsx",
+        "output": {
+          "filePattern": "{path}/index.tsx"
+        },
+        "contextTokens": ["interfaceName", "componentName", "propsMembers"]
+      },
+      "examples": [
+        "tcp component --json '{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}'",
+        "tcp component --json '{\"name\":\"ReviewCard\",\"path\":\"src/components/common/reviewCard\"}'",
+        "tcp component --json '{\"name\":\"ProfileHeader\",\"path\":\"features/account/components/profile/profileHeader\"}'"
+      ]
+    },
+    "uiState": {
+      "description": "Render UI interaction state and handlers snippet",
+      "summary": {
+        "whenToUse": [
+          "When you need interaction state shells for UI like a modal, drawer, or dropdown"
+        ],
+        "relatedCommands": [
+          {
+            "id": "component",
+            "reason": "Apply the generated state to the component"
+          },
+          {
+            "id": "validateFile",
+            "reason": "Validate the structure after the interaction change"
+          },
+          {
+            "id": "batch",
+            "reason": "Run it together with component work"
+          }
+        ],
+        "flowRefs": ["add-ui-interaction", "bulk-publisher-update"]
+      },
+      "contracts": {
+        "stateKind": "uiInteraction",
+        "allowedPatterns": ["toggle", "default"],
+        "namingPolicy": {
+          "state": "is{Name}Open",
+          "setter": "setIs{Name}Open",
+          "toggleHandler": "handleToggle{Name}",
+          "openHandler": "handleOpen{Name}",
+          "closeHandler": "handleClose{Name}"
+        }
+      },
+      "guide": {
+        "목적": "UI 상호작용 state와 handler 껍질을 생성한다.",
+        "입력규칙": [
+          "name은 필수다.",
+          "pattern으로 toggle 또는 기본 패턴을 선택할 수 있다."
+        ],
+        "이름규칙": [
+          "state 이름은 is*Open 규칙을 기본으로 사용한다.",
+          "setter는 setIs*Open 규칙을 기본으로 사용한다.",
+          "handler는 handleToggle*, handleOpen*, handleClose* 규칙을 사용한다."
+        ],
+        "출력규칙": [
+          "state 선언과 handler 껍질을 함께 반환한다."
+        ],
+        "주의사항": [
+          "비즈니스 상태가 아니라 UI 상호작용 상태에만 사용한다."
+        ]
+      },
+      "inputMode": "json",
+      "execution": {
+        "kind": "snippet",
+        "language": "ts"
+      },
+      "inputSchema": {
+        "required": ["name"]
+      },
+      "defaults": {
+        "category": "uiInteraction",
+        "pattern": "toggle",
+        "initial": false
+      },
+      "namingPolicy": {
+        "prefixes": {
+          "uiStateBoolean": "is",
+          "uiStateSetter": "setIs",
+          "uiStateToggleHandler": "handleToggle",
+          "uiStateOpenHandler": "handleOpen",
+          "uiStateCloseHandler": "handleClose"
+        },
+        "suffixes": {
+          "uiState": "Open"
+        }
+      },
+      "normalizationRules": [
+        {
+          "kind": "case",
+          "field": "name",
+          "style": "camel",
+          "reason": "ui state names use camelCase"
+        }
+      ],
+      "render": {
+        "templateFiles": {
+          "toggle": "templates/ui-state.toggle.ts",
+          "default": "templates/ui-state.default.ts"
+        },
+        "templateVariantField": "pattern",
+        "templateVariantMap": {
+          "toggle": "toggle"
+        },
+        "defaultVariant": "default",
+        "contextTokens": [
+          "uiStateName",
+          "uiStateSetterName",
+          "uiStateToggleHandlerName",
+          "uiStateOpenHandlerName",
+          "uiStateCloseHandlerName",
+          "initial"
+        ]
+      },
+      "examples": [
+        "tcp uiState --json '{\"category\":\"uiInteraction\",\"pattern\":\"toggle\",\"name\":\"menu\"}'"
+      ]
+    },
+    "batch": {
+      "description": "Execute multiple publisher ops in one request",
+      "summary": {
+        "whenToUse": [
+          "When you want to preview or apply multiple publisher operations in one request"
+        ],
+        "relatedCommands": [
+          {
+            "id": "component",
+            "reason": "Bundle component generation work"
+          },
+          {
+            "id": "uiState",
+            "reason": "Bundle UI state shell generation"
+          },
+          {
+            "id": "validateFile",
+            "reason": "Validate the result at the end"
+          }
+        ],
+        "flowRefs": ["bulk-publisher-update"]
+      },
+      "guide": {
+        "목적": "여러 퍼블리셔 작업을 한 번의 요청으로 순차 실행한다.",
+        "입력규칙": [
+          "ops 배열은 순서대로 실행된다.",
+          "앞선 op 결과는 $ref로 뒤 op에서 참조할 수 있다."
+        ],
+        "출력규칙": [
+          "기본은 preview다.",
+          "--apply일 때만 마지막에 한 번 write 한다.",
+          "하나라도 실패하면 전체 write를 취소한다."
+        ]
+      },
+      "inputMode": "json",
+      "execution": {
+        "kind": "batch"
+      },
+      "examples": [
+        "tcp batch --json '{\"ops\":[{\"id\":\"component\",\"command\":\"component\",\"spec\":{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}}]}'"
+      ]
+    }
+  }
+}

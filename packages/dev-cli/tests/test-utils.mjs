@@ -5,7 +5,7 @@ import os from "node:os";
 import { cp, mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 
-import { loadActiveProfile } from "../src/core/profile-loader.mjs";
+import { loadActiveProfile } from "../src/core/profiles/profile-loader.mjs";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -23,15 +23,15 @@ writeFileSync(
   path.join(defaultConfiguredHome, ".try-claude-dev-cli.json"),
   `${JSON.stringify({
     profiles: {
-      publisher: {
+      tcp: {
         mode: "personal",
         version: "v1"
       },
-      frontend: {
+      tcf: {
         mode: "personal",
         version: "v1"
       },
-      backend: {
+      tcb: {
         mode: "personal",
         version: "v1"
       }
@@ -91,9 +91,9 @@ export async function createTempHome(config = null) {
   return tempHome;
 }
 
-export async function loadProfile(role, mode = "personal", version = "v1") {
+export async function loadProfile(alias, mode = "personal", version = "v1") {
   const { profile } = await loadActiveProfile({
-    role,
+    alias,
     mode,
     version,
     localProfileRoot: projectRoot
@@ -119,7 +119,7 @@ async function copyProfileTree(tempRoot, profileId) {
 
 export async function createTempRepo({
   files = {},
-  profiles = ["shared/personal/v1", "publisher/personal/v1", "frontend/personal/v1"],
+  profiles = ["shared/personal/v1", "tcp/personal/v1", "tcf/personal/v1"],
   tsconfig
 } = {}) {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-validate-"));
@@ -132,13 +132,13 @@ export async function createTempRepo({
     tempRoot,
     "profiles/registry.json",
     `${JSON.stringify({
-      publisher: {
+      tcp: {
         personal: ["v1"]
       },
-      frontend: {
+      tcf: {
         personal: ["v1"]
       },
-      backend: {
+      tcb: {
         personal: ["v1"]
       }
     }, null, 2)}\n`

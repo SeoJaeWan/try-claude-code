@@ -22,7 +22,7 @@ test("mode set/show는 global config에 mode와 major version만 저장하고 �
 
   await mkdir(tempProject, { recursive: true });
   await copyProfileTree(tempRoot, "shared/personal/v1");
-  await copyProfileTree(tempRoot, "publisher/personal/v1");
+  await copyProfileTree(tempRoot, "tcp/personal/v1");
 
   const env = {
     HOME: tempHome,
@@ -53,7 +53,7 @@ test("mode set/show는 global config에 mode와 major version만 저장하고 �
 
   const configPath = path.join(tempHome, ".try-claude-dev-cli.json");
   const savedConfig = JSON.parse(await readFile(configPath, "utf8"));
-  assert.deepEqual(savedConfig.profiles.publisher, {
+  assert.deepEqual(savedConfig.profiles.tcp, {
     mode: "personal",
     version: "v1"
   });
@@ -103,7 +103,7 @@ test("mode set은 exact version 입력을 거부한다", async () => {
 
   await mkdir(tempProject, { recursive: true });
   await copyProfileTree(tempRoot, "shared/personal/v1");
-  await copyProfileTree(tempRoot, "publisher/personal/v1");
+  await copyProfileTree(tempRoot, "tcp/personal/v1");
 
   const result = runCli(tcpBin, [
     "mode",
@@ -152,7 +152,7 @@ test("mode set은 존재하지 않는 remote profile을 PROFILE_NOT_FOUND로 안
   assert.equal(result.status, 1);
   const payload = readJson(result.stderr);
   assert.equal(payload.error.code, "PROFILE_NOT_FOUND");
-  assert.equal(payload.error.details.relativePath, "profiles/publisher/personal/v999/profile.json");
+  assert.equal(payload.error.details.relativePath, "profiles/tcp/personal/v999/profile.json");
 });
 
 test("mode set은 --repo를 더 이상 허용하지 않는다", async () => {
@@ -183,7 +183,7 @@ test("mode update는 여전히 unsupported action으로 실패한다", async () 
 test("mode show는 legacy exact-version global config를 major version으로 정규화한다", async () => {
   const tempHome = await createTempHome({
     profiles: {
-      publisher: {
+      tcp: {
         mode: "personal",
         requestedVersion: "v1.0.3",
         resolvedVersion: "v1.0.3",

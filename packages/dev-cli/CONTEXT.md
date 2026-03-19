@@ -4,7 +4,7 @@ This CLI is agent-first.
 
 - Default output is JSON.
 - `--text` switches to human-readable output.
-- For low-token agent lookups, prefer command-scoped text help such as `tcp help component --text`; use top-level `--help` JSON only for command discovery or structured field access.
+- For low-token agent lookups, prefer command-scoped text help such as `tcp component --help --text`; use top-level `--help` JSON only for command discovery or structured field access.
 - Spec-driven commands accept `--json` only.
 - Human-readable rule guidance is exposed through the `guide` command, not `--help`.
 - Preview is the default. `--apply` writes files.
@@ -20,10 +20,10 @@ This CLI is agent-first.
 - Only `mode set --mode <mode> --version <major>` can change the active profile.
 - General commands do not accept `--mode`, `--version`, or `--profile` overrides.
 - `mode show` returns the stored value only and does not revalidate remote availability.
-- `--help` and `help <command>` provide minimal setup guidance even when no active mode is configured.
+- `--help` provides minimal setup guidance even when no active mode is configured.
 
-Alias to profile kind mapping:
+Active profile keys are alias-native:
 
-- `tcp` -> `publisher`
-- `tcf` -> `frontend`
-- `tcb` -> `backend`
+- `tcp`
+- `tcf`
+- `tcb`

@@ -36,11 +36,11 @@ profiles/
   registry.json
   shared/
     personal/v1/
-  publisher/
+  tcp/
     personal/v1/
-  frontend/
+  tcf/
     personal/v1/
-  backend/
+  tcb/
     personal/v1/
 ```
 
@@ -74,15 +74,15 @@ shared override 규칙:
 ## Alias Surface
 
 `tcp`
-- role: `publisher`
+- profile key: `tcp`
 - commands: `component`, `type`, `props`, `function`, `uiState`, `batch`
 
 `tcf`
-- role: `frontend`
+- profile key: `tcf`
 - commands: `hook`, `apiHook`, `type`, `props`, `function`, `queryKey`, `endpoint`, `mapper`, `hookReturn`, `batch`
 
 `tcb`
-- role: `backend`
+- profile key: `tcb`
 - commands: `module`, `requestDto`, `responseDto`, `entity`, `batch`
 
 ## Profile Resolution
@@ -93,7 +93,7 @@ shared override 규칙:
 > - `mode set --mode <mode> --version <major>` is the only way to change the active profile.
 > - General commands always use the stored global selection.
 > - If no active selection exists, the CLI stays unset until the user configures one.
-> - Remote `main/profiles/{role}/{mode}/{version}` is the runtime source of truth.
+> - Remote `main/profiles/{alias}/{mode}/{version}` is the runtime source of truth.
 > - `mode set` validates the full remote profile contract by loading `profile.json` plus its `extends` and template chain.
 > - `mode show` returns the stored value only and does not revalidate remote availability.
 > - General commands do not accept `--mode`, `--version`, or `--profile` overrides.
@@ -110,9 +110,9 @@ active profile 우선순위:
 공개 계약은 mode와 major version만 가진다.
 
 - 사용자는 `personal + v1` 같은 조합만 선택한다.
-- `profiles/registry.json`은 role별 mode와 지원 major version 배열만 관리한다.
+- `profiles/registry.json`은 alias별 mode와 지원 major version 배열만 관리한다.
 - config에는 `mode`, `version`만 저장한다.
-- 실제 profile/template fetch는 항상 `main/profiles/{role}/{mode}/{version}` live 경로를 직접 사용한다.
+- 실제 profile/template fetch는 항상 `main/profiles/{alias}/{mode}/{version}` live 경로를 직접 사용한다.
 - `mode set`과 `mode show`는 exact patch version을 받지 않는다.
 
 예시 config:
@@ -120,7 +120,7 @@ active profile 우선순위:
 ```json
 {
   "profiles": {
-    "publisher": {
+    "tcp": {
       "mode": "personal",
       "version": "v1"
     }
@@ -132,7 +132,7 @@ active profile 우선순위:
 
 ```json
 {
-  "publisher": {
+  "tcp": {
     "personal": ["v1"]
   }
 }
@@ -170,7 +170,7 @@ wrapper는 각각 하나의 `bin`만 노출한다.
 
 중요:
 
-- wrapper를 publish하기 전에 `main` 브랜치에 `profiles/registry.json`과 target `profiles/{role}/{mode}/{version}` 경로가 먼저 존재해야 한다.
+- wrapper를 publish하기 전에 `main` 브랜치에 `profiles/registry.json`과 target `profiles/{alias}/{mode}/{version}` 경로가 먼저 존재해야 한다.
 
 profile hotfix 순서:
 
@@ -312,7 +312,7 @@ batch 정책:
 
 ## Shared Personal v1
 
-`shared/personal/v1`는 `publisher`와 `frontend`가 공통으로 사용한다.
+`shared/personal/v1`는 `tcp`와 `tcf`가 공통으로 사용한다.
 
 - path segment: `camelCase`
 - 함수 스타일: 화살표 함수
@@ -446,7 +446,7 @@ tcb entity --json "{\"name\":\"Product\",\"path\":\"product\",\"basePackage\":\"
 {
   "ok": true,
   "command": "function",
-  "profile": "frontend/personal/v1",
+  "profile": "tcf/personal/v1",
   "normalizedSpec": {
     "kind": "internalHandler",
     "name": "handleClick"

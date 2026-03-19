@@ -51,7 +51,7 @@ test("tcb는 basePackage가 없으면 Spring Application.java에서 root package
 public class TryClaudeApplication {}
 `
     },
-    profiles: ["backend/personal/v1"]
+    profiles: ["tcb/personal/v1"]
   });
 
   const result = runCli(tcbBin, [

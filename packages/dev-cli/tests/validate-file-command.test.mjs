@@ -21,7 +21,7 @@ const tsconfig = {
 
 test("tcp validate-file는 디렉터리 하나를 재귀 탐색해 퍼블리셔 엔트리를 검증한다", async () => {
   const tempRoot = await createTempRepo({
-    profiles: ["shared/personal/v1", "publisher/personal/v1"],
+    profiles: ["shared/personal/v1", "tcp/personal/v1"],
     files: {
       "components/common/dashboardLayout/index.tsx": `interface DashboardLayoutProps {}
 
@@ -66,7 +66,7 @@ export default ReviewCard;
 
 test("validate-file는 파일 경로 입력을 거부한다", async () => {
   const tempRoot = await createTempRepo({
-    profiles: ["shared/personal/v1", "publisher/personal/v1"],
+    profiles: ["shared/personal/v1", "tcp/personal/v1"],
     files: {
       "components/common/dashboardLayout/index.tsx": `interface DashboardLayoutProps {}
 
@@ -117,7 +117,7 @@ test("validate-file는 --root 같은 legacy 옵션을 거부한다", () => {
 
 test("validate-file는 매칭 파일이 하나도 없는 디렉터리에 대해 힌트 포함 unsupported 오류를 반환한다", async () => {
   const tempRoot = await createTempRepo({
-    profiles: ["shared/personal/v1", "publisher/personal/v1"],
+    profiles: ["shared/personal/v1", "tcp/personal/v1"],
     files: {
       "docs/readme.md": "# docs\n",
       "docs/example.ts": "export const value = 1;\n"
@@ -142,7 +142,7 @@ test("validate-file는 매칭 파일이 하나도 없는 디렉터리에 대해 
 
 test("tcp validate-file는 디렉터리 하위에서 invalid entry를 함께 집계한다", async () => {
   const tempRoot = await createTempRepo({
-    profiles: ["shared/personal/v1", "publisher/personal/v1"],
+    profiles: ["shared/personal/v1", "tcp/personal/v1"],
     files: {
       "app/showcase/page.tsx": `const Page = () => {
   return <section />;
@@ -195,7 +195,7 @@ export default ReviewCard;
 
 test("tcf validate-file는 디렉터리 하위 hook 규칙 위반을 함께 검증한다", async () => {
   const tempRoot = await createTempRepo({
-    profiles: ["shared/personal/v1", "frontend/personal/v1"],
+    profiles: ["shared/personal/v1", "tcf/personal/v1"],
     files: {
       "hooks/utils/common/useScroll/index.ts": `const useScroll = () => {
   return {
@@ -251,7 +251,7 @@ test("tcb validate-file는 없는 명령으로 명시적으로 실패한다", ()
 
 test("tcp validate-file는 ownership rule 위반을 directory scan에서도 검출한다", async () => {
   const tempRoot = await createTempRepo({
-    profiles: ["shared/personal/v1", "publisher/personal/v1"],
+    profiles: ["shared/personal/v1", "tcp/personal/v1"],
     tsconfig,
     files: {
       "components/common/table/index.tsx": `interface TableProps {}

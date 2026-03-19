@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { createTempHome } from "./test-utils.mjs";
-import { resolveActiveProfile } from "../src/core/mode-resolver.mjs";
+import { resolveActiveProfile } from "../src/core/profiles/mode-resolver.mjs";
 
 async function writeJson(filePath, value) {
   await mkdir(path.dirname(filePath), { recursive: true });
@@ -15,7 +15,7 @@ async function writeJson(filePath, value) {
 test("resolveActiveProfile은 global 설정만 읽는다", async () => {
   const tempHome = await createTempHome({
     profiles: {
-      publisher: {
+      tcp: {
         mode: "personal",
         version: "v1"
       }
@@ -28,7 +28,7 @@ test("resolveActiveProfile은 global 설정만 읽는다", async () => {
   process.env.USERPROFILE = tempHome;
 
   const resolved = await resolveActiveProfile({
-    role: "publisher"
+    alias: "tcp"
   });
 
   assert.deepEqual(resolved, {
@@ -50,7 +50,7 @@ test("resolveActiveProfile은 repo-local config를 무시하고 global이 없으
   await mkdir(projectRoot, { recursive: true });
   await writeJson(path.join(projectRoot, ".try-claude-dev-cli.json"), {
     profiles: {
-      frontend: {
+      tcf: {
         mode: "company",
         version: "v2"
       }
@@ -63,7 +63,7 @@ test("resolveActiveProfile은 repo-local config를 무시하고 global이 없으
   process.env.USERPROFILE = tempHome;
 
   const resolved = await resolveActiveProfile({
-    role: "frontend",
+    alias: "tcf",
     projectRoot
   });
 
@@ -76,7 +76,7 @@ test("resolveActiveProfile은 repo-local config를 무시하고 global이 없으
 test("resolveActiveProfile은 legacy exact version global config를 major version으로 정규화한다", async () => {
   const tempHome = await createTempHome({
     profiles: {
-      backend: {
+      tcb: {
         mode: "personal",
         requestedVersion: "v1.0.3",
         resolvedVersion: "v1.0.3",
@@ -91,7 +91,7 @@ test("resolveActiveProfile은 legacy exact version global config를 major versio
   process.env.USERPROFILE = tempHome;
 
   const resolved = await resolveActiveProfile({
-    role: "backend"
+    alias: "tcb"
   });
 
   assert.deepEqual(resolved, {
