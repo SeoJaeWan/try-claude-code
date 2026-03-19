@@ -1454,17 +1454,25 @@ async function resolveDiscoveryTargets({
     .sort((left, right) => left.localeCompare(right));
   const targets = [];
 
+  const supportedPatterns = collectSupportedPathPatterns(validateCommand);
+  const exampleDirectories = collectExampleDirectories(validateCommand);
+  const supportedRoots = collectSupportedRoots(supportedPatterns, exampleDirectories);
+  const discoveryRootSegment = splitCliPath(normalizedRoot)[0];
+  const isUnderSupportedRoot = supportedRoots.includes(discoveryRootSegment);
+
   for (const sourceFile of sourceFiles) {
     const target = await inferValidationTarget(
       profile,
       toCliPath(projectRoot, sourceFile),
       projectRoot,
       {
-        includeUnsupportedViolation: false
+        includeUnsupportedViolation: isUnderSupportedRoot
       }
     );
 
-    if (target.matchedRule) {
+    if (isUnderSupportedRoot) {
+      targets.push(target);
+    } else if (target.matchedRule) {
       targets.push(target);
     }
   }
@@ -1473,12 +1481,14 @@ async function resolveDiscoveryTargets({
     createUnsupportedDirectoryError(validateCommand, normalizedRoot);
   }
 
+  const matchedCount = targets.filter((target) => target.matchedRule).length;
+
   return {
     discovery: {
       root: normalizedRoot,
       scanned: sourceFiles.length,
-      matched: targets.length,
-      skipped: sourceFiles.length - targets.length
+      matched: matchedCount,
+      skipped: sourceFiles.length - matchedCount
     },
     targets
   };
