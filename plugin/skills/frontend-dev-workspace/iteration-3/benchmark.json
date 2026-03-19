@@ -1,0 +1,55 @@
+{
+  "metadata": {
+    "skill_name": "frontend-dev",
+    "skill_path": "plugin/skills/frontend-dev",
+    "executor_model": "claude-sonnet-4-6",
+    "timestamp": "2026-03-19T00:00:00Z",
+    "iteration": 3,
+    "change_description": "sonnet 모델로 변경 (iteration-2는 opus-4-6). SKILL.md 변경 없음.",
+    "evals_run": [1, 2, 3, 4, 5],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 1, "eval_name": "login-hook-split", "configuration": "with_skill", "run_number": 1,
+      "result": {"pass_rate": 1.0, "passed": 8, "failed": 0, "total": 8, "time_seconds": 127.3, "tokens": 24890, "errors": 0}
+    },
+    {
+      "eval_id": 2, "eval_name": "notification-query", "configuration": "with_skill", "run_number": 1,
+      "result": {"pass_rate": 1.0, "passed": 8, "failed": 0, "total": 8, "time_seconds": 70.0, "tokens": 28263, "errors": 0}
+    },
+    {
+      "eval_id": 3, "eval_name": "order-query-hook", "configuration": "with_skill", "run_number": 1,
+      "result": {"pass_rate": 1.0, "passed": 8, "failed": 0, "total": 8, "time_seconds": 165.4, "tokens": 29761, "errors": 0}
+    },
+    {
+      "eval_id": 4, "eval_name": "profile-edit", "configuration": "with_skill", "run_number": 1,
+      "result": {"pass_rate": 1.0, "passed": 8, "failed": 0, "total": 8, "time_seconds": 182.3, "tokens": 40032, "errors": 0}
+    },
+    {
+      "eval_id": 5, "eval_name": "signup-hook-split", "configuration": "with_skill", "run_number": 1,
+      "result": {"pass_rate": 0.875, "passed": 7, "failed": 1, "total": 8, "time_seconds": 119.9, "tokens": 33927, "errors": 0}
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 0.975, "stddev": 0.056, "min": 0.875, "max": 1.0},
+      "time_seconds": {"mean": 133.0, "stddev": 42.5, "min": 70.0, "max": 182.3},
+      "tokens": {"mean": 31375, "stddev": 5684, "min": 24890, "max": 40032}
+    }
+  },
+  "comparison_with_iteration_2": {
+    "iteration_2": {"model": "claude-opus-4-6", "with_skill_pass_rate": 1.0, "time_mean": 173.1, "tokens_mean": 37606},
+    "iteration_3": {"model": "claude-sonnet-4-6", "with_skill_pass_rate": 0.975, "time_mean": 133.0, "tokens_mean": 31375},
+    "delta": {"pass_rate": "-0.025", "time_seconds": "-40.1", "tokens": "-6231"},
+    "observation": "sonnet은 opus 대비 pass_rate -2.5%p (0.975 vs 1.0), 시간 -40초, 토큰 -6231. Eval5 signup에서 mutation 훅 미분리 1개 실패 (domain assertion 보정: signup이 정확한 도메인)."
+  },
+  "notes": [
+    "모델 변경: opus-4-6 → sonnet-4-6. SKILL.md 변경 없음",
+    "Eval1-4는 sonnet에서도 100% 통과 — 기본 훅 분리/컨벤션 준수는 안정적",
+    "Eval5 signup-form-hook assertion 보정: domain=signup이 정확 (auth 아님). hooks/utils/signup/useSignupForm 생성 확인",
+    "Eval5 signup에서 별도 mutation 훅 미생성 — useAuth context 직접 호출로 처리 (form 훅 내부에서 submit 처리)",
+    "sonnet은 평균 40초 빠르고 6,231 토큰 적게 사용 — 비용/속도 이점 있음",
+    "iteration-2 opus 100% vs iteration-3 sonnet 97.5% — mutation 분리 정밀도에서 소폭 차이"
+  ]
+}

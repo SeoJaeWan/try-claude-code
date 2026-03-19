@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "profile-hook-created: profile edit 전용 훅이 hooks/utils/profile 경로에 생성된다 (예: hooks/utils/profile/useProfileEdit/index.ts)",
+      "passed": true,
+      "evidence": "File exists at hooks/utils/profile/useProfileEdit/index.ts and contains the useProfileEdit hook."
+    },
+    {
+      "text": "hook-use-prefix: 훅 이름이 use 접두사로 시작한다",
+      "passed": true,
+      "evidence": "Hook is named 'useProfileEdit' (line 32: 'const useProfileEdit = (): UseProfileEditReturn => {')."
+    },
+    {
+      "text": "hook-index-ts: 비 API 훅이 hooks/utils/{domain}/{hookName}/index.ts 패턴으로 생성된다",
+      "passed": true,
+      "evidence": "File is located at hooks/utils/profile/useProfileEdit/index.ts, matching the required pattern."
+    },
+    {
+      "text": "page-no-inline-usestate: page.tsx에 다수의 인라인 useState가 그대로 남지 않는다",
+      "passed": true,
+      "evidence": "page.tsx contains zero useState calls. All state is managed inside useProfileEdit hook."
+    },
+    {
+      "text": "page-section-layout: page에는 섹션 렌더링과 handler 연결만 남는다",
+      "passed": true,
+      "evidence": "page.tsx only destructures from useProfileEdit and renders sections (profile-view, profile-form) wired to handlers (handleEdit, handleCancel, handleSave, setDraftField). No state or business logic inline."
+    },
+    {
+      "text": "save-error-state: 저장 성공/에러 상태가 훅 반환값에 포함된다",
+      "passed": true,
+      "evidence": "UseProfileEditReturn interface includes 'saved: boolean' and 'errors: Record<string, string>', both returned from the hook (lines 21-22, 104-113)."
+    },
+    {
+      "text": "arrow-function: 훅이 화살표 함수로 정의된다",
+      "passed": true,
+      "evidence": "Hook is defined as 'const useProfileEdit = (): UseProfileEditReturn => {' (line 32), which is an arrow function."
+    },
+    {
+      "text": "testid-preserved: 기존 data-testid 속성이 유지된다",
+      "passed": true,
+      "evidence": "page.tsx retains data-testid attributes: profile-saved, profile-view, profile-display-name, profile-edit-btn, profile-form, profile-name, profile-bio, profile-save, profile-cancel. DatePicker and MultiSelect use testId props (profile-birthdate, profile-skills)."
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 0,
+    "total": 8,
+    "pass_rate": 1.0
+  }
+}

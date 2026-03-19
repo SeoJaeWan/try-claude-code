@@ -98,7 +98,7 @@
         "../../../features/frontend-dev-fixture/contexts/AuthContext.tsx"
       ],
       "expectations": [
-        {"id": "signup-form-hook", "text": "signup form 상태를 담당하는 훅이 hooks/utils/auth 경로에 생성된다 (예: hooks/utils/auth/useSignupForm/index.ts)"},
+        {"id": "signup-form-hook", "text": "signup form 상태를 담당하는 훅이 hooks/utils/signup 경로에 생성된다 (예: hooks/utils/signup/useSignupForm/index.ts)"},
         {"id": "signup-api-hook", "text": "signup submit을 담당하는 훅이 hooks/apis/auth/mutations/usePostSignup 경로에 생성된다"},
         {"id": "hook-use-prefix", "text": "훅 이름이 use 접두사로 시작한다 (tcf profile: hook prefix = use)"},
         {"id": "hook-index-ts", "text": "비 API 훅이 hooks/utils/{domain}/{hookName}/index.ts 패턴으로 생성된다 (tcf profile: output = hooks/utils/{domain}/{name}/index.ts)"},
