@@ -1,0 +1,19 @@
+{
+  "eval_id": 1,
+  "eval_name": "login-hook-extraction",
+  "configuration": "with_skill",
+  "pass_rate": 1.0,
+  "passed": 8,
+  "failed": 0,
+  "total": 8,
+  "expectations": [
+    {"text": "form 상태/유효성 검증을 담당하는 훅 파일이 hooks/utils/login 경로에 생성된다", "passed": true, "evidence": "File created at hooks/utils/login/useLoginForm/index.ts"},
+    {"text": "submit 로직이 훅으로 추상화된다 (page에 직접 남지 않음)", "passed": true, "evidence": "handleSubmit defined in useLoginForm hook; page.tsx delegates via onSubmit"},
+    {"text": "훅 이름이 use 접두사로 시작한다", "passed": true, "evidence": "useLoginForm"},
+    {"text": "비 API 훅이 hooks/utils/{domain}/{hookName}/index.ts 패턴으로 생성된다", "passed": true, "evidence": "hooks/utils/login/useLoginForm/index.ts"},
+    {"text": "page.tsx에 직접적인 useState 호출이 남지 않는다", "passed": true, "evidence": "page.tsx has no useState import or call"},
+    {"text": "page.tsx가 생성된 훅을 import하여 조합한다", "passed": true, "evidence": "import useLoginForm from '@/hooks/utils/login/useLoginForm'"},
+    {"text": "이벤트 핸들러가 handle 접두사를 사용한다", "passed": true, "evidence": "handleSubmit, handleEmailBlur, handlePasswordBlur defined in hook"},
+    {"text": "훅이 화살표 함수로 정의된다", "passed": true, "evidence": "const useLoginForm = () => { ... }"}
+  ]
+}
