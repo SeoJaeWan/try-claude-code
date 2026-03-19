@@ -1,24 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/contexts/AuthContext";
 import { useTodos } from "@/contexts/TodoContext";
 import StatsCard from "@/components/StatsCard";
 import TodoForm from "@/components/TodoForm";
 import NotificationList from "@/components/NotificationList";
 
 export default function DashboardPage() {
-  const { user, isAuthenticated, mounted } = useAuth();
   const { todos, addTodo } = useTodos();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (mounted && !isAuthenticated) router.push("/login");
-  }, [mounted, isAuthenticated, router]);
-
-  if (!mounted || !isAuthenticated) return null;
 
   const completed = todos.filter((t) => t.completed).length;
   const pending = todos.length - completed;
@@ -26,7 +15,7 @@ export default function DashboardPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50" data-testid="greeting">
-        안녕하세요, {user?.name}님
+        대시보드
       </h1>
       <p className="mt-1 text-sm text-zinc-500">오늘도 좋은 하루 되세요!</p>
       <p className="mt-1 text-xs text-zinc-400" data-testid="current-date">

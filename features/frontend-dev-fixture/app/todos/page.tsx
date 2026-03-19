@@ -1,8 +1,7 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTodos } from "@/contexts/TodoContext";
 import TodoForm from "@/components/TodoForm";
 import TodoItem from "@/components/TodoItem";
@@ -21,24 +20,16 @@ export default function TodosPageWrapper() {
 }
 
 function TodosPage() {
-  const { isAuthenticated, mounted } = useAuth();
   const { todos, addTodo, updateTodo, deleteTodo, toggleTodo, simulateError, setSimulateError } = useTodos();
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (mounted && !isAuthenticated) router.push("/login");
-  }, [mounted, isAuthenticated, router]);
-
-  useEffect(() => {
-    if (searchParams.get("simulate_error") === "true") setSimulateError(true);
-  }, [searchParams, setSimulateError]);
-
-  if (!mounted || !isAuthenticated) return null;
+  if (searchParams.get("simulate_error") === "true" && !simulateError) {
+    setSimulateError(true);
+  }
 
   const filtered = todos.filter((t) => {
     if (filter === "active" && t.completed) return false;

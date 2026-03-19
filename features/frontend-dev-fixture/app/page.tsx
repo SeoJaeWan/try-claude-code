@@ -1,21 +1,6 @@
-"use client";
-
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/contexts/AuthContext";
 
 export default function Home() {
-  const { isAuthenticated, mounted } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (mounted && isAuthenticated) router.push("/dashboard");
-  }, [mounted, isAuthenticated, router]);
-
-  if (!mounted) return null;
-  if (isAuthenticated) return null;
-
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center text-center">
       <h1 className="text-4xl font-bold text-zinc-900 dark:text-zinc-50">TestApp</h1>
