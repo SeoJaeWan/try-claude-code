@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { resolveRefs } from "../src/core/ref-resolver.mjs";
+import { resolveRefs } from "../src/core/execution/ref-resolver.mjs";
 
 test("ref resolver는 앞선 op 결과를 참조값으로 해석한다", () => {
   const resolved = resolveRefs(

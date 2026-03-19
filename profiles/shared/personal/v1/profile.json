@@ -3,7 +3,7 @@
   "kind": "shared-profile",
   "extends": [],
   "guide": {
-    "요약": "publisher와 frontend가 함께 쓰는 personal v1 공통 규칙이다.",
+    "요약": "tcp와 tcf가 함께 쓰는 personal v1 공통 규칙이다.",
     "공통규칙": [
       "폴더 경로는 각 profile의 path 규칙을 따르며, 공통 네이밍은 recipe에서 정규화한다.",
       "함수 기본 스타일은 화살표 함수다.",

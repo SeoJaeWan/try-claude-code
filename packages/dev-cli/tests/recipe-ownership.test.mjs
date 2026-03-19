@@ -4,9 +4,9 @@ import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { normalizeSpec, renderSnippet } from "../src/core/spec-normalizer.mjs";
-import { validateRequest } from "../src/core/profile-validator.mjs";
-import { loadActiveProfile } from "../src/core/profile-loader.mjs";
+import { normalizeSpec, renderSnippet } from "../src/core/execution/spec-normalizer.mjs";
+import { validateRequest } from "../src/core/validation/profile-validator.mjs";
+import { loadActiveProfile } from "../src/core/profiles/profile-loader.mjs";
 import { loadProfile, projectRoot } from "./test-utils.mjs";
 
 function cloneCommand(command) {
@@ -14,7 +14,7 @@ function cloneCommand(command) {
 }
 
 test("internalHandlerPrefix를 바꾸면 function 정규화 결과가 바뀐다", async () => {
-  const profile = await loadProfile("frontend");
+  const profile = await loadProfile("tcf");
   const command = cloneCommand(profile.commands.function);
 
   command.name = "function";
@@ -32,7 +32,7 @@ test("internalHandlerPrefix를 바꾸면 function 정규화 결과가 바뀐다"
 });
 
 test("propCallbackPrefix를 바꾸면 props callback 이름이 바뀐다", async () => {
-  const profile = await loadProfile("publisher");
+  const profile = await loadProfile("tcp");
   const command = cloneCommand(profile.commands.props);
 
   command.name = "props";
@@ -55,7 +55,7 @@ test("propCallbackPrefix를 바꾸면 props callback 이름이 바뀐다", async
 });
 
 test("hookPrefix를 바꾸면 hook 정규화 결과가 바뀐다", async () => {
-  const profile = await loadProfile("frontend");
+  const profile = await loadProfile("tcf");
   const command = cloneCommand(profile.commands.hook);
 
   command.name = "hook";
@@ -73,7 +73,7 @@ test("hookPrefix를 바꾸면 hook 정규화 결과가 바뀐다", async () => {
 });
 
 test("queryKey recipe를 바꾸면 snippet output이 바뀐다", async () => {
-  const profile = await loadProfile("frontend");
+  const profile = await loadProfile("tcf");
   const command = cloneCommand(profile.commands.queryKey);
 
   command.name = "queryKey";
@@ -96,7 +96,7 @@ test("queryKey recipe를 바꾸면 snippet output이 바뀐다", async () => {
 });
 
 test("endpoint recipe를 바꾸면 snippet output이 바뀐다", async () => {
-  const profile = await loadProfile("frontend");
+  const profile = await loadProfile("tcf");
   const command = cloneCommand(profile.commands.endpoint);
 
   command.name = "endpoint";
@@ -124,7 +124,7 @@ test("endpoint recipe를 바꾸면 snippet output이 바뀐다", async () => {
 });
 
 test("mapper recipe를 바꾸면 snippet output이 바뀐다", async () => {
-  const profile = await loadProfile("frontend");
+  const profile = await loadProfile("tcf");
   const command = cloneCommand(profile.commands.mapper);
 
   command.name = "mapper";
@@ -152,13 +152,13 @@ test("shared 기본 recipe는 역할 profile에서 command 단위로 override할
   await mkdir(path.join(tempRoot, "profiles", "shared", "personal", "v1"), {
     recursive: true
   });
-  await mkdir(path.join(tempRoot, "profiles", "frontend", "personal", "v1"), {
+  await mkdir(path.join(tempRoot, "profiles", "tcf", "personal", "v1"), {
     recursive: true
   });
   await writeFile(
     path.join(tempRoot, "profiles", "registry.json"),
     `${JSON.stringify({
-      frontend: {
+      tcf: {
         personal: ["v1"]
       }
     }, null, 2)}\n`,
@@ -184,9 +184,9 @@ test("shared 기본 recipe는 역할 profile에서 command 단위로 override할
   );
 
   await writeFile(
-    path.join(tempRoot, "profiles", "frontend", "personal", "v1", "profile.json"),
+    path.join(tempRoot, "profiles", "tcf", "personal", "v1", "profile.json"),
     `${JSON.stringify({
-      id: "frontend/personal/v1",
+      id: "tcf/personal/v1",
       extends: ["shared/personal/v1"],
       commands: {
         function: {
@@ -202,7 +202,7 @@ test("shared 기본 recipe는 역할 profile에서 command 단위로 override할
   );
 
   const { profile } = await loadActiveProfile({
-    role: "frontend",
+    alias: "tcf",
     mode: "personal",
     version: "v1",
     localProfileRoot: tempRoot
@@ -214,8 +214,8 @@ test("shared 기본 recipe는 역할 profile에서 command 단위로 override할
   );
 });
 
-test("validator는 role hardcode가 아니라 profile data를 읽는다", async () => {
-  const profile = await loadProfile("publisher");
+test("validator는 alias hardcode가 아니라 profile data를 읽는다", async () => {
+  const profile = await loadProfile("tcp");
   const componentCommand = cloneCommand(profile.commands.component);
 
   componentCommand.name = "component";

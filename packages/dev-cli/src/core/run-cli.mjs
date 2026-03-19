@@ -1,20 +1,20 @@
-import { parseArgv } from "./arg-parser.mjs";
-import { executeBatch, executeSpecCommand } from "./batch-executor.mjs";
-import { routeCommand } from "./command-router.mjs";
-import { writeProfileSelection } from "./config-store.mjs";
-import { errorToPayload } from "./error-formatter.mjs";
-import { writeGeneratedFiles } from "./file-writer.mjs";
-import { createGuidePayload, renderGuideText } from "./guide-renderer.mjs";
-import { createHelpPayload, renderHelpText } from "./help-renderer.mjs";
-import { resolveActiveProfile } from "./mode-resolver.mjs";
-import { formatOutput } from "./output.mjs";
-import { findProjectRoot } from "./path-utils.mjs";
-import { loadActiveProfile } from "./profile-loader.mjs";
-import { hydrateProfileSelection } from "./profile-registry.mjs";
-import { validateRequest } from "./profile-validator.mjs";
-import { validateFiles } from "./validate-file.mjs";
-import { createCliError } from "./recipe-utils.mjs";
-import { parseBatchSpec, parseCommandSpec, parseValidateFileSpec } from "./spec-parser.mjs";
+import { parseArgv } from "./cli/arg-parser.mjs";
+import { executeBatch, executeSpecCommand } from "./execution/batch-executor.mjs";
+import { routeCommand } from "./cli/command-router.mjs";
+import { writeProfileSelection } from "./profiles/config-store.mjs";
+import { errorToPayload } from "./cli/error-formatter.mjs";
+import { writeGeneratedFiles } from "./execution/file-writer.mjs";
+import { createGuidePayload, renderGuideText } from "./docs/guide-renderer.mjs";
+import { createHelpPayload, renderHelpText } from "./docs/help-renderer.mjs";
+import { resolveActiveProfile } from "./profiles/mode-resolver.mjs";
+import { formatOutput } from "./cli/output.mjs";
+import { findProjectRoot } from "./shared/path-utils.mjs";
+import { loadActiveProfile } from "./profiles/profile-loader.mjs";
+import { hydrateProfileSelection } from "./profiles/profile-registry.mjs";
+import { validateRequest } from "./validation/profile-validator.mjs";
+import { validateFiles } from "./validation/validate-file.mjs";
+import { createCliError } from "./shared/recipe-utils.mjs";
+import { parseBatchSpec, parseCommandSpec, parseValidateFileSpec } from "./execution/spec-parser.mjs";
 
 function createSuccessPayload(payload) {
   return {
@@ -73,7 +73,7 @@ function getProfileOverrideOption(options = {}) {
   return null;
 }
 
-function assertNoProfileOverrideOptions({ alias, role, options }) {
+function assertNoProfileOverrideOptions({ alias, options }) {
   const overrideOption = getProfileOverrideOption(options);
 
   if (!overrideOption) {
@@ -86,28 +86,26 @@ function assertNoProfileOverrideOptions({ alias, role, options }) {
     `This command does not accept --${toOptionFlag(overrideOption)}. Run \`${suggestedCommand}\` to change the active profile before retrying.`,
     {
       alias,
-      role,
       option: overrideOption,
       suggestedCommand
     }
   );
 }
 
-function createUnsetActiveProfileError(alias, role) {
+function createUnsetActiveProfileError(alias) {
   const suggestedCommand = createSuggestedModeCommand(alias);
   return createCliError(
     "ACTIVE_PROFILE_NOT_SET",
     `No active profile is configured for ${alias}. Run \`${suggestedCommand}\` first, then retry the command.`,
     {
       alias,
-      role,
       suggestedCommand
     }
   );
 }
 
-function mapModeSetError(error, { role, mode, version }) {
-  const rootProfilePath = `profiles/${role}/${mode}/${version}/profile.json`;
+function mapModeSetError(error, { alias, mode, version }) {
+  const rootProfilePath = `profiles/${alias}/${mode}/${version}/profile.json`;
   const cause = error?.details?.cause ?? "";
 
   if (
@@ -117,9 +115,9 @@ function mapModeSetError(error, { role, mode, version }) {
   ) {
     return createCliError(
       "PROFILE_NOT_FOUND",
-      `Profile ${role}/${mode}/${version} could not be found on the remote source.`,
+      `Profile ${alias}/${mode}/${version} could not be found on the remote source.`,
       {
-        role,
+        alias,
         mode,
         version,
         relativePath: rootProfilePath
@@ -130,7 +128,7 @@ function mapModeSetError(error, { role, mode, version }) {
   return error;
 }
 
-async function handleModeCommand({ alias, role, route }) {
+async function handleModeCommand({ alias, route }) {
   if (route.modeAction === "show") {
     assertAllowedOptions(
       route.options,
@@ -141,13 +139,12 @@ async function handleModeCommand({ alias, role, route }) {
       "mode show"
     );
     const activeProfile = await resolveActiveProfile({
-      role
+      alias
     });
 
     if (!activeProfile) {
       return createSuccessPayload({
         alias,
-        role,
         action: "mode",
         configured: false,
         activeProfile: null,
@@ -157,7 +154,6 @@ async function handleModeCommand({ alias, role, route }) {
 
     return createSuccessPayload({
       alias,
-      role,
       action: "mode",
       configured: true,
       activeProfile
@@ -192,7 +188,6 @@ async function handleModeCommand({ alias, role, route }) {
 
   if (/[\/@]/.test(String(route.options.mode))) {
     await hydrateProfileSelection({
-      role,
       selection: {
         source: "explicit",
         mode: String(route.options.mode),
@@ -211,7 +206,6 @@ async function handleModeCommand({ alias, role, route }) {
   }
 
   const activeProfile = await hydrateProfileSelection({
-    role,
     selection: {
       source: "explicit",
       mode: String(route.options.mode),
@@ -221,43 +215,43 @@ async function handleModeCommand({ alias, role, route }) {
 
   try {
     await loadActiveProfile({
-      role,
+      alias,
       mode: activeProfile.mode,
       version: activeProfile.version
     });
   } catch (error) {
     throw mapModeSetError(error, {
-      role,
+      alias,
       mode: activeProfile.mode,
       version: activeProfile.version
     });
   }
 
   const saved = await writeProfileSelection({
-    role,
+    alias,
     mode: activeProfile.mode,
     version: activeProfile.version
   });
 
   return createSuccessPayload({
-    role,
+    alias,
     action: "mode",
     activeProfile,
     saved
   });
 }
 
-async function resolveProfileContext({ alias, role }) {
+async function resolveProfileContext({ alias }) {
   const activeProfile = await resolveActiveProfile({
-    role
+    alias
   });
 
   if (!activeProfile) {
-    throw createUnsetActiveProfileError(alias, role);
+    throw createUnsetActiveProfileError(alias);
   }
 
   const { profile } = await loadActiveProfile({
-    role,
+    alias,
     mode: activeProfile.mode,
     version: activeProfile.version
   });
@@ -268,20 +262,24 @@ async function resolveProfileContext({ alias, role }) {
   };
 }
 
-async function handleHelpCommand({ alias, role, route }) {
+async function handleHelpCommand({ alias, route }) {
   assertNoProfileOverrideOptions({
     alias,
-    role,
     options: route.options
   });
   const activeProfile = await resolveActiveProfile({
-    role
+    alias
   });
+
+  if (!activeProfile && route.commandName) {
+    throw createUnsetActiveProfileError(alias);
+  }
+
   let profile = null;
 
   if (activeProfile) {
     ({ profile } = await loadActiveProfile({
-      role,
+      alias,
       mode: activeProfile.mode,
       version: activeProfile.version
     }));
@@ -290,7 +288,6 @@ async function handleHelpCommand({ alias, role, route }) {
 
   const payload = createHelpPayload({
     alias,
-    role,
     activeProfile,
     profile,
     commandName: route.commandName,
@@ -308,10 +305,9 @@ async function handleHelpCommand({ alias, role, route }) {
   return payload;
 }
 
-async function handleGuideCommand({ alias, role, route }) {
+async function handleGuideCommand({ alias, route }) {
   assertNoProfileOverrideOptions({
     alias,
-    role,
     options: route.options
   });
   assertAllowedOptions(
@@ -324,13 +320,11 @@ async function handleGuideCommand({ alias, role, route }) {
     "guide"
   );
   const { activeProfile, profile } = await resolveProfileContext({
-    alias,
-    role
+    alias
   });
   assertCommandExists(profile, route.commandName);
   const payload = createGuidePayload({
     alias,
-    role,
     activeProfile,
     profile,
     commandName: route.commandName
@@ -347,19 +341,16 @@ async function handleGuideCommand({ alias, role, route }) {
   return payload;
 }
 
-async function handleGenerateCommand({ alias, role, route, projectRoot }) {
+async function handleGenerateCommand({ alias, route, projectRoot }) {
   assertNoProfileOverrideOptions({
     alias,
-    role,
     options: route.options
   });
   const { activeProfile, profile } = await resolveProfileContext({
-    alias,
-    role
+    alias
   });
   const spec = parseCommandSpec(route);
   const result = await executeSpecCommand({
-    role,
     profile,
     profileId: profile.id,
     commandName: route.commandName,
@@ -370,7 +361,6 @@ async function handleGenerateCommand({ alias, role, route, projectRoot }) {
   if (!result.files?.length) {
     return createSuccessPayload({
       alias,
-      role,
       apply: Boolean(route.options.apply),
       ...result
     });
@@ -385,28 +375,24 @@ async function handleGenerateCommand({ alias, role, route, projectRoot }) {
 
   return createSuccessPayload({
     alias,
-    role,
     apply: Boolean(route.options.apply),
     ...result,
     files: writtenFiles
   });
 }
 
-async function handleBatchCommand({ alias, role, route, projectRoot }) {
+async function handleBatchCommand({ alias, route, projectRoot }) {
   assertNoProfileOverrideOptions({
     alias,
-    role,
     options: route.options
   });
   const { activeProfile, profile } = await resolveProfileContext({
-    alias,
-    role
+    alias
   });
   const batchSpec = parseBatchSpec(route);
   const result = await executeBatch({
     profile,
     profileId: profile.id,
-    role,
     batchSpec,
     projectRoot,
     apply: Boolean(route.options.apply),
@@ -415,16 +401,14 @@ async function handleBatchCommand({ alias, role, route, projectRoot }) {
 
   return createSuccessPayload({
     alias,
-    role,
     activeProfile,
     ...result
   });
 }
 
-async function handleValidateCommand({ alias, role, route, projectRoot }) {
+async function handleValidateCommand({ alias, route, projectRoot }) {
   assertNoProfileOverrideOptions({
     alias,
-    role,
     options: route.options
   });
   assertAllowedOptions(
@@ -443,11 +427,9 @@ async function handleValidateCommand({ alias, role, route, projectRoot }) {
     "validate"
   );
   const { activeProfile, profile } = await resolveProfileContext({
-    alias,
-    role
+    alias
   });
   const checks = await validateRequest({
-    role,
     profile,
     commandName: route.target ?? route.options.command ?? "validate",
     args: {
@@ -470,17 +452,15 @@ async function handleValidateCommand({ alias, role, route, projectRoot }) {
 
   return createSuccessPayload({
     alias,
-    role,
     action: "validate",
     activeProfile,
     ...checks
   });
 }
 
-async function handleValidateFileCommand({ alias, role, route, projectRoot }) {
+async function handleValidateFileCommand({ alias, route, projectRoot }) {
   assertNoProfileOverrideOptions({
     alias,
-    role,
     options: route.options
   });
   assertAllowedOptions(
@@ -492,8 +472,7 @@ async function handleValidateFileCommand({ alias, role, route, projectRoot }) {
     "validate-file"
   );
   const { activeProfile, profile } = await resolveProfileContext({
-    alias,
-    role
+    alias
   });
   assertCommandExists(profile, "validateFile");
   const spec = parseValidateFileSpec(route);
@@ -505,7 +484,6 @@ async function handleValidateFileCommand({ alias, role, route, projectRoot }) {
 
   return {
     alias,
-    role,
     action: "validate-file",
     activeProfile,
     exitCode: validation.ok ? 0 : 1,
@@ -530,46 +508,39 @@ export async function runCli({
     if (route.action === "help") {
       payload = await handleHelpCommand({
         alias,
-        role: route.role,
         route
       });
     } else if (route.action === "guide") {
       payload = await handleGuideCommand({
         alias,
-        role: route.role,
         route
       });
     } else if (route.action === "mode") {
       payload = await handleModeCommand({
         alias,
-        role: route.role,
         route
       });
     } else if (route.action === "validate") {
       payload = await handleValidateCommand({
         alias,
-        role: route.role,
         route,
         projectRoot
       });
     } else if (route.action === "validateFile") {
       payload = await handleValidateFileCommand({
         alias,
-        role: route.role,
         route,
         projectRoot
       });
     } else if (route.action === "batch") {
       payload = await handleBatchCommand({
         alias,
-        role: route.role,
         route,
         projectRoot
       });
     } else {
       payload = await handleGenerateCommand({
         alias,
-        role: route.role,
         route,
         projectRoot
       });

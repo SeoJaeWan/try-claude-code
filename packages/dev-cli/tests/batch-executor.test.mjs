@@ -4,17 +4,16 @@ import { access, mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { executeBatch } from "../src/core/batch-executor.mjs";
+import { executeBatch } from "../src/core/execution/batch-executor.mjs";
 import { loadProfile } from "./test-utils.mjs";
 
 test("batch executor는 op를 순서대로 실행하고 결과 순서를 유지한다", async () => {
-  const profile = await loadProfile("publisher");
+  const profile = await loadProfile("tcp");
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-batch-"));
 
   const result = await executeBatch({
     profile,
     profileId: profile.id,
-    role: "publisher",
     batchSpec: {
       ops: [
         {
@@ -54,14 +53,13 @@ test("batch executor는 op를 순서대로 실행하고 결과 순서를 유지�
 });
 
 test("batch executor는 기본적으로 preview 모드로 동작하고 파일을 쓰지 않는다", async () => {
-  const profile = await loadProfile("publisher");
+  const profile = await loadProfile("tcp");
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-batch-"));
   const targetPath = path.join(tempRoot, "components", "home", "homePage", "index.tsx");
 
   const result = await executeBatch({
     profile,
     profileId: profile.id,
-    role: "publisher",
     batchSpec: {
       ops: [
         {
@@ -85,7 +83,7 @@ test("batch executor는 기본적으로 preview 모드로 동작하고 파일을
 });
 
 test("batch executor는 뒤 op가 실패하면 전체 write를 막는다", async () => {
-  const profile = await loadProfile("publisher");
+  const profile = await loadProfile("tcp");
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-batch-"));
   const targetPath = path.join(tempRoot, "components", "home", "homePage", "index.tsx");
 
@@ -94,7 +92,6 @@ test("batch executor는 뒤 op가 실패하면 전체 write를 막는다", async
       executeBatch({
         profile,
         profileId: profile.id,
-        role: "publisher",
         batchSpec: {
           ops: [
             {

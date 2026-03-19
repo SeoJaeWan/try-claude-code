@@ -1,11 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { executeSpecCommand } from "../src/core/batch-executor.mjs";
+import { executeSpecCommand } from "../src/core/execution/batch-executor.mjs";
 import { loadProfile, projectRoot } from "./test-utils.mjs";
 
 test("publisher profile은 shared snippet command와 component uiState batch를 함께 노출한다", async () => {
-  const profile = await loadProfile("publisher");
+  const profile = await loadProfile("tcp");
 
   assert.deepEqual(
     Object.keys(profile.commands).sort(),
@@ -14,7 +14,7 @@ test("publisher profile은 shared snippet command와 component uiState batch를 
 });
 
 test("frontend profile은 계획된 file command와 snippet command를 모두 노출한다", async () => {
-  const profile = await loadProfile("frontend");
+  const profile = await loadProfile("tcf");
 
   assert.deepEqual(
     Object.keys(profile.commands).sort(),
@@ -35,14 +35,13 @@ test("frontend profile은 계획된 file command와 snippet command를 모두 �
 });
 
 test("지원하지 않는 profile-command 조합은 deterministic error로 실패한다", async () => {
-  const profile = await loadProfile("frontend");
+  const profile = await loadProfile("tcf");
 
   await assert.rejects(
     () =>
       executeSpecCommand({
         profile,
         profileId: profile.id,
-        role: "frontend",
         commandName: "uiState",
         spec: {
           category: "uiInteraction",

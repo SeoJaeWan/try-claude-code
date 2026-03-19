@@ -1,11 +1,11 @@
 {
-  "publisher": {
+  "tcp": {
     "personal": ["v1"]
   },
-  "frontend": {
+  "tcf": {
     "personal": ["v1"]
   },
-  "backend": {
+  "tcb": {
     "personal": ["v1"]
   }
 }
