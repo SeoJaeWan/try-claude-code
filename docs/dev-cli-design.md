@@ -97,7 +97,7 @@ shared override 규칙:
 > - `mode set` validates the full remote profile contract by loading `profile.json` plus its `extends` and template chain.
 > - `mode show` returns the stored value only and does not revalidate remote availability.
 > - General commands do not accept `--mode`, `--version`, or `--profile` overrides.
-> - `--help` and `help <command>` still work when mode is unset and return bootstrap guidance.
+> - `--help` and `help <command>` still work when mode is unset and return minimal setup guidance.
 
 > Legacy note: the older registry-first bullets below are historical context only and are superseded by the current runtime contract above.
 
