@@ -1,0 +1,15 @@
+{
+  "eval_id": 3,
+  "eval_name": "order-query-hook",
+  "prompt": "주문 상세를 조회하는 프론트 훅을 프로젝트 컨벤션에 맞게 추가해줘. query 훅 형태로 만들고, 호출부에서 loading/error를 다룰 수 있게 해줘.",
+  "assertions": [
+    {"id": "hook-file-exists", "text": "order query 훅 파일이 존재한다"},
+    {"id": "hook-use-prefix", "text": "query 훅 이름이 useGet 접두사를 사용한다 (tcf profile: API query naming = useGet*)"},
+    {"id": "hook-in-apis-queries", "text": "훅 경로가 hooks/apis/{domain}/queries 패턴을 따른다 (tcf profile: API query hook -> hooks/apis/{domain}/queries)"},
+    {"id": "hook-index-ts", "text": "훅이 hooks/apis/{domain}/queries/{hookName}/index.ts 패턴으로 생성된다 (tcf profile: output = {path}/{name}/index.ts)"},
+    {"id": "arrow-function", "text": "훅이 화살표 함수로 정의된다 (shared profile: function style = arrow)"},
+    {"id": "returns-loading", "text": "훅 반환값에 loading/isLoading 상태가 포함된다"},
+    {"id": "returns-error", "text": "훅 반환값에 error 상태가 포함된다"},
+    {"id": "no-logic-in-page", "text": "page에서 직접적인 fetch/business logic이 없고 훅 소비만 한다"}
+  ]
+}
