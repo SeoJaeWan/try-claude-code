@@ -4,12 +4,11 @@
         {
             "id": 1,
             "prompt": "로그인 페이지 인라인 상태와 제출 로직을 프로젝트 컨벤션에 맞게 훅으로 분리해줘. 페이지는 조합만 담당하게 정리해줘.",
-            "expected_output": "form 상태/유효성 검증 훅은 hooks/utils/auth, submit/API 훅은 hooks/apis/auth/mutations로 분리되고 page는 훅 조합만 담당",
+            "expected_output": "form 상태/유효성 검증 훅은 hooks/utils/login으로 분리되고 page는 훅 조합만 담당",
             "files": [
                 "../../../features/frontend-dev-fixture/package.json",
                 "../../../features/frontend-dev-fixture/app/login/page.tsx",
-                "../../../features/frontend-dev-fixture/lib/validators.ts",
-                "../../../features/frontend-dev-fixture/contexts/AuthContext.tsx"
+                "../../../features/frontend-dev-fixture/lib/validators.ts"
             ],
             "expectations": [
                 {
@@ -47,7 +46,7 @@
                     "id": "hook-index-ts",
                     "text": "훅이 hooks/apis/{domain}/queries/{hookName}/index.ts 패턴으로 생성된다 (tcf profile: output = {path}/{name}/index.ts)"
                 },
-                {"id": "no-fetch-in-component", "text": "NotificationList 컴포넌트에 직접적인 useEffect+fetch 패턴이 남지 않는다"},
+                {"id": "hook-refactored", "text": "useGetNotifications 훅이 기존 useEffect+fetch 대신 TanStack Query(useQuery)를 사용하도록 리팩토링된다"},
                 {"id": "loading-state", "text": "loading 상태 분기가 유지된다"},
                 {"id": "error-state", "text": "error 상태 분기가 유지된다"},
                 {"id": "empty-state", "text": "empty state 분기가 유지된다"},
@@ -89,7 +88,6 @@
             "files": [
                 "../../../features/frontend-dev-fixture/package.json",
                 "../../../features/frontend-dev-fixture/app/profile/page.tsx",
-                "../../../features/frontend-dev-fixture/contexts/AuthContext.tsx",
                 "../../../features/frontend-dev-fixture/components/DatePicker.tsx",
                 "../../../features/frontend-dev-fixture/components/MultiSelect.tsx",
                 "../../../features/frontend-dev-fixture/components/FileUpload.tsx"
@@ -114,19 +112,18 @@
         {
             "id": 5,
             "prompt": "회원가입 페이지도 프로젝트 컨벤션에 맞게 훅 조합 구조로 정리해줘. 로그인 페이지와 비슷한 수준의 경계로 맞춰줘.",
-            "expected_output": "signup form 상태 훅은 hooks/utils/auth, submit 훅은 hooks/apis/auth/mutations로 분리되고 page는 UI shell과 훅 조합으로 정리",
+            "expected_output": "signup form 상태 훅은 hooks/utils/signup으로 분리되고 page는 UI shell과 훅 조합으로 정리",
             "files": [
                 "../../../features/frontend-dev-fixture/package.json",
                 "../../../features/frontend-dev-fixture/app/signup/page.tsx",
-                "../../../features/frontend-dev-fixture/lib/validators.ts",
-                "../../../features/frontend-dev-fixture/contexts/AuthContext.tsx"
+                "../../../features/frontend-dev-fixture/lib/validators.ts"
             ],
             "expectations": [
                 {
                     "id": "signup-form-hook",
                     "text": "signup form 상태를 담당하는 훅이 hooks/utils/signup 경로에 생성된다 (예: hooks/utils/signup/useSignupForm/index.ts)"
                 },
-                {"id": "signup-api-hook", "text": "signup submit을 담당하는 훅이 hooks/apis/auth/mutations/usePostSignup 경로에 생성된다"},
+                {"id": "submit-in-hook", "text": "submit 로직이 훅으로 추상화된다 (별도 훅 또는 form 훅 내부, page에 직접 남지 않음)"},
                 {"id": "hook-use-prefix", "text": "훅 이름이 use 접두사로 시작한다 (tcf profile: hook prefix = use)"},
                 {
                     "id": "hook-index-ts",

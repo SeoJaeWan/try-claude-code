@@ -34,7 +34,7 @@
       "expectations": [
         {"id": "query-hook-path", "text": "조회 훅이 hooks/apis/{domain}/queries/ 경로 아래에 배치된다 (tcf profile: API query hook -> hooks/apis/{domain}/queries)"},
         {"id": "hook-index-ts", "text": "훅이 hooks/apis/{domain}/queries/{hookName}/index.ts 패턴으로 생성된다 (tcf profile: output = {path}/{name}/index.ts)"},
-        {"id": "no-fetch-in-component", "text": "NotificationList 컴포넌트에 직접적인 useEffect+fetch 패턴이 남지 않는다"},
+        {"id": "hook-refactored", "text": "useGetNotifications 훅이 기존 useEffect+fetch 대신 TanStack Query(useQuery)를 사용하도록 리팩토링된다"},
         {"id": "loading-state", "text": "loading 상태 분기가 유지된다"},
         {"id": "error-state", "text": "error 상태 분기가 유지된다"},
         {"id": "empty-state", "text": "empty state 분기가 유지된다"},
