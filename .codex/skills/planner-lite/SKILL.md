@@ -1,11 +1,11 @@
 ---
 name: planner-lite
-description: Execute finalized implementation plans with deterministic orchestration. Use when architect has already produced a decision-complete `plan.md` or `plan-{track}/plan.md` and the user wants execution rather than more planning, especially for worktree-scoped runs that must dispatch each phase to its mapped named custom agent, with per-phase validation, commits, and final merge coordination.
+description: Execute finalized implementation plans with deterministic orchestration. Use when architect has already produced a decision-complete `plan.md` or `plan-{track}/plan.md` and the user wants execution rather than more planning, especially for worktree-scoped runs that must dispatch each phase to its mapped named custom agent, with per-phase validation, commits, and user approval gate. Waits for user confirmation after each phase, and after all phases complete checks out the task branch — does not merge automatically.
 ---
 
 <Skill_Guide>
 <Purpose>
-Execute one finalized plan file with git worktree isolation, phase progression, and mandatory named custom-agent dispatch.
+Execute one finalized plan file with git worktree isolation, phase progression, and mandatory named custom-agent dispatch. After completion, checks out the task branch for review — no automatic merge.
 </Purpose>
 
 <Instructions>
@@ -95,6 +95,7 @@ Use this skill only after planning is complete.
 - Keep each phase bounded to the files and outcomes described by the plan.
 - Review the returned worktree changes, then run the relevant validation commands before moving to the next phase.
 - Commit after each successful phase using `git.md` conventions.
+- After each phase's validation and commit, report the results to the user and wait for explicit approval before proceeding to the next phase. Use `AskUserQuestion` to present the phase summary (changed files, commit, validation results) and options: "다음 phase 진행" / "중단". Do not proceed without user confirmation. If the user chooses to stop, keep the worktree intact for inspection.
 
 Delegation prompt contract:
 
@@ -114,12 +115,12 @@ Do not edit files outside this phase scope.
 Report changed files, validations run, and blockers.
 ```
 
-### Step 4. Merge and clean up
+### Step 4. Checkout task branch
 
-- After the final phase passes, remove the worktree so the task branch can merge.
-- Merge back into the recorded base branch with `--no-ff`.
-- Delete the task branch only after a clean merge.
-- If merge conflicts occur, stop, report the conflict, and keep the task branch for manual resolution.
+- After the final phase passes, remove the worktree so the task branch is freed.
+- Checkout the task branch: `git checkout "$TASK_BRANCH"`.
+- Do NOT merge into the base branch. Do NOT delete the task branch.
+- The user will decide when and how to merge (e.g., via PR or manual merge).
 
 ## Subagent policy
 
@@ -139,12 +140,12 @@ Report changed files, validations run, and blockers.
 - Do not ask child agents to create branches, worktrees, or merge.
 - Do not let planner-lite directly edit application files for a mapped phase unless the user explicitly overrides the child-agent model.
 - Do not dispatch mapped phases to generic `worker`, `default`, or `explorer` roles as a substitute for the named custom agent.
-- Do not switch the main repo checkout away from the recorded base branch.
+- Do not switch the main repo checkout away from the recorded base branch during phase execution (switching to the task branch after completion is expected).
 - Do not continue past a failed phase validation.
-- Do not delete task branches on merge failure.
+- Do not delete task branches — the user decides when to merge and clean up.
 
 ## Output contract
 
-- Report the executed plan path, base branch, worktree branch, which named custom agents were spawned, commits created, validations run, merge result, and any unresolved blockers.
+- Report the executed plan path, base branch, task branch (now checked out), which named custom agents were spawned, commits created, validations run, and any unresolved blockers.
 </Instructions>
 </Skill_Guide>

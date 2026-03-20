@@ -1,12 +1,12 @@
 ---
 name: planner-lite
-description: Deterministic plan orchestrator with per-task worktree isolation, sequential phase commits, and final merge. Use when executing plan.md artifacts that coordinate multiple agents across sequential or parallel phases.
+description: Deterministic plan orchestrator with per-task worktree isolation, sequential phase commits, per-phase user approval, and task branch checkout. Use when executing plan.md artifacts that coordinate multiple agents across sequential or parallel phases. Waits for user confirmation after each phase, and after all phases complete checks out the task branch — does not merge automatically.
 model: opus
 ---
 
 <Skill_Guide>
 <Purpose>
-Execute plan.md artifacts with task-level worktree isolation, sequential phase commits, and a single final merge. Each task gets one worktree for its entire lifecycle — phases commit sequentially within it, and the worktree is cleaned up after the final merge.
+Execute plan.md artifacts with task-level worktree isolation and sequential phase commits. Each task gets one worktree for its entire lifecycle — phases commit sequentially within it, and after completion the worktree is cleaned up and the task branch is checked out for review. No automatic merge is performed.
 </Purpose>
 
 <Instructions>
@@ -20,7 +20,7 @@ Orchestrate plan.md execution with task-level worktree isolation and commit-base
 
 `Agent(isolation: "worktree")` doesn't support nested Agent calls inside the worktree, so phase-level agent specialization is impossible with it. Using it when planner-lite is already in a worktree also causes nesting (`worktrees/A/worktrees/B`). And `EnterWorktree` has no mid-session exit, making post-work merge impossible.
 
-This skill uses manual `git worktree` management: one worktree per task, phase agents commit sequentially within it, and the worktree branch is merged once at the end. This gives full control over the worktree lifecycle while supporting different specialized agents per phase.
+This skill uses manual `git worktree` management: one worktree per task, phase agents commit sequentially within it, and the task branch is checked out after completion for user review. This gives full control over the worktree lifecycle while supporting different specialized agents per phase.
 
 ---
 
@@ -36,10 +36,10 @@ This skill uses manual `git worktree` management: one worktree per task, phase a
 ## Core rules
 
 1. planner-lite runs in the main conversation context (no agent binding).
-2. The main context HEAD stays on the base branch throughout execution.
+2. The main context HEAD stays on the base branch during phase execution, then switches to the task branch after completion.
 3. Task branches are created via `git worktree add -b` (one per task, not per phase).
 4. Phase agents are dispatched via `Agent` without `isolation: "worktree"` — they work directly in the worktree directory.
-5. Each phase ends with a commit. Only after the final phase does planner-lite merge.
+5. Each phase ends with a commit. After the final phase, planner-lite checks out the task branch (no merge).
 6. planner-lite runs from the repository root, never from inside `worktrees/**`.
 
 ---
@@ -47,17 +47,17 @@ This skill uses manual `git worktree` management: one worktree per task, phase a
 ## Branch model
 
 ```
-X (base branch — HEAD stays here throughout)
+X (base branch — HEAD stays here during execution)
 │
 └── git worktree add -b task-A worktrees/task-A X
     ├── commit: Phase 1 work
     ├── commit: Phase 2 work
     └── commit: Phase 3 work
-    → worktree remove → merge task-A into X → branch cleanup
+    → worktree remove → checkout task-A (ready for review/PR)
 ```
 
-- **Base branch (X):** Where HEAD is when planner-lite starts. It does not move.
-- **Task branch:** Created by `git worktree add -b`. All phase commits accumulate on this branch inside the worktree.
+- **Base branch (X):** Where HEAD is when planner-lite starts. It stays here during phase execution.
+- **Task branch:** Created by `git worktree add -b`. All phase commits accumulate on this branch inside the worktree. After completion, HEAD switches to this branch.
 
 ---
 
@@ -146,25 +146,29 @@ git -C "$WORKTREE_DIR" log --oneline -1
 
 If verification fails → stop execution and report the error. Do not proceed to the next phase.
 
-### Step 4. Merge
+#### 3c. Wait for user approval
 
-After all phases complete, the task branch has all phase commits. A branch checked out in a worktree cannot be merged elsewhere, so the worktree must be removed first:
+After verification passes, report the phase results to the user and wait for approval before continuing. Use `AskUserQuestion` to present:
+
+- What was completed in this phase (changed files, commit summary)
+- Validation results
+- Options: "다음 phase 진행" / "중단"
+
+Do not proceed to the next phase until the user explicitly approves. If the user chooses to stop, keep the worktree intact for inspection — do not clean up.
+
+### Step 4. Checkout task branch
+
+After all phases complete, the task branch has all phase commits. Remove the worktree and switch to the task branch so the user can review, test, and decide when to merge:
 
 ```bash
-# 1. Remove worktree (frees the branch for merge)
+# 1. Remove worktree (frees the branch)
 git worktree remove "$WORKTREE_DIR" --force
 
-# 2. Merge task branch into base
-git merge "$TASK_BRANCH" --no-ff -m "Merge ${TASK_BRANCH}: {task summary}"
-
-# 3. Clean up task branch
-git branch -d "$TASK_BRANCH"
+# 2. Checkout the task branch (do NOT merge)
+git checkout "$TASK_BRANCH"
 ```
 
-If merge conflicts occur:
-- Print conflict details and stop.
-- Do not delete the task branch — keep it for manual resolution.
-- Run `git merge --abort` if the user wants to cancel.
+Do not merge into the base branch. Do not delete the task branch. The user will decide when and how to merge (e.g., via PR or manual merge).
 
 ### Step 5. Verify completion
 
@@ -172,11 +176,11 @@ If merge conflicts occur:
 # Worktree should be gone
 git worktree list --porcelain
 
-# HEAD should be on base branch
-git rev-parse --abbrev-ref HEAD  # should be $BASE
+# HEAD should be on the task branch
+git rev-parse --abbrev-ref HEAD  # should be $TASK_BRANCH
 
-# Task branch should be deleted (after successful merge)
-git branch --list "$TASK_BRANCH"  # should be empty
+# Task branch should contain all phase commits
+git log --oneline "$BASE".."$TASK_BRANCH"
 ```
 
 ---
@@ -194,13 +198,12 @@ If a phase agent fails or produces no work:
 2. Decide: retry the phase, skip it, or stop execution
 3. The worktree remains intact for inspection
 
-### Merge conflict
+### Post-completion
 
-If merge conflicts occur in Step 4:
-1. The worktree is already removed at this point
-2. The task branch still exists with all phase commits
-3. Resolve conflicts manually, then run `git commit` to complete the merge
-4. Clean up: `git branch -d "$TASK_BRANCH"`
+After Step 4, HEAD is on the task branch with all phase commits. The user can:
+1. Review changes: `git log --oneline $BASE..$TASK_BRANCH`
+2. Create a PR, or merge manually when ready
+3. Return to base: `git checkout $BASE`
 
 ---
 
@@ -214,14 +217,14 @@ Each session independently:
 1. Reads its own plan's `**Branch:**` value
 2. Creates its own worktree from the shared base branch X
 3. Dispatches phase agents to its own worktree
-4. Merges its own task branch after completion
+4. Checks out its own task branch after completion (no merge)
 
 | Session 1 | Session 2 | Session 3 |
 |---|---|---|
 | HEAD on X | HEAD on X | HEAD on X |
 | worktree: task-A from X | worktree: task-B from X | worktree: task-C from X |
 | Phases → commits | Phases → commits | Phases → commits |
-| Remove worktree → merge | Remove worktree → merge | Remove worktree → merge |
+| Remove worktree → checkout task-A | Remove worktree → checkout task-B | Remove worktree → checkout task-C |
 
 ### Isolation guarantees
 
@@ -234,10 +237,10 @@ Each session independently:
 
 ### Final integration
 
-If sessions merge independently, later merges may conflict. For safer integration, defer merge to a single orchestrator:
+Each session leaves HEAD on its own task branch. The user or a separate orchestrator can merge when ready:
 
 ```bash
-# After all sessions complete (worktrees already removed by each session)
+# After all sessions complete (each on its own task branch)
 git checkout X
 git merge task-A --no-ff -m "Merge task A"
 git merge task-B --no-ff -m "Merge task B"
@@ -245,7 +248,7 @@ git merge task-C --no-ff -m "Merge task C"
 git branch -d task-A task-B task-C
 ```
 
-This final integration step is outside planner-lite's scope.
+This final integration step is outside planner-lite's scope — the user decides when to merge.
 
 ---
 
@@ -273,9 +276,9 @@ git rev-parse --abbrev-ref HEAD
 1. Never pass `isolation: "worktree"` to Agent — it doesn't support nested Agent calls, making phase-level specialization impossible.
 2. Never call `EnterWorktree` — it lacks mid-session exit, making merge impossible.
 3. Never run planner-lite from inside `worktrees/**` — always from repository root.
-4. Never delete task branches on merge failure — keep them for manual resolution.
+4. Never delete task branches — the user decides when to merge and clean up.
 5. Always verify phase commits and branch before starting the next phase.
-6. Always remove the worktree before merging — a branch checked out in a worktree cannot be merged elsewhere.
+6. Always remove the worktree before checking out the task branch.
 7. Never run two planner-lite sessions against the same `**Branch:**` value concurrently.
 
 </Instructions>
