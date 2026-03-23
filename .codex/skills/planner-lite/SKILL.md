@@ -49,9 +49,9 @@ This skill uses manual `git worktree` management: one worktree per task, phase a
 X (base branch — HEAD stays here during execution)
 │
 └── git worktree add -b task-A worktrees/task-A X
-    ├── commit: Phase 1 work
-    ├── commit: Phase 2 work
-    └── commit: Phase 3 work
+    ├── commit: feat(auth): implement JWT-based login
+    ├── commit: feat(auth): add token refresh middleware
+    └── commit: test(auth): add integration tests for login flow
     → worktree remove → checkout task-A (ready for review/PR)
 ```
 
@@ -112,7 +112,12 @@ Agent(
     - Work directly in your current directory.
     - Do NOT create additional worktrees or use EnterWorktree.
     - Only implement Phase {N} work described below. Do NOT redo prior phases.
-    - Commit your work when done: git add -A && git commit -m 'Phase {N}: {summary}'
+    - Commit your work when done using Conventional Commits format:
+      git add -A && git commit -m '{type}({scope}): {description}'
+      Types: feat, fix, refactor, test, docs, chore, style, perf, ci, build
+      Scope: the module or area you changed (e.g., auth, api, ui, db)
+      Description: concise summary of what you did, in imperative mood
+      Example: feat(auth): implement JWT-based login
 
     ## Task
     {phase content}
@@ -134,9 +139,11 @@ if [ "$CURRENT_BRANCH" != "$TASK_BRANCH" ]; then
 fi
 
 # 2. Check for uncommitted changes and commit if needed
+# Use Conventional Commits: {type}({scope}): {description}
+# Infer type from the phase content (feat/fix/refactor/test/docs/chore/style/perf/ci/build)
 if [ -n "$(git -C "$WORKTREE_DIR" status --porcelain)" ]; then
   git -C "$WORKTREE_DIR" add -A
-  git -C "$WORKTREE_DIR" commit -m "Phase {N}: {short summary}"
+  git -C "$WORKTREE_DIR" commit -m "{type}({scope}): {description from phase content}"
 fi
 
 # 3. Confirm latest commit
