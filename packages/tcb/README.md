@@ -16,5 +16,5 @@ tcb mode set --mode personal --version v1
 tcb mode show
 ```
 
-The CLI resolves the active contract from `main/profiles/tcb/{mode}/{version}` on `SeoJaeWan/try-claude-code`.
-Set the active remote contract with `tcb mode set --mode personal --version v1`, inspect the stored selection with `tcb mode show`, and use `tcb --help` even before mode setup for minimal setup guidance.
+`tcb mode set --mode personal --version v1` refreshes a local snapshot of `main/profiles/tcb/{mode}/{version}` from `SeoJaeWan/try-claude-code`.
+Inspect the stored selection with `tcb mode show`, use `tcb --help` even before mode setup for minimal setup guidance, and rerun `mode set` whenever you want to refresh the cached profile snapshot.

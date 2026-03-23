@@ -217,7 +217,8 @@ async function handleModeCommand({ alias, route }) {
     await loadActiveProfile({
       alias,
       mode: activeProfile.mode,
-      version: activeProfile.version
+      version: activeProfile.version,
+      remoteOnly: true
     });
   } catch (error) {
     throw mapModeSetError(error, {

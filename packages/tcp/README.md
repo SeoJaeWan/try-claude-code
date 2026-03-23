@@ -16,5 +16,5 @@ tcp mode set --mode personal --version v1
 tcp mode show
 ```
 
-The CLI resolves the active contract from `main/profiles/tcp/{mode}/{version}` on `SeoJaeWan/try-claude-code`.
-Set the active remote contract with `tcp mode set --mode personal --version v1`, inspect the stored selection with `tcp mode show`, and use `tcp --help` even before mode setup for minimal setup guidance.
+`tcp mode set --mode personal --version v1` refreshes a local snapshot of `main/profiles/tcp/{mode}/{version}` from `SeoJaeWan/try-claude-code`.
+Inspect the stored selection with `tcp mode show`, use `tcp --help` even before mode setup for minimal setup guidance, and rerun `mode set` whenever you want to refresh the cached profile snapshot.

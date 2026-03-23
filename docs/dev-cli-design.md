@@ -93,9 +93,10 @@ shared override 규칙:
 > - `mode set --mode <mode> --version <major>` is the only way to change the active profile.
 > - General commands always use the stored global selection.
 > - If no active selection exists, the CLI stays unset until the user configures one.
-> - Remote `main/profiles/{alias}/{mode}/{version}` is the runtime source of truth.
-> - `mode set` validates the full remote profile contract by loading `profile.json` plus its `extends` and template chain.
-> - `mode show` returns the stored value only and does not revalidate remote availability.
+> - `mode set` refreshes a local snapshot of `main/profiles/{alias}/{mode}/{version}` by loading `profile.json` plus its `extends` and template chain.
+> - General commands use the cached snapshot first, so the configured profile keeps working offline after a successful `mode set`.
+> - If a cached snapshot is missing, the CLI falls back to the remote profile and backfills the local cache.
+> - `mode show` returns the stored selection only and does not revalidate remote availability.
 > - General commands do not accept `--mode`, `--version`, or `--profile` overrides.
 > - `--help` still works when mode is unset and returns minimal setup guidance.
 
@@ -112,7 +113,8 @@ active profile 우선순위:
 - 사용자는 `personal + v1` 같은 조합만 선택한다.
 - `profiles/registry.json`은 alias별 mode와 지원 major version 배열만 관리한다.
 - config에는 `mode`, `version`만 저장한다.
-- 실제 profile/template fetch는 항상 `main/profiles/{alias}/{mode}/{version}` live 경로를 직접 사용한다.
+- 실제 profile/template fetch 결과는 홈 디렉터리 캐시에 snapshot으로 저장하고, 일반 명령은 그 snapshot을 우선 사용한다.
+- `mode set`은 원격 `main/profiles/{alias}/{mode}/{version}`를 기준으로 snapshot을 새로 갱신한다.
 - `mode set`과 `mode show`는 exact patch version을 받지 않는다.
 
 예시 config:
