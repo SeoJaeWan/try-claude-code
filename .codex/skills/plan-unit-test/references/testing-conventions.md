@@ -102,8 +102,7 @@ These are examples only. Use them only when the repository already points to tha
 - Keep planning artifacts flat under `plans/{task-name}/tests/`
 - Record placement intent and implementation placement rules in `manifest.md`
 - If the repo has no clear convention, ask the user instead of inventing one
-- In non-sequential mode, generate files per track under `plans/{task-name}/plan-{track}/tests/`
-- Keep root `plans/{task-name}/tests/manifest.md` as a track index in non-sequential mode
+- If the task is split into multiple sequential plan folders, generate files under the owning plan folder's `tests/`
 
 Examples:
 
