@@ -11,7 +11,7 @@ Generate spec-oriented unit/logic test files as plan artifacts during the planni
 <Instructions>
 # plan-unit-test
 
-Generate stack-aware unit/logic test files mapped to `plan.md` constraint IDs. These tests become flat plan artifacts that implementation agents later place into the source tree for Red-Green TDD using coding rules and local test conventions.
+Generate stack-aware unit/logic test files mapped to `plan.md` phase-local constraint IDs. These tests become flat plan artifacts that implementation agents later place into the source tree for Red-Green TDD using the owning phase's `테스트 이동`, coding rules, and local test conventions.
 
 The goal is not to optimize for "easy passing." The goal is to make the required logic explicit enough that implementation can be judged against a concrete behavioral contract.
 
@@ -21,12 +21,13 @@ This skill covers **unit and logic tests only**. E2E tests are handled by the `p
 
 ## Inputs to inspect
 
-1. `./plans/{task-name}/plan.md` - constraint IDs (`[C-...]`), execution mode, test targets
-2. `./plans/{task-name}/plan-{track}/plan.md` (존재 시) - track별 테스트 범위
-3. `./plans/{task-name}/tests/manifest.md` (존재 시) - track test 인덱스 규칙
-4. `./.codex/skills/plan-unit-test/references/testing-conventions.md` - test writing rules
-5. `./.codex/skills/plan-unit-test/references/constraint-coverage.md` - coverage rules
-6. Local test/build config near the target code - use this to detect stack and conventions before generating files
+1. Current executable plan file:
+   - `./plans/{task-name}/plan.md`
+   - or `./plans/{task-name}/{nn}-{plan-name}/plan.md`
+2. Plan-local `tests/manifest.md` (존재 시)
+3. `./.codex/skills/plan-unit-test/references/testing-conventions.md` - test writing rules
+4. `./.codex/skills/plan-unit-test/references/constraint-coverage.md` - coverage rules
+5. Local test/build config near the target code - use this to detect stack and conventions before generating files
 
 ---
 
@@ -42,13 +43,13 @@ This skill covers **unit and logic tests only**. E2E tests are handled by the `p
 
 ### Step 1. Extract test targets from `plan.md`
 
-- Parse all constraint IDs (`[C-...]`) from `plan.md`
-- If track plans exist, map constraints and test targets to each track first and generate artifacts per track
+- Parse all constraint IDs (`[C-...]`) from relevant phase/task blocks in `plan.md`
 - Identify testable logic boundaries: hooks, services, utilities, validators, mappers, use cases, state management, controller methods, domain policies
 - Choose the narrowest boundary that can verify the required logic accurately
 - Skip document-only or config-only changes with no testable logic
 - Skip user-facing flows that are better covered by E2E tests (`plan-e2e-test`)
 - Do not omit adjacent in-scope logic boundaries declared in plan scope (e.g., split sub-panels such as `leftPanel`)
+- If the plan does not expose the relevant constraints inside phase/task blocks, stop and return the missing contract to `architect`
 
 ### Step 2. Read reference documents
 
@@ -93,10 +94,10 @@ These tests may be unit-style, slice-style, or lightweight boundary tests depend
 
 ### Step 5. Save test files as plan artifacts
 
-Save generated tests as flat plan artifacts:
+Save generated tests as flat plan artifacts next to the owning `plan.md`:
 
-- sequential: `./plans/{task-name}/tests/`
-- non-sequential: `./plans/{task-name}/plan-{track}/tests/`
+- single-plan task: `./plans/{task-name}/tests/`
+- multi-plan task: `./plans/{task-name}/{nn}-{plan-name}/tests/`
 
 ```text
 plans/{task-name}/tests/
@@ -107,8 +108,8 @@ plans/{task-name}/tests/
 ```
 
 Plan artifacts under `tests/` do not mirror the final source-tree destination.
-Implementation agents resolve the final destination later using coding rules, local test conventions, and the placement intent recorded in `manifest.md`.
-When execution mode is not sequential, maintain one manifest per track and keep root `tests/manifest.md` as an index.
+Implementation agents resolve the final destination later using the owning phase's `테스트 이동`, coding rules, local test conventions, and the placement intent recorded in `manifest.md`.
+Keep one manifest per executable plan file.
 
 ### Step 6. Write `manifest.md`
 
@@ -126,9 +127,9 @@ Create `tests/manifest.md` with:
 
 ## Implementation Placement
 
-- Resolve final destination during implementation using coding rules and local test layout
+- Resolve final destination during implementation using phase `테스트 이동`, coding rules, and local test layout
 - Keep assertions and scenarios unchanged when relocating plan artifacts
-- If destination is still unclear after reading local conventions, stop and ask the user
+- If destination is still unclear after reading phase instructions and local conventions, stop and ask the user
 
 ## Coverage
 
@@ -154,13 +155,12 @@ If a category is intentionally omitted for a constraint, note the reason in the 
 
 ## Output contract
 
-- Sequential:
+- Single-plan task:
   - `./plans/{task-name}/tests/manifest.md`
   - `./plans/{task-name}/tests/{flat-artifact-files}`
-- Non-sequential:
-  - `./plans/{task-name}/plan-{track}/tests/manifest.md`
-  - `./plans/{task-name}/plan-{track}/tests/{flat-artifact-files}`
-  - `./plans/{task-name}/tests/manifest.md` (track index)
+- Multi-plan task:
+  - `./plans/{task-name}/{nn}-{plan-name}/tests/manifest.md`
+  - `./plans/{task-name}/{nn}-{plan-name}/tests/{flat-artifact-files}`
 - Output language: Korean (test specs)
 
 ## Guardrails

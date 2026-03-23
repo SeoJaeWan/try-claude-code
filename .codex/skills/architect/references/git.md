@@ -72,7 +72,6 @@ test/{work-summary}
 - A type prefix is required
 - Use kebab-case only
 - Use exactly one slash (`/`) in the branch name
-- For parallel worktree tracks, append `-{track}` to the summary
 
 Examples:
 
@@ -81,4 +80,30 @@ O  feat/add-archive-page
 X  add-archive-page
 X  feat/add_archive_page
 X  feat/AddArchivePage
+```
+
+---
+
+## Worktree Naming
+
+### Format
+
+```text
+{branch-name with "/" replaced by "-"}
+```
+
+### Rules
+
+- Derive the worktree directory name from the branch name
+- Replace every `/` in the branch name with `-`
+- Do not invent a second summary; keep branch and worktree names mechanically linked
+
+Examples:
+
+```text
+Branch:   feat/add-archive-page
+Worktree: feat-add-archive-page
+
+Branch:   refactor/dev-cli-contract-core
+Worktree: refactor-dev-cli-contract-core
 ```

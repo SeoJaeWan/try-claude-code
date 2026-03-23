@@ -11,7 +11,7 @@ Generate deterministic, environment-appropriate E2E plan artifacts during planni
 <Instructions>
 # plan-e2e-test
 
-Generate runner-appropriate E2E artifacts mapped to `plan.md` constraint IDs.
+Generate runner-appropriate E2E artifacts mapped to `plan.md` phase-local constraint IDs.
 
 - Web/browser surface: Playwright `.spec.ts`
 - React Native / Expo mobile surface: Maestro `.yaml`
@@ -20,7 +20,7 @@ These tests are planning artifacts, not implementation code.
 
 **Strict AI TDD**: E2E artifacts are frozen at planning time. If tests fail later, fix the implementation, not the tests.
 
-**Precondition**: Do not generate E2E artifacts unless `plan.md` already resolves all frontend UI contracts:
+**Precondition**: Do not generate E2E artifacts unless `plan.md` already resolves all frontend UI contracts inside the relevant phase/task blocks:
 
 - `route or navigation/surface contract`
 - `user state contract`
@@ -32,12 +32,13 @@ These tests are planning artifacts, not implementation code.
 
 ## Inputs to inspect
 
-1. `./plans/{task-name}/plan.md`
-2. `./plans/{task-name}/plan-{track}/plan.md` (존재 시)
-3. `./plans/{task-name}/e2e/manifest.md` (존재 시)
-4. `./.codex/skills/plan-e2e-test/references/e2e-conventions.md`
-5. `./.codex/skills/plan-e2e-test/references/constraint-coverage.md`
-6. Local E2E config and existing tests:
+1. Current executable plan file:
+   - `./plans/{task-name}/plan.md`
+   - or `./plans/{task-name}/{nn}-{plan-name}/plan.md`
+2. Plan-local `e2e/manifest.md` (존재 시)
+3. `./.codex/skills/plan-e2e-test/references/e2e-conventions.md`
+4. `./.codex/skills/plan-e2e-test/references/constraint-coverage.md`
+5. Local E2E config and existing tests:
    - Playwright signals: `playwright.config.*`, `*.spec.ts`, web app routes
    - Maestro signals: `.maestro/`, Expo/React Native config, existing `.yaml` flows
 
@@ -47,7 +48,7 @@ These tests are planning artifacts, not implementation code.
 
 ### Step 0. Verify UI contracts first
 
-Read `plan.md` and confirm all five UI contracts are explicitly resolved.
+Read `plan.md` and confirm all five UI contracts are explicitly resolved in the scoped phase/task blocks.
 
 Rules:
 
@@ -68,8 +69,7 @@ Do not generate both runners for one bounded surface unless the plan explicitly 
 
 ### Step 1. Extract E2E targets from `plan.md`
 
-- Parse all `[C-...]` constraints related to user-visible behavior.
-- If track plans exist, map constraints per track first.
+- Parse all `[C-...]` constraints related to user-visible behavior from relevant phase/task blocks.
 - Identify bounded E2E targets:
   - screen-local CRUD
   - form validation and submit gating
@@ -128,8 +128,8 @@ Generate `.yaml` flows with these rules:
 
 ### Step 5. Save artifacts as plan files
 
-- Sequential: `./plans/{task-name}/e2e/`
-- Non-sequential: `./plans/{task-name}/plan-{track}/e2e/`
+- Single-plan task: `./plans/{task-name}/e2e/`
+- Multi-plan task: `./plans/{task-name}/{nn}-{plan-name}/e2e/`
 
 Default output layout:
 
@@ -137,7 +137,7 @@ Default output layout:
 - Maestro: `e2e/{flow-id}.yaml`
 
 Do not freeze the final source-tree E2E placement here.
-Implementation agents resolve the final destination later using repo E2E conventions, coding rules, and the placement handoff recorded in `manifest.md`.
+Implementation agents resolve the final destination later using phase `테스트 이동`, repo E2E conventions, coding rules, and the placement handoff recorded in `manifest.md`.
 
 ### Step 6. Write `manifest.md`
 
@@ -158,9 +158,9 @@ Create `manifest.md` with:
 
 ## Implementation Placement
 
-- Resolve final destination during implementation using repo E2E layout and naming conventions
+- Resolve final destination during implementation using phase `테스트 이동`, repo E2E layout, and naming conventions
 - Keep assertions, locators, and scenario scope unchanged when relocating plan artifacts
-- If destination is still unclear after reading local conventions, stop and ask the user
+- If destination is still unclear after reading phase instructions and local conventions, stop and ask the user
 
 ## Locator Registry
 
@@ -197,14 +197,13 @@ Use a runner-appropriate locator label:
 
 ## Output contract
 
-- Sequential:
+- Single-plan task:
   - `./plans/{task-name}/e2e/manifest.md`
   - Playwright: `./plans/{task-name}/e2e/{surface-id}.spec.ts`
   - Maestro: `./plans/{task-name}/e2e/{flow-id}.yaml`
-- Non-sequential:
-  - `./plans/{task-name}/plan-{track}/e2e/manifest.md`
-  - Track-local runner-specific artifacts
-  - `./plans/{task-name}/e2e/manifest.md` (track index)
+- Multi-plan task:
+  - `./plans/{task-name}/{nn}-{plan-name}/e2e/manifest.md`
+  - Plan-local runner-specific artifacts
 - Output language: Korean
 
 ## Guardrails
