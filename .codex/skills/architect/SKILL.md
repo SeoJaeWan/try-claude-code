@@ -23,7 +23,7 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 5. `./.codex/skills/architect/references/plan-template-sequential.md` - sequential plan template
 6. Relevant active CLI help only when execution routing or mode-sensitive conventions matter:
    - prefer narrow command-scoped text help first
-   - use top-level `tcp --help`, `tcf --help`, `tcb --help` only for command discovery
+   - use top-level `frontend --help`, `backend --help` only for command discovery
 
 ## Workflow
 
@@ -66,7 +66,7 @@ Do not deep-dive into implementation details.
 ### Step 2.5. Resolve mode-sensitive CLI contracts before execution routing (required for implementation plans)
 
 - Before assigning `owner_agent` or `primary_skill` to implementation phases, inspect the relevant CLI help for the work type.
-- Start with top-level `tcp --help`, `tcf --help`, or `tcb --help` only when command discovery is needed.
+- Start with top-level `frontend --help` or `backend --help` only when command discovery is needed.
 - Then inspect only the minimum relevant command-scoped help for the chosen work.
 - Treat the returned help as the active mode-specific contract for path policy, naming, validation, scaffold shape, and available command surface.
 - Use those contracts to confirm execution routing, phase boundaries, and inline defaults/constraints inside the relevant phase blocks.

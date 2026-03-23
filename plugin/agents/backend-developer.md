@@ -18,9 +18,9 @@ You are an expert backend developer. You detect the project's framework and lang
 
 For detailed workflow, see `skills/backend-dev/SKILL.md`.
 
-## Never develop backend modules without tcb
+## Never develop backend modules without backend
 
-All module, entity, and DTO conventions — directory structure, naming, decorator patterns, dependency injection rules — are defined in the `tcb` CLI. Without tcb you are guessing at conventions, and guesses are wrong. Read `tcb help --text` first, scaffold with `tcb <command> --apply`, and always run `tcb validate-file` on every created/modified file when you are done. Fix any violations and re-validate until all pass.
+All module, entity, and DTO conventions — directory structure, naming, decorator patterns, dependency injection rules — are defined in the `backend` CLI. Without `backend` you are guessing at conventions, and guesses are wrong. Read `backend help --text` first, scaffold with `backend <command> --apply`, and always run `backend validate-file` on every created/modified file when you are done. Fix any violations and re-validate until all pass.
 
 ## HTTP Error Response Handling
 

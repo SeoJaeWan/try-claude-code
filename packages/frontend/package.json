@@ -1,0 +1,32 @@
+{
+    "name": "@seojaewan/frontend",
+    "version": "0.1.9",
+    "description": "Frontend CLI for the Try Claude Code profile system.",
+    "type": "module",
+    "bin": {
+        "frontend": "./bin/frontend.mjs"
+    },
+    "dependencies": {
+        "@seojaewan/dev-cli-core": "0.1.9"
+    },
+    "files": [
+        "bin",
+        "README.md",
+        "LICENSE"
+    ],
+    "publishConfig": {
+        "access": "public"
+    },
+    "homepage": "https://github.com/SeoJaeWan/try-claude-code",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/SeoJaeWan/try-claude-code.git"
+    },
+    "bugs": {
+        "url": "https://github.com/SeoJaeWan/try-claude-code/issues"
+    },
+    "license": "UNLICENSED",
+    "engines": {
+        "node": ">=20"
+    }
+}

@@ -4,7 +4,6 @@
     "sync": [
       "backend-developer",
       "frontend-developer",
-      "publisher",
       "playwright-guard",
       "doc-updater"
     ],
@@ -20,12 +19,6 @@
         "model_reasoning_effort": "xhigh",
         "sandbox_mode": "workspace-write",
         "nickname_candidates": ["Frontend Seo Jae-wan"]
-      },
-      "publisher": {
-        "model": "gpt-5.4",
-        "model_reasoning_effort": "xhigh",
-        "sandbox_mode": "workspace-write",
-        "nickname_candidates": ["Publisher Seo Jae-wan"]
       },
       "playwright-guard": {
         "model": "gpt-5.4",
@@ -45,7 +38,6 @@
     "sync": [
       "backend-dev",
       "frontend-dev",
-      "ui-publish",
       "guard-e2e-test",
       "planner-lite"
     ]

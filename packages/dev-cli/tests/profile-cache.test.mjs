@@ -4,7 +4,7 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 
 import { runCli as runCliCore } from "../src/run-cli.mjs";
-import { createTempHome, createTempRepo, readJson, runCli, tcpBin } from "./test-utils.mjs";
+import { createTempHome, createTempRepo, readJson, runCli, frontendBin } from "./test-utils.mjs";
 
 function createWritableBuffer() {
   let content = "";
@@ -46,11 +46,11 @@ async function withHomeEnv(homeDirectory, callback) {
 
 test("mode set은 원격 profile snapshot을 홈 캐시에 저장한다", async () => {
   const tempRoot = await createTempRepo({
-    profiles: ["shared/personal/v1", "tcp/personal/v1"]
+    profiles: ["shared/personal/v1", "frontend/personal/v1"]
   });
   const tempHome = await createTempHome();
 
-  const result = runCli(tcpBin, [
+  const result = runCli(frontendBin, [
     "mode",
     "set",
     "--mode",
@@ -73,14 +73,14 @@ test("mode set은 원격 profile snapshot을 홈 캐시에 저장한다", async 
     tempHome,
     ".try-claude-dev-cli-cache",
     "profiles",
-    "tcp",
+    "frontend",
     "personal",
     "v1",
     "profile.json"
   );
   const cachedEntry = JSON.parse(await readFile(cachePath, "utf8"));
 
-  assert.equal(cachedEntry.profile.id, "tcp/personal/v1");
+  assert.equal(cachedEntry.profile.id, "frontend/personal/v1");
   assert.equal(
     cachedEntry.profile.commands.component.render.templateContent.includes("export default"),
     true
@@ -91,13 +91,13 @@ test("mode set은 원격 profile snapshot을 홈 캐시에 저장한다", async 
   );
 });
 
-test("캐시된 profile이 있으면 tcp --help는 오프라인에서도 동작한다", async () => {
+test("캐시된 profile이 있으면 frontend --help는 오프라인에서도 동작한다", async () => {
   const tempRoot = await createTempRepo({
-    profiles: ["shared/personal/v1", "tcp/personal/v1"]
+    profiles: ["shared/personal/v1", "frontend/personal/v1"]
   });
   const tempHome = await createTempHome();
 
-  const setResult = runCli(tcpBin, [
+  const setResult = runCli(frontendBin, [
     "mode",
     "set",
     "--mode",
@@ -127,7 +127,7 @@ test("캐시된 profile이 있으면 tcp --help는 오프라인에서도 동작�
   try {
     const exitCode = await withHomeEnv(tempHome, async () =>
       runCliCore({
-        alias: "tcp",
+        alias: "frontend",
         argv: ["--help"],
         cwd: tempRoot,
         stdout,
@@ -140,7 +140,7 @@ test("캐시된 profile이 있으면 tcp --help는 오프라인에서도 동작�
 
     const payload = JSON.parse(stdout.toString());
     assert.equal(payload.helpMode, "summary");
-    assert.equal(payload.id, "tcp/personal/v1");
+    assert.equal(payload.id, "frontend/personal/v1");
     assert.equal(payload.activeProfile.mode, "personal");
     assert.equal(payload.activeProfile.version, "v1");
   } finally {

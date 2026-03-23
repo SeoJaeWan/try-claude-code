@@ -1,11 +1,12 @@
 {
-  "tcp": {
-    "personal": ["v1"]
+  "frontend": {
+    "personal": [
+      "v1"
+    ]
   },
-  "tcf": {
-    "personal": ["v1"]
-  },
-  "tcb": {
-    "personal": ["v1"]
+  "backend": {
+    "personal": [
+      "v1"
+    ]
   }
 }

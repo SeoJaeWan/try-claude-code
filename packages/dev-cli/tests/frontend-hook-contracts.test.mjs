@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { readJson, runCli, tcfBin } from "./test-utils.mjs";
+import { readJson, runCli, frontendBin } from "./test-utils.mjs";
 
 test("custom hook는 hooks/utils/{domain} 또는 hooks/utils/common 경로만 허용한다", () => {
-  const result = runCli(tcfBin, [
+  const result = runCli(frontendBin, [
     "hook",
     "--json",
     "{\"name\":\"useLoginForm\",\"path\":\"hooks/login\"}"
@@ -17,7 +17,7 @@ test("custom hook는 hooks/utils/{domain} 또는 hooks/utils/common 경로만 �
 });
 
 test("api query hook는 hooks/apis/{domain}/queries 경로와 useGet* 이름을 강제한다", () => {
-  const result = runCli(tcfBin, [
+  const result = runCli(frontendBin, [
     "apiHook",
     "--json",
     "{\"name\":\"useFetchOrderDetail\",\"path\":\"hooks/apis/order/queries\",\"kind\":\"query\",\"method\":\"GET\"}"
@@ -30,7 +30,7 @@ test("api query hook는 hooks/apis/{domain}/queries 경로와 useGet* 이름을 
 });
 
 test("api mutation hook는 REST method 기반 이름을 강제한다", () => {
-  const result = runCli(tcfBin, [
+  const result = runCli(frontendBin, [
     "apiHook",
     "--json",
     "{\"name\":\"useLogin\",\"path\":\"hooks/apis/auth/mutations\",\"kind\":\"mutation\",\"method\":\"POST\"}"
@@ -43,7 +43,7 @@ test("api mutation hook는 REST method 기반 이름을 강제한다", () => {
 });
 
 test("api mutation hook는 method와 kind 조합도 검증한다", () => {
-  const result = runCli(tcfBin, [
+  const result = runCli(frontendBin, [
     "apiHook",
     "--json",
     "{\"name\":\"usePostLogin\",\"path\":\"hooks/apis/auth/mutations\",\"kind\":\"mutation\",\"method\":\"GET\"}"
@@ -56,7 +56,7 @@ test("api mutation hook는 method와 kind 조합도 검증한다", () => {
 });
 
 test("apiHook는 method가 없으면 이름 prefix에서 HTTP method를 추론한다", () => {
-  const result = runCli(tcfBin, [
+  const result = runCli(frontendBin, [
     "apiHook",
     "--json",
     "{\"name\":\"usePostLogin\",\"path\":\"hooks/apis/auth/mutations\",\"kind\":\"mutation\"}"

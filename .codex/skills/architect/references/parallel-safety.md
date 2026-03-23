@@ -41,7 +41,7 @@ Include in plan.md when execution mode is `partial-parallel` or `parallel`:
 
 | Session    | Branch          | Plan File        | Skill(s)                 | File Scope        |
 | ---------- | --------------- | ---------------- | ------------------------ | ----------------- |
-| Current    | feat/x-frontend | plan-frontend.md | frontend-dev, ui-publish | app/, components/ |
+| Current    | feat/x-frontend | plan-frontend.md | frontend-dev             | app/, components/ |
 | Additional | feat/x-backend  | plan-backend.md  | backend-dev              | server/, api/     |
 
 **Conflict risk:** [None/Low/Medium]

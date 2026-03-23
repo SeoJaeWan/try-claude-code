@@ -10,9 +10,8 @@ import { loadActiveProfile } from "../src/core/profiles/profile-loader.mjs";
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 
 export const projectRoot = path.resolve(currentDir, "..", "..", "..");
-export const tcpBin = path.join(projectRoot, "packages", "tcp", "bin", "tcp.mjs");
-export const tcfBin = path.join(projectRoot, "packages", "tcf", "bin", "tcf.mjs");
-export const tcbBin = path.join(projectRoot, "packages", "tcb", "bin", "tcb.mjs");
+export const frontendBin = path.join(projectRoot, "packages", "frontend", "bin", "frontend.mjs");
+export const backendBin = path.join(projectRoot, "packages", "backend", "bin", "backend.mjs");
 const fetchFixtureLoader = pathToFileURL(
   path.join(currentDir, "test-fetch-fixture-loader.mjs")
 ).href;
@@ -23,15 +22,11 @@ writeFileSync(
   path.join(defaultConfiguredHome, ".try-claude-dev-cli.json"),
   `${JSON.stringify({
     profiles: {
-      tcp: {
+      frontend: {
         mode: "personal",
         version: "v1"
       },
-      tcf: {
-        mode: "personal",
-        version: "v1"
-      },
-      tcb: {
+      backend: {
         mode: "personal",
         version: "v1"
       }
@@ -119,7 +114,7 @@ async function copyProfileTree(tempRoot, profileId) {
 
 export async function createTempRepo({
   files = {},
-  profiles = ["shared/personal/v1", "tcp/personal/v1", "tcf/personal/v1"],
+  profiles = ["shared/personal/v1", "frontend/personal/v1"],
   tsconfig
 } = {}) {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-validate-"));
@@ -132,13 +127,10 @@ export async function createTempRepo({
     tempRoot,
     "profiles/registry.json",
     `${JSON.stringify({
-      tcp: {
+      frontend: {
         personal: ["v1"]
       },
-      tcf: {
-        personal: ["v1"]
-      },
-      tcb: {
+      backend: {
         personal: ["v1"]
       }
     }, null, 2)}\n`

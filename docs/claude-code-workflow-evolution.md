@@ -261,7 +261,7 @@ flowchart TD
     ARCH["architect"]
     PLAN["plan.md"]
     WT["EnterWorktree / worktree contract"]
-    P1["publisher / tests"]
+    P1["frontend / tests"]
     P2["frontend / backend"]
     P3["review / integration"]
     TAIL["doc-update -> activity-log"]
@@ -448,8 +448,8 @@ flowchart LR
 flowchart TD
     U["User request"]
     PLAN[".codex skills<br/>brainstorm / architect / test planners"]
-    PSK["plugin skills<br/>frontend-dev / backend-dev / ui-publish / guard-e2e-test"]
-    CLI["tcp / tcf / tcb"]
+    PSK["plugin skills<br/>frontend-dev / backend-dev / guard-e2e-test"]
+    CLI["frontend / backend"]
     PROFILE["profiles/*/profile.json"]
     CORE["packages/dev-cli/src/core/*"]
     TEMPLATE["templates + render context"]
@@ -470,7 +470,7 @@ flowchart TD
 
 1. 복잡한 요청이면 `.codex/skills/architect/SKILL.md`가 `plans/{task-name}/plan.md`를 만든다.
 2. 구현 phase에서 `plugin/skills/frontend-dev/SKILL.md`가 실행된다.
-3. `frontend-dev`는 직접 파일을 만들지 않고 먼저 `tcf --help`와 `tcf hook`, `tcf apiHook`, `tcf batch` 같은 CLI를 사용한다.
+3. `frontend-dev`는 먼저 `frontend --help`와 `frontend component`, `frontend hook`, `frontend apiHook`, `frontend batch` 같은 CLI를 사용한다.
 4. CLI는 `packages/dev-cli` 엔진을 통해 현재 active profile을 로드한다.
 5. profile은 `profiles/frontend/personal/v1/profile.json`과 `profiles/shared/personal/v1/profile.json`을 merge한다.
 6. `normalizationRules`, `validatorRules`, `render.templateFile`, `output.filePattern`이 적용된다.
@@ -483,8 +483,8 @@ flowchart TD
 
 1. 복잡한 요청이면 `.codex/skills/architect/SKILL.md`가 `plans/{task-name}/plan.md`를 만든다.
 2. 구현 phase에서 `plugin/skills/backend-dev/SKILL.md`가 실행된다.
-3. `backend-dev`는 직접 Java 파일을 만들지 않고 먼저 `tcb --help`를 본다.
-4. 이어서 `tcb module`, `tcb requestDto`, `tcb responseDto`, `tcb entity`를 통해 Spring feature 뼈대를 생성한다.
+3. `backend-dev`는 직접 Java 파일을 만들지 않고 먼저 `backend --help`를 본다.
+4. 이어서 `backend module`, `backend requestDto`, `backend responseDto`, `backend entity`를 통해 Spring feature 뼈대를 생성한다.
 5. CLI는 `profiles/backend/personal/v1/profile.json`을 읽어 Spring Boot 규칙을 적용한다.
 6. 여기서 package-by-feature, lower-case package segment, `basePackage`, DTO/entity 경로 규칙이 적용된다.
 7. `--apply`일 때 아래 같은 Spring 경로에 파일이 생성된다.
@@ -508,7 +508,7 @@ flowchart LR
     ARCH["architect"]
     PLAN["plans/{task}/plan.md"]
     BD["backend-dev"]
-    TCB["tcb CLI"]
+    TCB["backend CLI"]
     BP["backend profile<br/>Spring Boot rules"]
     FILES["controller/service/repository/dto/entity"]
     IMPL["business logic implementation"]
@@ -522,8 +522,8 @@ flowchart LR
 |---|---|---|
 | 배포 메타 | 플러그인 공개/번들 정의 | `.claude-plugin/marketplace.json` |
 | 계획 계층 | 요청 분석, plan/tests/e2e 생성 | `.codex/skills/architect/SKILL.md`, `.codex/skills/plan-unit-test/SKILL.md`, `.codex/skills/plan-e2e-test/SKILL.md` |
-| 실행 계층 | 역할별 워크플로 정의 | `plugin/skills/frontend-dev/SKILL.md`, `plugin/skills/ui-publish/SKILL.md`, `plugin/skills/backend-dev/SKILL.md` |
-| 역할 프롬프트 | 에이전트 성격과 도구 범위 | `plugin/agents/frontend-developer.md`, `plugin/agents/publisher.md` |
+| 실행 계층 | 역할별 워크플로 정의 | `plugin/skills/frontend-dev/SKILL.md`, `plugin/skills/backend-dev/SKILL.md` |
+| 역할 프롬프트 | 에이전트 성격과 도구 범위 | `plugin/agents/frontend-developer.md`, `plugin/agents/backend-developer.md` |
 | 규칙 소유 계층 | 네이밍/경로/검증/렌더 규칙 | `profiles/*/profile.json` |
 | 런타임 엔진 | parse / normalize / batch / write 실행 | `packages/dev-cli/src/core/*` |
 | 템플릿 계층 | 실제 scaffold 문자열 | `profiles/*/templates/*` |
@@ -621,14 +621,14 @@ flowchart LR
 
 - `plans/{task-name}/plan.md`
 - `codemaps/frontend.md` (있으면)
-- `tcf --help`
-- `tcf hook` / `tcf apiHook` / `tcf batch`
+- `frontend --help`
+- `frontend component` / `frontend hook` / `frontend apiHook` / `frontend batch`
 
 중요한 차이:
 
 - `coding-rules.md`를 직접 읽어 규칙을 기억하지 않는다.
 - `design/` 전체를 먼저 읽는 것이 기본 흐름이 아니다.
-- 파일 생성 규칙은 `tcf`가 강제한다.
+- 파일 생성 규칙은 `frontend`가 강제한다.
 
 즉 **참조 대상이 문서에서 실행기 쪽으로 이동**했다.
 
@@ -652,10 +652,10 @@ flowchart LR
 
 - `plan.md`
 - `codemaps/backend.md`, `codemaps/database.md` (있으면)
-- `tcb --help`
-- `tcb module` / `requestDto` / `responseDto` / `entity`
+- `backend --help`
+- `backend module` / `requestDto` / `responseDto` / `entity`
 
-즉 DB snake_case, package structure, DTO naming 같은 규칙을 문서에서 읽는 대신 `tcb`와 profile이 소유한다.
+즉 DB snake_case, package structure, DTO naming 같은 규칙을 문서에서 읽는 대신 `backend`와 profile이 소유한다.
 
 ### 중복 문서가 줄어든 방식
 
@@ -775,7 +775,7 @@ flowchart LR
     ARCH["architect"]
     PLAN["plans/*"]
     FE["frontend-dev skill"]
-    TCF["tcf CLI"]
+    TCF["frontend CLI"]
     PROFILE["frontend/shared profile"]
     FILES["preview/apply files"]
     IMPL["logic implementation"]
@@ -823,9 +823,8 @@ flowchart LR
 | 작업 종류 | 진입점 | 실행 스킬 | 생성 엔진 | 규칙 소스 | 대표 산출물 |
 |---|---|---|---|---|---|
 | 기획/분석 | `brainstorm`, `architect` | Codex planning skills | 없음 | `.codex/skills/*` | `plans/*`, 요구사항 정리 |
-| 프론트엔드 UI | `architect` 후 `ui-publish` | `plugin/skills/ui-publish/SKILL.md` | `tcp` | `profiles/tcp/*`, `profiles/shared/*` | 컴포넌트 scaffold + UI 구현 |
-| 프론트엔드 로직 | `architect` 후 `frontend-dev` | `plugin/skills/frontend-dev/SKILL.md` | `tcf` | `profiles/tcf/*`, `profiles/shared/*` | hook/apiHook scaffold + 로직 |
-| 백엔드 | `architect` 후 `backend-dev` | `plugin/skills/backend-dev/SKILL.md` | `tcb` | `profiles/tcb/*` | Spring feature package scaffold (`controller/service/repository/dto/entity`) |
+| 프론트엔드 | `architect` 후 `frontend-dev` | `plugin/skills/frontend-dev/SKILL.md` | `frontend` | `profiles/frontend/*`, `profiles/shared/*` | 컴포넌트 scaffold + UI 구현 + hook/apiHook scaffold + 로직 |
+| 백엔드 | `architect` 후 `backend-dev` | `plugin/skills/backend-dev/SKILL.md` | `backend` | `profiles/backend/*` | Spring feature package scaffold (`controller/service/repository/dto/entity`) |
 | full-flow E2E guard | `architect` plan phase | `plugin/skills/guard-e2e-test/SKILL.md` | 테스트 실행 | E2E references + plan artifact | Playwright guard 결과 |
 | Git 작업 | 직접 실행 가능 | `commit`, `pr` | 없음 | skill doc | commit / PR 메시지 |
 
@@ -865,11 +864,11 @@ flowchart LR
 
 - `.claude-plugin/marketplace.json`
 - `plugin/skills/frontend-dev/SKILL.md`
-- `plugin/skills/ui-publish/SKILL.md`
 - `plugin/agents/frontend-developer.md`
+- `plugin/agents/backend-developer.md`
 - `packages/dev-cli/src/core/cli/command-router.mjs`
 - `packages/dev-cli/src/core/profiles/profile-loader.mjs`
 - `packages/dev-cli/src/core/execution/batch-executor.mjs`
 - `profiles/shared/personal/v1/profile.json`
-- `profiles/tcf/personal/v1/profile.json`
+- `profiles/frontend/personal/v1/profile.json`
 - `docs/dev-cli-design.md`

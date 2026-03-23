@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { cp, mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
 
-import { createTempHome, readJson, projectRoot, runCli, tcpBin } from "./test-utils.mjs";
+import { createTempHome, readJson, projectRoot, runCli, frontendBin } from "./test-utils.mjs";
 
 async function copyProfileTree(root, profileId) {
   const source = path.join(projectRoot, "profiles", ...profileId.split("/"));
@@ -22,7 +22,7 @@ test("mode set/show는 global config에 mode와 major version만 저장하고 �
 
   await mkdir(tempProject, { recursive: true });
   await copyProfileTree(tempRoot, "shared/personal/v1");
-  await copyProfileTree(tempRoot, "tcp/personal/v1");
+  await copyProfileTree(tempRoot, "frontend/personal/v1");
 
   const env = {
     HOME: tempHome,
@@ -30,7 +30,7 @@ test("mode set/show는 global config에 mode와 major version만 저장하고 �
     TRY_CLAUDE_TEST_PROFILE_ROOT: tempRoot
   };
 
-  const setResult = runCli(tcpBin, [
+  const setResult = runCli(frontendBin, [
     "mode",
     "set",
     "--mode",
@@ -53,12 +53,12 @@ test("mode set/show는 global config에 mode와 major version만 저장하고 �
 
   const configPath = path.join(tempHome, ".try-claude-dev-cli.json");
   const savedConfig = JSON.parse(await readFile(configPath, "utf8"));
-  assert.deepEqual(savedConfig.profiles.tcp, {
+  assert.deepEqual(savedConfig.profiles.frontend, {
     mode: "personal",
     version: "v1"
   });
 
-  const showResult = runCli(tcpBin, ["mode", "show"], {
+  const showResult = runCli(frontendBin, ["mode", "show"], {
     cwd: tempProject,
     env: {
       HOME: tempHome,
@@ -82,7 +82,7 @@ test("mode show는 active profile이 없으면 unset 상태를 성공 payload로
   const configPath = path.join(tempHome, ".try-claude-dev-cli.json");
   await writeFile(configPath, `${JSON.stringify({}, null, 2)}\n`, "utf8");
 
-  const result = runCli(tcpBin, ["mode", "show"], {
+  const result = runCli(frontendBin, ["mode", "show"], {
     env: {
       HOME: tempHome,
       USERPROFILE: tempHome
@@ -93,7 +93,7 @@ test("mode show는 active profile이 없으면 unset 상태를 성공 payload로
   const payload = readJson(result.stdout);
   assert.equal(payload.configured, false);
   assert.equal(payload.activeProfile, null);
-  assert.equal(payload.suggestedCommand, "tcp mode set --mode personal --version v1");
+  assert.equal(payload.suggestedCommand, "frontend mode set --mode personal --version v1");
 });
 
 test("mode set은 exact version 입력을 거부한다", async () => {
@@ -103,9 +103,9 @@ test("mode set은 exact version 입력을 거부한다", async () => {
 
   await mkdir(tempProject, { recursive: true });
   await copyProfileTree(tempRoot, "shared/personal/v1");
-  await copyProfileTree(tempRoot, "tcp/personal/v1");
+  await copyProfileTree(tempRoot, "frontend/personal/v1");
 
-  const result = runCli(tcpBin, [
+  const result = runCli(frontendBin, [
     "mode",
     "set",
     "--mode",
@@ -133,7 +133,7 @@ test("mode set은 존재하지 않는 remote profile을 PROFILE_NOT_FOUND로 안
 
   await mkdir(tempProject, { recursive: true });
 
-  const result = runCli(tcpBin, [
+  const result = runCli(frontendBin, [
     "mode",
     "set",
     "--mode",
@@ -152,11 +152,11 @@ test("mode set은 존재하지 않는 remote profile을 PROFILE_NOT_FOUND로 안
   assert.equal(result.status, 1);
   const payload = readJson(result.stderr);
   assert.equal(payload.error.code, "PROFILE_NOT_FOUND");
-  assert.equal(payload.error.details.relativePath, "profiles/tcp/personal/v999/profile.json");
+  assert.equal(payload.error.details.relativePath, "profiles/frontend/personal/v999/profile.json");
 });
 
 test("mode set은 --repo를 더 이상 허용하지 않는다", async () => {
-  const result = runCli(tcpBin, [
+  const result = runCli(frontendBin, [
     "mode",
     "set",
     "--mode",
@@ -173,7 +173,7 @@ test("mode set은 --repo를 더 이상 허용하지 않는다", async () => {
 });
 
 test("mode update는 여전히 unsupported action으로 실패한다", async () => {
-  const result = runCli(tcpBin, ["mode", "update"]);
+  const result = runCli(frontendBin, ["mode", "update"]);
 
   assert.equal(result.status, 1);
   const payload = readJson(result.stderr);
@@ -183,7 +183,7 @@ test("mode update는 여전히 unsupported action으로 실패한다", async () 
 test("mode show는 legacy exact-version global config를 major version으로 정규화한다", async () => {
   const tempHome = await createTempHome({
     profiles: {
-      tcp: {
+      frontend: {
         mode: "personal",
         requestedVersion: "v1.0.3",
         resolvedVersion: "v1.0.3",
@@ -192,7 +192,7 @@ test("mode show는 legacy exact-version global config를 major version으로 정
     }
   });
 
-  const result = runCli(tcpBin, ["mode", "show"], {
+  const result = runCli(frontendBin, ["mode", "show"], {
     env: {
       HOME: tempHome,
       USERPROFILE: tempHome

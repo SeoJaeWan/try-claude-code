@@ -4,12 +4,11 @@ import os from "node:os";
 import path from "node:path";
 import { mkdtemp } from "node:fs/promises";
 
-import { readJson, runCli, tcpBin, tcfBin, tcbBin } from "./test-utils.mjs";
+import { readJson, runCli, frontendBin, backendBin } from "./test-utils.mjs";
 
 for (const [alias, binPath] of [
-  ["tcp", tcpBin],
-  ["tcf", tcfBin],
-  ["tcb", tcbBin]
+  ["frontend", frontendBin],
+  ["backend", backendBin]
 ]) {
   test(`${alias} wrapper는 repo 밖 디렉터리에서도 기본 help summary JSON을 반환한다`, async () => {
     const tempProject = await mkdtemp(path.join(os.tmpdir(), `dev-cli-smoke-${alias}-`));

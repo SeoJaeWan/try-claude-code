@@ -2,7 +2,7 @@
 
 ## Summary
 
-`tcp`, `tcf`, `tcb`는 `@seojaewan/dev-cli-core` shared runtime 위에서 동작하고, 실제 배포는 `@seojaewan/tcp`, `@seojaewan/tcf`, `@seojaewan/tcb` wrapper package가 담당한다.
+`frontend`, `backend`는 `@seojaewan/dev-cli-core` shared runtime 위에서 동작하고, 실제 배포는 `@seojaewan/frontend`, `@seojaewan/backend` wrapper package가 담당한다.
 규칙, 템플릿, 명령 표면은 GitHub `SeoJaeWan/try-claude-code`의 `main/profiles/**`에서 읽고, CLI는 spec-driven JSON 입력과 batch 실행을 기본으로 제공한다.
 이때 engine은 실행기 역할만 맡고, command semantics는 `profile/version`의 recipe가 소유한다.
 
@@ -25,22 +25,18 @@ packages/
       core/
       validators/
     tests/
-  tcp/
-    bin/tcp.mjs
-  tcf/
-    bin/tcf.mjs
-  tcb/
-    bin/tcb.mjs
+  frontend/
+    bin/frontend.mjs
+  backend/
+    bin/backend.mjs
 
 profiles/
   registry.json
   shared/
     personal/v1/
-  tcp/
+  frontend/
     personal/v1/
-  tcf/
-    personal/v1/
-  tcb/
+  backend/
     personal/v1/
 ```
 
@@ -73,16 +69,12 @@ shared override 규칙:
 
 ## Alias Surface
 
-`tcp`
-- profile key: `tcp`
-- commands: `component`, `type`, `props`, `function`, `uiState`, `batch`
+`frontend`
+- profile key: `frontend`
+- commands: `component`, `uiState`, `hook`, `apiHook`, `type`, `props`, `function`, `queryKey`, `endpoint`, `mapper`, `hookReturn`, `validateFile`, `batch`
 
-`tcf`
-- profile key: `tcf`
-- commands: `hook`, `apiHook`, `type`, `props`, `function`, `queryKey`, `endpoint`, `mapper`, `hookReturn`, `batch`
-
-`tcb`
-- profile key: `tcb`
+`backend`
+- profile key: `backend`
 - commands: `module`, `requestDto`, `responseDto`, `entity`, `batch`
 
 ## Profile Resolution
@@ -122,7 +114,7 @@ active profile 우선순위:
 ```json
 {
   "profiles": {
-    "tcp": {
+    "frontend": {
       "mode": "personal",
       "version": "v1"
     }
@@ -134,7 +126,7 @@ active profile 우선순위:
 
 ```json
 {
-  "tcp": {
+  "frontend": {
     "personal": ["v1"]
   }
 }
@@ -143,32 +135,29 @@ active profile 우선순위:
 예시:
 
 ```bash
-tcp mode set --mode personal --version v1
-tcp mode show
-tcp --help
+frontend mode set --mode personal --version v1
+frontend mode show
+frontend --help
 ```
 
 ## Publish Surface
 
-publish 대상은 4개 패키지다.
+publish 대상은 3개 패키지다.
 
 - `@seojaewan/dev-cli-core`
-- `@seojaewan/tcp`
-- `@seojaewan/tcf`
-- `@seojaewan/tcb`
+- `@seojaewan/frontend`
+- `@seojaewan/backend`
 
 wrapper는 각각 하나의 `bin`만 노출한다.
 
-- `@seojaewan/tcp` -> `tcp`
-- `@seojaewan/tcf` -> `tcf`
-- `@seojaewan/tcb` -> `tcb`
+- `@seojaewan/frontend` -> `frontend`
+- `@seojaewan/backend` -> `backend`
 
 수동 publish 순서:
 
 1. `@seojaewan/dev-cli-core`
-2. `@seojaewan/tcp`
-3. `@seojaewan/tcf`
-4. `@seojaewan/tcb`
+2. `@seojaewan/frontend`
+3. `@seojaewan/backend`
 
 중요:
 
@@ -186,47 +175,44 @@ profile hotfix 순서:
 기본 help는 탐색용 summary JSON이다.
 
 ```bash
-tcp --help
-tcf --help
-tcb --help
+frontend --help
+backend --help
 ```
 
 에이전트가 매 작업마다 top-level `--help`에서 모든 contract를 읽을 필요는 없다.
 top-level help는 명령 탐색, whenToUse, relatedCommands, flow discovery만 제공한다.
 
 ```bash
-tcp component --help --text
-tcf hook --help --text
-tcf apiHook --help --text
-tcb module --help --text
+frontend component --help --text
+frontend hook --help --text
+frontend apiHook --help --text
+backend module --help --text
 ```
 
 구조화된 상세 contract가 실제로 필요할 때만 command-scoped JSON help를 읽는다.
 
 ```bash
-tcp component --help
-tcf apiHook --help
-tcb requestDto --help
+frontend component --help
+frontend apiHook --help
+backend requestDto --help
 ```
 
-top-level `tcp --help`, `tcf --help`, `tcb --help`는 command discovery나 전체 contract audit가 필요할 때만 사용한다.
+top-level `frontend --help`, `backend --help`는 command discovery나 전체 contract audit가 필요할 때만 사용한다.
 
 전체 command contract audit가 필요하면 `--full`을 사용한다.
 
 ```bash
-tcp --help --full
-tcf --help --full
-tcb --help --full
+frontend --help --full
+backend --help --full
 ```
 
 사람용 가이드는 별도 `guide` 명령으로 본다.
 
 ```bash
-tcp guide
-tcf guide
-tcb guide
-tcp guide component
-tcf guide hook
+frontend guide
+backend guide
+frontend guide component
+frontend guide hook
 ```
 
 `guide`의 source of truth도 profile 안의 `guide` 속성이다.
@@ -237,16 +223,16 @@ tcf guide hook
 spec-driven 생성 command는 `--json` spec을 받는다.
 
 ```bash
-tcp component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}"
-tcf hook --json "{\"name\":\"useScroll\",\"path\":\"hooks/utils/common\"}"
-tcb requestDto --json "{\"name\":\"CreateProductRequest\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}"
+frontend component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}"
+frontend hook --json "{\"name\":\"useScroll\",\"path\":\"hooks/utils/common\"}"
+backend requestDto --json "{\"name\":\"CreateProductRequest\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}"
 ```
 
 preview가 기본이며 실제 파일 생성은 `--apply`일 때만 수행한다.
 
 ```bash
-tcp component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}"
-tcp component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}" --apply
+frontend component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}"
+frontend component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}" --apply
 ```
 
 ## Batch Contract
@@ -255,7 +241,7 @@ tcp component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common/revi
 각 op는 앞 op 결과를 제한적으로 참조할 수 있다.
 
 ```bash
-tcp batch --json "{
+frontend batch --json "{
   \"ops\": [
     {
       \"id\": \"component\",
@@ -314,7 +300,7 @@ batch 정책:
 
 ## Shared Personal v1
 
-`shared/personal/v1`는 `tcp`와 `tcf`가 공통으로 사용한다.
+`shared/personal/v1`는 `frontend`와 `backend`가 공통으로 사용한다.
 
 - path segment: `camelCase`
 - 함수 스타일: 화살표 함수
@@ -332,14 +318,14 @@ batch 정책:
 예시:
 
 ```bash
-tcp type --json "{\"name\":\"TableColumn\",\"kind\":\"interface\"}"
-tcf props --json "{\"members\":[{\"kind\":\"value\",\"name\":\"title\",\"type\":\"string\",\"required\":true}]}"
-tcf function --json "{\"kind\":\"internalHandler\",\"name\":\"onClick\"}"
+frontend type --json "{\"name\":\"TableColumn\",\"kind\":\"interface\"}"
+frontend props --json "{\"members\":[{\"kind\":\"value\",\"name\":\"title\",\"type\":\"string\",\"required\":true}]}"
+frontend function --json "{\"kind\":\"internalHandler\",\"name\":\"onClick\"}"
 ```
 
-## Publisher Personal v1
+## Frontend Component Contract
 
-`tcp component`
+`frontend component`
 
 - 입력: `name`, `path`, optional `role`, optional `props`
 - 출력: `{path}/index.tsx`
@@ -352,12 +338,12 @@ tcf function --json "{\"kind\":\"internalHandler\",\"name\":\"onClick\"}"
 - `Props` 인터페이스 포함
 - props 구조분해는 함수 본문 첫 줄
 
-`tcp uiState`
+`frontend uiState`
 
 - UI interaction intent를 받아 state + handler snippet 반환
 - whitelist 강제 대신 UI state shell을 정규화
 
-publisher 금지 패턴:
+component 금지 패턴:
 
 - `useEffect(`
 - `fetch(`
@@ -368,13 +354,13 @@ publisher 금지 패턴:
 예시:
 
 ```bash
-tcp component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\",\"props\":[{\"kind\":\"value\",\"name\":\"title\",\"type\":\"string\",\"required\":true}]}"
-tcp uiState --json "{\"category\":\"uiInteraction\",\"pattern\":\"toggle\",\"name\":\"menu\"}"
+frontend component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\",\"props\":[{\"kind\":\"value\",\"name\":\"title\",\"type\":\"string\",\"required\":true}]}"
+frontend uiState --json "{\"category\":\"uiInteraction\",\"pattern\":\"toggle\",\"name\":\"menu\"}"
 ```
 
-## Frontend Personal v1
+## Frontend Hook Contract
 
-`tcf hook`
+`frontend hook`
 
 - 입력: `name`, `path`
 - 출력: `{path}/{name}/index.ts`
@@ -382,7 +368,7 @@ tcp uiState --json "{\"category\":\"uiInteraction\",\"pattern\":\"toggle\",\"nam
 - 화살표 함수
 - `export default`
 
-`tcf apiHook`
+`frontend apiHook`
 
 - 입력: `name`, `path`, `kind`
 - TanStack Query baseline
@@ -401,15 +387,15 @@ snippet command:
 예시:
 
 ```bash
-tcf hook --json "{\"name\":\"useScroll\",\"path\":\"hooks/utils\"}"
-tcf apiHook --json "{\"name\":\"useGetProduct\",\"path\":\"hooks/apis/product/queries\",\"kind\":\"query\"}"
-tcf queryKey --json "{\"domain\":\"product\",\"scope\":\"detail\",\"params\":[\"productId\"]}"
-tcf endpoint --json "{\"method\":\"GET\",\"resource\":\"product\",\"path\":\"/products/:productId\"}"
+frontend hook --json "{\"name\":\"useScroll\",\"path\":\"hooks/utils\"}"
+frontend apiHook --json "{\"name\":\"useGetProduct\",\"path\":\"hooks/apis/product/queries\",\"kind\":\"query\"}"
+frontend queryKey --json "{\"domain\":\"product\",\"scope\":\"detail\",\"params\":[\"productId\"]}"
+frontend endpoint --json "{\"method\":\"GET\",\"resource\":\"product\",\"path\":\"/products/:productId\"}"
 ```
 
 ## Backend Personal v1
 
-`tcb` personal v1은 Spring Boot baseline이다.
+`backend` personal v1은 Spring Boot baseline이다.
 
 source-backed defaults:
 
@@ -432,10 +418,10 @@ v1 choices:
 예시:
 
 ```bash
-tcb module --json "{\"name\":\"Product\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}"
-tcb requestDto --json "{\"name\":\"CreateProductRequest\",\"path\":\"product\",\"basePackage\":\"com.example.app\",\"fields\":[{\"name\":\"name\",\"type\":\"String\",\"validations\":[\"NotBlank\"]}]}"
-tcb responseDto --json "{\"name\":\"ProductResponse\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}"
-tcb entity --json "{\"name\":\"Product\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}"
+backend module --json "{\"name\":\"Product\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}"
+backend requestDto --json "{\"name\":\"CreateProductRequest\",\"path\":\"product\",\"basePackage\":\"com.example.app\",\"fields\":[{\"name\":\"name\",\"type\":\"String\",\"validations\":[\"NotBlank\"]}]}"
+backend responseDto --json "{\"name\":\"ProductResponse\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}"
+backend entity --json "{\"name\":\"Product\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}"
 ```
 
 `basePackage`가 없으면 CLI는 Spring root package를 감지하려고 시도하고, 실패하면 명시적 JSON error를 반환한다.
@@ -448,7 +434,7 @@ tcb entity --json "{\"name\":\"Product\",\"path\":\"product\",\"basePackage\":\"
 {
   "ok": true,
   "command": "function",
-  "profile": "tcf/personal/v1",
+  "profile": "frontend/personal/v1",
   "normalizedSpec": {
     "kind": "internalHandler",
     "name": "handleClick"

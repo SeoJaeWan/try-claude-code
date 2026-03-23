@@ -87,8 +87,8 @@ test("loadActiveProfile은 registry 없이 main/profiles 경로에서 profile과
   const originalFetch = globalThis.fetch;
   const tempHome = await createTempHome();
   globalThis.fetch = createMockFetch({
-    [`${RAW_BASE_URL}profiles/tcp/personal/v1/profile.json`]: JSON.stringify({
-      id: "tcp/personal/v1",
+    [`${RAW_BASE_URL}profiles/frontend/personal/v1/profile.json`]: JSON.stringify({
+      id: "frontend/personal/v1",
       extends: ["shared/personal/v1"],
       commands: {
         component: {
@@ -111,13 +111,13 @@ test("loadActiveProfile은 registry 없이 main/profiles 경로에서 profile과
         }
       }
     }),
-    [`${RAW_BASE_URL}profiles/tcp/personal/v1/templates/component.default.tsx`]: "export default {{componentName}};"
+    [`${RAW_BASE_URL}profiles/frontend/personal/v1/templates/component.default.tsx`]: "export default {{componentName}};"
   });
 
   try {
     const { profile, activeProfile } = await withHomeEnv(tempHome, () =>
       loadActiveProfile({
-        alias: "tcp",
+        alias: "frontend",
         mode: "personal",
         version: "v1"
       })

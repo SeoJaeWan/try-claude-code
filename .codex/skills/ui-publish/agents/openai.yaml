@@ -1,7 +1,0 @@
-interface:
-  display_name: "UI Publish"
-  short_description: "Build visual UI layout and components without business logic."
-  default_prompt: "Use $ui-publish to create or refine visual React UI components and responsive layout without business logic."
-
-policy:
-  allow_implicit_invocation: true

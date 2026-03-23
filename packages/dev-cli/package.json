@@ -1,7 +1,7 @@
 {
   "name": "@seojaewan/dev-cli-core",
   "version": "0.1.9",
-  "description": "Shared runtime for the tcp, tcf, and tcb CLIs.",
+  "description": "Shared runtime for the frontend and backend CLIs.",
   "type": "module",
   "exports": {
     ".": "./src/run-cli.mjs"

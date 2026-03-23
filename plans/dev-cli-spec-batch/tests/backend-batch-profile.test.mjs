@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
 describe("BackendBatchProfile", () => {
-  it("[C-BE-001] tcb requestDto는 --json spec으로 dry-run file plan을 만든다", async () => {
+  it("[C-BE-001] backend requestDto는 --json spec으로 dry-run file plan을 만든다", async () => {
     // Arrange
     const request = {
       ops: [

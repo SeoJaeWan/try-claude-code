@@ -3,17 +3,20 @@
   "kind": "shared-profile",
   "extends": [],
   "guide": {
-    "요약": "tcp와 tcf가 함께 쓰는 personal v1 공통 규칙이다.",
-    "공통규칙": [
-      "폴더 경로는 각 profile의 path 규칙을 따르며, 공통 네이밍은 recipe에서 정규화한다.",
-      "함수 기본 스타일은 화살표 함수다.",
-      "배열 이름은 복수형을 사용하고 List, Array suffix는 피한다.",
-      "한 곳에서만 쓰는 타입은 로컬에 두고, 여러 곳에서 쓰면 types/common 또는 types/{domain}으로 올린다."
+    "summary": "Shared personal v1 rules used by frontend and backend profiles.",
+    "sharedRules": [
+      "Each profile keeps its own path rules, while shared naming is normalized by recipe rules.",
+      "Arrow functions are the default function style.",
+      "Array names should be plural and must avoid List or Array suffixes.",
+      "Single-use types stay local; shared types move to types/common or types/{domain}."
     ]
   },
   "help": {
     "defaultFormat": "json",
-    "supportedFormats": ["json", "text"]
+    "supportedFormats": [
+      "json",
+      "text"
+    ]
   },
   "rules": {
     "enforced": {
@@ -25,7 +28,10 @@
       },
       "arrayNaming": {
         "pluralRequired": true,
-        "forbiddenSuffixes": ["List", "Array"]
+        "forbiddenSuffixes": [
+          "List",
+          "Array"
+        ]
       },
       "typeNaming": {
         "interface": "PascalCase",
@@ -33,7 +39,10 @@
       },
       "typePlacement": {
         "localSingleUse": "same-file-or-local-folder",
-        "globalSharedRoots": ["types/common", "types/{domain}"]
+        "globalSharedRoots": [
+          "types/common",
+          "types/{domain}"
+        ]
       }
     }
   },
@@ -76,9 +85,14 @@
         "language": "ts"
       },
       "inputSchema": {
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "enums": {
-          "kind": ["interface", "type"]
+          "kind": [
+            "interface",
+            "type"
+          ]
         }
       },
       "defaults": {
@@ -111,11 +125,13 @@
           "type": "templates/type.alias.ts"
         },
         "templateVariantField": "kind",
-        "contextTokens": ["typeName"]
+        "contextTokens": [
+          "typeName"
+        ]
       },
       "examples": [
-        "tcp type --json '{\"name\":\"TableColumn\",\"kind\":\"interface\"}'",
-        "tcf type --json '{\"name\":\"ProductSummary\",\"kind\":\"type\"}'"
+        "frontend type --json {\"name\":\"TableColumn\",\"kind\":\"interface\"}",
+        "frontend type --json {\"name\":\"ProductSummary\",\"kind\":\"type\"}"
       ]
     },
     "props": {
@@ -154,7 +170,9 @@
         "language": "ts"
       },
       "inputSchema": {
-        "arrays": ["members"]
+        "arrays": [
+          "members"
+        ]
       },
       "defaults": {
         "members": []
@@ -181,10 +199,12 @@
       ],
       "render": {
         "snippetTemplate": "templates/props.members.ts",
-        "contextTokens": ["membersOnly"]
+        "contextTokens": [
+          "membersOnly"
+        ]
       },
       "examples": [
-        "tcp props --json '{\"members\":[{\"kind\":\"value\",\"name\":\"title\",\"type\":\"string\",\"required\":true}]}'"
+        "frontend props --json {\"members\":[{\"kind\":\"value\",\"name\":\"title\",\"type\":\"string\",\"required\":true}]}"
       ]
     },
     "function": {
@@ -221,10 +241,20 @@
         "language": "ts"
       },
       "inputSchema": {
-        "requiredAny": [["name", "action"]],
-        "arrays": ["params"],
+        "requiredAny": [
+          [
+            "name",
+            "action"
+          ]
+        ],
+        "arrays": [
+          "params"
+        ],
         "enums": {
-          "kind": ["internalHandler", "utility"]
+          "kind": [
+            "internalHandler",
+            "utility"
+          ]
         }
       },
       "defaults": {
@@ -252,7 +282,9 @@
           "intents": {
             "internalHandler": {
               "prefixKey": "internalHandler",
-              "stripPrefixKeys": ["propCallback"],
+              "stripPrefixKeys": [
+                "propCallback"
+              ],
               "style": "pascal",
               "reason": "internal handlers use handle*"
             },
@@ -265,10 +297,15 @@
       ],
       "render": {
         "snippetTemplate": "templates/function.default.ts",
-        "contextTokens": ["functionName", "asyncToken", "functionSignature", "functionReturnType"]
+        "contextTokens": [
+          "functionName",
+          "asyncToken",
+          "functionSignature",
+          "functionReturnType"
+        ]
       },
       "examples": [
-        "tcf function --json '{\"kind\":\"internalHandler\",\"name\":\"onClick\"}'"
+        "frontend function --json {\"kind\":\"internalHandler\",\"name\":\"onClick\"}"
       ]
     }
   }

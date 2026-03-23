@@ -1,0 +1,629 @@
+{
+  "id": "backend/personal/v1",
+  "kind": "backend-profile",
+  "alias": "backend",
+  "extends": [],
+  "guide": {
+    "요약": "백엔드 personal v1 규칙이다. Spring Boot 기준 파일 생성 규칙을 다룬다.",
+    "공통규칙": [
+      "basePackage가 없으면 Spring root package를 감지한다.",
+      "패키지 경로 segment는 lower-case를 사용한다.",
+      "module은 package-by-feature 구조를 기본으로 한다."
+    ]
+  },
+  "helpSummary": {
+    "summary": "Backend personal v1 rules for Spring Boot file generation.",
+    "flows": {
+      "create-spring-feature": {
+        "title": "Create a Spring feature package",
+        "summary": "Create the module skeleton, then add request-dto, response-dto, and entity files.",
+        "steps": [
+          {
+            "command": "module",
+            "purpose": "Generate controller, service, and repository skeletons"
+          },
+          {
+            "command": "requestDto",
+            "purpose": "Generate the request DTO"
+          },
+          {
+            "command": "responseDto",
+            "purpose": "Generate the response DTO"
+          },
+          {
+            "command": "entity",
+            "purpose": "Generate the entity shell"
+          }
+        ]
+      },
+      "bulk-backend-scaffold": {
+        "title": "Batch backend operations",
+        "summary": "Bundle multiple backend file generation operations in batch for preview or apply.",
+        "steps": [
+          {
+            "command": "batch",
+            "purpose": "Run multiple operations in sequence"
+          }
+        ]
+      }
+    }
+  },
+  "help": {
+    "defaultFormat": "json",
+    "supportedFormats": [
+      "json",
+      "text"
+    ]
+  },
+  "metadata": {
+    "sourceBackedDefaults": [
+      "Avoid the default package and keep the application class at the root package.",
+      "Use @Valid for request validation.",
+      "Use @ControllerAdvice and ResponseEntityExceptionHandler for REST errors."
+    ],
+    "inferredChoices": [
+      "Use package-by-feature.",
+      "Split feature packages into controller, service, dto, entity, repository."
+    ]
+  },
+  "commands": {
+    "module": {
+      "description": "Generate a Spring feature module skeleton",
+      "summary": {
+        "whenToUse": [
+          "When you need a new Spring feature package skeleton"
+        ],
+        "relatedCommands": [
+          {
+            "id": "requestDto",
+            "reason": "Generate the request DTO"
+          },
+          {
+            "id": "responseDto",
+            "reason": "Generate the response DTO"
+          },
+          {
+            "id": "entity",
+            "reason": "Generate the entity shell"
+          },
+          {
+            "id": "batch",
+            "reason": "Bundle multiple file generation tasks"
+          }
+        ],
+        "flowRefs": [
+          "create-spring-feature",
+          "bulk-backend-scaffold"
+        ]
+      },
+      "guide": {
+        "목적": "Spring feature module 기본 파일 세트를 생성한다.",
+        "입력규칙": [
+          "name과 path는 필수다.",
+          "basePackage는 없으면 자동 감지를 시도한다."
+        ],
+        "이름규칙": [
+          "클래스 이름은 PascalCase를 사용한다.",
+          "패키지 경로는 lower-case를 사용한다."
+        ],
+        "출력규칙": [
+          "controller, service, repository, global exception handler 파일을 생성한다."
+        ]
+      },
+      "inputMode": "json",
+      "execution": {
+        "kind": "file"
+      },
+      "inputSchema": {
+        "required": [
+          "name",
+          "path"
+        ]
+      },
+      "fieldResolvers": [
+        {
+          "field": "basePackage",
+          "source": "detector",
+          "detector": "springBasePackage",
+          "code": "ROOT_PACKAGE_NOT_FOUND",
+          "message": "Spring root package could not be detected. Provide basePackage in the JSON spec.",
+          "details": {
+            "command": "module"
+          }
+        }
+      ],
+      "generator": {
+        "kind": "multiFile",
+        "requiresBasePackage": true
+      },
+      "normalizationRules": [
+        {
+          "kind": "case",
+          "field": "name",
+          "style": "pascal",
+          "reason": "classes use PascalCase"
+        },
+        {
+          "kind": "path",
+          "field": "path"
+        }
+      ],
+      "validatorRules": [
+        {
+          "kind": "nameCase",
+          "field": "name",
+          "style": "pascal",
+          "message": "Class name must use PascalCase"
+        },
+        {
+          "kind": "pathSegmentCase",
+          "field": "path",
+          "style": "lower",
+          "code": "INVALID_PACKAGE_SEGMENT",
+          "message": "Backend package segments must use lower-case"
+        }
+      ],
+      "render": {
+        "templateFiles": {
+          "controller": "templates/module.controller.java",
+          "service": "templates/module.service.java",
+          "repository": "templates/module.repository.java",
+          "globalExceptionHandler": "templates/module.global-exception-handler.java"
+        },
+        "fileEntries": [
+          {
+            "templateKey": "controller",
+            "filePattern": "src/main/java/{basePackagePath}/{path}/controller/{name}Controller.java"
+          },
+          {
+            "templateKey": "service",
+            "filePattern": "src/main/java/{basePackagePath}/{path}/service/{name}Service.java"
+          },
+          {
+            "templateKey": "repository",
+            "filePattern": "src/main/java/{basePackagePath}/{path}/repository/{name}Repository.java"
+          },
+          {
+            "templateKey": "globalExceptionHandler",
+            "filePattern": "src/main/java/{basePackagePath}/global/exception/GlobalExceptionHandler.java"
+          }
+        ],
+        "contextTokens": [
+          "className",
+          "featurePackage",
+          "featurePath",
+          "basePackage",
+          "packagePathDot",
+          "basePackagePath"
+        ]
+      },
+      "examples": [
+        "backend module --json '{\"name\":\"Product\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}'"
+      ]
+    },
+    "requestDto": {
+      "description": "Generate a Spring request DTO",
+      "summary": {
+        "whenToUse": [
+          "When you need a request DTO for controller input"
+        ],
+        "relatedCommands": [
+          {
+            "id": "module",
+            "reason": "Generate the skeleton for the same feature"
+          },
+          {
+            "id": "responseDto",
+            "reason": "Define the response DTO together"
+          },
+          {
+            "id": "entity",
+            "reason": "Generate the domain entity shell"
+          },
+          {
+            "id": "batch",
+            "reason": "Run multiple file generation tasks in one request"
+          }
+        ],
+        "flowRefs": [
+          "create-spring-feature",
+          "bulk-backend-scaffold"
+        ]
+      },
+      "guide": {
+        "목적": "Spring request DTO 파일을 생성한다.",
+        "입력규칙": [
+          "name과 path는 필수다.",
+          "fields 배열로 record 필드를 전달할 수 있다."
+        ],
+        "이름규칙": [
+          "클래스 이름은 PascalCase를 사용한다.",
+          "필드 이름은 camelCase를 사용한다."
+        ],
+        "출력규칙": [
+          "dto 경로 아래 request DTO 파일을 생성한다."
+        ]
+      },
+      "inputMode": "json",
+      "execution": {
+        "kind": "file"
+      },
+      "inputSchema": {
+        "required": [
+          "name",
+          "path"
+        ],
+        "arrays": [
+          "fields"
+        ]
+      },
+      "defaults": {
+        "fields": []
+      },
+      "fieldResolvers": [
+        {
+          "field": "basePackage",
+          "source": "detector",
+          "detector": "springBasePackage",
+          "code": "ROOT_PACKAGE_NOT_FOUND",
+          "message": "Spring root package could not be detected. Provide basePackage in the JSON spec.",
+          "details": {
+            "command": "requestDto"
+          }
+        }
+      ],
+      "generator": {
+        "kind": "singleFile",
+        "requiresBasePackage": true
+      },
+      "normalizationRules": [
+        {
+          "kind": "case",
+          "field": "name",
+          "style": "pascal",
+          "reason": "classes use PascalCase"
+        },
+        {
+          "kind": "path",
+          "field": "path"
+        },
+        {
+          "kind": "listItemNames",
+          "field": "fields",
+          "style": "camel",
+          "reason": "field names use camelCase"
+        }
+      ],
+      "validatorRules": [
+        {
+          "kind": "nameCase",
+          "field": "name",
+          "style": "pascal",
+          "message": "Class name must use PascalCase"
+        },
+        {
+          "kind": "pathSegmentCase",
+          "field": "path",
+          "style": "lower",
+          "code": "INVALID_PACKAGE_SEGMENT",
+          "message": "Backend package segments must use lower-case"
+        }
+      ],
+      "render": {
+        "templateFile": "templates/request-dto.java",
+        "output": {
+          "filePattern": "src/main/java/{basePackagePath}/{path}/dto/{name}.java"
+        },
+        "contextTokens": [
+          "className",
+          "basePackage",
+          "packagePathDot",
+          "basePackagePath",
+          "recordFields"
+        ]
+      },
+      "examples": [
+        "backend requestDto --json '{\"name\":\"CreateProductRequest\",\"path\":\"product\",\"basePackage\":\"com.example.app\",\"fields\":[{\"name\":\"name\",\"type\":\"String\",\"validations\":[\"NotBlank\"]}]}'"
+      ]
+    },
+    "responseDto": {
+      "description": "Generate a Spring response DTO",
+      "summary": {
+        "whenToUse": [
+          "When you need a response DTO for an API response"
+        ],
+        "relatedCommands": [
+          {
+            "id": "module",
+            "reason": "Generate the skeleton for the same feature"
+          },
+          {
+            "id": "requestDto",
+            "reason": "Define the request DTO together"
+          },
+          {
+            "id": "entity",
+            "reason": "Generate the entity shell referenced by the response"
+          },
+          {
+            "id": "batch",
+            "reason": "Run multiple file generation tasks in one request"
+          }
+        ],
+        "flowRefs": [
+          "create-spring-feature",
+          "bulk-backend-scaffold"
+        ]
+      },
+      "guide": {
+        "목적": "Spring response DTO 파일을 생성한다.",
+        "입력규칙": [
+          "name과 path는 필수다.",
+          "fields 배열로 record 필드를 전달할 수 있다."
+        ],
+        "이름규칙": [
+          "클래스 이름은 PascalCase를 사용한다.",
+          "필드 이름은 camelCase를 사용한다."
+        ],
+        "출력규칙": [
+          "dto 경로 아래 response DTO 파일을 생성한다."
+        ]
+      },
+      "inputMode": "json",
+      "execution": {
+        "kind": "file"
+      },
+      "inputSchema": {
+        "required": [
+          "name",
+          "path"
+        ],
+        "arrays": [
+          "fields"
+        ]
+      },
+      "defaults": {
+        "fields": []
+      },
+      "fieldResolvers": [
+        {
+          "field": "basePackage",
+          "source": "detector",
+          "detector": "springBasePackage",
+          "code": "ROOT_PACKAGE_NOT_FOUND",
+          "message": "Spring root package could not be detected. Provide basePackage in the JSON spec.",
+          "details": {
+            "command": "responseDto"
+          }
+        }
+      ],
+      "generator": {
+        "kind": "singleFile",
+        "requiresBasePackage": true
+      },
+      "normalizationRules": [
+        {
+          "kind": "case",
+          "field": "name",
+          "style": "pascal",
+          "reason": "classes use PascalCase"
+        },
+        {
+          "kind": "path",
+          "field": "path"
+        },
+        {
+          "kind": "listItemNames",
+          "field": "fields",
+          "style": "camel",
+          "reason": "field names use camelCase"
+        }
+      ],
+      "validatorRules": [
+        {
+          "kind": "nameCase",
+          "field": "name",
+          "style": "pascal",
+          "message": "Class name must use PascalCase"
+        },
+        {
+          "kind": "pathSegmentCase",
+          "field": "path",
+          "style": "lower",
+          "code": "INVALID_PACKAGE_SEGMENT",
+          "message": "Backend package segments must use lower-case"
+        }
+      ],
+      "render": {
+        "templateFile": "templates/response-dto.java",
+        "output": {
+          "filePattern": "src/main/java/{basePackagePath}/{path}/dto/{name}.java"
+        },
+        "contextTokens": [
+          "className",
+          "basePackage",
+          "packagePathDot",
+          "basePackagePath",
+          "recordFields"
+        ]
+      },
+      "examples": [
+        "backend responseDto --json '{\"name\":\"ProductResponse\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}'"
+      ]
+    },
+    "entity": {
+      "description": "Generate a Spring entity",
+      "summary": {
+        "whenToUse": [
+          "When you need a JPA entity shell"
+        ],
+        "relatedCommands": [
+          {
+            "id": "module",
+            "reason": "Generate the skeleton for the same feature"
+          },
+          {
+            "id": "requestDto",
+            "reason": "Align request DTO fields with domain fields"
+          },
+          {
+            "id": "responseDto",
+            "reason": "Align response DTO fields with domain fields"
+          },
+          {
+            "id": "batch",
+            "reason": "Run multiple file generation tasks in one request"
+          }
+        ],
+        "flowRefs": [
+          "create-spring-feature",
+          "bulk-backend-scaffold"
+        ]
+      },
+      "guide": {
+        "목적": "Spring entity 파일을 생성한다.",
+        "입력규칙": [
+          "name과 path는 필수다.",
+          "fields 배열로 엔티티 필드를 전달할 수 있다."
+        ],
+        "이름규칙": [
+          "클래스 이름은 PascalCase를 사용한다.",
+          "필드 이름은 camelCase를 사용한다."
+        ],
+        "출력규칙": [
+          "entity 경로 아래 엔티티 파일을 생성한다."
+        ]
+      },
+      "inputMode": "json",
+      "execution": {
+        "kind": "file"
+      },
+      "inputSchema": {
+        "required": [
+          "name",
+          "path"
+        ],
+        "arrays": [
+          "fields"
+        ]
+      },
+      "defaults": {
+        "fields": []
+      },
+      "fieldResolvers": [
+        {
+          "field": "basePackage",
+          "source": "detector",
+          "detector": "springBasePackage",
+          "code": "ROOT_PACKAGE_NOT_FOUND",
+          "message": "Spring root package could not be detected. Provide basePackage in the JSON spec.",
+          "details": {
+            "command": "entity"
+          }
+        }
+      ],
+      "generator": {
+        "kind": "singleFile",
+        "requiresBasePackage": true
+      },
+      "normalizationRules": [
+        {
+          "kind": "case",
+          "field": "name",
+          "style": "pascal",
+          "reason": "classes use PascalCase"
+        },
+        {
+          "kind": "path",
+          "field": "path"
+        },
+        {
+          "kind": "listItemNames",
+          "field": "fields",
+          "style": "camel",
+          "reason": "field names use camelCase"
+        }
+      ],
+      "validatorRules": [
+        {
+          "kind": "nameCase",
+          "field": "name",
+          "style": "pascal",
+          "message": "Class name must use PascalCase"
+        },
+        {
+          "kind": "pathSegmentCase",
+          "field": "path",
+          "style": "lower",
+          "code": "INVALID_PACKAGE_SEGMENT",
+          "message": "Backend package segments must use lower-case"
+        }
+      ],
+      "render": {
+        "templateFile": "templates/entity.java",
+        "output": {
+          "filePattern": "src/main/java/{basePackagePath}/{path}/entity/{name}.java"
+        },
+        "contextTokens": [
+          "className",
+          "basePackage",
+          "packagePathDot",
+          "basePackagePath",
+          "entityFields"
+        ]
+      },
+      "examples": [
+        "backend entity --json '{\"name\":\"Product\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}'"
+      ]
+    },
+    "batch": {
+      "description": "Execute multiple backend file ops in one request",
+      "summary": {
+        "whenToUse": [
+          "When you want to preview or apply multiple backend file generation tasks in one request"
+        ],
+        "relatedCommands": [
+          {
+            "id": "module",
+            "reason": "Bundle feature skeleton generation"
+          },
+          {
+            "id": "requestDto",
+            "reason": "Bundle request DTO generation"
+          },
+          {
+            "id": "responseDto",
+            "reason": "Bundle response DTO generation"
+          },
+          {
+            "id": "entity",
+            "reason": "Bundle entity generation"
+          }
+        ],
+        "flowRefs": [
+          "bulk-backend-scaffold",
+          "create-spring-feature"
+        ]
+      },
+      "guide": {
+        "목적": "여러 백엔드 파일 생성 작업을 한 번의 요청으로 순차 실행한다.",
+        "입력규칙": [
+          "ops 배열은 순서대로 실행된다.",
+          "앞선 op 결과는 $ref로 뒤 op에서 참조할 수 있다."
+        ],
+        "출력규칙": [
+          "기본은 preview다.",
+          "--apply일 때만 마지막에 한 번 write 한다.",
+          "하나라도 실패하면 전체 write를 취소한다."
+        ]
+      },
+      "inputMode": "json",
+      "execution": {
+        "kind": "batch"
+      },
+      "examples": [
+        "backend batch --json '{\"ops\":[{\"id\":\"request-dto\",\"command\":\"requestDto\",\"spec\":{\"name\":\"CreateProductRequest\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}}]}'"
+      ]
+    }
+  }
+}

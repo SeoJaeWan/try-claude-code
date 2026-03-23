@@ -2,18 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
 describe("ProfileBatchCommands", () => {
-  it("[C-SPEC-003] tcp profile은 component, type, props, function, uiState command를 노출한다", async () => {
-    // Arrange
-    const profile = await loadProfile("publisher/personal/v1");
-
-    // Act
-    const commandNames = Object.keys(profile.commands);
-
-    // Assert
-    assert.deepEqual(commandNames.sort(), ["component", "function", "props", "type", "uiState"].sort());
-  });
-
-  it("[C-SPEC-003] tcf profile은 snippet/file command를 모두 노출한다", async () => {
+  it("[C-SPEC-003] frontend profile은 UI/file/snippet command를 모두 노출한다", async () => {
     // Arrange
     const profile = await loadProfile("frontend/personal/v1");
 
@@ -23,7 +12,7 @@ describe("ProfileBatchCommands", () => {
     // Assert
     assert.deepEqual(
       commandNames.sort(),
-      ["apiHook", "endpoint", "function", "hook", "hookReturn", "mapper", "props", "queryKey", "type"].sort()
+      ["apiHook", "component", "endpoint", "function", "hook", "hookReturn", "mapper", "props", "queryKey", "type", "uiState"].sort()
     );
   });
 
@@ -44,7 +33,7 @@ describe("ProfileBatchCommands", () => {
     };
 
     // Act
-    const error = await subject.execute("tcf", batchRequest).catch((caught) => caught);
+    const error = await subject.execute("backend", batchRequest).catch((caught) => caught);
 
     // Assert
     assert.equal(error.code, "UNKNOWN_COMMAND");

@@ -3,16 +3,16 @@ import assert from "node:assert/strict";
 import { routeCommand } from "../../../packages/dev-cli/src/core/command-router.mjs";
 
 describe("commandRouter", () => {
-  it("[C-CLI-001] tcp alias 요청을 publisher component command로 라우팅한다", () => {
+  it("[C-CLI-001] frontend alias 요청을 frontend component command로 라우팅한다", () => {
     // Arrange
-    const argv = ["tcp", "component", "HomePage", "--path", "page/homePage", "--dry-run"];
+    const argv = ["frontend", "component", "HomePage", "--path", "page/homePage", "--dry-run"];
 
     // Act
     const result = routeCommand(argv);
 
     // Assert
-    assert.equal(result.alias, "tcp");
-    assert.equal(result.profileKind, "publisher");
+    assert.equal(result.alias, "frontend");
+    assert.equal(result.profileKind, "frontend");
     assert.equal(result.command, "component");
     assert.equal(result.options.path, "page/homePage");
     assert.equal(result.options["dry-run"], true);
