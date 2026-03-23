@@ -18,7 +18,7 @@ export default usePostLogin;
   });
 
   const profile = {
-    id: "tcf/personal/v1",
+    id: "frontend/personal/v1",
     commands: {
       apiHook: {
         fieldResolvers: [
@@ -113,7 +113,7 @@ export default widget;
   });
 
   const profile = {
-    id: "tcf/personal/v1",
+    id: "frontend/personal/v1",
     commands: {
       hook: {
         validatorRules: []
@@ -176,7 +176,7 @@ test("validateFiles는 zero-match directory에 hint-rich unsupported error를 �
   });
 
   const profile = {
-    id: "tcp/personal/v1",
+    id: "frontend/personal/v1",
     commands: {
       validateFile: {
         unsupportedTargetMessage: "Publisher validate-file only supports declared component/page entry files.",
@@ -186,8 +186,8 @@ test("validateFiles는 zero-match directory에 hint-rich unsupported error를 �
           }
         },
         examples: [
-          "tcp validate-file app",
-          "tcp validate-file components/common"
+          "frontend validate-file app",
+          "frontend validate-file components/common"
         ],
         targetRules: [
           {
@@ -229,7 +229,7 @@ export default Page;
   await assert.rejects(
     () => validateFiles({
       profile: {
-        id: "tcp/personal/v1",
+        id: "frontend/personal/v1",
         commands: {
           validateFile: {
             targetRules: []

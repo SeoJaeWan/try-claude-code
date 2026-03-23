@@ -289,7 +289,7 @@ Task({
 
 ## HUMANMAPS Output (human-readable HTML)
 
-After CODEMAPS generation, generate HUMANMAPS HTML **directly** within this skill (no publisher delegation).
+After CODEMAPS generation, generate HUMANMAPS HTML **directly** within this skill (no separate frontend delegation).
 
 **Output location:** `humanmaps/`
 

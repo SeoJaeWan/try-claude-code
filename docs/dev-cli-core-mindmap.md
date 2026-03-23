@@ -5,13 +5,13 @@
 `packages/dev-cli/src/core` 아래 파일이 언제, 어떤 경로로, 어떤 역할로 호출되는지 한 번에 보기 위한 문서다.
 
 - 기준 entrypoint: `packages/dev-cli/src/run-cli.mjs`
-- 실제 wrapper bin: `packages/tcp/bin/tcp.mjs`, `packages/tcf/bin/tcf.mjs`, `packages/tcb/bin/tcb.mjs`
+- 실제 wrapper bin: `packages/frontend/bin/frontend.mjs`, `packages/backend/bin/backend.mjs`
 - 핵심 orchestrator: `packages/dev-cli/src/core/run-cli.mjs`
 
 ## 한눈에 보는 마인드맵
 
 ```text
-tcp / tcf / tcb
+frontend / backend
 └─ src/run-cli.mjs
    └─ core/run-cli.mjs
       ├─ cli/
@@ -68,8 +68,8 @@ run-cli
       └─ formatOutput
 ```
 
-- top-level `tcp --help`는 mode unset 상태에서도 동작한다.
-- command-scoped `tcp component --help`는 mode unset이면 `ACTIVE_PROFILE_NOT_SET`으로 실패한다.
+- top-level `frontend --help`와 `backend --help`는 mode unset 상태에서도 동작한다.
+- command-scoped `frontend component --help`와 `backend module --help`는 mode unset이면 `ACTIVE_PROFILE_NOT_SET`으로 실패한다.
 
 ### `guide`
 

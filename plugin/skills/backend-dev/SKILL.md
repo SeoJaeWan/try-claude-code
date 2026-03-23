@@ -18,9 +18,9 @@ Expert backend development workflow.
 
 ---
 
-## Never develop backend modules without tcb
+## Never develop backend modules without backend
 
-All module, entity, and DTO conventions — directory structure, naming, decorator patterns, dependency injection rules — are defined in the `tcb` CLI. Without tcb you are guessing at conventions, and guesses are wrong. Read `tcb help --text` first, scaffold with `tcb <command> --apply`, and always run `tcb validate-file` on every created/modified file when you are done. Fix any violations and re-validate until all pass.
+All module, entity, and DTO conventions — directory structure, naming, decorator patterns, dependency injection rules — are defined in the `backend` CLI. Without `backend` you are guessing at conventions, and guesses are wrong. Read `backend help --text` first, scaffold with `backend <command> --apply`, and always run `backend validate-file` on every created/modified file when you are done. Fix any violations and re-validate until all pass.
 
 ---
 
@@ -47,7 +47,7 @@ Every API endpoint must include proper error responses.
 5. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
 6. Run tests — confirm ALL pass (Green)
 7. If plan includes `e2e/`: if E2E fails, fix implementation, NOT tests
-8. **Run `tcb validate-file` on all created/modified files.** Fix any reported violations and re-validate until all pass. Do not skip this step.
+8. **Run `backend validate-file` on all created/modified files.** Fix any reported violations and re-validate until all pass. Do not skip this step.
 9. Return results based on plan.md
   </Instructions>
   </Skill_Guide>

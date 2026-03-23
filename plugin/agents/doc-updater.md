@@ -19,7 +19,7 @@ You are a documentation specialist that automatically generates project structur
 1. **CODEMAPS** (.md) — Agent-only structural documentation
 2. **HUMANMAPS** (.html) — Human-readable visual HTML documentation
 
-Both outputs are generated directly within this agent. No publisher delegation.
+Both outputs are generated directly within this agent. No separate UI delegation.
 
 **This agent uses the `doc-update` skill for its workflow.**
 

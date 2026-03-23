@@ -6,8 +6,8 @@ describe("helpRenderer", () => {
   it("[C-CLI-002] 기본 help 요청이면 JSON payload를 반환한다", () => {
     // Arrange
     const profile = {
-      id: "publisher/personal/v1",
-      alias: "tcp",
+      id: "frontend/personal/v1",
+      alias: "frontend",
       commands: [{ name: "component" }],
     };
 
@@ -16,7 +16,7 @@ describe("helpRenderer", () => {
 
     // Assert
     assert.equal(result.format, "json");
-    assert.equal(result.payload.alias, "tcp");
+    assert.equal(result.payload.alias, "frontend");
     assert.equal(Array.isArray(result.payload.commands), true);
   });
 
@@ -24,7 +24,7 @@ describe("helpRenderer", () => {
     // Arrange
     const profile = {
       id: "frontend/personal/v1",
-      alias: "tcf",
+      alias: "frontend",
       commands: [{ name: "hook", description: "Generate a hook" }],
     };
 
@@ -33,7 +33,7 @@ describe("helpRenderer", () => {
 
     // Assert
     assert.equal(result.format, "text");
-    assert.match(result.payload, /tcf/);
+    assert.match(result.payload, /frontend/);
     assert.match(result.payload, /hook/);
   });
 });

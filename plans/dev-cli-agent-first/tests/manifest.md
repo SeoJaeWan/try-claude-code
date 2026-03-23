@@ -7,7 +7,7 @@
 | `command-router.test.mjs` | `utility` | `commandRouter` | `shared` | [C-CLI-001] | expected, defensive |
 | `help-renderer.test.mjs` | `utility` | `helpRenderer` | `shared` | [C-CLI-002] | expected, defensive |
 | `profile-loader.test.mjs` | `utility` | `profileLoader` | `shared` | [C-CLI-003] | expected, defensive, exception |
-| `publisher-frontend-profile.test.mjs` | `validator` | `publisherFrontendProfileValidator` | `shared` | [C-CLI-004], [C-CLI-006] | expected, defensive, edge |
+| `frontend-profile.test.mjs` | `validator` | `frontendProfileValidator` | `shared` | [C-CLI-004], [C-CLI-006] | expected, defensive, edge |
 | `backend-profile.test.mjs` | `validator` | `backendProfileValidator` | `shared` | [C-CLI-005], [C-CLI-006] | expected, defensive, exception |
 
 ## Implementation Placement

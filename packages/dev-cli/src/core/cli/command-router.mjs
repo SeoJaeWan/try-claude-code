@@ -1,6 +1,6 @@
 import { normalizeCommandName } from "./arg-parser.mjs";
 
-const KNOWN_ALIASES = new Set(["tcp", "tcf", "tcb"]);
+const KNOWN_ALIASES = new Set(["frontend", "backend"]);
 
 function normalizeFormat(options) {
   return options.text ? "text" : "json";
