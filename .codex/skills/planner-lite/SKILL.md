@@ -1,151 +1,284 @@
 ---
 name: planner-lite
-description: Execute finalized implementation plans with deterministic orchestration. Use when architect has already produced a decision-complete `plan.md` or `plan-{track}/plan.md` and the user wants execution rather than more planning, especially for worktree-scoped runs that must dispatch each phase to its mapped named custom agent, with per-phase validation, commits, and user approval gate. Waits for user confirmation after each phase, and after all phases complete checks out the task branch — does not merge automatically.
+description: Deterministic plan orchestrator with per-task worktree isolation, sequential phase commits, per-phase user approval, and task branch checkout. Use when executing plan.md artifacts that coordinate multiple agents across sequential or parallel phases. Waits for user confirmation after each phase, and after all phases complete checks out the task branch — does not merge automatically.
 ---
 
 <Skill_Guide>
 <Purpose>
-Execute one finalized plan file with git worktree isolation, phase progression, and mandatory named custom-agent dispatch. After completion, checks out the task branch for review — no automatic merge.
+Execute plan.md artifacts with task-level worktree isolation and sequential phase commits. Each task gets one worktree for its entire lifecycle — phases commit sequentially within it, and after completion the worktree is cleaned up and the task branch is checked out for review. No automatic merge is performed.
 </Purpose>
 
 <Instructions>
 # planner-lite
 
-Use this skill only after planning is complete.
+Orchestrate plan.md execution with task-level worktree isolation and commit-based phase progression.
 
-## Inputs to inspect
+---
 
-1. The executable plan file path
-2. `./.codex/skills/architect/references/agents-lite.md`
-3. `./.codex/skills/architect/references/planning-policy.md`
-4. `./.codex/skills/architect/references/git.md`
-5. The custom agent files mapped from each encountered `owner_agent`
+## Why this workflow matters
 
-## Execution scope
+`Agent(isolation: "worktree")` doesn't support nested Agent calls inside the worktree, so phase-level agent specialization is impossible with it. Using it when planner-lite is already in a worktree also causes nesting (`worktrees/A/worktrees/B`). And `EnterWorktree` has no mid-session exit, making post-work merge impossible.
 
-- Execute one plan file at a time.
-- For sequential mode, execute `plans/{task-name}/plan.md`.
-- For partial-parallel or parallel mode, execute one `plans/{task-name}/plan-{track}/plan.md` per session.
-- Do not execute the root DAG index as if it were a track implementation plan.
+This skill uses manual `git worktree` management: one worktree per task, phase agents commit sequentially within it, and the task branch is checked out after completion for user review. This gives full control over the worktree lifecycle while supporting different specialized agents per phase.
 
-## Session ownership
+---
 
-- The parent or main session should hand finalized plan execution off to the named custom agent `planner`.
-- After that handoff, `planner` is the only session that should spawn phase workers, wait on them, run per-phase validation, commit phase work, and manage the final merge while following this skill.
-- If a non-`planner` session is following this skill and named custom-agent spawning is available, it must launch `planner` and stop short of spawning any phase worker itself.
-- If named custom-agent spawning is unavailable, stop and report the configuration problem instead of silently collapsing orchestration back into the parent session.
-- Do not instruct users to invoke `$planner-lite` directly when the repository already exposes `/agent planner`.
+## Inputs
 
-## Owner mapping
+1. Plan file path (`plans/{task-name}/plan.md` or `plans/{task-name}/plan-{track}.md`)
+2. Plan headers:
+    - `**Branch:** {task-branch}` — the name for this task's worktree and branch
+3. Phase/task blocks with `- owner_agent: \`{agent-name}\``
 
-- `frontend-developer` -> custom agent `frontend-developer`
-- `backend-developer` -> custom agent `backend-developer`
-- `publisher` -> custom agent `publisher`
-- `playwright-guard` -> custom agent `playwright-guard`
+---
 
-## Workflow
+## Core rules
 
-### Step 0. Validate the plan
+1. planner-lite runs in the main conversation context (no agent binding).
+2. The main context HEAD stays on the base branch during phase execution, then switches to the task branch after completion.
+3. Task branches are created via `git worktree add -b` (one per task, not per phase).
+4. Phase agents are dispatched via `Agent` without `isolation: "worktree"` — they work directly in the worktree directory.
+5. Each phase ends with a commit. After the final phase, planner-lite checks out the task branch (no merge).
+6. planner-lite runs from the repository root, never from inside `worktrees/**`.
 
-- Require a `**Branch:**` header.
-- Require explicit `owner_agent` values for every executable block.
-- Require every executable block to have enough execution metadata to delegate safely: phase id, `owner_agent`, `작업`, `산출물`, and plan-level validation commands.
-- Refuse execution if blocking ambiguity remains or the file is only a planning index.
-- Stop if an `owner_agent` cannot be mapped to an available named custom agent.
-- Stop if project-scoped agents are unavailable, if the repository is not trusted, or if the current runtime can spawn only generic worker roles.
+---
 
-### Step 1. Prepare git state
+## Branch model
 
-- Record the current branch as the base branch.
-- Keep the main repo checkout on the base branch.
-- Default the worktree root to `./worktrees/{branch}` unless the repository already has a stronger local convention.
-- Remove stale worktree state for the same branch before recreating it.
-- Create one task worktree branch per executable plan file.
-
-### Step 2. Resolve phase dispatch before any implementation
-
-- Parse executable phases in order and treat `owner_agent` as authoritative routing metadata.
-- Resolve the mapped named custom agent from `owner_agent`.
-- Treat `primary_skill` as a consistency check against the mapped custom agent, not as a worker fallback path.
-- Dispatch is mandatory for every mapped phase. Planner-lite owns orchestration only; do not implement a mapped phase directly in planner-lite.
-- Treat a missing named custom-agent spawn as an execution failure, not as an acceptable shortcut.
-- Do not fall back to `worker + skill`, `default + skill`, or any other generic role simulation.
-- Build a delegation packet for each phase with:
-  - plan path
-  - phase heading or id
-  - `owner_agent`
-  - worktree directory
-  - `목적`
-  - `작업`
-  - `산출물`
-  - relevant validation commands
-
-### Step 3. Execute phases in order via child agents
-
-- Spawn the mapped named custom agent for phase execution. Keep git orchestration, worktree lifecycle, validation, commit control, and merge control in planner-lite.
-- Address the mapped custom agent explicitly and include the resolved phase metadata in the prompt.
-- Let the custom agent load and apply its own configured skills and developer instructions. Do not simulate that role by injecting a substitute skill into a generic worker.
-- Require the child agent to work only inside the assigned worktree directory, avoid nested worktrees, avoid plan rewrites, and stay within the current phase scope.
-- Require the child agent to report changed files, validations it ran locally, and any blockers before planner-lite continues.
-- Record the spawned child agent id in phase state and treat that id as the only live worker for the phase.
-- Wait for the child agent to finish each sequential phase before running validation or moving on.
-- For long-running phases, call `wait_agent` with the maximum supported timeout `timeout_ms=3600000` rather than using short polling loops.
-- If a max-length wait still times out without a terminal child status, treat the phase as still running and continue waiting on the same child agent id.
-- Do not respawn a child agent because of a non-terminal wait timeout. Retry only after a terminal failure and after inspecting the current worktree diff or commit state.
-- Keep each phase bounded to the files and outcomes described by the plan.
-- Review the returned worktree changes, then run the relevant validation commands before moving to the next phase.
-- Commit after each successful phase using `git.md` conventions.
-- After each phase's validation and commit, report the results to the user and wait for explicit approval before proceeding to the next phase. Use `AskUserQuestion` to present the phase summary (changed files, commit, validation results) and options: "다음 phase 진행" / "중단". Do not proceed without user confirmation. If the user chooses to stop, keep the worktree intact for inspection.
-
-Delegation prompt contract:
-
-```text
-Execute <plan path> <phase id> as the named custom agent <owner_agent>.
-Work only in <worktree path>.
-Goal: <phase 목적>
-Tasks:
-<phase 작업 bullets>
-Expected outputs:
-<phase 산출물 bullets>
-Validation to respect:
-<relevant validation commands>
-Do not create branches, worktrees, or merges.
-Do not rewrite the plan.
-Do not edit files outside this phase scope.
-Report changed files, validations run, and blockers.
 ```
+X (base branch — HEAD stays here during execution)
+│
+└── git worktree add -b task-A worktrees/task-A X
+    ├── commit: Phase 1 work
+    ├── commit: Phase 2 work
+    └── commit: Phase 3 work
+    → worktree remove → checkout task-A (ready for review/PR)
+```
+
+- **Base branch (X):** Where HEAD is when planner-lite starts. It stays here during phase execution.
+- **Task branch:** Created by `git worktree add -b`. All phase commits accumulate on this branch inside the worktree. After completion, HEAD switches to this branch.
+
+---
+
+## Execution workflow
+
+### Step 1. Validate
+
+- Ensure `**Branch:**` header exists in the plan file.
+- Ensure each phase block includes `- owner_agent: \`{agent-name}\``.
+- Ensure every `owner_agent` maps to an existing agent in `agents/{owner_agent}.md`.
+- Ensure current working directory is the repository root (not inside `worktrees/**`).
+- If validation fails → stop immediately.
+
+### Step 2. Set up
+
+```bash
+# Record the base branch
+BASE=$(git rev-parse --abbrev-ref HEAD)
+
+# Read task branch name from plan header
+TASK_BRANCH="{value from **Branch:**}"
+WORKTREE_DIR="worktrees/${TASK_BRANCH}"
+
+# Clean up stale worktree if it exists from a previous failed run
+if git worktree list --porcelain | grep -q "$WORKTREE_DIR"; then
+  git worktree remove "$WORKTREE_DIR" --force
+  git branch -D "$TASK_BRANCH" 2>/dev/null
+fi
+
+# Create worktree with a new branch based on the base
+git worktree add -b "$TASK_BRANCH" "$WORKTREE_DIR" "$BASE"
+```
+
+After this step, HEAD is still on `$BASE` in the main repo. The worktree has its own checkout of `$TASK_BRANCH`.
+
+### Step 3. Execute phases
+
+For each phase in plan order:
+
+#### 3a. Dispatch agent
+
+Call the Agent tool without `isolation: "worktree"`. The agent is told to work in the worktree directory:
+
+```
+Agent(
+  subagent_type: "{owner_agent}",
+  prompt: "
+    ## Working directory
+    You are working in: {repo_root}/{WORKTREE_DIR}
+    cd to this directory before starting any work.
+
+    ## Rules
+    - Work directly in your current directory.
+    - Do NOT create additional worktrees or use EnterWorktree.
+    - Only implement Phase {N} work described below. Do NOT redo prior phases.
+    - Commit your work when done: git add -A && git commit -m 'Phase {N}: {summary}'
+
+    ## Task
+    {phase content}
+  ",
+  description: "Phase {N}: {short summary}"
+)
+```
+
+#### 3b. Verify phase work
+
+After the agent completes, verify from the repo root:
+
+```bash
+# 1. Check the agent committed to the correct branch
+CURRENT_BRANCH=$(git -C "$WORKTREE_DIR" rev-parse --abbrev-ref HEAD)
+if [ "$CURRENT_BRANCH" != "$TASK_BRANCH" ]; then
+  echo "ERROR: Agent switched branches. Expected $TASK_BRANCH, got $CURRENT_BRANCH"
+  # Stop execution
+fi
+
+# 2. Check for uncommitted changes and commit if needed
+if [ -n "$(git -C "$WORKTREE_DIR" status --porcelain)" ]; then
+  git -C "$WORKTREE_DIR" add -A
+  git -C "$WORKTREE_DIR" commit -m "Phase {N}: {short summary}"
+fi
+
+# 3. Confirm latest commit
+git -C "$WORKTREE_DIR" log --oneline -1
+```
+
+If verification fails → stop execution and report the error. Do not proceed to the next phase.
+
+#### 3c. Wait for user approval
+
+After verification passes, report the phase results to the user and wait for approval before continuing. Use `AskUserQuestion` to present:
+
+- What was completed in this phase (changed files, commit summary)
+- Validation results
+- Options: "다음 phase 진행" / "중단"
+
+Do not proceed to the next phase until the user explicitly approves. If the user chooses to stop, keep the worktree intact for inspection — do not clean up.
 
 ### Step 4. Checkout task branch
 
-- After the final phase passes, remove the worktree so the task branch is freed.
-- Checkout the task branch: `git checkout "$TASK_BRANCH"`.
-- Do NOT merge into the base branch. Do NOT delete the task branch.
-- The user will decide when and how to merge (e.g., via PR or manual merge).
+After all phases complete, the task branch has all phase commits. Remove the worktree and switch to the task branch so the user can review, test, and decide when to merge:
 
-## Subagent policy
+```bash
+# 1. Remove worktree (frees the branch)
+git worktree remove "$WORKTREE_DIR" --force
 
-- Use planner-lite as the orchestrator and the mapped custom agents as phase workers.
-- For mapped phases, named custom-agent execution is required. Do not collapse a phase back into planner-lite just because planner-lite could edit the files itself.
-- For a sequential track, execute phases one at a time and wait for each child agent before continuing.
-- For partial-parallel or parallel execution, use separate planner-lite sessions per track so each track keeps its own worktree.
-- If planner-lite is already running as a child agent and effective config prevents another named custom-agent spawn, stop and report the nesting requirement instead of silently collapsing roles.
-- When delegating a phase, address the mapped child agent explicitly by role, for example `frontend-developer`.
-- Do not replace a missing named custom-agent path with a generic worker plus explicit skill prompt.
-- Do not treat `wait_agent` timeouts as implicit failures. Keep the same child agent alive and continue waiting with `timeout_ms=3600000` unless the child reaches a terminal state or the user cancels execution.
+# 2. Checkout the task branch (do NOT merge)
+git checkout "$TASK_BRANCH"
+```
+
+Do not merge into the base branch. Do not delete the task branch. The user will decide when and how to merge (e.g., via PR or manual merge).
+
+### Step 5. Verify completion
+
+```bash
+# Worktree should be gone
+git worktree list --porcelain
+
+# HEAD should be on the task branch
+git rev-parse --abbrev-ref HEAD  # should be $TASK_BRANCH
+
+# Task branch should contain all phase commits
+git log --oneline "$BASE".."$TASK_BRANCH"
+```
+
+---
+
+## Error recovery
+
+### Stale worktree from previous run
+
+Handled in Step 2 — if the worktree directory already exists, it's force-removed before recreation.
+
+### Phase agent failure
+
+If a phase agent fails or produces no work:
+1. Check `git -C "$WORKTREE_DIR" status` for partial changes
+2. Decide: retry the phase, skip it, or stop execution
+3. The worktree remains intact for inspection
+
+### Post-completion
+
+After Step 4, HEAD is on the task branch with all phase commits. The user can:
+1. Review changes: `git log --oneline $BASE..$TASK_BRANCH`
+2. Create a PR, or merge manually when ready
+3. Return to base: `git checkout $BASE`
+
+---
+
+## Parallel execution
+
+When running multiple tasks (A, B, C) in parallel from the same base branch X, each task runs in a **separate planner-lite session**.
+
+### How it works
+
+Each session independently:
+1. Reads its own plan's `**Branch:**` value
+2. Creates its own worktree from the shared base branch X
+3. Dispatches phase agents to its own worktree
+4. Checks out its own task branch after completion (no merge)
+
+| Session 1 | Session 2 | Session 3 |
+|---|---|---|
+| HEAD on X | HEAD on X | HEAD on X |
+| worktree: task-A from X | worktree: task-B from X | worktree: task-C from X |
+| Phases → commits | Phases → commits | Phases → commits |
+| Remove worktree → checkout task-A | Remove worktree → checkout task-B | Remove worktree → checkout task-C |
+
+### Isolation guarantees
+
+| Rule | Why |
+|---|---|
+| Each task has its own worktree directory | Separate directories, separate branches |
+| HEAD stays on X in every session | No drift — all tasks branch from the same base |
+| No `isolation: "worktree"` in Agent calls | Prevents nested worktree creation |
+| Each task only commits to its own branch | No cross-contamination between parallel tasks |
+
+### Final integration
+
+Each session leaves HEAD on its own task branch. The user or a separate orchestrator can merge when ready:
+
+```bash
+# After all sessions complete (each on its own task branch)
+git checkout X
+git merge task-A --no-ff -m "Merge task A"
+git merge task-B --no-ff -m "Merge task B"
+git merge task-C --no-ff -m "Merge task C"
+git branch -d task-A task-B task-C
+```
+
+This final integration step is outside planner-lite's scope — the user decides when to merge.
+
+---
+
+## Validation commands
+
+```bash
+# Check plan headers
+rg -n "^\*\*Branch:\*\*" <plan-path>
+rg -n "owner_agent:" <plan-path>
+
+# Inspect worktree state
+git worktree list --porcelain
+
+# Clean up stale worktrees
+git worktree prune -n -v
+
+# Verify HEAD hasn't drifted
+git rev-parse --abbrev-ref HEAD
+```
+
+---
 
 ## Guardrails
 
-- Do not rewrite the plan during execution except for clearly marked execution status notes if the repo already uses them.
-- Do not create nested worktrees.
-- Do not ask child agents to create branches, worktrees, or merge.
-- Do not let planner-lite directly edit application files for a mapped phase unless the user explicitly overrides the child-agent model.
-- Do not dispatch mapped phases to generic `worker`, `default`, or `explorer` roles as a substitute for the named custom agent.
-- Do not switch the main repo checkout away from the recorded base branch during phase execution (switching to the task branch after completion is expected).
-- Do not continue past a failed phase validation.
-- Do not delete task branches — the user decides when to merge and clean up.
+1. Never pass `isolation: "worktree"` to Agent — it doesn't support nested Agent calls, making phase-level specialization impossible.
+2. Never call `EnterWorktree` — it lacks mid-session exit, making merge impossible.
+3. Never run planner-lite from inside `worktrees/**` — always from repository root.
+4. Never delete task branches — the user decides when to merge and clean up.
+5. Always verify phase commits and branch before starting the next phase.
+6. Always remove the worktree before checking out the task branch.
+7. Never run two planner-lite sessions against the same `**Branch:**` value concurrently.
 
-## Output contract
-
-- Report the executed plan path, base branch, task branch (now checked out), which named custom agents were spawned, commits created, validations run, and any unresolved blockers.
 </Instructions>
 </Skill_Guide>

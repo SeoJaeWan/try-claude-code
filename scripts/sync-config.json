@@ -1,0 +1,53 @@
+{
+  "$comment": "plugin → .codex sync configuration. Only listed items are synced.",
+  "agents": {
+    "sync": [
+      "backend-developer",
+      "frontend-developer",
+      "publisher",
+      "playwright-guard",
+      "doc-updater"
+    ],
+    "codexOverrides": {
+      "backend-developer": {
+        "model": "gpt-5.4",
+        "model_reasoning_effort": "xhigh",
+        "sandbox_mode": "workspace-write",
+        "nickname_candidates": ["Backend Seo Jae-wan"]
+      },
+      "frontend-developer": {
+        "model": "gpt-5.4",
+        "model_reasoning_effort": "xhigh",
+        "sandbox_mode": "workspace-write",
+        "nickname_candidates": ["Frontend Seo Jae-wan"]
+      },
+      "publisher": {
+        "model": "gpt-5.4",
+        "model_reasoning_effort": "xhigh",
+        "sandbox_mode": "workspace-write",
+        "nickname_candidates": ["Publisher Seo Jae-wan"]
+      },
+      "playwright-guard": {
+        "model": "gpt-5.4",
+        "model_reasoning_effort": "xhigh",
+        "sandbox_mode": "workspace-write",
+        "nickname_candidates": ["Bug Hunter Seo Jae-wan"]
+      },
+      "doc-updater": {
+        "model": "gpt-5.4",
+        "model_reasoning_effort": "xhigh",
+        "sandbox_mode": "workspace-write",
+        "nickname_candidates": ["Doc Seo Jae-wan"]
+      }
+    }
+  },
+  "skills": {
+    "sync": [
+      "backend-dev",
+      "frontend-dev",
+      "ui-publish",
+      "guard-e2e-test",
+      "planner-lite"
+    ]
+  }
+}

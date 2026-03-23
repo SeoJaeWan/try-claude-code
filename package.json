@@ -4,6 +4,8 @@
   "type": "module",
   "packageManager": "pnpm@10.28.0",
   "scripts": {
+    "sync": "node scripts/sync-definitions.mjs",
+    "sync:dry": "node scripts/sync-definitions.mjs --dry-run",
     "test:dev-cli": "pnpm --filter @seojaewan/dev-cli-core test"
   },
   "pnpm": {
