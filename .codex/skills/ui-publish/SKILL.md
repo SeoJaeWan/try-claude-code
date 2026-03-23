@@ -1,75 +1,52 @@
 ---
 name: ui-publish
-description: Create or refine visual UI structure after scope is fixed. Use when a request involves React or Next.js components, layouts, pages, responsive styling, design-system variants, spacing, typography, tokens, or presentational refactors that should not contain business logic. Trigger for component and layout files owned by publisher where the output should be visual-only or expose props for later logic wiring.
+description: UI/UX component creation (layout-first, no logic). Use for all visual work, layouts, styling, and responsive design.
 ---
 
 <Skill_Guide>
 <Purpose>
-Build production-ready presentational UI without absorbing business logic.
+UI/UX component creation (layout-first, no logic). Use for all visual work, layouts, styling, and responsive design.
 </Purpose>
 
 <Instructions>
 # ui-publish
 
-Use this skill for visual phases owned by `publisher`.
+Expert UI publisher for production-ready React components (visual only, no business logic).
 
-## Inputs to inspect
+---
 
-1. The active request and latest conversation context
-2. `plans/{task-name}/plan.md` or the assigned track plan when a plan exists
-3. `codemaps/frontend.md` when present
-4. Existing design system, component library, `tailwind.config.*`, and global styles
-5. Active `tcp` help for command discovery, scaffold shape, and validation rules
+## Never develop components without tcp
 
-## Workflow
+All component conventions — folder structure, naming, props patterns, forbidden patterns — are defined in the `tcp` CLI. Without tcp you are guessing at conventions, and guesses are wrong. Read `tcp help --text` first, scaffold with `tcp <command> --apply`, and always run `tcp validate-file` on every created/modified file when you are done. Fix any violations and re-validate until all pass.
 
-### Step 0. Confirm the boundary
+---
 
-- Own layout, responsive behavior, presentational component structure, styling, and visual polish.
-- Allow local interaction state that exists only to present UI, such as open or closed panels, tabs, or menus.
-- Leave API calls, form submission logic, auth, filtering, persistence, and domain rules to `frontend-dev` or `backend-dev`.
+## Layout-First Principle
 
-### Step 1. Read the visual contract
+Focus on visual structure only — do not implement business logic:
+- UI interaction state is allowed (sidebar toggle, accordion, modal open/close, tab selection)
+- Do not implement: API calls, form data management, auth logic, data filtering
+- Leave data-dependent handlers as placeholder props — the frontend-dev skill fills them in later
 
-- Read the assigned plan before editing when a plan exists.
-- Read only the local theme and component context needed to implement the requested surface.
-- Preserve established visual language when the repo already has one.
+---
 
-### Step 2. Resolve the active `tcp` contract
+## Font
 
-- Run `tcp --help` only when command discovery is needed.
-- Then inspect only the relevant command-scoped help.
-- Treat `tcp` output as the current source of truth for naming, file placement, scaffolding, and validation.
-- Do not guess component conventions from old examples.
+**Pretendard Variable:** `<repo-root>/.claude/assets/fonts/PretendardVariable.ttf`
+- Use for all UI text (sans-serif), weights 100-900
+- Font family: `"Pretendard, -apple-system, BlinkMacSystemFont, sans-serif"`
 
-### Step 3. Implement the UI
+---
 
-- Build visual structure first and expose data-dependent behavior via props or slots.
-- Keep components easy for `frontend-dev` to wire later.
-- Preserve accessibility basics such as labels, semantics, and keyboard-relevant affordances.
-- Prefer incremental refactors over broad visual rewrites unless the plan explicitly calls for redesign.
+## Implementation Steps
 
-### Step 4. Handle tests
-
-- If the plan includes frozen E2E artifacts, implement the UI so those locators and outcomes remain valid.
-- Do not rewrite the planned contracts to fit the component.
-
-### Step 5. Validate
-
-- Run the relevant UI verification for the affected scope.
-- Run `tcp validate-file` on every created or modified UI file.
-- Fix reported violations and re-run validation until clean.
-
-## Guardrails
-
-- Do not add business logic or data fetching.
-- Do not hide required callback or prop seams behind local data mocks.
-- Do not skip `tcp` validation.
-- Do not replace established project tokens or conventions without an explicit reason.
-
-## Output contract
-
-- Return changed files, executed validations, and any handoff points for `frontend-dev`.
-- Call out any deliberate placeholder props or state seams added for later logic wiring.
-</Instructions>
-</Skill_Guide>
+1. Read plan from `plans/{task-name}/plan.md` (if present)
+2. Read `codemaps/frontend.md` (if present)
+3. Read project theme/style: `tailwind.config.js`, `app/globals.css`
+4. Implement the visual layout inside the component
+5. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
+6. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
+7. **Run `tcp validate-file` on all created/modified files.** Fix any reported violations and re-validate until all pass. Do not skip this step.
+8. Return results based on plan.md
+  </Instructions>
+  </Skill_Guide>
