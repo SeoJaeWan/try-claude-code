@@ -98,7 +98,7 @@ export default usePostLogin;
   assert.deepEqual(result.results[0].violations, []);
 });
 
-test("validateFiles는 directory scan에서 unsupported 파일을 skip한다", async () => {
+test("validateFiles는 supported root 아래 unsupported 파일도 결과에 포함한다", async () => {
   const tempRoot = await createTempRepo({
     profiles: [],
     files: {
@@ -149,7 +149,7 @@ export default widget;
     projectRoot: tempRoot
   });
 
-  assert.equal(result.ok, true);
+  assert.equal(result.ok, false);
   assert.deepEqual(result.discovery, {
     root: "src",
     scanned: 2,
@@ -157,10 +157,14 @@ export default widget;
     skipped: 1
   });
   assert.deepEqual(result.summary, {
-    total: 1,
+    total: 2,
     passed: 1,
-    failed: 0
+    failed: 1
   });
+  const unsupportedResult = result.results.find((item) => item.file === "src/readme.ts");
+  assert.ok(unsupportedResult);
+  assert.equal(unsupportedResult.ok, false);
+  assert.equal(unsupportedResult.violations[0].code, "UNSUPPORTED_VALIDATION_TARGET");
 });
 
 test("validateFiles는 zero-match directory에 hint-rich unsupported error를 반환한다", async () => {

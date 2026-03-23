@@ -16,5 +16,5 @@ tcf mode set --mode personal --version v1
 tcf mode show
 ```
 
-The CLI resolves the active contract from `main/profiles/tcf/{mode}/{version}` on `SeoJaeWan/try-claude-code`.
-Set the active remote contract with `tcf mode set --mode personal --version v1`, inspect the stored selection with `tcf mode show`, and use `tcf --help` even before mode setup for minimal setup guidance.
+`tcf mode set --mode personal --version v1` refreshes a local snapshot of `main/profiles/tcf/{mode}/{version}` from `SeoJaeWan/try-claude-code`.
+Inspect the stored selection with `tcf mode show`, use `tcf --help` even before mode setup for minimal setup guidance, and rerun `mode set` whenever you want to refresh the cached profile snapshot.

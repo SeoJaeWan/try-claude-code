@@ -6,6 +6,10 @@ import {
   readRemoteJsonResource,
   readRemoteTextResource
 } from "./profile-registry.mjs";
+import {
+  readCachedProfileSnapshot,
+  writeCachedProfileSnapshot
+} from "./profile-cache.mjs";
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -219,7 +223,8 @@ export async function loadActiveProfile({
   alias,
   mode,
   version,
-  localProfileRoot
+  localProfileRoot,
+  remoteOnly = false
 }) {
   const activeProfile = await hydrateProfileSelection({
     selection: {
@@ -241,7 +246,29 @@ export async function loadActiveProfile({
     };
   }
 
+  if (!remoteOnly) {
+    const cachedProfile = await readCachedProfileSnapshot({
+      alias,
+      mode: activeProfile.mode,
+      version: activeProfile.version
+    });
+
+    if (cachedProfile) {
+      return {
+        profileId,
+        profile: cachedProfile,
+        activeProfile
+      };
+    }
+  }
+
   const profile = await loadRemoteProfileById(profileId);
+  await writeCachedProfileSnapshot({
+    alias,
+    mode: activeProfile.mode,
+    version: activeProfile.version,
+    profile
+  });
 
   return {
     profileId,

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import { hydrateProfileSelection } from "../src/core/profiles/profile-registry.mjs";
 import { loadActiveProfile } from "../src/core/profiles/profile-loader.mjs";
+import { createTempHome } from "./test-utils.mjs";
 
 const RAW_BASE_URL = "https://raw.githubusercontent.com/SeoJaeWan/try-claude-code/main/";
 
@@ -26,6 +27,30 @@ function createMockFetch(fixtures) {
       text: async () => fixtures[url]
     };
   };
+}
+
+async function withHomeEnv(homeDirectory, callback) {
+  const originalHome = process.env.HOME;
+  const originalUserProfile = process.env.USERPROFILE;
+
+  process.env.HOME = homeDirectory;
+  process.env.USERPROFILE = homeDirectory;
+
+  try {
+    return await callback();
+  } finally {
+    if (originalHome === undefined) {
+      delete process.env.HOME;
+    } else {
+      process.env.HOME = originalHome;
+    }
+
+    if (originalUserProfile === undefined) {
+      delete process.env.USERPROFILE;
+    } else {
+      process.env.USERPROFILE = originalUserProfile;
+    }
+  }
 }
 
 test("hydrateProfileSelection은 registry 없이 mode와 major version만 정규화한다", async () => {
@@ -60,6 +85,7 @@ test("hydrateProfileSelection은 inline mode syntax를 거부한다", async () =
 
 test("loadActiveProfile은 registry 없이 main/profiles 경로에서 profile과 template content를 직접 읽는다", async () => {
   const originalFetch = globalThis.fetch;
+  const tempHome = await createTempHome();
   globalThis.fetch = createMockFetch({
     [`${RAW_BASE_URL}profiles/tcp/personal/v1/profile.json`]: JSON.stringify({
       id: "tcp/personal/v1",
@@ -88,18 +114,22 @@ test("loadActiveProfile은 registry 없이 main/profiles 경로에서 profile과
     [`${RAW_BASE_URL}profiles/tcp/personal/v1/templates/component.default.tsx`]: "export default {{componentName}};"
   });
 
-  const { profile, activeProfile } = await loadActiveProfile({
-    alias: "tcp",
-    mode: "personal",
-    version: "v1"
-  });
+  try {
+    const { profile, activeProfile } = await withHomeEnv(tempHome, () =>
+      loadActiveProfile({
+        alias: "tcp",
+        mode: "personal",
+        version: "v1"
+      })
+    );
 
-  assert.equal(activeProfile.version, "v1");
-  assert.equal(profile.commands.component.render.templateContent, "export default {{componentName}};");
-  assert.equal(
-    profile.commands.function.namingPolicy.prefixes.internalHandler,
-    "handle"
-  );
-
-  globalThis.fetch = originalFetch;
+    assert.equal(activeProfile.version, "v1");
+    assert.equal(profile.commands.component.render.templateContent, "export default {{componentName}};");
+    assert.equal(
+      profile.commands.function.namingPolicy.prefixes.internalHandler,
+      "handle"
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

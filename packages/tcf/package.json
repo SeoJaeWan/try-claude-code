@@ -1,13 +1,13 @@
 {
     "name": "@seojaewan/tcf",
-    "version": "0.1.8",
+    "version": "0.1.9",
     "description": "Frontend CLI for the Try Claude Code profile system.",
     "type": "module",
     "bin": {
         "tcf": "./bin/tcf.mjs"
     },
     "dependencies": {
-        "@seojaewan/dev-cli-core": "0.1.8"
+        "@seojaewan/dev-cli-core": "0.1.9"
     },
     "files": [
         "bin",
