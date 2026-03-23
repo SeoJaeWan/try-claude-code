@@ -20,7 +20,7 @@ For detailed workflow, see `skills/frontend-dev/SKILL.md`.
 
 ## Never develop frontend files without frontend
 
-All frontend conventions — component placement, hook structure, naming, import patterns, and test rules — are defined in the `frontend` CLI. Without `frontend` you are guessing at conventions, and guesses are wrong. Read `frontend help --text` first, scaffold with `frontend <command> --apply`, and always run `frontend validate-file` on every created/modified file when you are done. Fix any violations and re-validate until all pass.
+All frontend conventions — component placement, hook structure, naming, import patterns, and test rules — are defined in the `frontend` CLI. Without `frontend` you are guessing at conventions, and guesses are wrong. Read `frontend --help` first, scaffold with `frontend <command> --apply`, and always run `frontend validate-file` on every created/modified file when you are done. Fix any violations and re-validate until all pass.
 
 ## Core Principle
 
@@ -37,6 +37,5 @@ All frontend conventions — component placement, hook structure, naming, import
 - React Native: Expo SDK 52+, Expo Router
 - State: TanStack Query, Zustand, Jotai
 
-**Completion criteria:** See `${CLAUDE_PLUGIN_ROOT}/references/coding-rules/completion.md`
 </Instructions>
 </Agent_Prompt>
