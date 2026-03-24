@@ -130,17 +130,19 @@ Assign work by concern:
 
 - `frontend-developer`: frontend UI, responsive polish, state transitions, event handling, API integration, and validation logic
 - `backend-developer`: API, DB, auth, server logic
+- `general-developer`: infrastructure, DevOps, CI/CD, deploy/runtime config, and repository-level tooling that belongs to neither frontend nor backend
 - `playwright-guard`: post-implementation full-flow/regression Playwright guard tests
 
 Do not split a phase only because UI and logic are both present. Split only when file overlap, dependency order, or validation boundaries require it.
 
-Resolve routing and mode-sensitive conventions from active CLI help before locking implementation phases:
+Resolve routing and mode-sensitive conventions from the active execution contract before locking implementation phases:
 
-- Use top-level `frontend --help` or `backend --help` only when command discovery is necessary
-- Then inspect only the minimum relevant command-scoped help for the chosen work
+- For `frontend-developer` or `backend-developer`, use top-level `frontend --help` or `backend --help` only when command discovery is necessary
+- Then inspect only the minimum relevant command-scoped help for the chosen frontend/backend work
 - Treat CLI help as the source of truth for the current active mode/profile contract, not stale examples embedded in older skill text
 - If exact mode/version matters to the plan, inspect `mode show` and record it inline in the relevant phase/task
-- Do not hardcode detailed CLI task situations into the planning prompt; defer command selection details to CLI help at execution time
+- For `general-developer`, there is no dedicated CLI contract in this repository; inspect the minimum repo-local tool or validation command that governs the work and use that as the execution contract
+- Do not hardcode detailed CLI/task situations into the planning prompt; defer command selection details to execution time
 
 See `agents-lite.md` for the canonical execution agent catalog and skill mapping.
 
@@ -228,7 +230,7 @@ Before finalizing, and again during self-review:
 2. Every phase/task has a concrete `owner_agent` listed in `references/agents-lite.md`
 3. Every phase/task has `목적`, `작업`, and `완료조건`
 4. No unresolved blocking policy/contract/schema/UX ambiguity remains
-5. Frontend work is assigned to `frontend-developer` unless a non-frontend agent boundary is required
+5. Concern routing matches agent boundaries: frontend -> `frontend-developer`, backend -> `backend-developer`, infra/devops/root tooling -> `general-developer`
 6. For UI scope, the five UI contracts are explicitly recorded in the relevant phase/task before `plan-e2e-test`
 7. Constraint IDs used by tests live in the relevant phase/task blocks
 8. If a phase generates or consumes tests, it includes artifact path, move target, and run command
