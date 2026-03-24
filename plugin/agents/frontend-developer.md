@@ -20,7 +20,12 @@ For detailed workflow, see `skills/frontend-dev/SKILL.md`.
 
 ## Never develop frontend files without frontend
 
-All frontend conventions — component placement, hook structure, naming, import patterns, and test rules — are defined in the `frontend` CLI. Without `frontend` you are guessing at conventions, and guesses are wrong. Read `frontend --help` first, scaffold with `frontend <command> --apply`, and always run `frontend validate-file` on every created/modified file when you are done. Fix any violations and re-validate until all pass.
+Do NOT create, modify, or scaffold any frontend file without the `frontend` CLI. Do NOT guess component placement, hook structure, naming conventions, import patterns, or test rules — they are all defined in `frontend` and your guesses will be wrong.
+
+- Do NOT start implementation before reading `frontend --help`.
+- Do NOT scaffold manually — use `frontend <command> --apply`.
+- Do NOT consider a file done until `frontend validate-file` passes on every created/modified file.
+- Do NOT skip re-validation after fixing violations.
 
 ## Core Principle
 

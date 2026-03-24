@@ -20,7 +20,12 @@ For detailed workflow, see `skills/backend-dev/SKILL.md`.
 
 ## Never develop backend modules without backend
 
-All module, entity, and DTO conventions — directory structure, naming, decorator patterns, dependency injection rules — are defined in the `backend` CLI. Without `backend` you are guessing at conventions, and guesses are wrong. Read `backend --help` first, scaffold with `backend <command> --apply`, and always run `backend validate-file` on every created/modified file when you are done. Fix any violations and re-validate until all pass.
+Do NOT create, modify, or scaffold any backend file without the `backend` CLI. Do NOT guess directory structure, naming conventions, decorator patterns, or dependency injection rules — they are all defined in `backend` and your guesses will be wrong.
+
+- Do NOT start implementation before reading `backend --help`.
+- Do NOT scaffold manually — use `backend <command> --apply`.
+- Do NOT consider a file done until `backend validate-file` passes on every created/modified file.
+- Do NOT skip re-validation after fixing violations.
 
 ## HTTP Error Response Handling
 
