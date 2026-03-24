@@ -1,6 +1,5 @@
 
 node_modules/
-.claude
 test/**/workspace/
 test/**/origin-workspace/node_modules/
 test/**/origin-workspace/.next/
