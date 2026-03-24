@@ -1,16 +1,35 @@
 {
   "permissions": {
     "allow": [
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:shipyard.build)",
       "Bash(git *)",
+      "Bash(git:*)",
       "Bash(pnpm *)",
+      "Bash(pnpm:*)",
       "Bash(npm *)",
+      "Bash(npm:*)",
       "Bash(node *)",
+      "Bash(node:*)",
       "Bash(npx *)",
+      "Bash(npx:*)",
       "Bash(frontend *)",
+      "Bash(frontend:*)",
       "Bash(backend *)",
+      "Bash(backend:*)",
       "Bash(find *)",
+      "Bash(find:*)",
       "Bash(grep *)",
+      "Bash(grep:*)",
       "Bash(mkdir *)",
+      "Bash(mkdir:*)",
       "Bash(rm worktrees/*)",
       "Bash(rm -r worktrees/*)",
       "Bash(rm -f worktrees/*)",
@@ -45,6 +64,19 @@
       "mcp__playwright-test__test_list",
       "mcp__playwright-test__test_run",
       "mcp__playwright-test__browser_generate_locator"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}'"
+          }
+        ]
+      }
     ]
   }
 }

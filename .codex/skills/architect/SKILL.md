@@ -21,9 +21,10 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 3. `./.codex/skills/architect/references/planning-policy.md` - canonical planning rules and quality gates
 4. `./.codex/skills/architect/references/git.md` - commit message, branch naming, and worktree naming rules
 5. `./.codex/skills/architect/references/plan-template-sequential.md` - sequential plan template
-6. Relevant active CLI help only when execution routing or mode-sensitive conventions matter:
-   - prefer narrow command-scoped text help first
+6. Relevant execution contracts only when routing or mode-sensitive conventions matter:
+   - for `frontend-developer` or `backend-developer`, prefer narrow command-scoped CLI help first
    - use top-level `frontend --help`, `backend --help` only for command discovery
+   - for `general-developer`, inspect only the minimum repo-local tool/validation contract that governs the work (for example `docker compose config`, `nginx -t`, CI config schema, or deploy script entrypoints)
 
 ## Workflow
 
@@ -63,15 +64,20 @@ Use high-level inspection only:
 
 Do not deep-dive into implementation details.
 
-### Step 2.5. Resolve mode-sensitive CLI contracts before execution routing (required for implementation plans)
+### Step 2.5. Resolve execution contracts before routing (required for implementation plans)
 
-- Before assigning `owner_agent` or `primary_skill` to implementation phases, inspect the relevant CLI help for the work type.
-- Start with top-level `frontend --help` or `backend --help` only when command discovery is needed.
-- Then inspect only the minimum relevant command-scoped help for the chosen work.
-- Treat the returned help as the active mode-specific contract for path policy, naming, validation, scaffold shape, and available command surface.
+- Before assigning `owner_agent` or `primary_skill` to implementation phases, inspect the relevant execution contract for the work type.
+- For `frontend-developer` or `backend-developer`:
+  - start with top-level `frontend --help` or `backend --help` only when command discovery is needed
+  - then inspect only the minimum relevant command-scoped help for the chosen work
+  - treat the returned help as the active mode-specific contract for path policy, naming, validation, scaffold shape, and available command surface
+- For `general-developer`:
+  - there is no dedicated CLI contract in this repository
+  - inspect only the minimum repo-local tool or validation command that governs the work
+  - use those commands as the active execution contract for file boundaries, validation, and rollout constraints
 - Use those contracts to confirm execution routing, phase boundaries, and inline defaults/constraints inside the relevant phase blocks.
-- If one request spans multiple concerns, inspect each relevant CLI instead of guessing from stale skill prose.
-- Do not explain detailed task-by-task CLI situations in the plan prompt itself; route through CLI help at execution time.
+- If one request spans multiple concerns, inspect each relevant contract instead of guessing from stale skill prose.
+- Do not explain detailed task-by-task command situations in the plan prompt itself; defer command selection details to execution time.
 
 ### Step 3. Design plan structure
 
