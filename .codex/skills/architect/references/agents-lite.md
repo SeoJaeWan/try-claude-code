@@ -10,6 +10,7 @@ For detailed planning rules, quality gates, and UI test-phase policy, read `plan
 | -------------------- | ---------------------- | ------------------- | --------------------------------------------------------- |
 | `frontend-developer` | `frontend-dev`         | `frontend`          | frontend UI, integration, hooks, state, and API work      |
 | `backend-developer`  | `backend-dev`          | `backend`           | API, DB, auth, server logic                               |
+| `general-developer`  | `general-dev`          | `N/A`               | infrastructure, DevOps, CI/CD, deploy, and root tooling   |
 | `playwright-guard`   | `guard-e2e-test`       | `N/A`               | post-implementation full-flow Playwright regression guard |
 
 ## Planning Skills (run by architect)
@@ -26,3 +27,4 @@ For detailed planning rules, quality gates, and UI test-phase policy, read `plan
 - Only list execution agents or skills that actually exist in this repository.
 - Do not document hypothetical utility skills here.
 - Architect should inspect the corresponding CLI help before finalizing implementation routing for `frontend-developer` or `backend-developer`.
+- For `general-developer`, inspect the minimum repo-local validation or tooling contract instead of a nonexistent dedicated CLI.
