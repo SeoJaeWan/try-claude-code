@@ -1,138 +1,143 @@
 ---
 name: init-memory
-description: "Obsidian + Google Drive 기반 Claude Code 메모리 symlink 초기화. 'init-memory', '메모리 초기화', '메모리 연결', '메모리 세팅', 'memory setup' 요청 시 트리거. 새 프로젝트에서 메모리 연동이 필요할 때, 기존 symlink 상태를 점검하고 싶을 때도 사용한다."
+description: "Initialize Claude Code memory symlinks to Obsidian vault on Google Drive. Triggers on 'init-memory', 'memory setup', 'memory init', 'link memory', '메모리 초기화', '메모리 연결', '메모리 세팅'. Use this when setting up memory sync for a new project or checking existing symlink status."
 allowed-tools: Bash, Read, Write, Glob, AskUserQuestion
 ---
 
 <Skill_Guide>
 <Purpose>
-Claude Code의 3계층 메모리(User/Project/Auto)를 Obsidian vault(Google Drive)에 symlink로 연결한다.
-이미 연결된 항목은 건너뛰고, 누락된 항목만 새로 설정한다.
+Link Claude Code's 3-layer memory (User/Project/Auto) to an Obsidian vault on Google Drive via symlinks.
+Skip items that are already linked. Only set up missing or broken ones.
 </Purpose>
 
 <Instructions>
 
-# Init Memory — Obsidian + Google Drive 메모리 연동
+# Init Memory — Obsidian + Google Drive Memory Sync
 
-Claude Code 메모리를 Google Drive 내 Obsidian vault에 symlink로 연결하여,
-기기 간 동기화 및 Obsidian 시각적 관리를 가능하게 한다.
+Connect Claude Code memory to an Obsidian vault on Google Drive via symlinks,
+enabling cross-device sync and visual management through Obsidian.
 
-## 사전 조건
+## Prerequisites
 
-- Google Drive 데스크톱이 설치되어 마운트되어 있어야 한다
-- Obsidian vault가 Google Drive 안에 생성되어 있어야 한다
+- Google Drive desktop must be installed and mounted
+- An Obsidian vault must exist inside Google Drive
 
-## 설정 값
+## Configuration
 
 ```
 VAULT_BASE: G:\내 드라이브\ClaudeMemory
 ```
 
-이 경로가 사용자 환경과 다를 수 있으므로, 첫 실행 시 AskUserQuestion으로 확인한다.
+This path may differ per user environment. On first run, confirm via AskUserQuestion.
 
-## 3계층 메모리 구조
+## 3-Layer Memory Structure
 
-| 계층 | Claude Code 경로 | Obsidian 대상 경로 |
-|------|------------------|-------------------|
-| User memory (전역) | `~/.claude/CLAUDE.md` | `{VAULT_BASE}/user-memory/CLAUDE.md` |
-| Project memory | `./.claude/CLAUDE.md` | `{VAULT_BASE}/projects/{프로젝트명}/CLAUDE.md` |
-| Auto-memory | `~/.claude/projects/{프로젝트키}/memory/` | `{VAULT_BASE}/projects/{프로젝트명}/auto-memory/` |
+| Layer | Claude Code Path | Obsidian Target Path |
+|-------|-----------------|---------------------|
+| User memory (global) | `~/.claude/CLAUDE.md` | `{VAULT_BASE}/user-memory/CLAUDE.md` |
+| Project memory | `./.claude/CLAUDE.md` | `{VAULT_BASE}/projects/{PROJECT_NAME}/CLAUDE.md` |
+| Auto-memory | `~/.claude/projects/{PROJECT_KEY}/memory/` | `{VAULT_BASE}/projects/{PROJECT_NAME}/auto-memory/` |
 
-- **프로젝트명**: 현재 디렉토리의 폴더 이름 (예: `try-claude-code`)
-- **프로젝트키**: `~/.claude/projects/` 하위의 인코딩된 경로명 (예: `C--Users-USER-Desktop-dev-try-claude-code`)
+- **PROJECT_NAME**: Current directory's folder name (e.g., `try-claude-code`)
+- **PROJECT_KEY**: Encoded path under `~/.claude/projects/` (e.g., `C--Users-USER-Desktop-dev-try-claude-code`)
 
-## 실행 순서
+## Execution Steps
 
-### Step 1: 환경 탐지
+### Step 1: Detect Environment
 
 ```bash
-# 현재 프로젝트 정보
+# Current project info
 PROJECT_DIR=$(pwd)
 PROJECT_NAME=$(basename "$PROJECT_DIR")
 
-# 프로젝트키 탐지 — ~/.claude/projects/ 에서 현재 경로에 매칭되는 폴더 찾기
-# pwd의 경로를 C--Users-USER-... 형식으로 변환하여 매칭
+# Detect PROJECT_KEY — find matching folder under ~/.claude/projects/
+# Convert pwd path to C--Users-USER-... format and match
 ```
 
-- Google Drive 마운트 확인: `G:\` 또는 사용자 지정 경로가 접근 가능한지 확인
-- 접근 불가 시 AskUserQuestion으로 올바른 경로를 요청
+- Verify Google Drive mount: check if `G:\` or user-specified path is accessible
+- If inaccessible, ask for the correct path via AskUserQuestion
 
-### Step 2: 상태 점검
+### Step 2: Check Current Status
 
-3개 항목 각각에 대해 현재 상태를 확인한다:
+Check the current state of all 3 items:
 
 ```bash
-# 각 경로에 대해
-file <경로>
+# For each path
+file <path>
 ```
 
-| 상태 | 의미 | 액션 |
-|------|------|------|
-| `symbolic link to ...` (정상) | 이미 연결됨 | 건너뜀 |
-| `broken symbolic link` | 링크 깨짐 | 삭제 후 재생성 |
-| 일반 파일/폴더 존재 | symlink 아닌 실제 파일 | 백업 후 symlink 생성 |
-| 파일 없음 | 미설정 | 새로 생성 |
+| Status | Meaning | Action |
+|--------|---------|--------|
+| `symbolic link to ...` (valid) | Already linked | Skip |
+| `broken symbolic link` | Link is broken | Delete and recreate |
+| Regular file/folder exists | Not a symlink | Backup then create symlink |
+| File not found | Not set up | Create new |
 
-결과를 사용자에게 테이블로 보여주고, 진행 여부를 AskUserQuestion으로 확인한다.
+Show results to the user as a table and confirm whether to proceed via AskUserQuestion.
 
-### Step 3: Obsidian vault 쪽 대상 폴더/파일 생성
+### Step 3: Create Target Folders/Files in Obsidian Vault
 
-symlink 타겟이 되는 Google Drive 쪽 경로가 없으면 먼저 생성한다:
+Create Google Drive target paths if they do not exist:
 
 ```bash
 mkdir -p "{VAULT_BASE}/user-memory"
-mkdir -p "{VAULT_BASE}/projects/{프로젝트명}/auto-memory"
-touch "{VAULT_BASE}/user-memory/CLAUDE.md"        # 비어있으면 빈 파일
-touch "{VAULT_BASE}/projects/{프로젝트명}/CLAUDE.md"
+mkdir -p "{VAULT_BASE}/projects/{PROJECT_NAME}/auto-memory"
+touch "{VAULT_BASE}/user-memory/CLAUDE.md"        # Empty file if new
+touch "{VAULT_BASE}/projects/{PROJECT_NAME}/CLAUDE.md"
 ```
 
-기존 파일이 있으면 덮어쓰지 않는다.
+Do NOT overwrite existing files.
 
-### Step 4: symlink 생성
+### Step 4: Create Symlinks
 
-Windows에서는 `cmd //c mklink`를 사용한다. 관리자 권한이 필요할 수 있다.
+Use `MSYS=winsymlinks:nativestrict` with `ln -s` in Git Bash.
+No admin privileges required. Works with Google Drive virtual drives.
 
 ```bash
-# 파일 symlink
-cmd //c mklink "C:\소스경로" "G:\대상경로"
+export MSYS=winsymlinks:nativestrict
 
-# 폴더 symlink (/D 필요)
-cmd //c mklink /D "C:\소스경로" "G:\대상경로"
+# File symlinks (User memory, Project memory)
+ln -s "G:/내 드라이브/ClaudeMemory/user-memory/CLAUDE.md" "/c/Users/USER/.claude/CLAUDE.md"
+ln -s "G:/내 드라이브/ClaudeMemory/projects/{PROJECT_NAME}/CLAUDE.md" "{PROJECT_PATH}/.claude/CLAUDE.md"
+
+# Directory symlink (Auto-memory)
+ln -s "G:/내 드라이브/ClaudeMemory/projects/{PROJECT_NAME}/auto-memory" "/c/Users/USER/.claude/projects/{PROJECT_KEY}/memory"
 ```
 
-- 기존에 일반 파일이 있었다면 `{원래이름}.bak`으로 백업 후 진행
-- symlink 생성 실패 시 (권한 문제) 사용자에게 관리자 cmd에서 수동 실행할 명령어를 제시
+- If a regular file/folder already exists, rename it to `{original_name}.bak` before creating the symlink
+- If `ln -s` fails, provide the user with manual `mklink` commands to run in an admin cmd as a fallback
 
-### Step 5: 검증
+### Step 5: Verify
 
-생성된 symlink 3개를 모두 검증한다:
+Verify all 3 symlinks:
 
 ```bash
-# 각 symlink에 대해
-file <경로>           # symbolic link 확인
-echo "test" > <경로>/test.txt   # 쓰기 테스트 (auto-memory만)
-cat <Google Drive 쪽>/test.txt  # 읽기 확인
-rm <경로>/test.txt              # 정리
+# For each symlink
+file <path>                          # Confirm symbolic link
+echo "test" > <path>/test.txt       # Write test (auto-memory only)
+cat <google_drive_path>/test.txt    # Read verification
+rm <path>/test.txt                  # Cleanup
 ```
 
-### Step 6: 결과 리포트
+### Step 6: Report Results
 
-최종 상태를 테이블로 출력한다:
+Output the final status as a table:
 
 ```
-| 계층           | 상태 | Claude Code 경로        | → Obsidian 경로              |
-|----------------|------|------------------------|------------------------------|
-| User memory    | ✅   | ~/.claude/CLAUDE.md     | → .../user-memory/CLAUDE.md  |
-| Project memory | ✅   | ./.claude/CLAUDE.md     | → .../projects/xxx/CLAUDE.md |
-| Auto-memory    | ✅   | .../memory/             | → .../projects/xxx/auto-memory/ |
+| Layer          | Status | Claude Code Path         | → Obsidian Path                |
+|----------------|--------|--------------------------|--------------------------------|
+| User memory    | ✅     | ~/.claude/CLAUDE.md      | → .../user-memory/CLAUDE.md    |
+| Project memory | ✅     | ./.claude/CLAUDE.md      | → .../projects/xxx/CLAUDE.md   |
+| Auto-memory    | ✅     | .../memory/              | → .../projects/xxx/auto-memory/|
 ```
 
-## 주의사항
+## Important Notes
 
-- symlink 생성 전 기존 파일은 반드시 백업한다
-- Google Drive 경로에 공백이 포함될 수 있으므로 항상 따옴표로 감싼다
-- `mklink`은 Windows cmd 전용 명령어이므로 `cmd //c mklink`로 호출한다
-- 이미 정상 연결된 항목은 절대 건드리지 않는다
+- Always backup existing files before creating symlinks (rename to `.bak`)
+- Always quote Google Drive paths — they may contain spaces
+- Always set `export MSYS=winsymlinks:nativestrict` before running `ln -s`
+- Do NOT touch items that are already properly linked
+- Do NOT use `mklink` (cmd) or Junction (`mklink /J`) — they fail on Google Drive virtual drives
 
 ---
 
