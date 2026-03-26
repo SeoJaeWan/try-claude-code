@@ -1,0 +1,1 @@
+G:/내 드라이브/ClaudeMemory/projects/try-claude-code/CLAUDE.md
