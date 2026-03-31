@@ -28,8 +28,7 @@ frontend / backend
       │  └─ version-utils.mjs
       │
       ├─ docs/
-      │  ├─ help-renderer.mjs
-      │  └─ guide-renderer.mjs
+      │  └─ help-renderer.mjs
       │
       ├─ execution/
       │  ├─ spec-parser.mjs
@@ -64,27 +63,11 @@ run-cli
       ├─ resolveActiveProfile
       ├─ (mode set 상태면) loadActiveProfile
       ├─ createHelpPayload
-      ├─ renderHelpText (text 모드일 때만)
       └─ formatOutput
 ```
 
 - top-level `frontend --help`와 `backend --help`는 mode unset 상태에서도 동작한다.
 - command-scoped `frontend component --help`와 `backend module --help`는 mode unset이면 `ACTIVE_PROFILE_NOT_SET`으로 실패한다.
-
-### `guide`
-
-```text
-run-cli
-└─ routeCommand(action=guide)
-   ├─ resolveActiveProfile
-   ├─ loadActiveProfile
-   ├─ createGuidePayload
-   ├─ renderGuideText (기본)
-   └─ formatOutput
-```
-
-- 사람용 설명서 경로다.
-- JSON help와 달리 목적, 예시, 출력 경로 같은 guide 메타데이터를 보여준다.
 
 ### `mode show` / `mode set`
 
@@ -187,8 +170,8 @@ run-cli
 | File | 주 호출자 | 언제 사용되나 | 역할 |
 | --- | --- | --- | --- |
 | `run-cli.mjs` | `src/run-cli.mjs`, wrapper bin | 모든 명령 시작점 | 전체 orchestration, handler 분기, 출력/에러 처리 |
-| `arg-parser.mjs` | `run-cli.mjs`, `command-router.mjs`, `spec-parser.mjs` | argv를 처음 읽을 때 | `--text`, `--json`, positional을 구조화하고 첫 command를 camelCase로 정규화 |
-| `command-router.mjs` | `run-cli.mjs` | parse 직후 | alias와 argv shape를 보고 `help/guide/mode/validate/batch/execute` action으로 라우팅 |
+| `arg-parser.mjs` | `run-cli.mjs`, `command-router.mjs`, `spec-parser.mjs` | argv를 처음 읽을 때 | `--json`, positional을 구조화하고 첫 command를 camelCase로 정규화 |
+| `command-router.mjs` | `run-cli.mjs` | parse 직후 | alias와 argv shape를 보고 `help/mode/validate/batch/execute` action으로 라우팅 |
 | `spec-parser.mjs` | `run-cli.mjs` | `execute`, `batch`, `validate-file` 진입 시 | `--json` spec, `batch.ops[]`, `validate-file <directory>`를 contract 형태로 파싱 |
 
 ### 2. Profile / Mode / Source-of-Truth
@@ -198,15 +181,14 @@ run-cli
 | `config-store.mjs` | `mode-resolver.mjs`, `run-cli.mjs` | mode show/set 시 | global config 읽기/쓰기 |
 | `mode-resolver.mjs` | `run-cli.mjs` | active profile이 필요한 거의 모든 명령 | 현재 global selection을 읽어 `mode/version`을 반환 |
 | `profile-registry.mjs` | `run-cli.mjs`, `profile-loader.mjs` | `mode set`, remote profile fetch 시 | mode/version 정규화와 remote GitHub raw resource fetch 담당 |
-| `profile-loader.mjs` | `run-cli.mjs`, tests | help/guide/generate/validate 실행 전, `mode set` 검증 시 | profile.json + extends chain + template 경로를 합쳐 완성된 active profile 로드 |
+| `profile-loader.mjs` | `run-cli.mjs`, tests | help/generate/validate 실행 전, `mode set` 검증 시 | profile.json + extends chain + template 경로를 합쳐 완성된 active profile 로드 |
 | `version-utils.mjs` | `config-store.mjs`, `mode-resolver.mjs`, `profile-registry.mjs` | version 처리 전반 | `v1` 형태 강제, legacy exact version 정규화 |
 
 ### 3. Help / Guide / Output
 
 | File | 주 호출자 | 언제 사용되나 | 역할 |
 | --- | --- | --- | --- |
-| `help-renderer.mjs` | `run-cli.mjs` | `--help`, `command --help`, `--help --full` | bootstrap/summary/detail help payload 생성과 text 렌더 |
-| `guide-renderer.mjs` | `run-cli.mjs` | `guide`, `guide <command>` | 사람용 guide payload 생성과 text 렌더 |
+| `help-renderer.mjs` | `run-cli.mjs` | `--help`, `command --help` | bootstrap/summary/detail JSON help payload 생성 |
 | `output.mjs` | `run-cli.mjs` | 성공/실패 응답 직전 | JSON/Text 포맷 결정, `fields` 필터 적용, snippet/file/error를 최종 문자열로 변환 |
 | `error-formatter.mjs` | `run-cli.mjs` | 예외 catch 시 | thrown error를 deterministic error payload로 변환 |
 

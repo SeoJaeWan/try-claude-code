@@ -2,21 +2,8 @@ import { normalizeCommandName } from "./arg-parser.mjs";
 
 const KNOWN_ALIASES = new Set(["frontend", "backend"]);
 
-function normalizeFormat(options) {
-  return options.text ? "text" : "json";
-}
-
-function normalizeGuideFormat(options) {
-  if (options.json === true && options.text !== true) {
-    return "json";
-  }
-
-  return "text";
-}
-
 export function routeCommand(alias, parsed) {
   const [first = ""] = parsed.positionals;
-  const format = normalizeFormat(parsed.options);
 
   if (!KNOWN_ALIASES.has(alias)) {
     const error = new Error(`Unknown alias: ${alias}`);
@@ -36,7 +23,7 @@ export function routeCommand(alias, parsed) {
   if (parsed.options.help || first === "") {
     return {
       action: "help",
-      format,
+      format: "json",
       commandName: first || parsed.options.command || null,
       options: parsed.options
     };
@@ -45,7 +32,7 @@ export function routeCommand(alias, parsed) {
   if (first === "mode") {
     return {
       action: "mode",
-      format,
+      format: "json",
       modeAction: normalizeCommandName(parsed.positionals[1] ?? "") || "show",
       options: parsed.options
     };
@@ -54,7 +41,7 @@ export function routeCommand(alias, parsed) {
   if (first === "validate") {
     return {
       action: "validate",
-      format,
+      format: "json",
       target: normalizeCommandName(parsed.positionals[1] ?? "") || null,
       options: parsed.options
     };
@@ -63,18 +50,9 @@ export function routeCommand(alias, parsed) {
   if (first === "validateFile") {
     return {
       action: "validateFile",
-      format,
+      format: "json",
       commandName: "validateFile",
       extraPositionals: parsed.positionals.slice(1),
-      options: parsed.options
-    };
-  }
-
-  if (first === "guide") {
-    return {
-      action: "guide",
-      format: normalizeGuideFormat(parsed.options),
-      commandName: normalizeCommandName(parsed.positionals[1] ?? "") || null,
       options: parsed.options
     };
   }
@@ -82,7 +60,7 @@ export function routeCommand(alias, parsed) {
   if (first === "batch") {
     return {
       action: "batch",
-      format,
+      format: "json",
       commandName: "batch",
       extraPositionals: parsed.positionals.slice(1),
       options: parsed.options
@@ -91,7 +69,7 @@ export function routeCommand(alias, parsed) {
 
   return {
     action: "execute",
-    format,
+    format: "json",
     commandName: first,
     extraPositionals: parsed.positionals.slice(1),
     options: parsed.options

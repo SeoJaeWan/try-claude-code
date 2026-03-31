@@ -17,7 +17,7 @@ Expert backend development workflow.
 
 ## Never develop backend modules without backend
 
-All module, entity, and DTO conventions — directory structure, naming, decorator patterns, dependency injection rules — are defined in the `backend` CLI. Without `backend` you are guessing at conventions, and guesses are wrong. Read `backend help --text` first, scaffold with `backend <command> --apply`, and always run `backend validate-file` on every created/modified file when you are done. Fix any violations and re-validate until all pass.
+All module, entity, and DTO conventions — directory structure, naming, decorator patterns, dependency injection rules — are defined in the `backend` CLI. Without `backend` you are guessing at conventions, and guesses are wrong. Read `backend --help` (JSON) or `backend <command> --help` for command-scoped contract first, scaffold with `backend <command> --apply`, and always run `backend validate-file` on every created/modified file when you are done. Fix any violations and re-validate until all pass.
 
 ---
 

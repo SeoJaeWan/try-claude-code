@@ -182,13 +182,6 @@ backend --help
 에이전트가 매 작업마다 top-level `--help`에서 모든 contract를 읽을 필요는 없다.
 top-level help는 명령 탐색, whenToUse, relatedCommands, flow discovery만 제공한다.
 
-```bash
-frontend component --help --text
-frontend hook --help --text
-frontend apiHook --help --text
-backend module --help --text
-```
-
 구조화된 상세 contract가 실제로 필요할 때만 command-scoped JSON help를 읽는다.
 
 ```bash
@@ -198,25 +191,6 @@ backend requestDto --help
 ```
 
 top-level `frontend --help`, `backend --help`는 command discovery나 전체 contract audit가 필요할 때만 사용한다.
-
-전체 command contract audit가 필요하면 `--full`을 사용한다.
-
-```bash
-frontend --help --full
-backend --help --full
-```
-
-사람용 가이드는 별도 `guide` 명령으로 본다.
-
-```bash
-frontend guide
-backend guide
-frontend guide component
-frontend guide hook
-```
-
-`guide`의 source of truth도 profile 안의 `guide` 속성이다.
-즉 machine rule과 human guide를 같은 `profile.json` 안에서 함께 관리한다.
 
 ## Execution Model
 
