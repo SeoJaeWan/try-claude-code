@@ -4,8 +4,7 @@ import { routeCommand } from "./cli/command-router.mjs";
 import { writeProfileSelection } from "./profiles/config-store.mjs";
 import { errorToPayload } from "./cli/error-formatter.mjs";
 import { writeGeneratedFiles } from "./execution/file-writer.mjs";
-import { createGuidePayload, renderGuideText } from "./docs/guide-renderer.mjs";
-import { createHelpPayload, renderHelpText } from "./docs/help-renderer.mjs";
+import { createHelpPayload } from "./docs/help-renderer.mjs";
 import { resolveActiveProfile } from "./profiles/mode-resolver.mjs";
 import { formatOutput } from "./cli/output.mjs";
 import { findProjectRoot } from "./shared/path-utils.mjs";
@@ -133,7 +132,6 @@ async function handleModeCommand({ alias, route }) {
     assertAllowedOptions(
       route.options,
       new Set([
-        "text",
         "fields"
       ]),
       "mode show"
@@ -169,7 +167,6 @@ async function handleModeCommand({ alias, route }) {
   assertAllowedOptions(
     route.options,
     new Set([
-      "text",
       "fields",
       "mode",
       "version"
@@ -287,59 +284,12 @@ async function handleHelpCommand({ alias, route }) {
     assertCommandExists(profile, route.commandName);
   }
 
-  const payload = createHelpPayload({
-    alias,
-    activeProfile,
-    profile,
-    commandName: route.commandName,
-    full: Boolean(route.options.full)
-  });
-
-  if (route.format === "text") {
-    return {
-      ok: true,
-      format: "text",
-      payload: renderHelpText(payload)
-    };
-  }
-
-  return payload;
-}
-
-async function handleGuideCommand({ alias, route }) {
-  assertNoProfileOverrideOptions({
-    alias,
-    options: route.options
-  });
-  assertAllowedOptions(
-    route.options,
-    new Set([
-      "text",
-      "json",
-      "fields"
-    ]),
-    "guide"
-  );
-  const { activeProfile, profile } = await resolveProfileContext({
-    alias
-  });
-  assertCommandExists(profile, route.commandName);
-  const payload = createGuidePayload({
+  return createHelpPayload({
     alias,
     activeProfile,
     profile,
     commandName: route.commandName
   });
-
-  if (route.format === "text") {
-    return {
-      ok: true,
-      format: "text",
-      payload: renderGuideText(payload)
-    };
-  }
-
-  return payload;
 }
 
 async function handleGenerateCommand({ alias, route, projectRoot }) {
@@ -415,7 +365,6 @@ async function handleValidateCommand({ alias, route, projectRoot }) {
   assertAllowedOptions(
     route.options,
     new Set([
-      "text",
       "fields",
       "command",
       "name",
@@ -467,7 +416,6 @@ async function handleValidateFileCommand({ alias, route, projectRoot }) {
   assertAllowedOptions(
     route.options,
     new Set([
-      "text",
       "fields"
     ]),
     "validate-file"
@@ -511,11 +459,6 @@ export async function runCli({
         alias,
         route
       });
-    } else if (route.action === "guide") {
-      payload = await handleGuideCommand({
-        alias,
-        route
-      });
     } else if (route.action === "mode") {
       payload = await handleModeCommand({
         alias,
@@ -547,15 +490,14 @@ export async function runCli({
       });
     }
 
-    const output = formatOutput(payload, route.format, route.options.fields);
+    const output = formatOutput(payload, route.options.fields);
     stdout.write(output.text);
     process.exitCode = output.exitCode;
     return output.exitCode;
   } catch (error) {
     const parsed = parseArgv(argv);
-    const format = parsed.options.text ? "text" : "json";
     const payload = errorToPayload(error);
-    const output = formatOutput(payload, format, parsed.options.fields);
+    const output = formatOutput(payload, parsed.options.fields);
     stderr.write(output.text);
     process.exitCode = output.exitCode;
     return output.exitCode;
