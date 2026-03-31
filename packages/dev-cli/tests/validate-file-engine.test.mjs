@@ -17,7 +17,7 @@ export default usePostLogin;
   });
 
   const profile = {
-    id: "frontend/personal/v1",
+    alias: "frontend",
     commands: {
       apiHook: {
         fieldResolvers: [
@@ -111,7 +111,7 @@ export default widget;
   });
 
   const profile = {
-    id: "frontend/personal/v1",
+    alias: "frontend",
     commands: {
       hook: {
         validatorRules: []
@@ -173,7 +173,7 @@ test("validateFiles는 zero-match directory에 hint-rich unsupported error를 �
   });
 
   const profile = {
-    id: "frontend/personal/v1",
+    alias: "frontend",
     commands: {
       validateFile: {
         unsupportedTargetMessage: "Publisher validate-file only supports declared component/page entry files.",
@@ -225,7 +225,7 @@ export default Page;
   await assert.rejects(
     () => validateFiles({
       profile: {
-        id: "frontend/personal/v1",
+        alias: "frontend",
         commands: {
           validateFile: {
             targetRules: []

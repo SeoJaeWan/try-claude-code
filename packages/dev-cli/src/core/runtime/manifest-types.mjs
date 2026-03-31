@@ -31,8 +31,7 @@
  * @property {Object.<string, ManifestFlow>} [flows]
  *
  * @typedef {Object} CliManifest
- * @property {string}  id          - e.g. "frontend/personal/v1"
- * @property {string}  alias       - e.g. "frontend"
+ * @property {string}  alias       - e.g. "frontend", "backend"
  * @property {Object.<string, ManifestCommand>} commands
  * @property {Object}  [rules]
  * @property {ManifestHelpSummary} [helpSummary]

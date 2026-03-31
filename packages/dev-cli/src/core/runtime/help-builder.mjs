@@ -126,10 +126,7 @@ export function buildSummaryHelp(manifest) {
     ok: true,
     helpMode: "summary",
     alias: manifest.alias,
-    id: manifest.id ?? null,
-    profileSummary: {
-      summary: manifest.helpSummary?.summary ?? ""
-    },
+    summary: manifest.helpSummary?.summary ?? "",
     flows,
     commands
   };
@@ -160,7 +157,6 @@ export function buildDetailHelp(manifest, commandName) {
     ok: true,
     helpMode: "detail",
     alias: manifest.alias,
-    id: manifest.id ?? null,
     rules: manifest.rules ?? {},
     commands
   };

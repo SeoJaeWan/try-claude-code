@@ -128,8 +128,7 @@ async function handleExecute({ manifest, route, projectRoot }) {
   assertCommandExists(manifest, route.commandName);
   const spec = parseCommandSpec(route);
   const result = await executeSpecCommand({
-    profile: manifest,
-    profileId: manifest.id ?? manifest.alias,
+    manifest,
     commandName: route.commandName,
     spec,
     projectRoot

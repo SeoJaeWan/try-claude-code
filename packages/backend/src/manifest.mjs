@@ -4,8 +4,6 @@
  * Backend package-owned CliManifest.
  *
  * This is the single source of truth for the backend command catalog.
- * It replaces the legacy profiles/backend/personal/v1/profile.json path.
- *
  * Template paths are resolved relative to this file using import.meta.url
  * so that the published package works correctly regardless of where it is
  * installed.
@@ -22,11 +20,10 @@ function t(relativePath) {
 
 /** @type {import("@seojaewan/dev-cli-core").CliManifest} */
 export const manifest = {
-  id: "backend/personal/v1",
   alias: "backend",
 
   helpSummary: {
-    summary: "Backend personal v1 rules for Spring Boot file generation.",
+    summary: "Backend rules for Spring Boot file generation.",
     flows: {
       "create-spring-feature": {
         title: "Create a Spring feature package",

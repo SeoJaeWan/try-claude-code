@@ -38,9 +38,9 @@ function createViolation(code, message, details = {}, suggestion) {
 function createValidationProfileConfigError(profile, validateCommand) {
   throw createCliError(
     "VALIDATION_PROFILE_CONFIG_ERROR",
-    "validate-file target rules are missing or invalid for the active profile.",
+    "validate-file target rules are missing or invalid for this manifest.",
     {
-      profileId: profile.id,
+      alias: profile.alias,
       command: "validate-file",
       targetRules: validateCommand?.targetRules ?? null
     }
