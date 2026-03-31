@@ -1,67 +1,35 @@
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import os from "node:os";
-import { cp, mkdtemp, mkdir, writeFile } from "node:fs/promises";
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 
-import { loadActiveProfile } from "../src/core/profiles/profile-loader.mjs";
+import { manifest as frontendManifest } from "../../frontend/src/manifest.mjs";
+import { manifest as backendManifest } from "../../backend/src/manifest.mjs";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 
 export const projectRoot = path.resolve(currentDir, "..", "..", "..");
 export const frontendBin = path.join(projectRoot, "packages", "frontend", "bin", "frontend.mjs");
 export const backendBin = path.join(projectRoot, "packages", "backend", "bin", "backend.mjs");
-const fetchFixtureLoader = pathToFileURL(
-  path.join(currentDir, "test-fetch-fixture-loader.mjs")
-).href;
-const defaultConfiguredHome = mkdtempSync(path.join(os.tmpdir(), "dev-cli-home-"));
-
-mkdirSync(defaultConfiguredHome, { recursive: true });
-writeFileSync(
-  path.join(defaultConfiguredHome, ".try-claude-dev-cli.json"),
-  `${JSON.stringify({
-    profiles: {
-      frontend: {
-        mode: "personal",
-        version: "v1"
-      },
-      backend: {
-        mode: "personal",
-        version: "v1"
-      }
-    }
-  }, null, 2)}\n`,
-  "utf8"
-);
 
 export function createCliEnv(additional = {}) {
   const currentNodeOptions = process.env.NODE_OPTIONS ?? "";
-  const importOption = `--import "${fetchFixtureLoader}"`;
-  const homeDirectory = additional.HOME ?? additional.USERPROFILE ?? defaultConfiguredHome;
 
   return {
     ...process.env,
-    NODE_OPTIONS: currentNodeOptions.includes(importOption)
-      ? currentNodeOptions
-      : `${currentNodeOptions} ${importOption}`.trim(),
-    HOME: homeDirectory,
-    USERPROFILE: homeDirectory,
+    NODE_OPTIONS: currentNodeOptions,
     ...additional
   };
 }
 
 export function runCli(binPath, argv, options = {}) {
   const { env, cwd = projectRoot, ...restOptions } = options;
-  const defaultProfileRoot = existsSync(path.join(cwd, "profiles"))
-    ? cwd
-    : projectRoot;
 
   return spawnSync(process.execPath, [binPath, ...argv], {
     cwd,
     encoding: "utf8",
     env: createCliEnv({
-      TRY_CLAUDE_TEST_PROFILE_ROOT: env?.TRY_CLAUDE_TEST_PROFILE_ROOT ?? defaultProfileRoot,
       ...env
     }),
     ...restOptions
@@ -86,55 +54,33 @@ export async function createTempHome(config = null) {
   return tempHome;
 }
 
-export async function loadProfile(alias, mode = "personal", version = "v1") {
-  const { profile } = await loadActiveProfile({
-    alias,
-    mode,
-    version,
-    localProfileRoot: projectRoot
-  });
+/**
+ * Load a package-owned manifest by alias.
+ * Replaces the old profile-loader-based loadProfile helper.
+ */
+export function loadManifest(alias) {
+  if (alias === "frontend") {
+    return frontendManifest;
+  }
 
-  return profile;
+  if (alias === "backend") {
+    return backendManifest;
+  }
+
+  throw new Error(`Unknown alias for loadManifest: ${alias}`);
 }
 
-async function writeRepoFile(projectRoot, relativePath, content) {
-  const filePath = path.join(projectRoot, ...relativePath.split("/"));
+async function writeRepoFile(repoRoot, relativePath, content) {
+  const filePath = path.join(repoRoot, ...relativePath.split("/"));
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, content, "utf8");
 }
 
-async function copyProfileTree(tempRoot, profileId) {
-  const source = path.join(projectRoot, "profiles", ...profileId.split("/"));
-  const target = path.join(tempRoot, "profiles", ...profileId.split("/"));
-  await mkdir(path.dirname(target), { recursive: true });
-  await cp(source, target, {
-    recursive: true
-  });
-}
-
 export async function createTempRepo({
   files = {},
-  profiles = ["shared/personal/v1", "frontend/personal/v1"],
   tsconfig
 } = {}) {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-validate-"));
-
-  for (const profileId of profiles) {
-    await copyProfileTree(tempRoot, profileId);
-  }
-
-  await writeRepoFile(
-    tempRoot,
-    "profiles/registry.json",
-    `${JSON.stringify({
-      frontend: {
-        personal: ["v1"]
-      },
-      backend: {
-        personal: ["v1"]
-      }
-    }, null, 2)}\n`
-  );
 
   if (tsconfig) {
     await writeRepoFile(

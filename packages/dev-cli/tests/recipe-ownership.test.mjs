@@ -1,21 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
 
 import { normalizeSpec, renderSnippet } from "../src/core/execution/spec-normalizer.mjs";
-import { validateRequest } from "../src/core/validation/profile-validator.mjs";
-import { loadActiveProfile } from "../src/core/profiles/profile-loader.mjs";
-import { loadProfile, projectRoot } from "./test-utils.mjs";
+import { validateRequest } from "../src/core/validation/command-validator.mjs";
+import { loadManifest, projectRoot } from "./test-utils.mjs";
 
 function cloneCommand(command) {
   return JSON.parse(JSON.stringify(command));
 }
 
-test("internalHandlerPrefix를 바꾸면 function 정규화 결과가 바뀐다", async () => {
-  const profile = await loadProfile("frontend");
-  const command = cloneCommand(profile.commands.function);
+test("internalHandlerPrefix를 바꾸면 function 정규화 결과가 바뀐다", () => {
+  const manifest = loadManifest("frontend");
+  const command = cloneCommand(manifest.commands.function);
 
   command.name = "function";
   command.namingPolicy.prefixes.internalHandler = "perform";
@@ -31,9 +27,9 @@ test("internalHandlerPrefix를 바꾸면 function 정규화 결과가 바뀐다"
   assert.equal(result.normalizedSpec.name, "performClick");
 });
 
-test("propCallbackPrefix를 바꾸면 props callback 이름이 바뀐다", async () => {
-  const profile = await loadProfile("frontend");
-  const command = cloneCommand(profile.commands.props);
+test("propCallbackPrefix를 바꾸면 props callback 이름이 바뀐다", () => {
+  const manifest = loadManifest("frontend");
+  const command = cloneCommand(manifest.commands.props);
 
   command.name = "props";
   command.namingPolicy.prefixes.propCallback = "emit";
@@ -54,9 +50,9 @@ test("propCallbackPrefix를 바꾸면 props callback 이름이 바뀐다", async
   assert.equal(result.normalizedSpec.members[0].name, "emitClick");
 });
 
-test("hookPrefix를 바꾸면 hook 정규화 결과가 바뀐다", async () => {
-  const profile = await loadProfile("frontend");
-  const command = cloneCommand(profile.commands.hook);
+test("hookPrefix를 바꾸면 hook 정규화 결과가 바뀐다", () => {
+  const manifest = loadManifest("frontend");
+  const command = cloneCommand(manifest.commands.hook);
 
   command.name = "hook";
   command.namingPolicy.prefixes.hook = "load";
@@ -73,8 +69,8 @@ test("hookPrefix를 바꾸면 hook 정규화 결과가 바뀐다", async () => {
 });
 
 test("queryKey recipe를 바꾸면 snippet output이 바뀐다", async () => {
-  const profile = await loadProfile("frontend");
-  const command = cloneCommand(profile.commands.queryKey);
+  const manifest = loadManifest("frontend");
+  const command = cloneCommand(manifest.commands.queryKey);
 
   command.name = "queryKey";
   command.namingPolicy.suffixes.queryKeyFunction = "CacheKey";
@@ -96,8 +92,8 @@ test("queryKey recipe를 바꾸면 snippet output이 바뀐다", async () => {
 });
 
 test("endpoint recipe를 바꾸면 snippet output이 바뀐다", async () => {
-  const profile = await loadProfile("frontend");
-  const command = cloneCommand(profile.commands.endpoint);
+  const manifest = loadManifest("frontend");
+  const command = cloneCommand(manifest.commands.endpoint);
 
   command.name = "endpoint";
   command.namingPolicy = {
@@ -124,8 +120,8 @@ test("endpoint recipe를 바꾸면 snippet output이 바뀐다", async () => {
 });
 
 test("mapper recipe를 바꾸면 snippet output이 바뀐다", async () => {
-  const profile = await loadProfile("frontend");
-  const command = cloneCommand(profile.commands.mapper);
+  const manifest = loadManifest("frontend");
+  const command = cloneCommand(manifest.commands.mapper);
 
   command.name = "mapper";
   command.namingPolicy.prefixes.mapper = "build";
@@ -146,77 +142,9 @@ test("mapper recipe를 바꾸면 snippet output이 바뀐다", async () => {
   assert.match(snippet.code, /buildProductResponseIntoProductViewModel/);
 });
 
-test("shared 기본 recipe는 역할 profile에서 command 단위로 override할 수 있다", async () => {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-profile-override-"));
-
-  await mkdir(path.join(tempRoot, "profiles", "shared", "personal", "v1"), {
-    recursive: true
-  });
-  await mkdir(path.join(tempRoot, "profiles", "frontend", "personal", "v1"), {
-    recursive: true
-  });
-  await writeFile(
-    path.join(tempRoot, "profiles", "registry.json"),
-    `${JSON.stringify({
-      frontend: {
-        personal: ["v1"]
-      }
-    }, null, 2)}\n`,
-    "utf8"
-  );
-
-  await writeFile(
-    path.join(tempRoot, "profiles", "shared", "personal", "v1", "profile.json"),
-    `${JSON.stringify({
-      id: "shared/personal/v1",
-      extends: [],
-      commands: {
-        function: {
-          namingPolicy: {
-            prefixes: {
-              internalHandler: "handle"
-            }
-          }
-        }
-      }
-    }, null, 2)}\n`,
-    "utf8"
-  );
-
-  await writeFile(
-    path.join(tempRoot, "profiles", "frontend", "personal", "v1", "profile.json"),
-    `${JSON.stringify({
-      id: "frontend/personal/v1",
-      extends: ["shared/personal/v1"],
-      commands: {
-        function: {
-          namingPolicy: {
-            prefixes: {
-              internalHandler: "commit"
-            }
-          }
-        }
-      }
-    }, null, 2)}\n`,
-    "utf8"
-  );
-
-  const { profile } = await loadActiveProfile({
-    alias: "frontend",
-    mode: "personal",
-    version: "v1",
-    localProfileRoot: tempRoot
-  });
-
-  assert.equal(
-    profile.commands.function.namingPolicy.prefixes.internalHandler,
-    "commit"
-  );
-});
-
-test("validator는 alias hardcode가 아니라 profile data를 읽는다", async () => {
-  const profile = await loadProfile("frontend");
-  const componentCommand = cloneCommand(profile.commands.component);
+test("validator는 alias hardcode가 아니라 manifest data를 읽는다", async () => {
+  const manifest = loadManifest("frontend");
+  const componentCommand = cloneCommand(manifest.commands.component);
 
   componentCommand.name = "component";
   componentCommand.validatorRules = [
@@ -237,16 +165,16 @@ test("validator는 alias hardcode가 아니라 profile data를 읽는다", async
     }
   ];
 
-  const customProfile = {
-    ...profile,
+  const customManifest = {
+    ...manifest,
     commands: {
-      ...profile.commands,
+      ...manifest.commands,
       component: componentCommand
     }
   };
 
   const checks = await validateRequest({
-    profile: customProfile,
+    profile: customManifest,
     commandName: "component",
     args: {
       name: "HomePage",
@@ -266,7 +194,7 @@ test("validator는 alias hardcode가 아니라 profile data를 읽는다", async
   await assert.rejects(
     () =>
       validateRequest({
-        profile: customProfile,
+        profile: customManifest,
         commandName: "component",
         args: {
           name: "HomePage",

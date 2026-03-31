@@ -2,14 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { executeSpecCommand } from "../src/core/execution/batch-executor.mjs";
-import { loadProfile, projectRoot } from "./test-utils.mjs";
+import { loadManifest, projectRoot } from "./test-utils.mjs";
 
 test("executeSpecCommand은 유효한 spec으로 ok:true 결과를 반환한다", async () => {
-  const profile = await loadProfile("frontend");
+  const manifest = loadManifest("frontend");
 
   const result = await executeSpecCommand({
-    profile,
-    profileId: profile.id,
+    profile: manifest,
+    profileId: manifest.id,
     commandName: "component",
     spec: {
       name: "HomePage",
@@ -25,13 +25,13 @@ test("executeSpecCommand은 유효한 spec으로 ok:true 결과를 반환한다"
 });
 
 test("executeSpecCommand은 알 수 없는 command에 UNKNOWN_COMMAND 오류를 반환한다", async () => {
-  const profile = await loadProfile("frontend");
+  const manifest = loadManifest("frontend");
 
   await assert.rejects(
     () =>
       executeSpecCommand({
-        profile,
-        profileId: profile.id,
+        profile: manifest,
+        profileId: manifest.id,
         commandName: "batch",
         spec: { ops: [] },
         projectRoot
@@ -41,11 +41,11 @@ test("executeSpecCommand은 알 수 없는 command에 UNKNOWN_COMMAND 오류를 
 });
 
 test("executeSpecCommand은 snippet 실행 command에 snippet result를 반환한다", async () => {
-  const profile = await loadProfile("frontend");
+  const manifest = loadManifest("frontend");
 
   const result = await executeSpecCommand({
-    profile,
-    profileId: profile.id,
+    profile: manifest,
+    profileId: manifest.id,
     commandName: "function",
     spec: {
       kind: "internalHandler",
