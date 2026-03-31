@@ -29,23 +29,23 @@ test("legacy help subcommand 문법은 일반 unknown command로 실패한다", 
   assert.equal(payload.error.details.command, "help");
 });
 
-test("frontend guide는 제거된 명령으로 JSON_SPEC_REQUIRED로 실패한다", () => {
+test("frontend guide는 manifest에 없으므로 UNKNOWN_COMMAND로 실패한다", () => {
   const result = runCli(frontendBin, ["guide"]);
 
   assert.equal(result.status, 1);
   const payload = readJson(result.stderr);
   assert.equal(payload.ok, false);
-  assert.equal(payload.error.code, "JSON_SPEC_REQUIRED");
+  assert.equal(payload.error.code, "UNKNOWN_COMMAND");
 });
 
-test("frontend guide component는 positional spec 입력을 거부한다", () => {
+test("frontend guide component는 manifest에 없으므로 UNKNOWN_COMMAND로 실패한다", () => {
+  // manifest dispatcher routes "guide" as execute → command not found
   const result = runCli(frontendBin, ["guide", "component"]);
 
   assert.equal(result.status, 1);
   const payload = readJson(result.stderr);
   assert.equal(payload.ok, false);
-  assert.equal(payload.error.code, "JSON_SPEC_REQUIRED");
-  assert.equal(payload.error.details.command, "guide");
+  assert.equal(payload.error.code, "UNKNOWN_COMMAND");
 });
 
 test("frontend --help --text는 제거된 옵션으로 UNKNOWN_OPTION으로 실패한다", () => {
