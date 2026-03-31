@@ -16,9 +16,9 @@
 
 1. wrapper package가 `runCli("frontend")` 또는 `runCli("backend")`를 호출한다.
 2. `arg-parser`가 `argv`를 `options`와 `positionals`로 분리한다.
-3. `command-router`가 action을 `help`, `guide`, `mode`, `batch`, `validate`, `validateFile`, `execute` 중 하나로 결정한다.
+3. `command-router`가 action을 `help`, `mode`, `batch`, `validate`, `validateFile`, `execute` 중 하나로 결정한다.
 4. `mode-resolver`와 `profile-loader`가 active profile과 template payload를 로드한다.
-5. `help-renderer` 또는 `guide-renderer`가 문서성 응답을 만들거나, 실행 계층이 spec을 해석한다.
+5. `help-renderer`가 JSON help 응답을 만들거나, 실행 계층이 spec을 해석한다.
 6. 실행 경로에서는 `spec-parser` -> `spec-normalizer` -> `command-args-resolver` -> `render-context` -> `template-engine` -> `file-generator` 순서로 파일 또는 snippet이 생성된다.
 7. `profile-validator`가 command 단위 규칙을 검사하고, `validate-file`은 생성 후 파일 시스템 기준 정적 검사를 수행한다.
 8. `output`이 JSON 또는 text를 렌더링하고, `error-formatter`가 실패를 안정적인 error envelope로 바꾼다.
@@ -30,7 +30,7 @@
 | `src/run-cli.mjs` | 외부 공개용 얇은 entry wrapper |
 | `src/core/cli/*` | CLI parsing, routing, output formatting |
 | `src/core/profiles/*` | mode/config/cache/profile loading |
-| `src/core/docs/*` | help/guide payload 및 text rendering |
+| `src/core/docs/*` | help payload 생성 |
 | `src/core/execution/*` | spec parsing, normalization, rendering, batch, file generation |
 | `src/core/validation/*` | command-level validation, directory/file-level validation |
 | `src/core/shared/*` | naming/path/pattern/error/default 유틸 |
@@ -48,8 +48,8 @@
 
 | 파일 | 주요 역할 | 사용 목적 | 주요 의존성 |
 | --- | --- | --- | --- |
-| `src/core/cli/arg-parser.mjs` | raw argv 파싱 | `--json`, `--text`, `--mode` 같은 옵션과 positional command를 분리한다. 첫 command를 camelCase로 바꿔 내부 command key와 맞춘다. | 없음 |
-| `src/core/cli/command-router.mjs` | action routing | 파싱 결과를 `help`, `guide`, `mode`, `validate`, `validateFile`, `batch`, `execute`로 분기한다. alias가 현재 지원 집합인지도 여기서 검사한다. | `arg-parser.mjs`의 command name normalization |
+| `src/core/cli/arg-parser.mjs` | raw argv 파싱 | `--json`, `--mode` 같은 옵션과 positional command를 분리한다. 첫 command를 camelCase로 바꿔 내부 command key와 맞춘다. | 없음 |
+| `src/core/cli/command-router.mjs` | action routing | 파싱 결과를 `help`, `mode`, `validate`, `validateFile`, `batch`, `execute`로 분기한다. alias가 현재 지원 집합인지도 여기서 검사한다. | `arg-parser.mjs`의 command name normalization |
 | `src/core/cli/error-formatter.mjs` | error envelope 생성 | 예외를 `{ ok: false, error: { code, message, details } }` 구조로 바꾼다. CLI contract를 deterministic하게 유지하는 목적이다. | 없음 |
 | `src/core/cli/output.mjs` | final output renderer | payload를 JSON 또는 text로 바꾼다. snippet이면 code만, file generation이면 path 목록만, error면 사람이 읽기 쉬운 text를 출력한다. | 없음 |
 
@@ -57,7 +57,7 @@
 
 | 파일 | 주요 역할 | 사용 목적 | 주요 의존성 |
 | --- | --- | --- | --- |
-| `src/core/run-cli.mjs` | main application service | 실제 CLI 제어 흐름의 중심이다. option whitelist, mode command, active profile 확인, help/guide, generate, batch, validate, validate-file, output, error handling까지 전부 조립한다. | `cli/*`, `profiles/*`, `docs/*`, `execution/*`, `validation/*`, `shared/*` |
+| `src/core/run-cli.mjs` | main application service | 실제 CLI 제어 흐름의 중심이다. option whitelist, mode command, active profile 확인, help, generate, batch, validate, validate-file, output, error handling까지 전부 조립한다. | `cli/*`, `profiles/*`, `docs/*`, `execution/*`, `validation/*`, `shared/*` |
 
 `src/core/run-cli.mjs`의 내부 책임은 크게 여섯 묶음이다.
 
@@ -76,7 +76,7 @@
 | `src/core/profiles/mode-resolver.mjs` | active mode 조회 | 현재 alias의 active selection을 global config에서 해석한다. repo-local pin은 보지 않고 global selection만 사용한다. | `config-store.mjs`, `version-utils.mjs` |
 | `src/core/profiles/profile-cache.mjs` | snapshot cache I/O | remote에서 받아온 resolved profile snapshot을 홈 캐시에 저장하고 재사용한다. 오프라인 help와 실행이 가능한 이유가 여기 있다. | Node fs/os/path |
 | `src/core/profiles/profile-registry.mjs` | remote resource access | raw GitHub의 profile resource를 읽는다. mode/version 정규화와 remote JSON/text fetch error mapping을 담당한다. | `recipe-utils.mjs`, `version-utils.mjs`, `fetch` |
-| `src/core/profiles/profile-loader.mjs` | profile composition engine | local/remote profile을 로드하고 `extends` 체인을 합친다. template file path를 local path 또는 remote content로 resolve한다. 현재 profile loading의 핵심 모듈이다. | `profile-registry.mjs`, `profile-cache.mjs`, Node fs/path |
+| `src/core/profiles/profile-loader.mjs` | profile composition engine | local/remote profile을 로드하고 `extends` 체인을 합친다. template file path를 local path 또는 remote content로 resolve한다. 현재 profile loading의 핵심 모듈이다. help/generate/validate 실행 전, `mode set` 검증 시 사용된다. | `profile-registry.mjs`, `profile-cache.mjs`, Node fs/path |
 | `src/core/profiles/version-utils.mjs` | version format guard | `v1` 같은 major version만 허용하고, legacy exact version이 있으면 major만 추출한다. | `recipe-utils.mjs` |
 
 `src/core/profiles/profile-loader.mjs`는 현재 구조에서 특히 중요하다.
@@ -98,8 +98,7 @@
 
 | 파일 | 주요 역할 | 사용 목적 | 주요 의존성 |
 | --- | --- | --- | --- |
-| `src/core/docs/help-renderer.mjs` | help payload/text renderer | bootstrap, summary, detail 세 종류의 help를 만든다. command contract를 외부에 노출하되 template source 같은 내부 필드는 숨긴다. | 없음 |
-| `src/core/docs/guide-renderer.mjs` | guide payload/text renderer | `guide` 명령용 문서성 출력기를 제공한다. command의 guide, examples, output pattern, input requirements를 사람이 읽기 쉽게 구성한다. | 없음 |
+| `src/core/docs/help-renderer.mjs` | help payload renderer | bootstrap, summary, detail 세 종류의 JSON help를 만든다. command contract를 외부에 노출하되 template source 같은 내부 필드는 숨긴다. | 없음 |
 
 `src/core/docs/help-renderer.mjs`는 단순 formatter 이상이다.
 
@@ -107,12 +106,10 @@
   - mode 미설정 상태에서 보여줄 최소 setup 안내를 생성한다.
 - `createSummaryPayload`:
   - command discovery용 요약 help를 만든다.
-  - `whenToUse`, `relatedCommands`, `flowRefs`, `detailHelp`를 포함한다.
+  - `whenToUse`, `relatedCommands`, `flowRefs`를 포함한다.
 - `createDetailPayload`:
   - profile command 전체 계약을 거의 원본에 가깝게 노출한다.
   - template path/content는 `sanitizeCommand`로 제거한다.
-- `renderHelpText`:
-  - JSON과는 별개로 사람이 읽는 요약 text를 만든다.
 
 ### Execution Layer
 
