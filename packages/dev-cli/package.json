@@ -1,6 +1,6 @@
 {
   "name": "@seojaewan/dev-cli-core",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "description": "Manifest-driven runtime for package-owned frontend and backend CLIs.",
   "type": "module",
   "exports": {
