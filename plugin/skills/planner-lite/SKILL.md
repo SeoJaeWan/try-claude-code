@@ -50,6 +50,7 @@ This skill uses manual `git worktree` management: one worktree per task, phase a
 X (base branch — HEAD stays here during execution)
 │
 └── git worktree add -b task-A worktrees/task-A X
+    ├── commit: docs(plan): add plan for task-A        ← plan file (auto)
     ├── commit: feat(auth): implement JWT-based login
     ├── commit: feat(auth): add token refresh middleware
     └── commit: test(auth): add integration tests for login flow
@@ -91,7 +92,20 @@ fi
 git worktree add -b "$TASK_BRANCH" "$WORKTREE_DIR" "$BASE"
 ```
 
-After this step, HEAD is still on `$BASE` in the main repo. The worktree has its own checkout of `$TASK_BRANCH`.
+After creating the worktree, copy the plan file into it and commit as the first commit on the task branch. This ensures the plan is included when the task branch is merged.
+
+```bash
+# Copy the plan file (preserve directory structure)
+PLAN_PATH="plans/{task-name}/plan.md"
+mkdir -p "$WORKTREE_DIR/$(dirname "$PLAN_PATH")"
+cp "$PLAN_PATH" "$WORKTREE_DIR/$PLAN_PATH"
+
+# Commit the plan as the first commit
+git -C "$WORKTREE_DIR" add "$PLAN_PATH"
+git -C "$WORKTREE_DIR" commit -m "docs(plan): add plan for {task-name}"
+```
+
+After this step, HEAD is still on `$BASE` in the main repo. The worktree has its own checkout of `$TASK_BRANCH` with the plan file as the first commit.
 
 ### Step 3. Execute phases
 
