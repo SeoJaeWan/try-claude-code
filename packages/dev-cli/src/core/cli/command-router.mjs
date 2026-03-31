@@ -57,16 +57,6 @@ export function routeCommand(alias, parsed) {
     };
   }
 
-  if (first === "batch") {
-    return {
-      action: "batch",
-      format: "json",
-      commandName: "batch",
-      extraPositionals: parsed.positionals.slice(1),
-      options: parsed.options
-    };
-  }
-
   return {
     action: "execute",
     format: "json",

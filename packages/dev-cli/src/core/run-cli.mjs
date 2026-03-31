@@ -1,5 +1,5 @@
 import { parseArgv } from "./cli/arg-parser.mjs";
-import { executeBatch, executeSpecCommand } from "./execution/batch-executor.mjs";
+import { executeSpecCommand } from "./execution/batch-executor.mjs";
 import { routeCommand } from "./cli/command-router.mjs";
 import { writeProfileSelection } from "./profiles/config-store.mjs";
 import { errorToPayload } from "./cli/error-formatter.mjs";
@@ -13,7 +13,7 @@ import { hydrateProfileSelection } from "./profiles/profile-registry.mjs";
 import { validateRequest } from "./validation/profile-validator.mjs";
 import { validateFiles } from "./validation/validate-file.mjs";
 import { createCliError } from "./shared/recipe-utils.mjs";
-import { parseBatchSpec, parseCommandSpec, parseValidateFileSpec } from "./execution/spec-parser.mjs";
+import { parseCommandSpec, parseValidateFileSpec } from "./execution/spec-parser.mjs";
 
 function createSuccessPayload(payload) {
   return {
@@ -341,31 +341,6 @@ async function handleGenerateCommand({ alias, route, projectRoot }) {
   });
 }
 
-async function handleBatchCommand({ alias, route, projectRoot }) {
-  assertNoProfileOverrideOptions({
-    alias,
-    options: route.options
-  });
-  const { activeProfile, profile } = await resolveProfileContext({
-    alias
-  });
-  const batchSpec = parseBatchSpec(route);
-  const result = await executeBatch({
-    profile,
-    profileId: profile.id,
-    batchSpec,
-    projectRoot,
-    apply: Boolean(route.options.apply),
-    force: Boolean(route.options.force)
-  });
-
-  return createSuccessPayload({
-    alias,
-    activeProfile,
-    ...result
-  });
-}
-
 async function handleValidateCommand({ alias, route, projectRoot }) {
   assertNoProfileOverrideOptions({
     alias,
@@ -481,12 +456,6 @@ export async function runCli({
       });
     } else if (route.action === "validateFile") {
       payload = await handleValidateFileCommand({
-        alias,
-        route,
-        projectRoot
-      });
-    } else if (route.action === "batch") {
-      payload = await handleBatchCommand({
         alias,
         route,
         projectRoot
