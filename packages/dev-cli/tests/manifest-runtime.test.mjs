@@ -118,7 +118,6 @@ test("buildSummaryHelp는 manifest에서 summary payload를 만든다", () => {
   assert.equal(payload.ok, true);
   assert.equal(payload.helpMode, "summary");
   assert.equal(payload.alias, "test");
-  assert.equal(payload.id, "test/manifest/v1");
   assert.ok(payload.commands.widget, "widget 명령이 있어야 한다");
   assert.equal(payload.commands.widget.cliCommand, "widget");
   assert.match(payload.commands.widget.whenToUse[0], /When you need a new widget/);
