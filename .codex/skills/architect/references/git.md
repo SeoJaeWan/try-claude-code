@@ -51,8 +51,7 @@ Closes #123
 ### Format
 
 ```text
-Single-track: {type}/{feature-summary}
-Parallel-track: {type}/{feature-summary}-{track}
+{type}/{feature-summary}
 ```
 
 ### Type Examples

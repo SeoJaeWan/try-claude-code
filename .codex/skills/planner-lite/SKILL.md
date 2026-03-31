@@ -1,6 +1,6 @@
 ---
 name: planner-lite
-description: Deterministic plan orchestrator with per-task worktree isolation, sequential phase commits, and per-phase user approval. Use when executing plan.md artifacts that coordinate multiple agents across sequential or parallel phases. Waits for user confirmation after each phase, and after all phases complete asks user whether to merge — HEAD always stays on the base branch.
+description: Deterministic plan orchestrator with per-task worktree isolation, sequential phase commits, and per-phase user approval. Use when executing a finalized single `plan.md` whose phases must run in order. Waits for user confirmation after each phase, and after all phases complete asks user whether to merge — HEAD always stays on the base branch.
 ---
 
 <Skill_Guide>
@@ -19,13 +19,13 @@ Orchestrate plan.md execution with task-level worktree isolation and commit-base
 
 `Agent(isolation: "worktree")` doesn't support nested Agent calls inside the worktree, so phase-level agent specialization is impossible with it. Using it when planner-lite is already in a worktree also causes nesting (`worktrees/A/worktrees/B`). And `EnterWorktree` has no mid-session exit, making post-work merge impossible.
 
-This skill uses manual `git worktree` management: one worktree per task, phase agents commit sequentially within it, and after completion the worktree is removed while HEAD stays on the base branch. The user is then asked whether to merge. This gives full control over the worktree lifecycle while supporting different specialized agents per phase and safe parallel execution.
+This skill uses manual `git worktree` management: one worktree per task, phase agents commit sequentially within it, and after completion the worktree is removed while HEAD stays on the base branch. The user is then asked whether to merge. This gives full control over the worktree lifecycle while supporting different specialized agents per phase in a strict sequential workflow.
 
 ---
 
 ## Inputs
 
-1. Plan file path (`plans/{task-name}/plan.md` or `plans/{task-name}/plan-{track}.md`)
+1. Plan file path (`plans/{task-name}/plan.md`)
 2. Plan headers:
     - `**Branch:** {task-branch}` — the name for this task's worktree and branch
 3. Phase/task blocks with `- owner_agent: \`{agent-name}\``
@@ -225,53 +225,6 @@ After Step 4, HEAD is still on the base branch. The task branch exists with all 
 
 ---
 
-## Parallel execution
-
-When running multiple tasks (A, B, C) in parallel from the same base branch X, each task runs in a **separate planner-lite session**.
-
-### How it works
-
-Each session independently:
-
-1. Reads its own plan's `**Branch:**` value
-2. Creates its own worktree from the shared base branch X
-3. Dispatches phase agents to its own worktree
-4. Removes worktree and asks user whether to merge (HEAD stays on X)
-
-| Session 1                         | Session 2                         | Session 3                         |
-| --------------------------------- | --------------------------------- | --------------------------------- |
-| HEAD on X                         | HEAD on X                         | HEAD on X                         |
-| worktree: task-A from X           | worktree: task-B from X           | worktree: task-C from X           |
-| Phases → commits                  | Phases → commits                  | Phases → commits                  |
-| Remove worktree → HEAD stays on X | Remove worktree → HEAD stays on X | Remove worktree → HEAD stays on X |
-| Ask user: merge task-A?           | Ask user: merge task-B?           | Ask user: merge task-C?           |
-
-### Isolation guarantees
-
-| Rule                                                    | Why                                                                              |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Each task has its own worktree directory                | Separate directories, separate branches                                          |
-| HEAD stays on X in every session, even after completion | No drift — all tasks branch from the same base, parallel sessions never conflict |
-| No `isolation: "worktree"` in Agent calls               | Prevents nested worktree creation                                                |
-| Each task only commits to its own branch                | No cross-contamination between parallel tasks                                    |
-
-### Final integration
-
-All sessions leave HEAD on X. Each session asks the user whether to merge its task branch. The user can merge immediately, create PRs, or defer:
-
-```bash
-# HEAD is already on X — no checkout needed
-# User chose to merge all three:
-git merge task-A --no-ff -m "merge: task-A into X"
-git merge task-B --no-ff -m "merge: task-B into X"
-git merge task-C --no-ff -m "merge: task-C into X"
-git branch -d task-A task-B task-C
-```
-
-The merge decision is always the user's — planner-lite only asks, never acts without approval.
-
----
-
 ## Validation commands
 
 ```bash
@@ -299,7 +252,7 @@ git rev-parse --abbrev-ref HEAD
 4. Never delete task branches — the user decides when to merge and clean up.
 5. Always verify phase commits and branch before starting the next phase.
 6. Always remove the worktree before asking the user about merge. Never checkout the task branch — HEAD must stay on the base branch.
-7. Never run two planner-lite sessions against the same `**Branch:**` value concurrently.
+7. Never reinterpret one request as multiple plan files or extra workstreams.
 
 </Instructions>
 </Skill_Guide>
