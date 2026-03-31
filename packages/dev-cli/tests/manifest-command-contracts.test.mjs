@@ -27,8 +27,7 @@ test("frontend에서 미등록 command는 UNKNOWN_COMMAND로 deterministic하게
   await assert.rejects(
     () =>
       executeSpecCommand({
-        profile: manifest,
-        profileId: manifest.id,
+        manifest,
         commandName: "batch",
         spec: { ops: [] },
         projectRoot
@@ -43,8 +42,7 @@ test("backend에서 미등록 command는 UNKNOWN_COMMAND로 deterministic하게 
   await assert.rejects(
     () =>
       executeSpecCommand({
-        profile: manifest,
-        profileId: manifest.id,
+        manifest,
         commandName: "batch",
         spec: { ops: [] },
         projectRoot
@@ -59,8 +57,7 @@ test("지원하지 않는 manifest-command 조합은 deterministic error로 실�
   await assert.rejects(
     () =>
       executeSpecCommand({
-        profile: manifest,
-        profileId: manifest.id,
+        manifest,
         commandName: "module",
         spec: {
           name: "Orders",

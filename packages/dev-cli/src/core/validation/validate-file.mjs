@@ -38,9 +38,9 @@ function createViolation(code, message, details = {}, suggestion) {
 function createValidationProfileConfigError(profile, validateCommand) {
   throw createCliError(
     "VALIDATION_PROFILE_CONFIG_ERROR",
-    "validate-file target rules are missing or invalid for the active profile.",
+    "validate-file target rules are missing or invalid for this manifest.",
     {
-      profileId: profile.id,
+      alias: profile.alias,
       command: "validate-file",
       targetRules: validateCommand?.targetRules ?? null
     }
@@ -494,7 +494,7 @@ async function inferValidationTarget(profile, rawFilePath, projectRoot, options 
           ...violations,
           createViolation(
             "UNSUPPORTED_VALIDATION_TARGET",
-            validateCommand.unsupportedTargetMessage ?? "validate-file target is not supported by the active profile.",
+            validateCommand.unsupportedTargetMessage ?? "validate-file target is not supported by this manifest.",
             {
               file: normalizedFilePath
             }
@@ -1397,11 +1397,11 @@ function createUnsupportedDirectoryError(validateCommand, directory) {
   const supportedRoots = collectSupportedRoots(supportedPatterns, exampleDirectories);
   const suggestion = exampleDirectories[0]
     ? `Try validate-file ${exampleDirectories[0]}`
-    : "Try a directory that contains profile-supported entry files.";
+    : "Try a directory that contains manifest-declared entry files.";
 
   throw createCliError(
     "UNSUPPORTED_VALIDATION_TARGET",
-    validateCommand.unsupportedTargetMessage ?? "validate-file target is not supported by the active profile.",
+    validateCommand.unsupportedTargetMessage ?? "validate-file target is not supported by this manifest.",
     {
       directory,
       supportedPatterns,

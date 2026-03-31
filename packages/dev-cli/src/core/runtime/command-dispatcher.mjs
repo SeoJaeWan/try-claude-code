@@ -125,11 +125,15 @@ async function handleHelp({ manifest, route }) {
 }
 
 async function handleExecute({ manifest, route, projectRoot }) {
+  assertAllowedOptions(
+    route.options,
+    new Set(["json", "apply", "force", "fields"]),
+    route.commandName
+  );
   assertCommandExists(manifest, route.commandName);
   const spec = parseCommandSpec(route);
   const result = await executeSpecCommand({
-    profile: manifest,
-    profileId: manifest.id ?? manifest.alias,
+    manifest,
     commandName: route.commandName,
     spec,
     projectRoot

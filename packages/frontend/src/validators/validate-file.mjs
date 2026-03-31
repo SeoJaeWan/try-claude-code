@@ -79,7 +79,7 @@ export const validateFileCommand = {
     kind: "analysis"
   },
   unsupportedTargetMessage:
-    "Frontend validate-file only supports active-profile React page/component entries and hooks declared by the active profile.",
+    "Frontend validate-file only supports React page/component entries and hooks declared in the frontend manifest.",
   targetRules: [
     {
       commandName: "component",
