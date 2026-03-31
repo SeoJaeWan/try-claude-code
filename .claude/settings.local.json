@@ -64,20 +64,8 @@
       "mcp__playwright-test__test_list",
       "mcp__playwright-test__test_run",
       "mcp__playwright-test__browser_generate_locator",
-      "Skill(try-claude-skills:commit)"
-    ]
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}'"
-          }
-        ]
-      }
+      "Skill(try-claude-skills:commit)",
+      "WebFetch(domain:docs.anthropic.com)"
     ]
   }
 }
