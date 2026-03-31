@@ -22,12 +22,29 @@ test("spec-driven command는 --json 입력을 받고 기본적으로 파일 prev
   assert.equal(payload.files[0].status, "planned");
 });
 
-test("legacy positional 입력은 명시적인 JSON spec 오류를 반환한다", () => {
+test("legacy positional 입력은 UNKNOWN_OPTION 또는 JSON_SPEC_REQUIRED 오류를 반환한다", () => {
+  // --path is not an allowed option on execute path; UNKNOWN_OPTION is checked first
   const result = runCli(frontendBin, [
     "component",
     "HomePage",
     "--path",
     "components/common/homePage"
+  ]);
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stderr);
+  assert.equal(payload.ok, false);
+  assert.ok(
+    payload.error.code === "UNKNOWN_OPTION" || payload.error.code === "JSON_SPEC_REQUIRED",
+    `기대: UNKNOWN_OPTION 또는 JSON_SPEC_REQUIRED, 실제: ${payload.error.code}`
+  );
+});
+
+test("legacy positional 입력에서 --json 없이 실행하면 JSON spec 오류를 반환한다", () => {
+  // no unknown options in argv, but no --json either
+  const result = runCli(frontendBin, [
+    "component",
+    "HomePage"
   ]);
 
   assert.equal(result.status, 1);
@@ -141,4 +158,78 @@ test("frontend component는 prefix가 있어도 마지막 components 세그먼�
     payload.files[0].path,
     "src/components/common/reviewCard/index.tsx"
   );
+});
+
+test("제거된 --mode 옵션은 UNKNOWN_OPTION으로 deterministic하게 실패한다", () => {
+  const result = runCli(frontendBin, [
+    "component",
+    "--mode",
+    "personal",
+    "--json",
+    "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}"
+  ]);
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stderr);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.error.code, "UNKNOWN_OPTION");
+});
+
+test("제거된 --version 옵션은 UNKNOWN_OPTION으로 deterministic하게 실패한다", () => {
+  const result = runCli(frontendBin, [
+    "component",
+    "--version",
+    "v2",
+    "--json",
+    "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}"
+  ]);
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stderr);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.error.code, "UNKNOWN_OPTION");
+});
+
+test("제거된 --profile 옵션은 UNKNOWN_OPTION으로 deterministic하게 실패한다", () => {
+  const result = runCli(frontendBin, [
+    "component",
+    "--profile",
+    "personal",
+    "--json",
+    "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}"
+  ]);
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stderr);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.error.code, "UNKNOWN_OPTION");
+});
+
+test("--mode --version --profile 조합도 UNKNOWN_OPTION으로 실패한다", () => {
+  const result = runCli(frontendBin, [
+    "component",
+    "--mode",
+    "personal",
+    "--version",
+    "v2",
+    "--json",
+    "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}"
+  ]);
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stderr);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.error.code, "UNKNOWN_OPTION");
+});
+
+test("execute path는 --json, --apply, --force, --fields를 허용한다", () => {
+  const result = runCli(frontendBin, [
+    "component",
+    "--json",
+    "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}",
+    "--fields",
+    "ok,command"
+  ]);
+
+  assert.equal(result.status, 0);
 });

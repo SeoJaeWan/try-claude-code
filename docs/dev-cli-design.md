@@ -144,9 +144,9 @@ frontend component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common
 frontend component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}" --apply
 ```
 
-## Shared Personal v1
+## Shared Manifest Defaults
 
-`shared/personal/v1`는 `frontend`와 `backend`가 공통으로 사용한다.
+`frontend`와 `backend` manifest가 공통으로 적용하는 기본 규칙:
 
 - path segment: `camelCase`
 - 함수 스타일: 화살표 함수
