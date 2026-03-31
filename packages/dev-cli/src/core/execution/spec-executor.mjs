@@ -9,13 +9,12 @@ function createCliError(code, message, details = {}) {
 }
 
 export async function executeSpecCommand({
-  profile,
-  profileId,
+  manifest,
   commandName,
   spec,
   projectRoot
 }) {
-  const baseCommand = profile.commands?.[commandName];
+  const baseCommand = manifest.commands?.[commandName];
   const command = baseCommand
     ? {
         name: commandName,
@@ -25,7 +24,7 @@ export async function executeSpecCommand({
   if (!command) {
     throw createCliError("UNKNOWN_COMMAND", `Unknown command: ${commandName}`, {
       command: commandName,
-      profile: profileId
+      alias: manifest.alias
     });
   }
 
@@ -43,7 +42,6 @@ export async function executeSpecCommand({
     return {
       ok: true,
       command: commandName,
-      profile: profileId,
       normalizedSpec,
       normalizations,
       result
@@ -51,7 +49,7 @@ export async function executeSpecCommand({
   }
 
   const files = await generateFiles({
-    profile,
+    profile: manifest,
     commandName,
     args: normalizedSpec,
     projectRoot
@@ -60,7 +58,6 @@ export async function executeSpecCommand({
   return {
     ok: true,
     command: commandName,
-    profile: profileId,
     normalizedSpec,
     normalizations,
     files

@@ -4,8 +4,6 @@
  * Frontend package-owned CliManifest.
  *
  * This is the single source of truth for the frontend command catalog.
- * It replaces the legacy profiles/frontend/personal/v1/profile.json path.
- *
  * Template paths are resolved relative to this file using import.meta.url
  * so that the published package works correctly regardless of where it is
  * installed.
@@ -24,12 +22,11 @@ function t(relativePath) {
 
 /** @type {import("@seojaewan/dev-cli-core").CliManifest} */
 export const manifest = {
-  id: "frontend/personal/v1",
   alias: "frontend",
 
   helpSummary: {
     summary:
-      "Frontend personal v1 rules for UI components, interaction state, hooks, API hooks, and frontend snippets.",
+      "Frontend rules for UI components, interaction state, hooks, API hooks, and frontend snippets.",
     flows: {
       "create-component": {
         title: "Create a new UI component",
@@ -676,8 +673,6 @@ export const manifest = {
         "frontend hookReturn --json '{\"values\":[{\"name\":\"product\",\"type\":\"ProductViewModel | null\"}],\"actions\":[{\"name\":\"refetch\",\"type\":\"() => Promise<void>\"}]}'"
       ]
     },
-
-    // ---- shared commands (from shared/personal/v1) ----
 
     type: {
       description: "Render a shared type snippet",
