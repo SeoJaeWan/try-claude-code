@@ -265,6 +265,15 @@ async function handleHelpCommand({ alias, route }) {
     alias,
     options: route.options
   });
+  assertAllowedOptions(
+    route.options,
+    new Set([
+      "help",
+      "command",
+      "fields"
+    ]),
+    "help"
+  );
   const activeProfile = await resolveActiveProfile({
     alias
   });
