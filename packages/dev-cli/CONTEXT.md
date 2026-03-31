@@ -3,10 +3,8 @@
 This CLI is agent-first.
 
 - Default output is JSON.
-- `--text` switches to human-readable output.
-- For low-token agent lookups, prefer command-scoped text help such as `frontend component --help --text`; use top-level `--help` JSON only for command discovery or structured field access.
 - Spec-driven commands accept `--json` only.
-- Human-readable rule guidance is exposed through the `guide` command, not `--help`.
+- For low-token agent lookups, prefer command-scoped JSON help such as `frontend component --help`; use top-level `--help` only for command discovery or structured field access.
 - Preview is the default. `--apply` writes files.
 - `batch` executes ordered ops in one request and writes once at the end.
 - Commands must be deterministic and non-interactive by default.

@@ -13,7 +13,7 @@
 - 대상은 repo 루트의 dev CLI 패키지, `frontend/backend` profile bundle, 이를 참조하는 skill/docs다.
 - 이번 계획은 `shared/personal/v1`, `frontend/personal/v1`, `backend/personal/v1`을 구현 범위로 둔다.
 - CLI는 profile 기반 template/validator/help를 읽고 실제 파일을 생성하거나 `--dry-run`으로 preview해야 한다.
-- `--help` 기본 출력은 JSON이고 `--help --text`는 사람용 렌더링으로 고정한다.
+- `--help` 기본 출력은 JSON이고 `<command> --help`는 command-scoped JSON detail을 반환한다.
 
 ## Out of Scope
 
@@ -97,7 +97,7 @@
   - repo 루트에 `pnpm` workspace bootstrap 파일을 추가한다.
   - `packages/dev-cli` 패키지와 `frontend`, `backend` wrapper 구조를 만든다.
   - command router, profile loader, mode resolver, help renderer, dry-run writer, exit code 정책을 구현한다.
-  - JSON 기본 help, `--text` human renderer, non-interactive 기본값, deterministic error payload, explicit input flags를 contract로 고정한다.
+  - JSON 기본 help, non-interactive 기본값, deterministic error payload, explicit input flags를 contract로 고정한다.
 - 산출물:
   - `package.json`
   - `pnpm-workspace.yaml`
@@ -194,7 +194,7 @@
 ## 종료 기준
 
 - [ ] `frontend`, `backend`가 동일한 core engine 위에서 동작한다.
-- [ ] `--help` 기본 출력이 JSON이고 `--help --text`가 동작한다.
+- [ ] `--help` 기본 출력이 JSON이고 `<command> --help`가 command-scoped JSON detail을 반환한다.
 - [ ] `frontend`, `backend` personal v1 profile이 실제 scaffold와 validator를 제공한다.
 - [ ] `frontend`는 UI shell과 hook/api 규칙을 생성 단계에서 강제한다.
 - [ ] `backend`는 Spring root package 및 feature package baseline을 help/validator에 반영한다.

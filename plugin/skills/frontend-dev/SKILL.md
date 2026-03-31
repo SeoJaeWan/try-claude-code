@@ -20,7 +20,7 @@ Expert frontend workflow — UI components, hooks, state management, and API int
 
 ## Never develop frontend files without frontend
 
-All frontend conventions — component placement, hook structure, naming, import patterns, and test rules — are defined in the `frontend` CLI. Without `frontend` you are guessing at conventions, and guesses are wrong. Read `frontend help --text` first, scaffold with `frontend <command> --apply`, and always run `frontend validate-file` on every created/modified file when you are done. Fix any violations and re-validate until all pass.
+All frontend conventions — component placement, hook structure, naming, import patterns, and test rules — are defined in the `frontend` CLI. Without `frontend` you are guessing at conventions, and guesses are wrong. Read `frontend --help` (JSON) or `frontend <command> --help` for command-scoped contract first, scaffold with `frontend <command> --apply`, and always run `frontend validate-file` on every created/modified file when you are done. Fix any violations and re-validate until all pass.
 
 ---
 
