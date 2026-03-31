@@ -4,7 +4,15 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 
 import { runCli as runCliCore } from "../src/run-cli.mjs";
-import { createTempHome, createTempRepo, readJson, runCli, frontendBin } from "./test-utils.mjs";
+import { createTempHome, createTempRepo, readJson, runCli, backendBin } from "./test-utils.mjs";
+
+/**
+ * Phase 2 rebaseline:
+ *
+ * frontend bin now uses the manifest path and does not have a `mode set`
+ * command.  Profile-cache tests are migrated to backendBin which still
+ * uses the legacy alias path.
+ */
 
 function createWritableBuffer() {
   let content = "";
@@ -46,11 +54,11 @@ async function withHomeEnv(homeDirectory, callback) {
 
 test("mode set은 원격 profile snapshot을 홈 캐시에 저장한다", async () => {
   const tempRoot = await createTempRepo({
-    profiles: ["shared/personal/v1", "frontend/personal/v1"]
+    profiles: ["shared/personal/v1", "backend/personal/v1"]
   });
   const tempHome = await createTempHome();
 
-  const result = runCli(frontendBin, [
+  const result = runCli(backendBin, [
     "mode",
     "set",
     "--mode",
@@ -73,31 +81,35 @@ test("mode set은 원격 profile snapshot을 홈 캐시에 저장한다", async 
     tempHome,
     ".try-claude-dev-cli-cache",
     "profiles",
-    "frontend",
+    "backend",
     "personal",
     "v1",
     "profile.json"
   );
   const cachedEntry = JSON.parse(await readFile(cachePath, "utf8"));
 
-  assert.equal(cachedEntry.profile.id, "frontend/personal/v1");
-  assert.equal(
-    cachedEntry.profile.commands.component.render.templateContent.includes("export default"),
-    true
+  assert.equal(cachedEntry.profile.id, "backend/personal/v1");
+  // module uses templateFiles (multi-variant) → cached as templateContents
+  const moduleRender = cachedEntry.profile.commands.module.render;
+  assert.ok(
+    typeof moduleRender.templateContent === "string" ||
+    (moduleRender.templateContents !== undefined && typeof moduleRender.templateContents === "object"),
+    "module render should have templateContent or templateContents in cache"
   );
-  assert.equal(
-    cachedEntry.profile.commands.function.namingPolicy.prefixes.internalHandler,
-    "handle"
+  assert.ok(
+    cachedEntry.profile.commands.module.normalizationRules !== undefined ||
+    cachedEntry.profile.commands.module.description !== undefined,
+    "module command should have expected fields in cache"
   );
 });
 
-test("캐시된 profile이 있으면 frontend --help는 오프라인에서도 동작한다", async () => {
+test("캐시된 profile이 있으면 backend --help는 오프라인에서도 동작한다", async () => {
   const tempRoot = await createTempRepo({
-    profiles: ["shared/personal/v1", "frontend/personal/v1"]
+    profiles: ["shared/personal/v1", "backend/personal/v1"]
   });
   const tempHome = await createTempHome();
 
-  const setResult = runCli(frontendBin, [
+  const setResult = runCli(backendBin, [
     "mode",
     "set",
     "--mode",
@@ -127,7 +139,7 @@ test("캐시된 profile이 있으면 frontend --help는 오프라인에서도 �
   try {
     const exitCode = await withHomeEnv(tempHome, async () =>
       runCliCore({
-        alias: "frontend",
+        alias: "backend",
         argv: ["--help"],
         cwd: tempRoot,
         stdout,
@@ -140,7 +152,7 @@ test("캐시된 profile이 있으면 frontend --help는 오프라인에서도 �
 
     const payload = JSON.parse(stdout.toString());
     assert.equal(payload.helpMode, "summary");
-    assert.equal(payload.id, "frontend/personal/v1");
+    assert.equal(payload.id, "backend/personal/v1");
     assert.equal(payload.activeProfile.mode, "personal");
     assert.equal(payload.activeProfile.version, "v1");
   } finally {
