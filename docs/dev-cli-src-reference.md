@@ -65,7 +65,7 @@
 
 | 파일 | 주요 역할 | 사용 목적 | 주요 의존성 |
 | --- | --- | --- | --- |
-| `batch-executor.mjs` | execution coordinator | 단일 command 실행을 조정한다. `executeSpecCommand`이 중심이다. | `file-generator.mjs`, `file-writer.mjs`, `spec-normalizer.mjs` |
+| `spec-executor.mjs` | execution coordinator | 단일 command 실행을 조정한다. `executeSpecCommand`이 중심이다. | `file-generator.mjs`, `file-writer.mjs`, `spec-normalizer.mjs` |
 | `command-args-resolver.mjs` | derived arg resolver | command의 `fieldResolvers`를 실행해 누락된 field를 채운다. path capture, file name, parent segment, prefix map, detector 기반 필드 유도에 사용된다. | `path-utils.mjs`, `recipe-utils.mjs`, `path-patterns.mjs`, `validators/backend-utils.mjs` |
 | `file-generator.mjs` | file plan generator | command spec를 파일 목록으로 변환한다. 템플릿 선택, render context 생성, output path 계산, pre-write validation까지 수행한다. | `template-engine.mjs`, `render-context.mjs`, `command-validator.mjs`, `command-args-resolver.mjs` |
 | `file-writer.mjs` | write/dry-run executor | generated files를 실제 파일 시스템에 쓰거나, dry-run이면 `planned` 상태로만 반환한다. duplicate path와 overwrite protection도 여기서 처리한다. | Node fs/path |
