@@ -11,7 +11,7 @@ test("기본 help payload는 탐색용 summary JSON을 반환한다", () => {
   assert.equal(payload.ok, true);
   assert.equal(payload.helpMode, "summary");
   assert.equal("rules" in payload, false);
-  assert.equal(payload.commands.component.detailHelp, "frontend component --help");
+  assert.equal("detailHelp" in payload.commands.component, false);
   assert.match(
     payload.commands.component.whenToUse[0],
     /When you need a new UI component shell/

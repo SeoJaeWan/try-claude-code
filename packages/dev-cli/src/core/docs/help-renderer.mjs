@@ -4,17 +4,9 @@ function toCliCommandName(name) {
 
 const BOOTSTRAP_HELP_SUMMARY = "No active profile is configured.";
 
-function createDetailHelp(alias, commandName) {
-  return `${alias} ${toCliCommandName(commandName)} --help`;
-}
-
 function normalizeWhenToUse(command) {
   if (Array.isArray(command.summary?.whenToUse) && command.summary.whenToUse.length > 0) {
     return command.summary.whenToUse;
-  }
-
-  if (typeof command.guide?.목적 === "string" && command.guide.목적.trim().length > 0) {
-    return [command.guide.목적.trim()];
   }
 
   return command.description ? [command.description] : [];
@@ -67,8 +59,7 @@ function createSummaryCommand(alias, commandName, command, flows) {
     relatedCommands: normalizeRelatedCommands(command.summary?.relatedCommands ?? []),
     flowRefs,
     inputMode: command.inputMode ?? null,
-    executionKind: command.execution?.kind ?? null,
-    detailHelp: createDetailHelp(alias, commandName)
+    executionKind: command.execution?.kind ?? null
   };
 }
 
@@ -126,7 +117,7 @@ function createSummaryPayload({
     activeProfile,
     extends: profile.extends ?? [],
     profileSummary: {
-      summary: profile.helpSummary?.summary ?? profile.guide?.요약 ?? ""
+      summary: profile.helpSummary?.summary ?? ""
     },
     flows,
     commands

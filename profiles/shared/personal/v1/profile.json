@@ -2,22 +2,6 @@
   "id": "shared/personal/v1",
   "kind": "shared-profile",
   "extends": [],
-  "guide": {
-    "summary": "Shared personal v1 rules used by frontend and backend profiles.",
-    "sharedRules": [
-      "Each profile keeps its own path rules, while shared naming is normalized by recipe rules.",
-      "Arrow functions are the default function style.",
-      "Array names should be plural and must avoid List or Array suffixes.",
-      "Single-use types stay local; shared types move to types/common or types/{domain}."
-    ]
-  },
-  "help": {
-    "defaultFormat": "json",
-    "supportedFormats": [
-      "json",
-      "text"
-    ]
-  },
   "rules": {
     "enforced": {
       "folderCase": "camelCase",
@@ -63,20 +47,6 @@
             "id": "function",
             "reason": "Continue with the function signature shell"
           }
-        ]
-      },
-      "guide": {
-        "목적": "공통 타입 또는 인터페이스 껍질을 만든다.",
-        "입력규칙": [
-          "name은 필수다.",
-          "kind는 interface 또는 type만 허용한다."
-        ],
-        "이름규칙": [
-          "타입 이름은 PascalCase를 사용한다."
-        ],
-        "출력규칙": [
-          "interface면 interface 템플릿을 사용한다.",
-          "type이면 type alias 템플릿을 사용한다."
         ]
       },
       "inputMode": "json",
@@ -151,19 +121,6 @@
           }
         ]
       },
-      "guide": {
-        "목적": "Props 인터페이스 안에 들어갈 멤버만 생성한다.",
-        "입력규칙": [
-          "members 배열로 value 또는 callback 멤버를 전달한다."
-        ],
-        "이름규칙": [
-          "value 멤버는 camelCase를 사용한다.",
-          "callback 멤버는 on* 규칙으로 정규화한다."
-        ],
-        "출력규칙": [
-          "전체 인터페이스가 아니라 멤버 목록만 반환한다."
-        ]
-      },
       "inputMode": "json",
       "execution": {
         "kind": "snippet",
@@ -218,21 +175,6 @@
             "id": "type",
             "reason": "Define parameter and return type shells"
           }
-        ]
-      },
-      "guide": {
-        "목적": "공통 함수 껍질을 만든다.",
-        "입력규칙": [
-          "kind는 internalHandler 또는 utility를 사용한다.",
-          "name 또는 action 중 하나는 반드시 있어야 한다."
-        ],
-        "이름규칙": [
-          "internalHandler는 handle* 규칙으로 정규화한다.",
-          "utility는 camelCase를 사용한다."
-        ],
-        "출력규칙": [
-          "화살표 함수 형태로 반환한다.",
-          "async가 true면 async 토큰을 붙인다."
         ]
       },
       "inputMode": "json",

@@ -5,15 +5,6 @@
   "extends": [
     "shared/personal/v1"
   ],
-  "guide": {
-    "summary": "Frontend personal v1 rules for UI components, interaction state, hooks, API hooks, and frontend snippets.",
-    "sharedRules": [
-      "Component paths follow the final components-segment placement rules.",
-      "Hooks use the use* prefix and live under hooks/utils/{domain} or hooks/apis/{domain}/{queries|mutations}.",
-      "UI interaction state is allowed inside component files, but data logic and API calls belong in hook/apiHook files.",
-      "Use common only when the artifact is shared across multiple root page domains."
-    ]
-  },
   "helpSummary": {
     "summary": "Frontend personal v1 rules for UI components, interaction state, hooks, API hooks, and frontend snippets.",
     "flows": {
@@ -211,22 +202,6 @@
             "useMutation("
           ]
         }
-      },
-      "guide": {
-        "purpose": "Validate component, hook, and apiHook files against the active frontend rules.",
-        "inputRules": [
-          "Pass exactly one relative directory path as a positional argument.",
-          "The validator scans only active-profile entry files under that directory."
-        ],
-        "outputRules": [
-          "Return a results array with violations grouped per file."
-        ],
-        "notes": [
-          "Keep page.tsx for framework page entries.",
-          "Use index.tsx for non-page React TSX component entries.",
-          "Hook entry files must use index.ts.",
-          "Do not keep JSX helpers, subcomponents, or additional hook declarations in the same entry file."
-        ]
       },
       "inputMode": "positional",
       "execution": {
@@ -701,43 +676,6 @@
           ]
         }
       },
-      "guide": {
-        "목적": "UI 컴포넌트 파일 껍질을 생성한다.",
-        "입력규칙": [
-          "name과 path는 필수다.",
-          "path는 마지막 components 세그먼트 아래에서 components/common/{component} 또는 components/{domain}/{component} 패턴을 사용한다. prefix는 허용된다.",
-          "props는 value 또는 callback 멤버 배열로 전달한다."
-        ],
-        "이름규칙": [
-          "컴포넌트 이름은 PascalCase를 사용한다.",
-          "props callback은 on* 규칙을 따른다."
-        ],
-        "출력규칙": [
-          "출력 파일은 {path}/index.tsx 이다.",
-          "Props 인터페이스와 export default를 포함한다.",
-          "컴포넌트 본문은 화살표 함수 형태를 유지한다."
-        ],
-        "배치규칙": [
-          "공통 컴포넌트는 */components/common/{component}를 사용한다.",
-          "도메인 전용 컴포넌트는 */components/{domain}/{component}를 사용한다.",
-          "prefix가 있어도 마지막 components 세그먼트를 기준으로 같은 규칙을 적용한다. 예: src/components/common/button, features/cart/components/cart/cartSummary.",
-          "domain은 root page segment를 사용한다. 예: app/login -> login.",
-          "common은 2개 이상 root page domain에서 재사용될 때만 사용한다.",
-          "레거시 경로가 현재 컨벤션과 다르면 기존 PascalCase 폴더나 top-level components/{Component} 경로를 유지하지 말고 현재 경로 규칙으로 이동한다.",
-          "레거시 경로가 이미 현재 컨벤션과 같으면 경로는 유지하고 index.tsx 내부 구현만 수정한다."
-        ],
-        "안티패턴": [
-          "dashboard 전용인데 components/common/dashboardLayout에 두는 것",
-          "범용 카드인데 components/ProductCard 같은 PascalCase top-level 폴더를 유지하는 것"
-        ],
-        "금지규칙": [
-          "useEffect(",
-          "fetch(",
-          "axios.",
-          "useQuery(",
-          "useMutation("
-        ]
-      },
       "inputMode": "json",
       "execution": {
         "kind": "file"
@@ -883,24 +821,6 @@
           "closeHandler": "handleClose{Name}"
         }
       },
-      "guide": {
-        "목적": "UI 상호작용 state와 handler 껍질을 생성한다.",
-        "입력규칙": [
-          "name은 필수다.",
-          "pattern으로 toggle 또는 기본 패턴을 선택할 수 있다."
-        ],
-        "이름규칙": [
-          "state 이름은 is*Open 규칙을 기본으로 사용한다.",
-          "setter는 setIs*Open 규칙을 기본으로 사용한다.",
-          "handler는 handleToggle*, handleOpen*, handleClose* 규칙을 사용한다."
-        ],
-        "출력규칙": [
-          "state 선언과 handler 껍질을 함께 반환한다."
-        ],
-        "주의사항": [
-          "비즈니스 상태가 아니라 UI 상호작용 상태에만 사용한다."
-        ]
-      },
       "inputMode": "json",
       "execution": {
         "kind": "snippet",
@@ -983,18 +903,6 @@
           "bulk-frontend-update"
         ]
       },
-      "guide": {
-        "목적": "여러 프론트엔드 작업을 한 번의 요청으로 순차 실행한다.",
-        "입력규칙": [
-          "ops 배열은 순서대로 실행된다.",
-          "앞선 op 결과는 $ref로 뒤 op에서 참조할 수 있다."
-        ],
-        "출력규칙": [
-          "기본은 preview다.",
-          "--apply일 때만 마지막에 한 번 write 한다.",
-          "하나라도 실패하면 전체 write를 취소한다."
-        ]
-      },
       "inputMode": "json",
       "execution": {
         "kind": "batch"
@@ -1051,20 +959,6 @@
           "requiredPrefix": "use",
           "requiredPattern": "^use[A-Z][A-Za-z0-9]*$"
         }
-      },
-      "guide": {
-        "목적": "일반 훅 파일 껍질을 생성한다.",
-        "입력규칙": [
-          "name과 path는 필수다."
-        ],
-        "이름규칙": [
-          "훅 이름은 use* 규칙을 사용한다."
-        ],
-        "출력규칙": [
-          "출력 파일은 {path}/{name}/index.ts 이다.",
-          "경로는 hooks/utils/{domain} 또는 hooks/utils/common 만 허용한다.",
-          "화살표 함수와 export default를 사용한다."
-        ]
       },
       "inputMode": "json",
       "execution": {
@@ -1220,26 +1114,6 @@
             "useSubmit"
           ]
         }
-      },
-      "guide": {
-        "목적": "TanStack Query 기반 API 훅 파일을 생성한다.",
-        "입력규칙": [
-          "name, path, kind는 필수다.",
-          "kind는 query 또는 mutation만 허용한다.",
-          "method는 query면 GET, mutation이면 POST/PUT/PATCH/DELETE를 사용한다."
-        ],
-        "이름규칙": [
-          "query 훅 이름은 useGet* 규칙을 사용한다.",
-          "mutation 훅 이름은 usePost*, usePut*, usePatch*, useDelete* 규칙을 사용한다."
-        ],
-        "출력규칙": [
-          "출력 파일은 {path}/{name}/index.ts 이다.",
-          "경로는 hooks/apis/{domain}/queries 또는 hooks/apis/{domain}/mutations 만 허용한다.",
-          "query는 queries, mutation은 mutations 경로를 사용해야 한다."
-        ],
-        "주의사항": [
-          "API 훅은 서버 요청 로직에만 사용한다."
-        ]
       },
       "inputMode": "json",
       "execution": {
@@ -1417,20 +1291,6 @@
           "create-api-hook"
         ]
       },
-      "guide": {
-        "목적": "TanStack Query key 함수 껍질을 만든다.",
-        "입력규칙": [
-          "domain은 필수다.",
-          "scope와 params는 선택값이지만 규칙에 맞게 정규화된다."
-        ],
-        "이름규칙": [
-          "domain과 scope는 camelCase를 사용한다.",
-          "함수명 suffix는 현재 profile recipe를 따른다."
-        ],
-        "출력규칙": [
-          "query key 함수와 배열 멤버 구성을 함께 반환한다."
-        ]
-      },
       "inputMode": "json",
       "execution": {
         "kind": "snippet",
@@ -1505,20 +1365,6 @@
           "create-api-hook"
         ]
       },
-      "guide": {
-        "목적": "API endpoint 상수 껍질을 만든다.",
-        "입력규칙": [
-          "method, resource, path는 필수다."
-        ],
-        "이름규칙": [
-          "method는 대문자로 정규화한다.",
-          "resource는 camelCase를 사용한다.",
-          "상수명은 현재 profile의 prefix, suffix 규칙으로 생성한다."
-        ],
-        "출력규칙": [
-          "상수명과 endpoint path를 함께 반환한다."
-        ]
-      },
       "inputMode": "json",
       "execution": {
         "kind": "snippet",
@@ -1580,19 +1426,6 @@
           "create-api-hook"
         ]
       },
-      "guide": {
-        "목적": "응답 타입을 뷰 모델로 바꾸는 mapper 함수 껍질을 만든다.",
-        "입력규칙": [
-          "sourceType과 targetType은 필수다."
-        ],
-        "이름규칙": [
-          "mapper 이름은 profile의 prefix와 joiner 규칙으로 생성한다.",
-          "최종 함수명은 camelCase를 사용한다."
-        ],
-        "출력규칙": [
-          "mapper 함수 시그니처와 기본 본문을 반환한다."
-        ]
-      },
       "inputMode": "json",
       "execution": {
         "kind": "snippet",
@@ -1650,18 +1483,6 @@
         ],
         "flowRefs": [
           "create-api-hook"
-        ]
-      },
-      "guide": {
-        "목적": "훅이 반환할 값과 액션 구조를 만든다.",
-        "입력규칙": [
-          "values와 actions 배열을 전달할 수 있다."
-        ],
-        "이름규칙": [
-          "반환 값과 액션 이름은 camelCase를 사용한다."
-        ],
-        "출력규칙": [
-          "return object에 들어갈 멤버 목록을 반환한다."
         ]
       },
       "inputMode": "json",
