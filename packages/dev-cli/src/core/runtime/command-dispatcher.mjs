@@ -4,15 +4,10 @@
  * Routes a parsed CLI invocation to the appropriate executor using only a
  * CliManifest.  No profile loader, no mode resolver, no remote fetch.
  *
- * Retained surface:
+ * Supported surface:
  *   - help (summary and detail)
  *   - execute  (file-template and snippet-template)
  *   - validate-file
- *
- * Removed surface (not handled here):
- *   - mode set / mode show
- *   - guide
- *   - batch
  */
 
 import { createCliError } from "../shared/recipe-utils.mjs";
@@ -21,7 +16,7 @@ import { parseArgv } from "../cli/arg-parser.mjs";
 import { formatOutput } from "../cli/output.mjs";
 import { errorToPayload } from "../cli/error-formatter.mjs";
 import { writeGeneratedFiles } from "../execution/file-writer.mjs";
-import { executeSpecCommand } from "../execution/batch-executor.mjs";
+import { executeSpecCommand } from "../execution/spec-executor.mjs";
 import { parseCommandSpec, parseValidateFileSpec } from "../execution/spec-parser.mjs";
 import { validateFiles } from "../validation/validate-file.mjs";
 import { buildHelpPayload } from "./help-builder.mjs";

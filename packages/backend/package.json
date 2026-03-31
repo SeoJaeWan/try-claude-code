@@ -1,13 +1,13 @@
 {
     "name": "@seojaewan/backend",
-    "version": "0.1.9",
+    "version": "0.2.0",
     "description": "Backend CLI — package-owned manifest for Spring Boot file generation.",
     "type": "module",
     "bin": {
         "backend": "./bin/backend.mjs"
     },
     "dependencies": {
-        "@seojaewan/dev-cli-core": "0.1.9"
+        "@seojaewan/dev-cli-core": "0.2.0"
     },
     "files": [
         "bin",
