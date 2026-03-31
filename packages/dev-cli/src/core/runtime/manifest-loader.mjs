@@ -3,16 +3,8 @@
  *
  * Loading path for package-owned manifests.
  *
- * Phase 1 establishes the contract: host packages pass a CliManifest object
- * directly into the runtime.  No remote fetch, no profile cache, no mode
- * config is involved.
- *
- * Future phases (2, 3) will add:
- *   - resolveManifestFromPackage(packageRoot)  — reads src/manifest.mjs from a
- *     package directory for use by wrapper binaries
- *
- * The profile-based loader (core/profiles/profile-loader.mjs) remains in
- * place for the existing legacy path and is removed in Phase 4.
+ * Host packages pass a CliManifest object directly into the runtime via
+ * runCli({ manifest }).  No remote fetch, no profile cache, no mode config.
  */
 
 import { assertManifest } from "./manifest-types.mjs";
