@@ -27,16 +27,6 @@
             "purpose": "Generate the entity shell"
           }
         ]
-      },
-      "bulk-backend-scaffold": {
-        "title": "Batch backend operations",
-        "summary": "Bundle multiple backend file generation operations in batch for preview or apply.",
-        "steps": [
-          {
-            "command": "batch",
-            "purpose": "Run multiple operations in sequence"
-          }
-        ]
       }
     }
   },
@@ -70,15 +60,10 @@
           {
             "id": "entity",
             "reason": "Generate the entity shell"
-          },
-          {
-            "id": "batch",
-            "reason": "Bundle multiple file generation tasks"
           }
         ],
         "flowRefs": [
-          "create-spring-feature",
-          "bulk-backend-scaffold"
+          "create-spring-feature"
         ]
       },
       "inputMode": "json",
@@ -190,15 +175,10 @@
           {
             "id": "entity",
             "reason": "Generate the domain entity shell"
-          },
-          {
-            "id": "batch",
-            "reason": "Run multiple file generation tasks in one request"
           }
         ],
         "flowRefs": [
-          "create-spring-feature",
-          "bulk-backend-scaffold"
+          "create-spring-feature"
         ]
       },
       "inputMode": "json",
@@ -301,15 +281,10 @@
           {
             "id": "entity",
             "reason": "Generate the entity shell referenced by the response"
-          },
-          {
-            "id": "batch",
-            "reason": "Run multiple file generation tasks in one request"
           }
         ],
         "flowRefs": [
-          "create-spring-feature",
-          "bulk-backend-scaffold"
+          "create-spring-feature"
         ]
       },
       "inputMode": "json",
@@ -412,15 +387,10 @@
           {
             "id": "responseDto",
             "reason": "Align response DTO fields with domain fields"
-          },
-          {
-            "id": "batch",
-            "reason": "Run multiple file generation tasks in one request"
           }
         ],
         "flowRefs": [
-          "create-spring-feature",
-          "bulk-backend-scaffold"
+          "create-spring-feature"
         ]
       },
       "inputMode": "json",
@@ -503,43 +473,6 @@
       },
       "examples": [
         "backend entity --json '{\"name\":\"Product\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}'"
-      ]
-    },
-    "batch": {
-      "description": "Execute multiple backend file ops in one request",
-      "summary": {
-        "whenToUse": [
-          "When you want to preview or apply multiple backend file generation tasks in one request"
-        ],
-        "relatedCommands": [
-          {
-            "id": "module",
-            "reason": "Bundle feature skeleton generation"
-          },
-          {
-            "id": "requestDto",
-            "reason": "Bundle request DTO generation"
-          },
-          {
-            "id": "responseDto",
-            "reason": "Bundle response DTO generation"
-          },
-          {
-            "id": "entity",
-            "reason": "Bundle entity generation"
-          }
-        ],
-        "flowRefs": [
-          "bulk-backend-scaffold",
-          "create-spring-feature"
-        ]
-      },
-      "inputMode": "json",
-      "execution": {
-        "kind": "batch"
-      },
-      "examples": [
-        "backend batch --json '{\"ops\":[{\"id\":\"request-dto\",\"command\":\"requestDto\",\"spec\":{\"name\":\"CreateProductRequest\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}}]}'"
       ]
     }
   }

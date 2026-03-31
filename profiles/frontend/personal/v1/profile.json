@@ -69,16 +69,6 @@
             "purpose": "Validate the final hook structure"
           }
         ]
-      },
-      "bulk-frontend-update": {
-        "title": "Batch frontend operations",
-        "summary": "Bundle component, state, hook, and snippet operations in batch for preview or apply.",
-        "steps": [
-          {
-            "command": "batch",
-            "purpose": "Run multiple operations in sequence"
-          }
-        ]
       }
     }
   },
@@ -137,17 +127,12 @@
           {
             "id": "apiHook",
             "reason": "Validate right after API hook generation"
-          },
-          {
-            "id": "batch",
-            "reason": "Validate the result of a batch run"
           }
         ],
         "flowRefs": [
           "create-component",
           "create-custom-hook",
-          "create-api-hook",
-          "bulk-frontend-update"
+          "create-api-hook"
         ]
       },
       "contracts": {
@@ -628,15 +613,10 @@
           {
             "id": "uiState",
             "reason": "Add a UI interaction state shell"
-          },
-          {
-            "id": "batch",
-            "reason": "Run multiple component operations at once"
           }
         ],
         "flowRefs": [
-          "create-component",
-          "bulk-frontend-update"
+          "create-component"
         ]
       },
       "contracts": {
@@ -796,15 +776,10 @@
           {
             "id": "validateFile",
             "reason": "Validate the structure after the interaction change"
-          },
-          {
-            "id": "batch",
-            "reason": "Run it together with component work"
           }
         ],
         "flowRefs": [
-          "create-component",
-          "bulk-frontend-update"
+          "create-component"
         ]
       },
       "contracts": {
@@ -879,38 +854,6 @@
         "frontend uiState --json '{\"category\":\"uiInteraction\",\"pattern\":\"toggle\",\"name\":\"menu\"}'"
       ]
     },
-    "batch": {
-      "description": "Execute multiple frontend ops in one request",
-      "summary": {
-        "whenToUse": [
-          "When you want to run multiple frontend scaffold or snippet tasks in one request"
-        ],
-        "relatedCommands": [
-          {
-            "id": "hook",
-            "reason": "Bundle custom hook generation tasks"
-          },
-          {
-            "id": "apiHook",
-            "reason": "Bundle API hook-related tasks"
-          },
-          {
-            "id": "validateFile",
-            "reason": "Validate the result at the end"
-          }
-        ],
-        "flowRefs": [
-          "bulk-frontend-update"
-        ]
-      },
-      "inputMode": "json",
-      "execution": {
-        "kind": "batch"
-      },
-      "examples": [
-        "frontend batch --json '{\"ops\":[{\"id\":\"hook\",\"command\":\"hook\",\"spec\":{\"name\":\"useScroll\",\"path\":\"hooks/utils/common\"}}]}'"
-      ]
-    },
     "hook": {
       "description": "Generate a non-API hook file",
       "summary": {
@@ -925,15 +868,10 @@
           {
             "id": "function",
             "reason": "Define internal handlers or utility shells"
-          },
-          {
-            "id": "batch",
-            "reason": "Run multiple hook tasks together"
           }
         ],
         "flowRefs": [
-          "create-custom-hook",
-          "bulk-frontend-update"
+          "create-custom-hook"
         ]
       },
       "contracts": {
@@ -1061,15 +999,10 @@
           {
             "id": "validateFile",
             "reason": "Validate path and AST rules after generation"
-          },
-          {
-            "id": "batch",
-            "reason": "Run related tasks in one request"
           }
         ],
         "flowRefs": [
-          "create-api-hook",
-          "bulk-frontend-update"
+          "create-api-hook"
         ]
       },
       "contracts": {

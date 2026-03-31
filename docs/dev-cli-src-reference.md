@@ -16,7 +16,7 @@
 
 1. wrapper package가 `runCli("frontend")` 또는 `runCli("backend")`를 호출한다.
 2. `arg-parser`가 `argv`를 `options`와 `positionals`로 분리한다.
-3. `command-router`가 action을 `help`, `mode`, `batch`, `validate`, `validateFile`, `execute` 중 하나로 결정한다.
+3. `command-router`가 action을 `help`, `mode`, `validate`, `validateFile`, `execute` 중 하나로 결정한다.
 4. `mode-resolver`와 `profile-loader`가 active profile과 template payload를 로드한다.
 5. `help-renderer`가 JSON help 응답을 만들거나, 실행 계층이 spec을 해석한다.
 6. 실행 경로에서는 `spec-parser` -> `spec-normalizer` -> `command-args-resolver` -> `render-context` -> `template-engine` -> `file-generator` 순서로 파일 또는 snippet이 생성된다.
@@ -31,7 +31,7 @@
 | `src/core/cli/*` | CLI parsing, routing, output formatting |
 | `src/core/profiles/*` | mode/config/cache/profile loading |
 | `src/core/docs/*` | help payload 생성 |
-| `src/core/execution/*` | spec parsing, normalization, rendering, batch, file generation |
+| `src/core/execution/*` | spec parsing, normalization, rendering, file generation |
 | `src/core/validation/*` | command-level validation, directory/file-level validation |
 | `src/core/shared/*` | naming/path/pattern/error/default 유틸 |
 | `src/validators/*` | 특정 alias가 재사용하는 helper |
@@ -49,7 +49,7 @@
 | 파일 | 주요 역할 | 사용 목적 | 주요 의존성 |
 | --- | --- | --- | --- |
 | `src/core/cli/arg-parser.mjs` | raw argv 파싱 | `--json`, `--mode` 같은 옵션과 positional command를 분리한다. 첫 command를 camelCase로 바꿔 내부 command key와 맞춘다. | 없음 |
-| `src/core/cli/command-router.mjs` | action routing | 파싱 결과를 `help`, `mode`, `validate`, `validateFile`, `batch`, `execute`로 분기한다. alias가 현재 지원 집합인지도 여기서 검사한다. | `arg-parser.mjs`의 command name normalization |
+| `src/core/cli/command-router.mjs` | action routing | 파싱 결과를 `help`, `mode`, `validate`, `validateFile`, `execute`로 분기한다. alias가 현재 지원 집합인지도 여기서 검사한다. | `arg-parser.mjs`의 command name normalization |
 | `src/core/cli/error-formatter.mjs` | error envelope 생성 | 예외를 `{ ok: false, error: { code, message, details } }` 구조로 바꾼다. CLI contract를 deterministic하게 유지하는 목적이다. | 없음 |
 | `src/core/cli/output.mjs` | final output renderer | payload를 JSON 또는 text로 바꾼다. snippet이면 code만, file generation이면 path 목록만, error면 사람이 읽기 쉬운 text를 출력한다. | 없음 |
 
@@ -57,14 +57,14 @@
 
 | 파일 | 주요 역할 | 사용 목적 | 주요 의존성 |
 | --- | --- | --- | --- |
-| `src/core/run-cli.mjs` | main application service | 실제 CLI 제어 흐름의 중심이다. option whitelist, mode command, active profile 확인, help, generate, batch, validate, validate-file, output, error handling까지 전부 조립한다. | `cli/*`, `profiles/*`, `docs/*`, `execution/*`, `validation/*`, `shared/*` |
+| `src/core/run-cli.mjs` | main application service | 실제 CLI 제어 흐름의 중심이다. option whitelist, mode command, active profile 확인, help, generate, validate, validate-file, output, error handling까지 전부 조립한다. | `cli/*`, `profiles/*`, `docs/*`, `execution/*`, `validation/*`, `shared/*` |
 
 `src/core/run-cli.mjs`의 내부 책임은 크게 여섯 묶음이다.
 
 - transport 책임: `parseArgv`, `routeCommand`, `formatOutput`, `errorToPayload`
 - profile/session 책임: `resolveActiveProfile`, `writeProfileSelection`, `loadActiveProfile`
 - setup UX 책임: `mode show`, `mode set`, bootstrap help, active profile 미설정 에러
-- generation 책임: `executeSpecCommand`, `executeBatch`, `writeGeneratedFiles`
+- generation 책임: `executeSpecCommand`, `writeGeneratedFiles`
 - validation 책임: `validateRequest`, `validateFiles`
 - 정책 보호 책임: allowed option 검사, profile override 금지, command existence 검사
 
@@ -115,14 +115,14 @@
 
 | 파일 | 주요 역할 | 사용 목적 | 주요 의존성 |
 | --- | --- | --- | --- |
-| `src/core/execution/batch-executor.mjs` | single/batch execution coordinator | 단일 command 실행과 `batch` 실행을 묶는다. batch에서는 op 순서, `$ref`, collect files, atomic write를 조정한다. | `file-generator.mjs`, `file-writer.mjs`, `ref-resolver.mjs`, `spec-normalizer.mjs` |
+| `src/core/execution/batch-executor.mjs` | execution coordinator | 단일 command 실행을 조정한다. | `file-generator.mjs`, `file-writer.mjs`, `spec-normalizer.mjs` |
 | `src/core/execution/command-args-resolver.mjs` | derived arg resolver | command의 `fieldResolvers`를 실행해 누락된 field를 채운다. path capture, file name, parent segment, prefix map, detector 기반 필드 유도에 사용된다. | `path-utils.mjs`, `recipe-utils.mjs`, `path-patterns.mjs`, `validators/backend-utils.mjs` |
 | `src/core/execution/file-generator.mjs` | file plan generator | command spec를 파일 목록으로 변환한다. 템플릿 선택, render context 생성, output path 계산, pre-write validation까지 수행한다. | `template-engine.mjs`, `render-context.mjs`, `profile-validator.mjs`, `command-args-resolver.mjs` |
 | `src/core/execution/file-writer.mjs` | write/dry-run executor | generated files를 실제 파일 시스템에 쓰거나, dry-run이면 `planned` 상태로만 반환한다. duplicate path와 overwrite protection도 여기서 처리한다. | Node fs/path |
-| `src/core/execution/ref-resolver.mjs` | `$ref` resolver | batch 내부의 제한된 backward reference를 해석한다. unknown ref, forward ref, missing path를 명시적으로 실패시킨다. | 없음 |
+| `src/core/execution/ref-resolver.mjs` | `$ref` resolver | spec 내부의 backward reference를 해석한다. unknown ref, forward ref, missing path를 명시적으로 실패시킨다. | 없음 |
 | `src/core/execution/render-context.mjs` | template token builder | template에서 쓰는 token 값을 계산한다. React, hook, query, endpoint, mapper, Java DTO/entity용 context token이 모두 여기서 만들어진다. | `naming.mjs`, `recipe-utils.mjs` |
 | `src/core/execution/spec-normalizer.mjs` | spec normalization engine | 입력 schema 검증, naming/path normalization, derived field 계산, snippet rendering 전 단계 정리를 수행한다. 현재 command semantics가 가장 많이 응축된 파일이다. | `render-context.mjs`, `template-engine.mjs`, `recipe-utils.mjs` |
-| `src/core/execution/spec-parser.mjs` | JSON-only spec parser | command, batch, validate-file가 JSON 또는 positional을 어떤 식으로 받아야 하는지 강제한다. `JSON_SPEC_REQUIRED`, `INVALID_BATCH_SPEC` 같은 contract error가 여기서 나온다. | `arg-parser.mjs` |
+| `src/core/execution/spec-parser.mjs` | JSON-only spec parser | command, validate-file가 JSON 또는 positional을 어떤 식으로 받아야 하는지 강제한다. `JSON_SPEC_REQUIRED` 같은 contract error가 여기서 나온다. | `arg-parser.mjs` |
 | `src/core/execution/template-engine.mjs` | tiny template runtime | 파일 또는 inline template content에서 `{{token}}` 치환을 수행한다. | `recipe-utils.mjs`, Node fs |
 
 `src/core/execution/spec-normalizer.mjs`의 핵심 책임은 아래와 같다.
@@ -221,7 +221,6 @@
   - normalization
   - template render
   - file write
-  - batch
 - contract/domain 역할:
   - UI/backend token 계산
   - Spring base package detection

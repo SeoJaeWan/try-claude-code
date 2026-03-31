@@ -6,7 +6,6 @@ This CLI is agent-first.
 - Spec-driven commands accept `--json` only.
 - For low-token agent lookups, prefer command-scoped JSON help such as `frontend component --help`; use top-level `--help` only for command discovery or structured field access.
 - Preview is the default. `--apply` writes files.
-- `batch` executes ordered ops in one request and writes once at the end.
 - Commands must be deterministic and non-interactive by default.
 - Command semantics are recipe-driven.
 - Naming prefixes like `handle`, `on`, `use` are owned by profile/version recipes, not hardcoded in core.
