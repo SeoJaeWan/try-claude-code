@@ -243,7 +243,7 @@ test("backend validate-file는 없는 명령으로 명시적으로 실패한다"
   assert.equal(payload.error.code, "UNKNOWN_COMMAND");
 });
 
-test("validate-file unsupported target 오류 메시지에 'active profile' 표현이 없다", async () => {
+test("validate-file unsupported target 오류 메시지에 legacy profile vocabulary가 없다", async () => {
   const tempRoot = await createTempRepo({
     files: {
       "docs/readme.md": "# docs\n"
@@ -262,11 +262,11 @@ test("validate-file unsupported target 오류 메시지에 'active profile' 표�
   assert.equal(payload.error.code, "UNSUPPORTED_VALIDATION_TARGET");
   assert.ok(
     !payload.error.message.includes("active profile"),
-    `오류 메시지에 'active profile'이 포함되어선 안 된다: ${payload.error.message}`
+    `오류 메시지에 legacy 'active profile' 표현이 포함되어선 안 된다: ${payload.error.message}`
   );
   assert.ok(
     !payload.error.details.suggestion?.includes("profile-supported"),
-    `suggestion에 'profile-supported'이 포함되어선 안 된다: ${payload.error.details.suggestion}`
+    `suggestion에 legacy 'profile-supported' 표현이 포함되어선 안 된다: ${payload.error.details.suggestion}`
   );
 });
 
