@@ -5,7 +5,7 @@ description: Codex entry skill for rigorous implementation planning. Use when a 
 
 <Skill_Guide>
 <Purpose>
-Create decision-complete implementation plans as one or more sequential plan files with explicit execution phases and execution handoff.
+Create decision-complete implementation plans as a single sequential plan file with explicit execution phases and execution handoff.
 </Purpose>
 
 <Instructions>
@@ -89,18 +89,12 @@ Do not deep-dive into implementation details.
 - Use as many `작업` bullets or paragraphs as needed to make the phase executable; do not force arbitrary counts.
 - Branch names must follow `./.codex/skills/architect/references/git.md` when available; worktree directory names are derived from the branch by replacing `/` with `-`.
 
-### Step 3.2. Decide single-plan vs multi-plan split (required)
+### Step 3.2. Enforce single-plan output (required)
 
-- Default to a single sequential plan at `./plans/{task-name}/plan.md`.
-- If the task is clearer as multiple executable slices, create multiple sequential plans instead of DAG/tracks.
-- Use numbered subfolders for multi-plan tasks:
-  - `./plans/{task-name}/01-{plan-name}/plan.md`
-  - `./plans/{task-name}/02-{plan-name}/plan.md`
-- Split plans when execution can be coordinated at plan granularity:
-  - low file overlap between plan slices
-  - clear predecessor/successor relationship between plan slices
-  - easier review or approval boundaries by slice
-- Do not generate DAG graphs or track plans.
+- Always create exactly one sequential plan at `./plans/{task-name}/plan.md`.
+- Use phases inside that file to express execution order and scope boundaries.
+- Do not split one request into multiple plan files.
+- Do not generate DAG graphs, numbered plan folders, or any extra plan files.
 
 ### Step 3.5. Generate unit test plan (conditional)
 
@@ -108,8 +102,7 @@ If a plan file includes testable logic boundaries and constraint IDs (`[C-...]`)
 
 1. Read `./.codex/skills/plan-unit-test/SKILL.md`
 2. Execute the `plan-unit-test` workflow using the same directory as the owning `plan.md`:
-   - single-plan task: `./plans/{task-name}/tests/`
-   - multi-plan task: `./plans/{task-name}/{nn}-{plan-name}/tests/`
+   - `./plans/{task-name}/tests/`
 3. Add or refresh `## 테스트 계획` in the owning `plan.md` with the unit-test manifest path and a brief scope summary
 4. Verify the test manifest meets the coverage and implementation-handoff requirements defined by that skill
 
@@ -122,8 +115,7 @@ If a plan file changes feature-level user-facing behavior within a bounded UI su
 1. Confirm frontend UI contracts are fully resolved
 2. Read `./.codex/skills/plan-e2e-test/SKILL.md`
 3. Execute `plan-e2e-test` using the same directory as the owning `plan.md`:
-   - single-plan task: `./plans/{task-name}/e2e/`
-   - multi-plan task: `./plans/{task-name}/{nn}-{plan-name}/e2e/`
+   - `./plans/{task-name}/e2e/`
 4. Add or refresh `## 테스트 계획` in the owning `plan.md` with the E2E manifest path, runner, and bounded surface summary
 5. Verify the manifest matches the E2E policy and implementation-handoff requirements in `planning-policy.md`
 
@@ -161,16 +153,12 @@ Provide a concise execution handoff summary using the handoff requirements in `p
 
 ## Output contract
 
-- Single-plan task:
+- Plan file:
   - `./plans/{task-name}/plan.md`
-- Multi-plan task:
-  - `./plans/{task-name}/01-{plan-name}/plan.md` (2+)
 - Unit test artifacts when Step 3.5 applies:
-  - single-plan task: `./plans/{task-name}/tests/manifest.md`, `./plans/{task-name}/tests/{flat-artifact-files}`
-  - multi-plan task: `./plans/{task-name}/{nn}-{plan-name}/tests/manifest.md`, `./plans/{task-name}/{nn}-{plan-name}/tests/{flat-artifact-files}`
+  - `./plans/{task-name}/tests/manifest.md`, `./plans/{task-name}/tests/{flat-artifact-files}`
 - E2E test artifacts when Step 3.6 applies:
-  - single-plan task: `./plans/{task-name}/e2e/manifest.md`, plus flat runner-appropriate artifacts such as `./plans/{task-name}/e2e/{surface-id}.spec.ts` or `./plans/{task-name}/e2e/{flow-id}.yaml`
-  - multi-plan task: `./plans/{task-name}/{nn}-{plan-name}/e2e/manifest.md`, plus plan-local runner-appropriate artifacts
+  - `./plans/{task-name}/e2e/manifest.md`, plus flat runner-appropriate artifacts such as `./plans/{task-name}/e2e/{surface-id}.spec.ts` or `./plans/{task-name}/e2e/{flow-id}.yaml`
 - Output language: Korean
 
 ## Guardrails
@@ -181,7 +169,7 @@ Provide a concise execution handoff summary using the handoff requirements in `p
 - Do not freeze final source-tree test placement in planning artifacts; implementation agents resolve it later from the relevant manifest, coding rules, and local conventions.
 - `playwright-guard` execution happens later; architect only plans that phase.
 - Do not produce a plan with unresolved blocking ambiguity.
-- Do not generate DAG, track plans, or root graph metadata.
+- Do not generate multiple plan files, DAG metadata, or root graph metadata.
 - If the user explicitly requests direct agent execution for a low-risk focused task, do not force planning.
 - Do not prescribe arbitrary `작업` bullet counts.
   </Instructions>

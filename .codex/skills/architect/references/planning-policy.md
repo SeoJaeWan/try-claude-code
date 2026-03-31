@@ -72,20 +72,17 @@ For frontend/UI scope, the five UI contracts must be recorded inside the relevan
 Constraint IDs (`[C-...]`) that drive `plan-unit-test` or `plan-e2e-test` must live inside the relevant phase/task block, not in a separate summary section.
 `## 테스트 계획` should stay brief. Use it to point to manifests and artifact directories, not to duplicate scenario detail already frozen in those artifacts.
 
-### Multi-Plan Split Policy
+### Single-Plan Policy
 
-If one request needs multiple executable plans:
+For each request:
 
-- use multiple sequential plan files instead of DAG/tracks
-- place them under numbered folders for stable order and review boundaries
-- format:
-  - `plans/{task-name}/01-{plan-name}/plan.md`
-  - `plans/{task-name}/02-{plan-name}/plan.md`
+- create exactly one executable plan file at `plans/{task-name}/plan.md`
+- express sequencing only through ordered `Phase` blocks inside that file
 - keep test artifacts local to the owning plan directory:
-  - `plans/{task-name}/{nn}-{plan-name}/tests/`
-  - `plans/{task-name}/{nn}-{plan-name}/e2e/`
-- express inter-plan dependency in the relevant phase `선행조건`
-- do not generate root graph/index files unless the user explicitly requests them
+  - `plans/{task-name}/tests/`
+  - `plans/{task-name}/e2e/`
+- do not split one request into multiple plan files
+- do not generate numbered plan folders or root graph/index files
 
 ### Planning-time Test Artifact Layout
 
@@ -93,7 +90,7 @@ When unit/E2E plan artifacts are generated:
 
 - keep planning artifacts flat and intent-oriented inside `tests/` or `e2e/`
 - do not mirror or freeze the final source-tree placement inside `plans/`
-- reference those artifacts from `plan.md` via `## 테스트 계획`
+- reference those artifacts from the same `plan.md` via `## 테스트 계획`
 - unit test manifests must record:
   - `boundary_type`
   - `boundary_name`
@@ -235,7 +232,7 @@ Before finalizing, and again during self-review:
 9. If tests are planned, `## 테스트 계획` exists and points to the generated manifest/artifact directories
 10. For UI feature scope, `plan-e2e-test` artifacts exist with runner-appropriate frozen E2E files and placement handoff in `e2e/manifest.md`
 11. For UI/user-journey or regression-hardening scope, a later `playwright-guard` phase exists with explicit trigger, scope, and verification checklist
-12. Multi-plan tasks use numbered plan folders and keep tests/e2e local to the owning plan
+12. Exactly one plan file exists for the request and all sequencing is expressed through ordered phases
 13. Planning-time test artifacts remain flat; final source-tree placement is deferred to manifests and implementation conventions
 
 Do not request execution before this checklist passes.
@@ -246,17 +243,15 @@ Do not request execution before this checklist passes.
 
 Provide a concise handoff summary with:
 
-1. Ordered plan file path(s)
-2. Task branch name and derived worktree directory name (`/` -> `-`) for each executable plan file
-3. First executable phase and its `owner_agent` for each plan file
+1. The plan file path
+2. Task branch name and derived worktree directory name (`/` -> `-`)
+3. First executable phase and its `owner_agent`
 4. Execution invocation commands:
-   - launch the named custom agent `planner` against each plan file
-   - if plans are independent, separate planner sessions may run in parallel
-   - if plans depend on earlier plans, execute them in folder order
+   - launch the named custom agent `planner` against the plan file
 5. Merge rule:
    - `planner` owns the task worktree and phase-worker dispatch while following the `planner-lite` workflow
    - phase workers run inside the assigned task worktree without creating nested worktrees
-   - successful phases are committed inside the task branch; final merge goes into each file's `Branch` with `--no-ff`
+   - successful phases are committed inside the task branch; final merge goes into the plan file's `Branch` with `--no-ff`
 6. For UI/user-flow scope, state whether `plan-e2e-test` artifacts are included and whether a later `playwright-guard` phase is scheduled
-7. Note whether `tests/manifest.md` and/or `e2e/manifest.md` are included for each plan
+7. Note whether `tests/manifest.md` and/or `e2e/manifest.md` are included
 8. Implementation agents must resolve final test placement from the relevant manifest, coding rules, and local conventions before copying flat plan artifacts into the source tree
