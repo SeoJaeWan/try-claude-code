@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { executeSpecCommand } from "../src/core/execution/batch-executor.mjs";
+import { executeSpecCommand } from "../src/core/execution/spec-executor.mjs";
 import { loadManifest, projectRoot } from "./test-utils.mjs";
 
 test("executeSpecCommand은 유효한 spec으로 ok:true 결과를 반환한다", async () => {

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { executeSpecCommand } from "../src/core/execution/batch-executor.mjs";
+import { executeSpecCommand } from "../src/core/execution/spec-executor.mjs";
 import { loadManifest, projectRoot } from "./test-utils.mjs";
 
 test("frontend manifest는 batch 없이 핵심 commands를 노출한다", () => {
