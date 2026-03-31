@@ -1,7 +1,7 @@
 {
     "name": "@seojaewan/backend",
     "version": "0.1.9",
-    "description": "Backend CLI for the Try Claude Code profile system.",
+    "description": "Backend CLI — package-owned manifest for Spring Boot file generation.",
     "type": "module",
     "bin": {
         "backend": "./bin/backend.mjs"
