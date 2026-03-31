@@ -3,17 +3,17 @@
 ## Summary
 
 `frontend`, `backend`는 `@seojaewan/dev-cli-core` shared runtime 위에서 동작하고, 실제 배포는 `@seojaewan/frontend`, `@seojaewan/backend` wrapper package가 담당한다.
-규칙, 템플릿, 명령 표면은 GitHub `SeoJaeWan/try-claude-code`의 `main/profiles/**`에서 읽고, CLI는 spec-driven JSON 입력을 기본으로 제공한다.
-이때 engine은 실행기 역할만 맡고, command semantics는 `profile/version`의 recipe가 소유한다.
+규칙, 템플릿, 명령 표면은 각 패키지가 소유하는 `manifest.mjs`에서 정의하고, CLI는 spec-driven JSON 입력을 기본으로 제공한다.
+이때 core runtime은 실행기 역할만 맡고, command semantics는 패키지 내부의 manifest recipe가 소유한다.
 
 이 구조는 agent-first CLI 원칙을 따른다.
 
 - scaffold/snippet 생성 명령은 명시적인 `--json` spec을 사용한다
-- validation/help/mode 같은 운영 명령은 contract에 맞는 전용 입력 형태를 사용한다
+- validation/help 같은 운영 명령은 contract에 맞는 전용 입력 형태를 사용한다
 - 출력 기본값은 JSON
 - preview가 기본값이고 실제 write는 `--apply`
 - 실패는 deterministic JSON error payload로 반환
-- `handle/on/use`, case, snippet shape, validator rule, template context는 profile recipe가 소유
+- `handle/on/use`, case, snippet shape, validator rule, template context는 manifest recipe가 소유
 
 ## Layout
 
@@ -22,122 +22,67 @@ packages/
   dev-cli/
     src/
       core/
+        runtime/     manifest types, loader, dispatcher, help-builder
+        execution/   spec-normalizer, file-generator, template-engine, file-writer
+        validation/  command-validator, validate-file
+        shared/      naming, path-utils, recipe-utils, path-patterns
+        cli/         arg-parser, output, error-formatter
       validators/
     tests/
   frontend/
     bin/frontend.mjs
+    src/
+      manifest.mjs     package-owned CliManifest
+      templates/       template files
+      validators/      validate-file helper
   backend/
     bin/backend.mjs
-
-profiles/
-  registry.json
-  shared/
-    personal/v1/
-  frontend/
-    personal/v1/
-  backend/
-    personal/v1/
+    src/
+      manifest.mjs     package-owned CliManifest
+      templates/       template files
 ```
 
-## Recipe Contract
+## Manifest Contract
 
-각 profile command는 단순 help metadata가 아니라 recipe를 가진다.
+각 wrapper package는 CliManifest를 소유한다.
 
-- `inputSchema`
-- `defaults`
-- `namingPolicy`
+- `id`: manifest identifier (e.g. `"frontend/personal/v1"`)
+- `alias`: CLI command name (`"frontend"` or `"backend"`)
+- `helpSummary`: discovery용 summary와 workflow flows
+- `commands`: command 이름 -> recipe object
+
+각 command recipe는 아래를 가진다.
+
+- `description`
+- `inputMode`: `"json"` or `"positional"`
+- `execution`: `{ kind: "snippet"|"file", language? }`
+- `summary`: `{ whenToUse, relatedCommands, flowRefs }`
 - `normalizationRules`
 - `validatorRules`
-- `render`
+- `render`: `{ snippetTemplateContent? }` or `{ templateFile? }` / `{ templateFiles? }`
 
-`render`는 아래를 포함할 수 있다.
-
-- `snippetTemplate`
-- `templateFile`
-- `templateFiles`
-- `output.filePattern`
-- `contextTokens`
-
-shared override 규칙:
-
-- object는 deep merge
-- scalar는 override
-- array는 append 후 dedupe
-
-즉 core는 parser, preview/apply, error envelope를 유지하고, 실제 command 규칙은 profile recipe를 해석해서 실행한다.
+즉 core는 parser, dispatcher, preview/apply, error envelope를 유지하고, 실제 command 규칙은 manifest recipe를 해석해서 실행한다.
 
 ## Alias Surface
 
 `frontend`
-- profile key: `frontend`
+- manifest key: `frontend`
 - commands: `component`, `uiState`, `hook`, `apiHook`, `type`, `props`, `function`, `queryKey`, `endpoint`, `mapper`, `hookReturn`, `validateFile`
 
 `backend`
-- profile key: `backend`
+- manifest key: `backend`
 - commands: `module`, `requestDto`, `responseDto`, `entity`
 
-## Profile Resolution
+## Runtime Contract
 
-> Current runtime contract
->
-> - The CLI stores one global active profile per alias in `~/.try-claude-dev-cli.json`.
-> - `mode set --mode <mode> --version <major>` is the only way to change the active profile.
-> - General commands always use the stored global selection.
-> - If no active selection exists, the CLI stays unset until the user configures one.
-> - `mode set` refreshes a local snapshot of `main/profiles/{alias}/{mode}/{version}` by loading `profile.json` plus its `extends` and template chain.
-> - General commands use the cached snapshot first, so the configured profile keeps working offline after a successful `mode set`.
-> - If a cached snapshot is missing, the CLI falls back to the remote profile and backfills the local cache.
-> - `mode show` returns the stored selection only and does not revalidate remote availability.
-> - General commands do not accept `--mode`, `--version`, or `--profile` overrides.
-> - `--help` still works when mode is unset and returns minimal setup guidance.
+현재 runtime contract:
 
-> Legacy note: the older registry-first bullets below are historical context only and are superseded by the current runtime contract above.
-
-active profile 우선순위:
-
-1. 명시 옵션: `--mode`, `--version`
-2. global active selection: `~/.try-claude-dev-cli.json`
-3. unset state until the user runs `mode set`
-
-공개 계약은 mode와 major version만 가진다.
-
-- 사용자는 `personal + v1` 같은 조합만 선택한다.
-- `profiles/registry.json`은 alias별 mode와 지원 major version 배열만 관리한다.
-- config에는 `mode`, `version`만 저장한다.
-- 실제 profile/template fetch 결과는 홈 디렉터리 캐시에 snapshot으로 저장하고, 일반 명령은 그 snapshot을 우선 사용한다.
-- `mode set`은 원격 `main/profiles/{alias}/{mode}/{version}`를 기준으로 snapshot을 새로 갱신한다.
-- `mode set`과 `mode show`는 exact patch version을 받지 않는다.
-
-예시 config:
-
-```json
-{
-  "profiles": {
-    "frontend": {
-      "mode": "personal",
-      "version": "v1"
-    }
-  }
-}
-```
-
-예시 registry:
-
-```json
-{
-  "frontend": {
-    "personal": ["v1"]
-  }
-}
-```
-
-예시:
-
-```bash
-frontend mode set --mode personal --version v1
-frontend mode show
-frontend --help
-```
+- wrapper package가 자신의 `manifest.mjs`를 직접 `runCli({ manifest })` 에 주입한다.
+- profile system, remote fetch, global config(`~/.try-claude-dev-cli.json`), mode/version 개념이 없다.
+- `--help`는 항상 manifest 기반 summary JSON을 반환한다.
+- command-scoped `--help`는 해당 command detail JSON을 반환한다.
+- 일반 명령은 manifest에서 직접 실행된다.
+- `mode`, `--mode`, `--version`, `--profile` 옵션은 존재하지 않는다.
 
 ## Publish Surface
 
@@ -158,16 +103,7 @@ wrapper는 각각 하나의 `bin`만 노출한다.
 2. `@seojaewan/frontend`
 3. `@seojaewan/backend`
 
-중요:
-
-- wrapper를 publish하기 전에 `main` 브랜치에 `profiles/registry.json`과 target `profiles/{alias}/{mode}/{version}` 경로가 먼저 존재해야 한다.
-
-profile hotfix 순서:
-
-1. `main`에 `profiles/*` 수정 반영
-2. 필요한 major version 디렉터리 내용 갱신
-3. `profiles/registry.json`에서 지원 major version 배열을 유지
-4. 사용자는 `mode set --version v1`로 해당 major contract를 선택
+manifest 변경이 필요할 때는 해당 wrapper package(`frontend` 또는 `backend`)의 `src/manifest.mjs`를 수정하고 패키지를 새 버전으로 배포한다.
 
 ## Help Contract
 
@@ -274,7 +210,7 @@ frontend uiState --json "{\"category\":\"uiInteraction\",\"pattern\":\"toggle\",
 
 - 입력: `name`, `path`
 - 출력: `{path}/{name}/index.ts`
-- hook prefix는 profile recipe 기준으로 `use`
+- hook prefix는 manifest recipe 기준으로 `use`
 - 화살표 함수
 - `export default`
 
@@ -344,7 +280,6 @@ backend entity --json "{\"name\":\"Product\",\"path\":\"product\",\"basePackage\
 {
   "ok": true,
   "command": "function",
-  "profile": "frontend/personal/v1",
   "normalizedSpec": {
     "kind": "internalHandler",
     "name": "handleClick"
@@ -365,19 +300,6 @@ backend entity --json "{\"name\":\"Product\",\"path\":\"product\",\"basePackage\
 }
 ```
 
-## Ownership Notes
-
-현재 v1에서는 아래 요소가 모두 profile recipe 기준으로 동작한다.
-
-- `function`의 internal handler prefix
-- `props`의 callback prefix
-- `hook`과 `apiHook`의 hook prefix
-- `uiState`의 state, setter, handler naming
-- `queryKey`, `endpoint`, `mapper`, `hookReturn` snippet shape
-- file template context와 validator rule
-
-즉 `personal/v2`나 `company/v1`에서 prefix, shape, validation이 달라지면 core 수정 없이 recipe 변경으로 대응하는 구조다.
-
 오류 응답:
 
 ```json
@@ -390,3 +312,16 @@ backend entity --json "{\"name\":\"Product\",\"path\":\"product\",\"basePackage\
   }
 }
 ```
+
+## Ownership Notes
+
+현재 v1에서는 아래 요소가 모두 manifest recipe 기준으로 동작한다.
+
+- `function`의 internal handler prefix
+- `props`의 callback prefix
+- `hook`과 `apiHook`의 hook prefix
+- `uiState`의 state, setter, handler naming
+- `queryKey`, `endpoint`, `mapper`, `hookReturn` snippet shape
+- file template context와 validator rule
+
+즉 `frontend/personal/v2`나 다른 manifest에서 prefix, shape, validation이 달라지면 core 수정 없이 해당 패키지의 manifest 변경으로 대응하는 구조다.

@@ -1,6 +1,6 @@
 # @seojaewan/backend
 
-Backend CLI for the Try Claude Code profile system.
+Backend CLI — package-owned manifest for Spring Boot file generation.
 
 ## Install
 
@@ -12,9 +12,10 @@ npm i -g @seojaewan/backend
 
 ```bash
 backend --help
-backend mode set --mode personal --version v1
-backend mode show
+backend module --help
+backend module --json "{\"name\":\"Product\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}"
+backend requestDto --json "{\"name\":\"CreateProductRequest\",\"path\":\"product\",\"basePackage\":\"com.example.app\"}"
 ```
 
-`backend mode set --mode personal --version v1` refreshes a local snapshot of `main/profiles/backend/{mode}/{version}` from `SeoJaeWan/try-claude-code`.
-Inspect the stored selection with `backend mode show`, use `backend --help` even before mode setup for minimal setup guidance, and rerun `mode set` whenever you want to refresh the cached profile snapshot.
+`backend --help` returns a manifest-driven summary JSON with all available commands, whenToUse guidance, and workflow flows.
+Use `backend <command> --help` for command-scoped detail before scaffolding.
