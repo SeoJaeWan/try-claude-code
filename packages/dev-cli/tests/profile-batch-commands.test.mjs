@@ -4,26 +4,52 @@ import assert from "node:assert/strict";
 import { executeSpecCommand } from "../src/core/execution/batch-executor.mjs";
 import { loadProfile, projectRoot } from "./test-utils.mjs";
 
-test("frontend profile은 shared snippet, component, and hook commands를 함께 노출한다", async () => {
+test("frontend profile은 batch 없이 핵심 commands를 노출한다", async () => {
+  const profile = await loadProfile("frontend");
+  const keys = Object.keys(profile.commands).sort();
+
+  assert.ok(!keys.includes("batch"), "batch는 frontend profile에서 제거되어야 한다");
+  assert.ok(keys.includes("component"), "component는 여전히 노출되어야 한다");
+  assert.ok(keys.includes("apiHook"), "apiHook은 여전히 노출되어야 한다");
+  assert.ok(keys.includes("validateFile"), "validateFile은 여전히 노출되어야 한다");
+});
+
+test("backend profile은 batch 없이 핵심 commands를 노출한다", async () => {
+  const profile = await loadProfile("backend");
+  const keys = Object.keys(profile.commands).sort();
+
+  assert.ok(!keys.includes("batch"), "batch는 backend profile에서 제거되어야 한다");
+});
+
+test("frontend batch command는 UNKNOWN_COMMAND로 deterministic하게 실패한다", async () => {
   const profile = await loadProfile("frontend");
 
-  assert.deepEqual(
-    Object.keys(profile.commands).sort(),
-    [
-      "apiHook",
-      "batch",
-      "component",
-      "endpoint",
-      "function",
-      "hook",
-      "hookReturn",
-      "mapper",
-      "props",
-      "queryKey",
-      "type",
-      "uiState",
-      "validateFile"
-    ].sort()
+  await assert.rejects(
+    () =>
+      executeSpecCommand({
+        profile,
+        profileId: profile.id,
+        commandName: "batch",
+        spec: { ops: [] },
+        projectRoot
+      }),
+    (error) => error.code === "UNKNOWN_COMMAND"
+  );
+});
+
+test("backend batch command는 UNKNOWN_COMMAND로 deterministic하게 실패한다", async () => {
+  const profile = await loadProfile("backend");
+
+  await assert.rejects(
+    () =>
+      executeSpecCommand({
+        profile,
+        profileId: profile.id,
+        commandName: "batch",
+        spec: { ops: [] },
+        projectRoot
+      }),
+    (error) => error.code === "UNKNOWN_COMMAND"
   );
 });
 
