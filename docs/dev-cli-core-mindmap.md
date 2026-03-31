@@ -26,6 +26,7 @@ frontend / backend
          │  └─ help-builder.mjs
          │
          ├─ execution/
+         │  ├─ spec-executor.mjs
          │  ├─ spec-parser.mjs
          │  ├─ spec-normalizer.mjs
          │  ├─ file-generator.mjs
@@ -71,7 +72,7 @@ command-dispatcher
    └─ action = execute
       ├─ loadManifestDirect
       ├─ parseCommandSpec
-      ├─ executeSpecCommand (batch-executor)
+      ├─ executeSpecCommand (spec-executor)
       │  ├─ normalizeSpec
       │  ├─ renderSnippet            (snippet command)
       │  └─ generateFiles            (file command)
@@ -137,10 +138,10 @@ command-dispatcher
 
 | File | 주 호출자 | 언제 사용되나 | 역할 |
 | --- | --- | --- | --- |
-| `execution/batch-executor.mjs` | `command-dispatcher.mjs` | 일반 생성 명령 | `executeSpecCommand` 중심 실행기 |
-| `execution/spec-normalizer.mjs` | `batch-executor.mjs` | execute 시작 직후 | defaults 적용, normalizationRules 실행, snippet rendering 진입 |
-| `execution/file-generator.mjs` | `batch-executor.mjs` | file-kind command 실행 시 | render context 구성, template 렌더, 생성 전 validate 수행 |
-| `execution/file-writer.mjs` | `command-dispatcher.mjs`, `batch-executor.mjs` | `--apply` 또는 dry-run plan 확정 시 | 중복 path 검사, overwrite 검사, 실제 파일 write 또는 planned 결과 생성 |
+| `execution/spec-executor.mjs` | `command-dispatcher.mjs` | 일반 생성 명령 | `executeSpecCommand` 중심 실행기 |
+| `execution/spec-normalizer.mjs` | `spec-executor.mjs` | execute 시작 직후 | defaults 적용, normalizationRules 실행, snippet rendering 진입 |
+| `execution/file-generator.mjs` | `spec-executor.mjs` | file-kind command 실행 시 | render context 구성, template 렌더, 생성 전 validate 수행 |
+| `execution/file-writer.mjs` | `command-dispatcher.mjs`, `spec-executor.mjs` | `--apply` 또는 dry-run plan 확정 시 | 중복 path 검사, overwrite 검사, 실제 파일 write 또는 planned 결과 생성 |
 | `execution/template-engine.mjs` | `file-generator.mjs`, `spec-normalizer.mjs` | 템플릿이 실제 문자열로 렌더될 때 | `{{token}}` 기반 템플릿 렌더 |
 | `execution/render-context.mjs` | `file-generator.mjs`, `spec-normalizer.mjs` | 템플릿 렌더 직전 | `propsMembers`, `uiStateName`, `endpointConstantName` 같은 context token 계산 |
 

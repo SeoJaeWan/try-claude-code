@@ -24,7 +24,7 @@ test("executeSpecCommand은 유효한 spec으로 ok:true 결과를 반환한다"
   assert.ok(result.files[0].path.includes("homePage"));
 });
 
-test("executeSpecCommand은 알 수 없는 command에 UNKNOWN_COMMAND 오류를 반환한다", async () => {
+test("executeSpecCommand은 manifest에 없는 command에 UNKNOWN_COMMAND 오류를 반환한다", async () => {
   const manifest = loadManifest("frontend");
 
   await assert.rejects(

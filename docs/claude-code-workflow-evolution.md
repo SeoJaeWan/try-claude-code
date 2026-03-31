@@ -866,7 +866,7 @@ flowchart LR
 - `plugin/skills/frontend-dev/SKILL.md`
 - `plugin/agents/frontend-developer.md`
 - `plugin/agents/backend-developer.md`
-- `packages/dev-cli/src/core/cli/command-router.mjs`
+- `packages/dev-cli/src/core/runtime/command-dispatcher.mjs`
 - `packages/dev-cli/src/core/profiles/profile-loader.mjs`
 - `profiles/shared/personal/v1/profile.json`
 - `profiles/frontend/personal/v1/profile.json`
