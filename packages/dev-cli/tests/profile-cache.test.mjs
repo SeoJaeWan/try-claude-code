@@ -4,14 +4,14 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 
 import { runCli as runCliCore } from "../src/run-cli.mjs";
-import { createTempHome, createTempRepo, readJson, runCli, backendBin } from "./test-utils.mjs";
+import { createTempHome, createTempRepo, readJson } from "./test-utils.mjs";
 
 /**
- * Phase 2 rebaseline:
+ * Phase 3 rebaseline:
  *
- * frontend bin now uses the manifest path and does not have a `mode set`
- * command.  Profile-cache tests are migrated to backendBin which still
- * uses the legacy alias path.
+ * Both frontend and backend bins now use the manifest path.
+ * Profile-cache tests that depended on `backend mode set` (legacy path)
+ * are replaced with direct runCliCore calls using the legacy alias path.
  */
 
 function createWritableBuffer() {
@@ -52,30 +52,36 @@ async function withHomeEnv(homeDirectory, callback) {
   }
 }
 
-test("mode set은 원격 profile snapshot을 홈 캐시에 저장한다", async () => {
+test("legacy runCliCore mode set은 원격 profile snapshot을 홈 캐시에 저장한다", async () => {
   const tempRoot = await createTempRepo({
     profiles: ["shared/personal/v1", "backend/personal/v1"]
   });
   const tempHome = await createTempHome();
 
-  const result = runCli(backendBin, [
-    "mode",
-    "set",
-    "--mode",
-    "personal",
-    "--version",
-    "v1"
-  ], {
-    cwd: tempRoot,
-    env: {
-      HOME: tempHome,
-      USERPROFILE: tempHome,
-      TRY_CLAUDE_TEST_PROFILE_ROOT: tempRoot
+  const stdout = createWritableBuffer();
+  const stderr = createWritableBuffer();
+  const originalExitCode = process.exitCode;
+
+  const exitCode = await withHomeEnv(tempHome, async () => {
+    process.env.TRY_CLAUDE_TEST_PROFILE_ROOT = tempRoot;
+
+    try {
+      return await runCliCore({
+        alias: "backend",
+        argv: ["mode", "set", "--mode", "personal", "--version", "v1"],
+        cwd: tempRoot,
+        stdout,
+        stderr
+      });
+    } finally {
+      delete process.env.TRY_CLAUDE_TEST_PROFILE_ROOT;
     }
   });
 
-  assert.equal(result.status, 0);
-  assert.equal(readJson(result.stdout).ok, true);
+  process.exitCode = originalExitCode;
+
+  assert.equal(exitCode, 0);
+  assert.equal(readJson(stdout.toString()).ok, true);
 
   const cachePath = path.join(
     tempHome,
@@ -103,34 +109,39 @@ test("mode set은 원격 profile snapshot을 홈 캐시에 저장한다", async 
   );
 });
 
-test("캐시된 profile이 있으면 backend --help는 오프라인에서도 동작한다", async () => {
+test("캐시된 profile이 있으면 legacy runCliCore backend --help는 오프라인에서도 동작한다", async () => {
   const tempRoot = await createTempRepo({
     profiles: ["shared/personal/v1", "backend/personal/v1"]
   });
   const tempHome = await createTempHome();
 
-  const setResult = runCli(backendBin, [
-    "mode",
-    "set",
-    "--mode",
-    "personal",
-    "--version",
-    "v1"
-  ], {
-    cwd: tempRoot,
-    env: {
-      HOME: tempHome,
-      USERPROFILE: tempHome,
-      TRY_CLAUDE_TEST_PROFILE_ROOT: tempRoot
+  // Seed the cache via a direct legacy runCliCore call
+  const setStdout = createWritableBuffer();
+  const setStderr = createWritableBuffer();
+  const originalExitCode = process.exitCode;
+
+  const setExitCode = await withHomeEnv(tempHome, async () => {
+    process.env.TRY_CLAUDE_TEST_PROFILE_ROOT = tempRoot;
+
+    try {
+      return await runCliCore({
+        alias: "backend",
+        argv: ["mode", "set", "--mode", "personal", "--version", "v1"],
+        cwd: tempRoot,
+        stdout: setStdout,
+        stderr: setStderr
+      });
+    } finally {
+      delete process.env.TRY_CLAUDE_TEST_PROFILE_ROOT;
     }
   });
 
-  assert.equal(setResult.status, 0);
+  process.exitCode = originalExitCode;
+  assert.equal(setExitCode, 0);
 
   const stdout = createWritableBuffer();
   const stderr = createWritableBuffer();
   const originalFetch = globalThis.fetch;
-  const originalExitCode = process.exitCode;
 
   globalThis.fetch = async () => {
     throw new Error("offline");
