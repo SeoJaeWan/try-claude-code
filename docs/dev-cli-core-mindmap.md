@@ -32,7 +32,6 @@ frontend / backend
       │
       ├─ execution/
       │  ├─ spec-parser.mjs
-      │  ├─ batch-executor.mjs
       │  ├─ spec-normalizer.mjs
       │  ├─ file-generator.mjs
       │  ├─ file-writer.mjs
@@ -110,23 +109,6 @@ run-cli
 - `snippet` 계열은 코드 조각만 반환한다.
 - `file` 계열은 파일 plan 또는 실제 파일 write로 이어진다.
 
-### `batch`
-
-```text
-run-cli
-└─ routeCommand(action=batch)
-   ├─ resolveActiveProfile
-   ├─ loadActiveProfile
-   ├─ parseBatchSpec
-   └─ executeBatch
-      ├─ resolveRefs
-      ├─ executeSpecCommand x N
-      └─ writeGeneratedFiles
-```
-
-- `ops[]`를 순차 실행한다.
-- 뒤 op는 앞 op 결과를 `$ref`로 참조할 수 있다.
-
 ### `validate`
 
 ```text
@@ -171,8 +153,8 @@ run-cli
 | --- | --- | --- | --- |
 | `run-cli.mjs` | `src/run-cli.mjs`, wrapper bin | 모든 명령 시작점 | 전체 orchestration, handler 분기, 출력/에러 처리 |
 | `arg-parser.mjs` | `run-cli.mjs`, `command-router.mjs`, `spec-parser.mjs` | argv를 처음 읽을 때 | `--json`, positional을 구조화하고 첫 command를 camelCase로 정규화 |
-| `command-router.mjs` | `run-cli.mjs` | parse 직후 | alias와 argv shape를 보고 `help/mode/validate/batch/execute` action으로 라우팅 |
-| `spec-parser.mjs` | `run-cli.mjs` | `execute`, `batch`, `validate-file` 진입 시 | `--json` spec, `batch.ops[]`, `validate-file <directory>`를 contract 형태로 파싱 |
+| `command-router.mjs` | `run-cli.mjs` | parse 직후 | alias와 argv shape를 보고 `help/mode/validate/execute` action으로 라우팅 |
+| `spec-parser.mjs` | `run-cli.mjs` | `execute`, `validate-file` 진입 시 | `--json` spec, `validate-file <directory>`를 contract 형태로 파싱 |
 
 ### 2. Profile / Mode / Source-of-Truth
 
@@ -192,17 +174,16 @@ run-cli
 | `output.mjs` | `run-cli.mjs` | 성공/실패 응답 직전 | JSON/Text 포맷 결정, `fields` 필터 적용, snippet/file/error를 최종 문자열로 변환 |
 | `error-formatter.mjs` | `run-cli.mjs` | 예외 catch 시 | thrown error를 deterministic error payload로 변환 |
 
-### 4. Generate / Batch / Template Rendering
+### 4. Generate / Template Rendering
 
 | File | 주 호출자 | 언제 사용되나 | 역할 |
 | --- | --- | --- | --- |
-| `batch-executor.mjs` | `run-cli.mjs` | 일반 생성 명령과 `batch` | `executeSpecCommand`, `executeBatch` 중심 실행기 |
-| `spec-normalizer.mjs` | `batch-executor.mjs` | execute/batch 시작 직후 | defaults 적용, normalizationRules 실행, snippet rendering 진입 |
+| `batch-executor.mjs` | `run-cli.mjs` | 일반 생성 명령 | `executeSpecCommand` 중심 실행기 |
+| `spec-normalizer.mjs` | `batch-executor.mjs` | execute 시작 직후 | defaults 적용, normalizationRules 실행, snippet rendering 진입 |
 | `file-generator.mjs` | `batch-executor.mjs` | file-kind command 실행 시 | render context 구성, template 렌더, 생성 전 validate 수행 |
 | `file-writer.mjs` | `run-cli.mjs`, `batch-executor.mjs` | `--apply` 또는 dry-run plan 확정 시 | 중복 path 검사, overwrite 검사, 실제 파일 write 또는 planned 결과 생성 |
 | `template-engine.mjs` | `file-generator.mjs`, `spec-normalizer.mjs` | 템플릿이 실제 문자열로 렌더될 때 | `{{token}}` 기반 템플릿 렌더 |
 | `render-context.mjs` | `file-generator.mjs`, `spec-normalizer.mjs` | 템플릿 렌더 직전 | `propsMembers`, `uiStateName`, `endpointConstantName` 같은 context token 계산 |
-| `ref-resolver.mjs` | `batch-executor.mjs` | batch에서 뒤 op가 앞 op 결과를 참조할 때 | `$ref`를 prior result 값으로 해석 |
 
 ### 5. Validation / Arg Resolution
 
@@ -241,8 +222,7 @@ run-cli
 ### 3. 생성 명령이 어떻게 파일이 되는지 볼 때
 
 1. `spec-parser.mjs`
-2. `batch-executor.mjs`
-3. `spec-normalizer.mjs`
+2. `spec-normalizer.mjs`
 4. `file-generator.mjs`
 5. `command-args-resolver.mjs`
 6. `render-context.mjs`
