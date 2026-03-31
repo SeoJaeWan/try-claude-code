@@ -137,7 +137,7 @@ Default output layout:
 - Maestro: `e2e/{flow-id}.yaml`
 
 Do not freeze the final source-tree E2E placement here.
-Implementation agents resolve the final destination later using phase `테스트 이동`, repo E2E conventions, coding rules, and the placement handoff recorded in `manifest.md`.
+Implementation agents resolve the final destination later using `e2e/manifest.md`, repo E2E conventions, coding rules, and the placement handoff recorded in `manifest.md`.
 
 ### Step 6. Write `manifest.md`
 
@@ -158,7 +158,7 @@ Create `manifest.md` with:
 
 ## Implementation Placement
 
-- Resolve final destination during implementation using phase `테스트 이동`, repo E2E layout, and naming conventions
+- Resolve final destination during implementation using `e2e/manifest.md`, repo E2E layout, and naming conventions
 - Keep assertions, locators, and scenario scope unchanged when relocating plan artifacts
 - If destination is still unclear after reading phase instructions and local conventions, stop and ask the user
 

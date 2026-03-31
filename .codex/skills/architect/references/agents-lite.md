@@ -6,7 +6,7 @@ For detailed planning rules, quality gates, and UI test-phase policy, read `plan
 
 ## Canonical Execution Agents
 
-| owner_agent          | Primary skill examples | CLI contract source | Role                                                      |
+| owner_agent          | Related skill examples | CLI contract source | Role                                                      |
 | -------------------- | ---------------------- | ------------------- | --------------------------------------------------------- |
 | `frontend-developer` | `frontend-dev`         | `frontend`          | frontend UI, integration, hooks, state, and API work      |
 | `backend-developer`  | `backend-dev`          | `backend`           | API, DB, auth, server logic                               |

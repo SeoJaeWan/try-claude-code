@@ -11,7 +11,7 @@ Generate spec-oriented unit/logic test files as plan artifacts during the planni
 <Instructions>
 # plan-unit-test
 
-Generate stack-aware unit/logic test files mapped to `plan.md` phase-local constraint IDs. These tests become flat plan artifacts that implementation agents later place into the source tree for Red-Green TDD using the owning phase's `테스트 이동`, coding rules, and local test conventions.
+Generate stack-aware unit/logic test files mapped to `plan.md` phase-local constraint IDs. These tests become flat plan artifacts that implementation agents later place into the source tree for Red-Green TDD using `tests/manifest.md`, coding rules, and local test conventions.
 
 The goal is not to optimize for "easy passing." The goal is to make the required logic explicit enough that implementation can be judged against a concrete behavioral contract.
 
@@ -108,7 +108,7 @@ plans/{task-name}/tests/
 ```
 
 Plan artifacts under `tests/` do not mirror the final source-tree destination.
-Implementation agents resolve the final destination later using the owning phase's `테스트 이동`, coding rules, local test conventions, and the placement intent recorded in `manifest.md`.
+Implementation agents resolve the final destination later using `tests/manifest.md`, coding rules, local test conventions, and the placement intent recorded in `manifest.md`.
 Keep one manifest per executable plan file.
 
 ### Step 6. Write `manifest.md`
@@ -127,7 +127,7 @@ Create `tests/manifest.md` with:
 
 ## Implementation Placement
 
-- Resolve final destination during implementation using phase `테스트 이동`, coding rules, and local test layout
+- Resolve final destination during implementation using `tests/manifest.md`, coding rules, and local test layout
 - Keep assertions and scenarios unchanged when relocating plan artifacts
 - If destination is still unclear after reading phase instructions and local conventions, stop and ask the user
 
