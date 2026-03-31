@@ -145,7 +145,7 @@ function createBootstrapPayload({
       suggestedCommand
     ],
     blockedReason:
-      "Guide, generate, batch, and validate commands stay unavailable until an active mode is configured.",
+      "Guide, generate, and validate commands stay unavailable until an active mode is configured.",
     command: null,
     profileSummary: {
       summary: BOOTSTRAP_HELP_SUMMARY

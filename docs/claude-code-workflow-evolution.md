@@ -470,7 +470,7 @@ flowchart TD
 
 1. 복잡한 요청이면 `.codex/skills/architect/SKILL.md`가 `plans/{task-name}/plan.md`를 만든다.
 2. 구현 phase에서 `plugin/skills/frontend-dev/SKILL.md`가 실행된다.
-3. `frontend-dev`는 먼저 `frontend --help`와 `frontend component`, `frontend hook`, `frontend apiHook`, `frontend batch` 같은 CLI를 사용한다.
+3. `frontend-dev`는 먼저 `frontend --help`와 `frontend component`, `frontend hook`, `frontend apiHook` 같은 CLI를 사용한다.
 4. CLI는 `packages/dev-cli` 엔진을 통해 현재 active profile을 로드한다.
 5. profile은 `profiles/frontend/personal/v1/profile.json`과 `profiles/shared/personal/v1/profile.json`을 merge한다.
 6. `normalizationRules`, `validatorRules`, `render.templateFile`, `output.filePattern`이 적용된다.
@@ -525,7 +525,7 @@ flowchart LR
 | 실행 계층 | 역할별 워크플로 정의 | `plugin/skills/frontend-dev/SKILL.md`, `plugin/skills/backend-dev/SKILL.md` |
 | 역할 프롬프트 | 에이전트 성격과 도구 범위 | `plugin/agents/frontend-developer.md`, `plugin/agents/backend-developer.md` |
 | 규칙 소유 계층 | 네이밍/경로/검증/렌더 규칙 | `profiles/*/profile.json` |
-| 런타임 엔진 | parse / normalize / batch / write 실행 | `packages/dev-cli/src/core/*` |
+| 런타임 엔진 | parse / normalize / write 실행 | `packages/dev-cli/src/core/*` |
 | 템플릿 계층 | 실제 scaffold 문자열 | `profiles/*/templates/*` |
 
 ### 현재 구조의 가장 큰 차이
@@ -622,7 +622,7 @@ flowchart LR
 - `plans/{task-name}/plan.md`
 - `codemaps/frontend.md` (있으면)
 - `frontend --help`
-- `frontend component` / `frontend hook` / `frontend apiHook` / `frontend batch`
+- `frontend component` / `frontend hook` / `frontend apiHook`
 
 중요한 차이:
 
@@ -868,7 +868,6 @@ flowchart LR
 - `plugin/agents/backend-developer.md`
 - `packages/dev-cli/src/core/cli/command-router.mjs`
 - `packages/dev-cli/src/core/profiles/profile-loader.mjs`
-- `packages/dev-cli/src/core/execution/batch-executor.mjs`
 - `profiles/shared/personal/v1/profile.json`
 - `profiles/frontend/personal/v1/profile.json`
 - `docs/dev-cli-design.md`

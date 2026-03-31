@@ -3,7 +3,7 @@
 ## Summary
 
 `frontend`, `backend`는 `@seojaewan/dev-cli-core` shared runtime 위에서 동작하고, 실제 배포는 `@seojaewan/frontend`, `@seojaewan/backend` wrapper package가 담당한다.
-규칙, 템플릿, 명령 표면은 GitHub `SeoJaeWan/try-claude-code`의 `main/profiles/**`에서 읽고, CLI는 spec-driven JSON 입력과 batch 실행을 기본으로 제공한다.
+규칙, 템플릿, 명령 표면은 GitHub `SeoJaeWan/try-claude-code`의 `main/profiles/**`에서 읽고, CLI는 spec-driven JSON 입력을 기본으로 제공한다.
 이때 engine은 실행기 역할만 맡고, command semantics는 `profile/version`의 recipe가 소유한다.
 
 이 구조는 agent-first CLI 원칙을 따른다.
@@ -13,7 +13,6 @@
 - 출력 기본값은 JSON
 - preview가 기본값이고 실제 write는 `--apply`
 - 실패는 deterministic JSON error payload로 반환
-- 여러 scaffold/snippet 요청은 `batch`로 한 번에 처리
 - `handle/on/use`, case, snippet shape, validator rule, template context는 profile recipe가 소유
 
 ## Layout
@@ -65,17 +64,17 @@ shared override 규칙:
 - scalar는 override
 - array는 append 후 dedupe
 
-즉 core는 parser, batch executor, `$ref`, preview/apply, error envelope를 유지하고, 실제 command 규칙은 profile recipe를 해석해서 실행한다.
+즉 core는 parser, preview/apply, error envelope를 유지하고, 실제 command 규칙은 profile recipe를 해석해서 실행한다.
 
 ## Alias Surface
 
 `frontend`
 - profile key: `frontend`
-- commands: `component`, `uiState`, `hook`, `apiHook`, `type`, `props`, `function`, `queryKey`, `endpoint`, `mapper`, `hookReturn`, `validateFile`, `batch`
+- commands: `component`, `uiState`, `hook`, `apiHook`, `type`, `props`, `function`, `queryKey`, `endpoint`, `mapper`, `hookReturn`, `validateFile`
 
 `backend`
 - profile key: `backend`
-- commands: `module`, `requestDto`, `responseDto`, `entity`, `batch`
+- commands: `module`, `requestDto`, `responseDto`, `entity`
 
 ## Profile Resolution
 
@@ -208,69 +207,6 @@ preview가 기본이며 실제 파일 생성은 `--apply`일 때만 수행한다
 frontend component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}"
 frontend component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}" --apply
 ```
-
-## Batch Contract
-
-`batch`는 ordered `ops[]`를 순차 실행한다.
-각 op는 앞 op 결과를 제한적으로 참조할 수 있다.
-
-```bash
-frontend batch --json "{
-  \"ops\": [
-    {
-      \"id\": \"component\",
-      \"command\": \"component\",
-      \"spec\": {
-        \"name\": \"ReviewCard\",
-        \"path\": \"components/common/reviewCard\"
-      }
-    },
-    {
-      \"id\": \"props\",
-      \"command\": \"props\",
-      \"spec\": {
-        \"members\": [
-          { \"kind\": \"value\", \"name\": \"title\", \"type\": \"string\", \"required\": true },
-          { \"kind\": \"callback\", \"name\": \"click\", \"params\": [] }
-        ]
-      }
-    },
-    {
-      \"id\": \"uiState\",
-      \"command\": \"uiState\",
-      \"spec\": {
-        \"category\": \"uiInteraction\",
-        \"pattern\": \"toggle\",
-        \"name\": \"menu\"
-      }
-    }
-  ]
-}"
-```
-
-`$ref` 형식:
-
-- `opId.field.path`
-- backward reference만 허용
-- forward, self, unknown reference는 실패
-
-예시:
-
-```json
-{
-  "componentName": {
-    "$ref": "component.normalizedSpec.name"
-  }
-}
-```
-
-batch 정책:
-
-- 기본값은 preview
-- 실제 write는 `--apply`
-- write는 마지막에 한 번만 수행
-- 하나라도 실패하면 전체 write 취소
-- 기존 파일 patch/insert는 이번 범위에 포함하지 않음
 
 ## Shared Personal v1
 
