@@ -55,15 +55,11 @@ Every executable `plan.md` must include:
 3. For each phase/task:
    - `목적`
    - `작업`
-   - `완료조건`
+   - `검증`
 4. Optional per-phase fields when needed:
-   - `primary_skill`
    - `선행조건`
-   - `계약/제약`
-   - `테스트 산출물`
-   - `테스트 이동`
-   - `실행`
-   - `폴백`
+   - `제약`
+5. When tests exist, a plan-level `## 테스트 계획` section that summarizes the manifest path and artifact directory for unit and/or E2E artifacts
 
 Every executable plan file must include a `Branch` header:
 
@@ -72,8 +68,9 @@ Every executable plan file must include a `Branch` header:
 Worktree directory naming is derived from the `Branch` value by replacing `/` with `-`.
 Example: `feat/add-login` -> `worktrees/feat-add-login`
 
-For frontend/UI scope, the five UI contracts must be recorded inside the relevant phase/task `계약/제약` bullets.
+For frontend/UI scope, the five UI contracts must be recorded inside the relevant phase/task `제약` bullets.
 Constraint IDs (`[C-...]`) that drive `plan-unit-test` or `plan-e2e-test` must live inside the relevant phase/task block, not in a separate summary section.
+`## 테스트 계획` should stay brief. Use it to point to manifests and artifact directories, not to duplicate scenario detail already frozen in those artifacts.
 
 ### Multi-Plan Split Policy
 
@@ -96,6 +93,7 @@ When unit/E2E plan artifacts are generated:
 
 - keep planning artifacts flat and intent-oriented inside `tests/` or `e2e/`
 - do not mirror or freeze the final source-tree placement inside `plans/`
+- reference those artifacts from `plan.md` via `## 테스트 계획`
 - unit test manifests must record:
   - `boundary_type`
   - `boundary_name`
@@ -113,14 +111,15 @@ When unit/E2E plan artifacts are generated:
 - Every execution block (`Phase n`) must include `owner_agent`
 - Every execution block (`Phase n`) must include `목적`
 - Every execution block (`Phase n`) must include `작업`
-- Every execution block (`Phase n`) must include `완료조건`
+- Every execution block (`Phase n`) must include `검증`
+- `검증` must be written as checklist bullets (`- [ ] ...`)
+- `작업` bullet count is not fixed; use as many bullets or paragraphs as needed to make the phase executable
 - `목적` should stay to one or two sentences; phase blocks are the primary execution contract, not long prose summaries
 - `owner_agent` must exist in `references/agents-lite.md`
 - use exactly one execution agent per block
-- add `primary_skill` only when the phase must pin a specific skill
 - do not rely on heading text like `(Owner: ...)`
-- if tests are generated or consumed in a phase, include `테스트 산출물`, `테스트 이동`, and `실행`
-- if UI contracts or constraint IDs matter, include them inline under `계약/제약`
+- if UI contracts or constraint IDs matter, include them inline under `제약`
+- if tests are part of scope, keep phase-level references minimal and place artifact/placement details in `## 테스트 계획` and the corresponding manifest
 
 ---
 
@@ -144,7 +143,7 @@ Resolve routing and mode-sensitive conventions from the active execution contrac
 - For `general-developer`, there is no dedicated CLI contract in this repository; inspect the minimum repo-local tool or validation command that governs the work and use that as the execution contract
 - Do not hardcode detailed CLI/task situations into the planning prompt; defer command selection details to execution time
 
-See `agents-lite.md` for the canonical execution agent catalog and skill mapping.
+See `agents-lite.md` for the canonical execution agent catalog and related skill examples.
 
 ---
 
@@ -210,7 +209,6 @@ Add a later `playwright-guard` phase when the plan changes:
 When this phase exists:
 
 - set `owner_agent: playwright-guard`
-- set `primary_skill: guard-e2e-test`
 - schedule it after implementation reaches green on core validation
 - define trigger and scope explicitly:
   - changed journey or affected routes
@@ -228,16 +226,17 @@ Before finalizing, and again during self-review:
 
 1. Every executable plan file includes a valid `Branch` header and its worktree name can be derived by `/ -> -`
 2. Every phase/task has a concrete `owner_agent` listed in `references/agents-lite.md`
-3. Every phase/task has `목적`, `작업`, and `완료조건`
-4. No unresolved blocking policy/contract/schema/UX ambiguity remains
-5. Concern routing matches agent boundaries: frontend -> `frontend-developer`, backend -> `backend-developer`, infra/devops/root tooling -> `general-developer`
-6. For UI scope, the five UI contracts are explicitly recorded in the relevant phase/task before `plan-e2e-test`
-7. Constraint IDs used by tests live in the relevant phase/task blocks
-8. If a phase generates or consumes tests, it includes artifact path, move target, and run command
-9. For UI feature scope, `plan-e2e-test` artifacts exist with runner-appropriate frozen E2E files and placement handoff
-10. For UI/user-journey or regression-hardening scope, a later `playwright-guard` phase exists with explicit trigger, scope, and exit criteria
-11. Multi-plan tasks use numbered plan folders and keep tests/e2e local to the owning plan
-12. Planning-time test artifacts remain flat; final source-tree placement is deferred to implementation via phase instructions and manifests
+3. Every phase/task has `목적`, `작업`, and `검증`
+4. `검증` is an actionable checklist, not loose prose
+5. No unresolved blocking policy/contract/schema/UX ambiguity remains
+6. Concern routing matches agent boundaries: frontend -> `frontend-developer`, backend -> `backend-developer`, infra/devops/root tooling -> `general-developer`
+7. For UI scope, the five UI contracts are explicitly recorded in the relevant phase/task before `plan-e2e-test`
+8. Constraint IDs used by tests live in the relevant phase/task blocks
+9. If tests are planned, `## 테스트 계획` exists and points to the generated manifest/artifact directories
+10. For UI feature scope, `plan-e2e-test` artifacts exist with runner-appropriate frozen E2E files and placement handoff in `e2e/manifest.md`
+11. For UI/user-journey or regression-hardening scope, a later `playwright-guard` phase exists with explicit trigger, scope, and verification checklist
+12. Multi-plan tasks use numbered plan folders and keep tests/e2e local to the owning plan
+13. Planning-time test artifacts remain flat; final source-tree placement is deferred to manifests and implementation conventions
 
 Do not request execution before this checklist passes.
 
@@ -259,5 +258,5 @@ Provide a concise handoff summary with:
    - phase workers run inside the assigned task worktree without creating nested worktrees
    - successful phases are committed inside the task branch; final merge goes into each file's `Branch` with `--no-ff`
 6. For UI/user-flow scope, state whether `plan-e2e-test` artifacts are included and whether a later `playwright-guard` phase is scheduled
-7. Note which phase owns test movement from `plans/` into the source tree
-8. Implementation agents must resolve final test placement from phase `테스트 이동`, coding rules, and local conventions before copying flat plan artifacts into the source tree
+7. Note whether `tests/manifest.md` and/or `e2e/manifest.md` are included for each plan
+8. Implementation agents must resolve final test placement from the relevant manifest, coding rules, and local conventions before copying flat plan artifacts into the source tree

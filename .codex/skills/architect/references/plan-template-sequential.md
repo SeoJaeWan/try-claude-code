@@ -11,49 +11,44 @@
 
 ### Phase 1
 
-- 목적:
 - owner_agent: `{agent-name}`
-- primary_skill: `{skill-name}` (선택)
+- 목적:
 - 선행조건: `none` (선택)
-- 계약/제약:
+- 제약:
   - `[C-...]` (해당 시)
   - UI scope인 경우 `route/user state/action/visible outcome/locator` 계약
 - 작업:
-- 테스트 산출물:
-  - `plans/{task-name}/tests/{artifact}` (해당 시)
-  - `plans/{task-name}/e2e/{artifact}` (해당 시)
-- 테스트 이동:
-  - `plans/{task-name}/tests/{artifact}` -> `{repo test target path}` (해당 시)
-  - `plans/{task-name}/e2e/{artifact}` -> `{repo e2e target path}` (해당 시)
-- 실행:
-  - `{command}` (해당 시)
-- 완료조건:
-- 폴백: (선택)
+- 검증:
+  - [ ] `{command 또는 확인 방법}`
+  - [ ] `{기대 결과}`
 
 ### Phase 2
 
-- 목적:
 - owner_agent: `{agent-name}`
-- primary_skill: `{skill-name}` (선택)
+- 목적:
 - 선행조건: (선택)
-- 계약/제약:
+- 제약:
 - 작업:
-- 테스트 산출물:
-- 테스트 이동:
-- 실행:
-- 완료조건:
-- 폴백: (선택)
+- 검증:
+  - [ ] `{command 또는 확인 방법}`
+  - [ ] `{기대 결과}`
 
 ### Phase 3
 
-- 목적:
 - owner_agent: `{agent-name}`
-- primary_skill: `{skill-name}` (선택)
+- 목적:
 - 선행조건: (선택)
-- 계약/제약:
+- 제약:
 - 작업:
-- 테스트 산출물:
-- 테스트 이동:
-- 실행:
-- 완료조건:
-- 폴백: (선택)
+- 검증:
+  - [ ] `{command 또는 확인 방법}`
+  - [ ] `{기대 결과}`
+
+## 테스트 계획
+
+- 단위 테스트:
+  - `plans/{task-name}/tests/manifest.md` 및 flat artifacts (해당 시)
+  - 최종 소스 트리 배치는 `tests/manifest.md`와 구현 단계 규칙에서 resolve
+- E2E 테스트:
+  - `plans/{task-name}/e2e/manifest.md` 및 runner-appropriate artifacts (해당 시)
+  - 최종 소스 트리 배치는 `e2e/manifest.md`와 구현 단계 규칙에서 resolve
