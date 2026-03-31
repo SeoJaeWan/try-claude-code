@@ -51,7 +51,6 @@ test("backend는 basePackage가 없으면 Spring Application.java에서 root pac
 public class TryClaudeApplication {}
 `
     },
-    profiles: ["backend/personal/v1"]
   });
 
   const result = runCli(backendBin, [

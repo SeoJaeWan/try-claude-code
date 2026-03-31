@@ -6,7 +6,6 @@ import { createTempRepo } from "./test-utils.mjs";
 
 test("validateFiles는 directory scan에서도 targetRules argMapping과 fieldResolver를 함께 적용한다", async () => {
   const tempRoot = await createTempRepo({
-    profiles: [],
     files: {
       "hooks/apis/auth/mutations/usePostLogin/index.ts": `const usePostLogin = () => {
   return {};
@@ -100,7 +99,6 @@ export default usePostLogin;
 
 test("validateFiles는 supported root 아래 unsupported 파일도 결과에 포함한다", async () => {
   const tempRoot = await createTempRepo({
-    profiles: [],
     files: {
       "src/widget/index.ts": `const widget = () => {
   return {};
@@ -169,7 +167,6 @@ export default widget;
 
 test("validateFiles는 zero-match directory에 hint-rich unsupported error를 반환한다", async () => {
   const tempRoot = await createTempRepo({
-    profiles: [],
     files: {
       "docs/readme.ts": "export const readme = true;\n"
     }
@@ -218,7 +215,6 @@ test("validateFiles는 zero-match directory에 hint-rich unsupported error를 �
 
 test("validateFiles는 targetRules misconfig를 config error로 분리한다", async () => {
   const tempRoot = await createTempRepo({
-    profiles: [],
     files: {
       "app/showcase/page.tsx": `const Page = () => <section />;
 export default Page;

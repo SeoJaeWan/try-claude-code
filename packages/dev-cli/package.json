@@ -1,10 +1,10 @@
 {
   "name": "@seojaewan/dev-cli-core",
   "version": "0.1.9",
-  "description": "Shared runtime for the frontend and backend CLIs.",
+  "description": "Manifest-driven runtime for package-owned frontend and backend CLIs.",
   "type": "module",
   "exports": {
-    ".": "./src/run-cli.mjs"
+    ".": "./src/index.mjs"
   },
   "scripts": {
     "test": "node --test ./tests/*.test.mjs"

@@ -1,6 +1,6 @@
 # @seojaewan/frontend
 
-Frontend CLI for the Try Claude Code profile system.
+Frontend CLI — package-owned manifest for UI components, hooks, and frontend snippets.
 
 ## Install
 
@@ -12,9 +12,10 @@ npm i -g @seojaewan/frontend
 
 ```bash
 frontend --help
-frontend mode set --mode personal --version v1
-frontend mode show
+frontend component --help
+frontend component --json "{\"name\":\"ReviewCard\",\"path\":\"components/common/reviewCard\"}"
+frontend validate-file src/components/common/reviewCard
 ```
 
-`frontend mode set --mode personal --version v1` refreshes a local snapshot of `main/profiles/frontend/{mode}/{version}` from `SeoJaeWan/try-claude-code`.
-Inspect the stored selection with `frontend mode show`, use `frontend --help` even before mode setup for minimal setup guidance, and rerun `mode set` whenever you want to refresh the cached profile snapshot.
+`frontend --help` returns a manifest-driven summary JSON with all available commands, whenToUse guidance, and workflow flows.
+Use `frontend <command> --help` for command-scoped detail before scaffolding.

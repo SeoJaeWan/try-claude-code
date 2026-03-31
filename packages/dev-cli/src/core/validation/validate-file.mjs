@@ -12,7 +12,7 @@ import {
 import { createCliError } from "../shared/recipe-utils.mjs";
 import { applyFieldResolvers, resolveCommandArgs } from "../execution/command-args-resolver.mjs";
 import { renderTemplate, matchCliPathPatterns } from "../shared/path-patterns.mjs";
-import { validateRequest } from "./profile-validator.mjs";
+import { validateRequest } from "./command-validator.mjs";
 
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const IMPORT_RESOLUTION_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx"];

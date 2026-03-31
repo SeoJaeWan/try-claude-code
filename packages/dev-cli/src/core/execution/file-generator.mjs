@@ -1,6 +1,6 @@
 import { renderTemplateFile } from "./template-engine.mjs";
 import { normalizeCliPath } from "../shared/path-utils.mjs";
-import { validateRequest } from "../validation/profile-validator.mjs";
+import { validateRequest } from "../validation/command-validator.mjs";
 import { buildRenderContext } from "./render-context.mjs";
 import { createCliError, ensureString } from "../shared/recipe-utils.mjs";
 import { resolveCommandArgs } from "./command-args-resolver.mjs";
