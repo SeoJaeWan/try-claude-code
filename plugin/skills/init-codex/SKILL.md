@@ -118,27 +118,7 @@ ln -s "$CODEX_VAULT/agents" .codex/agents
 - If `ln -s` fails, provide the user with manual `mklink /D` commands as a fallback
 - Do NOT touch config.toml or artifacts/ — they remain local
 
-### Step 5: Update .gitignore
-
-Append ignore rules if not already present:
-
-```bash
-# Check and add to .gitignore
-grep -qxF '.codex/skills/' .gitignore 2>/dev/null || echo '.codex/skills/' >> .gitignore
-grep -qxF '.codex/agents/' .gitignore 2>/dev/null || echo '.codex/agents/' >> .gitignore
-```
-
-If these paths are already git-tracked, inform the user:
-
-```
-The following paths are currently tracked by git and need to be untracked:
-  git rm --cached -r .codex/skills/ .codex/agents/
-Run this command? (This only removes git tracking, not the files themselves.)
-```
-
-Wait for user confirmation before running `git rm --cached`.
-
-### Step 6: Verify
+### Step 5: Verify
 
 ```bash
 # Confirm symlinks
@@ -150,7 +130,7 @@ ls .codex/skills/
 ls .codex/agents/
 ```
 
-### Step 7: Report Results
+### Step 6: Report Results
 
 Output the final status as a table:
 
@@ -163,6 +143,19 @@ Output the final status as a table:
 | artifacts  | local  | .codex/artifacts/  | (not symlinked, project-specific)   |
 ```
 
+## Git Tracking
+
+Do NOT add symlinked paths to `.gitignore` and do NOT run `git rm --cached`.
+
+Git follows directory symlinks transparently — it reads files through the symlink and
+tracks them as if they were regular files. This means vault contents stay in git history,
+which is the desired behavior: the project repo remains self-contained even without
+vault access.
+
+If the project previously tracked these paths as real directories, git will detect the
+change (files appear "deleted" then re-added via symlink). This is expected — just
+commit the change normally.
+
 ## Important Notes
 
 - Always backup existing directories before creating symlinks (rename to `.bak`)
@@ -172,6 +165,7 @@ Output the final status as a table:
 - Do NOT overwrite vault contents if they already exist
 - Do NOT touch items that are already properly linked
 - Do NOT use `mklink /J` (Junction) — it fails on Google Drive virtual drives
+- Do NOT add symlinked paths to .gitignore — git tracking is intentionally preserved
 
 ---
 
