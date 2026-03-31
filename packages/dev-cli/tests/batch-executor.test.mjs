@@ -1,124 +1,59 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { access, mkdtemp } from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
 
-import { executeBatch } from "../src/core/execution/batch-executor.mjs";
-import { loadProfile } from "./test-utils.mjs";
+import { executeSpecCommand } from "../src/core/execution/batch-executor.mjs";
+import { loadProfile, projectRoot } from "./test-utils.mjs";
 
-test("batch executor는 op를 순서대로 실행하고 결과 순서를 유지한다", async () => {
+test("executeSpecCommand은 유효한 spec으로 ok:true 결과를 반환한다", async () => {
   const profile = await loadProfile("frontend");
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-batch-"));
 
-  const result = await executeBatch({
+  const result = await executeSpecCommand({
     profile,
     profileId: profile.id,
-    batchSpec: {
-      ops: [
-        {
-          id: "component",
-          command: "component",
-          spec: {
-            name: "HomePage",
-            path: "components/home/homePage"
-          }
-        },
-        {
-          id: "props",
-          command: "props",
-          spec: {
-            members: [
-              {
-                kind: "value",
-                name: "title",
-                type: "string",
-                required: true
-              }
-            ]
-          }
-        }
-      ]
+    commandName: "component",
+    spec: {
+      name: "HomePage",
+      path: "components/home/homePage"
     },
-    projectRoot: tempRoot,
-    apply: false,
-    force: false
+    projectRoot
   });
 
   assert.equal(result.ok, true);
-  assert.deepEqual(
-    result.batchResults.map((item) => item.id),
-    ["component", "props"]
-  );
+  assert.equal(result.command, "component");
+  assert.ok(Array.isArray(result.files));
+  assert.ok(result.files[0].path.includes("homePage"));
 });
 
-test("batch executor는 기본적으로 preview 모드로 동작하고 파일을 쓰지 않는다", async () => {
+test("executeSpecCommand은 알 수 없는 command에 UNKNOWN_COMMAND 오류를 반환한다", async () => {
   const profile = await loadProfile("frontend");
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-batch-"));
-  const targetPath = path.join(tempRoot, "components", "home", "homePage", "index.tsx");
-
-  const result = await executeBatch({
-    profile,
-    profileId: profile.id,
-    batchSpec: {
-      ops: [
-        {
-          id: "component",
-          command: "component",
-          spec: {
-            name: "HomePage",
-            path: "components/home/homePage"
-          }
-        }
-      ]
-    },
-    projectRoot: tempRoot,
-    apply: false,
-    force: false
-  });
-
-  assert.equal(result.apply, false);
-  assert.equal(result.files[0].status, "planned");
-  await assert.rejects(() => access(targetPath));
-});
-
-test("batch executor는 뒤 op가 실패하면 전체 write를 막는다", async () => {
-  const profile = await loadProfile("frontend");
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "dev-cli-batch-"));
-  const targetPath = path.join(tempRoot, "components", "home", "homePage", "index.tsx");
 
   await assert.rejects(
     () =>
-      executeBatch({
+      executeSpecCommand({
         profile,
         profileId: profile.id,
-        batchSpec: {
-          ops: [
-            {
-              id: "component",
-              command: "component",
-              spec: {
-                name: "HomePage",
-                path: "components/home/homePage"
-              }
-            },
-            {
-              id: "bad-function",
-              command: "function",
-              spec: {
-                kind: "internalHandler",
-                name: "handleSubmit",
-                action: "click"
-              }
-            }
-          ]
-        },
-        projectRoot: tempRoot,
-        apply: true,
-        force: false
+        commandName: "batch",
+        spec: { ops: [] },
+        projectRoot
       }),
-    (error) => error.code === "SPEC_CONFLICT"
+    (error) => error.code === "UNKNOWN_COMMAND"
   );
+});
 
-  await assert.rejects(() => access(targetPath));
+test("executeSpecCommand은 snippet 실행 command에 snippet result를 반환한다", async () => {
+  const profile = await loadProfile("frontend");
+
+  const result = await executeSpecCommand({
+    profile,
+    profileId: profile.id,
+    commandName: "function",
+    spec: {
+      kind: "internalHandler",
+      name: "onClick"
+    },
+    projectRoot
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.result.kind, "snippet");
 });
