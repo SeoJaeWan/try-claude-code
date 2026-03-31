@@ -19,7 +19,6 @@ test("기본 help payload는 탐색용 summary JSON을 반환한다", () => {
   assert.equal(payload.flows["create-component"].steps[0].command, "component");
 });
 
-
 test("legacy help subcommand 문법은 일반 unknown command로 실패한다", () => {
   const result = runCli(frontendBin, ["help", "component"]);
 
@@ -28,5 +27,54 @@ test("legacy help subcommand 문법은 일반 unknown command로 실패한다", 
   assert.equal(payload.ok, false);
   assert.equal(payload.error.code, "UNKNOWN_COMMAND");
   assert.equal(payload.error.details.command, "help");
+});
+
+test("frontend guide는 제거된 명령으로 JSON_SPEC_REQUIRED로 실패한다", () => {
+  const result = runCli(frontendBin, ["guide"]);
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stderr);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.error.code, "JSON_SPEC_REQUIRED");
+});
+
+test("frontend guide component는 positional spec 입력을 거부한다", () => {
+  const result = runCli(frontendBin, ["guide", "component"]);
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stderr);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.error.code, "JSON_SPEC_REQUIRED");
+  assert.equal(payload.error.details.command, "guide");
+});
+
+test("frontend --help --text는 제거된 옵션으로 UNKNOWN_OPTION으로 실패한다", () => {
+  const result = runCli(frontendBin, ["--help", "--text"]);
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stderr);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.error.code, "UNKNOWN_OPTION");
+  assert.equal(payload.error.details.option, "text");
+});
+
+test("frontend --help --full은 제거된 옵션으로 UNKNOWN_OPTION으로 실패한다", () => {
+  const result = runCli(frontendBin, ["--help", "--full"]);
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stderr);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.error.code, "UNKNOWN_OPTION");
+  assert.equal(payload.error.details.option, "full");
+});
+
+test("component --help --text도 UNKNOWN_OPTION으로 실패한다", () => {
+  const result = runCli(frontendBin, ["component", "--help", "--text"]);
+
+  assert.equal(result.status, 1);
+  const payload = readJson(result.stderr);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.error.code, "UNKNOWN_OPTION");
+  assert.equal(payload.error.details.option, "text");
 });
 
