@@ -1,7 +1,7 @@
 ---
 name: frontend-dev
 description: React/Next.js/Expo development with UI components, custom hooks, and state management. Use for frontend UI, API integration, and mobile app development.
-model: sonnet
+model: opus
 context: fork
 agent: frontend-developer
 ---
