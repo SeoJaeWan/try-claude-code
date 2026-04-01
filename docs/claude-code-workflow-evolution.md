@@ -522,7 +522,7 @@ flowchart LR
 | 계층 | 역할 | 대표 파일 |
 |---|---|---|
 | 배포 메타 | 플러그인 공개/번들 정의 | `.claude-plugin/marketplace.json` |
-| 계획 계층 | 요청 분석, plan/tests/e2e 생성 | `.codex/skills/architect/SKILL.md`, `.codex/skills/plan-unit-test/SKILL.md`, `.codex/skills/plan-e2e-test/SKILL.md` |
+| 계획 계층 | 요청 분석, boundary-centered plan 생성, source-tree test materialization | `.codex/skills/architect/SKILL.md`, `.codex/skills/plan-materialize/SKILL.md` |
 | 실행 계층 | 역할별 워크플로 정의 | `plugin/skills/frontend-dev/SKILL.md`, `plugin/skills/backend-dev/SKILL.md` |
 | 역할 프롬프트 | 에이전트 성격과 도구 범위 | `plugin/agents/frontend-developer.md`, `plugin/agents/backend-developer.md` |
 | 규칙 소유 계층 | 네이밍/경로/검증/렌더 규칙 | `packages/{alias}/src/manifest.mjs` |
