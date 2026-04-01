@@ -19,9 +19,7 @@ function nowIso() {
 function defaultState() {
   return {
     version: STATE_VERSION,
-    config: {
-      stopReviewGate: false
-    },
+    config: {},
     jobs: []
   };
 }
@@ -148,19 +146,6 @@ export function upsertJob(cwd, jobPatch) {
 
 export function listJobs(cwd) {
   return loadState(cwd).jobs;
-}
-
-export function setConfig(cwd, key, value) {
-  return updateState(cwd, (state) => {
-    state.config = {
-      ...state.config,
-      [key]: value
-    };
-  });
-}
-
-export function getConfig(cwd) {
-  return loadState(cwd).config;
 }
 
 export function writeJobFile(cwd, jobId, payload) {
