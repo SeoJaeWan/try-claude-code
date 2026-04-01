@@ -156,6 +156,13 @@ function main() {
     return;
   }
 
+  const diff = spawnSync("git", ["diff", "--stat"], { cwd, encoding: "utf8" });
+  const diffCached = spawnSync("git", ["diff", "--cached", "--stat"], { cwd, encoding: "utf8" });
+  if (!diff.stdout.trim() && !diffCached.stdout.trim()) {
+    logNote(runningTaskNote);
+    return;
+  }
+
   const review = runStopReview(cwd, input);
   if (!review.ok) {
     emitDecision({
