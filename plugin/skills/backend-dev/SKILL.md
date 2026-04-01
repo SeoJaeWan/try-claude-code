@@ -1,7 +1,7 @@
 ---
 name: backend-dev
 description: Backend API development, database integration, and authentication. Auto-detects framework and language from project files. Use for API endpoints, DB operations, server logic, and backend testing.
-model: sonnet
+model: opus
 context: fork
 agent: backend-developer
 ---
@@ -28,13 +28,13 @@ All module, entity, and DTO conventions — directory structure, naming, decorat
 
 Every API endpoint must include proper error responses.
 
-| Status | When to use | Example |
-|---|---|---|
-| `400 Bad Request` | Invalid input, validation failure | DTO validation fails |
-| `401 Unauthorized` | Missing or invalid authentication | No/expired JWT token |
-| `403 Forbidden` | Insufficient permissions | User accessing admin route |
-| `404 Not Found` | Resource does not exist | `GET /products/:id` with non-existent ID |
-| `409 Conflict` | Duplicate resource or state conflict | Creating user with existing email |
+| Status             | When to use                          | Example                                  |
+| ------------------ | ------------------------------------ | ---------------------------------------- |
+| `400 Bad Request`  | Invalid input, validation failure    | DTO validation fails                     |
+| `401 Unauthorized` | Missing or invalid authentication    | No/expired JWT token                     |
+| `403 Forbidden`    | Insufficient permissions             | User accessing admin route               |
+| `404 Not Found`    | Resource does not exist              | `GET /products/:id` with non-existent ID |
+| `409 Conflict`     | Duplicate resource or state conflict | Creating user with existing email        |
 
 ---
 
@@ -49,5 +49,5 @@ Every API endpoint must include proper error responses.
 7. If plan includes `e2e/`: if E2E fails, fix implementation, NOT tests
 8. **Run `backend validate-file` on all created/modified files.** Fix any reported violations and re-validate until all pass. Do not skip this step.
 9. Return results based on plan.md
-  </Instructions>
-  </Skill_Guide>
+   </Instructions>
+   </Skill_Guide>

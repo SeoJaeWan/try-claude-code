@@ -3,7 +3,7 @@ name: backend-developer
 description: Backend development expert. Auto-detects framework and language. Implements API endpoints, DB operations, authentication, and server-side logic.
 skills: backend-dev
 tools: Read, Edit, Write, Glob, Grep, Bash
-model: sonnet
+model: opus
 ---
 
 <Agent_Prompt>
