@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 
 import { getCodexLoginStatus } from "./lib/codex.mjs";
 import { loadPromptTemplate, interpolateTemplate } from "./lib/prompts.mjs";
-import { getConfig, listJobs } from "./lib/state.mjs";
+import { listJobs } from "./lib/state.mjs";
 import { sortJobsNewestFirst } from "./lib/job-control.mjs";
 import { SESSION_ID_ENV } from "./lib/tracked-jobs.mjs";
 import { resolveWorkspaceRoot } from "./lib/workspace.mjs";
@@ -143,18 +143,11 @@ function main() {
   const input = readHookInput();
   const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
   const workspaceRoot = resolveWorkspaceRoot(cwd);
-  const config = getConfig(workspaceRoot);
-
   const jobs = sortJobsNewestFirst(filterJobsForCurrentSession(listJobs(workspaceRoot), input));
   const runningJob = jobs.find((job) => job.status === "queued" || job.status === "running");
   const runningTaskNote = runningJob
     ? `Codex task ${runningJob.id} is still running. Check /codex:status and use /codex:cancel ${runningJob.id} if you want to stop it before ending the session.`
     : null;
-
-  if (!config.stopReviewGate) {
-    logNote(runningTaskNote);
-    return;
-  }
 
   const setupNote = buildSetupNote(cwd);
   if (setupNote) {

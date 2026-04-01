@@ -34,9 +34,7 @@
  *   onProgress: ProgressReporter | null
  * }} TurnCaptureState
  */
-import { readJsonFile } from "./fs.mjs";
 import { BROKER_BUSY_RPC_CODE, BROKER_ENDPOINT_ENV, CodexAppServerClient } from "./app-server.mjs";
-import { loadBrokerSession } from "./broker-lifecycle.mjs";
 import { binaryAvailable, runCommand } from "./process.mjs";
 
 const SERVICE_NAME = "claude_code_codex_plugin";
@@ -652,7 +650,7 @@ function buildResultStatus(turnState) {
   return turnState.finalTurn?.status === "completed" ? 0 : 1;
 }
 
-export function getCodexAvailability(cwd) {
+function getCodexAvailability(cwd) {
   const versionStatus = binaryAvailable("codex", ["--version"], { cwd });
   if (!versionStatus.available) {
     return versionStatus;
@@ -669,25 +667,6 @@ export function getCodexAvailability(cwd) {
   return {
     available: true,
     detail: `${versionStatus.detail}; advanced runtime available`
-  };
-}
-
-export function getSessionRuntimeStatus(env = process.env, cwd = process.cwd()) {
-  const endpoint = env?.[BROKER_ENDPOINT_ENV] ?? loadBrokerSession(cwd)?.endpoint ?? null;
-  if (endpoint) {
-    return {
-      mode: "shared",
-      label: "shared session",
-      detail: "This Claude session is configured to reuse one shared Codex runtime.",
-      endpoint
-    };
-  }
-
-  return {
-    mode: "direct",
-    label: "direct startup",
-    detail: "No shared Codex runtime is active yet. The first review or task command will start one on demand.",
-    endpoint: null
   };
 }
 
@@ -723,107 +702,6 @@ export function getCodexLoginStatus(cwd) {
     loggedIn: false,
     detail: result.stderr.trim() || result.stdout.trim() || "not authenticated"
   };
-}
-
-export async function interruptAppServerTurn(cwd, { threadId, turnId }) {
-  if (!threadId || !turnId) {
-    return {
-      attempted: false,
-      interrupted: false,
-      transport: null,
-      detail: "missing threadId or turnId"
-    };
-  }
-
-  const availability = getCodexAvailability(cwd);
-  if (!availability.available) {
-    return {
-      attempted: false,
-      interrupted: false,
-      transport: null,
-      detail: availability.detail
-    };
-  }
-
-  const brokerEndpoint = process.env[BROKER_ENDPOINT_ENV] ?? loadBrokerSession(cwd)?.endpoint ?? null;
-  let client = null;
-  try {
-    client = brokerEndpoint
-      ? await CodexAppServerClient.connect(cwd, { brokerEndpoint })
-      : await CodexAppServerClient.connect(cwd, { disableBroker: true });
-    await client.request("turn/interrupt", { threadId, turnId });
-    return {
-      attempted: true,
-      interrupted: true,
-      transport: client.transport,
-      detail: `Interrupted ${turnId} on ${threadId}.`
-    };
-  } catch (error) {
-    return {
-      attempted: true,
-      interrupted: false,
-      transport: client?.transport ?? null,
-      detail: error instanceof Error ? error.message : String(error)
-    };
-  } finally {
-    await client?.close().catch(() => {});
-  }
-}
-
-export async function runAppServerReview(cwd, options = {}) {
-  const availability = getCodexAvailability(cwd);
-  if (!availability.available) {
-    throw new Error("Codex CLI is not installed or is missing required runtime support. Install it with `npm install -g @openai/codex`, then rerun `/codex:setup`.");
-  }
-
-  return withAppServer(cwd, async (client) => {
-    emitProgress(options.onProgress, "Starting Codex review thread.", "starting");
-    const thread = await startThread(client, cwd, {
-      model: options.model,
-      sandbox: "read-only",
-      ephemeral: true,
-      threadName: options.threadName
-    });
-    const sourceThreadId = thread.thread.id;
-    emitProgress(options.onProgress, `Thread ready (${sourceThreadId}).`, "starting", {
-      threadId: sourceThreadId
-    });
-    const delivery = options.delivery ?? "inline";
-
-    const turnState = await captureTurn(
-      client,
-      sourceThreadId,
-      () =>
-        client.request("review/start", {
-          threadId: sourceThreadId,
-          delivery,
-          target: options.target
-        }),
-      {
-        onProgress: options.onProgress,
-        onResponse(response, state) {
-          if (response.reviewThreadId) {
-            state.threadIds.add(response.reviewThreadId);
-            if (delivery === "detached") {
-              state.threadId = response.reviewThreadId;
-            }
-          }
-        }
-      }
-    );
-
-    return {
-      status: buildResultStatus(turnState),
-      threadId: turnState.threadId,
-      sourceThreadId,
-      turnId: turnState.turnId,
-      reviewText: turnState.reviewText,
-      reasoningSummary: turnState.reasoningSummary,
-      turn: turnState.finalTurn,
-      error: turnState.error,
-      stderr: cleanCodexStderr(client.stderr)
-    };
-  });
 }
 
 export async function runAppServerTurn(cwd, options = {}) {
@@ -919,35 +797,4 @@ export function buildPersistentTaskThreadName(prompt) {
   return buildTaskThreadName(prompt);
 }
 
-export function parseStructuredOutput(rawOutput, fallback = {}) {
-  if (!rawOutput) {
-    return {
-      parsed: null,
-      parseError: fallback.failureMessage ?? "Codex did not return a final structured message.",
-      rawOutput: rawOutput ?? "",
-      ...fallback
-    };
-  }
-
-  try {
-    return {
-      parsed: JSON.parse(rawOutput),
-      parseError: null,
-      rawOutput,
-      ...fallback
-    };
-  } catch (error) {
-    return {
-      parsed: null,
-      parseError: error.message,
-      rawOutput,
-      ...fallback
-    };
-  }
-}
-
-export function readOutputSchema(schemaPath) {
-  return readJsonFile(schemaPath);
-}
-
-export { DEFAULT_CONTINUE_PROMPT, TASK_THREAD_PREFIX };
+export { DEFAULT_CONTINUE_PROMPT };
