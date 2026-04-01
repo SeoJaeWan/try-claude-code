@@ -24,8 +24,7 @@ Do NOT create, modify, or scaffold any frontend file without the `frontend` CLI.
 
 - Do NOT start implementation before reading `frontend --help`.
 - Do NOT scaffold manually — use `frontend <command> --apply`.
-- Do NOT consider a file done until `frontend validate-file` passes on every created/modified file.
-- Do NOT skip re-validation after fixing violations.
+- Do NOT run `frontend validate-file` — convention validation is handled by the Stop hook after your work completes.
 
 ## Core Principle
 

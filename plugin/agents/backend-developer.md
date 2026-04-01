@@ -24,8 +24,7 @@ Do NOT create, modify, or scaffold any backend file without the `backend` CLI. D
 
 - Do NOT start implementation before reading `backend --help`.
 - Do NOT scaffold manually — use `backend <command> --apply`.
-- Do NOT consider a file done until `backend validate-file` passes on every created/modified file.
-- Do NOT skip re-validation after fixing violations.
+- Do NOT run `backend validate-file` — convention validation is handled by the Stop hook after your work completes.
 
 ## HTTP Error Response Handling
 
