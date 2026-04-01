@@ -39,7 +39,7 @@
         "Includes data-state branch flow: adding a todo without completing it leaves stats counter unchanged",
         "Includes branch flow: navigate to /todos without login → redirect to /login",
         "Uses data-testid locators (todo-input, todo-add, todo-checkbox-{id}, stat-total, stat-completed, nav-todos, nav-dashboard)",
-        "Does NOT write single-screen tests (per-screen todo validation is plan-e2e-test scope)"
+        "Does NOT write single-screen tests (per-screen todo validation is plan-materialize scope)"
       ]
     },
     {
