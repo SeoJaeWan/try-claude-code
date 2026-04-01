@@ -82,10 +82,16 @@ BASE=$(git rev-parse --abbrev-ref HEAD)
 TASK_BRANCH="{value from **Branch:**}"
 WORKTREE_DIR="worktrees/${TASK_BRANCH}"
 
-# Clean up stale worktree if it exists from a previous failed run
+# Check for stale worktree from a previous failed run
 if git worktree list --porcelain | grep -q "$WORKTREE_DIR"; then
-  git worktree remove "$WORKTREE_DIR" --force
-  git branch -D "$TASK_BRANCH" 2>/dev/null
+  echo "Stale worktree found: $WORKTREE_DIR"
+  git -C "$WORKTREE_DIR" log --oneline "$BASE".."$TASK_BRANCH" 2>/dev/null
+  git -C "$WORKTREE_DIR" status --short 2>/dev/null
+  # → AskUserQuestion with existing commits/changes shown above.
+  #   Options:
+  #   - "정리하고 새로 시작" → remove worktree + delete branch, then recreate
+  #   - "기존 worktree에서 이어서 진행" → skip creation, resume from last completed phase
+  #   - "중단" → stop execution
 fi
 
 # Create worktree with a new branch based on the base
@@ -220,7 +226,7 @@ git log --oneline "$BASE".."$TASK_BRANCH"
 
 ### Stale worktree from previous run
 
-Handled in Step 2 — if the worktree directory already exists, it's force-removed before recreation.
+Handled in Step 2 — if the worktree directory already exists, existing commits and uncommitted changes are shown to the user via `AskUserQuestion`. The user chooses to clean up and restart, resume from existing state, or abort. Previous work is never destroyed without explicit user consent.
 
 ### Phase agent failure
 
