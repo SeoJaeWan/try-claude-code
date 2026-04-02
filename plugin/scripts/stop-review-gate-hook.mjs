@@ -120,24 +120,6 @@ function isValidCommit(wtPath, sha) {
   return result.status === 0 && result.stdout.trim() === "commit";
 }
 
-function countActiveWorktrees(cwd) {
-  const result = spawnSync("git", ["worktree", "list", "--porcelain"], { cwd, encoding: "utf8" });
-  if (result.status !== 0 || !result.stdout) {
-    return 0;
-  }
-  let count = 0;
-  const normalizedCwd = path.resolve(cwd);
-  for (const line of result.stdout.split(/\r?\n/)) {
-    if (line.startsWith("worktree ")) {
-      const wtPath = path.resolve(line.slice("worktree ".length).trim());
-      if (wtPath !== normalizedCwd) {
-        count++;
-      }
-    }
-  }
-  return count;
-}
-
 function getWorktreeDiffs(sessionId, cwd) {
   if (!sessionId) {
     return [];
@@ -256,6 +238,16 @@ function runStopReview(cwd, input = {}, worktreeDiffs = []) {
 function main() {
   const input = readHookInput();
   const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
+
+  // Check active worktrees registered by the current session for recent commits.
+  const sessionId = input.session_id || process.env[SESSION_ID_ENV] || null;
+  const worktreeDiffs = getWorktreeDiffs(sessionId, cwd);
+
+  // No active worktree diffs — nothing to review, exit immediately.
+  if (worktreeDiffs.length === 0) {
+    return;
+  }
+
   const workspaceRoot = resolveWorkspaceRoot(cwd);
   const jobs = sortJobsNewestFirst(filterJobsForCurrentSession(listJobs(workspaceRoot), input));
   const runningJob = jobs.find((job) => job.status === "queued" || job.status === "running");
@@ -266,33 +258,6 @@ function main() {
   const setupNote = buildSetupNote(cwd);
   if (setupNote) {
     logNote(setupNote);
-    logNote(runningTaskNote);
-    return;
-  }
-
-  // Check main repo for uncommitted changes.
-  const diff = spawnSync("git", ["diff", "--stat"], { cwd, encoding: "utf8" });
-  const diffCached = spawnSync("git", ["diff", "--cached", "--stat"], { cwd, encoding: "utf8" });
-  const hasMainDiff = !!(diff.stdout.trim() || diffCached.stdout.trim());
-
-  // Check active worktrees registered by the current session for recent commits.
-  const sessionId = input.session_id || process.env[SESSION_ID_ENV] || null;
-  const worktreeDiffs = getWorktreeDiffs(sessionId, cwd);
-
-  // Warn if there are active worktrees that this session is not tracking.
-  if (worktreeDiffs.length === 0) {
-    const activeCount = countActiveWorktrees(cwd);
-    const session = sessionId ? loadSession(sessionId) : null;
-    const registeredCount = session ? session.worktrees.length : 0;
-    if (activeCount > 0 && registeredCount === 0) {
-      logNote(
-        `Warning: ${activeCount} active worktree(s) detected but none are registered in this session. ` +
-        "Worktree commits may not be reviewed. Ensure git worktree commands run via the Bash tool so the PostToolUse hook can track them."
-      );
-    }
-  }
-
-  if (!hasMainDiff && worktreeDiffs.length === 0) {
     logNote(runningTaskNote);
     return;
   }
@@ -309,7 +274,7 @@ function main() {
   }
 
   // Review passed — record the reviewed commit SHAs so subsequent stops skip them.
-  if (worktreeDiffs.length > 0 && sessionId) {
+  if (sessionId) {
     markWorktreesReviewed(sessionId, worktreeDiffs);
   }
 
