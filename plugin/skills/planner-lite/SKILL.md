@@ -50,7 +50,7 @@ This skill uses manual `git worktree` management: one worktree per task, phase a
 X (base branch — HEAD stays here during execution)
 │
 └── git worktree add -b task-A worktrees/task-A X
-    ├── commit: docs(plan): add plan for task-A        ← plan file (auto)
+    ├── commit: docs(plan): add plan and test contracts for task-A  ← plan + materialized tests (auto)
     ├── commit: feat(auth): implement JWT-based login
     ├── commit: feat(auth): add token refresh middleware
     └── commit: test(auth): add integration tests for login flow
@@ -98,20 +98,44 @@ fi
 git worktree add -b "$TASK_BRANCH" "$WORKTREE_DIR" "$BASE"
 ```
 
-After creating the worktree, copy the plan file into it and commit as the first commit on the task branch. This ensures the plan is included when the task branch is merged.
+After creating the worktree, copy plan artifacts and materialized test files into it and commit as the first commit on the task branch. This ensures the plan and its test contracts are included when the task branch is merged.
 
 ```bash
 # Copy the plan file (preserve directory structure)
-PLAN_PATH="plans/{task-name}/plan.md"
-mkdir -p "$WORKTREE_DIR/$(dirname "$PLAN_PATH")"
+PLAN_DIR="plans/{task-name}"
+PLAN_PATH="$PLAN_DIR/plan.md"
+mkdir -p "$WORKTREE_DIR/$PLAN_DIR"
 cp "$PLAN_PATH" "$WORKTREE_DIR/$PLAN_PATH"
 
-# Commit the plan as the first commit
-git -C "$WORKTREE_DIR" add "$PLAN_PATH"
-git -C "$WORKTREE_DIR" commit -m "docs(plan): add plan for {task-name}"
+# Copy materialize.md if it exists
+MATERIALIZE_PATH="$PLAN_DIR/materialize.md"
+if [ -f "$MATERIALIZE_PATH" ]; then
+  cp "$MATERIALIZE_PATH" "$WORKTREE_DIR/$MATERIALIZE_PATH"
+fi
 ```
 
-After this step, HEAD is still on `$BASE` in the main repo. The worktree has its own checkout of `$TASK_BRANCH` with the plan file as the first commit.
+Then check if `materialize.md` exists adjacent to the plan. If it does, parse its target file entries and copy each test file into the worktree. `materialize.md` lists test files in its `target file` column — extract the paths and copy them while preserving directory structure:
+
+```bash
+# Copy materialized test files into worktree
+if [ -f "$MATERIALIZE_PATH" ]; then
+  # Extract target file paths from materialize.md table rows
+  # (lines containing .test. or .spec. with a file path)
+  grep -oP '(?<=\| )[^\|]+\.(?:test|spec)\.[^\|\s]+' "$MATERIALIZE_PATH" | while read -r TEST_FILE; do
+    TEST_FILE=$(echo "$TEST_FILE" | xargs)  # trim whitespace
+    if [ -f "$TEST_FILE" ]; then
+      mkdir -p "$WORKTREE_DIR/$(dirname "$TEST_FILE")"
+      cp "$TEST_FILE" "$WORKTREE_DIR/$TEST_FILE"
+    fi
+  done
+fi
+
+# Commit plan + test contracts as the first commit
+git -C "$WORKTREE_DIR" add -A
+git -C "$WORKTREE_DIR" commit -m "docs(plan): add plan and test contracts for {task-name}"
+```
+
+After this step, HEAD is still on `$BASE` in the main repo. The worktree has its own checkout of `$TASK_BRANCH` with the plan and materialized test files as the first commit.
 
 ### Step 3. Execute phases
 
