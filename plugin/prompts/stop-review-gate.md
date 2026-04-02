@@ -14,12 +14,17 @@ If the previous Claude turn was only a status update, a summary, a setup/login c
 Challenge whether that specific work and its design choices should ship.
 
 {{CLAUDE_RESPONSE_BLOCK}}
+
+{{WORKTREE_DIFFS_BLOCK}}
 </task>
 
 <validation_contract>
 Before finalizing the review, run convention validation on all changed files in the working tree:
 
 1. Detect changed files using `git diff --name-only` and `git diff --cached --name-only`.
+   If worktree diffs are present above, also detect changed files from each worktree using
+   `git -C <worktree-path> diff --name-only HEAD~1..HEAD`. Apply the same validation to those files
+   by running the validate-file commands from within the worktree directory.
 2. For each changed file:
    - If a `frontend` CLI is available (check with `which frontend` or `npx frontend --help`):
      Run `npx frontend validate-file <file>` on files that look like frontend code.
