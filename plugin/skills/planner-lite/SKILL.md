@@ -87,7 +87,7 @@ if git worktree list --porcelain | grep -q "$WORKTREE_DIR"; then
   echo "Stale worktree found: $WORKTREE_DIR"
   git -C "$WORKTREE_DIR" log --oneline "$BASE".."$TASK_BRANCH" 2>/dev/null
   git -C "$WORKTREE_DIR" status --short 2>/dev/null
-  # → AskUserQuestion with existing commits/changes shown above.
+  # → Report existing commits/changes as plain text and end your turn.
   #   Options:
   #   - "정리하고 새로 시작" → remove worktree + delete branch, then recreate
   #   - "기존 worktree에서 이어서 진행" → skip creation, resume from last completed phase
@@ -173,15 +173,16 @@ git -C "$WORKTREE_DIR" log --oneline -1
 
 If verification fails → stop execution and report the error. Do not proceed to the next phase.
 
-#### 3c. Wait for user approval
+#### 3c. End turn for stop-gate review
 
-After verification passes, report the phase results to the user and wait for approval before continuing. Use `AskUserQuestion` to present:
+After verification passes, output the following as **plain text** and let your turn end naturally. Do NOT use `AskUserQuestion` — just output text so that your turn ends with `end_turn`, which triggers the Stop hook to review the worktree commits automatically.
 
+Report:
 - What was completed in this phase (changed files, commit summary)
 - Validation results
-- Options: "다음 phase 진행" / "중단"
+- "Phase {N} 완료. Stop-gate review가 실행됩니다. 계속하려면 답장해주세요."
 
-Do not proceed to the next phase until the user explicitly approves. If the user chooses to stop, keep the worktree intact for inspection — do not clean up.
+Do not proceed to the next phase until the user explicitly replies. If the user chooses to stop, keep the worktree intact for inspection — do not clean up.
 
 ### Step 4. Clean up worktree and ask user
 
@@ -196,11 +197,11 @@ git worktree remove "$WORKTREE_DIR" --force
 git rev-parse --abbrev-ref HEAD  # should be $BASE
 ```
 
-After cleanup, use `AskUserQuestion` to present:
+After cleanup, output the following as **plain text** and let your turn end naturally. Do NOT use `AskUserQuestion`:
 
 - Summary of all phase commits: `git log --oneline $BASE..$TASK_BRANCH`
 - Changed files: `git diff --stat $BASE..$TASK_BRANCH`
-- Options:
+- Options the user can choose:
   - "base 브랜치($BASE)에 병합" → `git merge $TASK_BRANCH --no-ff -m "merge: $TASK_BRANCH into $BASE"` then `git branch -d $TASK_BRANCH`
   - "PR 생성" → leave the task branch for PR creation
   - "나중에 처리" → leave the task branch, do nothing
@@ -226,7 +227,7 @@ git log --oneline "$BASE".."$TASK_BRANCH"
 
 ### Stale worktree from previous run
 
-Handled in Step 2 — if the worktree directory already exists, existing commits and uncommitted changes are shown to the user via `AskUserQuestion`. The user chooses to clean up and restart, resume from existing state, or abort. Previous work is never destroyed without explicit user consent.
+Handled in Step 2 — if the worktree directory already exists, existing commits and uncommitted changes are reported as plain text and the turn ends. The user chooses to clean up and restart, resume from existing state, or abort. Previous work is never destroyed without explicit user consent.
 
 ### Phase agent failure
 
