@@ -81,16 +81,28 @@ Store this as `VAULT_BASE`. Verify the path is accessible before proceeding.
 
 ## Step 3: 3-Layer Memory Structure
 
-| Layer | Claude Code Path | Vault Target Path |
-|-------|-----------------|-------------------|
-| User memory (global) | `~/.claude/CLAUDE.md` | `{VAULT_BASE}/user-memory/CLAUDE.md` |
-| Project memory | `./.claude/CLAUDE.md` | `{VAULT_BASE}/projects/{PROJECT_KEY}/CLAUDE.md` |
-| Auto-memory | `~/.claude/projects/{PROJECT_KEY}/memory/` | `{VAULT_BASE}/projects/{PROJECT_KEY}/auto-memory/` |
+| Layer | Claude Code Path | Storage | Git tracked? |
+|-------|-----------------|---------|-------------|
+| User memory (global) | `~/.claude/CLAUDE.md` | Vault symlink → `{VAULT_BASE}/user-memory/CLAUDE.md` | No |
+| Project memory | `./.claude/CLAUDE.md` | **Direct file in repo** (no symlink) | **Yes** |
+| Auto-memory | `~/.claude/projects/{PROJECT_KEY}/memory/` | Vault symlink → `{VAULT_BASE}/projects/{PROJECT_KEY}/auto-memory/` | No |
+
+**Project memory is NOT symlinked.** It lives directly in the repo as `.claude/CLAUDE.md`
+so the team can share project context via git. The `.gitignore` should allow it:
+
+```gitignore
+.claude/*
+!.claude/CLAUDE.md
+```
 
 ## Step 4: Check Current Status
 
+Check each layer's current state:
+
+**User memory & Auto-memory (symlink-based):**
+
 ```bash
-# For each of the 3 paths, check symlink status
+# For each of the 2 symlink paths, check status
 # macOS/Linux: file <path> or ls -la <path>
 # Windows Git Bash: file <path>
 ```
@@ -101,6 +113,25 @@ Store this as `VAULT_BASE`. Verify the path is accessible before proceeding.
 | Broken symlink | Delete and recreate |
 | Regular file/folder exists | Backup (rename to `.bak`) then create symlink |
 | Does not exist | Create new |
+
+**Project memory (direct file, NOT symlinked):**
+
+```bash
+# Check .claude/CLAUDE.md
+file "$PROJECT_DIR/.claude/CLAUDE.md"
+```
+
+| Status | Action |
+|--------|--------|
+| Regular file exists | Skip (already correct) |
+| Symlink (legacy) | Replace with real file: read target content, delete symlink, write content directly |
+| Does not exist | Create with project name header |
+
+Also verify `.gitignore` contains the pattern to track it:
+```bash
+grep -q '!.claude/CLAUDE.md' "$PROJECT_DIR/.gitignore"
+```
+If missing, add `.claude/*` and `!.claude/CLAUDE.md` lines.
 
 Show results as a table and confirm with AskUserQuestion before proceeding.
 
@@ -177,7 +208,9 @@ Execute the user's choice and record the outcome for the final report:
   Show the user which files were copied and which were skipped.
 - **Skip**: do nothing.
 
-## Step 6: Create Vault Targets
+## Step 6: Create Vault Targets & Project Memory
+
+### 6a. Vault directories (User memory & Auto-memory only)
 
 ```bash
 mkdir -p "$VAULT_BASE/user-memory"
@@ -193,9 +226,6 @@ Seed the vault from local files. There are three cases per item:
 | Exists | Missing | Nothing to do |
 | Exists | Exists (real) | Compare; if different, ask user which to keep |
 
-The fourth case matters because legacy migration (Step 5 Copy) may have placed an
-older version in the vault while the local file has newer edits.
-
 **User memory:**
 ```bash
 LOCAL="$HOME/.claude/CLAUDE.md"
@@ -208,9 +238,6 @@ elif [ -f "$LOCAL" ] && [ ! -L "$LOCAL" ] && ! diff -q "$LOCAL" "$VAULT" > /dev/
   # Options: (a) Keep vault version, (b) Overwrite vault with local, (c) Keep both (save local as CLAUDE.md.local in vault)
 fi
 ```
-
-**Project memory:** same pattern with `LOCAL="$PROJECT_DIR/.claude/CLAUDE.md"` and
-`VAULT="$VAULT_BASE/projects/$PROJECT_KEY/CLAUDE.md"`.
 
 **Auto-memory (directory)** — merge local-only files into vault, never overwrite:
 ```bash
@@ -227,6 +254,36 @@ if [ -d "$LOCAL_DIR" ] && [ ! -L "$LOCAL_DIR" ]; then
       # Ask user which version to keep via AskUserQuestion
     fi
   done
+fi
+```
+
+### 6b. Project memory (direct file, NO vault sync)
+
+Project memory is stored directly in the repo at `.claude/CLAUDE.md` and tracked by git.
+Do NOT copy it to the vault or create a symlink.
+
+```bash
+PROJECT_CLAUDE="$PROJECT_DIR/.claude/CLAUDE.md"
+mkdir -p "$PROJECT_DIR/.claude"
+
+if [ -L "$PROJECT_CLAUDE" ]; then
+  # Legacy symlink — convert to real file
+  CONTENT=$(cat "$PROJECT_CLAUDE" 2>/dev/null || echo "")
+  rm "$PROJECT_CLAUDE"
+  echo "$CONTENT" > "$PROJECT_CLAUDE"
+  echo "Converted project CLAUDE.md from symlink to real file"
+elif [ ! -f "$PROJECT_CLAUDE" ]; then
+  PROJECT_NAME=$(basename "$PROJECT_DIR")
+  echo "# Project Memory - $PROJECT_NAME" > "$PROJECT_CLAUDE"
+  echo "Created new project CLAUDE.md"
+fi
+```
+
+Ensure `.gitignore` allows tracking:
+```bash
+if ! grep -q '!.claude/CLAUDE.md' "$PROJECT_DIR/.gitignore" 2>/dev/null; then
+  # Add .claude/* and !.claude/CLAUDE.md if not present
+  echo -e ".claude/*\n!.claude/CLAUDE.md" >> "$PROJECT_DIR/.gitignore"
 fi
 ```
 
@@ -254,18 +311,17 @@ the project key directory may not exist yet):
 
 ```bash
 mkdir -p "$HOME/.claude"
-mkdir -p "$PROJECT_DIR/.claude"
 mkdir -p "$HOME/.claude/projects/$PROJECT_KEY"
 ```
+
+Only create symlinks for **User memory** and **Auto-memory** (NOT project memory):
 
 **macOS / Linux:**
 ```bash
 clear_path "$HOME/.claude/CLAUDE.md"
-clear_path "$PROJECT_DIR/.claude/CLAUDE.md"
 clear_path "$HOME/.claude/projects/$PROJECT_KEY/memory"
 
 ln -s "$VAULT_BASE/user-memory/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
-ln -s "$VAULT_BASE/projects/$PROJECT_KEY/CLAUDE.md" "$PROJECT_DIR/.claude/CLAUDE.md"
 ln -s "$VAULT_BASE/projects/$PROJECT_KEY/auto-memory" "$HOME/.claude/projects/$PROJECT_KEY/memory"
 ```
 
@@ -274,13 +330,13 @@ ln -s "$VAULT_BASE/projects/$PROJECT_KEY/auto-memory" "$HOME/.claude/projects/$P
 export MSYS=winsymlinks:nativestrict
 
 clear_path "$HOME/.claude/CLAUDE.md"
-clear_path "$PROJECT_DIR/.claude/CLAUDE.md"
 clear_path "$HOME/.claude/projects/$PROJECT_KEY/memory"
 
 ln -s "$VAULT_BASE/user-memory/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
-ln -s "$VAULT_BASE/projects/$PROJECT_KEY/CLAUDE.md" "$PROJECT_DIR/.claude/CLAUDE.md"
 ln -s "$VAULT_BASE/projects/$PROJECT_KEY/auto-memory" "$HOME/.claude/projects/$PROJECT_KEY/memory"
 ```
+
+**Project memory** (`.claude/CLAUDE.md`) is handled in Step 6b as a direct file — no symlink.
 
 The `MSYS` env var tells Git Bash to create real Windows symlinks instead of file copies.
 This works without admin privileges on modern Windows (Developer Mode or default policy).
@@ -291,28 +347,33 @@ If `ln -s` fails on Windows, it usually means Developer Mode is off. Guide the u
 ## Step 8: Verify
 
 ```bash
-# Confirm each symlink resolves
+# Confirm symlinks resolve (user memory & auto-memory)
 file ~/.claude/CLAUDE.md
-file .claude/CLAUDE.md
 file ~/.claude/projects/$PROJECT_KEY/memory
+
+# Confirm project memory is a real file (NOT a symlink)
+file .claude/CLAUDE.md
 
 # Write-through test (auto-memory directory)
 echo "test" > ~/.claude/projects/$PROJECT_KEY/memory/test.txt
 cat "$VAULT_BASE/projects/$PROJECT_KEY/auto-memory/test.txt"
 rm ~/.claude/projects/$PROJECT_KEY/memory/test.txt
+
+# Verify .gitignore allows project CLAUDE.md
+grep '!.claude/CLAUDE.md' .gitignore
 ```
 
 ## Step 9: Report
 
 Include all actions taken so the user has a full record.
 
-**Symlink status:**
+**Memory status:**
 ```
-| Layer          | Status | Claude Code Path         | → Vault Path                   |
+| Layer          | Status | Path                     | Storage                        |
 |----------------|--------|--------------------------|--------------------------------|
-| User memory    | ✅/❌  | ~/.claude/CLAUDE.md      | → .../user-memory/CLAUDE.md    |
-| Project memory | ✅/❌  | ./.claude/CLAUDE.md      | → .../projects/xxx/CLAUDE.md   |
-| Auto-memory    | ✅/❌  | .../memory/              | → .../projects/xxx/auto-memory/|
+| User memory    | ✅/❌  | ~/.claude/CLAUDE.md      | Vault symlink                  |
+| Project memory | ✅/❌  | ./.claude/CLAUDE.md      | Direct file (git tracked)      |
+| Auto-memory    | ✅/❌  | .../memory/              | Vault symlink                  |
 ```
 
 **Migration summary** (only if Step 5 ran):
