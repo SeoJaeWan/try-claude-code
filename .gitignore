@@ -1,6 +1,7 @@
 
 node_modules/
-.claude/
+.claude/*
+!.claude/CLAUDE.md
 .codex/
 test/**/workspace/
 test/**/origin-workspace/node_modules/
