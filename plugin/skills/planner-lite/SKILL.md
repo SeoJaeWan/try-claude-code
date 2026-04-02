@@ -1,6 +1,6 @@
 ---
 name: planner-lite
-description: Deterministic plan orchestrator with per-task worktree isolation, sequential phase commits, and per-phase user approval. Use when executing plan.md artifacts that coordinate multiple agents across sequential or parallel phases. Waits for user confirmation after each phase, and after all phases complete asks user whether to merge — HEAD always stays on the base branch.
+description: Deterministic plan orchestrator with per-task worktree isolation, sequential phase commits, and per-phase user approval. Use when executing a finalized single `plan.md` whose phases must run in order. Waits for user confirmation after each phase, and after all phases complete asks user whether to merge — HEAD always stays on the base branch.
 model: opus
 ---
 
@@ -20,13 +20,13 @@ Orchestrate plan.md execution with task-level worktree isolation and commit-base
 
 `Agent(isolation: "worktree")` doesn't support nested Agent calls inside the worktree, so phase-level agent specialization is impossible with it. Using it when planner-lite is already in a worktree also causes nesting (`worktrees/A/worktrees/B`). And `EnterWorktree` has no mid-session exit, making post-work merge impossible.
 
-This skill uses manual `git worktree` management: one worktree per task, phase agents commit sequentially within it, and after completion the worktree is removed while HEAD stays on the base branch. The user is then asked whether to merge. This gives full control over the worktree lifecycle while supporting different specialized agents per phase and safe parallel execution.
+This skill uses manual `git worktree` management: one worktree per task, phase agents commit sequentially within it, and after completion the worktree is removed while HEAD stays on the base branch. The user is then asked whether to merge. This gives full control over the worktree lifecycle while supporting different specialized agents per phase in a strict sequential workflow.
 
 ---
 
 ## Inputs
 
-1. Plan file path (`plans/{task-name}/plan.md` or `plans/{task-name}/plan-{track}.md`)
+1. Plan file path (`plans/{task-name}/plan.md`)
 2. Plan headers:
     - `**Branch:** {task-branch}` — the name for this task's worktree and branch
 3. Phase/task blocks with `- owner_agent: \`{agent-name}\``
@@ -50,6 +50,7 @@ This skill uses manual `git worktree` management: one worktree per task, phase a
 X (base branch — HEAD stays here during execution)
 │
 └── git worktree add -b task-A worktrees/task-A X
+    ├── commit: docs(plan): add plan and test contracts for task-A  ← plan + materialized tests (auto)
     ├── commit: feat(auth): implement JWT-based login
     ├── commit: feat(auth): add token refresh middleware
     └── commit: test(auth): add integration tests for login flow
@@ -81,17 +82,60 @@ BASE=$(git rev-parse --abbrev-ref HEAD)
 TASK_BRANCH="{value from **Branch:**}"
 WORKTREE_DIR="worktrees/${TASK_BRANCH}"
 
-# Clean up stale worktree if it exists from a previous failed run
+# Check for stale worktree from a previous failed run
 if git worktree list --porcelain | grep -q "$WORKTREE_DIR"; then
-  git worktree remove "$WORKTREE_DIR" --force
-  git branch -D "$TASK_BRANCH" 2>/dev/null
+  echo "Stale worktree found: $WORKTREE_DIR"
+  git -C "$WORKTREE_DIR" log --oneline "$BASE".."$TASK_BRANCH" 2>/dev/null
+  git -C "$WORKTREE_DIR" status --short 2>/dev/null
+  # → Report existing commits/changes as plain text and end your turn.
+  #   Options:
+  #   - "정리하고 새로 시작" → remove worktree + delete branch, then recreate
+  #   - "기존 worktree에서 이어서 진행" → skip creation, resume from last completed phase
+  #   - "중단" → stop execution
 fi
 
 # Create worktree with a new branch based on the base
 git worktree add -b "$TASK_BRANCH" "$WORKTREE_DIR" "$BASE"
 ```
 
-After this step, HEAD is still on `$BASE` in the main repo. The worktree has its own checkout of `$TASK_BRANCH`.
+After creating the worktree, copy plan artifacts and materialized test files into it and commit as the first commit on the task branch. This ensures the plan and its test contracts are included when the task branch is merged.
+
+```bash
+# Copy the plan file (preserve directory structure)
+PLAN_DIR="plans/{task-name}"
+PLAN_PATH="$PLAN_DIR/plan.md"
+mkdir -p "$WORKTREE_DIR/$PLAN_DIR"
+cp "$PLAN_PATH" "$WORKTREE_DIR/$PLAN_PATH"
+
+# Copy materialize.md if it exists
+MATERIALIZE_PATH="$PLAN_DIR/materialize.md"
+if [ -f "$MATERIALIZE_PATH" ]; then
+  cp "$MATERIALIZE_PATH" "$WORKTREE_DIR/$MATERIALIZE_PATH"
+fi
+```
+
+Then check if `materialize.md` exists adjacent to the plan. If it does, parse its target file entries and copy each test file into the worktree. `materialize.md` lists test files in its `target file` column — extract the paths and copy them while preserving directory structure:
+
+```bash
+# Copy materialized test files into worktree
+if [ -f "$MATERIALIZE_PATH" ]; then
+  # Extract target file paths from materialize.md table rows
+  # (lines containing .test. or .spec. with a file path)
+  grep -oP '(?<=\| )[^\|]+\.(?:test|spec)\.[^\|\s]+' "$MATERIALIZE_PATH" | while read -r TEST_FILE; do
+    TEST_FILE=$(echo "$TEST_FILE" | xargs)  # trim whitespace
+    if [ -f "$TEST_FILE" ]; then
+      mkdir -p "$WORKTREE_DIR/$(dirname "$TEST_FILE")"
+      cp "$TEST_FILE" "$WORKTREE_DIR/$TEST_FILE"
+    fi
+  done
+fi
+
+# Commit plan + test contracts as the first commit
+git -C "$WORKTREE_DIR" add -A
+git -C "$WORKTREE_DIR" commit -m "docs(plan): add plan and test contracts for {task-name}"
+```
+
+After this step, HEAD is still on `$BASE` in the main repo. The worktree has its own checkout of `$TASK_BRANCH` with the plan and materialized test files as the first commit.
 
 ### Step 3. Execute phases
 
@@ -153,15 +197,16 @@ git -C "$WORKTREE_DIR" log --oneline -1
 
 If verification fails → stop execution and report the error. Do not proceed to the next phase.
 
-#### 3c. Wait for user approval
+#### 3c. End turn for stop-gate review
 
-After verification passes, report the phase results to the user and wait for approval before continuing. Use `AskUserQuestion` to present:
+After verification passes, output the following as **plain text** and let your turn end naturally. Do NOT use `AskUserQuestion` — just output text so that your turn ends with `end_turn`, which triggers the Stop hook to review the worktree commits automatically.
 
+Report:
 - What was completed in this phase (changed files, commit summary)
 - Validation results
-- Options: "다음 phase 진행" / "중단"
+- "Phase {N} 완료. Stop-gate review가 실행됩니다. 계속하려면 답장해주세요."
 
-Do not proceed to the next phase until the user explicitly approves. If the user chooses to stop, keep the worktree intact for inspection — do not clean up.
+Do not proceed to the next phase until the user explicitly replies. If the user chooses to stop, keep the worktree intact for inspection — do not clean up.
 
 ### Step 4. Clean up worktree and ask user
 
@@ -176,11 +221,11 @@ git worktree remove "$WORKTREE_DIR" --force
 git rev-parse --abbrev-ref HEAD  # should be $BASE
 ```
 
-After cleanup, use `AskUserQuestion` to present:
+After cleanup, output the following as **plain text** and let your turn end naturally. Do NOT use `AskUserQuestion`:
 
 - Summary of all phase commits: `git log --oneline $BASE..$TASK_BRANCH`
 - Changed files: `git diff --stat $BASE..$TASK_BRANCH`
-- Options:
+- Options the user can choose:
   - "base 브랜치($BASE)에 병합" → `git merge $TASK_BRANCH --no-ff -m "merge: $TASK_BRANCH into $BASE"` then `git branch -d $TASK_BRANCH`
   - "PR 생성" → leave the task branch for PR creation
   - "나중에 처리" → leave the task branch, do nothing
@@ -206,7 +251,7 @@ git log --oneline "$BASE".."$TASK_BRANCH"
 
 ### Stale worktree from previous run
 
-Handled in Step 2 — if the worktree directory already exists, it's force-removed before recreation.
+Handled in Step 2 — if the worktree directory already exists, existing commits and uncommitted changes are reported as plain text and the turn ends. The user chooses to clean up and restart, resume from existing state, or abort. Previous work is never destroyed without explicit user consent.
 
 ### Phase agent failure
 
@@ -221,52 +266,6 @@ After Step 4, HEAD is still on the base branch. The task branch exists with all 
 1. If merged → task branch is deleted, all commits are on the base branch
 2. If PR → task branch remains for PR creation
 3. If deferred → task branch remains, user can merge later
-
----
-
-## Parallel execution
-
-When running multiple tasks (A, B, C) in parallel from the same base branch X, each task runs in a **separate planner-lite session**.
-
-### How it works
-
-Each session independently:
-1. Reads its own plan's `**Branch:**` value
-2. Creates its own worktree from the shared base branch X
-3. Dispatches phase agents to its own worktree
-4. Removes worktree and asks user whether to merge (HEAD stays on X)
-
-| Session 1 | Session 2 | Session 3 |
-|---|---|---|
-| HEAD on X | HEAD on X | HEAD on X |
-| worktree: task-A from X | worktree: task-B from X | worktree: task-C from X |
-| Phases → commits | Phases → commits | Phases → commits |
-| Remove worktree → HEAD stays on X | Remove worktree → HEAD stays on X | Remove worktree → HEAD stays on X |
-| Ask user: merge task-A? | Ask user: merge task-B? | Ask user: merge task-C? |
-
-### Isolation guarantees
-
-| Rule | Why |
-|---|---|
-| Each task has its own worktree directory | Separate directories, separate branches |
-| HEAD stays on X in every session, even after completion | No drift — all tasks branch from the same base, parallel sessions never conflict |
-| No `isolation: "worktree"` in Agent calls | Prevents nested worktree creation |
-| Each task only commits to its own branch | No cross-contamination between parallel tasks |
-
-### Final integration
-
-All sessions leave HEAD on X. Each session asks the user whether to merge its task branch. The user can merge immediately, create PRs, or defer:
-
-```bash
-# HEAD is already on X — no checkout needed
-# User chose to merge all three:
-git merge task-A --no-ff -m "merge: task-A into X"
-git merge task-B --no-ff -m "merge: task-B into X"
-git merge task-C --no-ff -m "merge: task-C into X"
-git branch -d task-A task-B task-C
-```
-
-The merge decision is always the user's — planner-lite only asks, never acts without approval.
 
 ---
 
@@ -297,7 +296,7 @@ git rev-parse --abbrev-ref HEAD
 4. Never delete task branches — the user decides when to merge and clean up.
 5. Always verify phase commits and branch before starting the next phase.
 6. Always remove the worktree before asking the user about merge. Never checkout the task branch — HEAD must stay on the base branch.
-7. Never run two planner-lite sessions against the same `**Branch:**` value concurrently.
+7. Never reinterpret one request as multiple plan files or extra workstreams.
 
 </Instructions>
 </Skill_Guide>

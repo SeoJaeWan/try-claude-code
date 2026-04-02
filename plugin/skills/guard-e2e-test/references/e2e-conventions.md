@@ -1,6 +1,6 @@
 # E2E Test Conventions Reference
 
-Test authoring rules for guard-e2e-test. Shares the same Playwright-based rules as plan-e2e-test,
+Test authoring rules for guard-e2e-test. Shares the same Playwright-based rules as plan-materialize,
 with additional rules specific to full-flow journey tests.
 
 ---
@@ -63,7 +63,7 @@ await expect(locator).toHaveValue('input-value');
 {test-dir}/guard/{journey-domain}/{journey-scenario}.spec.ts
 ```
 
-- Place under `guard/` subdirectory to clearly separate from plan-e2e-test artifacts
+- Place under `guard/` subdirectory to clearly separate from bounded-surface E2E owned by plan-materialize
 - Domain subdirectory follows existing project patterns
 
 ### Test Naming
@@ -144,4 +144,4 @@ await expect(page).toHaveURL('/onboarding/complete');
 - **Inter-test dependencies** — each test runs independently
 - **Implementation-coupled selectors** — no class names, component internals, or generated IDs
 - **Flaky assertions** — no timing-dependent checks; use retry-able assertions
-- **Single-screen tests** — per-screen/feature tests belong to plan-e2e-test
+- **Single-screen tests** — per-screen/feature tests belong to plan-materialize

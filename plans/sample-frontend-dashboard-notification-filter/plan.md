@@ -101,7 +101,7 @@
 - 산출물 위치: `plans/sample-frontend-dashboard-notification-filter/e2e/manifest.md`, `plans/sample-frontend-dashboard-notification-filter/e2e/dashboard-notification-filter.spec.ts`
 - 최종 배치: 구현 단계에서 `features/next-app/tests/*.spec.ts` 관례에 맞춰 resolve
 - 메모:
-  - `plan-e2e-test` 범위는 dashboard 내 알림 섹션으로만 고정한다.
+  - `plan-materialize`의 bounded-surface E2E 범위는 dashboard 내 알림 섹션으로만 고정한다.
   - multi-route notification center는 이 샘플에서 다루지 않는다.
 
 ## 파일 변경 목록

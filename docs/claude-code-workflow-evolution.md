@@ -440,7 +440,7 @@ flowchart LR
 이 시기는 사실 두 단계로 다시 나뉜다.
 
 - `2026-03-06 ~ 2026-03-14`: 플러그인 패키징, marketplace, eval 정비
-- `2026-03-15 ~ 현재`: `dev-cli + profiles` 중심의 실행 강제 구조
+- `2026-03-15 ~ 현재`: `dev-cli + manifest` 중심의 실행 강제 구조
 
 ### 현재 구조의 최상위 지도
 
@@ -450,7 +450,7 @@ flowchart TD
     PLAN[".codex skills<br/>brainstorm / architect / test planners"]
     PSK["plugin skills<br/>frontend-dev / backend-dev / guard-e2e-test"]
     CLI["frontend / backend"]
-    PROFILE["profiles/*/profile.json"]
+    MANIFEST["packages/{alias}/src/manifest.mjs"]
     CORE["packages/dev-cli/src/core/*"]
     TEMPLATE["templates + render context"]
     OUT["preview/apply generated files"]
@@ -458,11 +458,13 @@ flowchart TD
     U --> PLAN
     PLAN --> PSK
     PSK --> CLI
-    CLI --> PROFILE
-    PROFILE --> CORE
+    CLI --> MANIFEST
+    MANIFEST --> CORE
     CORE --> TEMPLATE
     TEMPLATE --> OUT
 ```
+
+> **역사 참고**: 이전에는 `profiles/*/profile.json`이 CLI와 core 사이에 위치했다 (2026-03-15 이전). 현재 구조에서는 각 wrapper package가 `manifest.mjs`를 직접 소유하고 `runCli({ manifest })`로 주입한다.
 
 ### 현재 요청 처리의 실제 단계
 
@@ -470,12 +472,11 @@ flowchart TD
 
 1. 복잡한 요청이면 `.codex/skills/architect/SKILL.md`가 `plans/{task-name}/plan.md`를 만든다.
 2. 구현 phase에서 `plugin/skills/frontend-dev/SKILL.md`가 실행된다.
-3. `frontend-dev`는 먼저 `frontend --help`와 `frontend component`, `frontend hook`, `frontend apiHook`, `frontend batch` 같은 CLI를 사용한다.
-4. CLI는 `packages/dev-cli` 엔진을 통해 현재 active profile을 로드한다.
-5. profile은 `profiles/frontend/personal/v1/profile.json`과 `profiles/shared/personal/v1/profile.json`을 merge한다.
-6. `normalizationRules`, `validatorRules`, `render.templateFile`, `output.filePattern`이 적용된다.
-7. preview 기본 정책으로 결과를 계산하고, `--apply`일 때만 파일을 쓴다.
-8. 그 뒤에 구현 스킬이 생성된 파일 안에 비즈니스 로직을 채운다.
+3. `frontend-dev`는 먼저 `frontend --help`와 `frontend component`, `frontend hook`, `frontend apiHook` 같은 CLI를 사용한다.
+4. CLI는 wrapper package의 `manifest.mjs`를 `packages/dev-cli` core runtime에 주입한다.
+5. `normalizationRules`, `validatorRules`, `render.templateFile`, `output.filePattern`이 manifest recipe에서 적용된다.
+6. preview 기본 정책으로 결과를 계산하고, `--apply`일 때만 파일을 쓴다.
+7. 그 뒤에 구현 스킬이 생성된 파일 안에 비즈니스 로직을 채운다.
 
 ### 현재 Spring feature 요청 처리 단계
 
@@ -485,7 +486,7 @@ flowchart TD
 2. 구현 phase에서 `plugin/skills/backend-dev/SKILL.md`가 실행된다.
 3. `backend-dev`는 직접 Java 파일을 만들지 않고 먼저 `backend --help`를 본다.
 4. 이어서 `backend module`, `backend requestDto`, `backend responseDto`, `backend entity`를 통해 Spring feature 뼈대를 생성한다.
-5. CLI는 `profiles/backend/personal/v1/profile.json`을 읽어 Spring Boot 규칙을 적용한다.
+5. CLI는 `packages/backend/src/manifest.mjs`에 정의된 Spring Boot 규칙을 적용한다.
 6. 여기서 package-by-feature, lower-case package segment, `basePackage`, DTO/entity 경로 규칙이 적용된다.
 7. `--apply`일 때 아래 같은 Spring 경로에 파일이 생성된다.
 
@@ -521,12 +522,12 @@ flowchart LR
 | 계층 | 역할 | 대표 파일 |
 |---|---|---|
 | 배포 메타 | 플러그인 공개/번들 정의 | `.claude-plugin/marketplace.json` |
-| 계획 계층 | 요청 분석, plan/tests/e2e 생성 | `.codex/skills/architect/SKILL.md`, `.codex/skills/plan-unit-test/SKILL.md`, `.codex/skills/plan-e2e-test/SKILL.md` |
+| 계획 계층 | 요청 분석, boundary-centered plan 생성, source-tree test materialization | `.codex/skills/architect/SKILL.md`, `.codex/skills/plan-materialize/SKILL.md` |
 | 실행 계층 | 역할별 워크플로 정의 | `plugin/skills/frontend-dev/SKILL.md`, `plugin/skills/backend-dev/SKILL.md` |
 | 역할 프롬프트 | 에이전트 성격과 도구 범위 | `plugin/agents/frontend-developer.md`, `plugin/agents/backend-developer.md` |
-| 규칙 소유 계층 | 네이밍/경로/검증/렌더 규칙 | `profiles/*/profile.json` |
-| 런타임 엔진 | parse / normalize / batch / write 실행 | `packages/dev-cli/src/core/*` |
-| 템플릿 계층 | 실제 scaffold 문자열 | `profiles/*/templates/*` |
+| 규칙 소유 계층 | 네이밍/경로/검증/렌더 규칙 | `packages/{alias}/src/manifest.mjs` |
+| 런타임 엔진 | parse / normalize / write 실행 | `packages/dev-cli/src/core/*` |
+| 템플릿 계층 | 실제 scaffold 문자열 | `packages/{alias}/src/templates/*` |
 
 ### 현재 구조의 가장 큰 차이
 
@@ -538,9 +539,9 @@ flowchart LR
 현재 구조:
 
 - 워크플로 규칙은 `SKILL.md`에 있다.
-- 생성 규칙은 `profile.json`에 있다.
+- 생성 규칙은 wrapper package의 `manifest.mjs`에 있다.
 - 실행 강제는 `dev-cli core`가 맡는다.
-- 템플릿은 별도 파일로 분리돼 있다.
+- 템플릿은 각 wrapper package의 `src/templates/` 안에 있다.
 
 즉, 규칙이 "설명"에서 "실행 가능한 recipe"로 이동했다.
 
@@ -622,7 +623,7 @@ flowchart LR
 - `plans/{task-name}/plan.md`
 - `codemaps/frontend.md` (있으면)
 - `frontend --help`
-- `frontend component` / `frontend hook` / `frontend apiHook` / `frontend batch`
+- `frontend component` / `frontend hook` / `frontend apiHook`
 
 중요한 차이:
 
@@ -685,7 +686,7 @@ flowchart LR
 - query/mutation 경로 규칙
 - DTO/entity/module 생성 패턴
 
-이 규칙들이 현재는 `profiles/*/profile.json`과 `packages/dev-cli/src/core/*`로 이동했다.
+이 규칙들이 현재는 각 wrapper package의 `src/manifest.mjs`와 `packages/dev-cli/src/core/*`로 이동했다.
 
 그래서 지금은 문서 중복이 줄어든다.
 
@@ -720,7 +721,7 @@ flowchart LR
 | 관점 | 초기 | 중기 | 현재 |
 |---|---|---|---|
 | 라우팅 | trigger 문구 중심 | CLAUDE + architect 중심 | planning skill + plugin skill |
-| 규칙 저장 위치 | markdown 문서 | markdown + references + plan contract | profile JSON + CLI core |
+| 규칙 저장 위치 | markdown 문서 | markdown + references + plan contract | manifest.mjs + CLI core |
 | 스킬 독립성 | 낮음 | 중간 | 높음 |
 | 공통 문서 참조량 | 많음 | 분리되지만 여전히 큼 | 크게 줄어듦 |
 | 중복 설명 | 많음 | 분리/이관 중 | 상당수 제거 |
@@ -811,7 +812,7 @@ flowchart LR
 ```text
 워크플로 규칙 = SKILL.md
 계획 규칙 = .codex/skills/*
-생성 규칙 = profiles/*/profile.json
+생성 규칙 = packages/{alias}/src/manifest.mjs
 실행 가드 = packages/dev-cli/src/core/*
 배포 규칙 = .claude-plugin/marketplace.json
 ```
@@ -823,8 +824,8 @@ flowchart LR
 | 작업 종류 | 진입점 | 실행 스킬 | 생성 엔진 | 규칙 소스 | 대표 산출물 |
 |---|---|---|---|---|---|
 | 기획/분석 | `brainstorm`, `architect` | Codex planning skills | 없음 | `.codex/skills/*` | `plans/*`, 요구사항 정리 |
-| 프론트엔드 | `architect` 후 `frontend-dev` | `plugin/skills/frontend-dev/SKILL.md` | `frontend` | `profiles/frontend/*`, `profiles/shared/*` | 컴포넌트 scaffold + UI 구현 + hook/apiHook scaffold + 로직 |
-| 백엔드 | `architect` 후 `backend-dev` | `plugin/skills/backend-dev/SKILL.md` | `backend` | `profiles/backend/*` | Spring feature package scaffold (`controller/service/repository/dto/entity`) |
+| 프론트엔드 | `architect` 후 `frontend-dev` | `plugin/skills/frontend-dev/SKILL.md` | `frontend` | `packages/frontend/src/manifest.mjs` | 컴포넌트 scaffold + UI 구현 + hook/apiHook scaffold + 로직 |
+| 백엔드 | `architect` 후 `backend-dev` | `plugin/skills/backend-dev/SKILL.md` | `backend` | `packages/backend/src/manifest.mjs` | Spring feature package scaffold (`controller/service/repository/dto/entity`) |
 | full-flow E2E guard | `architect` plan phase | `plugin/skills/guard-e2e-test/SKILL.md` | 테스트 실행 | E2E references + plan artifact | Playwright guard 결과 |
 | Git 작업 | 직접 실행 가능 | `commit`, `pr` | 없음 | skill doc | commit / PR 메시지 |
 
@@ -834,13 +835,13 @@ flowchart LR
 
 이 두 레포의 전체 흐름은 아래 문장으로 요약할 수 있다.
 
-> 처음에는 "Claude가 문서를 읽고 규칙을 기억해 개발하는 방식"이었고, 지금은 "계획 스킬이 작업을 분해하고, 실행 스킬이 역할을 나누고, CLI와 profile이 생성 규칙을 강제하는 방식"으로 바뀌었다.
+> 처음에는 "Claude가 문서를 읽고 규칙을 기억해 개발하는 방식"이었고, 지금은 "계획 스킬이 작업을 분해하고, 실행 스킬이 역할을 나누고, CLI와 manifest가 생성 규칙을 강제하는 방식"으로 바뀌었다.
 
 좀 더 구체적으로 보면 다음과 같다.
 
 1. `claude-code-skills` 초기는 사람 친화적 운영 문서와 대화형 스킬이 중심이었다.
 2. 중간에는 `.claude`, `.ai`, `.codex`가 결합된 artifact-first workflow로 발전했다.
-3. 마지막에는 그 운영체계를 `try-claude-code`로 분리해 plugin/marketplace/CLI/profile 기반 제품 구조로 바꿨다.
+3. 마지막에는 그 운영체계를 `try-claude-code`로 분리해 plugin/marketplace/CLI/manifest 기반 제품 구조로 바꿨다.
 
 즉, 진화 방향은 항상 같다.
 
@@ -866,9 +867,7 @@ flowchart LR
 - `plugin/skills/frontend-dev/SKILL.md`
 - `plugin/agents/frontend-developer.md`
 - `plugin/agents/backend-developer.md`
-- `packages/dev-cli/src/core/cli/command-router.mjs`
-- `packages/dev-cli/src/core/profiles/profile-loader.mjs`
-- `packages/dev-cli/src/core/execution/batch-executor.mjs`
-- `profiles/shared/personal/v1/profile.json`
-- `profiles/frontend/personal/v1/profile.json`
+- `packages/dev-cli/src/core/runtime/command-dispatcher.mjs`
+- `packages/frontend/src/manifest.mjs`
+- `packages/backend/src/manifest.mjs`
 - `docs/dev-cli-design.md`

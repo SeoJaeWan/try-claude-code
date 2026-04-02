@@ -9,21 +9,9 @@
     },
     "plugins": [
         {
-            "name": "try-claude-skills",
+            "name": "try-claude-code",
             "description": "Collection of AI-assisted development workflow skills including frontend/backend development, Git workflows, E2E testing, project setup, documentation, and task planning",
-            "source": "./plugin",
-            "strict": true,
-            "skills": [
-                "./skills/backend-dev",
-                "./skills/frontend-dev",
-                "./skills/ui-publish",
-                "./skills/guard-e2e-test",
-                "./skills/lecture-slide-maker",
-                "./skills/commit",
-                "./skills/pr",
-                "./skills/doc-update",
-                "./skills/planner-lite"
-            ]
+            "source": "./plugin"
         }
     ]
 }

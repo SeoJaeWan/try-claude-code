@@ -1,6 +1,7 @@
 {
   "permissions": {
     "allow": [
+      "Fetch",
       "Bash",
       "Read",
       "Write",
@@ -10,6 +11,7 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:shipyard.build)",
+      "WebFetch(domain:docs.anthropic.com)",
       "Bash(git *)",
       "Bash(git:*)",
       "Bash(pnpm *)",
@@ -63,7 +65,8 @@
       "mcp__playwright-test__test_debug",
       "mcp__playwright-test__test_list",
       "mcp__playwright-test__test_run",
-      "mcp__playwright-test__browser_generate_locator"
+      "mcp__playwright-test__browser_generate_locator",
+      "Skill(try-claude-skills:commit)"
     ]
   },
   "hooks": {
