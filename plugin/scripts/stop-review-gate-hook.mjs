@@ -6,7 +6,6 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-import { getCodexLoginStatus } from "./lib/codex.mjs";
 import { loadPromptTemplate, interpolateTemplate } from "./lib/prompts.mjs";
 import { loadSession, updateWorktreeReviewedCommit } from "./lib/sessions.mjs";
 import { listJobs } from "./lib/state.mjs";
@@ -68,16 +67,6 @@ function buildStopReviewPrompt(input = {}, worktreeDiffs = []) {
     CLAUDE_RESPONSE_BLOCK: claudeResponseBlock,
     WORKTREE_DIFFS_BLOCK: worktreeDiffsBlock
   });
-}
-
-function buildSetupNote(cwd) {
-  const authStatus = getCodexLoginStatus(cwd);
-  if (authStatus.available && authStatus.loggedIn) {
-    return null;
-  }
-
-  const detail = authStatus.detail ? ` ${authStatus.detail}.` : "";
-  return `Codex is not set up for the review gate.${detail} Run /codex:setup and, if needed, !codex login.`;
 }
 
 function parseStopReviewOutput(rawOutput) {
@@ -254,13 +243,6 @@ function main() {
   const runningTaskNote = runningJob
     ? `Codex task ${runningJob.id} is still running. Check /codex:status and use /codex:cancel ${runningJob.id} if you want to stop it before ending the session.`
     : null;
-
-  const setupNote = buildSetupNote(cwd);
-  if (setupNote) {
-    logNote(setupNote);
-    logNote(runningTaskNote);
-    return;
-  }
 
   const review = runStopReview(cwd, input, worktreeDiffs);
   if (!review.ok) {
