@@ -1,6 +1,6 @@
 # Playwright MCP vs agent-browser 정리
 
-> **Historical Reference:** 이 문서는 historical reference입니다. 현재 활성 E2E 아키텍처는 `plan-e2e-test` skill 기반의 contract-first 방식입니다. 계획 단계에서 최종 Playwright `.spec.ts` 코드를 생성하고, 구현이 이를 통과하도록 합니다. 아래 내용은 이전 Playwright agent pipeline (planner/generator/healer) 아키텍처에 대한 기술 분석으로, 참고용으로 보존합니다.
+> **Historical Reference:** 이 문서는 historical reference입니다. 현재 활성 E2E 아키텍처는 `plan-materialize` skill 기반의 contract-first 방식입니다. planning 이후 실제 소스 트리에 bounded-surface E2E를 생성하거나 수정하고, 구현이 이를 통과하도록 합니다. 아래 내용은 이전 Playwright agent pipeline (planner/generator/healer) 아키텍처에 대한 기술 분석으로, 참고용으로 보존합니다.
 
 ## 목적
 
@@ -204,7 +204,7 @@ agents/playwright-test-healer.md      → 메타데이터 (tools, model, color) 
 - 당시 플러그인 구조
   - `planner / generator / healer` 파이프라인은 유지하고, 필요하면 브라우저 탐색 부분만 더 얇게 바꾸는 방식이 적절했다.
 
-> **현재 아키텍처 참고:** planner/generator/healer 파이프라인은 retired되었다. 현재 E2E 테스트는 `plan-e2e-test` skill이 계획 단계에서 contract artifact로 생성하며, 라이브 브라우저 탐색 없이 deterministic Playwright 코드를 작성한다.
+> **현재 아키텍처 참고:** planner/generator/healer 파이프라인은 retired되었다. 현재 bounded-surface E2E는 `plan-materialize` skill이 plan과 로컬 테스트 관례를 바탕으로 source-tree contract로 생성하거나 수정하며, 라이브 브라우저 탐색 없이 deterministic Playwright 코드를 작성한다.
 
 ## 결론
 

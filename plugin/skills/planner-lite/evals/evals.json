@@ -18,16 +18,16 @@
     },
     {
       "id": 2,
-      "prompt": "plan.md에 Phase 2개가 있는데, Phase-1은 병렬 태스크 3개야. 실행해줘",
-      "expected_output": "Phase-1 병렬 실행, Phase-2 순차, worktree 격리",
+      "prompt": "plan.md에 정의된 2개 Phase를 순서대로 실행해줘. 각 Phase가 끝날 때마다 사용자 승인도 받아야 해.",
+      "expected_output": "Phase-1 순차 실행, 승인 대기, Phase-2 순차 실행, worktree 격리",
       "files": ["../../../features/next-app/package.json"],
       "expectations": [
         "Reads skills/planner-lite/SKILL.md via Read tool",
-        "Identifies parallel tasks within Phase-1",
-        "Spawns multiple agents concurrently for parallel tasks",
-        "Creates separate worktree for each parallel task",
-        "Waits for all Phase-1 tasks before starting Phase-2",
-        "Uses git merge --no-ff for each completed task"
+        "Executes Phase-1 before Phase-2",
+        "Waits for explicit user approval after Phase-1 verification",
+        "Uses one task worktree for the full plan lifecycle",
+        "Does not reinterpret one plan as additional same-phase tasks",
+        "Uses git merge --no-ff only after final user merge approval"
       ]
     },
     {
