@@ -12,7 +12,7 @@ import { listJobs } from "./lib/state.mjs";
 import { sortJobsNewestFirst } from "./lib/job-control.mjs";
 import { SESSION_ID_ENV } from "./lib/tracked-jobs.mjs";
 import { resolveWorkspaceRoot } from "./lib/workspace.mjs";
-import { collectBlockReview } from "./lib/review-collector.mjs";
+import { collectBlockReview, findPlanDirByBranch } from "./lib/review-collector.mjs";
 
 const STOP_REVIEW_TIMEOUT_MS = 15 * 60 * 1000;
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -45,7 +45,7 @@ function filterJobsForCurrentSession(jobs, input = {}) {
   return jobs.filter((job) => job.sessionId === sessionId);
 }
 
-function buildStopReviewPrompt(input = {}, worktreeDiffs = []) {
+function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "") {
   const lastAssistantMessage = String(
     input.last_assistant_message ?? "",
   ).trim();
@@ -65,9 +65,35 @@ function buildStopReviewPrompt(input = {}, worktreeDiffs = []) {
     ].join("\n\n");
   }
 
+  let planContextBlock = "";
+  const branch = worktreeDiffs[0]?.branch;
+  if (branch && workspaceRoot) {
+    const planDir = findPlanDirByBranch(workspaceRoot, branch);
+    if (planDir) {
+      try {
+        const planContent = fs.readFileSync(path.join(planDir, "plan.md"), "utf8");
+        planContextBlock = `Plan for this task:\n${planContent}`;
+      } catch {
+        // Plan file unreadable — proceed without plan context.
+      }
+    }
+  }
+
+  let commitMessagesBlock = "";
+  if (worktreeDiffs.length > 0) {
+    const msgs = worktreeDiffs
+      .filter((wt) => wt.commitMessages)
+      .map((wt) => `Branch: ${wt.branch}\n${wt.commitMessages}`);
+    if (msgs.length > 0) {
+      commitMessagesBlock = `Commit messages in review range:\n${msgs.join("\n\n")}`;
+    }
+  }
+
   return interpolateTemplate(template, {
     CLAUDE_RESPONSE_BLOCK: claudeResponseBlock,
     WORKTREE_DIFFS_BLOCK: worktreeDiffsBlock,
+    PLAN_CONTEXT_BLOCK: planContextBlock,
+    COMMIT_MESSAGES_BLOCK: commitMessagesBlock,
   });
 }
 
@@ -177,11 +203,19 @@ function getWorktreeDiffs(sessionId, cwd) {
           encoding: "utf8",
         },
       );
+      const logResult = spawnSync(
+        "git",
+        ["-C", wtPath, "log", "--oneline", `${diffBase}..HEAD`],
+        {
+          encoding: "utf8",
+        },
+      );
       diffs.push({
         path: wt.path,
         branch: (branchResult.stdout || "").trim() || wt.branch || "unknown",
         diff: diffResult.stdout.trim(),
         headSha,
+        commitMessages: (logResult.stdout || "").trim(),
       });
     }
   }
@@ -194,9 +228,9 @@ function markWorktreesReviewed(sessionId, worktreeDiffs) {
   }
 }
 
-function runStopReview(cwd, input = {}, worktreeDiffs = []) {
+function runStopReview(cwd, input = {}, worktreeDiffs = [], workspaceRoot = "") {
   const scriptPath = path.join(SCRIPT_DIR, "codex-companion.mjs");
-  const prompt = buildStopReviewPrompt(input, worktreeDiffs);
+  const prompt = buildStopReviewPrompt(input, worktreeDiffs, workspaceRoot);
   const childEnv = {
     ...process.env,
     ...(input.session_id ? { [SESSION_ID_ENV]: input.session_id } : {}),
@@ -266,7 +300,7 @@ function main() {
     ? `Codex task ${runningJob.id} is still running. Check /codex:status and use /codex:cancel ${runningJob.id} if you want to stop it before ending the session.`
     : null;
 
-  const review = runStopReview(cwd, input, worktreeDiffs);
+  const review = runStopReview(cwd, input, worktreeDiffs, workspaceRoot);
   if (!review.ok) {
     // Do NOT mark as reviewed when blocked — the next stop attempt should re-review
     // the same range after Claude fixes the issues.
