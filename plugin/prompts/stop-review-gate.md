@@ -12,6 +12,16 @@ Check for second-order failures, empty-state behavior, stale state, rollback ris
 Ground every blocking claim in repository context or tool outputs you inspected — do not treat the previous Claude response text as proof that code changes happened.
 Do not block based on older edits from earlier turns.
 
+{{PLAN_CONTEXT_BLOCK}}
+
+{{COMMIT_MESSAGES_BLOCK}}
+
+If a plan and commit messages with [Phase N] tags are provided above, use them to:
+- Identify which phase is being reviewed
+- Check that changes align with the phase goals described in the plan
+- Verify the work stays within the phase scope — flag scope creep or missing deliverables
+- Evaluate design decisions against the plan's resolved decisions and constraints
+
 {{CLAUDE_RESPONSE_BLOCK}}
 
 {{WORKTREE_DIFFS_BLOCK}}

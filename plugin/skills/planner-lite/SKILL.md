@@ -157,12 +157,13 @@ Agent(
     - Work directly in your current directory.
     - Do NOT create additional worktrees or use EnterWorktree.
     - Only implement Phase {N} work described below. Do NOT redo prior phases.
-    - Commit your work when done using Conventional Commits format:
-      git add -A && git commit -m '{type}({scope}): {description}'
+    - Commit your work when done using Conventional Commits format with phase tag:
+      git add -A && git commit -m '{type}({scope}): {description} [Phase {N}]'
       Types: feat, fix, refactor, test, docs, chore, style, perf, ci, build
       Scope: the module or area you changed (e.g., auth, api, ui, db)
       Description: concise summary of what you did, in imperative mood
-      Example: feat(auth): implement JWT-based login
+      [Phase {N}]: MUST include — the stop-gate reviewer uses this to identify the current phase
+      Example: feat(auth): implement JWT-based login [Phase 2]
 
     ## Task
     {phase content}
@@ -184,11 +185,11 @@ if [ "$CURRENT_BRANCH" != "$TASK_BRANCH" ]; then
 fi
 
 # 2. Check for uncommitted changes and commit if needed
-# Use Conventional Commits: {type}({scope}): {description}
+# Use Conventional Commits with phase tag: {type}({scope}): {description} [Phase {N}]
 # Infer type from the phase content (feat/fix/refactor/test/docs/chore/style/perf/ci/build)
 if [ -n "$(git -C "$WORKTREE_DIR" status --porcelain)" ]; then
   git -C "$WORKTREE_DIR" add -A
-  git -C "$WORKTREE_DIR" commit -m "{type}({scope}): {description from phase content}"
+  git -C "$WORKTREE_DIR" commit -m "{type}({scope}): {description from phase content} [Phase {N}]"
 fi
 
 # 3. Confirm latest commit
@@ -207,6 +208,38 @@ Report:
 - "Phase {N} 완료. Stop-gate review가 실행됩니다. 계속하려면 답장해주세요."
 
 Do not proceed to the next phase until the user explicitly replies. If the user chooses to stop, keep the worktree intact for inspection — do not clean up.
+
+#### 3d. Handle stop-gate BLOCK
+
+If the stop-gate review returns a BLOCK, re-dispatch the **same phase agent** with the BLOCK feedback. Do NOT fix the code yourself in the main context.
+
+```
+Agent(
+  subagent_type: "{owner_agent}",
+  prompt: "
+    ## Working directory
+    You are working in: {repo_root}/{WORKTREE_DIR}
+    cd to this directory before starting any work.
+
+    ## Stop-gate review feedback
+    Your previous commit was BLOCKED by the stop-gate reviewer:
+    {BLOCK reason}
+
+    ## Rules
+    - Fix the issues described in the review feedback above.
+    - Do NOT rewrite unrelated code — only address the feedback.
+    - Commit your fix using Conventional Commits with phase tag:
+      git add -A && git commit -m '{type}({scope}): {description} [Phase {N}]'
+      Example: fix(auth): add token expiry validation [Phase 2]
+
+    ## Original task (for reference)
+    {phase content}
+  ",
+  description: "Phase {N} fix: {short BLOCK reason}"
+)
+```
+
+After the fix agent completes, run the same verification steps (3b) and end turn (3c) to trigger another stop-gate review. Repeat until ALLOW.
 
 ### Step 4. Clean up worktree and ask user
 
