@@ -9,3 +9,4 @@ test/**/origin-workspace/.next/
 test/**/origin-workspace/test-results/
 test/**/origin-workspace/playwright-report/
 test/**/origin-workspace/tsconfig.tsbuildinfo
+.reviews/
