@@ -12,6 +12,8 @@ Check for second-order failures, empty-state behavior, stale state, rollback ris
 Ground every blocking claim in repository context or tool outputs you inspected.
 Do not block based on older edits from earlier turns.
 
+This thread may contain prior review turns from the same session. Use them as reference for what was previously flagged, but base your ALLOW/BLOCK decision solely on the current diff range provided below. Do NOT re-block issues that have already been fixed.
+
 {{PLAN_CONTEXT_BLOCK}}
 
 {{COMMIT_MESSAGES_BLOCK}}

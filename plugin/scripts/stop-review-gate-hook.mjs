@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { loadPromptTemplate, interpolateTemplate } from "./lib/prompts.mjs";
-import { loadSession, updateWorktreeReviewedCommit } from "./lib/sessions.mjs";
+import { loadSession, updateWorktreeReviewedCommit, getStopReviewThreadId, setStopReviewThreadId } from "./lib/sessions.mjs";
 import { listJobs } from "./lib/state.mjs";
 import { sortJobsNewestFirst } from "./lib/job-control.mjs";
 import { SESSION_ID_ENV } from "./lib/tracked-jobs.mjs";
@@ -288,22 +288,41 @@ function markWorktreesReviewed(sessionId, worktreeDiffs) {
 }
 
 function runStopReview(cwd, input = {}, worktreeDiffs = [], workspaceRoot = "") {
+  const sessionId = input.session_id || process.env[SESSION_ID_ENV] || null;
   const scriptPath = path.join(SCRIPT_DIR, "codex-companion.mjs");
   const prompt = buildStopReviewPrompt(input, worktreeDiffs, workspaceRoot);
   const childEnv = {
     ...process.env,
-    ...(input.session_id ? { [SESSION_ID_ENV]: input.session_id } : {}),
+    ...(sessionId ? { [SESSION_ID_ENV]: sessionId } : {}),
   };
-  const result = spawnSync(
-    process.execPath,
-    [scriptPath, "task", "--json", prompt],
-    {
-      cwd,
-      env: childEnv,
-      encoding: "utf8",
-      timeout: STOP_REVIEW_TIMEOUT_MS,
-    },
-  );
+
+  // Try to resume the existing stop-review thread for this session.
+  const existingThreadId = sessionId ? getStopReviewThreadId(sessionId) : null;
+  const args = existingThreadId
+    ? [scriptPath, "task", "--json", "--resume-thread", existingThreadId, "--", prompt]
+    : [scriptPath, "task", "--json", "--", prompt];
+
+  let result = spawnSync(process.execPath, args, {
+    cwd,
+    env: childEnv,
+    encoding: "utf8",
+    timeout: STOP_REVIEW_TIMEOUT_MS,
+  });
+
+  // If resume failed, fall back to a fresh thread.
+  if (existingThreadId && result.status !== 0) {
+    logNote(`[stop-gate] Resume of thread ${existingThreadId} failed, starting fresh thread.`);
+    result = spawnSync(
+      process.execPath,
+      [scriptPath, "task", "--json", "--", prompt],
+      {
+        cwd,
+        env: childEnv,
+        encoding: "utf8",
+        timeout: STOP_REVIEW_TIMEOUT_MS,
+      },
+    );
+  }
 
   if (result.error?.code === "ETIMEDOUT") {
     return {
@@ -325,6 +344,10 @@ function runStopReview(cwd, input = {}, worktreeDiffs = [], workspaceRoot = "") 
 
   try {
     const payload = JSON.parse(result.stdout);
+    // Persist the thread ID so subsequent stops resume the same thread.
+    if (sessionId && payload?.threadId) {
+      setStopReviewThreadId(sessionId, payload.threadId);
+    }
     return parseStopReviewOutput(payload?.rawOutput);
   } catch {
     return {
