@@ -144,11 +144,11 @@ function parseStopReviewOutput(rawOutput) {
 }
 
 /**
- * When a BLOCK occurs in a planner-lite worktree context, build a directive
+ * When a BLOCK occurs in a plan-runner worktree context, build a directive
  * that tells the main session to re-dispatch the phase agent instead of
  * fixing the code directly.
  *
- * Returns the directive string, or "" if not in a planner-lite context.
+ * Returns the directive string, or "" if not in a plan-runner context.
  */
 function buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, sessionId) {
   const branch = worktreeDiffs[0]?.branch;
@@ -181,7 +181,7 @@ function buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, sessionId) {
   const lines = [
     "",
     "---",
-    "[planner-lite workflow directive]",
+    "[plan-runner workflow directive]",
     `Do NOT fix this yourself in the main session. Re-dispatch the same phase agent (${phaseTag}) to fix the issues.`,
     `The agent must work in the worktree at: ${wtPath}`,
     "After the agent commits the fix, end your turn so the stop-gate can re-review.",
@@ -380,7 +380,7 @@ function main() {
       // Review collection is best-effort — never block the gate decision.
     }
 
-    // If this BLOCK is in a planner-lite worktree context, append a directive
+    // If this BLOCK is in a plan-runner worktree context, append a directive
     // telling the main session to re-dispatch the phase agent for the fix.
     const plannerDirective = buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, sessionId);
     const fullReason = review.reason + plannerDirective;

@@ -1,5 +1,5 @@
 ---
-name: planner-lite
+name: plan-runner
 description: Deterministic plan orchestrator with per-task worktree isolation, sequential phase commits, and per-phase user approval. Use when executing a finalized single `plan.md` whose phases must run in order. Waits for user confirmation after each phase, and after all phases complete asks user whether to merge — HEAD always stays on the base branch.
 model: opus
 ---
@@ -10,7 +10,7 @@ Execute plan.md artifacts with task-level worktree isolation and sequential phas
 </Purpose>
 
 <Instructions>
-# planner-lite
+# plan-runner
 
 Orchestrate plan.md execution with task-level worktree isolation and commit-based phase progression.
 
@@ -18,7 +18,7 @@ Orchestrate plan.md execution with task-level worktree isolation and commit-base
 
 ## Why this workflow matters
 
-`Agent(isolation: "worktree")` doesn't support nested Agent calls inside the worktree, so phase-level agent specialization is impossible with it. Using it when planner-lite is already in a worktree also causes nesting (`worktrees/A/worktrees/B`). And `EnterWorktree` has no mid-session exit, making post-work merge impossible.
+`Agent(isolation: "worktree")` doesn't support nested Agent calls inside the worktree, so phase-level agent specialization is impossible with it. Using it when plan-runner is already in a worktree also causes nesting (`worktrees/A/worktrees/B`). And `EnterWorktree` has no mid-session exit, making post-work merge impossible.
 
 This skill uses manual `git worktree` management: one worktree per task, phase agents commit sequentially within it, and after completion the worktree is removed while HEAD stays on the base branch. The user is then asked whether to merge. This gives full control over the worktree lifecycle while supporting different specialized agents per phase in a strict sequential workflow.
 
@@ -45,12 +45,12 @@ Phase tracking is automatic (hook system) — do NOT put phase numbers in commit
 
 ## Core rules
 
-1. planner-lite runs in the main conversation context (no agent binding).
+1. plan-runner runs in the main conversation context (no agent binding).
 2. The main context HEAD stays on the base branch at all times — during and after execution. Never checkout the task branch automatically.
 3. Task branches are created via `git worktree add -b` (one per task, not per phase).
 4. Phase agents are dispatched via `Agent` without `isolation: "worktree"` — they work directly in the worktree directory.
-5. Each phase ends with a commit. After the final phase, planner-lite removes the worktree and asks the user whether to merge — it never checks out the task branch.
-6. planner-lite runs from the repository root, never from inside `worktrees/**`.
+5. Each phase ends with a commit. After the final phase, plan-runner removes the worktree and asks the user whether to merge — it never checks out the task branch.
+6. plan-runner runs from the repository root, never from inside `worktrees/**`.
 
 ---
 
@@ -67,7 +67,7 @@ X (base branch — HEAD stays here during execution)
     → worktree remove → ask user: merge into X? (HEAD stays on X)
 ```
 
-- **Base branch (X):** Where HEAD is when planner-lite starts. HEAD stays here throughout the entire lifecycle — during and after execution.
+- **Base branch (X):** Where HEAD is when plan-runner starts. HEAD stays here throughout the entire lifecycle — during and after execution.
 - **Task branch:** Created by `git worktree add -b`. All phase commits accumulate on this branch inside the worktree. After completion, the worktree is removed and the user decides whether to merge.
 
 ---
@@ -181,7 +181,7 @@ Report:
 
 Do not proceed to the next phase until the user explicitly replies. If the user chooses to stop, keep the worktree intact for inspection.
 
-> **BLOCK handling is automatic.** When the stop-gate returns BLOCK, the hook injects a `[planner-lite workflow directive]` into the feedback. Follow that directive — it tells you to re-dispatch the same phase agent with the BLOCK reason. Do NOT fix the code yourself in the main session.
+> **BLOCK handling is automatic.** When the stop-gate returns BLOCK, the hook injects a `[plan-runner workflow directive]` into the feedback. Follow that directive — it tells you to re-dispatch the same phase agent with the BLOCK reason. Do NOT fix the code yourself in the main session.
 
 ### Step 4. Clean up worktree and ask user
 
@@ -267,7 +267,7 @@ git rev-parse --abbrev-ref HEAD
 
 1. Never pass `isolation: "worktree"` to Agent — it doesn't support nested Agent calls, making phase-level specialization impossible.
 2. Never call `EnterWorktree` — it lacks mid-session exit, making merge impossible.
-3. Never run planner-lite from inside `worktrees/**` — always from repository root.
+3. Never run plan-runner from inside `worktrees/**` — always from repository root.
 4. Never delete task branches — the user decides when to merge and clean up.
 5. Always verify phase commits and branch before starting the next phase.
 6. Always remove the worktree before asking the user about merge. Never checkout the task branch — HEAD must stay on the base branch.

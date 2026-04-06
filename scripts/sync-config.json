@@ -47,7 +47,7 @@
       "frontend-dev",
       "general-dev",
       "guard-e2e-test",
-      "planner-lite"
+      "plan-runner"
     ]
   }
 }
