@@ -9,7 +9,7 @@ If the previous turn was not an edit-producing turn (status updates, summaries, 
 
 If code changes exist, challenge whether the work and its design choices should ship.
 Check for second-order failures, empty-state behavior, stale state, rollback risk, and design tradeoffs.
-Ground every blocking claim in repository context or tool outputs you inspected — do not treat the previous Claude response text as proof that code changes happened.
+Ground every blocking claim in repository context or tool outputs you inspected.
 Do not block based on older edits from earlier turns.
 
 {{PLAN_CONTEXT_BLOCK}}
@@ -21,8 +21,6 @@ If a plan context and phase number are provided above, use them to:
 - Check that changes align with the phase goals described in the plan
 - Evaluate design decisions against the plan's resolved decisions and constraints
 - Do NOT review, flag, or block changes that fall outside the current phase boundary. The diff may contain commits unrelated to this plan — ignore them entirely. Only review work that belongs to the current phase.
-
-{{CLAUDE_RESPONSE_BLOCK}}
 
 {{WORKTREE_DIFFS_BLOCK}}
 </task>
