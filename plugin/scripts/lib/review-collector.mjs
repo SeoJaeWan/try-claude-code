@@ -10,7 +10,7 @@ function sanitizeBranch(branch) {
 }
 
 /**
- * Scan plans/*/plan.md to find the directory whose **Branch:** header matches the given branch.
+ * Scan plans/{name}/plan.md to find the directory whose Branch header matches the given branch.
  * Returns the plan directory path or null.
  */
 export function findPlanDirByBranch(workspaceRoot, branch) {
