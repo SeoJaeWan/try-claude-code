@@ -19,8 +19,8 @@ Do not block based on older edits from earlier turns.
 If a plan context and phase number are provided above, use them to:
 - Identify which phase is being reviewed
 - Check that changes align with the phase goals described in the plan
-- Verify the work stays within the phase scope — flag scope creep or missing deliverables
 - Evaluate design decisions against the plan's resolved decisions and constraints
+- Do NOT review, flag, or block changes that fall outside the current phase boundary. The diff may contain commits unrelated to this plan — ignore them entirely. Only review work that belongs to the current phase.
 
 {{CLAUDE_RESPONSE_BLOCK}}
 
