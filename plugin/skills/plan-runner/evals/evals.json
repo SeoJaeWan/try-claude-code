@@ -1,5 +1,5 @@
 {
-  "skill_name": "planner-lite",
+  "skill_name": "plan-runner",
   "evals": [
     {
       "id": 1,
@@ -7,7 +7,7 @@
       "expected_output": "Branch 헤더 검증, worktree 생성, phase별 실행, merge, 정리",
       "files": ["../../../features/next-app/package.json"],
       "expectations": [
-        "Reads skills/planner-lite/SKILL.md via Read tool",
+        "Reads skills/plan-runner/SKILL.md via Read tool",
         "Validates Branch: header in plan.md",
         "Validates owner_agent references exist in agents/*.md",
         "Creates git worktree for task isolation",
@@ -22,7 +22,7 @@
       "expected_output": "Phase-1 순차 실행, 승인 대기, Phase-2 순차 실행, worktree 격리",
       "files": ["../../../features/next-app/package.json"],
       "expectations": [
-        "Reads skills/planner-lite/SKILL.md via Read tool",
+        "Reads skills/plan-runner/SKILL.md via Read tool",
         "Executes Phase-1 before Phase-2",
         "Waits for explicit user approval after Phase-1 verification",
         "Uses one task worktree for the full plan lifecycle",
@@ -36,7 +36,7 @@
       "expected_output": "Branch 헤더 누락 감지, 사용자에게 확인, 자동 생성 또는 에러",
       "files": ["../../../features/next-app/package.json"],
       "expectations": [
-        "Reads skills/planner-lite/SKILL.md via Read tool",
+        "Reads skills/plan-runner/SKILL.md via Read tool",
         "Detects missing Branch: header in plan.md",
         "Reports validation error to user",
         "Does not proceed without valid plan headers",

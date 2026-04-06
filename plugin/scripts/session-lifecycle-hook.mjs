@@ -157,7 +157,7 @@ function handlePostToolUse(input) {
 }
 
 // ---------------------------------------------------------------------------
-// PostToolUse (Agent) — detect planner-lite phase dispatch
+// PostToolUse (Agent) — detect plan-runner phase dispatch
 // ---------------------------------------------------------------------------
 
 const PHASE_DESC_RE = /^Phase\s+(\d+)/i;
