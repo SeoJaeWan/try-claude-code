@@ -47,13 +47,7 @@ function filterJobsForCurrentSession(jobs, input = {}) {
 
 function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "") {
   const sessionId = input.session_id || process.env[SESSION_ID_ENV] || null;
-  const lastAssistantMessage = String(
-    input.last_assistant_message ?? "",
-  ).trim();
   const template = loadPromptTemplate(ROOT_DIR, "stop-review-gate");
-  const claudeResponseBlock = lastAssistantMessage
-    ? ["Previous Claude response:", lastAssistantMessage].join("\n")
-    : "";
 
   let worktreeDiffsBlock = "";
   if (worktreeDiffs.length > 0) {
@@ -105,7 +99,7 @@ function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "
   }
 
   return interpolateTemplate(template, {
-    CLAUDE_RESPONSE_BLOCK: claudeResponseBlock,
+    CLAUDE_RESPONSE_BLOCK: "",
     WORKTREE_DIFFS_BLOCK: worktreeDiffsBlock,
     PLAN_CONTEXT_BLOCK: planContextBlock,
     COMMIT_MESSAGES_BLOCK: commitMessagesBlock,
