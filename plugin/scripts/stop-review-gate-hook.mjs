@@ -45,7 +45,8 @@ function filterJobsForCurrentSession(jobs, input = {}) {
   return jobs.filter((job) => job.sessionId === sessionId);
 }
 
-function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "", sessionId = null) {
+function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "") {
+  const sessionId = input.session_id || process.env[SESSION_ID_ENV] || null;
   const lastAssistantMessage = String(
     input.last_assistant_message ?? "",
   ).trim();
@@ -150,7 +151,8 @@ function parseStopReviewOutput(rawOutput) {
  *
  * Returns the directive string, or "" if not in a plan-runner context.
  */
-function buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, sessionId) {
+function buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, input = {}) {
+  const sessionId = input.session_id || process.env[SESSION_ID_ENV] || null;
   const branch = worktreeDiffs[0]?.branch;
   if (!branch || !workspaceRoot) {
     return "";
@@ -293,7 +295,7 @@ function markWorktreesReviewed(sessionId, worktreeDiffs) {
 
 function runStopReview(cwd, input = {}, worktreeDiffs = [], workspaceRoot = "") {
   const scriptPath = path.join(SCRIPT_DIR, "codex-companion.mjs");
-  const prompt = buildStopReviewPrompt(input, worktreeDiffs, workspaceRoot, sessionId);
+  const prompt = buildStopReviewPrompt(input, worktreeDiffs, workspaceRoot);
   const childEnv = {
     ...process.env,
     ...(input.session_id ? { [SESSION_ID_ENV]: input.session_id } : {}),
@@ -382,7 +384,7 @@ function main() {
 
     // If this BLOCK is in a plan-runner worktree context, append a directive
     // telling the main session to re-dispatch the phase agent for the fix.
-    const plannerDirective = buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, sessionId);
+    const plannerDirective = buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, input);
     const fullReason = review.reason + plannerDirective;
 
     emitDecision({
