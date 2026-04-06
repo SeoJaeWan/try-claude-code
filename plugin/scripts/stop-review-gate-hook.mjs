@@ -248,7 +248,7 @@ function getWorktreeDiffs(sessionId, cwd) {
 
     const diffResult = spawnSync(
       "git",
-      ["-C", wtPath, "diff", "--stat", `${diffBase}..HEAD`],
+      ["-C", wtPath, "diff", `${diffBase}..HEAD`],
       {
         encoding: "utf8",
       },
