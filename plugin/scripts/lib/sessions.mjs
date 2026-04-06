@@ -137,6 +137,19 @@ export function updateWorktreeReviewedCommit(sessionId, worktreePath, commitSha)
   }
 }
 
+export function updateWorktreePhase(sessionId, worktreePath, phase) {
+  const session = loadSession(sessionId);
+  if (!session) {
+    return;
+  }
+  const normalized = normalizePath(worktreePath);
+  const wt = session.worktrees.find((w) => normalizePath(w.path) === normalized);
+  if (wt) {
+    wt.currentPhase = phase;
+    saveSession(session);
+  }
+}
+
 export function removeWorktree(sessionId, worktreePath) {
   const session = loadSession(sessionId);
   if (!session) {

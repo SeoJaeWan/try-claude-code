@@ -11,7 +11,8 @@ import {
   cleanStaleSessions,
   loadSession,
   addWorktree,
-  removeWorktree
+  removeWorktree,
+  updateWorktreePhase
 } from "./lib/sessions.mjs";
 import { SESSION_ID_ENV } from "./lib/tracked-jobs.mjs";
 
@@ -156,6 +157,36 @@ function handlePostToolUse(input) {
 }
 
 // ---------------------------------------------------------------------------
+// PostToolUse (Agent) — detect planner-lite phase dispatch
+// ---------------------------------------------------------------------------
+
+const PHASE_DESC_RE = /^Phase\s+(\d+)/i;
+const WORKTREE_PATH_RE = /You are working in:\s*(\S+)/;
+
+function handlePostAgentUse(input) {
+  const sessionId = input.session_id || process.env[SESSION_ID_ENV];
+  if (!sessionId) {
+    return;
+  }
+
+  const description = input.tool_input?.description ?? "";
+  const phaseMatch = description.match(PHASE_DESC_RE);
+  if (!phaseMatch) {
+    return;
+  }
+
+  const phase = parseInt(phaseMatch[1], 10);
+  const prompt = input.tool_input?.prompt ?? "";
+  const wtMatch = prompt.match(WORKTREE_PATH_RE);
+  if (!wtMatch) {
+    return;
+  }
+
+  const wtPath = wtMatch[1].replace(/\\/g, "/");
+  updateWorktreePhase(sessionId, wtPath, phase);
+}
+
+// ---------------------------------------------------------------------------
 // Main dispatcher
 // ---------------------------------------------------------------------------
 
@@ -172,6 +203,9 @@ function main() {
       break;
     case "post-tool-use":
       handlePostToolUse(input);
+      break;
+    case "post-agent-use":
+      handlePostAgentUse(input);
       break;
     default:
       process.stderr.write(`session-lifecycle-hook: unknown mode "${mode}"\n`);

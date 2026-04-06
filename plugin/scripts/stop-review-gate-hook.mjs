@@ -45,7 +45,7 @@ function filterJobsForCurrentSession(jobs, input = {}) {
   return jobs.filter((job) => job.sessionId === sessionId);
 }
 
-function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "") {
+function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "", sessionId = null) {
   const lastAssistantMessage = String(
     input.last_assistant_message ?? "",
   ).trim();
@@ -76,6 +76,20 @@ function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "
       } catch {
         // Plan file unreadable — proceed without plan context.
       }
+
+      // Append current phase from session (set by PostToolUse Agent hook).
+      if (sessionId) {
+        const session = loadSession(sessionId);
+        if (session) {
+          const wtNorm = (worktreeDiffs[0]?.path ?? "").replace(/\\/g, "/");
+          const wt = session.worktrees.find(
+            (w) => w.path.replace(/\\/g, "/") === wtNorm,
+          );
+          if (wt?.currentPhase != null) {
+            planContextBlock += `\n\nCurrent phase being reviewed: Phase ${wt.currentPhase}`;
+          }
+        }
+      }
     }
   }
 
@@ -104,18 +118,20 @@ function parseStopReviewOutput(rawOutput) {
       ok: false,
       reason:
         "The stop-time Codex review task returned no final output. Run /codex:review --wait manually or bypass the gate.",
+      details: null,
     };
   }
 
   const firstLine = text.split(/\r?\n/, 1)[0].trim();
   if (firstLine.startsWith("ALLOW:")) {
-    return { ok: true, reason: null };
+    return { ok: true, reason: null, details: null };
   }
   if (firstLine.startsWith("BLOCK:")) {
     const reason = firstLine.slice("BLOCK:".length).trim() || text;
     return {
       ok: false,
       reason: `Codex stop-time review found issues that still need fixes before ending the session: ${reason}`,
+      details: text,
     };
   }
 
@@ -123,7 +139,54 @@ function parseStopReviewOutput(rawOutput) {
     ok: false,
     reason:
       "The stop-time Codex review task returned an unexpected answer. Run /codex:review --wait manually or bypass the gate.",
+    details: null,
   };
+}
+
+/**
+ * When a BLOCK occurs in a planner-lite worktree context, build a directive
+ * that tells the main session to re-dispatch the phase agent instead of
+ * fixing the code directly.
+ *
+ * Returns the directive string, or "" if not in a planner-lite context.
+ */
+function buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, sessionId) {
+  const branch = worktreeDiffs[0]?.branch;
+  if (!branch || !workspaceRoot) {
+    return "";
+  }
+
+  const planDir = findPlanDirByBranch(workspaceRoot, branch);
+  if (!planDir) {
+    return "";
+  }
+
+  // Read the current phase from the session file (set by PostToolUse Agent hook).
+  let phaseTag = "the current phase";
+  if (sessionId) {
+    const session = loadSession(sessionId);
+    if (session) {
+      const wtNorm = worktreeDiffs[0]?.path ?? "";
+      const wt = session.worktrees.find(
+        (w) => w.path.replace(/\\/g, "/") === wtNorm.replace(/\\/g, "/"),
+      );
+      if (wt?.currentPhase != null) {
+        phaseTag = `Phase ${wt.currentPhase}`;
+      }
+    }
+  }
+
+  const wtPath = worktreeDiffs[0]?.path ?? "the worktree";
+
+  const lines = [
+    "",
+    "---",
+    "[planner-lite workflow directive]",
+    `Do NOT fix this yourself in the main session. Re-dispatch the same phase agent (${phaseTag}) to fix the issues.`,
+    `The agent must work in the worktree at: ${wtPath}`,
+    "After the agent commits the fix, end your turn so the stop-gate can re-review.",
+  ];
+  return lines.join("\n");
 }
 
 // Well-known SHA for an empty tree — used when HEAD has no parent (first commit).
@@ -230,7 +293,7 @@ function markWorktreesReviewed(sessionId, worktreeDiffs) {
 
 function runStopReview(cwd, input = {}, worktreeDiffs = [], workspaceRoot = "") {
   const scriptPath = path.join(SCRIPT_DIR, "codex-companion.mjs");
-  const prompt = buildStopReviewPrompt(input, worktreeDiffs, workspaceRoot);
+  const prompt = buildStopReviewPrompt(input, worktreeDiffs, workspaceRoot, sessionId);
   const childEnv = {
     ...process.env,
     ...(input.session_id ? { [SESSION_ID_ENV]: input.session_id } : {}),
@@ -316,11 +379,17 @@ function main() {
     } catch {
       // Review collection is best-effort — never block the gate decision.
     }
+
+    // If this BLOCK is in a planner-lite worktree context, append a directive
+    // telling the main session to re-dispatch the phase agent for the fix.
+    const plannerDirective = buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, sessionId);
+    const fullReason = review.reason + plannerDirective;
+
     emitDecision({
       decision: "block",
       reason: runningTaskNote
-        ? `${runningTaskNote} ${review.reason}`
-        : review.reason,
+        ? `${runningTaskNote} ${fullReason}`
+        : fullReason,
     });
     return;
   }
