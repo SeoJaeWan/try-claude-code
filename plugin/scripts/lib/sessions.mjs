@@ -33,7 +33,8 @@ export function createSession(sessionId, cwd) {
     sessionId,
     createdAt: nowIso(),
     cwd: normalizePath(cwd),
-    worktrees: []
+    worktrees: [],
+    stopReviewThreadId: null
   };
   fs.writeFileSync(resolveSessionFile(sessionId), `${JSON.stringify(session, null, 2)}\n`, "utf8");
   return session;
@@ -50,7 +51,8 @@ export function loadSession(sessionId) {
       sessionId: parsed.sessionId ?? sessionId,
       createdAt: parsed.createdAt ?? nowIso(),
       cwd: parsed.cwd ?? "",
-      worktrees: Array.isArray(parsed.worktrees) ? parsed.worktrees : []
+      worktrees: Array.isArray(parsed.worktrees) ? parsed.worktrees : [],
+      stopReviewThreadId: parsed.stopReviewThreadId ?? null
     };
   } catch {
     return null;
@@ -148,6 +150,20 @@ export function updateWorktreePhase(sessionId, worktreePath, phase) {
     wt.currentPhase = phase;
     saveSession(session);
   }
+}
+
+export function getStopReviewThreadId(sessionId) {
+  const session = loadSession(sessionId);
+  return session?.stopReviewThreadId ?? null;
+}
+
+export function setStopReviewThreadId(sessionId, threadId) {
+  const session = loadSession(sessionId);
+  if (!session) {
+    return;
+  }
+  session.stopReviewThreadId = threadId;
+  saveSession(session);
 }
 
 export function removeWorktree(sessionId, worktreePath) {
