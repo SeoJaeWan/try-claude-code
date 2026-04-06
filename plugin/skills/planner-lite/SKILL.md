@@ -33,6 +33,16 @@ This skill uses manual `git worktree` management: one worktree per task, phase a
 
 ---
 
+## Commit convention
+
+Conventional Commits: `{type}({scope}): {description}`
+
+Types: `feat` · `fix` · `refactor` · `docs` · `chore`
+
+Phase tracking is automatic (hook system) — do NOT put phase numbers in commit messages.
+
+---
+
 ## Core rules
 
 1. planner-lite runs in the main conversation context (no agent binding).
@@ -139,11 +149,7 @@ After this step, HEAD is still on `$BASE` in the main repo. The worktree has its
 
 ### Step 3. Execute phases
 
-For each phase in plan order:
-
-#### 3a. Dispatch agent
-
-Call the Agent tool without `isolation: "worktree"`. The agent is told to work in the worktree directory:
+For each phase in plan order, dispatch the phase agent and then end your turn so the stop-gate can review.
 
 ```
 Agent(
@@ -157,13 +163,8 @@ Agent(
     - Work directly in your current directory.
     - Do NOT create additional worktrees or use EnterWorktree.
     - Only implement Phase {N} work described below. Do NOT redo prior phases.
-    - Commit your work when done using Conventional Commits format with phase tag:
-      git add -A && git commit -m '{type}({scope}): {description} [Phase {N}]'
-      Types: feat, fix, refactor, test, docs, chore, style, perf, ci, build
-      Scope: the module or area you changed (e.g., auth, api, ui, db)
-      Description: concise summary of what you did, in imperative mood
-      [Phase {N}]: MUST include — the stop-gate reviewer uses this to identify the current phase
-      Example: feat(auth): implement JWT-based login [Phase 2]
+    - You MUST commit before finishing:
+      git add -A && git commit -m '{type}({scope}): {description}'
 
     ## Task
     {phase content}
@@ -172,74 +173,15 @@ Agent(
 )
 ```
 
-#### 3b. Verify phase work
-
-After the agent completes, verify from the repo root:
-
-```bash
-# 1. Check the agent committed to the correct branch
-CURRENT_BRANCH=$(git -C "$WORKTREE_DIR" rev-parse --abbrev-ref HEAD)
-if [ "$CURRENT_BRANCH" != "$TASK_BRANCH" ]; then
-  echo "ERROR: Agent switched branches. Expected $TASK_BRANCH, got $CURRENT_BRANCH"
-  # Stop execution
-fi
-
-# 2. Check for uncommitted changes and commit if needed
-# Use Conventional Commits with phase tag: {type}({scope}): {description} [Phase {N}]
-# Infer type from the phase content (feat/fix/refactor/test/docs/chore/style/perf/ci/build)
-if [ -n "$(git -C "$WORKTREE_DIR" status --porcelain)" ]; then
-  git -C "$WORKTREE_DIR" add -A
-  git -C "$WORKTREE_DIR" commit -m "{type}({scope}): {description from phase content} [Phase {N}]"
-fi
-
-# 3. Confirm latest commit
-git -C "$WORKTREE_DIR" log --oneline -1
-```
-
-If verification fails → stop execution and report the error. Do not proceed to the next phase.
-
-#### 3c. End turn for stop-gate review
-
-After verification passes, output the following as **plain text** and let your turn end naturally. Do NOT use `AskUserQuestion` — just output text so that your turn ends with `end_turn`, which triggers the Stop hook to review the worktree commits automatically.
+After the agent returns, output a brief report as **plain text** and let your turn end naturally. Do NOT use `AskUserQuestion` — just output text so that `end_turn` triggers the Stop hook.
 
 Report:
-- What was completed in this phase (changed files, commit summary)
-- Validation results
+- `git -C "$WORKTREE_DIR" log --oneline -1` (latest commit)
 - "Phase {N} 완료. Stop-gate review가 실행됩니다. 계속하려면 답장해주세요."
 
-Do not proceed to the next phase until the user explicitly replies. If the user chooses to stop, keep the worktree intact for inspection — do not clean up.
+Do not proceed to the next phase until the user explicitly replies. If the user chooses to stop, keep the worktree intact for inspection.
 
-#### 3d. Handle stop-gate BLOCK
-
-If the stop-gate review returns a BLOCK, re-dispatch the **same phase agent** with the BLOCK feedback. Do NOT fix the code yourself in the main context.
-
-```
-Agent(
-  subagent_type: "{owner_agent}",
-  prompt: "
-    ## Working directory
-    You are working in: {repo_root}/{WORKTREE_DIR}
-    cd to this directory before starting any work.
-
-    ## Stop-gate review feedback
-    Your previous commit was BLOCKED by the stop-gate reviewer:
-    {BLOCK reason}
-
-    ## Rules
-    - Fix the issues described in the review feedback above.
-    - Do NOT rewrite unrelated code — only address the feedback.
-    - Commit your fix using Conventional Commits with phase tag:
-      git add -A && git commit -m '{type}({scope}): {description} [Phase {N}]'
-      Example: fix(auth): add token expiry validation [Phase 2]
-
-    ## Original task (for reference)
-    {phase content}
-  ",
-  description: "Phase {N} fix: {short BLOCK reason}"
-)
-```
-
-After the fix agent completes, run the same verification steps (3b) and end turn (3c) to trigger another stop-gate review. Repeat until ALLOW.
+> **BLOCK handling is automatic.** When the stop-gate returns BLOCK, the hook injects a `[planner-lite workflow directive]` into the feedback. Follow that directive — it tells you to re-dispatch the same phase agent with the BLOCK reason. Do NOT fix the code yourself in the main session.
 
 ### Step 4. Clean up worktree and ask user
 

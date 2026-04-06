@@ -16,7 +16,7 @@ Do not block based on older edits from earlier turns.
 
 {{COMMIT_MESSAGES_BLOCK}}
 
-If a plan and commit messages with [Phase N] tags are provided above, use them to:
+If a plan context and phase number are provided above, use them to:
 - Identify which phase is being reviewed
 - Check that changes align with the phase goals described in the plan
 - Verify the work stays within the phase scope — flag scope creep or missing deliverables
