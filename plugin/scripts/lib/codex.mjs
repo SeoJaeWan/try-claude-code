@@ -35,7 +35,7 @@
  * }} TurnCaptureState
  */
 import { BROKER_BUSY_RPC_CODE, BROKER_ENDPOINT_ENV, CodexAppServerClient } from "./app-server.mjs";
-import { binaryAvailable, runCommand } from "./process.mjs";
+
 
 const SERVICE_NAME = "claude_code_codex_plugin";
 const TASK_THREAD_PREFIX = "Codex Companion Task";
@@ -650,66 +650,7 @@ function buildResultStatus(turnState) {
   return turnState.finalTurn?.status === "completed" ? 0 : 1;
 }
 
-function getCodexAvailability(cwd) {
-  const versionStatus = binaryAvailable("codex", ["--version"], { cwd });
-  if (!versionStatus.available) {
-    return versionStatus;
-  }
-
-  const appServerStatus = binaryAvailable("codex", ["app-server", "--help"], { cwd });
-  if (!appServerStatus.available) {
-    return {
-      available: false,
-      detail: `${versionStatus.detail}; advanced runtime unavailable: ${appServerStatus.detail}`
-    };
-  }
-
-  return {
-    available: true,
-    detail: `${versionStatus.detail}; advanced runtime available`
-  };
-}
-
-export function getCodexLoginStatus(cwd) {
-  const availability = getCodexAvailability(cwd);
-  if (!availability.available) {
-    return {
-      available: false,
-      loggedIn: false,
-      detail: availability.detail
-    };
-  }
-
-  const result = runCommand("codex", ["login", "status"], { cwd });
-  if (result.error) {
-    return {
-      available: true,
-      loggedIn: false,
-      detail: result.error.message
-    };
-  }
-
-  if (result.status === 0) {
-    return {
-      available: true,
-      loggedIn: true,
-      detail: result.stdout.trim() || "authenticated"
-    };
-  }
-
-  return {
-    available: true,
-    loggedIn: false,
-    detail: result.stderr.trim() || result.stdout.trim() || "not authenticated"
-  };
-}
-
 export async function runAppServerTurn(cwd, options = {}) {
-  const availability = getCodexAvailability(cwd);
-  if (!availability.available) {
-    throw new Error("Codex CLI is not installed or is missing required runtime support. Install it with `npm install -g @openai/codex`, then rerun `/codex:setup`.");
-  }
-
   return withAppServer(cwd, async (client) => {
     let threadId;
 
@@ -772,11 +713,6 @@ export async function runAppServerTurn(cwd, options = {}) {
 }
 
 export async function findLatestTaskThread(cwd) {
-  const availability = getCodexAvailability(cwd);
-  if (!availability.available) {
-    throw new Error("Codex CLI is not installed or is missing required runtime support. Install it with `npm install -g @openai/codex`, then rerun `/codex:setup`.");
-  }
-
   return withAppServer(cwd, async (client) => {
     const response = await client.request("thread/list", {
       cwd,

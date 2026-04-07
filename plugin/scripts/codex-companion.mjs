@@ -11,7 +11,6 @@ import {
     buildPersistentTaskThreadName,
     DEFAULT_CONTINUE_PROMPT,
     findLatestTaskThread,
-    getCodexLoginStatus,
     runAppServerTurn
   } from "./lib/codex.mjs";
 import { readStdinIfPiped } from "./lib/fs.mjs";
@@ -138,16 +137,6 @@ function firstMeaningfulLine(text, fallback) {
   return line ?? fallback;
 }
 
-function ensureCodexReady(cwd) {
-  const authStatus = getCodexLoginStatus(cwd);
-  if (!authStatus.available) {
-    throw new Error("Codex CLI is not installed or is missing required runtime support. Install it with `npm install -g @openai/codex`, then rerun `/codex:setup`.");
-  }
-  if (!authStatus.loggedIn) {
-    throw new Error("Codex CLI is not authenticated. Run `!codex login` and retry.");
-  }
-}
-
 function renderTaskResult(parsedResult) {
   const rawOutput = typeof parsedResult?.rawOutput === "string" ? parsedResult.rawOutput : "";
   if (rawOutput) {
@@ -160,7 +149,6 @@ function renderTaskResult(parsedResult) {
 
 async function executeTaskRun(request) {
   const workspaceRoot = resolveWorkspaceRoot(request.cwd);
-  ensureCodexReady(request.cwd);
 
   const taskMetadata = buildTaskRunMetadata({
     prompt: request.prompt,
@@ -404,7 +392,6 @@ async function handleTask(argv) {
   });
 
   if (options.background) {
-    ensureCodexReady(cwd);
     requireTaskRequest(prompt, resumeLast);
 
     const job = buildTaskJob(workspaceRoot, taskMetadata, write);

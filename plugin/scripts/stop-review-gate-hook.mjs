@@ -6,6 +6,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
+import { runAppServerTurn } from "./lib/codex.mjs";
 import { loadPromptTemplate, interpolateTemplate } from "./lib/prompts.mjs";
 import { loadSession, updateWorktreeReviewedCommit, getStopReviewThreadId, setStopReviewThreadId } from "./lib/sessions.mjs";
 import { listJobs } from "./lib/state.mjs";
@@ -16,7 +17,21 @@ import { collectBlockReview, findPlanDirByBranch } from "./lib/review-collector.
 
 const STOP_REVIEW_TIMEOUT_MS = 15 * 60 * 1000;
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const ROOT_DIR = path.resolve(SCRIPT_DIR, "..");
+
+function withTimeout(promise, ms) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        const err = new Error("ETIMEDOUT");
+        err.code = "ETIMEDOUT";
+        reject(err);
+      }, ms);
+      timer.unref?.();
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
 
 function readHookInput() {
   const raw = fs.readFileSync(0, "utf8").trim();
@@ -45,9 +60,8 @@ function filterJobsForCurrentSession(jobs, input = {}) {
   return jobs.filter((job) => job.sessionId === sessionId);
 }
 
-function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "") {
-  const sessionId = input.session_id || process.env[SESSION_ID_ENV] || null;
-  const template = loadPromptTemplate(ROOT_DIR, "stop-review-gate");
+function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "", session = null) {
+  const template = loadPromptTemplate(path.resolve(SCRIPT_DIR, ".."), "stop-review-gate");
 
   let worktreeDiffsBlock = "";
   if (worktreeDiffs.length > 0) {
@@ -73,16 +87,13 @@ function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "
       }
 
       // Append current phase from session (set by PostToolUse Agent hook).
-      if (sessionId) {
-        const session = loadSession(sessionId);
-        if (session) {
-          const wtNorm = (worktreeDiffs[0]?.path ?? "").replace(/\\/g, "/");
-          const wt = session.worktrees.find(
-            (w) => w.path.replace(/\\/g, "/") === wtNorm,
-          );
-          if (wt?.currentPhase != null) {
-            planContextBlock += `\n\nCurrent phase being reviewed: Phase ${wt.currentPhase}`;
-          }
+      if (session) {
+        const wtNorm = (worktreeDiffs[0]?.path ?? "").replace(/\\/g, "/");
+        const wt = session.worktrees.find(
+          (w) => w.path.replace(/\\/g, "/") === wtNorm,
+        );
+        if (wt?.currentPhase != null) {
+          planContextBlock += `\n\nCurrent phase being reviewed: Phase ${wt.currentPhase}`;
         }
       }
     }
@@ -145,8 +156,7 @@ function parseStopReviewOutput(rawOutput) {
  *
  * Returns the directive string, or "" if not in a plan-runner context.
  */
-function buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, input = {}) {
-  const sessionId = input.session_id || process.env[SESSION_ID_ENV] || null;
+function buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, session = null) {
   const branch = worktreeDiffs[0]?.branch;
   if (!branch || !workspaceRoot) {
     return "";
@@ -157,18 +167,15 @@ function buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, input = {}) {
     return "";
   }
 
-  // Read the current phase from the session file (set by PostToolUse Agent hook).
+  // Read the current phase from the session (set by PostToolUse Agent hook).
   let phaseTag = "the current phase";
-  if (sessionId) {
-    const session = loadSession(sessionId);
-    if (session) {
-      const wtNorm = worktreeDiffs[0]?.path ?? "";
-      const wt = session.worktrees.find(
-        (w) => w.path.replace(/\\/g, "/") === wtNorm.replace(/\\/g, "/"),
-      );
-      if (wt?.currentPhase != null) {
-        phaseTag = `Phase ${wt.currentPhase}`;
-      }
+  if (session) {
+    const wtNorm = worktreeDiffs[0]?.path ?? "";
+    const wt = session.worktrees.find(
+      (w) => w.path.replace(/\\/g, "/") === wtNorm.replace(/\\/g, "/"),
+    );
+    if (wt?.currentPhase != null) {
+      phaseTag = `Phase ${wt.currentPhase}`;
     }
   }
 
@@ -196,12 +203,7 @@ function isValidCommit(wtPath, sha) {
   return result.status === 0 && result.stdout.trim() === "commit";
 }
 
-function getWorktreeDiffs(sessionId, cwd) {
-  if (!sessionId) {
-    return [];
-  }
-
-  const session = loadSession(sessionId);
+function getWorktreeDiffs(session, cwd) {
   if (!session || !session.worktrees || session.worktrees.length === 0) {
     return [];
   }
@@ -287,53 +289,50 @@ function markWorktreesReviewed(sessionId, worktreeDiffs) {
   }
 }
 
-function runStopReview(cwd, input = {}, worktreeDiffs = [], workspaceRoot = "") {
+async function runStopReview(cwd, input = {}, worktreeDiffs = [], workspaceRoot = "", session = null) {
   const sessionId = input.session_id || process.env[SESSION_ID_ENV] || null;
-  const scriptPath = path.join(SCRIPT_DIR, "codex-companion.mjs");
-  const prompt = buildStopReviewPrompt(input, worktreeDiffs, workspaceRoot);
-  const childEnv = {
-    ...process.env,
-    ...(sessionId ? { [SESSION_ID_ENV]: sessionId } : {}),
-  };
-
-  // Try to resume the existing stop-review thread for this session.
+  const prompt = buildStopReviewPrompt(input, worktreeDiffs, workspaceRoot, session);
   const existingThreadId = sessionId ? getStopReviewThreadId(sessionId) : null;
-  const args = existingThreadId
-    ? [scriptPath, "task", "--json", "--resume-thread", existingThreadId, "--", prompt]
-    : [scriptPath, "task", "--json", "--", prompt];
+  const turnCwd = workspaceRoot || cwd;
+  const turnOptions = { prompt, sandbox: "read-only", persistThread: true };
 
-  let result = spawnSync(process.execPath, args, {
-    cwd,
-    env: childEnv,
-    encoding: "utf8",
-    timeout: STOP_REVIEW_TIMEOUT_MS,
-  });
+  try {
+    let result;
+    if (existingThreadId) {
+      try {
+        result = await withTimeout(
+          runAppServerTurn(turnCwd, { ...turnOptions, resumeThreadId: existingThreadId }),
+          STOP_REVIEW_TIMEOUT_MS,
+        );
+      } catch (err) {
+        if (err.code === "ETIMEDOUT") throw err;
+        logNote(`[stop-gate] Resume of thread ${existingThreadId} failed, starting fresh thread.`);
+        result = await withTimeout(
+          runAppServerTurn(turnCwd, turnOptions),
+          STOP_REVIEW_TIMEOUT_MS,
+        );
+      }
+    } else {
+      result = await withTimeout(
+        runAppServerTurn(turnCwd, turnOptions),
+        STOP_REVIEW_TIMEOUT_MS,
+      );
+    }
 
-  // If resume failed, fall back to a fresh thread.
-  if (existingThreadId && result.status !== 0) {
-    logNote(`[stop-gate] Resume of thread ${existingThreadId} failed, starting fresh thread.`);
-    result = spawnSync(
-      process.execPath,
-      [scriptPath, "task", "--json", "--", prompt],
-      {
-        cwd,
-        env: childEnv,
-        encoding: "utf8",
-        timeout: STOP_REVIEW_TIMEOUT_MS,
-      },
-    );
-  }
-
-  if (result.error?.code === "ETIMEDOUT") {
-    return {
-      ok: false,
-      reason:
-        "The stop-time Codex review task timed out after 15 minutes. Run /codex:review --wait manually or bypass the gate.",
-    };
-  }
-
-  if (result.status !== 0) {
-    const detail = String(result.stderr || result.stdout || "").trim();
+    // Persist the thread ID so subsequent stops resume the same thread.
+    if (sessionId && result.threadId) {
+      setStopReviewThreadId(sessionId, result.threadId);
+    }
+    return parseStopReviewOutput(result.finalMessage);
+  } catch (error) {
+    if (error.code === "ETIMEDOUT") {
+      return {
+        ok: false,
+        reason:
+          "The stop-time Codex review task timed out after 15 minutes. Run /codex:review --wait manually or bypass the gate.",
+      };
+    }
+    const detail = error instanceof Error ? error.message : String(error);
     return {
       ok: false,
       reason: detail
@@ -341,30 +340,16 @@ function runStopReview(cwd, input = {}, worktreeDiffs = [], workspaceRoot = "") 
         : "The stop-time Codex review task failed. Run /codex:review --wait manually or bypass the gate.",
     };
   }
-
-  try {
-    const payload = JSON.parse(result.stdout);
-    // Persist the thread ID so subsequent stops resume the same thread.
-    if (sessionId && payload?.threadId) {
-      setStopReviewThreadId(sessionId, payload.threadId);
-    }
-    return parseStopReviewOutput(payload?.rawOutput);
-  } catch {
-    return {
-      ok: false,
-      reason:
-        "The stop-time Codex review task returned invalid JSON. Run /codex:review --wait manually or bypass the gate.",
-    };
-  }
 }
 
-function main() {
+async function main() {
   const input = readHookInput();
   const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
 
-  // Check active worktrees registered by the current session for recent commits.
+  // Load session once and pass to all consumers.
   const sessionId = input.session_id || process.env[SESSION_ID_ENV] || null;
-  const worktreeDiffs = getWorktreeDiffs(sessionId, cwd);
+  const session = sessionId ? loadSession(sessionId) : null;
+  const worktreeDiffs = getWorktreeDiffs(session, cwd);
 
   // No active worktree diffs — nothing to review, exit immediately.
   if (worktreeDiffs.length === 0) {
@@ -372,6 +357,10 @@ function main() {
   }
 
   const workspaceRoot = resolveWorkspaceRoot(cwd);
+
+  const review = await runStopReview(cwd, input, worktreeDiffs, workspaceRoot, session);
+
+  // Check for running jobs (informational note only).
   const jobs = sortJobsNewestFirst(
     filterJobsForCurrentSession(listJobs(workspaceRoot), input),
   );
@@ -382,7 +371,6 @@ function main() {
     ? `Codex task ${runningJob.id} is still running. Check /codex:status and use /codex:cancel ${runningJob.id} if you want to stop it before ending the session.`
     : null;
 
-  const review = runStopReview(cwd, input, worktreeDiffs, workspaceRoot);
   if (!review.ok) {
     // Do NOT mark as reviewed when blocked — the next stop attempt should re-review
     // the same range after Claude fixes the issues.
@@ -401,7 +389,7 @@ function main() {
 
     // If this BLOCK is in a plan-runner worktree context, append a directive
     // telling the main session to re-dispatch the phase agent for the fix.
-    const plannerDirective = buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, input);
+    const plannerDirective = buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, session);
     const fullReason = review.reason + plannerDirective;
 
     emitDecision({
