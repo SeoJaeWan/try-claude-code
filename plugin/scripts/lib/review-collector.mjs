@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -48,9 +49,26 @@ export function findPlanDirByBranch(workspaceRoot, branch) {
 }
 
 /**
- * Save a BLOCK review to .reviews/{sanitized-branch}/{headSha}.md
+ * Resolve the main worktree root (the actual repo, not a linked worktree).
+ */
+function resolveRepoRoot(cwd) {
+  try {
+    const raw = execSync("git worktree list --porcelain", {
+      cwd,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    const match = raw.match(/^worktree\s+(.+)/m);
+    return match ? match[1].trim() : cwd;
+  } catch {
+    return cwd;
+  }
+}
+
+/**
+ * Save a BLOCK review to {repoRoot}/.codex/reviews/{sanitized-branch}/{headSha}.md
  *
- * @param {string} workspaceRoot - repo root
+ * @param {string} workspaceRoot - workspace (or worktree) root
  * @param {object} opts
  * @param {string} opts.branch  - worktree branch
  * @param {string} opts.headSha - HEAD commit SHA at BLOCK time
@@ -58,7 +76,8 @@ export function findPlanDirByBranch(workspaceRoot, branch) {
  * @param {string} [opts.diff]  - optional diff stat
  */
 export function collectBlockReview(workspaceRoot, { branch, headSha, reason, diff }) {
-  const dir = path.join(workspaceRoot, ".reviews", sanitizeBranch(branch));
+  const repoRoot = resolveRepoRoot(workspaceRoot);
+  const dir = path.join(repoRoot, ".codex", "reviews", sanitizeBranch(branch));
   fs.mkdirSync(dir, { recursive: true });
 
   const filePath = path.join(dir, `${headSha}.md`);
