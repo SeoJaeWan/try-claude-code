@@ -7,7 +7,7 @@
  *
  * Syncs agent and skill definitions from plugin/ (Claude Code) to .codex/ (Codex).
  * Only items listed in sync-config.json are synced.
- * Codex-only items (e.g. planner.toml) are never touched.
+ * Codex-only items (e.g. planner.toml, plan-reviewer.toml, plan-materializer.toml) are never touched.
  *
  * - Agents: plugin .md → codex .toml
  * - Skills: plugin SKILL.md → codex SKILL.md (frontmatter transformed)

@@ -24,7 +24,7 @@ enabling one-edit-all-projects sync while keeping project-specific config local.
 | Path | Shared? | Reason |
 |------|---------|--------|
 | `.codex/skills/` | **Yes** — symlink to vault | Reusable skill definitions, identical across projects |
-| `.codex/agents/` | **Yes** — symlink to vault | Reusable agent definitions, identical across projects |
+| `.codex/agents/` | **Yes** — symlink to vault | Reusable agent definitions, including execution agents and Codex-native planning agents such as `planner`, `plan-reviewer`, and `plan-materializer` |
 | `.codex/config.toml` | **No** — stays local | Project-specific settings (max_threads, features) |
 | `.codex/artifacts/` | **No** — stays local | Project-specific outputs (brainstorm results, plans) |
 

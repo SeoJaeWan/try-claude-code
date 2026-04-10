@@ -6,7 +6,7 @@ Claude Code 스킬, 에이전트, 플러그인, 워크플로를 실험하는 저
 
 ## 어떤 걸 실험하나요?
 
-- 계획 스킬(`.codex/skills`)로 요청을 분해하고, 실행 스킬(`plugin/skills`)로 구현하는 흐름
+- 계획 스킬(`.codex/skills`)로 요청을 분해하고, named planning agent(`.codex/agents`)로 cold review와 test materialization을 분리한 뒤 실행 스킬(`plugin/skills`)로 구현하는 흐름
 - 에이전트(`plugin/agents`)를 통한 역할 분리 — frontend, backend, general, doc, e2e test
 - Hook 시스템(`plugin/hooks`)으로 세션 라이프사이클과 리뷰 게이트 자동화
 - Status line(`plugin/statusline/`)으로 모델·비용·캐시·Git·외부 서비스 상태를 터미널에 통합
@@ -15,7 +15,7 @@ Claude Code 스킬, 에이전트, 플러그인, 워크플로를 실험하는 저
 
 ```
 .codex/skills/        # 계획·설계 스킬 (외부 vault symlink)
-.codex/agents/        # 에이전트 정의 (외부 vault symlink)
+.codex/agents/        # Codex agent 정의 (외부 vault symlink, planning/execution 공존)
 plugin/
   skills/             # 실행 스킬 11개
   agents/             # 에이전트 5개
@@ -49,7 +49,9 @@ scripts/              # workspace sync 스크립트
 
 ### 계획 스킬 (`.codex/skills/`)
 
-외부 vault(Google Drive)에서 symlink로 공유됩니다. `architect`, `brainstorm`, `planner-lite` 등.
+외부 vault(Google Drive)에서 symlink로 공유됩니다. `architect`, `brainstorm`, `plan-review`, `plan-materialize` 등.
+
+`.codex/agents/`에는 `planner`, `plan-reviewer`, `plan-materializer` 같은 Codex named agent와 execution agent TOML이 함께 위치할 수 있습니다.
 
 ## 에이전트 (`plugin/agents/`)
 
