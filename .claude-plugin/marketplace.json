@@ -10,8 +10,13 @@
     "plugins": [
         {
             "name": "try-claude-code",
-            "description": "Collection of AI-assisted development workflow skills including frontend/backend development, Git workflows, E2E testing, project setup, documentation, and task planning",
-            "source": "./plugin"
+            "description": "Agents, hooks, and skills for AI-assisted development workflow — Git, testing, planning, and documentation",
+            "source": "./plugin/develop"
+        },
+        {
+            "name": "try-claude-code-statusline",
+            "description": "Multi-line box UI status line with toggle on/off support",
+            "source": "./plugin/statusline"
         }
     ]
 }
