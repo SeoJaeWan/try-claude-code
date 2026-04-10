@@ -23,7 +23,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
-const PLUGIN_DIR = join(ROOT, "plugin");
+const PLUGIN_DIR = join(ROOT, "plugin", "develop");
 const CODEX_DIR = join(ROOT, ".codex");
 const DRY_RUN = process.argv.includes("--dry-run");
 
