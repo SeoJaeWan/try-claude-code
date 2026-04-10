@@ -1,5 +1,5 @@
 ---
-name: plan-runner
+name: runner
 description: Deterministic plan orchestrator with per-task worktree isolation, sequential phase commits, and per-phase user approval. Use when executing a finalized single `plan.md` whose phases must run in order. Waits for user confirmation after each phase, and after all phases complete asks user whether to merge — HEAD always stays on the base branch.
 model: opus
 ---

@@ -1,5 +1,5 @@
 ---
-name: doc-update
+name: doc
 description: CODEMAPS and HUMANMAPS auto-generation. Scans service code structure and generates documentation. Outputs to codemaps/ and humanmaps/.
 model: sonnet
 context: fork
