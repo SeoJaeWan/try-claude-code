@@ -1,0 +1,26 @@
+{
+  "name": "codex-planning-stack",
+  "version": "0.1.0",
+  "description": "Planning-focused Codex skill bundle for brainstorming, architecting, review routing, and plan materialization workflows.",
+  "author": {
+    "name": "Seo Jae Wan"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Codex Planning Stack",
+    "shortDescription": "Planning skills for brainstorm, architect, review, and materialization loops",
+    "longDescription": "A local Codex plugin that bundles the planning workflow skills used in this repository, including planning orchestration, brainstorming, executable plan drafting, cold review, test materialization guidance, and review wiki maintenance skills.",
+    "developerName": "Seo Jae Wan",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Use $planning to run the planning loop for this repository.",
+      "Use $brainstorm to resolve blocking planning decisions before architecting.",
+      "Use $architect to draft executable plans under ./plans."
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Wiki Ingest"
+  short_description: "Ingest main-repo review files into raw and wiki planning rules."
+  default_prompt: "Use this skill when Codex needs to ingest review files from the main repository root under .codex/reviews into the review wiki raw and wiki stores."

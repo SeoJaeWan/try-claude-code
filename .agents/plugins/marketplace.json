@@ -1,0 +1,20 @@
+{
+  "name": "try-claude-code",
+  "interface": {
+    "displayName": "Try Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "codex-planning-stack",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex-planning-stack"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

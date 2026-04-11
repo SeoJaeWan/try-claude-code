@@ -1,0 +1,4 @@
+interface:
+  display_name: "Init Codex Runtime"
+  short_description: "Install the planning plugin's .codex runtime into this project"
+  default_prompt: "Use this skill to install the planning plugin's .codex runtime into the current project."
