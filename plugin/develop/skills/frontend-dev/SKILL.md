@@ -72,7 +72,7 @@ This ensures you and the project are aligned. If you cannot find enough examples
 3. **Run Convention Discovery** (above) — scan existing code for patterns
 4. Read project theme/style when the task includes UI work: `tailwind.config.*`, `app/globals.css`, component library tokens
 5. Implement the required UI and logic, following discovered conventions exactly
-6. **If visual reference provided**: Run Visual Reference Comparison loop (see below) — iterate until pixelmatch mismatch < 1%
+6. **If visual reference provided**: Run Visual Reference Comparison loop (see below) — capture target element only, iterate until pixelmatch mismatch < 1%
 7. If plan includes `tests/`: copy test files to source tree, run Red verification (`pnpm test`)
 8. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
 9. Run tests: `pnpm test` — confirm ALL pass (Green)
@@ -81,16 +81,28 @@ This ensures you and the project are aligned. If you cannot find enough examples
 
 ## Visual Reference Comparison (optional)
 
-Activated when a visual reference is provided (image file, live URL, or Figma export).
+Activated when a visual reference is provided (live URL or image file).
 Runs after initial implementation (step 6) and before test execution.
+
+**Core idea**: Compare at the DOM element level, not full-page level.
+Capture only the target element from the reference and the implementation,
+so size mismatches from page chrome, viewport differences, or surrounding
+layout never pollute the comparison.
+
+### Identify the comparison target
+
+Before capturing anything, determine **what to compare**:
+
+1. Read the task/plan to identify the target component or section
+2. Choose a CSS selector that isolates it (e.g., `.hero-section`, `#pricing-table`, `[data-testid="card"]`)
+3. If the reference URL and dev URL use different DOM structures, pick the most semantically equivalent selector for each
 
 ### Reference Acquisition
 
-| Source | How to obtain |
+| Source | How to capture |
 |---|---|
-| Image file | User provides PNG/JPG directly, or plan includes reference image path |
-| Live URL | `npx agent-browser open <url>` → `npx agent-browser screenshot reference.png` |
-| Figma | Obtained via `figma-implement-design` skill — frame export as PNG |
+| Live URL | `npx agent-browser open <url>` → `npx agent-browser screenshot "<selector>" reference.png` |
+| Image file | User provides PNG/JPG directly — use as-is (skip element capture) |
 
 ### Prerequisites
 
@@ -102,63 +114,71 @@ npm ls pixelmatch pngjs 2>/dev/null || npm install --save-dev pixelmatch pngjs
 
 ### Comparison Loop
 
-1. **Capture current state**
+#### Path A — Two-step capture (default)
+
+Use when the reference URL and dev URL need different selectors or different viewport sizes.
+
+1. **Capture reference element**
    ```bash
-   npx agent-browser open <dev-url>
-   npx agent-browser screenshot current.png
-   ```
-   If the reference has a known viewport size, match it before capturing:
-   ```bash
-   npx agent-browser eval "document.documentElement.clientWidth + 'x' + document.documentElement.clientHeight"
+   npx agent-browser open <reference-url>
+   npx agent-browser screenshot "<selector>" reference.png
    ```
 
-2. **Run pixelmatch comparison**
+2. **Capture current implementation element**
+   ```bash
+   npx agent-browser open <dev-url>
+   npx agent-browser screenshot "<selector>" current.png
+   ```
+
+3. **Run pixelmatch comparison**
    ```bash
    node <path-to-skill>/references/visual-compare.mjs reference.png current.png diff.png 0.1
    ```
-   Output: JSON with `mismatchRate`, `passed`, `sizeMismatch`, and `diffImage` path.
 
-3. **Evaluate result**
-   - `passed: true` (mismatch < 1%) → comparison PASSED → exit loop
-   - `passed: false` → continue to step 4
+4. **Evaluate result**
+   - `passed: true` (mismatch < 1%) → exit loop
+   - `passed: false` → read diff.png, fix code, go to step 2
 
-4. **Read diff.png** with the Read tool to view highlighted differences (red = mismatch)
-   - Determine if differences are meaningful or rendering noise
+#### Path B — One-shot diff (shortcut)
 
-5. **If meaningful differences** (layout shift, wrong color, missing element):
-   - Identify the specific CSS/layout cause from the diff
-   - Fix the code
-   - Go to step 1
+Use when both URLs share the same selector and the reference is already captured as a baseline image.
 
-6. **If only rendering noise** (anti-aliasing, sub-pixel font rendering, < 0.5%):
-   - Report as acceptable variance
-   - Exit loop
+```bash
+npx agent-browser open <dev-url>
+npx agent-browser diff screenshot --baseline reference.png --selector "<selector>" --output diff.png --threshold 0.1
+```
 
-### Integration with Figma MCP
+#### Path C — Direct URL diff
 
-When the reference comes from Figma via `figma-implement-design`:
+Use when comparing two live URLs with the same selector and no pre-existing baseline.
 
-1. Figma MCP provides design tokens (colors, spacing, typography) AND frame screenshot
-2. Use the frame screenshot as `reference.png`
-3. After implementation, run the comparison loop above
-4. pixelmatch catches what token extraction alone misses:
-   - Color values that render differently than Figma specifies
-   - Spacing that compounds across nested elements
-   - Font rendering differences (weight, line-height, letter-spacing)
-   - Border-radius, shadow, and opacity subtleties
+```bash
+npx agent-browser diff url <reference-url> <dev-url> --screenshot --selector "<selector>"
+```
+
+### Handling size differences
+
+Element-level capture minimizes size mismatches, but they can still occur
+(e.g., different font metrics, padding values). When `visual-compare.mjs`
+reports `sizeMismatch: true`:
+
+1. Check if the size difference is intentional (responsive breakpoint, different content length)
+2. If unintentional — fix the implementation CSS, do NOT resize the reference
+3. If intentional — match the viewport/conditions so both captures render at the same size
 
 ### Comparison thresholds
 
 | Scenario | Threshold | Rationale |
 |---|---|---|
-| Figma pixel-perfect | `0.05` | Strictest — design spec must match exactly |
 | General UI reference | `0.1` | Default — catches meaningful differences, ignores font rendering |
+| Pixel-perfect spec | `0.05` | Strictest — design spec must match exactly |
 | Cross-browser baseline | `0.2` | Lenient — different engines render fonts/shadows differently |
 
 Pass threshold as the 4th argument to `visual-compare.mjs`.
 
 ### What to avoid in visual comparison
 
+- Do NOT compare full-page screenshots when the task targets a specific component — always scope to the element
 - Do NOT modify reference images to match implementation — always fix the code
 - Do NOT chase anti-aliasing differences below 0.5% mismatch rate — these are rendering engine artifacts
 - Do NOT skip the pixelmatch gate and rely solely on visual inspection for pixel-level precision
