@@ -1,0 +1,7 @@
+interface:
+  display_name: "Architect"
+  short_description: "Create reviewer-friendly plans after resolving blocking ambiguity."
+  default_prompt: "Use $architect to resolve blocking ambiguity and produce reviewer-facing plan summaries plus per-phase technical detail files under ./plans; source-tree tests are materialized later by $plan-materialize."
+
+policy:
+  allow_implicit_invocation: true

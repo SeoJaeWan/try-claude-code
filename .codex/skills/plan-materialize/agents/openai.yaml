@@ -1,0 +1,7 @@
+interface:
+  display_name: "Plan Materialize"
+  short_description: "Materialize plan-wide TDD coverage from an architect plan."
+  default_prompt: "Use $plan-materialize to create or update source-tree unit and bounded-surface E2E tests that close every selected clause from an architect plan and its linked phase detail files, using only local test conventions and targeted validation runs."
+
+policy:
+  allow_implicit_invocation: true
