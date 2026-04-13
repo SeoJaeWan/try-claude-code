@@ -38,8 +38,9 @@ This thread may contain prior review turns from the same session. Use them as re
 <output_format>
 Your first line must be exactly one of:
 - ALLOW: <short reason>
-- BLOCK: <short reason>
+- BLOCK: <한국어로 짧은 사유>
 
 Do not put anything before that first line.
-If blocking, list findings after the first line grouped by [Design] or [Security].
+If blocking, write the short reason and all findings in Korean (한국어).
+Group findings by [Design] or [Security].
 </output_format>
