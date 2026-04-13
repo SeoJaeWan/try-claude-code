@@ -44,7 +44,6 @@ scripts/              # workspace sync 스크립트
 | `guard-e2e-test` | 다중 라우트 관통 full-flow Playwright E2E 테스트 |
 | `doc-update` | CODEMAPS/HUMANMAPS 자동 생성 |
 | `init-memory` | 외부 vault(Obsidian, Google Drive 등)로 메모리 symlink |
-| `init-codex` | .codex 에셋을 중앙 vault로 symlink |
 | `init-statusline` | 멀티라인 상태줄 초기 설정 (파일 복사 + settings.json 등록) |
 
 ### 계획 스킬 (`.codex/skills/`)
