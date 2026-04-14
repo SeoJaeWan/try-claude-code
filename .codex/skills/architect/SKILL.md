@@ -1,11 +1,11 @@
 ---
 name: architect
-description: Codex entry skill for boundary-centered implementation planning. Use when a request needs one or more executable plan artifacts under `./plans` after resolving blocking product policy, UX, contract, schema, validation, state, or permission ambiguity, with a reviewer-facing `plan.md` written in plain Korean, per-phase technical detail files for later `plan-review` and `plan-materialize`, and registry-backed review wiki core/pattern guidance.
+description: Codex entry skill for boundary-centered implementation planning. Use when a request needs one or more executable plan artifacts under `./plans` after resolving blocking product policy, UX, contract, schema, validation, state, or permission ambiguity, with a controller-facing `plan.md` written in plain Korean that shows the overall work map and each phase's actual work at a glance, plus per-phase technical detail files for later `plan-review` and `plan-materialize`, and registry-backed review wiki core/pattern guidance.
 ---
 
 <Skill_Guide>
 <Purpose>
-Create decision-complete implementation plans as one or more sequential executable plans, with explicit execution phases, scenario-first boundary I/O contracts, and user-facing plan artifacts that stay focused on execution rather than orchestration metadata.
+Create decision-complete implementation plans as one or more sequential executable plans, with explicit execution phases, scenario-first boundary I/O contracts, and controller-first plan artifacts that expose the whole flow and each phase's actual work before technical orchestration detail.
 </Purpose>
 
 <Instructions>
@@ -109,13 +109,26 @@ Do not deep-dive into implementation details.
 - Treat `plan-template-sequential.md` as the complete `plan.md` structure and `phase-template-detail.md` as the complete per-phase detail structure
 - Do not add extra top-level sections unless a core doc explicitly requires them or the user explicitly asks for them
 - Keep the plan artifacts phase-first and terse
-- Treat `plan.md` as a user-facing review artifact
+- Treat `plan.md` as a controller-first user-facing review artifact
+- Add `## 전체 작업 지도` immediately after the title so the controller can understand the full sequence without opening the phase detail files
+- In `전체 작업 지도`, summarize every phase in order with concise answers to:
+  - what this phase actually does
+  - what state exists when it finishes
+  - what it hands off to the next phase
 - Keep technical execution detail, test taxonomy, orchestration metadata, and tool-routing detail out of `plan.md` unless the user explicitly asks for them
 - Write each `plan.md` heading as `### Phase n. {짧고 쉬운 역할 이름}`
-- In `plan.md`, make each phase understandable through `목적`, `변경 내용`, `이전 상태`, and `이후 상태`
+- In `plan.md`, make each phase understandable through `목적`, `실제 작업`, `이전 상태`, `이후 상태`, and `확인 포인트`
+- Write `실제 작업` so a controller can tell which boundary changes in this phase without reading the detail file; use short review-friendly bullets or phrases, not abstract theme labels
+- Write `확인 포인트` so a controller can tell what evidence or visible state to inspect before approving the handoff
 - Avoid unexplained jargon in `plan.md`
 - Make the role label concrete
-- Use the phase detail files for `owner_agent`, technical `input/output`, file-level boundary, `작업`, and `검증`
+- Use the phase detail files for `owner_agent`, technical `input/output`, file-level boundary, detailed `작업`, and `검증`
+- Start every phase detail file with a controller digest in this order:
+  - `한 줄 목표`
+  - `실제 작업`
+  - `완료 증거`
+  - `중단 조건`
+- Keep that digest readable without the later technical sections; detailed commands, contracts, and routing stay below it
 - Keep `plan.md` and each linked phase detail file in parity
 - When a later phase only finalizes exports, migration, or consumer validation, record the delta from earlier phases instead of restating the full contract
 - When fallback or default-selection policy matters, prefer short rule lists or state-to-outcome mappings in the detail file
@@ -125,6 +138,7 @@ Do not deep-dive into implementation details.
 - Use one canonical `task-slug` per executable plan
 - For each behavior-changing phase, make the linked phase detail file precise enough that `plan-materialize` can derive a stable scenario contract without guessing
 - Do not leave multiple plausible canonical outputs unresolved inside one phase
+- If a controller cannot answer "what changes here, what proves it, and when do we stop" from the phase summary plus the phase digest, the plan fails the quality bar
 
 ### Step 3.2. Choose plan count before writing (required)
 
@@ -182,7 +196,7 @@ If a plan file changes cross-route journeys, auth/session transitions, redirect 
 
 ### Step 6. Compatibility policy (required)
 
-- Plan Artifact Interface v7 applies to newly created plans
+- Plan Artifact Interface v8 applies to newly created plans
 - Existing plans are not automatically migrated
 - If a legacy plan format is detected during update:
   - keep user-requested scope
@@ -221,5 +235,7 @@ Provide a concise execution handoff summary using the handoff requirements in `~
 - Do not leave a local prerequisite contract only in handoff prose
 - Do not leave canonical outputs, negative outputs, or recipients implicit when later test materialization would have to guess
 - Do not hide the real phase role behind unexplained jargon in `plan.md`
+- Do not make the controller open every phase detail file just to understand the whole plan flow
+- Do not bury the actual work of a phase under routing metadata or abstract labels
 </Instructions>
 </Skill_Guide>
