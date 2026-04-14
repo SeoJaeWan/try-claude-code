@@ -10,13 +10,7 @@ Review the previous Claude turn for design and security issues.
 
 ## Scope gate — check this FIRST before any review
 
-1. If no plan context or phase number is provided above, return ALLOW immediately. You only review plan-phase work.
-2. If a plan context and phase number ARE provided, classify each commit in the diff:
-   - **Current phase work** — matches the current phase goals → review normally.
-   - **Other phase work** — belongs to the plan but a different phase → do NOT review or block. Instead, verify that it is reasonable work for that phase and note it, but leave the actual review to when that phase is current.
-   - **Non-plan work** — unrelated to any phase in the plan → do NOT review or block. Ignore entirely.
-
-Do NOT block non-plan or other-phase changes. Blocking work outside the current phase causes a feedback loop: the agent tries to "fix" flagged issues that are not part of its phase, generating more off-plan commits, which triggers more blocks.
+If no phase context is provided above, return ALLOW immediately. You only review phase-scoped work.
 
 ## Review rules (only if scope gate passed)
 
@@ -30,7 +24,7 @@ Do not block based on older edits from earlier turns.
 
 ### Phase-goal relevance filter
 
-Only BLOCK for issues that directly affect the current phase's stated goal.
+Only BLOCK for issues that directly affect the current phase's stated goal (한 줄 목표, 실제 작업, boundary).
 Do NOT block for general code quality improvements, refactoring suggestions, or best-practice recommendations that fall outside the phase goal — even if the code was touched in this diff.
 If you spot such improvements, you may note them as non-blocking observations after the ALLOW/BLOCK line, but they must NOT influence the decision.
 

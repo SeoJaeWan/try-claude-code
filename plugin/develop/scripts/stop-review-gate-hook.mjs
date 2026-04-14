@@ -16,6 +16,26 @@ import { resolveWorkspaceRoot } from "./lib/workspace.mjs";
 import { collectBlockReview, findPlanDirByBranch } from "./lib/review-collector.mjs";
 
 const STOP_REVIEW_TIMEOUT_MS = 15 * 60 * 1000;
+
+/**
+ * Find a phase detail file matching the given phase number inside the phases/ directory.
+ * Files are expected to follow the pattern: {nn}-{slug}.md (e.g., 03-api-setup.md).
+ * Returns the full path to the file, or null if not found.
+ */
+function findPhaseFile(phasesDir, phaseNumber) {
+  if (!fs.existsSync(phasesDir)) {
+    return null;
+  }
+  const padded = String(phaseNumber).padStart(2, "0");
+  try {
+    const entries = fs.readdirSync(phasesDir);
+    const match = entries.find((e) => e.startsWith(`${padded}-`) && e.endsWith(".md"));
+    return match ? path.join(phasesDir, match) : null;
+  } catch {
+    return null;
+  }
+}
+
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 
 function withTimeout(promise, ms) {
@@ -78,22 +98,22 @@ function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "
   const branch = worktreeDiffs[0]?.branch;
   if (branch && workspaceRoot) {
     const planDir = findPlanDirByBranch(workspaceRoot, branch);
-    if (planDir) {
-      try {
-        const planContent = fs.readFileSync(path.join(planDir, "plan.md"), "utf8");
-        planContextBlock = `Plan for this task:\n${planContent}`;
-      } catch {
-        // Plan file unreadable — proceed without plan context.
-      }
-
-      // Append current phase from session (set by PostToolUse Agent hook).
-      if (session) {
-        const wtNorm = (worktreeDiffs[0]?.path ?? "").replace(/\\/g, "/");
-        const wt = session.worktrees.find(
-          (w) => w.path.replace(/\\/g, "/") === wtNorm,
-        );
-        if (wt?.currentPhase != null) {
-          planContextBlock += `\n\nCurrent phase being reviewed: Phase ${wt.currentPhase}`;
+    if (planDir && session) {
+      const wtNorm = (worktreeDiffs[0]?.path ?? "").replace(/\\/g, "/");
+      const wt = session.worktrees.find(
+        (w) => w.path.replace(/\\/g, "/") === wtNorm,
+      );
+      if (wt?.currentPhase != null) {
+        // Read the phase detail file instead of the full plan.
+        const phasesDir = path.join(planDir, "phases");
+        const phaseFile = findPhaseFile(phasesDir, wt.currentPhase);
+        if (phaseFile) {
+          try {
+            const phaseContent = fs.readFileSync(phaseFile, "utf8");
+            planContextBlock = `Current phase (Phase ${wt.currentPhase}) detail:\n${phaseContent}`;
+          } catch {
+            // Phase file unreadable — proceed without phase context.
+          }
         }
       }
     }
