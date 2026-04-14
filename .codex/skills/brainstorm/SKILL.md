@@ -5,7 +5,7 @@ description: Codex entry skill for decision-focused clarification and option exp
 
 <Skill_Guide>
 <Purpose>
-Clarify ambiguous requests with focused brainstorming, tradeoff comparison, and confirmation questions so blocking product and implementation policy is resolved before planning.
+Clarify ambiguous requests with focused brainstorming, tradeoff comparison, and confirmation questions so blocking product and implementation policy is resolved before planning, while presenting the main comparison and decision summary in scan-friendly tables.
 </Purpose>
 
 <Instructions>
@@ -57,6 +57,7 @@ If reliable research tooling is unavailable, state that clearly and ask the user
 ### 4. Compare approaches (required)
 
 Always present 2-3 options with tradeoffs when multiple viable policy or implementation directions exist.
+Present this option comparison as a markdown table in the response.
 For each option include:
 
 - Pros
@@ -88,6 +89,15 @@ Return a concise decision snapshot in the response:
 - Deferred low-risk choices
 - Key assumptions
 - Recommended next step (`architect` or direct execution)
+
+Present the decision snapshot as a markdown table in the response unless the user explicitly asks for another format.
+
+Response formatting rules:
+
+- Use markdown tables for the main option comparison and the default decision snapshot.
+- Keep recommendation rationale outside the table as a short paragraph or a few bullets when needed.
+- Keep confirmation-focused questions as a short numbered list so the user can reply quickly.
+- Do not leave the main comparison or decision snapshot as plain bullet lists unless the user explicitly asks for a different format.
 
 Do not create a requirements artifact by default.
 
@@ -133,6 +143,7 @@ Do not hand off to `architect` while blocking policy ambiguity remains.
 - Do not write implementation plans or code.
 - Do not skip approach comparison when meaningful tradeoffs exist.
 - Do not hand off to `architect` with unresolved blocking policy ambiguity.
+- Do not present the main option comparison or default decision snapshot only as loose bullet lists.
 - Do not depend on `./.ai/` or other external AI metadata directories.
 - Keep brainstorm-owned artifacts under `./.codex/`.
 - If requirements are already clear, explicitly state skip reason and route to `architect` directly.
