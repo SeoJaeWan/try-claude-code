@@ -2,6 +2,3 @@ interface:
     display_name: "Orchestrator"
     short_description: "Run the architect-review-materialize planning loop."
     default_prompt: "Use $orchestrator to orchestrate the explicit architect -> review -> revise -> user gate -> materialize planning workflow with named planning agents only."
-
-policy:
-    allow_implicit_invocation: false
