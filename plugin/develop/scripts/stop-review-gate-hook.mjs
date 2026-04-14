@@ -98,25 +98,35 @@ function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "
   const branch = worktreeDiffs[0]?.branch;
   if (branch && workspaceRoot) {
     const planDir = findPlanDirByBranch(workspaceRoot, branch);
+    logNote(`[stop-gate] plan-context chain: branch=${branch}, planDir=${planDir ?? "null"}`);
     if (planDir && session) {
       const wtNorm = (worktreeDiffs[0]?.path ?? "").replace(/\\/g, "/");
       const wt = session.worktrees.find(
         (w) => w.path.replace(/\\/g, "/") === wtNorm,
       );
+      logNote(`[stop-gate] plan-context chain: wtNorm=${wtNorm}, sessionMatch=${wt ? "found" : "miss"}, currentPhase=${wt?.currentPhase ?? "null"}`);
       if (wt?.currentPhase != null) {
         // Read the phase detail file instead of the full plan.
         const phasesDir = path.join(planDir, "phases");
         const phaseFile = findPhaseFile(phasesDir, wt.currentPhase);
+        logNote(`[stop-gate] plan-context chain: phasesDir=${phasesDir}, phaseFile=${phaseFile ?? "null"}`);
         if (phaseFile) {
           try {
             const phaseContent = fs.readFileSync(phaseFile, "utf8");
             planContextBlock = `Current phase (Phase ${wt.currentPhase}) detail:\n${phaseContent}`;
-          } catch {
-            // Phase file unreadable — proceed without phase context.
+            logNote(`[stop-gate] plan-context chain: loaded phase ${wt.currentPhase} (${phaseContent.length} chars)`);
+          } catch (err) {
+            logNote(`[stop-gate] plan-context chain: phase file read failed — ${err.message}`);
           }
         }
       }
+    } else if (!planDir) {
+      logNote(`[stop-gate] plan-context chain: no plan dir found for branch "${branch}" under ${workspaceRoot}/plans/`);
+    } else if (!session) {
+      logNote(`[stop-gate] plan-context chain: planDir found but session is null`);
     }
+  } else {
+    logNote(`[stop-gate] plan-context chain: skipped — branch=${branch ?? "undefined"}, workspaceRoot=${workspaceRoot || "empty"}`);
   }
 
   let commitMessagesBlock = "";
