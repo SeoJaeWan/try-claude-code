@@ -1,7 +1,0 @@
-interface:
-  display_name: "Plan Review"
-  short_description: "Critically review executable plans for blockers."
-  default_prompt: "Use $plan-review to cold-review an architect-generated ./plans/.../plan.md and its linked phase detail files for blockers, topology mistakes, readability gaps, and handoff risks before execution."
-
-policy:
-  allow_implicit_invocation: true

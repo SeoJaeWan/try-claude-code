@@ -1,4 +1,0 @@
-interface:
-  display_name: "Review Wiki Setup"
-  short_description: "Create the review wiki link and bootstrap the vault structure."
-  default_prompt: "Use this skill when Codex needs to create or verify the ~/.codex/reviewWiki link and bootstrap the review wiki vault structure."

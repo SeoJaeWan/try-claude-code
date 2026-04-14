@@ -1,4 +1,0 @@
-interface:
-  display_name: "Review Wiki Lint"
-  short_description: "Audit review wiki consistency and propose approved cleanup."
-  default_prompt: "Use this skill when Codex needs to lint the review wiki, prepare a cleanup report, and wait for user approval before applying fixes."

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Codex Planning Stack"
-  short_description: "Use planning, brainstorm, architect, review, and wiki-maintenance skills."
-  default_prompt: "Use the Codex Planning Stack plugin when you need planning orchestration, decision-focused brainstorming, executable plans, review routing, or review wiki maintenance."

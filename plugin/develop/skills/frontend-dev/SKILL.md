@@ -72,19 +72,24 @@ This ensures you and the project are aligned. If you cannot find enough examples
 3. **Run Convention Discovery** (above) — scan existing code for patterns
 4. Read project theme/style when the task includes UI work: `tailwind.config.*`, `app/globals.css`, component library tokens
 5. Implement the required UI and logic, following discovered conventions exactly
-6. **If visual reference provided**: Run Visual Reference Comparison loop (see below) — capture target element only, iterate until pixelmatch mismatch < 1%
+6. Run Visual Reference Comparison if triggered (see trigger conditions below)
 7. If plan includes `tests/`: copy test files to source tree, run Red verification (`pnpm test`)
 8. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
 9. Run tests: `pnpm test` — confirm ALL pass (Green)
 10. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
 11. Return results based on plan.md
 
-## Visual Reference Comparison (optional)
+## Visual Reference Comparison
 
-Activated when a visual reference is provided (live URL or image file).
-Runs after initial implementation (step 6) and before test execution.
+### Trigger conditions (activate when ANY of these apply)
 
-**Core idea**: Compare at the DOM element level, not full-page level.
+- User provides a reference image or URL
+- User requests visual comparison between two screens or URLs
+- User mentions "design diff", "compare", "audit", or "visual difference"
+
+### Core idea
+
+Compare at the DOM element level, not full-page level.
 Capture only the target element from the reference and the implementation,
 so size mismatches from page chrome, viewport differences, or surrounding
 layout never pollute the comparison.
@@ -112,9 +117,31 @@ Ensure `pixelmatch` and `pngjs` are available before running the comparison:
 npm ls pixelmatch pngjs 2>/dev/null || npm install --save-dev pixelmatch pngjs
 ```
 
-### Comparison Loop
+### Mode A — Comparison only (no implementation)
 
-#### Path A — Two-step capture (default)
+Use when the user asks to compare, audit, or diff two screens without building anything.
+
+1. **Capture both sides**
+   ```bash
+   npx agent-browser open <url-a>
+   npx agent-browser screenshot "<selector>" side-a.png
+   npx agent-browser open <url-b>
+   npx agent-browser screenshot "<selector>" side-b.png
+   ```
+
+2. **Run pixelmatch comparison**
+   ```bash
+   node <path-to-skill>/references/visual-compare.mjs side-a.png side-b.png diff.png 0.1
+   ```
+
+3. **Report findings** — read diff.png, describe visual differences, report mismatch percentage. Do NOT proceed to implementation unless explicitly asked.
+
+### Mode B — Post-implementation verification
+
+Use when a visual reference is provided alongside an implementation task.
+Runs after implementation (step 6) and before test execution.
+
+#### Path B1 — Two-step capture (default)
 
 Use when the reference URL and dev URL need different selectors or different viewport sizes.
 
@@ -139,7 +166,7 @@ Use when the reference URL and dev URL need different selectors or different vie
    - `passed: true` (mismatch < 1%) → exit loop
    - `passed: false` → read diff.png, fix code, go to step 2
 
-#### Path B — One-shot diff (shortcut)
+#### Path B2 — One-shot diff (shortcut)
 
 Use when both URLs share the same selector and the reference is already captured as a baseline image.
 
@@ -148,7 +175,7 @@ npx agent-browser open <dev-url>
 npx agent-browser diff screenshot --baseline reference.png --selector "<selector>" --output diff.png --threshold 0.1
 ```
 
-#### Path C — Direct URL diff
+#### Path B3 — Direct URL diff
 
 Use when comparing two live URLs with the same selector and no pre-existing baseline.
 
@@ -183,6 +210,7 @@ Pass threshold as the 4th argument to `visual-compare.mjs`.
 - Do NOT chase anti-aliasing differences below 0.5% mismatch rate — these are rendering engine artifacts
 - Do NOT skip the pixelmatch gate and rely solely on visual inspection for pixel-level precision
 - Do NOT install pixelmatch globally — use project devDependencies
+- Do NOT fall back to computed style comparison when pixelmatch is available — pixelmatch is the ground truth for visual differences; computed styles do not guarantee rendering equivalence
 
 ## What to avoid
 
