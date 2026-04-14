@@ -90,18 +90,21 @@ This ensures you and the project are aligned. If you cannot find enough examples
 ### Capture
 
 Do NOT take full-page or viewport-level screenshots.
-Always scope to the target element so that page chrome, viewport size,
-and surrounding layout never pollute the comparison.
+Always capture only the target element.
 
 1. Identify the target element with a CSS selector (e.g., `.hero-section`, `#pricing-table`, `[data-testid="card"]`)
-2. Capture the element:
+2. **Match viewport to reference size** — read the reference image dimensions and set the browser viewport width to match before capturing the implementation. This ensures responsive components render at the same breakpoint as the reference.
    ```bash
-   npx agent-browser open <url>
+   npx agent-browser open <url> --viewport-width <reference-width>
    npx agent-browser screenshot "<selector>" <output.png>
    ```
 3. If the user provides an image file directly, use it as-is (skip capture)
 
 ### Comparison (pixelmatch)
+
+pixelmatch requires both images to have **identical dimensions**.
+The viewport-matching step above ensures this. If dimensions still differ
+after capture, treat it as a finding — the implementation does not match the reference.
 
 Ensure `pixelmatch` and `pngjs` are available:
 
@@ -119,7 +122,7 @@ node <path-to-skill>/references/visual-compare.mjs <imageA.png> <imageB.png> dif
 
 Use when the user asks to compare, audit, or diff two screens without building anything.
 
-1. Capture element screenshots of both sides
+1. Capture element screenshots of both sides (match viewport to the first image's width)
 2. Run pixelmatch comparison
 3. Read diff.png, describe visual differences, report mismatch percentage
 4. Do NOT proceed to implementation unless explicitly asked
@@ -130,7 +133,7 @@ Use when a visual reference is provided alongside an implementation task.
 Runs after implementation (step 6) and before test execution.
 
 1. Capture element screenshot of the reference
-2. Capture element screenshot of the current implementation
+2. Match viewport to reference width, then capture the implementation
 3. Run pixelmatch comparison
 4. `passed: true` (mismatch < 1%) → exit loop
 5. `passed: false` → read diff.png, fix code, go to step 2
@@ -143,17 +146,9 @@ Runs after implementation (step 6) and before test execution.
 | Pixel-perfect spec | `0.05` | Strictest — design spec must match exactly |
 | Cross-browser baseline | `0.2` | Lenient — different engines render fonts/shadows differently |
 
-### Handling size differences
-
-When `visual-compare.mjs` reports `sizeMismatch: true`:
-
-1. Check if the size difference is intentional (responsive breakpoint, different content length)
-2. If unintentional — fix the implementation CSS, do NOT resize the reference
-3. If intentional — match the viewport/conditions so both captures render at the same size
-
 ### What to avoid in visual comparison
 
-- Do NOT modify reference images to match implementation — always fix the code
+- Do NOT modify or resize reference images to match implementation — always fix the code or adjust viewport
 - Do NOT chase anti-aliasing differences below 0.5% mismatch rate — rendering engine artifacts
 - Do NOT skip the pixelmatch gate and rely solely on visual inspection
 - Do NOT install pixelmatch globally — use project devDependencies
