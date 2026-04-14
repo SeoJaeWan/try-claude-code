@@ -1,6 +1,6 @@
 ---
 name: review-wiki-setup
-description: Create or verify the `~/.codex/reviewWiki` link to the Obsidian review wiki vault, bootstrap the required `raw/` and `wiki/` structure, and seed the initial routing documents for `architect`. Use when the review wiki link is missing, broken, moved, or the vault needs first-time setup on Windows, macOS, or Linux.
+description: Create or verify the `~/.codex/reviewWiki` link to the Obsidian review wiki vault, bootstrap the required `raw/` and `wiki/` structure, and seed the registry-backed core/pattern layout for planning. Use when the review wiki link is missing, broken, moved, or the vault needs first-time setup on Windows, macOS, or Linux.
 ---
 
 # Review Wiki Setup
@@ -20,14 +20,14 @@ Use this skill to connect Codex to the Obsidian vault and create the minimum rev
    - Do not continue bootstrapping against the wrong root.
 
 3. Bootstrap the vault structure.
-   - Create `raw/`, `wiki/`, and `wiki/_meta/` if they do not exist.
-   - Seed `wiki/index.md` if missing.
-   - Seed the initial planning documents if missing.
+   - Create `raw/`, `wiki/`, `wiki/core/`, `wiki/patterns/`, and `wiki/_meta/` if they do not exist.
+   - Seed `wiki/registry.json` if missing.
+   - Seed the core planning documents if missing.
    - Preserve existing user content; do not overwrite populated files without explicit approval.
 
 4. Verify the bootstrap.
    - Confirm the link resolves to the expected vault.
-   - Confirm the required folders and routing documents exist.
+   - Confirm the required folders, registry, and core documents exist.
    - Confirm `architect`, `ingest`, and `lint` can target the same root path.
 
 ## Guardrails

@@ -1,6 +1,6 @@
 ---
 name: review-wiki-lint
-description: Audit the review wiki for index drift, broken raw backlinks, duplicate or stale planning rules, and document consistency problems. Use when Codex needs to prepare a proposed cleanup report in `wiki/_meta/lint-report.md` and wait for explicit user approval before applying any wiki cleanup.
+description: Audit the review wiki for registry drift, broken raw backlinks, duplicate or conflicting pattern rules, orphan registrations, taxonomy drift, and document consistency problems. Use when Codex needs to prepare a proposed cleanup report in `wiki/_meta/lint-report.md` and wait for explicit user approval before applying any wiki cleanup.
 ---
 
 # Review Wiki Lint
@@ -11,16 +11,17 @@ Use this skill to inspect the review wiki without silently rewriting it. Resolve
 
 1. Verify the target.
    - Review wiki root: `~/.codex/reviewWiki`
-   - Required working files: `wiki/index.md` and `wiki/_meta/lint-report.md`
+   - Required working files: `wiki/registry.json` and `wiki/_meta/lint-report.md`
    - If the link is missing or broken, stop and use `review-wiki-setup`.
 
 2. Read the current routing surface first.
-   - Read `wiki/index.md`.
-   - Read the wiki documents referenced there.
+   - Read `wiki/registry.json`.
+   - Read every core document listed in the registry.
+   - Read every registered pattern file.
    - Inspect only as much raw material as needed to verify broken or suspicious backlinks.
 
 3. Run the lint checks from the reference checklist.
-   - Look for index drift, broken `raw_sources`, duplicate rules, raw-less rules, and stale or contradictory guidance.
+   - Look for registry drift, broken `raw_sources`, duplicate or conflicting rules, orphan registrations, unregistered files, taxonomy drift, overbroad tags, and stale guidance.
    - Treat lint as a review pass, not an excuse to rewrite the whole wiki.
 
 4. Write the proposed cleanup plan to `wiki/_meta/lint-report.md`.
@@ -35,11 +36,12 @@ Use this skill to inspect the review wiki without silently rewriting it. Resolve
 
 ## Lint Focus
 
-- Ensure every wiki document used by `architect` is registered in `wiki/index.md`.
-- Ensure every promoted rule has at least one valid raw backlink.
-- Ensure duplicate rules are merged or clearly separated by scope.
-- Ensure stale guidance is marked or rewritten only when the raw evidence and current policy justify it.
-- Ensure new wiki documents still match the routing-index model rather than turning into freeform note sprawl.
+- Ensure every core document and promoted pattern file used by planning is registered in `wiki/registry.json`.
+- Ensure the registry does not contain orphan core or pattern paths.
+- Ensure every promoted pattern has at least one valid raw backlink.
+- Ensure duplicate or conflicting rules are identified across exact and adjacent tag groups.
+- Ensure stale guidance is marked or rewritten only when the raw evidence and current core contract justify it.
+- Ensure new pattern files still match the one-file-per-rule registry model rather than turning into freeform note sprawl.
 
 ## Guardrails
 

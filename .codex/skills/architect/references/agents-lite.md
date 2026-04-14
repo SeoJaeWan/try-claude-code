@@ -2,7 +2,7 @@
 
 Minimal routing source for planning.
 Use this file as the canonical `owner_agent` catalog.
-For detailed planning rules, quality gates, and UI test-phase policy, read `planning-policy.md`.
+For detailed planning rules, quality gates, and UI test-phase policy, read `~/.codex/reviewWiki/wiki/registry.json` and the listed core docs.
 
 ## Canonical Execution Agents
 

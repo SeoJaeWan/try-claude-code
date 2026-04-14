@@ -32,7 +32,7 @@ Typical blocker cases:
 
 - invalid or missing `Branch` header
 - slug mismatch between plan path and branch summary
-- missing required `plan.md` summary fields or missing linked phase detail files from `planning-policy.md`
+- missing required `plan.md` summary fields or missing linked phase detail files from the active core plan artifact contract
 - a `plan.md` phase summary and its linked phase detail file describe different change boundaries or incompatible outcomes
 - unresolved blocking ambiguity
 - invalid or missing `owner_agent`
@@ -41,10 +41,11 @@ Typical blocker cases:
 - missing important `must not happen` output when absence is part of product policy
 - missing recipient, delivery target, or final interpretation boundary when relevant
 - missing winner rule, loser no-op rule, terminal-state rule, or side-effect coupling for risky scenarios
-- plan count or topology that is clearly over-split, under-justified, or not independently mergeable under the active policy
-- missing `playwright-guard` phase when the planning policy requires it
+- plan count or topology that is clearly over-split, under-justified, or not independently mergeable under the active core contract
+- missing `playwright-guard` phase when the active core docs require it
 - the reviewed plan depends on a local prerequisite plan, but no specific upstream phase credibly provides the prerequisite contract in the detail file `output` and `검증`
 - the reviewed plan depends on a local prerequisite plan, but the supposed provider phase boundary or verification path cannot actually establish that contract
+- selected pattern guidance reveals a direct contradiction that the plan leaves unresolved
 
 ### Major
 
@@ -79,11 +80,12 @@ Prefer no finding over a low-value minor note.
 
 Check the plan against:
 
-1. `architect/references/plan-template-sequential.md`
-2. `architect/references/phase-template-detail.md`
-3. `architect/references/planning-policy.md`
-4. repo-local execution contracts only when the plan makes a concrete claim that depends on them
-5. directly referenced local prerequisite plan files only for one-hop contract parity when the reviewed phase detail names them in `선행조건`
+1. `~/.codex/reviewWiki/wiki/registry.json` plus the listed core docs
+2. selected pattern files that match the reviewed plan under the registry `selection.review` policy
+3. `architect/references/plan-template-sequential.md`
+4. `architect/references/phase-template-detail.md`
+5. repo-local execution contracts only when the plan makes a concrete claim that depends on them
+6. directly referenced local prerequisite plan files only for one-hop contract parity when the reviewed phase detail names them in `선행조건`
 
 Required focus areas:
 

@@ -6,12 +6,18 @@ Lint the review wiki for routing integrity and evidence integrity. Favor narrow 
 
 ## Checks
 
-- every wiki document used for planning is registered in `wiki/index.md`
-- every promoted rule has at least one valid `raw_sources` backlink
+- `wiki/registry.json` exists and is valid JSON
+- every core document listed in the registry exists
+- every registered pattern file exists
+- every pattern file under `wiki/patterns/` is registered in the registry
+- every promoted pattern has at least one valid `raw_sources` backlink
 - `raw_sources` targets actually exist
 - duplicate rules are merged or clearly separated by scope
-- stale guidance is identified when raw evidence or current policy no longer supports it
-- new documents still fit the routing-index model instead of becoming freeform note sprawl
+- conflicting rules are flagged across exact and adjacent tag groups
+- stale guidance is identified when raw evidence or current core contract no longer supports it
+- tag vocabulary matches the registry taxonomy
+- overbroad tags or weak `Apply When` clauses are identified
+- new pattern files still fit the one-file-per-rule registry model instead of becoming freeform note sprawl
 
 ## Report Path
 

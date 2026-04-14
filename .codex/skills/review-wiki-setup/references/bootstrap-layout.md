@@ -4,46 +4,42 @@
 
 - `raw/`
 - `wiki/`
+- `wiki/core/`
+- `wiki/patterns/`
 - `wiki/_meta/`
 
 ## Required Initial Files
 
-- `wiki/index.md`
-- `wiki/scope-boundary.md`
-- `wiki/contracts-state-validation.md`
-- `wiki/rollout-verification.md`
+- `wiki/registry.json`
+- `wiki/core/source-precedence.md`
+- `wiki/core/decision-policy.md`
+- `wiki/core/plan-artifact-contract.md`
+- `wiki/core/execution-routing.md`
+- `wiki/core/test-and-review-handoff.md`
+- `wiki/core/quality-gates.md`
+- `wiki/core/execution-handoff.md`
 
 Create these only when missing. Do not overwrite populated files without approval.
 
-## Index Purpose
+## Registry Purpose
 
-`wiki/index.md` is a routing index, not a full wiki dump. It should:
+`wiki/registry.json` is the machine-readable routing contract. It should:
 
-- explain that `architect` reads this file first
-- list the current wiki documents
-- state each document's `purpose`
-- state each document's `read_when`
-- state each document's `skip_when`
-- explain raw fallback rules
+- list the core document paths in read order
+- list the registered pattern files
+- define the tag taxonomy
+- define selection policy for `architect` and `review`
+- define adjacency and lint policy
+- define ingest create-vs-update policy
 
-## Initial Routing Documents
+## Initial Core Documents
 
 Seed these planning concerns:
 
-- `scope-boundary.md`
-  - phase boundaries
-  - merge boundaries
-  - shared foundation
-  - prerequisites
-
-- `contracts-state-validation.md`
-  - input and output contract shape
-  - canonical identifiers
-  - validation rules
-  - permission and state transitions
-
-- `rollout-verification.md`
-  - rollout and rollback
-  - compatibility
-  - migration safety
-  - verification strategy
+- `source-precedence.md`
+- `decision-policy.md`
+- `plan-artifact-contract.md`
+- `execution-routing.md`
+- `test-and-review-handoff.md`
+- `quality-gates.md`
+- `execution-handoff.md`

@@ -8,7 +8,11 @@
 - Required directories:
   - `raw/`
   - `wiki/`
+  - `wiki/core/`
+  - `wiki/patterns/`
   - `wiki/_meta/`
+- Required control file:
+  - `wiki/registry.json`
 
 Use the `~/.codex/reviewWiki` link as the only stable entrypoint. Do not hardcode the underlying vault path into other skills.
 
@@ -59,29 +63,44 @@ Suggested `status` values:
 
 `raw-only` is valid when the review could not be matched to a plan by exact branch or when the finding is not promotable.
 
-## Rule Card Schema
+## Registry Schema
 
-Every promoted rule card should include:
+`wiki/registry.json` is the machine-readable source of truth for:
+
+- core document order
+- pattern file registration
+- tag vocabulary
+- selection policy
+- adjacency rules
+- lint policy
+- ingest policy
+
+Every promoted pattern file must be registered in the registry `patterns` array with:
 
 - `rule_id`
-- `summary`
-- `apply_when`
-- `do`
-- `avoid`
-- `why`
+- `path`
+
+## Pattern File Schema
+
+Every promoted pattern file should include YAML frontmatter with:
+
+- `rule_id`
+- `tags`
 - `raw_sources`
 
-Use imperative language in `do` and `avoid`. Keep the card short enough that `architect` can scan it while planning.
+Every promoted pattern file body should include:
 
-## Current Routing Documents
+- `Summary`
+- `Apply When`
+- `Do`
+- `Avoid`
+- `Why`
 
-The initial wiki starts with:
+Use imperative language in `Do` and `Avoid`. Keep the file short enough that `architect` can scan it while planning.
 
-- `scope-boundary.md`
-- `contracts-state-validation.md`
-- `rollout-verification.md`
+Pattern filenames should use:
 
-These are current documents, not a permanently closed set. New documents may be added later when a distinct planning concern emerges.
+- `wiki/patterns/{rule_id}.md`
 
 ## Plan Matching
 
@@ -127,27 +146,31 @@ Keep feedback in raw only when it is mostly:
 - stylistic nit
 - implementation trivia that does not improve future planning
 
-## New Document Creation
+## New Pattern Creation
 
-Update an existing wiki document when the concern fits naturally there.
+Update an existing pattern file when:
 
-Create a new wiki document immediately when:
+- the new evidence is a semantic duplicate of an existing rule
+- the same planning implication already exists and the new evidence only strengthens it
+
+Create a new pattern file when:
 
 - the concern is planning-relevant
-- the concern is independent rather than a small variant of an existing topic
-- forcing it into an existing document would blur the routing model
+- the concern is independent rather than a semantic duplicate
+- the same tag combination can coexist without conflicting intent
 
-New wiki document filenames must use ASCII slugs such as:
+When the new evidence conflicts with an older rule:
 
-- `migration-cutover.md`
-- `ownership-routing.md`
+- stop automatic promotion
+- draft the exact file and registry changes that would replace the older rule with the newer one
+- ask the user to approve the replacement before applying it
 
-Whenever a new document is created, update `wiki/index.md` in the same operation.
+Whenever a pattern file is created, removed, or renamed, update `wiki/registry.json` in the same operation.
 
 ## Failure Policy
 
 - Build the normalized raw batch before wiki promotion.
-- Delete the source review files only after the raw batch, wiki changes, and index update all succeed.
+- Delete the source review files only after the raw batch, wiki changes, and registry updates all succeed.
 - If any step fails, stop immediately and keep the source review files.
 - If the ingest batch succeeds, remove the remaining source review files from the inbox.
 - Redact or mask secrets and obvious personal identifiers before writing raw.
