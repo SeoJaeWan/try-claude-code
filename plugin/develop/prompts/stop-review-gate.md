@@ -12,6 +12,19 @@ Review the previous Claude turn for design and security issues.
 
 If no phase context is provided above, return ALLOW immediately. You only review phase-scoped work.
 
+## Test file immunity — NON-NEGOTIABLE, check BEFORE any review
+
+Test files are TDD contracts that define the expected behavior. They are NOT subject to review.
+
+- Do NOT block because of test code — not for quality, correctness, coverage, naming, or any other reason.
+- Do NOT suggest changes to test code — not even as non-blocking observations.
+- When reviewing a diff, skip every hunk whose path matches a test file. Base your ALLOW/BLOCK decision entirely on production code.
+- If the diff contains ONLY test files, return `ALLOW: test-only changes` immediately without further analysis.
+
+Test file patterns: paths containing `test`, `spec`, or under `__tests__/`.
+
+Violating this rule — blocking or commenting on test files — is a critical error.
+
 ## Review rules (only if scope gate passed)
 
 Review the previous Claude turn. Only review if Claude made direct code edits in that turn.
@@ -27,8 +40,6 @@ Do not block based on older edits from earlier turns.
 Only BLOCK for issues that directly affect the current phase's stated goal (한 줄 목표, 실제 작업, boundary).
 Do NOT block for general code quality improvements, refactoring suggestions, or best-practice recommendations that fall outside the phase goal — even if the code was touched in this diff.
 If you spot such improvements, you may note them as non-blocking observations after the ALLOW/BLOCK line, but they must NOT influence the decision.
-
-Test files (files matching `*test*`, `*spec*`, `__tests__/`) are TDD constraints — they define the expected behavior and must NOT be modified by the implementing agent. Do NOT block or suggest changes to test code. Review only production code in the diff. If the diff contains only test files, return ALLOW immediately.
 
 This thread may contain prior review turns from the same session. Use them as reference for what was previously flagged, but base your ALLOW/BLOCK decision solely on the current diff range provided below. Do NOT re-block issues that have already been fixed.
 
