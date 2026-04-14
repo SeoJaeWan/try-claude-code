@@ -87,111 +87,53 @@ This ensures you and the project are aligned. If you cannot find enough examples
 - User requests visual comparison between two screens or URLs
 - User mentions "design diff", "compare", "audit", or "visual difference"
 
-### Core idea
+### Capture
 
-Compare at the DOM element level, not full-page level.
-Capture only the target element from the reference and the implementation,
-so size mismatches from page chrome, viewport differences, or surrounding
-layout never pollute the comparison.
+Do NOT take full-page or viewport-level screenshots.
+Always scope to the target element so that page chrome, viewport size,
+and surrounding layout never pollute the comparison.
 
-### Identify the comparison target
+1. Identify the target element with a CSS selector (e.g., `.hero-section`, `#pricing-table`, `[data-testid="card"]`)
+2. Capture the element:
+   ```bash
+   npx agent-browser open <url>
+   npx agent-browser screenshot "<selector>" <output.png>
+   ```
+3. If the user provides an image file directly, use it as-is (skip capture)
 
-Before capturing anything, determine **what to compare**:
+### Comparison (pixelmatch)
 
-1. Read the task/plan to identify the target component or section
-2. Choose a CSS selector that isolates it (e.g., `.hero-section`, `#pricing-table`, `[data-testid="card"]`)
-3. If the reference URL and dev URL use different DOM structures, pick the most semantically equivalent selector for each
-
-### Reference Acquisition
-
-| Source | How to capture |
-|---|---|
-| Live URL | `npx agent-browser open <url>` → `npx agent-browser screenshot "<selector>" reference.png` |
-| Image file | User provides PNG/JPG directly — use as-is (skip element capture) |
-
-### Prerequisites
-
-Ensure `pixelmatch` and `pngjs` are available before running the comparison:
+Ensure `pixelmatch` and `pngjs` are available:
 
 ```bash
 npm ls pixelmatch pngjs 2>/dev/null || npm install --save-dev pixelmatch pngjs
+```
+
+Run the comparison:
+
+```bash
+node <path-to-skill>/references/visual-compare.mjs <imageA.png> <imageB.png> diff.png <threshold>
 ```
 
 ### Mode A — Comparison only (no implementation)
 
 Use when the user asks to compare, audit, or diff two screens without building anything.
 
-1. **Capture both sides**
-   ```bash
-   npx agent-browser open <url-a>
-   npx agent-browser screenshot "<selector>" side-a.png
-   npx agent-browser open <url-b>
-   npx agent-browser screenshot "<selector>" side-b.png
-   ```
-
-2. **Run pixelmatch comparison**
-   ```bash
-   node <path-to-skill>/references/visual-compare.mjs side-a.png side-b.png diff.png 0.1
-   ```
-
-3. **Report findings** — read diff.png, describe visual differences, report mismatch percentage. Do NOT proceed to implementation unless explicitly asked.
+1. Capture element screenshots of both sides
+2. Run pixelmatch comparison
+3. Read diff.png, describe visual differences, report mismatch percentage
+4. Do NOT proceed to implementation unless explicitly asked
 
 ### Mode B — Post-implementation verification
 
 Use when a visual reference is provided alongside an implementation task.
 Runs after implementation (step 6) and before test execution.
 
-#### Path B1 — Two-step capture (default)
-
-Use when the reference URL and dev URL need different selectors or different viewport sizes.
-
-1. **Capture reference element**
-   ```bash
-   npx agent-browser open <reference-url>
-   npx agent-browser screenshot "<selector>" reference.png
-   ```
-
-2. **Capture current implementation element**
-   ```bash
-   npx agent-browser open <dev-url>
-   npx agent-browser screenshot "<selector>" current.png
-   ```
-
-3. **Run pixelmatch comparison**
-   ```bash
-   node <path-to-skill>/references/visual-compare.mjs reference.png current.png diff.png 0.1
-   ```
-
-4. **Evaluate result**
-   - `passed: true` (mismatch < 1%) → exit loop
-   - `passed: false` → read diff.png, fix code, go to step 2
-
-#### Path B2 — One-shot diff (shortcut)
-
-Use when both URLs share the same selector and the reference is already captured as a baseline image.
-
-```bash
-npx agent-browser open <dev-url>
-npx agent-browser diff screenshot --baseline reference.png --selector "<selector>" --output diff.png --threshold 0.1
-```
-
-#### Path B3 — Direct URL diff
-
-Use when comparing two live URLs with the same selector and no pre-existing baseline.
-
-```bash
-npx agent-browser diff url <reference-url> <dev-url> --screenshot --selector "<selector>"
-```
-
-### Handling size differences
-
-Element-level capture minimizes size mismatches, but they can still occur
-(e.g., different font metrics, padding values). When `visual-compare.mjs`
-reports `sizeMismatch: true`:
-
-1. Check if the size difference is intentional (responsive breakpoint, different content length)
-2. If unintentional — fix the implementation CSS, do NOT resize the reference
-3. If intentional — match the viewport/conditions so both captures render at the same size
+1. Capture element screenshot of the reference
+2. Capture element screenshot of the current implementation
+3. Run pixelmatch comparison
+4. `passed: true` (mismatch < 1%) → exit loop
+5. `passed: false` → read diff.png, fix code, go to step 2
 
 ### Comparison thresholds
 
@@ -201,14 +143,19 @@ reports `sizeMismatch: true`:
 | Pixel-perfect spec | `0.05` | Strictest — design spec must match exactly |
 | Cross-browser baseline | `0.2` | Lenient — different engines render fonts/shadows differently |
 
-Pass threshold as the 4th argument to `visual-compare.mjs`.
+### Handling size differences
+
+When `visual-compare.mjs` reports `sizeMismatch: true`:
+
+1. Check if the size difference is intentional (responsive breakpoint, different content length)
+2. If unintentional — fix the implementation CSS, do NOT resize the reference
+3. If intentional — match the viewport/conditions so both captures render at the same size
 
 ### What to avoid in visual comparison
 
-- Do NOT compare full-page screenshots when the task targets a specific component — always scope to the element
 - Do NOT modify reference images to match implementation — always fix the code
-- Do NOT chase anti-aliasing differences below 0.5% mismatch rate — these are rendering engine artifacts
-- Do NOT skip the pixelmatch gate and rely solely on visual inspection for pixel-level precision
+- Do NOT chase anti-aliasing differences below 0.5% mismatch rate — rendering engine artifacts
+- Do NOT skip the pixelmatch gate and rely solely on visual inspection
 - Do NOT install pixelmatch globally — use project devDependencies
 - Do NOT fall back to computed style comparison when pixelmatch is available — pixelmatch is the ground truth for visual differences; computed styles do not guarantee rendering equivalence
 
