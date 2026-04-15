@@ -12,18 +12,23 @@ Review the previous Claude turn for design and security issues.
 
 If no phase context is provided above, return ALLOW immediately. You only review phase-scoped work.
 
-## Test file immunity — NON-NEGOTIABLE, check BEFORE any review
+## Test file handling — NON-NEGOTIABLE, check BEFORE any review
 
-Test files are TDD contracts that define the expected behavior. They are NOT subject to review.
+Test files are TDD contracts that define the expected behavior. They serve as the **specification** for what the production code must do.
 
+**Read test files as specification context:**
+- Use test assertions and scenarios to understand the intended behavior of the production code.
+- When judging whether production code is correct, check it against the contracts defined in the tests.
+
+**Do NOT review, judge, or suggest changes to test code itself:**
 - Do NOT block because of test code — not for quality, correctness, coverage, naming, or any other reason.
 - Do NOT suggest changes to test code — not even as non-blocking observations.
-- When reviewing a diff, skip every hunk whose path matches a test file. Base your ALLOW/BLOCK decision entirely on production code.
 - If the diff contains ONLY test files, return `ALLOW: test-only changes` immediately without further analysis.
+- Every BLOCK finding must reference a production code file path. If you cannot point to a production file, it is not a valid finding.
 
 Test file patterns: paths containing `test`, `spec`, or under `__tests__/`.
 
-Violating this rule — blocking or commenting on test files — is a critical error.
+Violating this rule — blocking or commenting on test files, or producing a finding that references only test file paths — is a critical error.
 
 ## Review rules (only if scope gate passed)
 
