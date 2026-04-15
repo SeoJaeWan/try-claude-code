@@ -72,87 +72,12 @@ This ensures you and the project are aligned. If you cannot find enough examples
 3. **Run Convention Discovery** (above) — scan existing code for patterns
 4. Read project theme/style when the task includes UI work: `tailwind.config.*`, `app/globals.css`, component library tokens
 5. Implement the required UI and logic, following discovered conventions exactly
-6. Run Visual Reference Comparison if triggered (see trigger conditions below)
+6. If a visual reference is provided or visual comparison is requested → delegate to the `visual-compare` skill (do NOT perform visual comparison inline — the dedicated skill handles capture, pixelmatch diff, and reporting)
 7. If plan includes `tests/`: copy test files to source tree, run Red verification (`pnpm test`)
 8. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
 9. Run tests: `pnpm test` — confirm ALL pass (Green)
 10. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
 11. Return results based on plan.md
-
-## Visual Reference Comparison
-
-### Trigger conditions (activate when ANY of these apply)
-
-- User provides a reference image or URL
-- User requests visual comparison between two screens or URLs
-- User mentions "design diff", "compare", "audit", or "visual difference"
-
-### Capture
-
-Do NOT take full-page or viewport-level screenshots.
-Always capture only the target element.
-
-1. Identify the target element with a CSS selector (e.g., `.hero-section`, `#pricing-table`, `[data-testid="card"]`)
-2. **Match viewport to reference size** — read the reference image dimensions and set the browser viewport width to match before capturing the implementation. This ensures responsive components render at the same breakpoint as the reference.
-   ```bash
-   npx agent-browser open <url> --viewport-width <reference-width>
-   npx agent-browser screenshot "<selector>" <output.png>
-   ```
-3. If the user provides an image file directly, use it as-is (skip capture)
-
-### Comparison (pixelmatch)
-
-pixelmatch requires both images to have **identical dimensions**.
-The viewport-matching step above ensures this. If dimensions still differ
-after capture, treat it as a finding — the implementation does not match the reference.
-
-Ensure `pixelmatch` and `pngjs` are available:
-
-```bash
-npm ls pixelmatch pngjs 2>/dev/null || npm install --save-dev pixelmatch pngjs
-```
-
-Run the comparison:
-
-```bash
-node <path-to-skill>/references/visual-compare.mjs <imageA.png> <imageB.png> diff.png <threshold>
-```
-
-### Mode A — Comparison only (no implementation)
-
-Use when the user asks to compare, audit, or diff two screens without building anything.
-
-1. Capture element screenshots of both sides (match viewport to the first image's width)
-2. Run pixelmatch comparison
-3. Read diff.png, describe visual differences, report mismatch percentage
-4. Do NOT proceed to implementation unless explicitly asked
-
-### Mode B — Post-implementation verification
-
-Use when a visual reference is provided alongside an implementation task.
-Runs after implementation (step 6) and before test execution.
-
-1. Capture element screenshot of the reference
-2. Match viewport to reference width, then capture the implementation
-3. Run pixelmatch comparison
-4. `passed: true` (mismatch < 1%) → exit loop
-5. `passed: false` → read diff.png, fix code, go to step 2
-
-### Comparison thresholds
-
-| Scenario | Threshold | Rationale |
-|---|---|---|
-| General UI reference | `0.1` | Default — catches meaningful differences, ignores font rendering |
-| Pixel-perfect spec | `0.05` | Strictest — design spec must match exactly |
-| Cross-browser baseline | `0.2` | Lenient — different engines render fonts/shadows differently |
-
-### What to avoid in visual comparison
-
-- Do NOT modify or resize reference images to match implementation — always fix the code or adjust viewport
-- Do NOT chase anti-aliasing differences below 0.5% mismatch rate — rendering engine artifacts
-- Do NOT skip the pixelmatch gate and rely solely on visual inspection
-- Do NOT install pixelmatch globally — use project devDependencies
-- Do NOT fall back to computed style comparison when pixelmatch is available — pixelmatch is the ground truth for visual differences; computed styles do not guarantee rendering equivalence
 
 ## What to avoid
 
