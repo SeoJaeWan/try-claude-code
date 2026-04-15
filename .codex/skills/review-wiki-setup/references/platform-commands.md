@@ -20,6 +20,12 @@ Remove-Item -LiteralPath "$HOME\\.codex\\reviewWiki"
 New-Item -ItemType SymbolicLink -Path "$HOME\\.codex\\reviewWiki" -Target "<vault-path>"
 ```
 
+Stage the workspace cache:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.ps1
+```
+
 ## macOS / Linux
 
 Create the link:
@@ -33,6 +39,12 @@ Replace a wrong link:
 ```bash
 rm "$HOME/.codex/reviewWiki"
 ln -s "/actual/vault/path" "$HOME/.codex/reviewWiki"
+```
+
+Stage the workspace cache:
+
+```bash
+sh ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.sh
 ```
 
 ## Verification

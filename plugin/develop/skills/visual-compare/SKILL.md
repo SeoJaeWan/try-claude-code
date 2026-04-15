@@ -22,6 +22,7 @@ Dedicated visual comparison workflow — screenshot capture, pixel diff, and mis
 - User provides a reference image (file path or URL) and asks to compare against live UI
 - User requests comparison between two URLs or two images
 - User mentions "design diff", "compare", "audit", "visual difference", "화면 비교", "디자인 비교"
+- A plan assigns a dedicated `visual-comparator` phase after UI implementation
 
 ## Workflow
 
@@ -96,6 +97,15 @@ When the user provides both a reference and a live implementation to verify:
 3. If `passed: false` — report the specific visual differences found in diff.png with actionable details (what differs, where, by how much)
 4. Do NOT fix code — this skill only captures, compares, and reports
 
+**Mode C — Dedicated plan phase**
+
+When `architect` split visual verification into its own phase:
+
+1. Complete Steps 1-4
+2. Write repo-local artifacts for the phase: captured images, `diff.png`, and a markdown or JSON report in the phase-defined artifact path
+3. Return a pass/fail result plus mismatch details that a later `frontend-developer` phase can consume
+4. Do NOT modify product source files in this phase
+
 ## Comparison thresholds
 
 | Scenario | Threshold | When to use |
@@ -115,6 +125,7 @@ Use `0.1` unless the user specifies otherwise or the context implies a different
 - Do NOT fall back to computed style comparison — pixelmatch is the ground truth for visual differences
 - Do NOT take full-page screenshots — always capture the specific target element
 - Do NOT proceed to code changes in Mode A — report only unless explicitly asked to fix
+- Do NOT fix visual mismatches inside a dedicated `visual-comparator` phase — hand them off to a later `frontend-developer` phase
 
 ## agent-browser reference
 

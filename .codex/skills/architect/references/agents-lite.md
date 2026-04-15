@@ -11,6 +11,7 @@ For detailed planning rules, quality gates, and UI test-phase policy, read the r
 | `frontend-developer` | `frontend-dev`         | `frontend`          | frontend UI, integration, hooks, state, and API work      |
 | `backend-developer`  | `backend-dev`          | `backend`           | API, DB, auth, server logic                               |
 | `general-developer`  | `general-dev`          | `N/A`               | infrastructure, DevOps, CI/CD, deploy, and root tooling   |
+| `visual-comparator`  | `visual-compare`       | `N/A`               | reference-based visual comparison, diff artifact capture, and mismatch reporting |
 | `playwright-guard`   | `guard-e2e-test`       | `N/A`               | post-implementation full-flow Playwright regression guard |
 
 ## Planning Skills (run by architect)
@@ -18,8 +19,9 @@ For detailed planning rules, quality gates, and UI test-phase policy, read the r
 - `plan-unit-test`: generates unit/logic test files as plan artifacts (`plans/{task}/tests/`)
 - `plan-e2e-test`: generates frozen feature-level E2E plan artifacts with the runner chosen from the environment (`plans/{task}/e2e/`)
 
-## Post-implementation Test Agents
+## Post-implementation Verification Agents
 
+- `visual-comparator`: runs `visual-compare` after UI implementation when a plan must compare the current UI against an external visual reference and leave repo-local capture, diff, and report artifacts for a later fix phase
 - `playwright-guard`: runs `guard-e2e-test` after implementation to add real full-flow/regression Playwright `.spec.ts` files in the project test tree
 
 ## Named Planning Agents
@@ -36,3 +38,4 @@ These planning agents are handoff utilities, not valid `owner_agent` values insi
 - Do not use named planning agents such as `plan-reviewer` or `plan-materializer` as phase `owner_agent` values.
 - Architect should inspect the corresponding CLI help before finalizing implementation routing for `frontend-developer` or `backend-developer`.
 - For `general-developer`, inspect the minimum repo-local validation or tooling contract instead of a nonexistent dedicated CLI.
+- Use `visual-comparator` only for compare/report phases that produce repo-local evidence artifacts; any product-code fix belongs in a later `frontend-developer` phase.

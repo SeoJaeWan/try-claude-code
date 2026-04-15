@@ -26,7 +26,9 @@ Use this skill to connect Codex to the Obsidian vault, create the minimum review
    - Preserve existing user content; do not overwrite populated files without explicit approval.
 
 4. Stage the planning cache when requested or when planning agents cannot read the external vault directly.
-   - On Windows, run `powershell -NoProfile -ExecutionPolicy Bypass -File ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.ps1` from the workspace root.
+   - Run the platform-appropriate staging command from `references/platform-commands.md` from the workspace root.
+   - On Windows, use `stage-review-wiki.ps1`.
+   - On macOS / Linux, use `stage-review-wiki.sh`.
    - Copy the `wiki/` subtree into `./.codex/cache/review-wiki/current/`.
    - Write `staged.json` with the source root, destination root, and staging timestamp.
    - Treat the staged cache as read-only execution input; the source of truth remains `~/.codex/reviewWiki`.

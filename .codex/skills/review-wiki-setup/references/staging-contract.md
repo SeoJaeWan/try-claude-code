@@ -8,7 +8,10 @@ Use this contract whenever planning agents need a workspace-local copy of the re
 - Workspace cache root: `./.codex/cache/review-wiki/current`
 - Stage manifest: `./.codex/cache/review-wiki/current/staged.json`
 
-On Windows, invoke the staging script with `powershell -NoProfile -ExecutionPolicy Bypass -File ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.ps1` from the workspace root to avoid local execution-policy failures.
+Use the platform-appropriate staging command from `references/platform-commands.md`:
+
+- Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.ps1`
+- macOS / Linux: `sh ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.sh`
 
 The cache copies the `wiki/` subtree only. It is read-only execution input, not the source of truth.
 
@@ -33,5 +36,5 @@ When the cache exists, planning agents should consume it instead of hardcoding t
 ## Responsibility split
 
 - `review-wiki-setup` repairs or bootstraps the external `~/.codex/reviewWiki` link and directory structure.
-- `scripts/stage-review-wiki.ps1` copies the external `wiki/` subtree into the workspace cache.
+- `scripts/stage-review-wiki.ps1` and `scripts/stage-review-wiki.sh` copy the external `wiki/` subtree into the workspace cache.
 - Planning skills consume the resolved `review_wiki_root` and must not bypass it with hardcoded external-path reads once the root is resolved.
