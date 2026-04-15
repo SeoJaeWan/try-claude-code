@@ -22,7 +22,6 @@ Dedicated visual comparison workflow — screenshot capture, pixel diff, and mis
 - User provides a reference image (file path or URL) and asks to compare against live UI
 - User requests comparison between two URLs or two images
 - User mentions "design diff", "compare", "audit", "visual difference", "화면 비교", "디자인 비교"
-- Another skill delegates visual verification (e.g., frontend-dev post-implementation check)
 
 ## Workflow
 
@@ -88,14 +87,14 @@ When the user asks to compare, audit, or diff without an implementation task:
 2. Present the comparison report
 3. Do NOT modify any code unless explicitly asked
 
-**Mode B — Verification loop (delegated by another skill)**
+**Mode B — Verification (reference image provided with implementation URL)**
 
-When called as part of an implementation workflow:
+When the user provides both a reference and a live implementation to verify:
 
 1. Complete Steps 1-4
-2. If `passed: true` (mismatch < threshold) — report success, return to caller
-3. If `passed: false` — report the specific visual differences found in diff.png so the caller can fix the code
-4. The calling skill/agent is responsible for code fixes — this skill only captures, compares, and reports
+2. If `passed: true` (mismatch < threshold) — report success
+3. If `passed: false` — report the specific visual differences found in diff.png with actionable details (what differs, where, by how much)
+4. Do NOT fix code — this skill only captures, compares, and reports
 
 ## Comparison thresholds
 

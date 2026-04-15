@@ -72,12 +72,11 @@ This ensures you and the project are aligned. If you cannot find enough examples
 3. **Run Convention Discovery** (above) — scan existing code for patterns
 4. Read project theme/style when the task includes UI work: `tailwind.config.*`, `app/globals.css`, component library tokens
 5. Implement the required UI and logic, following discovered conventions exactly
-6. If a visual reference is provided or visual comparison is requested → delegate to the `visual-compare` skill (do NOT perform visual comparison inline — the dedicated skill handles capture, pixelmatch diff, and reporting)
-7. If plan includes `tests/`: copy test files to source tree, run Red verification (`pnpm test`)
-8. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
-9. Run tests: `pnpm test` — confirm ALL pass (Green)
-10. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
-11. Return results based on plan.md
+6. If plan includes `tests/`: copy test files to source tree, run Red verification (`pnpm test`)
+7. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
+8. Run tests: `pnpm test` — confirm ALL pass (Green)
+9. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
+10. Return results based on plan.md
 
 ## What to avoid
 
