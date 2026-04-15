@@ -1,4 +1,4 @@
 interface:
   display_name: "Review Wiki Setup"
-  short_description: "Create the review wiki link and bootstrap the registry/core/pattern layout."
-  default_prompt: "Use this skill when Codex needs to create or verify the ~/.codex/reviewWiki link and bootstrap the review wiki registry, core docs, and pattern directory structure."
+  short_description: "Create the review wiki link and stage a workspace-local planning cache."
+  default_prompt: "Use this skill when Codex needs to create or verify the ~/.codex/reviewWiki link, bootstrap the review wiki registry/core/pattern layout, or stage a workspace-local review wiki cache for planning agents."

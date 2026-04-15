@@ -18,13 +18,14 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 
 1. User request and latest conversation context
 2. `./references/agents-lite.md` - execution agent catalog
-3. `~/.codex/reviewWiki/wiki/registry.json` - review wiki registry, core docs, tag taxonomy, and selection policy
-4. Every core document listed in the registry `core` array, in listed order
-5. Candidate pattern files selected from the registry `patterns` list using the `architect` selection mode plus matching `Apply When`
-6. `./references/git.md` - commit message, branch naming, and worktree naming rules
-7. `./references/plan-template-sequential.md` - sequential plan template
-8. `./references/phase-template-detail.md` - per-phase technical detail template
-9. Relevant execution contracts only when routing or mode-sensitive conventions matter:
+3. `../review-wiki-setup/references/staging-contract.md` - review wiki cache resolution and staging rules
+4. Resolved `review_wiki_root` containing `registry.json`, core docs, tag taxonomy, and selection policy. Prefer `./.codex/cache/review-wiki/current`; fall back to `~/.codex/reviewWiki/wiki` only when the cache is unavailable.
+5. Every core document listed in the registry `core` array, in listed order
+6. Candidate pattern files selected from the registry `patterns` list using the `architect` selection mode plus matching `Apply When`
+7. `./references/git.md` - commit message, branch naming, and worktree naming rules
+8. `./references/plan-template-sequential.md` - sequential plan template
+9. `./references/phase-template-detail.md` - per-phase technical detail template
+10. Relevant execution contracts only when routing or mode-sensitive conventions matter:
    - inspect only the minimum repo-local tool/validation/runtime contract that governs the work
    - examples: `package.json` scripts, framework config, test config, CI config schema, deploy script entrypoints, or existing source-tree placement conventions
 
@@ -35,11 +36,17 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 Before writing any plan artifact:
 
 - Read `./references/agents-lite.md`
-- Read `~/.codex/reviewWiki/wiki/registry.json`
-- If the review wiki link or registry is missing, broken, or unreadable:
+- Read `../review-wiki-setup/references/staging-contract.md`
+- Resolve `review_wiki_root` in this order:
+  1. `./.codex/cache/review-wiki/current`
+  2. `~/.codex/reviewWiki/wiki`
+- If the cache is missing and the external wiki root is readable, run `powershell -NoProfile -ExecutionPolicy Bypass -File ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.ps1` from the workspace root, then use the refreshed cache
+- If the external wiki root is missing or broken and the cache is absent:
   - report the missing dependency explicitly
   - use `review-wiki-setup` when available to repair it before continuing
-- Read every path listed in the registry `core` array, in order
+- If the external wiki root is permission-blocked but the cache exists, continue with the cache and note the fallback in the final handoff
+- Read `{review_wiki_root}/registry.json`
+- Read every path listed in the registry `core` array, in order, resolving relative paths from `review_wiki_root`
 - Derive initial tags from the user request and repo-local context
 - Select candidate pattern files from the registry `patterns` list using the registry `selection.architect` mode and `adjacency_rules`
 - Read only the selected pattern files whose `Apply When` clauses actually match the request or repo-local context
@@ -180,12 +187,12 @@ If a plan file changes cross-route journeys, auth/session transitions, redirect 
 
 ### Step 4. Quality gates (required)
 
-- Run the quality-gate checklist in `~/.codex/reviewWiki/wiki/core/quality-gates.md` before finalizing
+- Run the quality-gate checklist in `{review_wiki_root}/core/quality-gates.md` before finalizing
 - Treat missing review wiki routing or skipped applicable wiki guidance as a failed quality gate
 
 ### Step 5. Self-review gate (required)
 
-- Re-run the same checklist in `~/.codex/reviewWiki/wiki/core/quality-gates.md`
+- Re-run the same checklist in `{review_wiki_root}/core/quality-gates.md`
 - Incorporate critical findings before handoff
 - When multiple local plans exist, verify one-hop prerequisite parity before handoff:
   - each downstream detail-file `선행조건` maps to a specific upstream phase
@@ -207,7 +214,7 @@ If a plan file changes cross-route journeys, auth/session transitions, redirect 
 
 Architect does not execute implementation or source-tree test generation directly.
 If the user asks for an independent cold review before execution, route the finished executable plan to the named custom agent `plan-reviewer` after writing it. The workflow source of truth remains the `plan-review` skill.
-Provide a concise execution handoff summary using the handoff requirements in `~/.codex/reviewWiki/wiki/core/execution-handoff.md`.
+Provide a concise execution handoff summary using the handoff requirements in `{review_wiki_root}/core/execution-handoff.md`.
 
 ## Output contract
 
@@ -224,6 +231,7 @@ Provide a concise execution handoff summary using the handoff requirements in `~
 - Every executable plan file is sequential-only
 - Do not write `plan.md` as if only implementers will read it
 - Do not treat the review wiki as optional when its registry is available; always read the registry first and route from it
+- Do not bypass the resolved `review_wiki_root` with hardcoded external-path reads when a workspace cache exists
 - Do not generate or edit source-tree tests inside `architect`
 - `playwright-guard` execution happens later; architect only plans that phase
 - Do not produce a plan with unresolved blocking ambiguity

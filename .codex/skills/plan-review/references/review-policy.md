@@ -80,7 +80,7 @@ Prefer no finding over a low-value minor note.
 
 Check the plan against:
 
-1. `~/.codex/reviewWiki/wiki/registry.json` plus the listed core docs
+1. the resolved `review_wiki_root/registry.json` plus the listed core docs; prefer `./.codex/cache/review-wiki/current`, then fall back to `~/.codex/reviewWiki/wiki` only when the cache is unavailable
 2. selected pattern files that match the reviewed plan under the registry `selection.review` policy
 3. `architect/references/plan-template-sequential.md`
 4. `architect/references/phase-template-detail.md`

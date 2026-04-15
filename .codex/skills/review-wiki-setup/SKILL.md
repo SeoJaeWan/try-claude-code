@@ -1,11 +1,11 @@
 ---
 name: review-wiki-setup
-description: Create or verify the `~/.codex/reviewWiki` link to the Obsidian review wiki vault, bootstrap the required `raw/` and `wiki/` structure, and seed the registry-backed core/pattern layout for planning. Use when the review wiki link is missing, broken, moved, or the vault needs first-time setup on Windows, macOS, or Linux.
+description: Create or verify the `~/.codex/reviewWiki` link to the Obsidian review wiki vault, bootstrap the required `raw/` and `wiki/` structure, and stage a workspace-local planning cache. Use when the review wiki link is missing, broken, moved, the vault needs first-time setup on Windows, macOS, or Linux, or planning agents need a repo-local cache because they cannot read the external vault directly.
 ---
 
 # Review Wiki Setup
 
-Use this skill to connect Codex to the Obsidian vault and create the minimum review wiki structure. Read [references/platform-commands.md](references/platform-commands.md) and [references/bootstrap-layout.md](references/bootstrap-layout.md) before editing the filesystem.
+Use this skill to connect Codex to the Obsidian vault, create the minimum review wiki structure, and stage a workspace-local planning cache when needed. Read [references/platform-commands.md](references/platform-commands.md), [references/bootstrap-layout.md](references/bootstrap-layout.md), and [references/staging-contract.md](references/staging-contract.md) before editing the filesystem.
 
 ## Workflow
 
@@ -25,19 +25,30 @@ Use this skill to connect Codex to the Obsidian vault and create the minimum rev
    - Seed the core planning documents if missing.
    - Preserve existing user content; do not overwrite populated files without explicit approval.
 
-4. Verify the bootstrap.
+4. Stage the planning cache when requested or when planning agents cannot read the external vault directly.
+   - On Windows, run `powershell -NoProfile -ExecutionPolicy Bypass -File ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.ps1` from the workspace root.
+   - Copy the `wiki/` subtree into `./.codex/cache/review-wiki/current/`.
+   - Write `staged.json` with the source root, destination root, and staging timestamp.
+   - Treat the staged cache as read-only execution input; the source of truth remains `~/.codex/reviewWiki`.
+
+5. Verify the bootstrap and staging.
    - Confirm the link resolves to the expected vault.
    - Confirm the required folders, registry, and core documents exist.
    - Confirm `architect`, `ingest`, and `lint` can target the same root path.
+   - If a workspace cache was staged, confirm `./.codex/cache/review-wiki/current/registry.json` exists and matches the staging contract.
 
 ## Guardrails
 
 - Do not point `~/.codex/reviewWiki` at the wrong vault.
 - Do not overwrite existing wiki documents just to match a new template.
 - Do not scatter environment-specific absolute paths throughout other skills; the link is the stable interface.
-- Do not skip verification after link creation.
+- Do not treat the staged cache as the source of truth or edit the cache instead of the external wiki.
+- Do not write the staged cache outside the active workspace.
+- Do not use staging as a substitute for repairing a broken or missing link.
+- Do not skip verification after link creation or staging.
 
 ## Reference
 
 - Read [references/platform-commands.md](references/platform-commands.md) for Windows, macOS, and Linux link commands.
 - Read [references/bootstrap-layout.md](references/bootstrap-layout.md) for the initial directory and document set.
+- Read [references/staging-contract.md](references/staging-contract.md) for the planning-cache path contract and staging rules.

@@ -22,6 +22,8 @@ Do not use it as a generic replacement for `architect`, `plan-review`, or `plan-
 4. `./.codex/agents/plan-architect.toml`
 5. `./.codex/agents/plan-reviewer.toml`
 6. `./.codex/agents/plan-materializer.toml`
+7. `../review-wiki-setup/references/staging-contract.md`
+8. `../review-wiki-setup/scripts/stage-review-wiki.ps1`
 
 ## Required runtime expectations
 
@@ -73,9 +75,14 @@ Treat approval as valid only when `approved_revision == plan_revision`.
 
 ## Workflow
 
-### Step 0. Normalize target and load state
+### Step 0. Normalize target, prepare the review wiki cache, and load state
 
 - Derive one canonical `task-slug`.
+- Read `../review-wiki-setup/references/staging-contract.md`.
+- If `~/.codex/reviewWiki/wiki` is readable, always run `powershell -NoProfile -ExecutionPolicy Bypass -File ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.ps1` from the workspace root before invoking `plan-architect` or `plan-reviewer`, even when the cache already exists.
+- Treat the refreshed cache as the fixed review wiki snapshot for the rest of the current orchestration run.
+- If the external wiki root is permission-blocked or temporarily unreadable but `./.codex/cache/review-wiki/current` already exists, continue with the cached copy.
+- If both the external wiki root and the cache are unavailable, stop and route to `review-wiki-setup` or request the missing external-read approval before continuing.
 - Create `./.codex/artifacts/plan/{task-slug}/` and `state.json` if they do not exist.
 - If `state.json` exists, resume from the recorded stage instead of starting over.
 - Persist `state.json` after every stage transition. Do not keep orchestration-only state in chat memory alone.
@@ -243,6 +250,8 @@ Terminal stages are:
 
 - Orchestrate only: do not substitute for `architect`, `plan-review`, or `plan-materialize`.
 - Do not implement production code.
+- Do not call `plan-architect` or `plan-reviewer` before the review wiki cache preflight completes.
+- Do not silently refresh the review wiki cache again after Step 0 inside the same orchestration run.
 - Do not skip explicit user approval.
 - Do not let `plan-reviewer` edit plans.
 - Do not let `plan-materializer` patch plan ambiguity with tests.

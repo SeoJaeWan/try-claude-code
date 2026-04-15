@@ -17,15 +17,16 @@ Review the finished plan artifact, not the original request. Stay read-only.
 
 1. Target executable plan file: `./plans/**/plan.md`
 2. Linked phase detail files referenced from that `plan.md`
-3. `~/.codex/reviewWiki/wiki/registry.json`
-4. Every core doc listed in the registry `core` array, in listed order
-5. Pattern candidates selected from the registry `patterns` list using the `review` selection mode plus matching `Apply When`
-6. `../architect/references/plan-template-sequential.md`
-7. `../architect/references/phase-template-detail.md`
-8. `../architect/references/agents-lite.md`
-9. `./references/review-policy.md`
-10. Repo-local execution contracts only when needed to verify routing, validation, or repo-fit claims in the plan
-11. Directly referenced local prerequisite plan files only when the reviewed phase detail names them in `선행조건`
+3. `../review-wiki-setup/references/staging-contract.md`
+4. Resolved `review_wiki_root` containing `registry.json`, core docs, and pattern guidance. Prefer `./.codex/cache/review-wiki/current`; fall back to `~/.codex/reviewWiki/wiki` only when the cache is unavailable.
+5. Every core doc listed in the registry `core` array, in listed order
+6. Pattern candidates selected from the registry `patterns` list using the `review` selection mode plus matching `Apply When`
+7. `../architect/references/plan-template-sequential.md`
+8. `../architect/references/phase-template-detail.md`
+9. `../architect/references/agents-lite.md`
+10. `./references/review-policy.md`
+11. Repo-local execution contracts only when needed to verify routing, validation, or repo-fit claims in the plan
+12. Directly referenced local prerequisite plan files only when the reviewed phase detail names them in the local prerequisite field
 
 ## Workflow
 
@@ -33,8 +34,15 @@ Review the finished plan artifact, not the original request. Stay read-only.
 
 Before judging the plan:
 
-- read `~/.codex/reviewWiki/wiki/registry.json`
-- read every path listed in the registry `core` array, in order
+- read `../review-wiki-setup/references/staging-contract.md`
+- resolve `review_wiki_root` in this order:
+  1. `./.codex/cache/review-wiki/current`
+  2. `~/.codex/reviewWiki/wiki`
+- if the cache is missing and the external wiki root is readable, run `powershell -NoProfile -ExecutionPolicy Bypass -File ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.ps1` from the workspace root, then use the refreshed cache
+- if the external wiki root is missing or broken and the cache is absent, stop and report the missing dependency explicitly
+- if the external wiki root is permission-blocked but the cache exists, continue with the cache and mention the fallback in the review assumptions
+- read `{review_wiki_root}/registry.json`
+- read every path listed in the registry `core` array, in order, resolving relative paths from `review_wiki_root`
 - read `architect/references/plan-template-sequential.md`
 - read `architect/references/phase-template-detail.md`
 - read `plan-review/references/review-policy.md`
@@ -50,7 +58,7 @@ Before judging the plan:
 - Derive the same deterministic `plan_revision` fingerprint from the current `plan.md` plus its linked phase detail files
 - Treat the plan summary, linked phase detail files, and required references as the source of truth
 - Do not infer missing policy from the original user request when the plan itself is ambiguous
-- If a reviewed phase detail names a local prerequisite plan in `선행조건`, load only that directly referenced plan and inspect only the minimum upstream phase needed to verify the prerequisite contract
+- If a reviewed phase detail names a local prerequisite plan in the local prerequisite field, load only that directly referenced plan and inspect only the minimum upstream phase needed to verify the prerequisite contract
 - Do not recurse into a larger plan graph or turn the review into a full multi-plan orchestration pass
 
 ### Step 2. Run a cold review
@@ -130,6 +138,7 @@ Frontmatter rules:
 - Do not silently fix or rewrite the plan inside the review
 - Do not downgrade a blocker just to keep momentum
 - Do not treat partial notes, briefs, or non-executable artifacts as execution-ready plans
+- Do not bypass the resolved `review_wiki_root` with hardcoded external-path reads when a workspace cache exists
 - Do not perform a second full review of upstream plans; inspect only the direct prerequisite parity needed to judge the reviewed plan's execution readiness
 - Do not let missing canonical outputs, negative outputs, recipients, winner or loser rules, terminal-state policy, side-effect coupling, or invalid topology pass silently when later execution would have to guess
 - Do not let `plan.md` hide the actual phase role behind unexplained jargon or vague prose while the technical meaning lives only in the detail file
