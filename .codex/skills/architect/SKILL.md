@@ -1,6 +1,6 @@
 ---
 name: architect
-description: Codex entry skill for boundary-centered implementation planning. Use when a request needs one or more executable plan artifacts under `./plans` after resolving blocking product policy, UX, contract, schema, validation, state, or permission ambiguity, with a controller-facing `plan.md` written in plain Korean that shows the overall work map and each phase's actual work at a glance, plus per-phase technical detail files for later `plan-review` and `plan-materialize`, and registry-backed review wiki core/pattern guidance.
+description: Codex entry skill for boundary-centered implementation planning. Use when a request needs one or more executable plan artifacts under `./plans` after resolving blocking product policy, UX, contract, schema, validation, state, or permission ambiguity, with a controller-facing `plan.md` written in plain Korean that starts with an agreement table, an overall work map, and per-phase file-level change maps, plus per-phase technical detail files for later `plan-review` and `plan-materialize`, and registry-backed review wiki core/pattern guidance.
 ---
 
 <Skill_Guide>
@@ -19,13 +19,14 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 1. User request and latest conversation context
 2. `./references/agents-lite.md` - execution agent catalog
 3. `../review-wiki-setup/references/staging-contract.md` - review wiki cache resolution and staging rules
-4. Resolved `review_wiki_root` containing `registry.json`, core docs, tag taxonomy, and selection policy. Prefer `./.codex/cache/review-wiki/current`; fall back to `~/.codex/reviewWiki/wiki` only when the cache is unavailable.
-5. Every core document listed in the registry `core` array, in listed order
-6. Candidate pattern files selected from the registry `patterns` list using the `architect` selection mode plus matching `Apply When`
-7. `./references/git.md` - commit message, branch naming, and worktree naming rules
-8. `./references/plan-template-sequential.md` - sequential plan template
-9. `./references/phase-template-detail.md` - per-phase technical detail template
-10. Relevant execution contracts only when routing or mode-sensitive conventions matter:
+4. `../review-wiki-setup/references/platform-commands.md` - platform-specific link and staging commands
+5. Resolved `review_wiki_root` containing `registry.json`, core docs, tag taxonomy, and selection policy. Prefer `./.codex/cache/review-wiki/current`; fall back to `~/.codex/reviewWiki/wiki` only when the cache is unavailable.
+6. Every core document listed in the registry `core` array, in listed order
+7. Candidate pattern files selected from the registry `patterns` list using the `architect` selection mode plus matching `Apply When`
+8. `./references/git.md` - commit message, branch naming, and worktree naming rules
+9. `./references/plan-template-sequential.md` - sequential plan template
+10. `./references/phase-template-detail.md` - per-phase technical detail template
+11. Relevant execution contracts only when routing or mode-sensitive conventions matter:
    - inspect only the minimum repo-local tool/validation/runtime contract that governs the work
    - examples: `package.json` scripts, framework config, test config, CI config schema, deploy script entrypoints, or existing source-tree placement conventions
 
@@ -37,10 +38,11 @@ Before writing any plan artifact:
 
 - Read `./references/agents-lite.md`
 - Read `../review-wiki-setup/references/staging-contract.md`
+- Read `../review-wiki-setup/references/platform-commands.md`
 - Resolve `review_wiki_root` in this order:
   1. `./.codex/cache/review-wiki/current`
   2. `~/.codex/reviewWiki/wiki`
-- If the cache is missing and the external wiki root is readable, run `powershell -NoProfile -ExecutionPolicy Bypass -File ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.ps1` from the workspace root, then use the refreshed cache
+- If the cache is missing and the external wiki root is readable, run the platform-appropriate staging command from `platform-commands.md` from the workspace root, then use the refreshed cache
 - If the external wiki root is missing or broken and the cache is absent:
   - report the missing dependency explicitly
   - use `review-wiki-setup` when available to repair it before continuing
@@ -99,6 +101,10 @@ Do not deep-dive into implementation details.
   - there is no dedicated frontend/backend CLI contract in this repository
   - inspect only the minimum repo-local command, config, or existing source-tree convention that governs the work
   - treat that repo-local contract as the source of truth for path policy, naming, validation, scaffold shape, and rollout constraints
+- For `visual-comparator`:
+  - there is no dedicated compare CLI contract in this repository
+  - inspect only the minimum repo-local reference source, selector policy, capture path, and artifact location that govern the comparison phase
+  - treat those repo-local inputs as the source of truth for what gets captured, what gets compared, and what evidence must be committed
 - For `general-developer`:
   - there is no dedicated CLI contract in this repository
   - inspect only the minimum repo-local tool or validation command that governs the work
@@ -117,35 +123,49 @@ Do not deep-dive into implementation details.
 - Do not add extra top-level sections unless a core doc explicitly requires them or the user explicitly asks for them
 - Keep the plan artifacts phase-first and terse
 - Treat `plan.md` as a controller-first user-facing review artifact
-- Add `## 전체 작업 지도` immediately after the title so the controller can understand the full sequence without opening the phase detail files
+- Add `## 사전 합의` before `## 전체 작업 지도`
+- In `사전 합의`, record the pre-agreed policy, scope, or contract decisions from the conversation as a markdown table with:
+  - `항목`
+  - `합의 내용`
+  - `적용 phase`
+  - `메모`
+- Add `## 전체 작업 지도` after `사전 합의` so the controller can understand the full sequence without opening the phase detail files
 - In `전체 작업 지도`, summarize every phase in order with concise answers to:
   - what this phase actually does
   - what state exists when it finishes
   - what it hands off to the next phase
-- Keep technical execution detail, test taxonomy, orchestration metadata, and tool-routing detail out of `plan.md` unless the user explicitly asks for them
+- Keep owner routing, scenario I/O contracts, detailed validation commands, test taxonomy, and orchestration metadata out of `plan.md` unless the user explicitly asks for them
+- Keep file-level change maps and human-readable completion conditions in `plan.md`
 - Write each `plan.md` heading as `### Phase n. {짧고 쉬운 역할 이름}`
-- In `plan.md`, make each phase understandable through `목적`, `실제 작업`, `이전 상태`, `이후 상태`, and `확인 포인트`
-- Write `실제 작업` so a controller can tell which boundary changes in this phase without reading the detail file; use short review-friendly bullets or phrases, not abstract theme labels
-- Write `확인 포인트` so a controller can tell what evidence or visible state to inspect before approving the handoff
+- In `plan.md`, make each phase understandable through `목적`, `변경 내용`, `파일별 작업`, `이전 상태`, `이후 상태`, `완료 조건`, `관련 영역`, and `상세`
+- Write `변경 내용` so a controller can tell which boundary changes in this phase without reading the detail file; use short review-friendly bullets or phrases, not abstract theme labels
+- Write `파일별 작업` as a markdown table with:
+  - `파일`
+  - `작업 방식`
+  - `기대 결과`
+  - `완료 조건`
+- Default `파일별 작업` to concrete file paths. Use directory-level rows only when many sibling files receive the same mechanical treatment and file-level rows would hide the real boundary
+- Keep `관련 영역` for supporting references, prerequisite plans, and adjacent boundaries rather than the main file map
+- Write `완료 조건` so a controller can tell what visible or inspectable state closes the phase
 - Avoid unexplained jargon in `plan.md`
 - Make the role label concrete
-- Use the phase detail files for `owner_agent`, technical `input/output`, file-level boundary, detailed `작업`, and `검증`
+- Use the phase detail files for `owner_agent`, technical `input/output`, file-level preconditions, detailed `작업`, and `검증`
 - Start every phase detail file with a controller digest in this order:
-  - `한 줄 목표`
-  - `실제 작업`
-  - `완료 증거`
-  - `중단 조건`
+  - `## 컨트롤러 다이제스트`
+  - `### 파일별 작업`
+  - `### 완료 증거`
 - Keep that digest readable without the later technical sections; detailed commands, contracts, and routing stay below it
 - Keep `plan.md` and each linked phase detail file in parity
 - When a later phase only finalizes exports, migration, or consumer validation, record the delta from earlier phases instead of restating the full contract
 - When fallback or default-selection policy matters, prefer short rule lists or state-to-outcome mappings in the detail file
 - Keep `시작 조건` in `plan.md` short and human-readable
 - Use as many `작업` bullets or paragraphs as needed in the detail file to make the phase executable
+- In the detail-file `파일별 작업`, use `파일 | 작업 방식 | 사전 정의 | 완료 조건`
 - In the detail file `작업`, lead with concrete file or boundary changes
 - Use one canonical `task-slug` per executable plan
 - For each behavior-changing phase, make the linked phase detail file precise enough that `plan-materialize` can derive a stable scenario contract without guessing
 - Do not leave multiple plausible canonical outputs unresolved inside one phase
-- If a controller cannot answer "what changes here, what proves it, and when do we stop" from the phase summary plus the phase digest, the plan fails the quality bar
+- If a controller cannot answer "which files change here, what proves it, and when do we stop" from the phase summary plus the phase digest, the plan fails the quality bar
 
 ### Step 3.2. Choose plan count before writing (required)
 
@@ -185,6 +205,15 @@ If a plan file changes cross-route journeys, auth/session transitions, redirect 
 - Add a later phase with `owner_agent: playwright-guard`
 - Define trigger, scope, and expected outputs using the active review wiki core docs
 
+### Step 3.7. Plan reference-based visual comparison phase (conditional)
+
+If a plan implements UI against an external visual reference such as a live URL, image, screenshot set, or Figma file, and acceptance depends on comparing the implementation against that reference:
+
+- Add a later phase with `owner_agent: visual-comparator`
+- Make that phase capture or load the reference side and the current implementation side explicitly
+- Require repo-local capture, diff, and report artifacts plus a pass/fail decision in the phase detail file
+- If failed comparison can lead to more UI work, add a subsequent `frontend-developer` phase for fixes instead of hiding rework inside the compare phase
+
 ### Step 4. Quality gates (required)
 
 - Run the quality-gate checklist in `{review_wiki_root}/core/quality-gates.md` before finalizing
@@ -203,7 +232,7 @@ If a plan file changes cross-route journeys, auth/session transitions, redirect 
 
 ### Step 6. Compatibility policy (required)
 
-- Plan Artifact Interface v8 applies to newly created plans
+- Plan Artifact Interface v9 applies to newly created plans
 - Existing plans are not automatically migrated
 - If a legacy plan format is detected during update:
   - keep user-requested scope
@@ -233,6 +262,7 @@ Provide a concise execution handoff summary using the handoff requirements in `{
 - Do not treat the review wiki as optional when its registry is available; always read the registry first and route from it
 - Do not bypass the resolved `review_wiki_root` with hardcoded external-path reads when a workspace cache exists
 - Do not generate or edit source-tree tests inside `architect`
+- `visual-comparator` execution happens later; architect only plans that phase
 - `playwright-guard` execution happens later; architect only plans that phase
 - Do not produce a plan with unresolved blocking ambiguity
 - Do not generate multiple executable plan files unless the active core plan-count rule requires it

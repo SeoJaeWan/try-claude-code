@@ -26,7 +26,7 @@ If the review is `blocked`, return the plan to `architect` for revision instead 
 
 ### Blocker
 
-Use `blocker` when the plan is not safely executable, not reviewable, or would force later skills to guess a canonical contract.
+Use `blocker` when the plan is not safely executable or would force later skills to guess a canonical contract.
 
 Typical blocker cases:
 
@@ -42,6 +42,7 @@ Typical blocker cases:
 - missing recipient, delivery target, or final interpretation boundary when relevant
 - missing winner rule, loser no-op rule, terminal-state rule, or side-effect coupling for risky scenarios
 - plan count or topology that is clearly over-split, under-justified, or not independently mergeable under the active core contract
+- missing `visual-comparator` phase when the active core docs or selected pattern guidance require it
 - missing `playwright-guard` phase when the active core docs require it
 - the reviewed plan depends on a local prerequisite plan, but no specific upstream phase credibly provides the prerequisite contract in the detail file `output` and `검증`
 - the reviewed plan depends on a local prerequisite plan, but the supposed provider phase boundary or verification path cannot actually establish that contract
@@ -49,28 +50,27 @@ Typical blocker cases:
 
 ### Major
 
-Use `major` when the plan is probably executable but has a material weakness that raises review cost, rework risk, or confidence gaps.
+Use `major` when the plan is probably executable but has a material weakness that raises rework risk or confidence gaps.
 
 Typical major cases:
 
 - validation is real but too weak for the claimed boundary
 - topology is defensible but likely suboptimal
 - phase boundaries are technically valid but hide important sequencing or ownership assumptions
-- `plan.md` is technically complete but still obscures what the step actually changes, especially for a non-developer reviewer
 - the `plan.md` summary and technical detail file are individually plausible but drift in wording enough to raise rework risk
+- a required file-level change map or completion condition is present but too thin to support the claimed boundary confidently
 - repo-fit claims exist but rely on thin local evidence
 - `plan-materialize` can probably proceed, but the phase contract is thinner than it should be for later test derivation
 - a local prerequisite relationship probably works, but the downstream detail-file `선행조건` and upstream `output` or `검증` use thinner or drifted wording that raises rework risk
 
 ### Minor
 
-Use `minor` for clarity, density, or polish issues that do not change execution readiness.
+Use `minor` for non-blocking contract polish issues that do not change execution readiness.
 
 Typical minor cases:
 
-- redundant prose
-- slightly uneven checklist quality
-- wording that is awkward but still precise enough
+- optional contract notes are slightly uneven but still unambiguous
+- low-risk repetition or labeling drift exists in explanatory prose without changing the boundary
 
 Prefer no finding over a low-value minor note.
 
@@ -90,13 +90,13 @@ Check the plan against:
 Required focus areas:
 
 1. template compliance
-2. reviewer-facing readability of `plan.md`
-3. summary/detail parity
-4. blocking ambiguity and scenario completeness
-5. plan count and topology quality
-6. routing and ownership fit
-7. verification realism
-8. `plan-materialize` derivation readiness
+2. summary/detail parity
+3. blocking ambiguity and scenario completeness
+4. plan count and topology quality
+5. routing and ownership fit
+6. verification realism
+7. `plan-materialize` derivation readiness
+8. `visual-comparator` planning when relevant
 9. `playwright-guard` planning when relevant
 10. direct prerequisite contract parity when relevant
 

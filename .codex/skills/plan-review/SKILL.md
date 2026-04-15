@@ -1,6 +1,6 @@
 ---
 name: plan-review
-description: Read-only critical review skill for executable `./plans/**/plan.md` artifacts and their linked phase detail files created by `architect`. Use when Codex needs an independent cold review before execution, checking reviewer-facing readability, template compliance, blocking ambiguity, topology quality, owner routing, scenario-level technical input/output contracts, later `plan-materialize` derivation readiness, and registry-selected review wiki guidance without rewriting the plan.
+description: Read-only critical review skill for executable `./plans/**/plan.md` artifacts and their linked phase detail files created by `architect`. Use when Codex needs an independent cold review before execution, checking template compliance, blocking ambiguity, topology quality, owner routing, scenario-level technical input/output contracts, later `plan-materialize` derivation readiness, and registry-selected review wiki guidance without rewriting the plan.
 ---
 
 <Skill_Guide>
@@ -18,15 +18,16 @@ Review the finished plan artifact, not the original request. Stay read-only.
 1. Target executable plan file: `./plans/**/plan.md`
 2. Linked phase detail files referenced from that `plan.md`
 3. `../review-wiki-setup/references/staging-contract.md`
-4. Resolved `review_wiki_root` containing `registry.json`, core docs, and pattern guidance. Prefer `./.codex/cache/review-wiki/current`; fall back to `~/.codex/reviewWiki/wiki` only when the cache is unavailable.
-5. Every core doc listed in the registry `core` array, in listed order
-6. Pattern candidates selected from the registry `patterns` list using the `review` selection mode plus matching `Apply When`
-7. `../architect/references/plan-template-sequential.md`
-8. `../architect/references/phase-template-detail.md`
-9. `../architect/references/agents-lite.md`
-10. `./references/review-policy.md`
-11. Repo-local execution contracts only when needed to verify routing, validation, or repo-fit claims in the plan
-12. Directly referenced local prerequisite plan files only when the reviewed phase detail names them in the local prerequisite field
+4. `../review-wiki-setup/references/platform-commands.md`
+5. Resolved `review_wiki_root` containing `registry.json`, core docs, and pattern guidance. Prefer `./.codex/cache/review-wiki/current`; fall back to `~/.codex/reviewWiki/wiki` only when the cache is unavailable.
+6. Every core doc listed in the registry `core` array, in listed order
+7. Pattern candidates selected from the registry `patterns` list using the `review` selection mode plus matching `Apply When`
+8. `../architect/references/plan-template-sequential.md`
+9. `../architect/references/phase-template-detail.md`
+10. `../architect/references/agents-lite.md`
+11. `./references/review-policy.md`
+12. Repo-local execution contracts only when needed to verify routing, validation, or repo-fit claims in the plan
+13. Directly referenced local prerequisite plan files only when the reviewed phase detail names them in the local prerequisite field
 
 ## Workflow
 
@@ -35,10 +36,11 @@ Review the finished plan artifact, not the original request. Stay read-only.
 Before judging the plan:
 
 - read `../review-wiki-setup/references/staging-contract.md`
+- read `../review-wiki-setup/references/platform-commands.md`
 - resolve `review_wiki_root` in this order:
   1. `./.codex/cache/review-wiki/current`
   2. `~/.codex/reviewWiki/wiki`
-- if the cache is missing and the external wiki root is readable, run `powershell -NoProfile -ExecutionPolicy Bypass -File ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.ps1` from the workspace root, then use the refreshed cache
+- if the cache is missing and the external wiki root is readable, run the platform-appropriate staging command from `platform-commands.md` from the workspace root, then use the refreshed cache
 - if the external wiki root is missing or broken and the cache is absent, stop and report the missing dependency explicitly
 - if the external wiki root is permission-blocked but the cache exists, continue with the cache and mention the fallback in the review assumptions
 - read `{review_wiki_root}/registry.json`
@@ -68,7 +70,6 @@ Judge the plan against:
 - template compliance
 - the active review wiki core contract
 - the selected pattern guidance that actually matches the reviewed plan
-- `plan.md` readability for a non-developer reviewer
 - parity between the `plan.md` phase summary and the linked technical detail file
 - blocking ambiguity
 - topology quality and plan-count justification
@@ -78,6 +79,7 @@ Judge the plan against:
 - one-hop prerequisite contract parity when the reviewed plan references a local prerequisite plan
 - verification realism and repo-fit
 - whether the phase detail contracts are explicit enough for later `plan-materialize` derivation
+- `visual-comparator` planning when the active core docs or selected pattern guidance require it
 - `playwright-guard` planning when the active core docs require it
 
 Prefer findings over compliments. Do not invent repo facts that the plan does not support.
@@ -85,7 +87,7 @@ Prefer findings over compliments. Do not invent repo facts that the plan does no
 ### Step 3. Classify findings
 
 - Use the severity model in `references/review-policy.md`
-- Record only real issues that materially affect execution readiness, reviewability, or later test derivation
+- Record only real issues that materially affect execution readiness, contract clarity, or later test derivation
 - When a weakness comes from an explicit user tradeoff, note it accurately instead of silently normalizing it away
 - If no findings remain, say so explicitly
 
@@ -141,7 +143,7 @@ Frontmatter rules:
 - Do not bypass the resolved `review_wiki_root` with hardcoded external-path reads when a workspace cache exists
 - Do not perform a second full review of upstream plans; inspect only the direct prerequisite parity needed to judge the reviewed plan's execution readiness
 - Do not let missing canonical outputs, negative outputs, recipients, winner or loser rules, terminal-state policy, side-effect coupling, or invalid topology pass silently when later execution would have to guess
-- Do not let `plan.md` hide the actual phase role behind unexplained jargon or vague prose while the technical meaning lives only in the detail file
+- Do not let summary/detail drift or unresolved contract wording force guesswork about the actual phase boundary
 
 </Instructions>
 </Skill_Guide>

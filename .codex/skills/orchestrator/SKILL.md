@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-description: Explicit multi-agent planning orchestrator for requests that should run through the repository's planning loop instead of a one-off planning pass. Use only when the user explicitly invokes `$orchestrator` or explicitly asks for the automated architect/review/materialize workflow, and Codex should coordinate `plan-architect`, `plan-reviewer`, and `plan-materializer` to draft, review, revise, user-gate, and materialize tests without implementing production code.
+description: Explicit multi-agent planning orchestrator for requests that should run through the repository's planning loop instead of a one-off planning pass. Use only when the user explicitly invokes `$orchestrator` or explicitly asks for the automated architect/review/materialize workflow, and Codex should coordinate `plan-architect`, `plan-reviewer`, and `plan-materializer` to draft, review, revise, user-gate, open the current plan artifacts in browser tabs, and materialize tests without implementing production code.
 ---
 
 <Skill_Guide>
@@ -23,7 +23,10 @@ Do not use it as a generic replacement for `architect`, `plan-review`, or `plan-
 5. `./.codex/agents/plan-reviewer.toml`
 6. `./.codex/agents/plan-materializer.toml`
 7. `../review-wiki-setup/references/staging-contract.md`
-8. `../review-wiki-setup/scripts/stage-review-wiki.ps1`
+8. `../review-wiki-setup/references/platform-commands.md`
+9. `../review-wiki-setup/scripts/stage-review-wiki.ps1`
+10. `../review-wiki-setup/scripts/stage-review-wiki.sh`
+11. `./references/browser-open-commands.md`
 
 ## Required runtime expectations
 
@@ -79,7 +82,9 @@ Treat approval as valid only when `approved_revision == plan_revision`.
 
 - Derive one canonical `task-slug`.
 - Read `../review-wiki-setup/references/staging-contract.md`.
-- If `~/.codex/reviewWiki/wiki` is readable, always run `powershell -NoProfile -ExecutionPolicy Bypass -File ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.ps1` from the workspace root before invoking `plan-architect` or `plan-reviewer`, even when the cache already exists.
+- Read `../review-wiki-setup/references/platform-commands.md`.
+- Read `./references/browser-open-commands.md`.
+- If `~/.codex/reviewWiki/wiki` is readable, always run the platform-appropriate staging command from `platform-commands.md` from the workspace root before invoking `plan-architect` or `plan-reviewer`, even when the cache already exists.
 - Treat the refreshed cache as the fixed review wiki snapshot for the rest of the current orchestration run.
 - If the external wiki root is permission-blocked or temporarily unreadable but `./.codex/cache/review-wiki/current` already exists, continue with the cached copy.
 - If both the external wiki root and the cache are unavailable, stop and route to `review-wiki-setup` or request the missing external-read approval before continuing.
@@ -155,7 +160,10 @@ At the gate:
     - latest review outcome
     - what will happen next
     - a direct approval request
+- The packet must list the current `plan.md` path and every linked phase detail path in display order.
 - Write the packet to `user-gate.md`.
+- When local browser opening is available, open `user-gate.md`, the current `plan.md`, and every linked phase detail file in separate browser tabs using the platform-appropriate commands from `references/browser-open-commands.md`.
+- If browser opening is unavailable or blocked, tell the user and list the local files that should be opened manually.
 - Set `stage = "waiting_user_gate"`.
 - Do not call `plan-materializer` before explicit user approval.
 - Record approval only for the current `plan_revision`.
@@ -236,6 +244,7 @@ Terminal stages are:
 - Keep orchestration updates short.
 - Tell the user which stage is running.
 - Present the user gate packet in Korean.
+- If browser opening is unavailable or blocked, say so explicitly and list the local files.
 - When blocked, say which agent blocked and where the workflow is routing next.
 
 ## Output contract
