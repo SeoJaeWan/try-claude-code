@@ -215,9 +215,19 @@ function buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, session = null
     "",
     "---",
     "[plan-runner workflow directive]",
-    `Do NOT fix this yourself in the main session. Re-dispatch the same phase agent (${phaseTag}) to fix the issues.`,
-    `The agent must work in the worktree at: ${wtPath}`,
-    "After the agent commits the fix, end your turn so the stop-gate can re-review.",
+    "",
+    "Before acting on the BLOCK above, validate the review findings:",
+    "",
+    "1. **Phase relevance** — Read the current phase detail and check whether each finding directly affects the phase goal.",
+    "   Findings about general code quality, refactoring, or concerns outside the phase boundary are NOT actionable — discard them.",
+    "2. **Test immunity** — Check whether any finding asks to modify test files (paths containing `test`, `spec`, or `__tests__/`).",
+    "   Test files are TDD contracts and must NOT be changed. Discard any finding that requires test modification.",
+    "",
+    "If ALL findings are discarded after validation, do NOT re-dispatch — end your turn normally (the next stop-gate cycle will ALLOW).",
+    "If at least one valid finding remains, re-dispatch with only the validated findings:",
+    `- Re-dispatch the same phase agent (${phaseTag}) to fix the validated issues only.`,
+    `- The agent must work in the worktree at: ${wtPath}`,
+    "- After the agent commits the fix, end your turn so the stop-gate can re-review.",
   ];
   return lines.join("\n");
 }
