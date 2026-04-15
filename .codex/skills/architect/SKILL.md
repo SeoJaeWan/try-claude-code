@@ -17,16 +17,18 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 ## Inputs to inspect
 
 1. User request and latest conversation context
-2. `./references/agents-lite.md` - execution agent catalog
-3. `../review-wiki-setup/references/staging-contract.md` - review wiki cache resolution and staging rules
-4. `../review-wiki-setup/references/platform-commands.md` - platform-specific link and staging commands
-5. Resolved `review_wiki_root` containing `registry.json`, core docs, tag taxonomy, and selection policy. Prefer `./.codex/cache/review-wiki/current`; fall back to `~/.codex/reviewWiki/wiki` only when the cache is unavailable.
-6. Every core document listed in the registry `core` array, in listed order
-7. Candidate pattern files selected from the registry `patterns` list using the `architect` selection mode plus matching `Apply When`
-8. `./references/git.md` - commit message, branch naming, and worktree naming rules
-9. `./references/plan-template-sequential.md` - sequential plan template
-10. `./references/phase-template-detail.md` - per-phase technical detail template
-11. Relevant execution contracts only when routing or mode-sensitive conventions matter:
+2. Optional orchestration state file when invoked by `orchestrator`:
+   - `./.codex/artifacts/plan/{task-slug}/state.json`
+3. `./references/agents-lite.md` - execution agent catalog
+4. `../review-wiki-setup/references/staging-contract.md` - review wiki cache resolution and staging rules
+5. `../review-wiki-setup/references/platform-commands.md` - platform-specific link and staging commands
+6. Resolved `review_wiki_root` containing `registry.json`, core docs, tag taxonomy, and selection policy. Prefer `./.codex/cache/review-wiki/current`; fall back to `~/.codex/reviewWiki/wiki` only when the cache is unavailable.
+7. Every core document listed in the registry `core` array, in listed order
+8. Candidate pattern files selected from the registry `patterns` list using the `architect` selection mode plus matching `Apply When`
+9. `./references/git.md` - commit message, branch naming, and worktree naming rules
+10. `./references/plan-template-sequential.md` - sequential plan template
+11. `./references/phase-template-detail.md` - per-phase technical detail template
+12. Relevant execution contracts only when routing or mode-sensitive conventions matter:
    - inspect only the minimum repo-local tool/validation/runtime contract that governs the work
    - examples: `package.json` scripts, framework config, test config, CI config schema, deploy script entrypoints, or existing source-tree placement conventions
 
@@ -36,17 +38,29 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 
 Before writing any plan artifact:
 
+- Determine execution mode first:
+  - if an explicit orchestration `state.json` path is provided and `state.json.preflight.mode = "orchestrated"` with `state.json.preflight.complete = true`, enter orchestrated mode
+  - otherwise enter direct mode
 - Read `./references/agents-lite.md`
-- Read `../review-wiki-setup/references/staging-contract.md`
-- Read `../review-wiki-setup/references/platform-commands.md`
-- Resolve `review_wiki_root` in this order:
-  1. `./.codex/cache/review-wiki/current`
-  2. `~/.codex/reviewWiki/wiki`
-- If the cache is missing and the external wiki root is readable, run the platform-appropriate staging command from `platform-commands.md` from the workspace root, then use the refreshed cache
-- If the external wiki root is missing or broken and the cache is absent:
-  - report the missing dependency explicitly
-  - use `review-wiki-setup` when available to repair it before continuing
-- If the external wiki root is permission-blocked but the cache exists, continue with the cache and note the fallback in the final handoff
+- In orchestrated mode:
+  - read the provided `state.json`
+  - require `state.json.preflight.review_wiki_root` to be present
+  - treat `state.json.preflight.review_wiki_root` as authoritative
+  - do not run review wiki staging
+  - do not verify named-agent availability
+  - do not inspect runtime or CLI invocation paths
+  - if `state.json.preflight` is missing, incomplete, or contradictory, block instead of guessing
+- In direct mode:
+  - read `../review-wiki-setup/references/staging-contract.md`
+  - read `../review-wiki-setup/references/platform-commands.md`
+  - resolve `review_wiki_root` in this order:
+    1. `./.codex/cache/review-wiki/current`
+    2. `~/.codex/reviewWiki/wiki`
+  - if the cache is missing and the external wiki root is readable, run the platform-appropriate staging command from `platform-commands.md` from the workspace root, then use the refreshed cache
+  - if the external wiki root is missing or broken and the cache is absent:
+    - report the missing dependency explicitly
+    - use `review-wiki-setup` when available to repair it before continuing
+  - if the external wiki root is permission-blocked but the cache exists, continue with the cache and note the fallback in the final handoff
 - Read `{review_wiki_root}/registry.json`
 - Read every path listed in the registry `core` array, in order, resolving relative paths from `review_wiki_root`
 - Derive initial tags from the user request and repo-local context
@@ -261,6 +275,7 @@ Provide a concise execution handoff summary using the handoff requirements in `{
 - Do not write `plan.md` as if only implementers will read it
 - Do not treat the review wiki as optional when its registry is available; always read the registry first and route from it
 - Do not bypass the resolved `review_wiki_root` with hardcoded external-path reads when a workspace cache exists
+- In orchestrated mode, do not redo review wiki bootstrap or named-agent preflight that the orchestrator already completed
 - Do not generate or edit source-tree tests inside `architect`
 - `visual-comparator` execution happens later; architect only plans that phase
 - `playwright-guard` execution happens later; architect only plans that phase

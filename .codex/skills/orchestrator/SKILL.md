@@ -69,12 +69,21 @@ Required `state.json` shape:
     "blocked_by": null,
     "blocker_type": null,
     "resume_from": null,
-    "stuck_reason": null
+    "stuck_reason": null,
+    "preflight": {
+        "mode": "orchestrated",
+        "complete": false,
+        "review_wiki_root": null,
+        "review_wiki_snapshot_fixed": false,
+        "named_agents_verified": false,
+        "verified_agents": []
+    }
 }
 ```
 
 Use a deterministic `plan_revision` fingerprint for the current `plan.md` plus its linked phase detail files.
 Treat approval as valid only when `approved_revision == plan_revision`.
+Treat `state.json.preflight` as the authoritative run-level environment contract for named planning agents during an orchestration run.
 
 ## Workflow
 
@@ -84,13 +93,22 @@ Treat approval as valid only when `approved_revision == plan_revision`.
 - Read `../review-wiki-setup/references/staging-contract.md`.
 - Read `../review-wiki-setup/references/platform-commands.md`.
 - Read `./references/browser-open-commands.md`.
+- Create `./.codex/artifacts/plan/{task-slug}/` and `state.json` if they do not exist.
+- If `state.json` exists, resume from the recorded stage instead of starting over.
+- Persist `state.json` after every stage transition. Do not keep orchestration-only state in chat memory alone.
+- Initialize or refresh `state.json.preflight` before invoking any named planning agent:
+    - set `mode = "orchestrated"`
+    - set `complete = false`
+    - set `review_wiki_root = null`
+    - set `review_wiki_snapshot_fixed = false`
+    - set `named_agents_verified = false`
+    - clear `verified_agents`
 - If `~/.codex/reviewWiki/wiki` is readable, always run the platform-appropriate staging command from `platform-commands.md` from the workspace root before invoking `plan-architect` or `plan-reviewer`, even when the cache already exists.
 - Treat the refreshed cache as the fixed review wiki snapshot for the rest of the current orchestration run.
 - If the external wiki root is permission-blocked or temporarily unreadable but `./.codex/cache/review-wiki/current` already exists, continue with the cached copy.
 - If both the external wiki root and the cache are unavailable, stop and route to `review-wiki-setup` or request the missing external-read approval before continuing.
-- Create `./.codex/artifacts/plan/{task-slug}/` and `state.json` if they do not exist.
-- If `state.json` exists, resume from the recorded stage instead of starting over.
-- Persist `state.json` after every stage transition. Do not keep orchestration-only state in chat memory alone.
+- After resolving the fixed review wiki snapshot, write it into `state.json.preflight.review_wiki_root`.
+- Set `state.json.preflight.review_wiki_snapshot_fixed = true` before any named planning agent runs.
 - Recompute `plan_revision` whenever `./plans/{task-slug}/plan.md` or any linked phase detail file changes.
 - If plan artifacts changed on disk since the last recorded revision:
     - update `plan_revision`
@@ -103,12 +121,21 @@ Treat approval as valid only when `approved_revision == plan_revision`.
 - Confirm `plan-architect`, `plan-reviewer`, and `plan-materializer` definitions exist.
 - Confirm the linked local skills are present.
 - If any prerequisite is missing, stop instead of degrading to a manual fallback.
+- After prerequisite verification succeeds:
+    - set `state.json.preflight.named_agents_verified = true`
+    - set `state.json.preflight.verified_agents = ["plan-architect", "plan-reviewer", "plan-materializer"]`
+    - set `state.json.preflight.complete = true`
+    - persist `state.json`
 
 ### Step 2. Run architect draft
 
 - Call `plan-architect`.
 - Ask it to create or update the executable plan artifacts under `./plans/{task-slug}/`.
 - Ask it to stay within the `architect` skill.
+- Pass the exact `task-slug` and `./.codex/artifacts/plan/{task-slug}/state.json` path.
+- Tell it that `state.json.preflight` is authoritative for this orchestration run.
+- Tell it not to rerun review wiki staging, not to verify named agent availability, and not to inspect runtime or CLI invocation paths.
+- Require it to block if `state.json.preflight.complete != true`.
 - Record the returned plan path.
 - Recompute `plan_revision`.
 - If the plan revision changed:
@@ -123,6 +150,10 @@ Treat approval as valid only when `approved_revision == plan_revision`.
 ### Step 3. Run cold review
 
 - Call `plan-reviewer` on the current executable `plan.md`.
+- Pass the exact `task-slug` and `./.codex/artifacts/plan/{task-slug}/state.json` path.
+- Tell it that `state.json.preflight` is authoritative for this orchestration run.
+- Tell it not to rerun review wiki staging.
+- Require it to block if `state.json.preflight.complete != true`.
 - Treat `./.codex/artifacts/plan-review/{task-slug}/review.md` as the review source of truth.
 - Require `review.md` to start with a YAML frontmatter block that contains at least:
     - `plan_path`
@@ -148,6 +179,7 @@ Always require explicit user approval before materialization.
 At the gate:
 
 - Ask `plan-architect` to produce a concise approval packet when needed.
+- When asking `plan-architect` for a packet, pass the same `state.json` path and keep `state.json.preflight` authoritative.
 - Require detailed decision packets for unresolved user-policy questions:
     - what needs a decision
     - why it matters
@@ -187,6 +219,7 @@ When the user replies:
 ### Step 7. Materialize tests
 
 - Call `plan-materializer` only when `approved_revision == plan_revision`.
+- Pass the exact `task-slug` and `./.codex/artifacts/plan/{task-slug}/state.json` path.
 - Let it create or update source-tree tests and plan-local `materialize.md`.
 - Do not implement production code.
 - Require `materialize.md` to start with a YAML frontmatter block that contains at least:
@@ -260,6 +293,7 @@ Terminal stages are:
 - Orchestrate only: do not substitute for `architect`, `plan-review`, or `plan-materialize`.
 - Do not implement production code.
 - Do not call `plan-architect` or `plan-reviewer` before the review wiki cache preflight completes.
+- Do not ask named planning agents to rediscover the review wiki root, rerun staging, or verify named agent availability after `state.json.preflight.complete = true`.
 - Do not silently refresh the review wiki cache again after Step 0 inside the same orchestration run.
 - Do not skip explicit user approval.
 - Do not let `plan-reviewer` edit plans.

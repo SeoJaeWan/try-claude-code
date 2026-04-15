@@ -17,17 +17,19 @@ Review the finished plan artifact, not the original request. Stay read-only.
 
 1. Target executable plan file: `./plans/**/plan.md`
 2. Linked phase detail files referenced from that `plan.md`
-3. `../review-wiki-setup/references/staging-contract.md`
-4. `../review-wiki-setup/references/platform-commands.md`
-5. Resolved `review_wiki_root` containing `registry.json`, core docs, and pattern guidance. Prefer `./.codex/cache/review-wiki/current`; fall back to `~/.codex/reviewWiki/wiki` only when the cache is unavailable.
-6. Every core doc listed in the registry `core` array, in listed order
-7. Pattern candidates selected from the registry `patterns` list using the `review` selection mode plus matching `Apply When`
-8. `../architect/references/plan-template-sequential.md`
-9. `../architect/references/phase-template-detail.md`
-10. `../architect/references/agents-lite.md`
-11. `./references/review-policy.md`
-12. Repo-local execution contracts only when needed to verify routing, validation, or repo-fit claims in the plan
-13. Directly referenced local prerequisite plan files only when the reviewed phase detail names them in the local prerequisite field
+3. Optional orchestration state file when invoked by `orchestrator`:
+   - `./.codex/artifacts/plan/{task-slug}/state.json`
+4. `../review-wiki-setup/references/staging-contract.md`
+5. `../review-wiki-setup/references/platform-commands.md`
+6. Resolved `review_wiki_root` containing `registry.json`, core docs, and pattern guidance. Prefer `./.codex/cache/review-wiki/current`; fall back to `~/.codex/reviewWiki/wiki` only when the cache is unavailable.
+7. Every core doc listed in the registry `core` array, in listed order
+8. Pattern candidates selected from the registry `patterns` list using the `review` selection mode plus matching `Apply When`
+9. `../architect/references/plan-template-sequential.md`
+10. `../architect/references/phase-template-detail.md`
+11. `../architect/references/agents-lite.md`
+12. `./references/review-policy.md`
+13. Repo-local execution contracts only when needed to verify routing, validation, or repo-fit claims in the plan
+14. Directly referenced local prerequisite plan files only when the reviewed phase detail names them in the local prerequisite field
 
 ## Workflow
 
@@ -35,14 +37,24 @@ Review the finished plan artifact, not the original request. Stay read-only.
 
 Before judging the plan:
 
-- read `../review-wiki-setup/references/staging-contract.md`
-- read `../review-wiki-setup/references/platform-commands.md`
-- resolve `review_wiki_root` in this order:
-  1. `./.codex/cache/review-wiki/current`
-  2. `~/.codex/reviewWiki/wiki`
-- if the cache is missing and the external wiki root is readable, run the platform-appropriate staging command from `platform-commands.md` from the workspace root, then use the refreshed cache
-- if the external wiki root is missing or broken and the cache is absent, stop and report the missing dependency explicitly
-- if the external wiki root is permission-blocked but the cache exists, continue with the cache and mention the fallback in the review assumptions
+- determine execution mode first:
+  - if an explicit orchestration `state.json` path is provided and `state.json.preflight.mode = "orchestrated"` with `state.json.preflight.complete = true`, enter orchestrated mode
+  - otherwise enter direct mode
+- in orchestrated mode:
+  - read the provided `state.json`
+  - require `state.json.preflight.review_wiki_root` to be present
+  - treat `state.json.preflight.review_wiki_root` as authoritative
+  - do not run review wiki staging
+  - if `state.json.preflight` is missing, incomplete, or contradictory, block instead of guessing
+- in direct mode:
+  - read `../review-wiki-setup/references/staging-contract.md`
+  - read `../review-wiki-setup/references/platform-commands.md`
+  - resolve `review_wiki_root` in this order:
+    1. `./.codex/cache/review-wiki/current`
+    2. `~/.codex/reviewWiki/wiki`
+  - if the cache is missing and the external wiki root is readable, run the platform-appropriate staging command from `platform-commands.md` from the workspace root, then use the refreshed cache
+  - if the external wiki root is missing or broken and the cache is absent, stop and report the missing dependency explicitly
+  - if the external wiki root is permission-blocked but the cache exists, continue with the cache and mention the fallback in the review assumptions
 - read `{review_wiki_root}/registry.json`
 - read every path listed in the registry `core` array, in order, resolving relative paths from `review_wiki_root`
 - read `architect/references/plan-template-sequential.md`
@@ -141,6 +153,7 @@ Frontmatter rules:
 - Do not downgrade a blocker just to keep momentum
 - Do not treat partial notes, briefs, or non-executable artifacts as execution-ready plans
 - Do not bypass the resolved `review_wiki_root` with hardcoded external-path reads when a workspace cache exists
+- In orchestrated mode, do not redo review wiki bootstrap that the orchestrator already completed
 - Do not perform a second full review of upstream plans; inspect only the direct prerequisite parity needed to judge the reviewed plan's execution readiness
 - Do not let missing canonical outputs, negative outputs, recipients, winner or loser rules, terminal-state policy, side-effect coupling, or invalid topology pass silently when later execution would have to guess
 - Do not let summary/detail drift or unresolved contract wording force guesswork about the actual phase boundary
