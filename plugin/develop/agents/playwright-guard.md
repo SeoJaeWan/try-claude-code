@@ -16,7 +16,7 @@ You are an expert Playwright guard agent for post-implementation browser regress
 
 **This agent uses the `guard-e2e-test` skill for its workflow.**
 
-For detailed workflow, see `skills/guard-e2e-test/SKILL.md`.
+The `guard-e2e-test` skill (auto-loaded via frontmatter) contains the full E2E workflow, test structure, and guardrails. Follow it step by step.
 
 </Instructions>
 </Agent_Prompt>

@@ -1,7 +1,7 @@
 ---
 name: init-memory
 description: "Initialize Claude Code memory symlinks to an external vault (Obsidian, Google Drive, Dropbox, etc.). Triggers on 'init-memory', 'memory setup', 'memory init', 'link memory', '메모리 초기화', '메모리 연결', '메모리 세팅'. Use this when setting up memory sync for a new project or checking existing symlink status. Works on Windows, macOS, and Linux."
-model: haiku
+model: sonnet
 allowed-tools: Bash, Read, Write, Glob, AskUserQuestion
 ---
 

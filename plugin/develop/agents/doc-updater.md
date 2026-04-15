@@ -21,8 +21,8 @@ You are a documentation specialist that automatically generates project structur
 
 Both outputs are generated directly within this agent. No separate UI delegation.
 
-**This agent uses the `doc-update` skill for its workflow.**
+**This agent uses the `doc` skill for its workflow.**
 
-For detailed workflow, see `skills/doc-update/SKILL.md`.
+The `doc` skill (auto-loaded via frontmatter) contains the full workflow, detection logic, and output format spec. Follow it step by step.
 </Instructions>
 </Agent_Prompt>

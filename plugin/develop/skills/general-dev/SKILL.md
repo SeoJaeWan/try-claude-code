@@ -1,6 +1,6 @@
 ---
 name: general-dev
-description: Infrastructure and DevOps development. Handles Docker, CI/CD, nginx, environment config, monorepo build scripts, and tasks outside frontend/backend scope.
+description: "Infrastructure and DevOps development. Handles Docker, CI/CD, nginx, environment config, monorepo build scripts, and tasks outside frontend/backend scope. Use when the task involves Dockerfiles, GitHub Actions workflows, nginx config, .env setup, or deployment scripts. Triggers on: 'add Docker support', 'set up CI/CD', 'configure nginx', 'create .env template', 'write a deploy script', or any infra work that no single dev domain owns."
 model: sonnet
 context: fork
 agent: general-developer

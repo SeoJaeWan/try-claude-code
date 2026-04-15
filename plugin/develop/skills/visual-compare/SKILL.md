@@ -1,7 +1,7 @@
 ---
 name: visual-compare
-description: "Visual comparison using pixelmatch and agent-browser. Captures element screenshots, runs pixel-level diff, and reports mismatch. Use for design diff, visual audit, screenshot comparison, 화면 비교, 디자인 비교, 스크린샷 비교."
-model: opus
+description: "Visual comparison using pixelmatch and agent-browser. Captures element screenshots, runs pixel-level diff, and reports mismatch. Use for design diff, visual audit, screenshot comparison, verifying UI implementation against reference images, or comparing two URLs visually. Triggers on: reference image comparison, 'does this match the design', Figma/design spec verification, before-after UI comparison, 화면 비교, 디자인 비교, 스크린샷 비교. Use this skill even when the user just provides two images or URLs and asks what's different."
+model: sonnet
 context: fork
 agent: visual-comparator
 ---
@@ -16,13 +16,6 @@ Uses agent-browser for screenshot capture and pixelmatch for diff analysis.
 # visual-compare
 
 Dedicated visual comparison workflow — screenshot capture, pixel diff, and mismatch reporting.
-
-## When this skill activates
-
-- User provides a reference image (file path or URL) and asks to compare against live UI
-- User requests comparison between two URLs or two images
-- User mentions "design diff", "compare", "audit", "visual difference", "화면 비교", "디자인 비교"
-- A plan assigns a dedicated `visual-comparator` phase after UI implementation
 
 ## Workflow
 
@@ -47,7 +40,8 @@ Always capture only the target element via CSS selector.
 3. Match viewport width to reference image width before capturing — this ensures responsive components render at the same breakpoint
 
 ```bash
-npx agent-browser open <url> --viewport-width <reference-width>
+npx agent-browser set viewport <reference-width> <reference-height>
+npx agent-browser open <url>
 npx agent-browser screenshot "<selector>" <output.png>
 ```
 
@@ -129,7 +123,7 @@ Use `0.1` unless the user specifies otherwise or the context implies a different
 
 ## agent-browser reference
 
-See `references/agent-browser-patterns.md` for full CLI command reference, snapshot/ref system, and token-efficient exploration patterns.
+See `references/agent-browser-patterns.md` for the CLI commands relevant to visual comparison (screenshot, viewport, element info).
 
 </Instructions>
 </Skill_Guide>
