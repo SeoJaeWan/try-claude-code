@@ -185,6 +185,7 @@ Use `0.1` unless context implies otherwise. When reference and current are captu
 
 ## What to avoid
 
+- Do NOT use Playwright MCP tools (`mcp__playwright__*`) or any browser MCP for capture — all browser interaction must go through `npx agent-browser` via Bash. MCP browser tools have different capture semantics and will produce inconsistent results
 - Do NOT use the same Storybook (or test harness) as both reference and current source — this is a self-compare and produces no meaningful acceptance signal
 - Do NOT substitute source code analysis for real screenshots when state is hard to capture — seed the state instead
 - Do NOT produce a partial report where some cases have real screenshots and others only have source analysis — all cases must have a real triplet

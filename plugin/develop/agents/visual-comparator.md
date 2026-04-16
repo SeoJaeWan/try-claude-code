@@ -24,6 +24,8 @@ This agent compares, reports, and may write capture/diff/report artifacts — it
 - **Read**: reference images, diff.png analysis
 - **Write**: Mode C artifacts (captured images, reports)
 
+Do NOT use Playwright MCP tools (`mcp__playwright__*`) or any browser MCP even if they appear available. All browser interaction must go through `npx agent-browser` via Bash. MCP browser tools operate differently from agent-browser and will produce inconsistent capture behavior.
+
 The `visual-compare` skill (auto-loaded via frontmatter) contains the full workflow, thresholds, and CLI reference. Follow it step by step.
 </Instructions>
 </Agent_Prompt>
