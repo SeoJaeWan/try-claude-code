@@ -163,10 +163,9 @@ function parseStopReviewOutput(rawOutput) {
     return { ok: true, reason: null, details: null };
   }
   if (firstLine.startsWith("BLOCK:")) {
-    const reason = firstLine.slice("BLOCK:".length).trim() || text;
     return {
       ok: false,
-      reason: `Codex stop-time review found issues that still need fixes before ending the session: ${reason}`,
+      reason: text,
       details: text,
     };
   }
@@ -214,20 +213,11 @@ function buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, session = null
   const lines = [
     "",
     "---",
-    "[plan-runner workflow directive]",
-    "",
-    "Before acting on the BLOCK above, validate the review findings:",
-    "",
-    "1. **Phase relevance** — Read the current phase detail and check whether each finding directly affects the phase goal.",
-    "   Findings about general code quality, refactoring, or concerns outside the phase boundary are NOT actionable — discard them.",
-    "2. **Test immunity** — Check whether any finding asks to modify test files (paths containing `test`, `spec`, or `__tests__/`).",
-    "   Test files are TDD contracts and must NOT be changed. Discard any finding that requires test modification.",
-    "",
-    "If ALL findings are discarded after validation, do NOT re-dispatch — end your turn normally (the next stop-gate cycle will ALLOW).",
-    "If at least one valid finding remains, re-dispatch with only the validated findings:",
-    `- Re-dispatch the same phase agent (${phaseTag}) to fix the validated issues only.`,
-    `- The agent must work in the worktree at: ${wtPath}`,
-    "- After the agent commits the fix, end your turn so the stop-gate can re-review.",
+    `[plan-runner: ${phaseTag}] 아래 순서로 검증 후 행동:`,
+    "1. phase 외 이슈 또는 테스트파일 관련 이슈 → 폐기",
+    "2. 남은 이슈가 실제로 코드에 존재하는지 직접 확인 → 사실과 다르면 폐기",
+    `3. 유효 이슈가 남으면 → ${phaseTag} 에이전트를 워크트리(${wtPath})에서 재디스패치, 커밋 후 턴 종료`,
+    "4. 모두 폐기되면 → 재디스패치 없이 그냥 턴 종료 (다음 stop-gate에서 ALLOW)",
   ];
   return lines.join("\n");
 }
@@ -420,6 +410,7 @@ async function main() {
           branch: wt.branch,
           headSha: wt.headSha,
           reason: review.reason,
+          details: review.details,
           diff: wt.diff,
         });
       }

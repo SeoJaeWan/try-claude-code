@@ -72,10 +72,11 @@ function resolveRepoRoot(cwd) {
  * @param {object} opts
  * @param {string} opts.branch  - worktree branch
  * @param {string} opts.headSha - HEAD commit SHA at BLOCK time
- * @param {string} opts.reason  - BLOCK reason from stop-review-gate
+ * @param {string} opts.reason  - BLOCK reason (first line) from stop-review-gate
+ * @param {string} [opts.details] - full BLOCK output including all findings
  * @param {string} [opts.diff]  - optional diff stat
  */
-export function collectBlockReview(workspaceRoot, { branch, headSha, reason, diff }) {
+export function collectBlockReview(workspaceRoot, { branch, headSha, reason, details, diff }) {
   const repoRoot = resolveRepoRoot(workspaceRoot);
   const dir = path.join(repoRoot, ".codex", "reviews", sanitizeBranch(branch));
   fs.mkdirSync(dir, { recursive: true });
@@ -87,6 +88,9 @@ export function collectBlockReview(workspaceRoot, { branch, headSha, reason, dif
   content += `**Branch:** ${branch}\n`;
   content += `**Commit:** ${headSha}\n\n`;
   content += `## Reason\n\n${reason}\n`;
+  if (details && details !== reason) {
+    content += `\n## Details\n\n${details}\n`;
+  }
   if (diff) {
     content += `\n## Diff Stat\n\n\`\`\`\n${diff}\n\`\`\`\n`;
   }
