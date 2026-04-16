@@ -273,22 +273,13 @@ function renderPlugin() {
 function renderInline(input) {
   const parts = [];
 
-  // Model
-  const modelId = input.model?.id ?? "unknown";
-  parts.push(white(modelId));
+  // 1. Git branch / worktree (most important context)
+  const gitLines = renderGit(input.session_id);
+  if (gitLines.length > 0 && stripAnsi(gitLines[0]).trim()) {
+    parts.push(gitLines[0]);
+  }
 
-  // Duration
-  const duration = formatDuration(input.cost?.total_duration_ms);
-  parts.push(`${gray("⏱")}${duration}`);
-
-  // CTX + cost
-  const ctxPct = input.context_window?.used_percentage;
-  const costUsd = input.cost?.total_cost_usd;
-  const ctxStr = ctxPct != null ? `${gray("CTX:")}${colorPct(ctxPct, ctxPct + "%")}` : `${gray("CTX:")}${gray("—")}`;
-  const costStr = costUsd != null ? `${gray("~")}${white(formatCost(costUsd))}` : `${gray("~")}${gray("—")}`;
-  parts.push(`${ctxStr} ${costStr}`);
-
-  // 5h rate limit with time remaining
+  // 2. 5h rate limit with time remaining
   const sessPct = input.rate_limits?.five_hour?.used_percentage;
   const sessLeft = formatTimeRemaining(input.rate_limits?.five_hour?.resets_at);
   if (sessPct != null) {
@@ -297,7 +288,7 @@ function renderInline(input) {
     parts.push(`${gray("5h:")}${pctStr}${leftStr}`);
   }
 
-  // 7d rate limit with time remaining
+  // 3. 7d rate limit with time remaining
   const weekPct = input.rate_limits?.seven_day?.used_percentage;
   const weekLeft = formatTimeRemaining(input.rate_limits?.seven_day?.resets_at);
   if (weekPct != null) {
@@ -306,7 +297,22 @@ function renderInline(input) {
     parts.push(`${gray("7d:")}${pctStr}${leftStr}`);
   }
 
-  // Cache hit rate
+  // 4. Model
+  const modelId = input.model?.id ?? "unknown";
+  parts.push(white(modelId));
+
+  // 5. Duration
+  const duration = formatDuration(input.cost?.total_duration_ms);
+  parts.push(`${gray("⏱")}${duration}`);
+
+  // 6. CTX + cost
+  const ctxPct = input.context_window?.used_percentage;
+  const costUsd = input.cost?.total_cost_usd;
+  const ctxStr = ctxPct != null ? `${gray("CTX:")}${colorPct(ctxPct, ctxPct + "%")}` : `${gray("CTX:")}${gray("—")}`;
+  const costStr = costUsd != null ? `${gray("~")}${white(formatCost(costUsd))}` : `${gray("~")}${gray("—")}`;
+  parts.push(`${ctxStr} ${costStr}`);
+
+  // 7. Cache hit rate
   const usage = input.context_window?.current_usage;
   if (usage) {
     const cacheRead = usage.cache_read_input_tokens ?? 0;
@@ -318,13 +324,7 @@ function renderInline(input) {
     parts.push(`${gray("cache:")}${hitColor(hitRate + "%")}`);
   }
 
-  // Git branch
-  const gitLines = renderGit(input.session_id);
-  if (gitLines.length > 0 && stripAnsi(gitLines[0]).trim()) {
-    parts.push(gitLines[0]);
-  }
-
-  // Plugin
+  // 8. Plugin
   const plugin = renderPlugin();
   if (plugin && plugin.length > 0) {
     parts.push(plugin[0]);
