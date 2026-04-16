@@ -401,9 +401,13 @@ async function main() {
     ? `Codex task ${runningJob.id} is still running. Check /codex:status and use /codex:cancel ${runningJob.id} if you want to stop it before ending the session.`
     : null;
 
+  // Record the reviewed commit SHAs regardless of outcome so subsequent stops on the
+  // same commit are skipped (e.g. follow-up questions after a BLOCK).
+  if (sessionId) {
+    markWorktreesReviewed(sessionId, worktreeDiffs);
+  }
+
   if (!review.ok) {
-    // Do NOT mark as reviewed when blocked — the next stop attempt should re-review
-    // the same range after Claude fixes the issues.
     try {
       for (const wt of worktreeDiffs) {
         collectBlockReview(workspaceRoot, {
@@ -430,11 +434,6 @@ async function main() {
         : fullReason,
     });
     return;
-  }
-
-  // Review passed — record the reviewed commit SHAs so subsequent stops skip them.
-  if (sessionId) {
-    markWorktreesReviewed(sessionId, worktreeDiffs);
   }
 
   logNote(runningTaskNote);
