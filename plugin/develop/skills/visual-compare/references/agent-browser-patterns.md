@@ -50,6 +50,29 @@ npx agent-browser wait "<selector>"
 npx agent-browser wait 2000
 ```
 
+## JavaScript Evaluation (state seeding)
+
+```bash
+# Run arbitrary JS in the page context — use for state seeding before capture
+npx agent-browser evaluate "<js expression>"
+
+# Examples:
+# Seed localStorage (e.g., Jotai atomWithStorage, next-auth session)
+npx agent-browser evaluate "localStorage.setItem('windows', JSON.stringify([{id:'abc',type:'blog'}]))"
+
+# Dispatch a DOM event to trigger interaction-gated UI (context menus, tooltips)
+npx agent-browser evaluate "document.querySelector('.item').dispatchEvent(new MouseEvent('contextmenu', {bubbles:true}))"
+
+# Inject a cookie
+npx agent-browser evaluate "document.cookie = 'token=abc; path=/'"
+```
+
+After seeding, reload the page to let the app re-hydrate from the seeded state:
+
+```bash
+npx agent-browser open <url>  # reload after evaluate to apply seeded localStorage/cookies
+```
+
 ## Device Emulation
 
 ```bash
