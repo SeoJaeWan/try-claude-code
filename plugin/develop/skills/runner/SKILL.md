@@ -29,7 +29,8 @@ This skill uses manual `git worktree` management: one worktree per task, phase a
 1. Plan file path (`plans/{task-name}/plan.md`)
 2. Plan headers:
     - `**Branch:** {task-branch}` — the name for this task's worktree and branch
-3. Phase/task blocks with `- owner_agent: \`{agent-name}\``
+    - optional top routing table `| # | Phase | Agent |` for quick phase-to-agent mapping
+3. Linked phase detail files with `- owner_agent: \`{agent-name}\``
 
 ---
 
@@ -77,8 +78,9 @@ X (base branch — HEAD stays here during execution)
 ### Step 1. Validate
 
 - Ensure `**Branch:**` header exists in the plan file.
-- Ensure each phase block includes `- owner_agent: \`{agent-name}\``.
-- Ensure every `owner_agent` maps to an existing agent in `agents/{owner_agent}.md`.
+- Ensure the Phase Index table (`| # | Phase | Agent |`) exists near the top of plan.md — this is the primary routing source.
+- Ensure every phase file path listed in the table exists under the plan folder.
+- Ensure every `owner_agent` listed in the table maps to an existing agent in `agents/{owner_agent}.md`.
 - Ensure current working directory is the repository root (not inside `worktrees/**`).
 - If validation fails → stop immediately.
 
@@ -125,7 +127,9 @@ After this step, HEAD is still on `$BASE` in the main repo. The worktree has its
 
 ### Step 3. Execute phases
 
-For each phase in plan order, dispatch the phase agent and then end your turn so the stop-gate can review.
+Read the Phase Index table from the top of plan.md to get the ordered list of `(phase_file_path, owner_agent)` pairs. For each row in order, dispatch the phase agent and then end your turn so the stop-gate can review.
+
+The agent's job is to read its own phase file and execute it — don't inline the phase content into the prompt. The phase file lives inside the worktree (it was copied there in Step 2), so the agent can read it directly from the working directory.
 
 ```
 Agent(
@@ -135,15 +139,15 @@ Agent(
     You are working in: {repo_root}/{WORKTREE_DIR}
     cd to this directory before starting any work.
 
+    ## Your phase
+    Read and execute the phase contract at: {phase_file_path}
+    That file contains your complete task spec, boundary, acceptance criteria, and validation checklist.
+
     ## Rules
     - Work directly in your current directory.
     - Do NOT create additional worktrees or use EnterWorktree.
-    - Only implement Phase {N} work described below. Do NOT redo prior phases.
-    - You MUST commit before finishing:
-      git add -A && git commit -m '{type}({scope}): {description}'
-
-    ## Task
-    {phase content}
+    - Only implement the phase described in your phase file. Do NOT redo prior phases.
+    - Commit when done: git add -A && git commit -m '{type}({scope}): {description}'
   ",
   description: "Phase {N}: {short summary}"
 )
@@ -223,9 +227,12 @@ After Step 4, HEAD is still on the base branch. The task branch exists with all 
 ## Validation commands
 
 ```bash
-# Check plan headers
+# Check plan headers and Phase Index table
 rg -n "^\*\*Branch:\*\*" <plan-path>
-rg -n "owner_agent:" <plan-path>
+rg -n "^\| # \| Phase \| Agent" <plan-path>
+
+# Check phase files exist
+ls <plan-dir>/phases/
 
 # Inspect worktree state
 git worktree list --porcelain

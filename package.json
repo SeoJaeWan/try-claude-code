@@ -1,6 +1,6 @@
 {
   "name": "try-claude-code",
-  "version": "2.3.1",
+  "version": "2.3.2",
   "description": "Claude Code custom skills workspace",
   "type": "module"
 }

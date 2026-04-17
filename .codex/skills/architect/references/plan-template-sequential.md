@@ -1,10 +1,14 @@
 **Branch:** {type}/{task-slug}
 
 > Worktree dir: `worktrees/{task-slug}` (plan 폴더명과 동일)
-> 이 문서는 검토용 요약이다. 먼저 `사전 합의`와 `전체 작업 지도`에서 이번 변경의 기준과 흐름을 보고, 아래 phase 카드에서 어떤 파일이 어떻게 바뀌는지와 무엇을 확인해야 하는지를 본다.
-> 기술적인 입력/출력 계약, owner_agent, 세부 작업, 검증은 각 phase의 상세 문서에서 다룬다.
 
 # {작업명} 실행 계획
+
+| # | Phase | Agent |
+| --- | --- | --- |
+| 1 | `./phases/01-{phase-slug}.md` | `{agent-name}` |
+| 2 | `./phases/02-{phase-slug}.md` | `{agent-name}` |
+| 3 | `./phases/03-{phase-slug}.md` | `{agent-name}` |
 
 ## 사전 합의
 
