@@ -52,6 +52,8 @@ Do not assume or depend on `./.ai/` or any other external AI metadata directory.
 ### 3. Research latest information when needed
 
 If technical choices depend on external facts (library/API/pattern changes), gather current information before asking for decisions.
+If the choice is primarily about library, framework, package docs, API shape, migration path, or deprecation status, prefer Context7 before general web search.
+Use Context7 only for the minimum facts that change the option comparison, recommendation, or blocking questions.
 If reliable research tooling is unavailable, state that clearly and ask the user to confirm assumptions.
 
 ### 4. Compare approaches (required)
@@ -89,6 +91,7 @@ Return a concise decision snapshot in the response:
 - Deferred low-risk choices
 - Key assumptions
 - Recommended next step (`architect` or direct execution)
+- When external facts were checked, the decision snapshot should also make clear which library/framework/API facts were confirmed and which alternatives were rejected because of those facts
 
 Present the decision snapshot as a markdown table in the response unless the user explicitly asks for another format.
 
@@ -135,6 +138,7 @@ When planning is needed, provide:
 1. Summary of confirmed decisions
 2. Explicit defaults or deferred low-risk choices
 3. Suggested planning scope boundaries
+4. Context7-confirmed external facts that `architect` should treat as already resolved, plus any still-risky assumptions that may require fallback verification
 
 Do not hand off to `architect` while blocking policy ambiguity remains.
 
@@ -143,6 +147,7 @@ Do not hand off to `architect` while blocking policy ambiguity remains.
 - Do not write implementation plans or code.
 - Do not skip approach comparison when meaningful tradeoffs exist.
 - Do not hand off to `architect` with unresolved blocking policy ambiguity.
+- Do not skip Context7 when library/framework/API documentation is the main source of the decision and Context7 is available.
 - Do not present the main option comparison or default decision snapshot only as loose bullet lists.
 - Do not depend on `./.ai/` or other external AI metadata directories.
 - Keep brainstorm-owned artifacts under `./.codex/`.

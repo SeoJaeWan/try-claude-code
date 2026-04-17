@@ -1,7 +1,7 @@
 # Phase {n}. {역할 이름}
 
 > 이 문서는 실행용 상세 계약이다. 맨 위 컨트롤러 다이제스트만 읽어도 이 phase의 목표, 파일 단위 변경, 완료 판단, 중단 시점을 알 수 있어야 한다.
-> 아래 기술 섹션은 `plan.md`의 같은 phase 요약을 기술적으로 확장하되, 범위나 결론을 새로 바꾸지 않는다.
+> 아래 `실행 계약` 섹션은 `plan.md`의 같은 phase 요약을 기술적으로 확장하되, 범위나 결론을 새로 바꾸지 않는다. 상단에서 이미 고정한 결론은 반복하지 말고, 실행 순서, 선택 규칙, 불변식, 검증 근거만 보강한다.
 
 ## 컨트롤러 다이제스트
 
@@ -24,19 +24,24 @@
 - `{컨트롤러가 확인할 결과 1}`
 - `{컨트롤러가 확인할 결과 2}` (선택)
 
+## 실행 계약
+
 - owner_agent: `{agent-name}`
 - 목적:
-- boundary:
-- input:
+- 작업 순서:
+    1. `{먼저 고정할 boundary 또는 결정}`
+    2. `{그다음 연결/정리할 변경}`
+    3. `{마지막 검증 또는 동기화}`
+- boundary: `{파일 나열 대신 이 phase가 움직이는 변경 경계만 요약}`
+- input: `{이 phase가 소비하는 선행 산출물, 상태, 계약}`
 - output:
-    - 공개 계약:
+    - 공개 계약: `{이 phase가 끝나면 반드시 성립해야 하는 canonical output}`
     - 내부 기본값: (선택)
     - 허용하지 않는 대안: (선택)
 - 선행조건: `none` (선택)
-- 제약: (선택)
-- side effects: (선택)
+- 제약: `{상단 다이제스트에 없는 winner rule, naming guard, no-op rule, 범위 제한만 기록}` (선택)
+- side effects: `{허용되는 상태 변화에 결합된 부수 효과만 기록}` (선택)
 - failure/validation: `{blocked case, rejected or losing path, side-effect guard, or ambiguity note when relevant}` (선택)
-- 작업:
 - 검증:
     - [ ] `{command 또는 확인 방법}`
     - [ ] `{기대 결과}`

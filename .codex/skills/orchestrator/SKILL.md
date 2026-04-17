@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-description: Explicit multi-agent planning orchestrator for requests that should run through the repository's planning loop instead of a one-off planning pass. Use only when the user explicitly invokes `$orchestrator` or explicitly asks for the automated architect/review/materialize workflow, and Codex should coordinate `plan-architect`, `plan-reviewer`, and `plan-materializer` to draft, review, revise, user-gate, open the current plan artifacts in browser tabs, and materialize tests without implementing production code.
+description: Explicit multi-agent planning orchestrator for requests that should run through the repository's planning loop instead of a one-off planning pass. Use only when the user explicitly invokes `$orchestrator` or explicitly asks for the automated architect/review/materialize workflow, and Codex should coordinate `plan-architect`, `plan-reviewer`, and `plan-materializer` to draft, review, revise, run a mandatory browser-backed user gate that opens the current plan artifacts in tabs, and materialize tests without implementing production code.
 ---
 
 <Skill_Guide>
@@ -66,6 +66,15 @@ Required `state.json` shape:
     "last_materialize_signature": null,
     "user_gate_required": true,
     "user_approved": false,
+    "user_gate": {
+        "packet_path": null,
+        "browser_open_required": true,
+        "browser_open_attempted": false,
+        "browser_open_succeeded": false,
+        "opened_paths": [],
+        "open_command": null,
+        "last_open_error": null
+    },
     "blocked_by": null,
     "blocker_type": null,
     "resume_from": null,
@@ -84,6 +93,7 @@ Required `state.json` shape:
 Use a deterministic `plan_revision` fingerprint for the current `plan.md` plus its linked phase detail files.
 Treat approval as valid only when `approved_revision == plan_revision`.
 Treat `state.json.preflight` as the authoritative run-level environment contract for named planning agents during an orchestration run.
+Do not enter `waiting_user_gate` until `state.json.user_gate.browser_open_succeeded = true`, unless the user explicitly waives browser opening for this run.
 
 ## Workflow
 
@@ -114,6 +124,12 @@ Treat `state.json.preflight` as the authoritative run-level environment contract
     - update `plan_revision`
     - clear stale review/materialize signatures
     - if `approved_revision != plan_revision`, set `user_approved = false`
+    - reset `state.json.user_gate.packet_path = null`
+    - reset `state.json.user_gate.browser_open_attempted = false`
+    - reset `state.json.user_gate.browser_open_succeeded = false`
+    - clear `state.json.user_gate.opened_paths`
+    - clear `state.json.user_gate.open_command`
+    - clear `state.json.user_gate.last_open_error`
 - If the target plan folder already exists, treat the workflow as an update pass.
 
 ### Step 1. Verify agent prerequisites
@@ -194,9 +210,26 @@ At the gate:
     - a direct approval request
 - The packet must list the current `plan.md` path and every linked phase detail path in display order.
 - Write the packet to `user-gate.md`.
-- When local browser opening is available, open `user-gate.md`, the current `plan.md`, and every linked phase detail file in separate browser tabs using the platform-appropriate commands from `references/browser-open-commands.md`.
-- If browser opening is unavailable or blocked, tell the user and list the local files that should be opened manually.
-- Set `stage = "waiting_user_gate"`.
+- Record `state.json.user_gate.packet_path`.
+- Build the exact browser-open target list in this order:
+    - `user-gate.md`
+    - current `plan.md`
+    - every linked phase detail file in display order
+- Treat local browser opening as required whenever the runtime can execute local shell commands from the workspace.
+- Attempt the platform-appropriate browser-open command from `references/browser-open-commands.md`.
+- Record the attempt in `state.json.user_gate`:
+    - set `browser_open_attempted = true`
+    - write the exact `opened_paths`
+    - write the exact `open_command`
+- If browser opening succeeds, set `browser_open_succeeded = true`, clear `last_open_error`, and then set `stage = "waiting_user_gate"`.
+- If browser opening fails, or no supported local opener can be invoked:
+    - set `browser_open_succeeded = false`
+    - set `last_open_error`
+    - set `blocked_by = "browser_open"`
+    - set `blocker_type = "external_setup"`
+    - set `stage = "blocked_external"`
+    - stop and report the exact files plus the failing command or missing opener
+- Do not degrade to a manual file list unless the user explicitly waives browser opening for this run.
 - Do not call `plan-materializer` before explicit user approval.
 - Record approval only for the current `plan_revision`.
 
@@ -209,6 +242,12 @@ When the user replies:
     - recompute `plan_revision`
     - set `user_approved = false`
     - clear `approved_revision`
+    - reset `state.json.user_gate.packet_path = null`
+    - reset `state.json.user_gate.browser_open_attempted = false`
+    - reset `state.json.user_gate.browser_open_succeeded = false`
+    - clear `state.json.user_gate.opened_paths`
+    - clear `state.json.user_gate.open_command`
+    - clear `state.json.user_gate.last_open_error`
     - rerun `plan-reviewer`
     - return to the user gate before materialization
 - If the user approves without plan changes:
@@ -277,7 +316,7 @@ Terminal stages are:
 - Keep orchestration updates short.
 - Tell the user which stage is running.
 - Present the user gate packet in Korean.
-- If browser opening is unavailable or blocked, say so explicitly and list the local files.
+- If browser opening fails or is unavailable, say so explicitly, report the command or missing opener, and list the exact local files that should have been opened.
 - When blocked, say which agent blocked and where the workflow is routing next.
 
 ## Output contract
@@ -296,6 +335,8 @@ Terminal stages are:
 - Do not ask named planning agents to rediscover the review wiki root, rerun staging, or verify named agent availability after `state.json.preflight.complete = true`.
 - Do not silently refresh the review wiki cache again after Step 0 inside the same orchestration run.
 - Do not skip explicit user approval.
+- Do not silently downgrade browser-open to a manual file list when local shell execution should work.
+- Do not mark `waiting_user_gate` until browser-open succeeded or the user explicitly waived it.
 - Do not let `plan-reviewer` edit plans.
 - Do not let `plan-materializer` patch plan ambiguity with tests.
 - Do not bypass review after architect revisions.

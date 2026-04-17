@@ -1,4 +1,4 @@
 interface:
   display_name: "Orchestrator"
-  short_description: "Run the architect-review-materialize planning loop with a browser-backed user gate."
-  default_prompt: "Use $orchestrator to orchestrate the explicit architect -> review -> revise -> user gate -> browser-open -> materialize planning workflow with named planning agents only."
+  short_description: "Run architect-review-materialize with mandatory browser gate."
+  default_prompt: "Use $orchestrator to orchestrate the explicit architect -> review -> revise -> mandatory browser-open user gate -> materialize planning workflow with named planning agents only."

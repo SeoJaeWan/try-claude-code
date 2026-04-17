@@ -4,6 +4,14 @@ Use these commands only when the runtime can open local browser tabs and the use
 
 Prefer opening `file:///...` URIs so browser markdown extensions can render the raw `.md` files.
 
+## Required behavior
+
+- Treat browser-open as a required user-gate step, not a convenience feature.
+- Resolve every target path before invoking the opener. Missing files are a blocking error.
+- Attempt to open `user-gate.md`, the current `plan.md`, and every linked phase detail file in one browser session when possible.
+- If no supported opener exists or process launch fails, treat that as a blocking error instead of silently falling back to a plain file list.
+- Record the exact command and opened paths in orchestrator state.
+
 ## Windows PowerShell
 
 Build file URIs:
@@ -64,5 +72,5 @@ xdg-open "file:///absolute/path/to/phases/01-example.md"
 ## Notes
 
 - Open `user-gate.md`, the current `plan.md`, and every linked phase detail file in separate tabs.
-- If browser opening is blocked or unavailable, report the exact local file paths to the user instead of silently skipping the step.
+- If browser opening is blocked or unavailable, report the exact local file paths plus the failing command or missing opener, and stop unless the user explicitly waives browser opening.
 - Do not convert the markdown into HTML unless the user explicitly asks for a separate rendered artifact.
