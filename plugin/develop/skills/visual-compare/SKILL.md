@@ -125,11 +125,13 @@ node <path-to-this-skill>/references/visual-compare.mjs \
 ### Step 5 — Analyze and report
 
 1. Parse the JSON output from the comparison script
-2. Read `{kind}-{state}-diff.png` to understand **where** the mismatches are
+2. **Only if `passed: false`** — Read `{kind}-{state}-diff.png` to identify where mismatches are located
+   - Do NOT read diff.png when `passed: true` — JSON output is sufficient
+   - Do NOT read reference.png or current.png in any case — pixelmatch has already processed them
 3. For each case, report:
    - Mismatch percentage and pixel count
    - Whether dimensions matched (size diff is often the first signal of a layout bug)
-   - Description of visual differences (location, nature — e.g., "button text shifted 2px left", "background color differs in header")
+   - Description of mismatch location (from diff.png) — only for failed cases
    - Pass/fail determination
 
 **When mismatch is systematic across many cases:**
@@ -185,6 +187,8 @@ Use `0.1` unless context implies otherwise. When reference and current are captu
 
 ## What to avoid
 
+- Do NOT read reference.png or current.png — pixelmatch already processed them; reading adds token cost with no new information
+- Do NOT read diff.png when `passed: true` — JSON mismatch stats are sufficient for passing cases
 - Do NOT use Playwright MCP tools (`mcp__playwright__*`) or any browser MCP for capture — all browser interaction must go through `npx agent-browser` via Bash. MCP browser tools have different capture semantics and will produce inconsistent results
 - Do NOT use the same Storybook (or test harness) as both reference and current source — this is a self-compare and produces no meaningful acceptance signal
 - Do NOT substitute source code analysis for real screenshots when state is hard to capture — seed the state instead
