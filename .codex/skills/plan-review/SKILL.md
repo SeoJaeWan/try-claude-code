@@ -21,7 +21,7 @@ Review the finished plan artifact, not the original request. Stay read-only.
    - `./.codex/artifacts/plan/{task-slug}/state.json`
 4. `../review-wiki-setup/references/staging-contract.md`
 5. `../review-wiki-setup/references/platform-commands.md`
-6. Resolved `review_wiki_root` containing `registry.json`, core docs, and pattern guidance. Prefer `./.codex/cache/review-wiki/current`; fall back to `~/.codex/reviewWiki/wiki` only when the cache is unavailable.
+6. Resolved planning `review_wiki_root` containing `registry.json`, `core/`, and `patterns/`. Prefer `./.codex/cache/review-wiki/current`; fall back to `~/.codex/reviewWiki/wiki` only when the cache is unavailable.
 7. Every core doc listed in the registry `core` array, in listed order
 8. Pattern candidates selected from the registry `patterns` list using the `review` selection mode plus matching `Apply When`
 9. `../architect/references/plan-template-sequential.md`
@@ -69,7 +69,7 @@ Before judging the plan:
 - Derive review tags from the reviewed `plan.md`, linked phase detail files, and any explicit scope words in the request metadata when present
 - Select candidate pattern files from the registry `patterns` list using the registry `selection.review` mode and `adjacency_rules`
 - Read only the selected pattern files whose `Apply When` clauses actually match the reviewed plan or its phase detail files
-- Derive the same deterministic `plan_revision` fingerprint from the current `plan.md` plus its linked phase detail files
+- Derive the same deterministic `plan_revision` fingerprint from the current `plan.md` plus its linked phase detail files by hashing the normalized file bytes in relative-path order
 - Treat the plan summary, linked phase detail files, and required references as the source of truth
 - Do not infer missing policy from the original user request when the plan itself is ambiguous
 - If a reviewed phase detail names a local prerequisite plan in the local prerequisite field, load only that directly referenced plan and inspect only the minimum upstream phase needed to verify the prerequisite contract
@@ -92,7 +92,6 @@ Judge the plan against:
 - verification realism and repo-fit
 - whether the phase detail contracts are explicit enough for later `plan-materialize` derivation
 - `visual-comparator` planning when the active core docs or selected pattern guidance require it
-- `playwright-guard` planning when the active core docs require it
 
 Prefer findings over compliments. Do not invent repo facts that the plan does not support.
 
@@ -125,6 +124,9 @@ Include:
   - `outcome`
   - `next_action`
   - `finding_signature`
+  - `requires_user_decision`
+  - `issue_codes`
+  - `affected_phase_paths`
 - reviewed plan path
 - outcome
 - blocker, major, and minor findings
@@ -134,10 +136,14 @@ Include:
 Frontmatter rules:
 
 - `outcome`: `ready` | `ready-with-findings` | `blocked`
+- `requires_user_decision`: `true` only when the plan cannot proceed without a fresh user decision; otherwise `false`
+- `issue_codes`: stable, sorted short codes for the current finding set; use `[]` when no findings remain
+- `affected_phase_paths`: sorted linked phase detail paths implicated by the finding set; use `[]` when not applicable
 - `next_action`:
   - `user_gate` when `outcome = ready`
-  - `architect` when `outcome = ready-with-findings` or `blocked`
-- `finding_signature`: a stable short fingerprint of the current finding set for this exact `plan_revision`; use `none` when no findings remain
+  - `user_gate` when `requires_user_decision = true`
+  - `architect` when findings remain and `requires_user_decision = false`
+- `finding_signature`: a stable short fingerprint of the normalized finding set for this exact `plan_revision`; use `none` when no findings remain
 
 ### Step 6. Respond in chat
 

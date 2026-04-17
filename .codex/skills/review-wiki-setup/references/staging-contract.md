@@ -13,11 +13,18 @@ Use the platform-appropriate staging command from `references/platform-commands.
 - Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.ps1`
 - macOS / Linux: `sh ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.sh`
 
-The cache copies the `wiki/` subtree only. It is read-only execution input, not the source of truth.
+The cache copies the contents of the external `wiki/` root only. After staging, the planning root is `./.codex/cache/review-wiki/current` itself, so planning agents should find:
+
+- `./.codex/cache/review-wiki/current/registry.json`
+- `./.codex/cache/review-wiki/current/core/**`
+- `./.codex/cache/review-wiki/current/patterns/**`
+- `./.codex/cache/review-wiki/current/_meta/**`
+
+`raw/` is not copied into the planning cache. The cache is read-only execution input, not the source of truth.
 
 ## Root resolution order
 
-Resolve `review_wiki_root` in this order:
+Resolve the planning `review_wiki_root` in this order:
 
 1. `./.codex/cache/review-wiki/current`
 2. `~/.codex/reviewWiki/wiki`
@@ -36,5 +43,5 @@ When the cache exists, planning agents should consume it instead of hardcoding t
 ## Responsibility split
 
 - `review-wiki-setup` repairs or bootstraps the external `~/.codex/reviewWiki` link and directory structure.
-- `scripts/stage-review-wiki.ps1` and `scripts/stage-review-wiki.sh` copy the external `wiki/` subtree into the workspace cache.
+- `scripts/stage-review-wiki.ps1` and `scripts/stage-review-wiki.sh` copy the contents of the external `wiki/` root into the workspace cache.
 - Planning skills consume the resolved `review_wiki_root` and must not bypass it with hardcoded external-path reads once the root is resolved.

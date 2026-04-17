@@ -12,7 +12,6 @@ For detailed planning rules, quality gates, and UI test-phase policy, read the r
 | `backend-developer`  | `backend-dev`          | `backend`           | API, DB, auth, server logic                               |
 | `general-developer`  | `general-dev`          | `N/A`               | infrastructure, DevOps, CI/CD, deploy, and root tooling   |
 | `visual-comparator`  | `visual-compare`       | `N/A`               | reference-based visual comparison, diff artifact capture, and mismatch reporting |
-| `playwright-guard`   | `guard-e2e-test`       | `N/A`               | post-implementation full-flow Playwright regression guard |
 
 ## Planning Skills (run by architect)
 
@@ -22,7 +21,6 @@ For detailed planning rules, quality gates, and UI test-phase policy, read the r
 ## Post-implementation Verification Agents
 
 - `visual-comparator`: runs `visual-compare` after UI implementation when a plan must compare the current UI against an external visual reference and leave repo-local capture, diff, and report artifacts for a later fix phase
-- `playwright-guard`: runs `guard-e2e-test` after implementation to add real full-flow/regression Playwright `.spec.ts` files in the project test tree
 
 ## Named Planning Agents
 

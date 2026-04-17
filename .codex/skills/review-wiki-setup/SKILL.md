@@ -29,7 +29,8 @@ Use this skill to connect Codex to the Obsidian vault, create the minimum review
    - Run the platform-appropriate staging command from `references/platform-commands.md` from the workspace root.
    - On Windows, use `stage-review-wiki.ps1`.
    - On macOS / Linux, use `stage-review-wiki.sh`.
-   - Copy the `wiki/` subtree into `./.codex/cache/review-wiki/current/`.
+   - Copy the contents of the external `wiki/` root into `./.codex/cache/review-wiki/current/`.
+   - After staging, treat `./.codex/cache/review-wiki/current/` itself as the planning root that contains `registry.json`, `core/`, `patterns/`, and `_meta/`.
    - Write `staged.json` with the source root, destination root, and staging timestamp.
    - Treat the staged cache as read-only execution input; the source of truth remains `~/.codex/reviewWiki`.
 

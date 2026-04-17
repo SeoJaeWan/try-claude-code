@@ -60,6 +60,10 @@ Required `state.json` shape:
     "plan_revision": null,
     "approved_revision": null,
     "stage": "drafting",
+    "clarification": {
+        "packet_path": null,
+        "clarification_signature": null
+    },
     "last_review_outcome": null,
     "last_review_signature": null,
     "last_materialize_outcome": null,
@@ -90,7 +94,7 @@ Required `state.json` shape:
 }
 ```
 
-Use a deterministic `plan_revision` fingerprint for the current `plan.md` plus its linked phase detail files.
+Use a deterministic `plan_revision` fingerprint for the current `plan.md` plus its linked phase detail files by hashing the normalized file bytes in relative-path order.
 Treat approval as valid only when `approved_revision == plan_revision`.
 Treat `state.json.preflight` as the authoritative run-level environment contract for named planning agents during an orchestration run.
 Do not enter `waiting_user_gate` until `state.json.user_gate.browser_open_succeeded = true`, unless the user explicitly waives browser opening for this run.
@@ -115,6 +119,7 @@ Do not enter `waiting_user_gate` until `state.json.user_gate.browser_open_succee
     - clear `verified_agents`
 - If `~/.codex/reviewWiki/wiki` is readable, always run the platform-appropriate staging command from `platform-commands.md` from the workspace root before invoking `plan-architect` or `plan-reviewer`, even when the cache already exists.
 - Treat the refreshed cache as the fixed review wiki snapshot for the rest of the current orchestration run.
+- Treat `./.codex/cache/review-wiki/current` as the planning root after staging; it should contain `registry.json`, `core/`, `patterns/`, and `_meta/`.
 - If the external wiki root is permission-blocked or temporarily unreadable but `./.codex/cache/review-wiki/current` already exists, continue with the cached copy.
 - If both the external wiki root and the cache are unavailable, stop and route to `review-wiki-setup` or request the missing external-read approval before continuing.
 - After resolving the fixed review wiki snapshot, write it into `state.json.preflight.review_wiki_root`.
@@ -146,13 +151,23 @@ Do not enter `waiting_user_gate` until `state.json.user_gate.browser_open_succee
 ### Step 2. Run architect draft
 
 - Call `plan-architect`.
-- Ask it to create or update the executable plan artifacts under `./plans/{task-slug}/`.
+- Ask it to create or update the executable plan artifacts under `./plans/{task-slug}/`, or to write a clarification packet when pre-plan blocking ambiguity prevents drafting.
 - Ask it to stay within the `architect` skill.
 - Pass the exact `task-slug` and `./.codex/artifacts/plan/{task-slug}/state.json` path.
 - Tell it that `state.json.preflight` is authoritative for this orchestration run.
 - Tell it not to rerun review wiki staging, not to verify named agent availability, and not to inspect runtime or CLI invocation paths.
 - Require it to block if `state.json.preflight.complete != true`.
-- Record the returned plan path.
+- If it cannot draft before a fresh user decision, require it to write `./.codex/artifacts/plan/{task-slug}/clarification.md` with YAML frontmatter containing at least:
+    - `task_slug`
+    - `needs_user_input`
+    - `next_action`
+    - `clarification_signature`
+- If a clarification packet is written instead of a plan:
+    - record `state.json.clarification.packet_path`
+    - record `state.json.clarification.clarification_signature`
+    - set `stage = "waiting_architect_clarification"`
+    - stop and ask the user for the requested decision
+- Record the returned plan path when executable plan artifacts were written.
 - Recompute `plan_revision`.
 - If the plan revision changed:
     - clear `last_review_outcome`
@@ -161,6 +176,8 @@ Do not enter `waiting_user_gate` until `state.json.user_gate.browser_open_succee
     - clear `last_materialize_signature`
     - set `user_approved = false`
     - clear `approved_revision`
+    - clear `state.json.clarification.packet_path`
+    - clear `state.json.clarification.clarification_signature`
 - Set `stage = "reviewing"`.
 
 ### Step 3. Run cold review
@@ -178,13 +195,17 @@ Do not enter `waiting_user_gate` until `state.json.user_gate.browser_open_succee
     - `outcome`
     - `next_action`
     - `finding_signature`
+    - `requires_user_decision`
+    - `issue_codes`
+    - `affected_phase_paths`
 - Record `last_review_outcome` and `last_review_signature` in `state.json`.
 
 ### Step 4. Route review findings
 
 - If the same `plan_revision` produces the same `outcome` and the same `finding_signature` again, set `stage = "stuck"` and escalate to the user instead of looping.
 - If the review outcome is `ready`, continue to the user gate.
-- If the review outcome is `ready-with-findings`, send the review back to `plan-architect` for revision unless the finding is explicitly a user-policy decision.
+- If `review.md` says `requires_user_decision = true` or `next_action = user_gate`, continue to the user gate with the review packet.
+- If the review outcome is `ready-with-findings`, send the review back to `plan-architect` for revision.
 - If the review outcome is `blocked`, route to `plan-architect` first, not to the user by default.
 - After every architect revision, rerun `plan-reviewer`.
 
@@ -237,6 +258,10 @@ At the gate:
 
 When the user replies:
 
+- If `stage = "waiting_architect_clarification"`:
+    - send the response to `plan-architect`
+    - set `stage = "drafting"`
+    - resume the drafting step instead of entering review or materialize directly
 - If the user answers open questions or requests plan changes, send that response to `plan-architect`.
 - If `plan-architect` changes any plan artifact after the gate:
     - recompute `plan_revision`
@@ -271,6 +296,9 @@ When the user replies:
     - `next_action`
     - `resume_from`
     - `materialize_signature`
+    - `requires_user_decision`
+    - `blocked_clause_ids`
+    - `affected_phase_paths`
 - Record `last_materialize_outcome` and `last_materialize_signature` in `state.json`.
 
 ### Step 8. Route materialize blockers
@@ -324,6 +352,7 @@ Terminal stages are:
 - Plan artifacts under `./plans/**`
 - Review artifact under `./.codex/artifacts/plan-review/{task-slug}/review.md` with YAML frontmatter status fields
 - Orchestration state under `./.codex/artifacts/plan/{task-slug}/state.json`
+- Clarification packet under `./.codex/artifacts/plan/{task-slug}/clarification.md` when pre-plan user input is required
 - User gate packet under `./.codex/artifacts/plan/{task-slug}/user-gate.md`
 - Test materialization output under plan-local `materialize.md` with YAML frontmatter status fields
 
@@ -334,6 +363,7 @@ Terminal stages are:
 - Do not call `plan-architect` or `plan-reviewer` before the review wiki cache preflight completes.
 - Do not ask named planning agents to rediscover the review wiki root, rerun staging, or verify named agent availability after `state.json.preflight.complete = true`.
 - Do not silently refresh the review wiki cache again after Step 0 inside the same orchestration run.
+- Do not route a pre-plan clarification need through `plan-reviewer`; keep it in the architect clarification path.
 - Do not skip explicit user approval.
 - Do not silently downgrade browser-open to a manual file list when local shell execution should work.
 - Do not mark `waiting_user_gate` until browser-open succeeded or the user explicitly waived it.
@@ -342,6 +372,7 @@ Terminal stages are:
 - Do not bypass review after architect revisions.
 - Do not reuse stale approval after a plan revision change.
 - Do not keep looping silently when the workflow makes no progress for the same `plan_revision`.
+- Do not infer `user_policy` or user-decision routing from free-form prose when structured frontmatter fields are available.
 - Do not turn materialize blockers into ad-hoc implementation decisions.
 
 </Instructions>

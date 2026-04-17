@@ -43,7 +43,6 @@ Typical blocker cases:
 - missing winner rule, loser no-op rule, terminal-state rule, or side-effect coupling for risky scenarios
 - plan count or topology that is clearly over-split, under-justified, or not independently mergeable under the active core contract
 - missing `visual-comparator` phase when the active core docs or selected pattern guidance require it
-- missing `playwright-guard` phase when the active core docs require it
 - the reviewed plan depends on a local prerequisite plan, but no specific upstream phase credibly provides the prerequisite contract in the detail file `output` and `검증`
 - the reviewed plan depends on a local prerequisite plan, but the supposed provider phase boundary or verification path cannot actually establish that contract
 - selected pattern guidance reveals a direct contradiction that the plan leaves unresolved
@@ -97,8 +96,7 @@ Required focus areas:
 6. verification realism
 7. `plan-materialize` derivation readiness
 8. `visual-comparator` planning when relevant
-9. `playwright-guard` planning when relevant
-10. direct prerequisite contract parity when relevant
+9. direct prerequisite contract parity when relevant
 
 ### One-Hop Prerequisite Audit
 

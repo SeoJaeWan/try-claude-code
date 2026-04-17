@@ -22,7 +22,7 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 3. `./references/agents-lite.md` - execution agent catalog
 4. `../review-wiki-setup/references/staging-contract.md` - review wiki cache resolution and staging rules
 5. `../review-wiki-setup/references/platform-commands.md` - platform-specific link and staging commands
-6. Resolved `review_wiki_root` containing `registry.json`, core docs, tag taxonomy, and selection policy. Prefer `./.codex/cache/review-wiki/current`; fall back to `~/.codex/reviewWiki/wiki` only when the cache is unavailable.
+6. Resolved planning `review_wiki_root` containing `registry.json`, `core/`, `patterns/`, and selection policy. Prefer `./.codex/cache/review-wiki/current`; fall back to `~/.codex/reviewWiki/wiki` only when the cache is unavailable.
 7. Every core document listed in the registry `core` array, in listed order
 8. Candidate pattern files selected from the registry `patterns` list using the `architect` selection mode plus matching `Apply When`
 9. `./references/git.md` - commit message, branch naming, and worktree naming rules
@@ -104,6 +104,10 @@ Before writing any plan artifact:
   - batch at most 4 blocking questions at once
   - prefer structured user-input tooling when available
   - otherwise ask concise plain-text questions in chat
+- In orchestrated mode, if `blocking` ambiguity remains before any executable plan can be written:
+  - write `./.codex/artifacts/plan/{task-slug}/clarification.md`
+  - emit a concrete decision packet instead of plain chat questions
+  - stop before creating or updating `./plans/**`
 - For user-visible scope, resolve behavior well enough to define stable boundaries and expected outcomes in the plan
 - For notification, permission, routing, workflow, state-transition, or other behavior-changing scope, resolve enough detail to define:
   - trigger or precondition
@@ -244,14 +248,15 @@ If a plan file includes implementation scope beyond documentation-only or struct
 4. When the plan includes behavior, state, routing, or contract-selection changes, make the phase detail contract explicit enough for later materialization
 
 `architect` does not generate tests directly.
-`plan-materialize` later decides `unit`, bounded-surface `e2e`, `skip`, or `defer` from the plan summary, the phase detail files, and local project conventions.
+`plan-materialize` later decides `unit`, selected `e2e`, `skip`, or `block` from the plan summary, the phase detail files, and local project conventions.
 
-### Step 3.6. Plan full-flow Playwright guard phase (conditional)
+### Step 3.6. Plan journey and full-flow E2E ownership in `plan-materialize` (conditional)
 
 If a plan file changes cross-route journeys, auth/session transitions, redirect chains, persisted browser state, or any release-critical flow that needs regression hardening:
 
-- Add a later phase with `owner_agent: playwright-guard`
-- Define trigger, scope, and expected outputs using the active review wiki core docs
+- Do not add a dedicated `playwright-guard` phase just for that coverage
+- Make the changed journey contract explicit enough that `plan-materialize` can materialize the selected full-flow E2E directly
+- Define trigger, scope, state checkpoints, and expected outputs in the relevant phase detail file using the active review wiki core docs
 
 ### Step 3.7. Plan reference-based visual comparison phase (conditional)
 
@@ -300,6 +305,8 @@ Provide a concise execution handoff summary using the handoff requirements in `{
   - matching phase detail files: `./plans/{task-slug}/phases/{nn}-{phase-slug}.md`
   - multiple executable plan summaries when required: `./plans/{task-group}-{nn}-{slice-slug}/plan.md`
   - each multi-plan artifact also owns matching phase detail files under its own `phases/`
+- Optional orchestration clarification packet when planning must stop before any executable plan is writable:
+  - `./.codex/artifacts/plan/{task-slug}/clarification.md`
 - Output language: Korean
 
 ## Guardrails
@@ -312,8 +319,8 @@ Provide a concise execution handoff summary using the handoff requirements in `{
 - In orchestrated mode, do not redo review wiki bootstrap or named-agent preflight that the orchestrator already completed
 - Do not generate or edit source-tree tests inside `architect`
 - `visual-comparator` execution happens later; architect only plans that phase
-- `playwright-guard` execution happens later; architect only plans that phase
 - Do not produce a plan with unresolved blocking ambiguity
+- In orchestrated mode, do not leave pre-plan blocking questions only in chat when a `clarification.md` packet is required
 - Do not treat Context7 as mandatory for every plan; use it only when unstable external facts can change the boundary, contract, or phase split
 - Do not re-query Context7 just because it is available when `brainstorm` already resolved the relevant library/framework/API decision well enough for planning
 - Do not leave Context7-derived constraints only in transient reasoning; if they matter, compress them into `사전 합의` or the relevant phase detail file

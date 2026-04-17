@@ -1,6 +1,6 @@
 ---
 name: plan-materialize
-description: Create or update source-tree unit tests and bounded-surface E2E tests from an architect plan. Use after `architect` when a reviewer-facing `plan.md` and linked phase detail files define the implementation boundaries and technical contracts, and Codex must materialize real test files from local project conventions instead of generating flat artifacts under `./plans`.
+description: Create or update source-tree unit tests and selected E2E tests from an architect plan. Use after `architect` when a reviewer-facing `plan.md` and linked phase detail files define the implementation boundaries and technical contracts, and Codex must materialize real test files from local project conventions instead of generating flat artifacts under `./plans`, including bounded-surface UI coverage and explicitly selected full-flow journeys such as auth/session, redirect, and cross-route behavior.
 ---
 
 <Skill_Guide>
@@ -64,7 +64,7 @@ Then read the linked phase detail files and enumerate every selected phase-local
 - `검증`
 
 Treat these as first-class coverage obligations.
-Derive the same deterministic `plan_revision` fingerprint from the current `plan.md` plus its linked phase detail files before writing `materialize.md`.
+Derive the same deterministic `plan_revision` fingerprint from the current `plan.md` plus its linked phase detail files before writing `materialize.md`, by hashing the normalized file bytes in relative-path order.
 
 For each clause, record:
 
@@ -121,10 +121,10 @@ Classification rules:
     - covers template rendering, UI state interpretation, message mapping, serializer output, and any feature-specific transformation that defines the final user-visible or externally consumed output when the plan selects that interpretation as part of its contract
 - Logic boundary: unit test is mandatory
     - applies to frontend and backend logic such as hooks, services, validators, mappers, utilities, use cases, controllers, and domain policies when the plan changes or validates that logic boundary
-- Frontend user-visible boundary: bounded-surface E2E is the default
-    - forms, modals, drawers, tabs, settings panels, feature-local sub-routes, and any user-visible state the plan explicitly changes or validates
+- Frontend user-visible surface boundary: bounded-surface E2E is the default
+  - forms, modals, drawers, tabs, settings panels, feature-local sub-routes, and any user-visible state the plan explicitly changes or validates
 - Presentation-only change: E2E may be skipped only when the plan or user request makes that explicit enough to justify the skip
-- Cross-route journey selected by the plan: do not materialize here; return it as a blocker instead of silently deferring coverage
+- Cross-route journey, auth/session transition, redirect chain, persisted browser state, or release-critical flow explicitly selected by the plan: full-flow E2E is mandatory when the existing configured runner can own the journey
 - Export or import inventory is not a test boundary by default
     - materialize it only when the plan explicitly selects a stable public API contract whose presence or absence is itself the feature behavior
     - do not materialize package-root re-export wiring, owner-entry identity checks, or negative export absence checks when they only freeze internal module plumbing rather than external feature behavior
@@ -151,18 +151,19 @@ Every selected clause must end this step in exactly one state:
 
 #### E2E tests
 
-- Use `surface_id` metadata when present in existing spec headers
+- Use `journey_id` or `surface_id` metadata when present in existing spec headers
 - Fallback order:
-    1. `@surface_id`
-    2. `@route`
-    3. existing file name, locator contract, or nearby page object usage
-- Default policy: `modify-first, create-if-new-surface`
-- Split one surface into multiple specs only when the existing file becomes materially too large or divergent
+    1. `@journey_id`
+    2. `@surface_id`
+    3. `@route`
+    4. existing file name, locator contract, or nearby page object usage
+- Default policy: `modify-first, create-if-new-owner`
+- Split one owner into multiple specs only when the existing file becomes materially too large or divergent
 - When split is required, add a small registry file for that surface
-- If the selected user-visible clause has no stable owner surface in the current source tree, return a blocker with:
+- If the selected user-visible clause has no stable owner surface or journey and local conventions do not expose a stable place to create one, return a blocker with:
   - `outcome = blocked`
   - `blocker_type = external_setup`
-  - `blocker_code = owner_surface_missing`
+  - `blocker_code = owner_spec_missing`
   - `next_action = stop`
   - `resume_from = materialize`
 
@@ -187,14 +188,14 @@ Every selected clause must end this step in exactly one state:
 - If the plan's terminal state retires a boundary or surface, delete the obsolete test instead of replacing it with a placeholder test
 - Do not edit production code, fixtures outside the test tree, or test config during this skill
 
-### Step 4. Materialize bounded-surface E2E tests
+### Step 4. Materialize E2E tests
 
 - Follow `references/e2e-test-conventions.md`
 - Use only the runner already configured in the project
-- Materialize bounded-surface tests only; no cross-route regression flows here
+- Materialize only the selected bounded-surface or full-flow journey tests; do not add plan-external regression sweeps
 - Derive every scenario and assertion from explicit selected plan clauses only
-- Update the existing surface test when the same surface already exists
-- If the plan retires the surface entirely, delete the obsolete bounded-surface test instead of inventing a replacement smoke path
+- Update the existing owner test when the same surface or journey already exists
+- If the plan retires the selected surface or journey entirely, delete the obsolete owner test instead of inventing a replacement smoke path
 - Add metadata comments to E2E specs so future updates can find them reliably
 - When split is required, create a registry file only for that surface
 
@@ -226,6 +227,9 @@ Include:
   - `next_action`
   - `resume_from`
   - `materialize_signature`
+  - `requires_user_decision`
+  - `blocked_clause_ids`
+  - `affected_phase_paths`
 - phase
 - clause source: `output` | `constraint` | `failure-validation` | `validation`
 - clause text
@@ -245,14 +249,17 @@ Frontmatter rules:
 
 - `outcome`: `completed` | `blocked`
 - `blocker_type`: `none` | `plan_ambiguity` | `user_policy` | `external_setup`
-- `blocker_code`: use a specific code such as `setup_missing`, `local_convention_missing`, or `owner_surface_missing` when blocked; otherwise `none`
+- `blocker_code`: use a specific code such as `setup_missing`, `local_convention_missing`, or `owner_spec_missing` when blocked; otherwise `none`
 - `next_action`:
   - `done` when `outcome = completed`
   - `architect` when `blocker_type = plan_ambiguity`
   - `user_gate` when `blocker_type = user_policy`
   - `stop` when `blocker_type = external_setup`
 - `resume_from`: `none` by default, `materialize` for `external_setup` blockers
-- `materialize_signature`: a stable short fingerprint of the current materialization result for this exact `plan_revision`
+- `materialize_signature`: a stable short fingerprint of the normalized materialization result for this exact `plan_revision`
+- `requires_user_decision`: `true` only when `blocker_type = user_policy`; otherwise `false`
+- `blocked_clause_ids`: sorted clause identifiers blocked in this pass; use `[]` when not applicable
+- `affected_phase_paths`: sorted linked phase detail paths implicated by the materialization result; use `[]` when not applicable
 
 ### Step 7. Verify before completion
 
@@ -293,12 +300,12 @@ Frontmatter rules:
 - Stop when multiple plausible sibling contracts exist and the plan did not resolve the winner
 - Stop when the plan introduces a new rendered, mapped, serialized, or interpreted final output but does not identify the boundary that finalizes that output
 - Stop when the plan implies competing completion paths, deferred execution, terminal-state policy, or side-effect coupling but does not define the relevant invariant
-- Stop when a selected cross-route clause would require a guard or release-regression test outside this skill's bounded-surface scope
 - Do not create duplicate tests for an existing boundary or surface when an update is possible
 - Do not add test assertions, validation paths, state coverage, or edge cases that are outside the selected plan clauses or their declared risk patterns
 - Do not freeze exact export inventories or negative-only import/export assertions unless the plan explicitly identifies that inventory as the stable public contract
 - Do not create package-root export tests that only prove re-export identity, legacy alias absence, or private symbol absence unless the external import behavior itself is the selected durable feature contract
-- Do not silently defer selected plan coverage to `guard-e2e-test` or another future pass
+- Do not silently shrink a selected full-flow journey into a surface-only test just because a narrower owner already exists
+- Do not silently defer selected plan coverage to a later pass
 - Do not widen targeted validation commands into full-suite regression unless the plan explicitly requires it
 - Do not use `./plans` as the durable source of truth for E2E ownership; use source-tree metadata comments and split registries
 
