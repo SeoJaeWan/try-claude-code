@@ -33,7 +33,7 @@ Materialize tests after planning, not during implementation.
 5. `./references/unit-test-conventions.md` when logic boundaries are in scope
 6. `./references/e2e-test-conventions.md` when frontend UI boundaries are in scope
 7. Workspace helper for deterministic `plan_revision` and linked phase path discovery:
-    - `./scripts/plan-revision.mjs`
+    - `./.codex/scripts/plan-revision.mjs`
 
 ## Workflow
 
@@ -66,11 +66,11 @@ Then read the linked phase detail files and enumerate every selected phase-local
 - `검증`
 
 Treat these as first-class coverage obligations.
-- Use `node ./scripts/plan-revision.mjs --plan <plan-path> --json` as the authoritative source for:
+- Use `node ./.codex/scripts/plan-revision.mjs --plan <plan-path> --json` as the authoritative source for:
   - deterministic `plan_revision`
   - linked phase detail paths discovered from the current `plan.md`
 - Do not recreate the fingerprint with ad-hoc shell pipelines, temporary files, or OS temp directories.
-- If `./scripts/plan-revision.mjs` is missing, unreadable, or returns a linked-phase error, stop and return a blocker instead of inventing a replacement hash routine.
+- If `./.codex/scripts/plan-revision.mjs` is missing, unreadable, or returns a linked-phase error, stop and return a blocker instead of inventing a replacement hash routine.
 
 For each clause, record:
 

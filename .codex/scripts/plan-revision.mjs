@@ -10,7 +10,7 @@ function printUsage() {
   process.stdout.write(
     [
       "Usage:",
-      "  node ./scripts/plan-revision.mjs --plan <path-to-plan.md> [--json]",
+      "  node ./.codex/scripts/plan-revision.mjs --plan <path-to-plan.md> [--json]",
       "",
       "Outputs the deterministic plan_revision fingerprint for one plan.md plus",
       "its linked ./phases/*.md files. Default output is the fingerprint only.",
@@ -145,7 +145,7 @@ function buildPlanRevision(planPath, workspaceRoot) {
 
   return {
     workspaceRoot,
-    taskSlug: path.basename(planDir),
+    taskSlug: path.basename(path.dirname(resolvedPlanPath)),
     planPath: toPosixPath(path.relative(workspaceRoot, resolvedPlanPath)),
     linkedPhasePaths: linkedPhasePaths.map((filePath) => toPosixPath(path.relative(workspaceRoot, filePath))),
     hashFilePaths: hashFilePaths.map((file) => file.relativePath),
