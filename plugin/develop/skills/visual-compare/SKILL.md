@@ -52,14 +52,30 @@ Always capture only the target element via CSS selector.
 **Basic capture:**
 
 1. Identify the target element with a CSS selector (e.g., `.hero-section`, `#pricing-table`, `[data-testid="card"]`, `.w-[200px]`)
-2. If a reference image exists, read its dimensions first
-3. Match viewport width to reference image width before capturing
+2. Set viewport by scenario type — do NOT use reference image dimensions:
+
+| Scenario | Viewport command |
+|---|---|
+| Desktop (default) | `npx agent-browser set viewport 1280 800` |
+| Mobile | `npx agent-browser set device "iPhone 12"` |
+| Tablet | `npx agent-browser set viewport 768 1024` |
+
+When the scenario type isn't explicit, infer from context: URL path keywords (`/mobile`, `/desktop`), story names, or fixture names. Default to desktop (1280×800).
+
+3. For responsive components, verify the element actually rendered at the expected breakpoint before capturing:
 
 ```bash
-npx agent-browser set viewport <reference-width> <reference-height>
+npx agent-browser get box "<selector>"
+# If width is unexpectedly small, the wrong breakpoint may have applied — adjust viewport and retry
+```
+
+```bash
+npx agent-browser set viewport 1280 800
 npx agent-browser open <url>
 npx agent-browser screenshot "<selector>" <output.png>
 ```
+
+The output image dimensions are determined by the element's bounding box, not the viewport. Element-level capture naturally produces consistent dimensions between reference and current as long as both are captured at the same breakpoint.
 
 **State seeding (when required):**
 
@@ -188,6 +204,7 @@ Use `0.1` unless context implies otherwise. When reference and current are captu
 ## What to avoid
 
 - Do NOT read reference.png or current.png — pixelmatch already processed them; reading adds token cost with no new information
+- Do NOT read reference image dimensions to set viewport — element-level capture uses the element's bounding box, not the viewport, as output dimensions; use standard breakpoints (1280/768/390) by scenario type instead
 - Do NOT read diff.png when `passed: true` — JSON mismatch stats are sufficient for passing cases
 - Do NOT use Playwright MCP tools (`mcp__playwright__*`) or any browser MCP for capture — all browser interaction must go through `npx agent-browser` via Bash. MCP browser tools have different capture semantics and will produce inconsistent results
 - Do NOT use the same Storybook (or test harness) as both reference and current source — this is a self-compare and produces no meaningful acceptance signal
