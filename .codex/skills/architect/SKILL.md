@@ -49,6 +49,7 @@ Before writing any plan artifact:
   - read the provided `state.json`
   - require `state.json.preflight.review_wiki_root` to be present
   - treat `state.json.preflight.review_wiki_root` as authoritative
+  - if this architect instance is being reused for the same `task-slug`, treat the current `state.json`, current plan artifacts, and latest review artifact as higher priority than stale chat memory
   - do not run review wiki staging
   - do not verify named-agent availability
   - do not inspect runtime or CLI invocation paths

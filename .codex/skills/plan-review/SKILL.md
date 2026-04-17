@@ -71,6 +71,7 @@ Before judging the plan:
 - Read only the selected pattern files whose `Apply When` clauses actually match the reviewed plan or its phase detail files
 - Derive the same deterministic `plan_revision` fingerprint from the current `plan.md` plus its linked phase detail files by hashing the normalized file bytes in relative-path order
 - Treat the plan summary, linked phase detail files, and required references as the source of truth
+- If this reviewer instance is being reused inside the same orchestration run, treat prior findings as untrusted history and re-evaluate the current `plan_revision` from the current files
 - Do not infer missing policy from the original user request when the plan itself is ambiguous
 - If a reviewed phase detail names a local prerequisite plan in the local prerequisite field, load only that directly referenced plan and inspect only the minimum upstream phase needed to verify the prerequisite contract
 - Do not recurse into a larger plan graph or turn the review into a full multi-plan orchestration pass

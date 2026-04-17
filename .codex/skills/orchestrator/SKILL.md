@@ -34,6 +34,45 @@ Do not use it as a generic replacement for `architect`, `plan-review`, or `plan-
 - If any named agent definition is missing, unreadable, or not invokable, stop and report the blocker.
 - Do not silently inline architect, reviewer, or materializer work inside this skill when the named-agent path is expected.
 
+## Named agent invocation policy
+
+- Classify the orchestration request before spawning any named planning agent:
+    - `fresh_run`: the user explicitly wants a new or isolated run, a new `task-slug`, or a clean break from prior orchestration continuity
+    - `resume_run`: the user explicitly wants to continue, revise, review, or materialize the same `task-slug`
+- For `fresh_run`, invoke named planning agents with the target custom role and `fork_context = false`.
+- For `resume_run`, invoke named planning agents with the target custom role and `fork_context = true`.
+- Treat `fresh_run` as the default when the user requests a new slug, says to separate from an older run, or asks for a fresh state.
+- Within one `task-slug`, prefer reusing the same named planning agent instance for each role instead of spawning a replacement.
+- Persist the active agent id for each named role in `state.json` and treat it as the first-choice continuation target for the rest of the run.
+- For follow-up work on the same role, use this order:
+    - if a recorded agent id exists, send input to that same agent
+    - if the recorded agent was closed, try to resume it and then send input
+    - only if same-agent reuse fails with an explicit tool error, spawn a replacement agent of the same role and overwrite the recorded id
+- Do not spawn a second architect, reviewer, or materializer for the same `task-slug` while the recorded agent remains reusable.
+- For `fresh_run`, clear any previously recorded agent ids before the first named-agent spawn.
+- For `resume_run`, prefer the recorded agent ids over a new spawn even when `fork_context = true` would also be valid.
+- If same-agent reuse fails:
+    - report the exact target role
+    - report the recorded agent id
+    - report whether the failed attempt was `send_input` or `resume_agent`
+    - report the exact tool error or failure text
+    - then spawn the narrowest safe replacement for that same role and record the new id
+- Do not weaken the selected spawn policy before attempting it.
+- Do not claim capability limits such as "full-context fork and custom role cannot be combined" unless an actual spawn attempt failed with that exact combination.
+- If a spawn attempt fails:
+    - report the exact target agent
+    - report whether `fork_context` was `true` or `false`
+    - report the exact tool error or failure text
+    - then choose the narrowest safe fallback that preserves the user's isolation intent
+- When `fork_context = false`, compensate by sending a structured message packet that includes:
+    - exact `task-slug`
+    - exact `state.json` path
+    - statement that `state.json.preflight` is authoritative
+    - write scope
+    - allowed read-only context
+    - explicit non-reuse constraints when this is a fresh isolated run
+- Do not present a fallback choice as if it were a platform constraint when it was only an orchestration judgment call.
+
 ## State files
 
 Store orchestration-only state under `./.codex/artifacts/plan/{task-slug}/`.
@@ -60,6 +99,20 @@ Required `state.json` shape:
     "plan_revision": null,
     "approved_revision": null,
     "stage": "drafting",
+    "agents": {
+        "plan_architect": {
+            "id": null,
+            "role": "plan-architect"
+        },
+        "plan_reviewer": {
+            "id": null,
+            "role": "plan-reviewer"
+        },
+        "plan_materializer": {
+            "id": null,
+            "role": "plan-materializer"
+        }
+    },
     "clarification": {
         "packet_path": null,
         "clarification_signature": null
@@ -104,12 +157,17 @@ Do not enter `waiting_user_gate` until `state.json.user_gate.browser_open_succee
 ### Step 0. Normalize target, prepare the review wiki cache, and load state
 
 - Derive one canonical `task-slug`.
+- Derive one run mode before any named planning agent call:
+    - `fresh_run` when the request is for a new slug, a fresh state, or explicit isolation from prior orchestration continuity
+    - `resume_run` when the request continues the same slug or the same orchestration state
 - Read `../review-wiki-setup/references/staging-contract.md`.
 - Read `../review-wiki-setup/references/platform-commands.md`.
 - Read `./references/browser-open-commands.md`.
 - Create `./.codex/artifacts/plan/{task-slug}/` and `state.json` if they do not exist.
 - If `state.json` exists, resume from the recorded stage instead of starting over.
 - Persist `state.json` after every stage transition. Do not keep orchestration-only state in chat memory alone.
+- Ensure `state.json.agents.plan_architect.id`, `state.json.agents.plan_reviewer.id`, and `state.json.agents.plan_materializer.id` exist.
+- If this run is classified as `fresh_run`, clear every recorded agent id before invoking the first named planning agent.
 - Initialize or refresh `state.json.preflight` before invoking any named planning agent:
     - set `mode = "orchestrated"`
     - set `complete = false`
@@ -150,9 +208,14 @@ Do not enter `waiting_user_gate` until `state.json.user_gate.browser_open_succee
 
 ### Step 2. Run architect draft
 
-- Call `plan-architect`.
+- Invoke `plan-architect` through the same-agent continuity policy.
 - Ask it to create or update the executable plan artifacts under `./plans/{task-slug}/`, or to write a clarification packet when pre-plan blocking ambiguity prevents drafting.
 - Ask it to stay within the `architect` skill.
+- Apply the named-agent invocation policy:
+    - use `fork_context = false` for `fresh_run`
+    - use `fork_context = true` for `resume_run`
+- If `state.json.agents.plan_architect.id` is empty, spawn `plan-architect`, then record the returned id in `state.json`.
+- If `state.json.agents.plan_architect.id` is present, reuse that same agent id instead of spawning a second architect.
 - Pass the exact `task-slug` and `./.codex/artifacts/plan/{task-slug}/state.json` path.
 - Tell it that `state.json.preflight` is authoritative for this orchestration run.
 - Tell it not to rerun review wiki staging, not to verify named agent availability, and not to inspect runtime or CLI invocation paths.
@@ -182,11 +245,17 @@ Do not enter `waiting_user_gate` until `state.json.user_gate.browser_open_succee
 
 ### Step 3. Run cold review
 
-- Call `plan-reviewer` on the current executable `plan.md`.
+- Invoke `plan-reviewer` through the same-agent continuity policy on the current executable `plan.md`.
+- Apply the named-agent invocation policy:
+    - use `fork_context = false` for `fresh_run`
+    - use `fork_context = true` for `resume_run`
+- If `state.json.agents.plan_reviewer.id` is empty, spawn `plan-reviewer`, then record the returned id in `state.json`.
+- If `state.json.agents.plan_reviewer.id` is present, reuse that same reviewer id instead of spawning a second reviewer.
 - Pass the exact `task-slug` and `./.codex/artifacts/plan/{task-slug}/state.json` path.
 - Tell it that `state.json.preflight` is authoritative for this orchestration run.
 - Tell it not to rerun review wiki staging.
 - Require it to block if `state.json.preflight.complete != true`.
+- When reusing the same reviewer instance, explicitly instruct it to re-judge the current plan revision from the current files and not to carry forward stale findings automatically.
 - Treat `./.codex/artifacts/plan-review/{task-slug}/review.md` as the review source of truth.
 - Require `review.md` to start with a YAML frontmatter block that contains at least:
     - `plan_path`
@@ -215,7 +284,11 @@ Always require explicit user approval before materialization.
 
 At the gate:
 
-- Ask `plan-architect` to produce a concise approval packet when needed.
+- Ask `plan-architect` through the same-agent continuity policy to produce a concise approval packet when needed.
+- Apply the named-agent invocation policy:
+    - use `fork_context = false` for `fresh_run`
+    - use `fork_context = true` for `resume_run`
+- Reuse `state.json.agents.plan_architect.id` when present instead of spawning a second architect for the same run.
 - When asking `plan-architect` for a packet, pass the same `state.json` path and keep `state.json.preflight` authoritative.
 - Require detailed decision packets for unresolved user-policy questions:
     - what needs a decision
@@ -259,10 +332,10 @@ At the gate:
 When the user replies:
 
 - If `stage = "waiting_architect_clarification"`:
-    - send the response to `plan-architect`
+    - send the response to the recorded `plan-architect` agent id
     - set `stage = "drafting"`
     - resume the drafting step instead of entering review or materialize directly
-- If the user answers open questions or requests plan changes, send that response to `plan-architect`.
+- If the user answers open questions or requests plan changes, send that response to the recorded `plan-architect` agent id.
 - If `plan-architect` changes any plan artifact after the gate:
     - recompute `plan_revision`
     - set `user_approved = false`
@@ -282,7 +355,12 @@ When the user replies:
 
 ### Step 7. Materialize tests
 
-- Call `plan-materializer` only when `approved_revision == plan_revision`.
+- Invoke `plan-materializer` through the same-agent continuity policy only when `approved_revision == plan_revision`.
+- Apply the named-agent invocation policy:
+    - use `fork_context = false` for `fresh_run`
+    - use `fork_context = true` for `resume_run`
+- If `state.json.agents.plan_materializer.id` is empty, spawn `plan-materializer`, then record the returned id in `state.json`.
+- If `state.json.agents.plan_materializer.id` is present, reuse that same materializer id instead of spawning a second materializer.
 - Pass the exact `task-slug` and `./.codex/artifacts/plan/{task-slug}/state.json` path.
 - Let it create or update source-tree tests and plan-local `materialize.md`.
 - Do not implement production code.
@@ -363,6 +441,7 @@ Terminal stages are:
 - Do not call `plan-architect` or `plan-reviewer` before the review wiki cache preflight completes.
 - Do not ask named planning agents to rediscover the review wiki root, rerun staging, or verify named agent availability after `state.json.preflight.complete = true`.
 - Do not silently refresh the review wiki cache again after Step 0 inside the same orchestration run.
+- Do not silently replace a reusable named planning agent with a fresh one for the same `task-slug`; record and report any forced replacement.
 - Do not route a pre-plan clarification need through `plan-reviewer`; keep it in the architect clarification path.
 - Do not skip explicit user approval.
 - Do not silently downgrade browser-open to a manual file list when local shell execution should work.
