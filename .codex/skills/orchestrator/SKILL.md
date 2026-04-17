@@ -27,12 +27,16 @@ Do not use it as a generic replacement for `architect`, `plan-review`, or `plan-
 9. `../review-wiki-setup/scripts/stage-review-wiki.ps1`
 10. `../review-wiki-setup/scripts/stage-review-wiki.sh`
 11. `./references/browser-open-commands.md`
+12. Workspace helper for deterministic `plan_revision` and linked phase path discovery:
+    - `./scripts/plan-revision.mjs`
 
 ## Required runtime expectations
 
 - This skill assumes the runtime can invoke the named custom agents `plan-architect`, `plan-reviewer`, and `plan-materializer`.
 - If any named agent definition is missing, unreadable, or not invokable, stop and report the blocker.
 - Do not silently inline architect, reviewer, or materializer work inside this skill when the named-agent path is expected.
+- The parent orchestrator thread must itself be able to write inside the workspace because it persists `state.json`, `clarification.md`, and `user-gate.md`.
+- For resumed orchestration runs, preserve the same writable parent-thread sandbox used by the run being continued; do not assume child-agent `workspace-write` can compensate for a read-only parent thread.
 
 ## Named agent invocation policy
 
@@ -183,6 +187,11 @@ Do not enter `waiting_user_gate` until `state.json.user_gate.browser_open_succee
 - After resolving the fixed review wiki snapshot, write it into `state.json.preflight.review_wiki_root`.
 - Set `state.json.preflight.review_wiki_snapshot_fixed = true` before any named planning agent runs.
 - Recompute `plan_revision` whenever `./plans/{task-slug}/plan.md` or any linked phase detail file changes.
+- Use `node ./scripts/plan-revision.mjs --plan ./plans/{task-slug}/plan.md --json` as the authoritative source for:
+    - deterministic `plan_revision`
+    - linked phase detail file discovery
+- Do not recreate the fingerprint with ad-hoc shell pipelines, temporary files, or OS temp directories.
+- If `./scripts/plan-revision.mjs` is missing, unreadable, or returns a linked-phase error, stop and report that blocker instead of inventing a replacement hash routine.
 - If plan artifacts changed on disk since the last recorded revision:
     - update `plan_revision`
     - clear stale review/materialize signatures
@@ -308,7 +317,7 @@ At the gate:
 - Build the exact browser-open target list in this order:
     - `user-gate.md`
     - current `plan.md`
-    - every linked phase detail file in display order
+    - every linked phase detail file in display order from `./scripts/plan-revision.mjs --plan <plan-path> --json`
 - Treat local browser opening as required whenever the runtime can execute local shell commands from the workspace.
 - Attempt the platform-appropriate browser-open command from `references/browser-open-commands.md`.
 - Record the attempt in `state.json.user_gate`:
@@ -453,6 +462,7 @@ Terminal stages are:
 - Do not keep looping silently when the workflow makes no progress for the same `plan_revision`.
 - Do not infer `user_policy` or user-decision routing from free-form prose when structured frontmatter fields are available.
 - Do not turn materialize blockers into ad-hoc implementation decisions.
+- Do not recreate `plan_revision` with ad-hoc shell hashing commands or any workflow that writes to OS temp directories.
 
 </Instructions>
 </Skill_Guide>

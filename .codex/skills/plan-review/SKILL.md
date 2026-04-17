@@ -30,6 +30,8 @@ Review the finished plan artifact, not the original request. Stay read-only.
 12. `./references/review-policy.md`
 13. Repo-local execution contracts only when needed to verify routing, validation, or repo-fit claims in the plan
 14. Directly referenced local prerequisite plan files only when the reviewed phase detail names them in the local prerequisite field
+15. Workspace helper for deterministic `plan_revision` and linked phase path discovery:
+   - `./scripts/plan-revision.mjs`
 
 ## Workflow
 
@@ -65,11 +67,15 @@ Before judging the plan:
 
 - Review one executable `plan.md` at a time
 - Derive `task-slug` from the owning plan directory
+- Use `node ./scripts/plan-revision.mjs --plan <plan-path> --json` as the authoritative source for:
+  - deterministic `plan_revision`
+  - linked phase detail paths discovered from the current `plan.md`
 - Load every phase detail file linked from that `plan.md`
 - Derive review tags from the reviewed `plan.md`, linked phase detail files, and any explicit scope words in the request metadata when present
 - Select candidate pattern files from the registry `patterns` list using the registry `selection.review` mode and `adjacency_rules`
 - Read only the selected pattern files whose `Apply When` clauses actually match the reviewed plan or its phase detail files
-- Derive the same deterministic `plan_revision` fingerprint from the current `plan.md` plus its linked phase detail files by hashing the normalized file bytes in relative-path order
+- Do not recreate the fingerprint with ad-hoc shell pipelines, temporary files, or OS temp directories
+- If `./scripts/plan-revision.mjs` is missing, unreadable, or returns a linked-phase error, stop and report that blocker instead of inventing a replacement hash routine
 - Treat the plan summary, linked phase detail files, and required references as the source of truth
 - If this reviewer instance is being reused inside the same orchestration run, treat prior findings as untrusted history and re-evaluate the current `plan_revision` from the current files
 - Do not infer missing policy from the original user request when the plan itself is ambiguous

@@ -294,6 +294,13 @@ function requireTaskRequest(prompt, resumeLast) {
   }
 }
 
+function findTrackedTaskByThreadId(jobs, threadId) {
+  if (!threadId) {
+    return null;
+  }
+  return jobs.find((job) => job.jobClass === "task" && job.threadId === threadId) ?? null;
+}
+
 async function resolveLatestTrackedTaskThread(cwd, options = {}) {
   const workspaceRoot = resolveWorkspaceRoot(cwd);
   const jobs = sortJobsNewestFirst(listJobs(workspaceRoot)).filter((job) => job.id !== options.excludeJobId);
@@ -304,10 +311,19 @@ async function resolveLatestTrackedTaskThread(cwd, options = {}) {
 
   const trackedTask = jobs.find((job) => job.jobClass === "task" && job.status === "completed" && job.threadId);
   if (trackedTask) {
-    return { id: trackedTask.threadId };
+    return { id: trackedTask.threadId, write: Boolean(trackedTask.write) };
   }
 
-  return findLatestTaskThread(workspaceRoot);
+  const latestThread = await findLatestTaskThread(workspaceRoot);
+  if (!latestThread) {
+    return null;
+  }
+
+  const trackedLatest = findTrackedTaskByThreadId(jobs, latestThread.id);
+  return {
+    id: latestThread.id,
+    write: trackedLatest ? Boolean(trackedLatest.write) : null
+  };
 }
 
 async function runForegroundCommand(job, runner, options = {}) {
@@ -385,7 +401,25 @@ async function handleTask(argv) {
   if (resumeLast && fresh) {
     throw new Error("Choose either --resume/--resume-last or --fresh.");
   }
-  const write = Boolean(options.write);
+
+  let resolvedResumeThreadId = resumeThreadId;
+  let inheritedWrite = null;
+  const workspaceJobs = sortJobsNewestFirst(listJobs(workspaceRoot));
+  if (resolvedResumeThreadId) {
+    const trackedResume = findTrackedTaskByThreadId(workspaceJobs, resolvedResumeThreadId);
+    inheritedWrite = trackedResume ? Boolean(trackedResume.write) : null;
+  } else if (resumeLast) {
+    const latestThread = await resolveLatestTrackedTaskThread(workspaceRoot);
+    if (!latestThread) {
+      throw new Error("No previous Codex task thread was found for this repository.");
+    }
+    resolvedResumeThreadId = latestThread.id;
+    inheritedWrite = typeof latestThread.write === "boolean" ? latestThread.write : null;
+  }
+
+  const write = Object.prototype.hasOwnProperty.call(options, "write")
+    ? Boolean(options.write)
+    : Boolean(inheritedWrite);
   const taskMetadata = buildTaskRunMetadata({
     prompt,
     resumeLast
@@ -402,7 +436,7 @@ async function handleTask(argv) {
       prompt,
       write,
       resumeLast,
-      resumeThreadId,
+      resumeThreadId: resolvedResumeThreadId,
       jobId: job.id
     });
     const { payload } = enqueueBackgroundTask(cwd, job, request);
@@ -421,7 +455,7 @@ async function handleTask(argv) {
         prompt,
         write,
         resumeLast,
-        resumeThreadId,
+        resumeThreadId: resolvedResumeThreadId,
         jobId: job.id,
         onProgress: progress
       }),
