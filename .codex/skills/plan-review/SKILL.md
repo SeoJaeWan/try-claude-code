@@ -30,8 +30,6 @@ Review the finished plan artifact, not the original request. Stay read-only.
 12. `./references/review-policy.md`
 13. Repo-local execution contracts only when needed to verify routing, validation, or repo-fit claims in the plan
 14. Directly referenced local prerequisite plan files only when the reviewed phase detail names them in the local prerequisite field
-15. Workspace helper for deterministic `plan_revision` and linked phase path discovery:
-   - `./.codex/scripts/plan-revision.mjs`
 
 ## Workflow
 
@@ -46,6 +44,8 @@ Before judging the plan:
   - read the provided `state.json`
   - require `state.json.preflight.review_wiki_root` to be present
   - treat `state.json.preflight.review_wiki_root` as authoritative
+  - require `state.json.plan_path`, `state.json.plan_revision`, and `state.json.linked_phase_paths`
+  - treat `state.json.plan_path`, `state.json.plan_revision`, and `state.json.linked_phase_paths` as authoritative orchestration metadata
   - do not run review wiki staging
   - if `state.json.preflight` is missing, incomplete, or contradictory, block instead of guessing
 - in direct mode:
@@ -66,18 +66,22 @@ Before judging the plan:
 ### Step 1. Load one executable plan
 
 - Review one executable `plan.md` at a time
-- Derive `task-slug` from the owning plan directory
-- Use `node ./.codex/scripts/plan-revision.mjs --plan <plan-path> --json` as the authoritative source for:
-  - deterministic `plan_revision`
-  - linked phase detail paths discovered from the current `plan.md`
+- In orchestrated mode:
+  - derive `task-slug` from the provided `state.json`
+  - use `state.json.plan_path` as the reviewed plan path
+  - use `state.json.plan_revision` as the authoritative revision id
+  - use `state.json.linked_phase_paths` as the authoritative linked phase detail list
+- In direct mode:
+  - derive `task-slug` from the owning plan directory
+  - load every phase detail file linked from the current `plan.md`
+  - set `plan_revision = direct-mode`
 - Load every phase detail file linked from that `plan.md`
 - Derive review tags from the reviewed `plan.md`, linked phase detail files, and any explicit scope words in the request metadata when present
 - Select candidate pattern files from the registry `patterns` list using the registry `selection.review` mode and `adjacency_rules`
 - Read only the selected pattern files whose `Apply When` clauses actually match the reviewed plan or its phase detail files
-- Do not recreate the fingerprint with ad-hoc shell pipelines, temporary files, or OS temp directories
-- If `./.codex/scripts/plan-revision.mjs` is missing, unreadable, or returns a linked-phase error, stop and report that blocker instead of inventing a replacement hash routine
+- In orchestrated mode, do not rerun linked phase discovery or recompute `plan_revision`
 - Treat the plan summary, linked phase detail files, and required references as the source of truth
-- If this reviewer instance is being reused inside the same orchestration run, treat prior findings as untrusted history and re-evaluate the current `plan_revision` from the current files
+- If this reviewer instance is being reused inside the same orchestration run, treat prior findings as untrusted history and re-evaluate the current plan files against the orchestrator-provided `plan_revision`
 - Do not infer missing policy from the original user request when the plan itself is ambiguous
 - If a reviewed phase detail names a local prerequisite plan in the local prerequisite field, load only that directly referenced plan and inspect only the minimum upstream phase needed to verify the prerequisite contract
 - Do not recurse into a larger plan graph or turn the review into a full multi-plan orchestration pass
@@ -151,6 +155,7 @@ Frontmatter rules:
   - `user_gate` when `requires_user_decision = true`
   - `architect` when findings remain and `requires_user_decision = false`
 - `finding_signature`: a stable short fingerprint of the normalized finding set for this exact `plan_revision`; use `none` when no findings remain
+- In direct mode, use `plan_revision = direct-mode` in the review artifact frontmatter
 
 ### Step 6. Respond in chat
 
@@ -167,6 +172,7 @@ Frontmatter rules:
 - Do not treat partial notes, briefs, or non-executable artifacts as execution-ready plans
 - Do not bypass the resolved `review_wiki_root` with hardcoded external-path reads when a workspace cache exists
 - In orchestrated mode, do not redo review wiki bootstrap that the orchestrator already completed
+- In orchestrated mode, do not recompute orchestrator-owned plan metadata such as `plan_revision` or linked phase discovery
 - Do not perform a second full review of upstream plans; inspect only the direct prerequisite parity needed to judge the reviewed plan's execution readiness
 - Do not let missing canonical outputs, negative outputs, recipients, winner or loser rules, terminal-state policy, side-effect coupling, or invalid topology pass silently when later execution would have to guess
 - Do not let summary/detail drift or unresolved contract wording force guesswork about the actual phase boundary

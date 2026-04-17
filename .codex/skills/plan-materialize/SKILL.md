@@ -25,15 +25,15 @@ Materialize tests after planning, not during implementation.
 1. Current executable plan file:
     - `./plans/**/plan.md`
 2. Linked phase detail files referenced from the selected `plan.md`
-3. Existing plan-local report when present:
+3. Optional orchestration state file when invoked by `orchestrator`:
+    - `./.codex/artifacts/plan/{task-slug}/state.json`
+4. Existing plan-local report when present:
     - `materialize.md` adjacent to the selected executable plan
-4. Local test config and existing tests:
+5. Local test config and existing tests:
     - unit signals: `package.json`, `vitest.config.*`, `jest.config.*`, `pom.xml`, `build.gradle*`, `mvnw`, `gradlew`, existing `*.test.*` / `*.spec.*`
     - E2E signals: `playwright.config.*`, `.maestro/`, existing browser/mobile E2E files
-5. `./references/unit-test-conventions.md` when logic boundaries are in scope
-6. `./references/e2e-test-conventions.md` when frontend UI boundaries are in scope
-7. Workspace helper for deterministic `plan_revision` and linked phase path discovery:
-    - `./.codex/scripts/plan-revision.mjs`
+6. `./references/unit-test-conventions.md` when logic boundaries are in scope
+7. `./references/e2e-test-conventions.md` when frontend UI boundaries are in scope
 
 ## Workflow
 
@@ -66,11 +66,14 @@ Then read the linked phase detail files and enumerate every selected phase-local
 - `검증`
 
 Treat these as first-class coverage obligations.
-- Use `node ./.codex/scripts/plan-revision.mjs --plan <plan-path> --json` as the authoritative source for:
-  - deterministic `plan_revision`
-  - linked phase detail paths discovered from the current `plan.md`
-- Do not recreate the fingerprint with ad-hoc shell pipelines, temporary files, or OS temp directories.
-- If `./.codex/scripts/plan-revision.mjs` is missing, unreadable, or returns a linked-phase error, stop and return a blocker instead of inventing a replacement hash routine.
+- In orchestrated mode:
+  - use `state.json.plan_path` as the authoritative plan path
+  - use `state.json.plan_revision` as the authoritative revision id
+  - use `state.json.linked_phase_paths` as the authoritative linked phase detail list
+- In direct mode:
+  - load every phase detail file linked from the current `plan.md`
+  - set `plan_revision = direct-mode`
+- In orchestrated mode, do not rerun linked phase discovery or recompute `plan_revision`.
 
 For each clause, record:
 
@@ -266,6 +269,7 @@ Frontmatter rules:
 - `requires_user_decision`: `true` only when `blocker_type = user_policy`; otherwise `false`
 - `blocked_clause_ids`: sorted clause identifiers blocked in this pass; use `[]` when not applicable
 - `affected_phase_paths`: sorted linked phase detail paths implicated by the materialization result; use `[]` when not applicable
+- In direct mode, use `plan_revision = direct-mode` in the materialization report frontmatter
 
 ### Step 7. Verify before completion
 
@@ -314,6 +318,7 @@ Frontmatter rules:
 - Do not silently defer selected plan coverage to a later pass
 - Do not widen targeted validation commands into full-suite regression unless the plan explicitly requires it
 - Do not use `./plans` as the durable source of truth for E2E ownership; use source-tree metadata comments and split registries
+- In orchestrated mode, do not recompute orchestrator-owned plan metadata such as `plan_revision` or linked phase discovery
 
 </Instructions>
 </Skill_Guide>

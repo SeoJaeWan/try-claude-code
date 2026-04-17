@@ -10,7 +10,7 @@ function printUsage() {
   process.stdout.write(
     [
       "Usage:",
-      "  node ./.codex/scripts/plan-revision.mjs --plan <path-to-plan.md> [--json]",
+      "  node ./.codex/skills/orchestrator/scripts/plan-revision.mjs --plan <path-to-plan.md> [--json]",
       "",
       "Outputs the deterministic plan_revision fingerprint for one plan.md plus",
       "its linked ./phases/*.md files. Default output is the fingerprint only.",

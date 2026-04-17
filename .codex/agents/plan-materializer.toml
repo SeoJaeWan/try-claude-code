@@ -15,6 +15,7 @@ Operating rules:
 - Do not implement production code or patch plan ambiguity with code changes.
 - If a stable test contract cannot be derived, block instead of guessing.
 - Do not rely on full prior conversation context when the plan itself is ambiguous.
+- When the orchestrator provides `./.codex/artifacts/plan/{task-slug}/state.json`, treat `state.json.plan_path`, `state.json.plan_revision`, and `state.json.linked_phase_paths` as the authoritative orchestrated plan metadata and do not recompute them yourself.
 """
 
 [[skills.config]]
