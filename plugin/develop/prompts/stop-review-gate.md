@@ -4,6 +4,8 @@ Review the previous Claude turn for design and security issues.
 </role>
 
 <task>
+{{WARNINGS_BLOCK}}
+
 {{PLAN_CONTEXT_BLOCK}}
 
 {{COMMIT_MESSAGES_BLOCK}}

@@ -7,67 +7,30 @@ allowed-tools: Bash, Read, Glob, AskUserQuestion
 
 <Skill_Guide>
 <Purpose>
-Analyze the current branch's changes and create a Pull Request on GitHub.
+Create a GitHub Pull Request using Claude Code's base PR workflow.
 </Purpose>
 
 <Instructions>
 
 # Pull Request Creation
 
-Analyze changes on the current branch and create a PR.
+Follow the base Claude Code PR creation workflow documented in the system prompt (`gh pr create` with HEREDOC body, Summary + Test plan format, short title under 70 chars).
 
-## Current State
+## Project-specific additions
 
-```
-Current branch: !`git branch --show-current`
-Remote status: !`git status -sb`
-Diff from main: !`git diff main...HEAD --stat`
-Commit history: !`git log main..HEAD --oneline`
-```
+1. Verify the current branch is not `main`/`master` before anything else.
+2. Push to remote with `-u` if the branch is not yet tracked.
+3. If `.github/pull_request_template.md` exists, let `gh` auto-apply it; do not override.
+4. Confirm the generated PR title and body with the user via `AskUserQuestion` before running `gh pr create`.
 
-## Execution Order
+## Error handling
 
-1. **Check status** - Verify not on main branch and that changes exist
-2. **Check push** - Push to remote if needed
-3. **Check PR template** - Search for `.github/pull_request_template.md`
-4. **Write PR content** - Generate title and body
-5. **User confirmation** - Confirm via AskUserQuestion
-6. **Create PR** - Run gh pr create
-
-## PR Body Format
-
-```markdown
-## Summary
-{1-2 line summary}
-
-## Changes
-- {change 1}
-- {change 2}
-
-## Test plan
-- [ ] Verified working in local environment
-- [ ] {additional test items}
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-```
-
-## Error Handling
-
-| Situation | Handling |
-|-----------|----------|
-| On main branch | Inform "Cannot create PR from main" |
-| No remote repository | Guide to run "git remote add origin" |
-| gh CLI not installed | Provide installation instructions |
-| Authentication required | Guide to run "gh auth login" |
-
-## Notes
-
-- Use HEREDOC to pass the PR body
-- PR template is applied automatically if present
-- gh CLI is required
-
----
-- **Final step:** Yes
+| Situation | Action |
+|---|---|
+| On main/master branch | Refuse with "Cannot create PR from main" |
+| No remote configured | Ask user to run `git remote add origin` |
+| `gh` CLI missing | Point to installation docs |
+| Auth required | Ask user to run `gh auth login` |
 
 </Instructions>
 </Skill_Guide>

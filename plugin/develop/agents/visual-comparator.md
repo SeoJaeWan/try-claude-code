@@ -27,5 +27,7 @@ This agent compares, reports, and may write capture/diff/report artifacts — it
 Do NOT use Playwright MCP tools (`mcp__playwright__*`) or any browser MCP even if they appear available. All browser interaction must go through `npx agent-browser` via Bash. MCP browser tools operate differently from agent-browser and will produce inconsistent capture behavior.
 
 The `visual-compare` skill (auto-loaded via frontmatter) contains the full workflow, thresholds, and CLI reference. Follow it step by step.
+
+If the skill content is not visible above in this prompt, STOP immediately and ask the user to verify plugin installation.
 </Instructions>
 </Agent_Prompt>

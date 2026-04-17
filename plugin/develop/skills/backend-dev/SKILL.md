@@ -1,9 +1,7 @@
 ---
 name: backend-dev
-description: "Backend API development, database integration, and authentication. Auto-detects framework and language from project files. Use for API endpoints, DB operations, server logic, and backend testing."
+description: "Backend API development, database integration, and authentication. Auto-detects framework and language from project files. Use for API endpoints, DB operations, server logic, and backend testing. Run inside the `backend-developer` agent."
 model: sonnet
-context: fork
-agent: backend-developer
 ---
 
 <Skill_Guide>

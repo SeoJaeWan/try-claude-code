@@ -1,9 +1,7 @@
 ---
 name: visual-compare
-description: "Visual comparison using pixelmatch and agent-browser. Captures element screenshots, runs pixel-level diff, and reports mismatch. Use for design diff, visual audit, screenshot comparison, verifying UI implementation against reference images, or comparing two URLs visually. Triggers on: reference image comparison, 'does this match the design', Figma/design spec verification, before-after UI comparison, 화면 비교, 디자인 비교, 스크린샷 비교. Use this skill even when the user just provides two images or URLs and asks what's different."
+description: "Visual comparison using pixelmatch and agent-browser. Captures element screenshots, runs pixel-level diff, and reports mismatch. Use for design diff, visual audit, screenshot comparison, verifying UI implementation against reference images, or comparing two URLs visually. Triggers on: reference image comparison, 'does this match the design', Figma/design spec verification, before-after UI comparison, 화면 비교, 디자인 비교, 스크린샷 비교. Use this skill even when the user just provides two images or URLs and asks what's different. Run inside the `visual-comparator` agent."
 model: sonnet
-context: fork
-agent: visual-comparator
 ---
 
 <Skill_Guide>
@@ -16,6 +14,41 @@ Uses agent-browser for screenshot capture and pixelmatch for diff analysis.
 # visual-compare
 
 Dedicated visual comparison workflow — screenshot capture, pixel diff, and mismatch reporting.
+
+## Quick Reference (READ FIRST — these are the canonical rules)
+
+**Viewport is chosen by scenario type, never from reference image dimensions:**
+
+| Scenario | Viewport |
+|---|---|
+| Desktop (default) | `1280 × 800` |
+| Mobile | iPhone 12 preset |
+| Tablet | `768 × 1024` |
+
+**Threshold is chosen by reference source:**
+
+| Reference source | Threshold |
+|---|---|
+| General UI reference (default) | `0.1` |
+| External source (different OS or browser engine) | `0.2` |
+| Pixel-perfect spec (Figma) | `0.05` |
+
+**Artifact naming — three files per case, sharing an identical `{kind}-{state}` key:**
+
+```
+{kind}-{state}-reference.png
+{kind}-{state}-current.png
+{kind}-{state}-diff.png
+```
+
+**Read-on-failure rule:**
+
+- Read `diff.png` **only when `passed: false`**.
+- Never read `reference.png` or `current.png` — pixelmatch already processed them.
+
+**Browser tool:** All capture goes through `npx agent-browser` via Bash. Playwright MCP tools (`mcp__playwright__*`) are not used for this skill.
+
+---
 
 ## Workflow
 
@@ -203,21 +236,46 @@ Use `0.1` unless context implies otherwise. When reference and current are captu
 
 ## What to avoid
 
-- Do NOT read reference.png or current.png — pixelmatch already processed them; reading adds token cost with no new information
-- Do NOT read reference image dimensions to set viewport — element-level capture uses the element's bounding box, not the viewport, as output dimensions; use standard breakpoints (1280/768/390) by scenario type instead
-- Do NOT read diff.png when `passed: true` — JSON mismatch stats are sufficient for passing cases
-- Do NOT use Playwright MCP tools (`mcp__playwright__*`) or any browser MCP for capture — all browser interaction must go through `npx agent-browser` via Bash. MCP browser tools have different capture semantics and will produce inconsistent results
-- Do NOT use the same Storybook (or test harness) as both reference and current source — this is a self-compare and produces no meaningful acceptance signal
-- Do NOT substitute source code analysis for real screenshots when state is hard to capture — seed the state instead
-- Do NOT produce a partial report where some cases have real screenshots and others only have source analysis — all cases must have a real triplet
-- Do NOT use inconsistent file naming — `{kind}-{state}` key must be identical across reference, current, and diff
-- Do NOT modify or resize reference images to match implementation — the code or viewport must be adjusted instead
-- Do NOT chase anti-aliasing differences below 0.5% mismatch rate — these are rendering engine artifacts
-- Do NOT skip the pixelmatch gate and rely solely on visual inspection or computed styles
-- Do NOT install pixelmatch globally — use project devDependencies
-- Do NOT take full-page screenshots — always capture the specific target element
-- Do NOT proceed to code changes in Mode A — report only unless explicitly asked to fix
-- Do NOT fix visual mismatches inside a dedicated `visual-comparator` phase — hand them off to a later `frontend-developer` phase
+Each rule pairs a prohibition with the correct alternative when the alternative isn't already in Quick Reference.
+
+- **Do NOT read `reference.png` or `current.png`** — pixelmatch already processed them; reading adds token cost with no new information.
+  Instead: Read only `diff.png`, and only when `passed: false`.
+
+- **Do NOT read reference image dimensions to set viewport** — element-level capture uses the element's bounding box, not the viewport, as output dimensions.
+  Instead: Pick viewport from scenario type (see Quick Reference: desktop=1280×800, mobile=iPhone12, tablet=768×1024).
+
+- **Do NOT read `diff.png` when `passed: true`** — JSON mismatch stats are sufficient for passing cases.
+  Instead: Rely on `passed`, `mismatchRatio`, and `dimensionsMatch` fields in the JSON output.
+
+- **Do NOT use Playwright MCP tools (`mcp__playwright__*`) or any browser MCP for capture** — they have different capture semantics and produce inconsistent results.
+  Instead: All browser interaction goes through `npx agent-browser` via Bash.
+
+- **Do NOT use the same Storybook (or test harness) as both reference and current source** — this is a self-compare and produces no meaningful acceptance signal.
+  Instead: Reference must come from an independent source — a live production/staging URL, a different codebase, or a user-provided image file.
+
+- **Do NOT substitute source code analysis for real screenshots** when state is hard to capture.
+  Instead: Seed application state (localStorage, cookies, dispatched events) and capture real pixels — see "State seeding" in Step 2.
+
+- **Do NOT produce a partial report** where some cases have real screenshots and others only have source analysis.
+  Instead: Every case in the inventory must have a real `{reference, current, diff}` triplet before the report is final.
+
+- **Do NOT use inconsistent file naming** — the `{kind}-{state}` key must be identical across reference, current, and diff files.
+
+- **Do NOT modify or resize reference images to match implementation.**
+  Instead: Adjust the implementation code or the capture viewport.
+
+- **Do NOT chase anti-aliasing differences below 0.5% mismatch rate** — these are rendering engine artifacts.
+
+- **Do NOT skip the pixelmatch gate** and rely solely on visual inspection or computed styles.
+
+- **Do NOT install pixelmatch globally** — use project devDependencies.
+
+- **Do NOT take full-page or viewport-level screenshots.**
+  Instead: Always capture the specific target element via CSS selector.
+
+- **Do NOT proceed to code changes in Mode A** — report only unless explicitly asked to fix.
+
+- **Do NOT fix visual mismatches inside a dedicated `visual-comparator` phase** — hand them off to a later `frontend-developer` phase.
 
 ## agent-browser reference
 

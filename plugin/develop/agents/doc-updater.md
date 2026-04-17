@@ -24,5 +24,7 @@ Both outputs are generated directly within this agent. No separate UI delegation
 **This agent uses the `doc` skill for its workflow.**
 
 The `doc` skill (auto-loaded via frontmatter) contains the full workflow, detection logic, and output format spec. Follow it step by step.
+
+If the skill content is not visible above in this prompt, STOP immediately and ask the user to verify plugin installation.
 </Instructions>
 </Agent_Prompt>

@@ -80,8 +80,8 @@ X (base branch — HEAD stays here during execution)
 - Ensure `**Branch:**` header exists in the plan file.
 - Ensure the Phase Index table (`| # | Phase | Agent |`) exists near the top of plan.md — this is the primary routing source.
 - Ensure every phase file path listed in the table exists under the plan folder.
-- Ensure every `owner_agent` listed in the table maps to an existing agent in `agents/{owner_agent}.md`.
 - Ensure current working directory is the repository root (not inside `worktrees/**`).
+- Do NOT pre-check agent existence here — the `Agent` tool validates `subagent_type` at dispatch time and fails immediately if the agent is missing.
 - If validation fails → stop immediately.
 
 ### Step 2. Set up
@@ -93,6 +93,23 @@ BASE=$(git rev-parse --abbrev-ref HEAD)
 # Read task branch name from plan header
 TASK_BRANCH="{value from **Branch:**}"
 WORKTREE_DIR="worktrees/${TASK_BRANCH}"
+
+# Parallel-task awareness (informational — does NOT block execution).
+# If other worktrees are already active, surface them so the user (or you)
+# can decide whether another task is intentionally in progress or whether
+# those are stale leftovers from a previous failed run. Intentional parallel
+# work is allowed; the stop-gate only tracks the first worktree in the diff
+# list, so running two tasks at once will lose phase context for one of them.
+OTHER_WORKTREES=$(git worktree list --porcelain \
+  | awk '/^worktree / && $2 != ENVIRON["PWD"]' \
+  | grep -v "$WORKTREE_DIR" || true)
+if [ -n "$OTHER_WORKTREES" ]; then
+  echo "ℹ️  Other active worktrees detected (informational, not blocking):" >&2
+  echo "$OTHER_WORKTREES" >&2
+  echo "  - If these are stale from a failed run: clean up with 'git worktree remove <path>'." >&2
+  echo "  - If another task is intentionally in progress: proceed, but note that" >&2
+  echo "    stop-gate phase tracking covers only one worktree per session." >&2
+fi
 
 # Check for stale worktree from a previous failed run
 if git worktree list --porcelain | grep -q "$WORKTREE_DIR"; then
@@ -113,10 +130,11 @@ git worktree add -b "$TASK_BRANCH" "$WORKTREE_DIR" "$BASE"
 After creating the worktree, copy the entire plan folder into it and commit as the first commit on the task branch. This ensures the plan, test contracts, and any other artifacts under the plan folder are included when the task branch is merged.
 
 ```bash
-# Copy the entire plan folder (preserve directory structure)
+# Copy the entire plan folder into the worktree. Uses a Node helper instead
+# of `cp -r` / `mkdir -p` so this works identically on Windows (cmd/PowerShell),
+# macOS, and Linux without requiring Bash-specific utilities.
 PLAN_DIR="plans/{task-name}"
-mkdir -p "$WORKTREE_DIR/$PLAN_DIR"
-cp -r "$PLAN_DIR"/. "$WORKTREE_DIR/$PLAN_DIR/"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/plan-copy.mjs" "$PLAN_DIR" "$WORKTREE_DIR/$PLAN_DIR"
 
 # Commit plan artifacts as the first commit
 git -C "$WORKTREE_DIR" add -A
@@ -130,6 +148,8 @@ After this step, HEAD is still on `$BASE` in the main repo. The worktree has its
 Read the Phase Index table from the top of plan.md to get the ordered list of `(phase_file_path, owner_agent)` pairs. For each row in order, dispatch the phase agent and then end your turn so the stop-gate can review.
 
 The agent's job is to read its own phase file and execute it — don't inline the phase content into the prompt. The phase file lives inside the worktree (it was copied there in Step 2), so the agent can read it directly from the working directory.
+
+> **Contract**: The exact shape of `description` and the leading `prompt` header below is a contract shared with `plugin/develop/scripts/lib/contract.mjs` (regexes and builder functions) and the hook CI tests. Do NOT alter the `"Phase N: ..."` description form or the `"## Working directory / You are working in: ..."` block. If you need a new shape, update contract.mjs and the unit tests together.
 
 ```
 Agent(
@@ -152,6 +172,13 @@ Agent(
   description: "Phase {N}: {short summary}"
 )
 ```
+
+**Before calling `Agent(...)`, run a self-check on the dispatch:**
+
+1. The `description` field MUST start with `"Phase N:"` (literal word "Phase", a space, the phase number, a colon). Examples of correctly formatted descriptions: `"Phase 1: implement login"`, `"Phase 10: final cleanup"`. Examples that WILL break the hook contract: `"[Phase 1] …"`, `"1단계: …"`, `"phase one: …"`.
+2. The `prompt` MUST include a line reading exactly `"You are working in: <absolute_worktree_path>"`. Do not rename this header, do not translate it, and do not wrap the path in quotes.
+
+If either check fails, fix the dispatch before calling `Agent`. These strings are the shared contract with `scripts/lib/contract.mjs`; drift will cause the Stop hook to lose phase context silently.
 
 After the agent returns, output a brief report as **plain text** and let your turn end naturally. Do NOT use `AskUserQuestion` — just output text so that `end_turn` triggers the Stop hook.
 

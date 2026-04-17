@@ -1,5 +1,5 @@
 ---
-name: workflow
+name: session-restore
 description: Restore worktree context from a previous session into the current session by scanning git worktrees on disk. Triggers on 'resume', 'continue', '이어서', '복구', '워크트리 복구'.
 ---
 

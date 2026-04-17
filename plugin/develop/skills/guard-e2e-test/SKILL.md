@@ -1,9 +1,7 @@
 ---
 name: guard-e2e-test
-description: 여러 route/state를 관통하는 full-flow E2E Playwright 테스트를 생성하는 스킬. agent-browser를 통해 실제 브라우저에서 전체 사용자 여정을 탐색하고, route 전환/상태 유지/인증 흐름 등 cross-page 동작을 검증하는 .spec.ts를 생성하여 실제 테스트 디렉토리에 배치한다. `plan-materialize`가 만드는 기능/화면 단위 bounded-surface E2E와 달리, 여러 페이지를 관통하는 전체 사용자 여정의 회귀를 방어하는 용도이다. "회원가입부터 대시보드까지 플로우 테스트", "전체 사용자 여정 E2E", "로그인→결제→완료 플로우 회귀 테스트" 등의 요청 시 사용한다.
-model: opus
-context: fork
-agent: playwright-guard
+description: 여러 route/state를 관통하는 full-flow E2E Playwright 테스트를 생성하는 스킬. agent-browser를 통해 실제 브라우저에서 전체 사용자 여정을 탐색하고, route 전환/상태 유지/인증 흐름 등 cross-page 동작을 검증하는 .spec.ts를 생성하여 실제 테스트 디렉토리에 배치한다. `plan-materialize`가 만드는 기능/화면 단위 bounded-surface E2E와 달리, 여러 페이지를 관통하는 전체 사용자 여정의 회귀를 방어하는 용도이다. "회원가입부터 대시보드까지 플로우 테스트", "전체 사용자 여정 E2E", "로그인→결제→완료 플로우 회귀 테스트" 등의 요청 시 사용한다. Run inside the `playwright-guard` agent.
+model: sonnet
 ---
 
 <Skill_Guide>

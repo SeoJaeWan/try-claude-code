@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import crypto from "node:crypto";
 import fs from "node:fs";
 import process from "node:process";
 import path from "node:path";
@@ -8,14 +9,35 @@ import { fileURLToPath } from "node:url";
 
 import { runAppServerTurn } from "./lib/codex.mjs";
 import { loadPromptTemplate, interpolateTemplate } from "./lib/prompts.mjs";
-import { loadSession, updateWorktreeReviewedCommit, getStopReviewThreadId, setStopReviewThreadId } from "./lib/sessions.mjs";
+import {
+  loadSession,
+  updateWorktreeReviewedCommit,
+  getStopReviewThreadId,
+  setStopReviewThreadId,
+  consumeSessionWarnings,
+  recordBlock,
+  clearRecentBlockStreak,
+} from "./lib/sessions.mjs";
 import { listJobs } from "./lib/state.mjs";
 import { sortJobsNewestFirst } from "./lib/job-control.mjs";
 import { SESSION_ID_ENV } from "./lib/tracked-jobs.mjs";
 import { resolveWorkspaceRoot } from "./lib/workspace.mjs";
+import { comparePaths } from "./lib/fs.mjs";
 import { collectBlockReview, findPlanDirByBranch } from "./lib/review-collector.mjs";
 
 const STOP_REVIEW_TIMEOUT_MS = 15 * 60 * 1000;
+const SAME_BLOCK_ESCALATION_THRESHOLD = 3;
+
+function fingerprintBlockReason(reason) {
+  // Normalize whitespace so cosmetic differences (trailing newlines, extra
+  // spaces injected by the planner directive) do not split the streak.
+  const normalized = String(reason ?? "")
+    .replace(/\r?\n/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{2,}/g, "\n\n")
+    .trim();
+  return crypto.createHash("sha256").update(normalized).digest("hex").slice(0, 16);
+}
 
 /**
  * Find a phase detail file matching the given phase number inside the phases/ directory.
@@ -80,7 +102,26 @@ function filterJobsForCurrentSession(jobs, input = {}) {
   return jobs.filter((job) => job.sessionId === sessionId);
 }
 
-function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "", session = null) {
+function buildWarningsBlock(warnings = []) {
+  if (!warnings || warnings.length === 0) {
+    return "";
+  }
+  const lines = warnings.map((w) => {
+    const sample = w.sample ? `\n    sample: ${JSON.stringify(w.sample)}` : "";
+    return `- [${w.kind}] ${w.detail}${sample}`;
+  });
+  return [
+    "## Contract drift warnings (may affect review reliability)",
+    "",
+    "The runner↔hook contract detected drift in this session. These warnings are",
+    "informational — they may explain why phase context below is missing or partial.",
+    "Do NOT treat them as blocking findings.",
+    "",
+    ...lines,
+  ].join("\n");
+}
+
+function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "", session = null, warnings = []) {
   const template = loadPromptTemplate(path.resolve(SCRIPT_DIR, ".."), "stop-review-gate");
 
   let worktreeDiffsBlock = "";
@@ -100,11 +141,9 @@ function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "
     const planDir = findPlanDirByBranch(workspaceRoot, branch);
     logNote(`[stop-gate] plan-context chain: branch=${branch}, planDir=${planDir ?? "null"}`);
     if (planDir && session) {
-      const wtNorm = (worktreeDiffs[0]?.path ?? "").replace(/\\/g, "/");
-      const wt = session.worktrees.find(
-        (w) => w.path.replace(/\\/g, "/") === wtNorm,
-      );
-      logNote(`[stop-gate] plan-context chain: wtNorm=${wtNorm}, sessionMatch=${wt ? "found" : "miss"}, currentPhase=${wt?.currentPhase ?? "null"}`);
+      const wtRaw = worktreeDiffs[0]?.path ?? "";
+      const wt = session.worktrees.find((w) => comparePaths(w.path, wtRaw));
+      logNote(`[stop-gate] plan-context chain: wt=${wtRaw}, sessionMatch=${wt ? "found" : "miss"}, currentPhase=${wt?.currentPhase ?? "null"}`);
       if (wt?.currentPhase != null) {
         // Read the phase detail file instead of the full plan.
         const phasesDir = path.join(planDir, "phases");
@@ -144,6 +183,7 @@ function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "
     WORKTREE_DIFFS_BLOCK: worktreeDiffsBlock,
     PLAN_CONTEXT_BLOCK: planContextBlock,
     COMMIT_MESSAGES_BLOCK: commitMessagesBlock,
+    WARNINGS_BLOCK: buildWarningsBlock(warnings),
   });
 }
 
@@ -199,10 +239,8 @@ function buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, session = null
   // Read the current phase from the session (set by PostToolUse Agent hook).
   let phaseTag = "the current phase";
   if (session) {
-    const wtNorm = worktreeDiffs[0]?.path ?? "";
-    const wt = session.worktrees.find(
-      (w) => w.path.replace(/\\/g, "/") === wtNorm.replace(/\\/g, "/"),
-    );
+    const wtRaw = worktreeDiffs[0]?.path ?? "";
+    const wt = session.worktrees.find((w) => comparePaths(w.path, wtRaw));
     if (wt?.currentPhase != null) {
       phaseTag = `Phase ${wt.currentPhase}`;
     }
@@ -319,9 +357,9 @@ function markWorktreesReviewed(sessionId, worktreeDiffs) {
   }
 }
 
-async function runStopReview(cwd, input = {}, worktreeDiffs = [], workspaceRoot = "", session = null) {
+async function runStopReview(cwd, input = {}, worktreeDiffs = [], workspaceRoot = "", session = null, warnings = []) {
   const sessionId = input.session_id || process.env[SESSION_ID_ENV] || null;
-  const prompt = buildStopReviewPrompt(input, worktreeDiffs, workspaceRoot, session);
+  const prompt = buildStopReviewPrompt(input, worktreeDiffs, workspaceRoot, session, warnings);
   const existingThreadId = sessionId ? getStopReviewThreadId(sessionId) : null;
   const turnCwd = workspaceRoot || cwd;
   const turnOptions = { prompt, sandbox: "read-only", persistThread: true };
@@ -362,7 +400,17 @@ async function runStopReview(cwd, input = {}, worktreeDiffs = [], workspaceRoot 
           "The stop-time Codex review task timed out after 15 minutes. Run /codex:review --wait manually or bypass the gate.",
       };
     }
-    const detail = error instanceof Error ? error.message : String(error);
+    // Graceful degrade: if Codex is not installed/launchable, skip the review
+    // instead of blocking. SessionStart already warned the user, so don't repeat.
+    const errText = error instanceof Error ? error.message : String(error);
+    const isMissingCodex =
+      error?.code === "ENOENT" ||
+      /\bcodex\b.*not (?:recognized|found)|command not found.*codex|ENOENT/i.test(errText);
+    if (isMissingCodex) {
+      logNote("[stop-gate] Codex CLI unavailable — skipping stop-time review.");
+      return { ok: true, skipped: true, reason: null };
+    }
+    const detail = errText;
     return {
       ok: false,
       reason: detail
@@ -388,7 +436,11 @@ async function main() {
 
   const workspaceRoot = resolveWorkspaceRoot(cwd);
 
-  const review = await runStopReview(cwd, input, worktreeDiffs, workspaceRoot, session);
+  // Drain contract-drift warnings accumulated since the last stop-gate. Passing
+  // them to the reviewer lets Codex explain why phase context may be missing.
+  const warnings = sessionId ? consumeSessionWarnings(sessionId) : [];
+
+  const review = await runStopReview(cwd, input, worktreeDiffs, workspaceRoot, session, warnings);
 
   // Check for running jobs (informational note only).
   const jobs = sortJobsNewestFirst(
@@ -425,7 +477,27 @@ async function main() {
     // If this BLOCK is in a plan-runner worktree context, append a directive
     // telling the main session to re-dispatch the phase agent for the fix.
     const plannerDirective = buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, session);
-    const fullReason = review.reason + plannerDirective;
+
+    // Track consecutive BLOCKs with the same fingerprint so the user can be
+    // escalated when the same issue survives multiple re-dispatch attempts.
+    let escalationNote = "";
+    if (sessionId) {
+      const fingerprint = fingerprintBlockReason(review.reason);
+      const { count } = recordBlock(sessionId, fingerprint);
+      if (count >= SAME_BLOCK_ESCALATION_THRESHOLD) {
+        escalationNote = [
+          "",
+          "---",
+          `[escalation] 같은 이슈로 ${count}회 연속 BLOCK되었습니다. 자동 재디스패치만으로는 해결되지 않을 가능성이 큽니다.`,
+          "다음 중 하나를 선택하세요:",
+          "  1) 사용자(사람)가 직접 원인을 진단 — 코드/테스트/plan을 재검토",
+          "  2) 해당 phase의 기대 동작(plan 또는 phase 파일)을 수정",
+          "  3) 현재 worktree를 폐기하고 처음부터 다시 시작",
+        ].join("\n");
+      }
+    }
+
+    const fullReason = review.reason + plannerDirective + escalationNote;
 
     emitDecision({
       decision: "block",
@@ -434,6 +506,12 @@ async function main() {
         : fullReason,
     });
     return;
+  }
+
+  // ALLOW path — clear the consecutive-BLOCK streak so future BLOCKs with the
+  // same fingerprint start counting from 1 again.
+  if (sessionId) {
+    clearRecentBlockStreak(sessionId);
   }
 
   logNote(runningTaskNote);

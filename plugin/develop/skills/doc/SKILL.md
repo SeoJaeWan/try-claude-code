@@ -1,9 +1,7 @@
 ---
 name: doc
-description: "CODEMAPS and HUMANMAPS auto-generation. Scans service code structure and generates documentation. Outputs to codemaps/ and humanmaps/. Use when the user asks to update or regenerate project documentation, or after significant code changes. Triggers on: 'update docs', 'regenerate codemaps', 'sync documentation', '문서 업데이트', '코드맵 갱신'. Also triggered automatically as a final phase by the plan orchestrator."
+description: "CODEMAPS and HUMANMAPS auto-generation. Scans service code structure and generates documentation. Outputs to codemaps/ and humanmaps/. Use when the user asks to update or regenerate project documentation, or after significant code changes. Triggers on: 'update docs', 'regenerate codemaps', 'sync documentation', '문서 업데이트', '코드맵 갱신'. Also triggered automatically as a final phase by the plan orchestrator. Run inside the `doc-updater` agent."
 model: sonnet
-context: fork
-agent: doc-updater
 ---
 
 <Skill_Guide>

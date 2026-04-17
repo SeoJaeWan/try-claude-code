@@ -100,6 +100,50 @@ scripts/              # workspace sync 스크립트
 3. 한 레포 안의 개인 운영체계보다 **설치 가능한 plugin** 조합으로 분리하는 쪽
 4. 큰 공통 문서를 매번 다 읽는 구조보다, **작업별 working set을 줄이는** 쪽
 
+## 플랫폼 요구사항
+
+이 플러그인은 macOS, Windows, Linux 모두에서 동작하도록 설계되어 있습니다. 다만 각 플랫폼에서 한 번은 확인해야 하는 사전 조건이 있습니다.
+
+### 공통
+
+- **Node.js 20 이상** — hook 스크립트와 `plan-copy.mjs` 헬퍼는 Node `fs.cpSync`(20+)를 사용합니다.
+- **Git 2.20 이상** — worktree 명령을 쓰며, `git worktree list --porcelain` 출력 포맷에 의존합니다.
+- **Codex CLI (선택)** — `stop-review-gate` 훅이 Codex를 호출합니다. 미설치 상태에서도 세션은 정상 동작하며, stop 리뷰만 자동으로 건너뜁니다. SessionStart 훅이 세션 시작 시 Codex 감지 여부를 stderr에 알려줍니다.
+  ```
+  npm install -g @openai/codex
+  ```
+
+### Windows
+
+- **긴 경로 지원**: worktree 디렉토리 이름이 길어질 수 있습니다. 260자 제한으로 `git worktree add`가 실패하면 다음을 한 번만 실행하세요.
+  ```powershell
+  git config --global core.longpaths true
+  ```
+- **Git Bash 권장**: runner 스킬이 실행하는 쉘 명령은 Git Bash에서 가장 안정적입니다. PowerShell/cmd 전용 환경이라면 `plan-copy.mjs` 같은 Node 헬퍼 경로로 대체되는지 확인하세요 (본 플러그인은 Node 헬퍼를 우선 사용하도록 설계되어 있습니다).
+- **`codex.cmd` 자동 인식**: npm 전역 설치 시 `<nvm|npm-prefix>\codex.cmd`가 생성되며, SessionStart 훅이 `cmd.exe`를 경유해 감지합니다.
+
+### macOS
+
+- **Gatekeeper quarantine**: Codex를 npm 이외 경로(예: 수동 다운로드)로 설치한 경우 첫 실행 시 차단될 수 있습니다. 실행 파일 우클릭 → 열기로 예외 등록하세요.
+- **`where.exe` 필요 없음**: POSIX `which`가 기본 사용됩니다.
+
+### Linux
+
+- **npm 전역 bin의 PATH 포함**: `~/.npm-global/bin` 또는 `/usr/local/bin`이 PATH에 있는지 확인하세요.
+  ```bash
+  echo $PATH | tr ':' '\n' | grep -E "npm-global|local/bin"
+  ```
+
+## 테스트
+
+훅 계약(runner skill ↔ hook 스크립트)을 지키는지 확인하는 단위 테스트가 있습니다.
+
+```bash
+npm test
+```
+
+CI에서는 `.github/workflows/plugin-test.yml`이 **ubuntu / macOS / windows × Node 20·22** 조합으로 같은 테스트를 실행합니다.
+
 ## 빠르게 보려면
 
 ```bash

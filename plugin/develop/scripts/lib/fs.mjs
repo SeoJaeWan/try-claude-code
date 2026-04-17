@@ -6,6 +6,39 @@ export function ensureAbsolutePath(cwd, maybePath) {
   return path.isAbsolute(maybePath) ? maybePath : path.resolve(cwd, maybePath);
 }
 
+// Convert path separators to POSIX style. Does not resolve or normalize segments.
+export function toPosixPath(p) {
+  if (!p) return "";
+  return String(p).replace(/\\/g, "/");
+}
+
+// Collapse ./ and ../ segments and convert to POSIX separators. Relative paths
+// stay relative; this does NOT resolve against the current working directory.
+// Use when storing paths in JSON that should keep their original relativity.
+export function normalizePath(p) {
+  if (!p) return "";
+  return toPosixPath(path.normalize(p));
+}
+
+// Resolve to an absolute POSIX-style path. Use when paths are passed between
+// processes (hooks, subprocesses) or compared against a canonical location.
+export function absoluteNormalizePath(p) {
+  if (!p) return "";
+  return toPosixPath(path.resolve(p));
+}
+
+// Compare two paths for equality with OS-appropriate case sensitivity.
+// Inputs are resolved to absolute POSIX form before comparison; use this
+// instead of raw string equality for worktree and session-stored paths.
+export function comparePaths(a, b) {
+  const na = absoluteNormalizePath(a);
+  const nb = absoluteNormalizePath(b);
+  if (!na || !nb) return na === nb;
+  return process.platform === "win32"
+    ? na.toLowerCase() === nb.toLowerCase()
+    : na === nb;
+}
+
 export function createTempDir(prefix = "codex-plugin-") {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }

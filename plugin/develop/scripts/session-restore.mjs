@@ -19,6 +19,7 @@ import path from "node:path";
 import process from "node:process";
 
 import { addWorktree } from "./lib/sessions.mjs";
+import { normalizePath, toPosixPath } from "./lib/fs.mjs";
 import { SESSION_ID_ENV } from "./lib/tracked-jobs.mjs";
 
 // ---------------------------------------------------------------------------
@@ -115,15 +116,13 @@ function main() {
   }
 
   // Normalize the main worktree path for comparison.
-  const mainPath = worktrees[0]?.path
-    ? path.normalize(worktrees[0].path).replace(/\\/g, "/")
-    : null;
-  const normCwd = path.normalize(cwd).replace(/\\/g, "/");
+  const mainPath = worktrees[0]?.path ? normalizePath(worktrees[0].path) : null;
+  const normCwd = normalizePath(cwd);
 
   const registered = [];
 
   for (const wt of worktrees) {
-    const normWtPath = path.normalize(wt.path).replace(/\\/g, "/");
+    const normWtPath = normalizePath(wt.path);
 
     // Skip the main worktree.
     if (normWtPath === mainPath || normWtPath === normCwd) {
@@ -137,7 +136,7 @@ function main() {
 
     // Use a relative path when possible (keeps session data portable).
     const wtRelOrAbs = path.isAbsolute(wt.path)
-      ? path.relative(cwd, wt.path).replace(/\\/g, "/") || wt.path
+      ? toPosixPath(path.relative(cwd, wt.path)) || wt.path
       : wt.path;
 
     addWorktree(sessionId, wtRelOrAbs, wt.branch);
