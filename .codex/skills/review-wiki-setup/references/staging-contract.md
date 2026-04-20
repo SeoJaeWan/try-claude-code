@@ -1,47 +1,55 @@
-# Review Wiki Staging Contract
+# Review Wiki Planning Root Contract
 
-Use this contract whenever planning agents need a workspace-local copy of the review wiki.
+Use this contract whenever planning agents need a workspace-local planning root for the review wiki.
 
 ## Paths
 
 - External source root: `~/.codex/reviewWiki/wiki`
-- Workspace cache root: `./.codex/cache/review-wiki/current`
-- Stage manifest: `./.codex/cache/review-wiki/current/staged.json`
+- Workspace planning root: `./.codex/review-wiki/sync/current`
+- Planning-root manifest: `./.codex/review-wiki/sync/current.manifest.json`
 
-Use the platform-appropriate staging command from `references/platform-commands.md`:
+Use the platform-appropriate preparation command from `references/platform-commands.md`:
 
 - Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.ps1`
 - macOS / Linux: `sh ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.sh`
 
-The cache copies the contents of the external `wiki/` root only. After staging, the planning root is `./.codex/cache/review-wiki/current` itself, so planning agents should find:
+The workspace planning root always resolves at `./.codex/review-wiki/sync/current`. It may be prepared in one of two modes:
 
-- `./.codex/cache/review-wiki/current/registry.json`
-- `./.codex/cache/review-wiki/current/core/**`
-- `./.codex/cache/review-wiki/current/patterns/**`
-- `./.codex/cache/review-wiki/current/_meta/**`
+- `snapshot`: copy the external `wiki/` contents into the workspace-local planning root
+- `link`: create a live directory link to the external `wiki/` root
 
-`raw/` is not copied into the planning cache. The cache is read-only execution input, not the source of truth.
+After refresh or repair, the planning root is `./.codex/review-wiki/sync/current` itself, so planning agents should find:
+
+- `./.codex/review-wiki/sync/current/registry.json`
+- `./.codex/review-wiki/sync/current/core/**`
+- `./.codex/review-wiki/sync/current/patterns/**`
+- `./.codex/review-wiki/sync/current/_meta/**`
+
+The manifest lives next to the planning root so diagnostics do not modify the external source root when `link` mode is used.
+
+`raw/` is not part of the planning root. In `snapshot` mode it is intentionally omitted, and in `link` mode the root points at `~/.codex/reviewWiki/wiki`. The planning root is read-only execution input, not the source of truth.
 
 ## Root resolution order
 
 Resolve the planning `review_wiki_root` in this order:
 
-1. `./.codex/cache/review-wiki/current`
-2. `~/.codex/reviewWiki/wiki`
+1. `./.codex/review-wiki/sync/current`
 
-When the cache exists, planning agents should consume it instead of hardcoding the external root.
+If the workspace planning root is missing, stop and route to `review-wiki-setup` instead of falling back to direct external-path reads in planning skills.
 
 ## Freshness policy
 
-- `orchestrator` must refresh the cache exactly once at the start of every orchestration run when the external source root is readable.
-- Treat that refreshed cache as the fixed planning snapshot for the rest of the same orchestration run.
-- Do not refresh the cache again inside the same orchestration run unless the user explicitly asks to reload the review wiki and restart planning from that newer snapshot.
-- Direct `architect` and `plan-review` runs may use an existing cache without refreshing it.
-- If the external source root is permission-blocked or temporarily unreadable but the cache exists, continue with the cache and mention the fallback in the handoff or review note.
-- If both the external source root and the cache are unavailable, stop and escalate instead of guessing.
+- Default to `snapshot` mode when planning agents run in sandboxed environments that may block reads through external link targets.
+- Use `link` mode only when the runtime can follow the external vault through `./.codex/review-wiki/sync/current` without bypassing sandbox policy.
+- `review-wiki-setup` or an external maintenance step repairs or recreates `./.codex/review-wiki/sync/current` as needed.
+- `orchestrator`, `architect`, and `plan-review` consume `./.codex/review-wiki/sync/current` directly and do not perform per-run refresh inside the planning workflow.
+- In `snapshot` mode, refresh the workspace planning root after external `wiki/` edits when planning agents need the latest state.
+- In `link` mode, edits to the external `wiki/` root appear immediately through `./.codex/review-wiki/sync/current` once the link exists.
+- Planning skills may read `current.manifest.json` for diagnostics, but freshness checks are informational unless the user explicitly requests a stricter policy.
+- If the workspace planning root is missing, stop and escalate instead of guessing.
 
 ## Responsibility split
 
-- `review-wiki-setup` repairs or bootstraps the external `~/.codex/reviewWiki` link and directory structure.
-- `scripts/stage-review-wiki.ps1` and `scripts/stage-review-wiki.sh` copy the contents of the external `wiki/` root into the workspace cache.
+- `review-wiki-setup` repairs or bootstraps the external `~/.codex/reviewWiki` link and can prepare the workspace planning root in either supported mode.
+- External maintenance jobs may recreate `./.codex/review-wiki/sync/current` without involving the planning hot path.
 - Planning skills consume the resolved `review_wiki_root` and must not bypass it with hardcoded external-path reads once the root is resolved.

@@ -1,11 +1,11 @@
 ---
 name: architect
-description: Codex entry skill for boundary-centered implementation planning. Use when a request needs one or more executable plan artifacts under `./plans` after resolving blocking product policy, UX, contract, schema, validation, state, or permission ambiguity, with a controller-facing `plan.md` written in plain Korean that includes a work-at-a-glance summary, an agreement table, a phase flow summary, phase-by-phase execution checkpoints, and linked per-phase technical detail files for later `plan-review` and `plan-materialize`, plus registry-backed review wiki core/pattern guidance.
+description: Codex entry skill for request-traceable implementation planning. Use when a request needs one or more executable plan artifacts under `./plans` after resolving blocking product policy, UX, contract, schema, validation, state, permission, and any upstream UI-direction ambiguity handled by `brainstorm` or `design-discovery`, with a controller-facing `plan.md` written in plain Korean that keeps the user's request items visible, groups work by concrete boundaries, exposes public contracts before execution order, and links per-phase technical detail files for later `plan-review` and `plan-materialize`, plus registry-backed review wiki core/pattern guidance.
 ---
 
 <Skill_Guide>
 <Purpose>
-Create decision-complete implementation plans as one or more sequential executable plans, with explicit execution phases, scenario-first boundary I/O contracts, and controller-first plan artifacts that expose the whole flow and each phase's actual work before technical orchestration detail.
+Create decision-complete implementation plans as one or more sequential executable plans, with explicit execution phases, scenario-first boundary I/O contracts, and controller-first plan artifacts that preserve the user's wording, expose concrete work bundles and public contracts before execution order, and keep later execution from guessing.
 </Purpose>
 
 <Instructions>
@@ -18,20 +18,22 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 
 1. User request and latest conversation context
 2. Optional orchestration state file when invoked by `orchestrator`:
-   - `./.codex/artifacts/plan/{task-slug}/state.json`
-3. `./references/agents-lite.md` - execution agent catalog
-4. `../review-wiki-setup/references/staging-contract.md` - review wiki cache resolution and staging rules
-5. `../review-wiki-setup/references/platform-commands.md` - platform-specific link and staging commands
-6. Resolved planning `review_wiki_root` containing `registry.json`, `core/`, `patterns/`, and selection policy. Prefer `./.codex/cache/review-wiki/current`; fall back to `~/.codex/reviewWiki/wiki` only when the cache is unavailable.
-7. Every core document listed in the registry `core` array, in listed order
-8. Candidate pattern files selected from the registry `patterns` list using the `architect` selection mode plus matching `Apply When`
-9. `./references/git.md` - commit message, branch naming, and worktree naming rules
-10. `./references/plan-template-sequential.md` - sequential plan template
-11. `./references/phase-template-detail.md` - per-phase technical detail template
-12. Relevant execution contracts only when routing or mode-sensitive conventions matter:
+   - `./plans/_orchestrator/{task-slug}/state.json`
+3. Optional `design-discovery` handoff from the latest conversation context or a directly referenced `./.codex/artifacts/design-discovery/{feature-name}.md`
+4. `./references/agents-lite.md` - execution agent catalog
+5. `../review-wiki-setup/references/staging-contract.md` - review wiki sync resolution and refresh rules
+6. `../review-wiki-setup/references/platform-commands.md` - platform-specific link and planning-root commands
+7. Resolved planning `review_wiki_root` containing `registry.json`, `core/`, `patterns/`, and selection policy. Use `./.codex/review-wiki/sync/current` as the planning root.
+8. Every core document listed in the registry `core` array, in listed order
+9. Candidate pattern files selected from the registry `patterns` list using the `architect` selection mode plus matching `Apply When`
+10. `./references/git.md` - commit message, branch naming, and worktree naming rules
+11. `./references/plan-template-sequential.md` - sequential plan template
+12. `./references/phase-template-detail.md` - per-phase technical detail template
+13. `./references/visual-parity-contract.md` - canonical comparison-mode, surface-role, and metric-contract rules for visual parity tasks
+14. Relevant execution contracts only when routing or mode-sensitive conventions matter:
    - inspect only the minimum repo-local tool/validation/runtime contract that governs the work
    - examples: `package.json` scripts, framework config, test config, CI config schema, deploy script entrypoints, or existing source-tree placement conventions
-13. Context7 MCP tools only as fallback when external library or API facts can still change the planning boundary after local inspection and any prior `brainstorm` handoff:
+15. Context7 MCP tools only as fallback when external library or API facts can still change the planning boundary after local inspection and any prior `brainstorm` handoff:
    - use Context7 only for version-sensitive library/framework/API behavior, migration constraints, deprecation status, or current recommended patterns
    - do not use Context7 for repo-local conventions, stable language basics, or facts already derivable from local context
 
@@ -57,14 +59,10 @@ Before writing any plan artifact:
 - In direct mode:
   - read `../review-wiki-setup/references/staging-contract.md`
   - read `../review-wiki-setup/references/platform-commands.md`
-  - resolve `review_wiki_root` in this order:
-    1. `./.codex/cache/review-wiki/current`
-    2. `~/.codex/reviewWiki/wiki`
-  - if the cache is missing and the external wiki root is readable, run the platform-appropriate staging command from `platform-commands.md` from the workspace root, then use the refreshed cache
-  - if the external wiki root is missing or broken and the cache is absent:
+  - resolve `review_wiki_root` to `./.codex/review-wiki/sync/current`
+  - if the workspace sync is missing:
     - report the missing dependency explicitly
     - use `review-wiki-setup` when available to repair it before continuing
-  - if the external wiki root is permission-blocked but the cache exists, continue with the cache and note the fallback in the final handoff
 - Read `{review_wiki_root}/registry.json`
 - Read every path listed in the registry `core` array, in order, resolving relative paths from `review_wiki_root`
 - Derive initial tags from the user request and repo-local context
@@ -74,12 +72,16 @@ Before writing any plan artifact:
 
 ### Step 1. Analyze request
 
+- First consume any `design-discovery` handoff and treat its approved UI direction, hierarchy, state-presentation expectations, responsive constraints, reuse rules, and referenced visuals as the default planning input for UI work
 - Clarify goals, boundaries, constraints, acceptance criteria, and feature policy
+- Treat the user's wording as canonical and keep it traceable through the plan
+- Decompose the request into concrete items and touched work bundles before naming phases
 - Classify missing information as `blocking`, `derivable`, or `deferrable` using the active review wiki core decision policy
 - Apply relevant selected pattern guidance before deciding that a boundary, canonical identifier, prerequisite, or verification strategy is already obvious
 - Derive what can be confirmed from local context before asking the user
 - For behavior-changing work, identify the domain scenario first rather than jumping to implementation layers
 - Treat the scenario's `input -> output` contract as the planning primitive
+- Do not replace the user's wording with planner shorthand when a concrete itemized restatement is possible
 
 ### Step 1.2. Verify unstable external facts when needed (conditional)
 
@@ -101,19 +103,28 @@ Before writing any plan artifact:
 
 - Do not write any plan artifact while `blocking` ambiguity remains
 - Route unresolved `blocking` ambiguity to `brainstorm` first
+- If UI scope exists and user-visible hierarchy, state presentation, responsive behavior, or design-system fit are still ambiguous enough that planning would force later design guessing, route that ambiguity to `design-discovery` before writing the plan
 - If direct clarification is necessary, ask only concise, actionable questions:
   - batch at most 4 blocking questions at once
   - prefer structured user-input tooling when available
   - otherwise ask concise plain-text questions in chat
 - In orchestrated mode, if `blocking` ambiguity remains before any executable plan can be written:
-  - write `./.codex/artifacts/plan/{task-slug}/clarification.md`
+  - write `./plans/_orchestrator/{task-slug}/clarification.md`
   - emit a concrete decision packet instead of plain chat questions
   - stop before creating or updating `./plans/**`
+- If the blocking issue is missing UI direction, hierarchy, or state presentation, make the clarification packet explicitly tell the user to run `design-discovery` or provide equivalent locked UI decisions before planning continues
 - For user-visible scope, resolve behavior well enough to define stable boundaries and expected outcomes in the plan
+- For touched public boundaries such as components, hooks, APIs, routes, or services, resolve enough detail to name the public surface that will change:
+  - props / inputs / outputs
+  - callback names and handoff meaning
+  - state ownership (`controlled`, `default`, `internal`, `host-owned`) when relevant
+  - invalid / no-op rules when execution would otherwise guess
+  - explicit exclusions that need user approval
 - For notification, permission, routing, workflow, state-transition, or other behavior-changing scope, resolve enough detail to define:
   - trigger or precondition
   - canonical output that must happen
   - negative output that must not happen
+  - observable state or output markers for interactive behavior when execution or later tests would otherwise have to guess
   - recipient, delivery target, or final interpretation boundary when delivery or interpretation matters
   - sibling output candidates that are explicitly rejected when multiple identifiers, data shapes, or interpretation paths are plausible
 - Do not force detailed E2E surface metadata into the plan when `plan-materialize` can derive it later
@@ -128,6 +139,7 @@ Use high-level inspection only:
 - tech stack and major boundaries
 - expected integration points
 - existing policies, contracts, behaviors, and conventions that answer missing questions
+- `design-discovery` outcomes when they materially affect user-visible planning boundaries, hierarchy, or state coverage
 - the selected pattern files when they affect split topology, contracts, state/validation, rollout, rollback, or verification quality
 
 Do not deep-dive into implementation details.
@@ -142,6 +154,8 @@ Do not deep-dive into implementation details.
 - For `visual-comparator`:
   - there is no dedicated compare CLI contract in this repository
   - inspect only the minimum repo-local reference source, selector policy, capture path, and artifact location that govern the comparison phase
+  - if visual parity is part of acceptance, also inspect `./references/visual-parity-contract.md`
+  - treat the comparison mode, gating metric, non-gating metric, surface-role mapping, comparison policy, and metric treatment as part of the compare execution contract
   - treat those repo-local inputs as the source of truth for what gets captured, what gets compared, and what evidence must be committed
 - For `general-developer`:
   - there is no dedicated CLI contract in this repository
@@ -159,66 +173,60 @@ Do not deep-dive into implementation details.
 - Required branch headers, phase metadata, routing policy, and execution handoff rules must follow the active review wiki core docs
 - Treat `plan-template-sequential.md` as the complete `plan.md` structure and `phase-template-detail.md` as the complete per-phase detail structure
 - Do not add extra top-level sections unless a core doc explicitly requires them or the user explicitly asks for them
-- Keep the plan artifacts phase-first and terse
+- Do not add a dedicated top-level design-discovery recap section; compress approved UI-direction decisions into the existing request, contract, and phase detail tables
 - Treat `plan.md` as a controller-first user-facing review artifact
 - Keep the top preamble minimal: `Branch`, a one-line `Worktree dir`, then a compact routing table with `# | Phase | Agent`
 - In that routing table, use the linked phase detail path in `Phase` and mirror the linked detail-file `owner_agent` in `Agent`
-- Add `## 이번 작업 한눈에 보기` after the routing table
-- In `이번 작업 한눈에 보기`, summarize the plan in short bullets:
-  - `목표`
-  - `이번 계획의 핵심 변경`
-  - `완료되면 달라지는 점`
-  - `제외 범위`
-- Add `## 사전 합의` after `이번 작업 한눈에 보기`
-- In `사전 합의`, record the pre-agreed policy, scope, or contract decisions from the conversation as a markdown table with:
-  - `항목`
-  - `합의 내용`
-  - `적용 범위`
-  - `메모`
-- When Context7 changed or confirmed a planning decision, record only the outcome in `사전 합의` or the relevant phase detail file:
+- After the routing table, use the sections fixed by `plan-template-sequential.md` in the same order.
+- Keep `plan.md` reviewable without opening phase detail files first.
+- Lead with tables, not paragraph blocks.
+- The top half of `plan.md` must let a human reviewer answer:
+  - what the user asked for
+  - which concrete work bundles will change
+  - which public contracts are being locked
+  - what is explicitly excluded
+- Use `## 요청 추적` to map the user's request items to the plan scope without replacing them with planner taxonomy.
+- Use `## 작업 단위 요약` to group work by concrete boundaries such as components, hooks, routes, services, or screens.
+- Use `## 공개 계약 요약` to expose touched public surfaces before phase ordering.
+- Use `## 소유권/상태 규칙` when ownership, winner rules, open/close rules, or no-op rules matter.
+- Use `## 제외 범위` to show excluded items one row at a time with reason and approval status.
+- Use `## 단계 개요` and `## Phase 단계 설명` to explain sequence after the work bundles and public contracts are already visible.
+- End `plan.md` with `## 검토 체크리스트`.
+- When Context7 changed or confirmed a planning decision, record only the outcome in the top-level request / contract tables or the relevant phase detail file:
   - do not restate the whole lookup when `brainstorm` already resolved it; carry forward the confirmed outcome and only note the delta if `architect` had to re-check it
-  - use `사전 합의` for cross-phase choices such as library selection, version policy, or migration direction
+  - use the top-level request / contract tables for cross-phase choices such as library selection, version policy, or migration direction
   - use the relevant phase detail file for phase-local API constraints, deprecations, or integration rules
-- Add `## Phase 흐름 요약` after `사전 합의` so the controller can understand the full sequence without opening the phase detail files
-- In `Phase 흐름 요약`, summarize every phase in order with concise answers to:
-  - what role this phase plays
-  - what work happens in this phase
-  - what state is fixed when it finishes
-  - what it hands off to the next phase
-- Add `## 단계별 실행` after `Phase 흐름 요약`
+- When a `design-discovery` handoff exists, record only the locked outcome in the top-level request / contract tables or the relevant phase detail file:
+  - do not restate the whole consultation history or variant loop
+  - use the top-level request / contract tables for cross-phase UI direction, design-system, or hierarchy constraints
+  - use the relevant phase detail file for phase-local state presentation, responsive behavior, or component interaction rules
 - Treat the compact top routing table as navigation metadata only; keep routing rationale, scenario I/O contracts, detailed validation commands, test taxonomy, and orchestration metadata out of `plan.md` unless the user explicitly asks for them
-- Keep high-level boundary changes and human-readable completion conditions in `plan.md`; keep file-level change maps in the linked phase detail files
-- Write each `plan.md` heading as `### Phase n. {짧고 쉬운 역할 이름}`
-- In `plan.md`, make each phase understandable through `목적`, one short sequencing-rationale line, `시작 조건`, `핵심 변경`, `완료 조건`, the explicit handoff or final output line, and `상세 문서`
-- Use the sequencing-rationale line to explain why the phase belongs at that point in the sequence; for example `왜 먼저 하는가`, `왜 이 단계가 필요한가`, or `왜 마지막 단계인가`
-- Write `핵심 변경` so a controller can tell which boundary changes in this phase without reading the detail file; use short review-friendly bullets or phrases, not abstract theme labels
-- Write the handoff line so the next phase can start without reinterpreting the contract; use `다음 단계로 넘기는 것` for intermediate phases and `최종 산출물` for the last phase
-- Write `완료 조건` so a controller can tell what visible or inspectable state closes the phase
-- End `plan.md` with `## 체크포인트`
-- In `체크포인트`, write one approval-style checkbox per phase so the controller can see which state must be fixed before the next handoff or final rollout
+- Keep high-level boundary changes and human-readable completion conditions in `plan.md`; keep file-level change maps and detailed constraints in the linked phase detail files
+- Write each `plan.md` phase card as a short metadata table, not a prose block
 - Avoid unexplained jargon in `plan.md`
-- Make the role label concrete
-- Use the phase detail files for `owner_agent`, technical `input/output`, file-level preconditions, execution ordering, constraints, and `검증`
-- Start every phase detail file with a controller digest in this order:
-  - `## 컨트롤러 다이제스트`
-  - `### 파일별 작업`
-  - `### 완료 증거`
-- Keep that digest readable without the later technical sections; detailed commands, contracts, and routing stay below it
-- After the digest, add one `## 실행 계약` block for the technical detail section
+- Make work-bundle names concrete
+- Use the phase detail files for work-bundle cards, file-level preconditions, execution ordering, constraints, and `검증`
+- Start every phase detail file with `## Phase 요약` and `## 작업 순서`
+- Then break the phase into concrete work-bundle sections such as `## 작업 묶음 A. ...`, `## 작업 묶음 B. ...`
+- Inside each work-bundle section, expose:
+  - why it changes
+  - current problem
+  - target state
+  - kept boundaries
+  - related files
+  - public contract
+  - validation points
 - Keep `plan.md` and each linked phase detail file in parity
-- Do not restate a conclusion already fixed in `컨트롤러 다이제스트` or `파일별 작업` unless a later skill would otherwise have to guess the canonical contract
+- Do not restate a conclusion already fixed in a top-level contract table unless a later skill would otherwise have to guess the contract
 - When a later phase only finalizes exports, migration, or consumer validation, record the delta from earlier phases instead of restating the full contract
 - When fallback or default-selection policy matters, prefer short rule lists or state-to-outcome mappings in the detail file
 - Keep `시작 조건` in `plan.md` short and human-readable
-- Use a numbered `작업 순서` list in the detail file so the execution order is visible without rereading the whole file map
-- In the detail-file `파일별 작업`, use `파일 | 작업 방식 | 사전 정의 | 완료 조건`
-- In the detail file `boundary`, describe change boundaries rather than re-listing every writable file; the writable file map belongs in `파일별 작업`
-- In the detail file `작업 순서`, lead with concrete file or boundary changes
-- Keep `완료 증거` human-readable and outcome-focused; keep `검증` command-oriented and avoid duplicating the same sentence across both
+- In work-bundle file tables, use `파일 | 작업 방식 | 완료 조건`
+- Keep phase detail sections table-heavy and scan-friendly; do not collapse a whole phase into one long paragraph
 - Use one canonical `task-slug` per executable plan
 - For each behavior-changing phase, make the linked phase detail file precise enough that `plan-materialize` can derive a stable scenario contract without guessing
 - Do not leave multiple plausible canonical outputs unresolved inside one phase
-- If a controller cannot answer "why this phase exists now, what changes here, what state gets fixed, what is handed off, and when do we stop" from the phase summary plus the phase digest, the plan fails the quality bar
+- If a controller cannot answer "what the user asked for, which boundaries change, which public contracts are locked, what is excluded, and what each phase fixes" from the top-level tables plus the phase work-bundle cards, the plan fails the quality bar
 
 ### Step 3.2. Choose plan count before writing (required)
 
@@ -249,7 +257,8 @@ If a plan file includes implementation scope beyond documentation-only or struct
 4. When the plan includes behavior, state, routing, or contract-selection changes, make the phase detail contract explicit enough for later materialization
 
 `architect` does not generate tests directly.
-`plan-materialize` later decides `unit`, selected `e2e`, `skip`, or `block` from the plan summary, the phase detail files, and local project conventions.
+`plan-materialize` later decides `unit`, `runtime`, selected `e2e`, `skip`, or `block` from the plan summary, the phase detail files, and local project conventions.
+`architect` does not enumerate owner-test inventories or choose concrete test files.
 
 ### Step 3.6. Plan journey and full-flow E2E ownership in `plan-materialize` (conditional)
 
@@ -264,8 +273,14 @@ If a plan file changes cross-route journeys, auth/session transitions, redirect 
 If a plan implements UI against an external visual reference such as a live URL, image, screenshot set, or Figma file, and acceptance depends on comparing the implementation against that reference:
 
 - Add a later phase with `owner_agent: visual-comparator`
+- Choose exactly one `comparison mode` per compared state or scope
+- Default to `structural parity` when fixture payloads, repeated mock media, synthetic body content, or other known non-reference-equivalent surfaces would otherwise dominate whole-canvas mismatch
 - Make that phase capture or load the reference side and the current implementation side explicitly
+- Make the phase detail file state one blocking `gating metric` and one separate `non-gating metric`, or `none` when no advisory metric is needed
+- Use the canonical surface roles from `./references/visual-parity-contract.md`; task-local nouns can appear only as local mapping notes
+- For each relevant surface, declare the `comparison policy` and `metric treatment`
 - Require repo-local capture, diff, and report artifacts plus a pass/fail decision in the phase detail file
+- Require the report contract to separate blocking pass/fail from global drift reporting
 - If failed comparison can lead to more UI work, add a subsequent `frontend-developer` phase for fixes instead of hiding rework inside the compare phase
 
 ### Step 4. Quality gates (required)
@@ -307,7 +322,7 @@ Provide a concise execution handoff summary using the handoff requirements in `{
   - multiple executable plan summaries when required: `./plans/{task-group}-{nn}-{slice-slug}/plan.md`
   - each multi-plan artifact also owns matching phase detail files under its own `phases/`
 - Optional orchestration clarification packet when planning must stop before any executable plan is writable:
-  - `./.codex/artifacts/plan/{task-slug}/clarification.md`
+  - `./plans/_orchestrator/{task-slug}/clarification.md`
 - Output language: Korean
 
 ## Guardrails
@@ -316,15 +331,18 @@ Provide a concise execution handoff summary using the handoff requirements in `{
 - Every executable plan file is sequential-only
 - Do not write `plan.md` as if only implementers will read it
 - Do not treat the review wiki as optional when its registry is available; always read the registry first and route from it
-- Do not bypass the resolved `review_wiki_root` with hardcoded external-path reads when a workspace cache exists
+- Do not bypass the resolved `review_wiki_root` with hardcoded external-path reads once the workspace sync path is available
 - In orchestrated mode, do not redo review wiki bootstrap or named-agent preflight that the orchestrator already completed
 - Do not generate or edit source-tree tests inside `architect`
 - `visual-comparator` execution happens later; architect only plans that phase
 - Do not produce a plan with unresolved blocking ambiguity
+- Do not replace the user's wording with planner shorthand when the user's wording can be preserved in a request row
 - In orchestrated mode, do not leave pre-plan blocking questions only in chat when a `clarification.md` packet is required
+- Do not leave user-visible hierarchy, state presentation, or responsive behavior implicit when `design-discovery` already resolved them
+- Do not add new top-level plan sections just to mirror a `design-discovery` handoff
 - Do not treat Context7 as mandatory for every plan; use it only when unstable external facts can change the boundary, contract, or phase split
 - Do not re-query Context7 just because it is available when `brainstorm` already resolved the relevant library/framework/API decision well enough for planning
-- Do not leave Context7-derived constraints only in transient reasoning; if they matter, compress them into `사전 합의` or the relevant phase detail file
+- Do not leave Context7-derived constraints only in transient reasoning; if they matter, compress them into the top-level request / contract tables or the relevant phase detail file
 - Do not generate multiple executable plan files unless the active core plan-count rule requires it
 - Do not generate overview, index, DAG, or root graph files
 - If the user explicitly requests direct agent execution for a low-risk focused task, do not force planning
@@ -332,9 +350,11 @@ Provide a concise execution handoff summary using the handoff requirements in `{
 - Do not let the plan folder name, branch summary, and worktree directory diverge
 - Do not leave a local prerequisite contract only in handoff prose
 - Do not leave canonical outputs, negative outputs, or recipients implicit when later test materialization would have to guess
-- Do not re-list the same file inventory in `boundary` after `파일별 작업` already fixed it
 - Do not hide the real phase role behind unexplained jargon in `plan.md`
 - Do not make the controller open every phase detail file just to understand the whole plan flow
 - Do not bury the actual work of a phase under routing metadata or abstract labels
+- Do not make a reviewer reconstruct public props, callback names, state ownership, or exclusions from prose alone
+- Do not use task-local UI nouns as the canonical taxonomy for a visual parity contract
+- Do not claim scoped or structural visual parity closure without an explicit blocking gating metric and a separate non-gating metric decision
 </Instructions>
 </Skill_Guide>

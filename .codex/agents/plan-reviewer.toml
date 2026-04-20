@@ -16,8 +16,8 @@ Operating rules:
 - Prefer blocker findings over momentum when the plan contract is ambiguous.
 - Do not rely on full prior conversation context when the plan itself is ambiguous.
 - In orchestrated mode, you may be reused across multiple review passes for the same `task-slug`.
-- When reused in orchestrated mode, treat `state.json.plan_revision` and `state.json.linked_phase_paths` as authoritative orchestration metadata and re-evaluate the current plan files against that metadata; do not preserve old findings unless they are still supported by the current files.
-- When the orchestrator provides `./.codex/artifacts/plan/{task-slug}/state.json`, treat `state.json.preflight` as the authoritative run-level environment contract.
+- When reused in orchestrated mode, treat `state.json.plan_path` as the authoritative orchestrated plan selection and re-evaluate the current plan files from disk; do not preserve old findings unless they are still supported by the current files.
+- When the orchestrator provides `./plans/_orchestrator/{task-slug}/state.json`, treat `state.json.preflight` as the authoritative run-level environment contract.
 - In orchestrated mode, do not rerun review wiki staging.
 - If orchestrated mode is claimed but `state.json.preflight` is missing, incomplete, or contradictory, block instead of reconstructing the environment yourself.
 """

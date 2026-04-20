@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-description: Explicit multi-agent planning orchestrator for requests that should run through the repository's planning loop instead of a one-off planning pass. Use only when the user explicitly invokes `$orchestrator` or explicitly asks for the automated architect/review/materialize workflow, and Codex should coordinate `plan-architect`, `plan-reviewer`, and `plan-materializer` to draft, review, revise, run a mandatory browser-backed user gate that opens the current plan artifacts in tabs, and materialize tests without implementing production code.
+description: Explicit multi-agent planning orchestrator for requests that should run through the repository's planning loop instead of a one-off planning pass. Use only when the user explicitly invokes `$orchestrator` or explicitly asks for the automated architect/review/materialize workflow, and Codex should coordinate `plan-architect`, `plan-reviewer`, and `plan-materializer` to draft, review, revise, request explicit user approval, and materialize tests without implementing production code.
 ---
 
 <Skill_Guide>
@@ -18,17 +18,13 @@ Do not use it as a generic replacement for `architect`, `plan-review`, or `plan-
 
 1. Latest user request and latest conversation context
 2. Existing plan artifacts under `./plans/**` relevant to the task
-3. Existing orchestration state under `./.codex/artifacts/plan/{task-slug}/state.json` when present
+3. Existing orchestration state under `./plans/_orchestrator/{task-slug}/state.json` when present
 4. `./.codex/agents/plan-architect.toml`
 5. `./.codex/agents/plan-reviewer.toml`
 6. `./.codex/agents/plan-materializer.toml`
 7. `../review-wiki-setup/references/staging-contract.md`
-8. `../review-wiki-setup/references/platform-commands.md`
-9. `../review-wiki-setup/scripts/stage-review-wiki.ps1`
-10. `../review-wiki-setup/scripts/stage-review-wiki.sh`
-11. `./references/browser-open-commands.md`
-12. Orchestrator-local helper for deterministic `plan_revision` and linked phase path discovery:
-    - `./scripts/plan-revision.mjs`
+8. `./references/state-integrity.md`
+9. `./scripts/validate-orchestrator-state.mjs`
 
 ## Required runtime expectations
 
@@ -38,6 +34,8 @@ Do not use it as a generic replacement for `architect`, `plan-review`, or `plan-
 - The parent orchestrator thread must itself be able to write inside the workspace because it persists `state.json`, `clarification.md`, and `user-gate.md`.
 - For resumed orchestration runs, preserve the same writable parent-thread sandbox used by the run being continued; do not assume child-agent `workspace-write` can compensate for a read-only parent thread.
 - Do not block orchestration solely because a replacement named agent cannot be spawned with a full parent-context fork; use the packet-driven fallback defined below whenever the role contract allows it.
+- Treat `state.json` as authoritative only when it passes the orchestrator state validator.
+- Do not reuse, resume, or replace any named planning agent when the current `state.json` is malformed or fails invariant validation.
 
 ## Named agent invocation policy
 
@@ -61,8 +59,6 @@ Do not use it as a generic replacement for `architect`, `plan-review`, or `plan-
     - exact `state.json` path
     - statement that `state.json.preflight` is authoritative
     - exact `plan_path`
-    - exact `plan_revision`
-    - exact `linked_phase_paths`
     - write scope
     - allowed read-only context
     - role-specific output path requirements
@@ -88,7 +84,7 @@ Do not use it as a generic replacement for `architect`, `plan-review`, or `plan-
 
 ## State files
 
-Store orchestration-only state under `./.codex/artifacts/plan/{task-slug}/`.
+Store orchestration-only state under `./plans/_orchestrator/{task-slug}/`.
 
 Required files:
 
@@ -96,11 +92,14 @@ Required files:
 
 Optional helper files:
 
+- `clarification.md`
 - `user-gate.md`
 - `notes.md` only when a short orchestration note is useful
+- `state.json.next` only while validating a candidate state write
+- `state.json.bak` only when preserving the last validated snapshot is useful for explicit recovery
 
 Keep plan content under `./plans/**`.
-Keep review findings under `./.codex/artifacts/plan-review/**`.
+Keep review findings under `./plans/_orchestrator/review/**`.
 Keep test materialization output under plan-local `materialize.md`.
 
 Required `state.json` shape:
@@ -109,9 +108,6 @@ Required `state.json` shape:
 {
     "task_slug": "example-task",
     "plan_path": "plans/example-task/plan.md",
-    "plan_revision": null,
-    "linked_phase_paths": [],
-    "approved_revision": null,
     "stage": "drafting",
     "agents": {
         "plan_architect": {
@@ -133,18 +129,15 @@ Required `state.json` shape:
     },
     "last_review_outcome": null,
     "last_review_signature": null,
+    "review_loop_count": 0,
     "last_materialize_outcome": null,
+    "last_materialize_gate_status": null,
     "last_materialize_signature": null,
+    "materialize_loop_count": 0,
     "user_gate_required": true,
     "user_approved": false,
     "user_gate": {
-        "packet_path": null,
-        "browser_open_required": true,
-        "browser_open_attempted": false,
-        "browser_open_succeeded": false,
-        "opened_paths": [],
-        "open_command": null,
-        "last_open_error": null
+        "packet_path": null
     },
     "blocked_by": null,
     "blocker_type": null,
@@ -154,67 +147,63 @@ Required `state.json` shape:
         "mode": "orchestrated",
         "complete": false,
         "review_wiki_root": null,
-        "review_wiki_snapshot_fixed": false,
         "named_agents_verified": false,
         "verified_agents": []
     }
 }
 ```
 
-Use the orchestrator-local helper to derive the deterministic `plan_revision` fingerprint and `linked_phase_paths` for the current `plan.md`.
-Treat approval as valid only when `approved_revision == plan_revision`.
 Treat `state.json.preflight` as the authoritative run-level environment contract for named planning agents during an orchestration run.
-Treat `state.json.plan_path`, `state.json.plan_revision`, and `state.json.linked_phase_paths` as the authoritative orchestration metadata for downstream planning agents during an orchestrated run.
-Do not enter `waiting_user_gate` until `state.json.user_gate.browser_open_succeeded = true`, unless the user explicitly waives browser opening for this run.
+Treat `state.json.plan_path` as the authoritative orchestration metadata for downstream planning agents during an orchestrated run.
+Treat approval as valid only until `plan-architect` changes the plan after the user gate.
+
+## State integrity contract
+
+- Read `./references/state-integrity.md` before reading or mutating orchestration state.
+- Validate `state.json` with `node ./.codex/skills/orchestrator/scripts/validate-orchestrator-state.mjs --state <path>` before:
+    - resuming an existing run
+    - handing `state.json` to any named planning agent
+    - trusting a just-written state transition
+- When writing state:
+    - write the full candidate document to `state.json.next`
+    - validate `state.json.next`
+    - replace `state.json` only after validation succeeds
+    - re-validate the final `state.json` before any named-agent handoff
+- If the current `state.json` fails validation:
+    - stop and report the exact validator error
+    - do not treat the failure as an architect, reviewer, or materializer stall
+    - do not spawn or resume any named planning agent until the corruption is resolved
 
 ## Workflow
 
-### Step 0. Normalize target, prepare the review wiki cache, and load state
+### Step 0. Normalize target, resolve the planning sync root, and load state
 
 - Derive one canonical `task-slug`.
 - Derive one run mode before any named planning agent call:
     - `fresh_run` when the request is for a new slug, a fresh state, or explicit isolation from prior orchestration continuity
     - `resume_run` when the request continues the same slug or the same orchestration state
 - Read `../review-wiki-setup/references/staging-contract.md`.
-- Read `../review-wiki-setup/references/platform-commands.md`.
-- Read `./references/browser-open-commands.md`.
-- Create `./.codex/artifacts/plan/{task-slug}/` and `state.json` if they do not exist.
-- If `state.json` exists, resume from the recorded stage instead of starting over.
-- Persist `state.json` after every stage transition. Do not keep orchestration-only state in chat memory alone.
+- Read `./references/state-integrity.md`.
+- Create `./plans/_orchestrator/{task-slug}/` and `state.json` if they do not exist.
+- If `state.json` exists:
+    - validate it before loading or reusing any recorded agent id
+    - if validation fails, stop and report the exact validator error instead of reconstructing the run from chat memory
+    - only after validation succeeds, resume from the recorded stage instead of starting over
+- Persist `state.json` after every stage transition using the safe write pattern from `references/state-integrity.md`. Do not keep orchestration-only state in chat memory alone.
 - Ensure `state.json.agents.plan_architect.id`, `state.json.agents.plan_reviewer.id`, and `state.json.agents.plan_materializer.id` exist.
 - If this run is classified as `fresh_run`, clear every recorded agent id before invoking the first named planning agent.
 - Initialize or refresh `state.json.preflight` before invoking any named planning agent:
     - set `mode = "orchestrated"`
     - set `complete = false`
     - set `review_wiki_root = null`
-    - set `review_wiki_snapshot_fixed = false`
     - set `named_agents_verified = false`
     - clear `verified_agents`
-- If `~/.codex/reviewWiki/wiki` is readable, always run the platform-appropriate staging command from `platform-commands.md` from the workspace root before invoking `plan-architect` or `plan-reviewer`, even when the cache already exists.
-- Treat the refreshed cache as the fixed review wiki snapshot for the rest of the current orchestration run.
-- Treat `./.codex/cache/review-wiki/current` as the planning root after staging; it should contain `registry.json`, `core/`, `patterns/`, and `_meta/`.
-- If the external wiki root is permission-blocked or temporarily unreadable but `./.codex/cache/review-wiki/current` already exists, continue with the cached copy.
-- If both the external wiki root and the cache are unavailable, stop and route to `review-wiki-setup` or request the missing external-read approval before continuing.
-- After resolving the fixed review wiki snapshot, write it into `state.json.preflight.review_wiki_root`.
-- Set `state.json.preflight.review_wiki_snapshot_fixed = true` before any named planning agent runs.
-- Recompute orchestration metadata whenever `./plans/{task-slug}/plan.md` or any linked phase detail file changes.
-- Use `node ./.codex/skills/orchestrator/scripts/plan-revision.mjs --plan ./plans/{task-slug}/plan.md --json` as the authoritative source for:
-    - deterministic `plan_revision`
-    - linked phase detail file discovery
-- Do not recreate the fingerprint with ad-hoc shell pipelines, temporary files, or OS temp directories.
-- If `./.codex/skills/orchestrator/scripts/plan-revision.mjs` is missing, unreadable, or returns a linked-phase error, stop and report that blocker instead of inventing a replacement hash routine.
-- If plan artifacts changed on disk since the last recorded revision:
-    - update `plan_revision`
-    - update `linked_phase_paths`
-    - clear stale review/materialize signatures
-    - if `approved_revision != plan_revision`, set `user_approved = false`
-    - reset `state.json.user_gate.packet_path = null`
-    - reset `state.json.user_gate.browser_open_attempted = false`
-    - reset `state.json.user_gate.browser_open_succeeded = false`
-    - clear `state.json.user_gate.opened_paths`
-    - clear `state.json.user_gate.open_command`
-    - clear `state.json.user_gate.last_open_error`
+- Resolve the planning `review_wiki_root` to `./.codex/review-wiki/sync/current`.
+- Treat `./.codex/review-wiki/sync/current` as a workspace-local planning root prepared outside the orchestration hot path.
+- If `./.codex/review-wiki/sync/current` is missing, stop and route to `review-wiki-setup` instead of attempting per-run staging inside this skill.
+- After resolving the planning sync root, write it into `state.json.preflight.review_wiki_root`.
 - If the target plan folder already exists, treat the workflow as an update pass.
+- Before the first named-agent invocation of the run, validate the final `state.json` again and stop if it fails.
 
 ### Step 1. Verify agent prerequisites
 
@@ -235,33 +224,42 @@ Do not enter `waiting_user_gate` until `state.json.user_gate.browser_open_succee
 - If `state.json.agents.plan_architect.id` is present, reuse that same agent id instead of spawning a second architect.
 - If `state.json.agents.plan_architect.id` is empty, spawn `plan-architect`, then record the returned id in `state.json`.
 - When a new architect instance must be spawned for this run, default to packet-driven handoff from `state.json`; use `fork_context = true` only when unresolved clarification or a recent user decision is not yet captured safely in the orchestration artifacts.
-- Pass the exact `task-slug` and `./.codex/artifacts/plan/{task-slug}/state.json` path.
+- Pass the exact `task-slug` and `./plans/_orchestrator/{task-slug}/state.json` path.
 - Tell it that `state.json.preflight` is authoritative for this orchestration run.
-- Tell it that `state.json.plan_path`, `state.json.plan_revision`, and `state.json.linked_phase_paths` are the authoritative orchestrated plan metadata.
-- Tell it not to rerun review wiki staging, not to verify named agent availability, and not to inspect runtime or CLI invocation paths.
+- Tell it that `state.json.plan_path` is the authoritative orchestrated plan path.
+- Tell it not to rerun review wiki setup, not to verify named agent availability, and not to inspect runtime or CLI invocation paths.
 - Require it to block if `state.json.preflight.complete != true`.
-- If it cannot draft before a fresh user decision, require it to write `./.codex/artifacts/plan/{task-slug}/clarification.md` with YAML frontmatter containing at least:
+- If it cannot draft before a fresh user decision, require it to write `./plans/_orchestrator/{task-slug}/clarification.md` with YAML frontmatter containing at least:
     - `task_slug`
     - `needs_user_input`
     - `next_action`
     - `clarification_signature`
+- When the missing decision is unresolved UI direction, hierarchy, state presentation, or design-system fit, require the clarification packet to tell the user to run `design-discovery` or provide equivalent locked UI decisions before planning can resume
 - If a clarification packet is written instead of a plan:
     - record `state.json.clarification.packet_path`
     - record `state.json.clarification.clarification_signature`
     - set `stage = "waiting_architect_clarification"`
     - stop and ask the user for the requested decision
 - Record the returned plan path when executable plan artifacts were written.
-- Recompute orchestration metadata.
-- If the plan revision changed:
+- After every architect-written plan update:
     - clear `last_review_outcome`
     - clear `last_review_signature`
+    - reset `review_loop_count = 0`
     - clear `last_materialize_outcome`
+    - clear `last_materialize_gate_status`
     - clear `last_materialize_signature`
+    - reset `materialize_loop_count = 0`
     - set `user_approved = false`
-    - clear `approved_revision`
+    - clear `state.json.user_gate.packet_path`
     - clear `state.json.clarification.packet_path`
     - clear `state.json.clarification.clarification_signature`
 - Set `stage = "reviewing"`.
+- If the architect writes neither a plan nor a clarification packet after one same-agent reuse attempt and one safe replacement attempt, set:
+    - `blocked_by = "plan_architect"`
+    - `blocker_type = "agent_stall"`
+    - `stuck_reason = "plan_architect produced no artifacts"`
+    - `stage = "stuck"`
+  and escalate instead of waiting indefinitely.
 
 ### Step 3. Run cold review
 
@@ -269,17 +267,16 @@ Do not enter `waiting_user_gate` until `state.json.user_gate.browser_open_succee
 - If `state.json.agents.plan_reviewer.id` is present, reuse that same reviewer id instead of spawning a second reviewer.
 - If `state.json.agents.plan_reviewer.id` is empty, spawn `plan-reviewer`, then record the returned id in `state.json`.
 - When a new reviewer instance must be spawned for this run, spawn `plan-reviewer` with `fork_context = false` and a packet-driven handoff from `state.json`.
-- Pass the exact `task-slug` and `./.codex/artifacts/plan/{task-slug}/state.json` path.
+- Pass the exact `task-slug` and `./plans/_orchestrator/{task-slug}/state.json` path.
 - Tell it that `state.json.preflight` is authoritative for this orchestration run.
-- Tell it that `state.json.plan_path`, `state.json.plan_revision`, and `state.json.linked_phase_paths` are the authoritative orchestrated plan metadata.
-- Tell it not to rerun review wiki staging.
+- Tell it that `state.json.plan_path` is the authoritative orchestrated plan path.
+- Tell it not to rerun review wiki setup.
 - Require it to block if `state.json.preflight.complete != true`.
-- When reusing the same reviewer instance, explicitly instruct it to re-evaluate the current plan files against the orchestrator-provided `plan_revision` and not to carry forward stale findings automatically.
-- Treat `./.codex/artifacts/plan-review/{task-slug}/review.md` as the review source of truth.
+- When reusing the same reviewer instance, explicitly instruct it to re-evaluate the current plan files and not to carry forward stale findings automatically.
+- Treat `./plans/_orchestrator/review/{task-slug}/review.md` as the review source of truth.
 - Require `review.md` to start with a YAML frontmatter block that contains at least:
     - `plan_path`
     - `task_slug`
-    - `plan_revision`
     - `outcome`
     - `next_action`
     - `finding_signature`
@@ -290,7 +287,9 @@ Do not enter `waiting_user_gate` until `state.json.user_gate.browser_open_succee
 
 ### Step 4. Route review findings
 
-- If the same `plan_revision` produces the same `outcome` and the same `finding_signature` again, set `stage = "stuck"` and escalate to the user instead of looping.
+- If the same `outcome` and the same `finding_signature` repeat again without an intervening architect-written plan update:
+    - increment `review_loop_count`
+    - if `review_loop_count >= 2`, set `stage = "stuck"` and escalate to the user instead of looping
 - If the review outcome is `ready`, continue to the user gate.
 - If `review.md` says `requires_user_decision = true` or `next_action = user_gate`, continue to the user gate with the review packet.
 - If the review outcome is `ready-with-findings`, send the review back to `plan-architect` for revision.
@@ -315,34 +314,14 @@ At the gate:
     - default if the user does not answer
 - If no open questions remain, present:
     - plan path
-    - current `plan_revision`
     - latest review outcome
     - what will happen next
     - a direct approval request
-- The packet must list the current `plan.md` path and every linked phase detail path in display order.
-- Write the packet to `user-gate.md`.
+- The packet must list the current `plan.md` path and every linked phase detail path in display order from the current `plan.md`.
+- Write the packet to `./plans/_orchestrator/{task-slug}/user-gate.md`.
 - Record `state.json.user_gate.packet_path`.
-- Build the exact browser-open target list in this order:
-    - `user-gate.md`
-    - current `plan.md`
-    - every linked phase detail file in display order from `state.json.linked_phase_paths`
-- Treat local browser opening as required whenever the runtime can execute local shell commands from the workspace.
-- Attempt the platform-appropriate browser-open command from `references/browser-open-commands.md`.
-- Record the attempt in `state.json.user_gate`:
-    - set `browser_open_attempted = true`
-    - write the exact `opened_paths`
-    - write the exact `open_command`
-- If browser opening succeeds, set `browser_open_succeeded = true`, clear `last_open_error`, and then set `stage = "waiting_user_gate"`.
-- If browser opening fails, or no supported local opener can be invoked:
-    - set `browser_open_succeeded = false`
-    - set `last_open_error`
-    - set `blocked_by = "browser_open"`
-    - set `blocker_type = "external_setup"`
-    - set `stage = "blocked_external"`
-    - stop and report the exact files plus the failing command or missing opener
-- Do not degrade to a manual file list unless the user explicitly waives browser opening for this run.
+- Set `stage = "waiting_user_gate"` after the gate packet is written.
 - Do not call `plan-materializer` before explicit user approval.
-- Record approval only for the current `plan_revision`.
 
 ### Step 6. Resume after user response
 
@@ -355,37 +334,36 @@ When the user replies:
 - If the user answers open questions or requests plan changes, send that response to the recorded `plan-architect` agent id.
 - If the recorded `plan-architect` agent cannot be reused for the follow-up, spawn a replacement `plan-architect` using the same packet-driven rules as Step 2 before forwarding the user response.
 - If `plan-architect` changes any plan artifact after the gate:
-    - recompute orchestration metadata
     - set `user_approved = false`
-    - clear `approved_revision`
-    - reset `state.json.user_gate.packet_path = null`
-    - reset `state.json.user_gate.browser_open_attempted = false`
-    - reset `state.json.user_gate.browser_open_succeeded = false`
-    - clear `state.json.user_gate.opened_paths`
-    - clear `state.json.user_gate.open_command`
-    - clear `state.json.user_gate.last_open_error`
+    - clear `state.json.user_gate.packet_path`
+    - clear `last_review_outcome`
+    - clear `last_review_signature`
+    - reset `review_loop_count = 0`
+    - clear `last_materialize_outcome`
+    - clear `last_materialize_gate_status`
+    - clear `last_materialize_signature`
+    - reset `materialize_loop_count = 0`
     - rerun `plan-reviewer`
     - return to the user gate before materialization
 - If the user approves without plan changes:
-    - set `approved_revision = plan_revision`
     - set `user_approved = true`
     - set `stage = "ready_for_materialize"`
 
 ### Step 7. Materialize tests
 
-- Invoke `plan-materializer` through the same-agent continuity policy only when `approved_revision == plan_revision`.
+- Invoke `plan-materializer` through the same-agent continuity policy only when `user_approved = true`.
 - If `state.json.agents.plan_materializer.id` is present, reuse that same materializer id instead of spawning a second materializer.
 - If `state.json.agents.plan_materializer.id` is empty, spawn `plan-materializer`, then record the returned id in `state.json`.
 - When a new materializer instance must be spawned for this run, spawn `plan-materializer` with `fork_context = false` and a packet-driven handoff from `state.json`.
-- Pass the exact `task-slug` and `./.codex/artifacts/plan/{task-slug}/state.json` path.
-- Tell it that `state.json.plan_path`, `state.json.plan_revision`, and `state.json.linked_phase_paths` are the authoritative orchestrated plan metadata.
+- Pass the exact `task-slug` and `./plans/_orchestrator/{task-slug}/state.json` path.
+- Tell it that `state.json.plan_path` is the authoritative orchestrated plan path.
 - Let it create or update source-tree tests and plan-local `materialize.md`.
 - Do not implement production code.
 - Require `materialize.md` to start with a YAML frontmatter block that contains at least:
     - `plan_path`
     - `task_slug`
-    - `plan_revision`
     - `outcome`
+    - `gate_status`
     - `blocker_type`
     - `blocker_code`
     - `next_action`
@@ -394,15 +372,21 @@ When the user replies:
     - `requires_user_decision`
     - `blocked_clause_ids`
     - `affected_phase_paths`
-- Record `last_materialize_outcome` and `last_materialize_signature` in `state.json`.
+- Record `last_materialize_outcome`, `last_materialize_gate_status`, and `last_materialize_signature` in `state.json`.
 
 ### Step 8. Route materialize blockers
 
-- If the same `plan_revision` produces the same `outcome` and the same `materialize_signature` again, set `stage = "stuck"` and escalate to the user instead of looping.
-- If `plan-materializer` finishes successfully, set `stage = "done"`.
+- If the same `outcome` and the same `materialize_signature` repeat again without an intervening architect-written plan update:
+    - increment `materialize_loop_count`
+    - if `materialize_loop_count >= 2`, set `stage = "stuck"` and escalate to the user instead of looping
+- If `plan-materializer` finishes with `outcome = completed` and `gate_status = passed`, set `stage = "done"`.
+- If `plan-materializer` finishes with `outcome = completed` and `gate_status = failed`:
+    - set `stage = "materialize_failed"`
+    - keep `user_approved = true`
+    - stop and tell the user that test materialization completed but the targeted gate failed
 - If `plan-materializer` returns `blocked` with `blocker_type = "external_setup"`:
     - set `stage = "blocked_external"`
-    - keep `approved_revision` unchanged
+    - keep `user_approved = true`
     - set `resume_from = "materialize"`
     - stop and tell the user which setup or source-tree prerequisite must be added first
 - If `plan-materializer` returns `blocked` with `blocker_type = "plan_ambiguity"`, route the blocker back to `plan-architect`.
@@ -410,12 +394,9 @@ When the user replies:
     - ask `plan-architect` for a decision packet
     - return to the user gate
 - After any architect revision triggered by materialize:
-    - recompute orchestration metadata
     - rerun `plan-reviewer`
     - require a fresh user approval before another materialize pass
-- When resuming from `blocked_external`:
-    - if `plan_revision == approved_revision` and the plan artifacts did not change, resume at `plan-materializer`
-    - otherwise resume at `plan-reviewer` or the user gate as needed
+- When resuming from `blocked_external`, resume at `plan-materializer` only when the plan has not changed since the last approved gate; otherwise resume at `plan-reviewer` or the user gate as needed.
 
 ### Step 9. Completion
 
@@ -423,6 +404,7 @@ Terminal stages are:
 
 - `done`
 - `blocked_external`
+- `materialize_failed`
 - `stuck`
 
 `done` requires all of the following:
@@ -430,8 +412,7 @@ Terminal stages are:
 - executable plan artifacts exist
 - latest review state is execution-ready enough to proceed
 - user approval was recorded
-- `approved_revision == plan_revision`
-- `plan-materializer` finished
+- `plan-materializer` finished with `gate_status = passed`
 - `state.json` reflects the final stage
 
 ## Chat response requirements
@@ -439,39 +420,42 @@ Terminal stages are:
 - Keep orchestration updates short.
 - Tell the user which stage is running.
 - Present the user gate packet in Korean.
-- If browser opening fails or is unavailable, say so explicitly, report the command or missing opener, and list the exact local files that should have been opened.
 - When blocked, say which agent blocked and where the workflow is routing next.
+- If state validation fails, say the authoritative orchestration packet is corrupt, report the validator error, and stop before any named-agent action.
+- When `plan-architect` stalls without writing a plan or clarification packet, say so explicitly and stop instead of waiting indefinitely.
+- When materialization completes but `gate_status = failed`, say that the planning workflow finished but the targeted test gate did not pass.
 
 ## Output contract
 
 - Plan artifacts under `./plans/**`
-- Review artifact under `./.codex/artifacts/plan-review/{task-slug}/review.md` with YAML frontmatter status fields
-- Orchestration state under `./.codex/artifacts/plan/{task-slug}/state.json`
-- Clarification packet under `./.codex/artifacts/plan/{task-slug}/clarification.md` when pre-plan user input is required
-- User gate packet under `./.codex/artifacts/plan/{task-slug}/user-gate.md`
+- Review artifact under `./plans/_orchestrator/review/{task-slug}/review.md` with YAML frontmatter status fields
+- Orchestration state under `./plans/_orchestrator/{task-slug}/state.json`
+- Clarification packet under `./plans/_orchestrator/{task-slug}/clarification.md` when pre-plan user input is required
+- User gate packet under `./plans/_orchestrator/{task-slug}/user-gate.md`
 - Test materialization output under plan-local `materialize.md` with YAML frontmatter status fields
 
 ## Guardrails
 
 - Orchestrate only: do not substitute for `architect`, `plan-review`, or `plan-materialize`.
 - Do not implement production code.
-- Do not call `plan-architect` or `plan-reviewer` before the review wiki cache preflight completes.
-- Do not ask named planning agents to rediscover the review wiki root, rerun staging, verify named agent availability, or recompute orchestrator-owned plan metadata after `state.json.preflight.complete = true`.
-- Do not silently refresh the review wiki cache again after Step 0 inside the same orchestration run.
+- Do not call `plan-architect` or `plan-reviewer` before the review wiki sync preflight completes.
+- Do not ask named planning agents to rediscover the review wiki root, rerun review wiki setup, verify named agent availability, or recompute orchestrator-owned metadata after `state.json.preflight.complete = true`.
+- Do not hand malformed or unvalidated `state.json` files to named planning agents.
+- Do not mutate `state.json` via a partial patch and continue without validating the full document afterward.
 - Do not silently replace a reusable named planning agent with a fresh one for the same `task-slug`; record and report any forced replacement.
 - Do not route a pre-plan clarification need through `plan-reviewer`; keep it in the architect clarification path.
+- Do not try to inline `design-discovery` inside this workflow; if pre-plan UI direction is missing, surface it through architect clarification and wait for the user.
 - Do not skip explicit user approval.
-- Do not silently downgrade browser-open to a manual file list when local shell execution should work.
-- Do not mark `waiting_user_gate` until browser-open succeeded or the user explicitly waived it.
+- Do not reintroduce browser-open as a required gate in this workflow.
 - Do not let `plan-reviewer` edit plans.
 - Do not let `plan-materializer` patch plan ambiguity with tests.
 - Do not bypass review after architect revisions.
-- Do not reuse stale approval after a plan revision change.
-- Do not keep looping silently when the workflow makes no progress for the same `plan_revision`.
+- Do not reuse stale approval after architect changes the plan.
+- Do not keep looping silently when the workflow makes no progress for the same finding or materialization signature.
+- Do not wait indefinitely when the architect writes no artifacts after reuse and one safe replacement attempt.
 - Do not infer `user_policy` or user-decision routing from free-form prose when structured frontmatter fields are available.
 - Do not turn materialize blockers into ad-hoc implementation decisions.
-- Do not let downstream planning agents recompute `plan_revision` or linked phase discovery during orchestrated runs.
-- Do not recreate `plan_revision` with ad-hoc shell hashing commands or any workflow that writes to OS temp directories.
+- Do not route `plan-materializer` `external_setup` blockers back to `plan-architect`; stop and surface the setup prerequisite first.
 
 </Instructions>
 </Skill_Guide>

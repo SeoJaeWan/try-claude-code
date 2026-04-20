@@ -1,47 +1,116 @@
-# Phase {n}. {역할 이름}
+# Phase {n}. {phase-title}
 
-> 이 문서는 실행용 상세 계약이다. 맨 위 컨트롤러 다이제스트만 읽어도 이 phase의 목표, 파일 단위 변경, 완료 판단, 중단 시점을 알 수 있어야 한다.
-> 아래 `실행 계약` 섹션은 `plan.md`의 같은 phase 요약을 기술적으로 확장하되, 범위나 결론을 새로 바꾸지 않는다. 상단에서 이미 고정한 결론은 반복하지 말고, 실행 순서, 선택 규칙, 불변식, 검증 근거만 보강한다.
-
-## 컨트롤러 다이제스트
+## Phase 요약
 
 | 항목 | 내용 |
 | --- | --- |
-| 한 줄 목표 | {이 phase가 끝나면 무엇이 고정되는지 한 문장으로} |
-| 선행조건 | `none` (선택) |
-| 완료 판단 | {컨트롤러가 승인할 수 있는 최종 상태} |
-| 중단 조건 | {재계획 또는 즉시 중단이 필요한 조건. 없으면 `없음`} |
+| 목표 | {이번 phase가 잠그는 핵심 결과} |
+| 연결 작업 단위 | `{boundary-name}`, `{boundary-name}` |
+| 선행 조건 | `none` (없으면) |
+| 검증 메모 | {리뷰어가 이 phase에서 바로 확인할 핵심 포인트} |
+| 로컬 전제 계약 | {다음 또는 이전 phase와 주고받는 계약. 없으면 `없음`} |
 
-### 파일별 작업
+## 작업 순서
 
-| 파일 | 작업 방식 | 사전 정의 | 완료 조건 |
+| 순서 | 작업 단위 | 이번 단계에서 처리하는 내용 | 완료 조건 |
 | --- | --- | --- | --- |
-| `path/to/file` | {추가/분리/교체/정리/검증} | {이 파일에서 먼저 고정해야 하는 계약, winner rule, 금지 사항} | {이 파일 기준으로 phase 종료를 판단하는 상태} |
-| `path/to/file` | {추가/분리/교체/정리/검증} | {이 파일에서 먼저 고정해야 하는 계약, winner rule, 금지 사항} | {이 파일 기준으로 phase 종료를 판단하는 상태} |
+| 1 | `{boundary-name}` | {가장 먼저 처리해야 하는 이유와 변경 범위} | {phase 내부 완료 기준} |
+| 2 | `{boundary-name}` | {중간 구현 또는 정합화 범위} | {phase 내부 완료 기준} |
+| 3 | `{boundary-name}` | {후속 검증 또는 마무리 범위} | {phase 내부 완료 기준} |
 
-### 완료 증거
+## 작업 단위 A. {boundary-name}
 
-- `{컨트롤러가 확인할 결과 1}`
-- `{컨트롤러가 확인할 결과 2}` (선택)
+| 항목 | 내용 |
+| --- | --- |
+| 변경 이유 | {사용자 요청과 현재 문제를 연결한 변경 이유} |
+| 현재 문제 | {현재 드러난 결함 또는 부족한 점} |
+| 목표 상태 | {이번 phase에서 달성해야 하는 상태} |
+| 유지 경계 | {이번 phase에서 건드리지 않는 경계} |
 
-## 실행 계약
+### 관련 파일
 
-- owner_agent: `{agent-name}`
-- 목적:
-- 작업 순서:
-    1. `{먼저 고정할 boundary 또는 결정}`
-    2. `{그다음 연결/정리할 변경}`
-    3. `{마지막 검증 또는 동기화}`
-- boundary: `{파일 나열 대신 이 phase가 움직이는 변경 경계만 요약}`
-- input: `{이 phase가 소비하는 선행 산출물, 상태, 계약}`
-- output:
-    - 공개 계약: `{이 phase가 끝나면 반드시 성립해야 하는 canonical output}`
-    - 내부 기본값: (선택)
-    - 허용하지 않는 대안: (선택)
-- 선행조건: `none` (선택)
-- 제약: `{상단 다이제스트에 없는 winner rule, naming guard, no-op rule, 범위 제한만 기록}` (선택)
-- side effects: `{허용되는 상태 변화에 결합된 부수 효과만 기록}` (선택)
-- failure/validation: `{blocked case, rejected or losing path, side-effect guard, or ambiguity note when relevant}` (선택)
-- 검증:
-    - [ ] `{command 또는 확인 방법}`
-    - [ ] `{기대 결과}`
+| 파일 | 작업 역할 | 검증 메모 |
+| --- | --- | --- |
+| `path/to/file` | {변경 / 연결 / 확인 / 비교} | {이 파일에서 확인할 핵심 포인트} |
+| `path/to/file` | {변경 / 연결 / 확인 / 비교} | {이 파일에서 확인할 핵심 포인트} |
+
+### 공개 계약
+
+| 항목 | 내용 |
+| --- | --- |
+| public surface | {props / inputs / outputs} |
+| state ownership | {controlled / default / internal} |
+| callback / handoff | {callback 의미 또는 handoff 규칙} |
+| no-op / invalid rule | {무시 또는 no-op 규칙} |
+| 추가 관찰 포인트 | {API / route / state / selector 등} |
+
+### 시각 패리티 계약
+
+| 항목 | 내용 |
+| --- | --- |
+| comparison mode | {`structural parity` / `full-fidelity parity` / `none`} |
+| gating metric | {blocking metric / `n/a`} |
+| non-gating metric | {advisory metric / `none`} |
+| local surface | {task-local noun / `n/a`} |
+| canonical surface role | {`frame-surface` / `navigation-surface` / `control-surface` / `content-surface` / `media-surface` / `text-detail-surface` / `ornament-surface` / `fixture-payload-surface` / `n/a`} |
+| comparison policy | {`gating` / `advisory` / `noise` / `ignore` / `n/a`} |
+| metric treatment | {`full-compare` / `boundary-and-geometry` / `layout-only` / `text-metrics-only` / `masked-out` / `n/a`} |
+
+### 검증 근거
+
+| 항목 | 확인 수단 |
+| --- | --- |
+| {검증이 필요한 계약 또는 상태} | {test / story / compare / source inspection} |
+| {검증이 필요한 계약 또는 상태} | {test / story / compare / source inspection} |
+
+## 작업 단위 B. {boundary-name}
+
+| 항목 | 내용 |
+| --- | --- |
+| 변경 이유 | {사용자 요청과 현재 문제를 연결한 변경 이유} |
+| 현재 문제 | {현재 드러난 결함 또는 부족한 점} |
+| 목표 상태 | {이번 phase에서 달성해야 하는 상태} |
+| 유지 경계 | {이번 phase에서 건드리지 않는 경계} |
+
+### 관련 파일
+
+| 파일 | 작업 역할 | 검증 메모 |
+| --- | --- | --- |
+| `path/to/file` | {변경 / 연결 / 확인 / 비교} | {이 파일에서 확인할 핵심 포인트} |
+| `path/to/file` | {변경 / 연결 / 확인 / 비교} | {이 파일에서 확인할 핵심 포인트} |
+
+### 공개 계약
+
+| 항목 | 내용 |
+| --- | --- |
+| public surface | {props / inputs / outputs} |
+| state ownership | {controlled / default / internal} |
+| callback / handoff | {callback 의미 또는 handoff 규칙} |
+| no-op / invalid rule | {무시 또는 no-op 규칙} |
+| 추가 관찰 포인트 | {API / route / state / selector 등} |
+
+### 시각 패리티 계약
+
+| 항목 | 내용 |
+| --- | --- |
+| comparison mode | {`structural parity` / `full-fidelity parity` / `none`} |
+| gating metric | {blocking metric / `n/a`} |
+| non-gating metric | {advisory metric / `none`} |
+| local surface | {task-local noun / `n/a`} |
+| canonical surface role | {`frame-surface` / `navigation-surface` / `control-surface` / `content-surface` / `media-surface` / `text-detail-surface` / `ornament-surface` / `fixture-payload-surface` / `n/a`} |
+| comparison policy | {`gating` / `advisory` / `noise` / `ignore` / `n/a`} |
+| metric treatment | {`full-compare` / `boundary-and-geometry` / `layout-only` / `text-metrics-only` / `masked-out` / `n/a`} |
+
+### 검증 근거
+
+| 항목 | 확인 수단 |
+| --- | --- |
+| {검증이 필요한 계약 또는 상태} | {test / story / compare / source inspection} |
+| {검증이 필요한 계약 또는 상태} | {test / story / compare / source inspection} |
+
+## Phase 검증
+
+| 검증 항목 | 확인 수단 | 기대 결과 |
+| --- | --- | --- |
+| {phase-level validation} | {command 또는 수단} | {기대 결과} |
+| {phase-level validation} | {command 또는 수단} | {기대 결과} |

@@ -2,7 +2,7 @@
 
 Minimal routing source for planning.
 Use this file as the canonical `owner_agent` catalog.
-For detailed planning rules, quality gates, and UI test-phase policy, read the resolved `review_wiki_root` registry and listed core docs. Prefer `./.codex/cache/review-wiki/current` when present; otherwise use `~/.codex/reviewWiki/wiki`.
+For detailed planning rules, quality gates, and UI test-phase policy, read the resolved `review_wiki_root` registry and listed core docs. Use `./.codex/review-wiki/sync/current` as the planning root.
 
 ## Canonical Execution Agents
 

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Design Discovery"
+  short_description: "Lock UI direction before planning"
+  default_prompt: "Use $design-discovery to resolve UI direction after $brainstorm and before $architect through consultation-first discovery and optional variant exploration."
+policy:
+  allow_implicit_invocation: false
