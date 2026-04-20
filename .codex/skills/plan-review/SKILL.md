@@ -19,8 +19,11 @@ Review the finished plan artifact against the user's request and any upstream re
 2. Target executable plan file: `./plans/**/plan.md`
 3. Linked phase detail files referenced from that `plan.md`
 4. Optional directly referenced `./.codex/artifacts/design-discovery/{feature-name}.md` artifact or latest `design-discovery` handoff when UI scope exists
-5. Optional orchestration state file when invoked by `orchestrator`:
-   - `./plans/_orchestrator/{task-slug}/state.json`
+5. Optional orchestrator handoff in the latest conversation context when invoked by `orchestrator`:
+   - `task_slug`
+   - `plan_path`
+   - `review_wiki_root`
+   - optional `plan_signature`
 6. `../review-wiki-setup/references/staging-contract.md`
 7. `../review-wiki-setup/references/platform-commands.md`
 8. Resolved planning `review_wiki_root` containing `registry.json`, `core/`, and `patterns/`. Use `./.codex/review-wiki/sync/current` as the planning root.
@@ -41,16 +44,16 @@ Review the finished plan artifact against the user's request and any upstream re
 Before judging the plan:
 
 - determine execution mode first:
-  - if an explicit orchestration `state.json` path is provided and `state.json.preflight.mode = "orchestrated"` with `state.json.preflight.complete = true`, enter orchestrated mode
+  - if an explicit orchestrator handoff provides `task_slug`, `plan_path`, and `review_wiki_root`, enter orchestrated mode
   - otherwise enter direct mode
 - in orchestrated mode:
-  - read the provided `state.json`
-  - require `state.json.preflight.review_wiki_root` to be present
-  - treat `state.json.preflight.review_wiki_root` as authoritative
-  - require `state.json.plan_path`
-  - treat `state.json.plan_path` as authoritative orchestration metadata
+  - require the provided `review_wiki_root`
+  - treat the provided `review_wiki_root` as authoritative
+  - require the provided `plan_path`
+  - treat the provided `plan_path` as authoritative orchestration metadata
+  - if a current `plan_signature` is provided, treat it as the authoritative freshness fingerprint for this pass
   - do not run review wiki staging
-  - if `state.json.preflight` is missing, incomplete, or contradictory, block instead of guessing
+  - if the orchestrator handoff is missing required fields or contradictory, block instead of guessing
 - in direct mode:
   - read `../review-wiki-setup/references/staging-contract.md`
   - read `../review-wiki-setup/references/platform-commands.md`
@@ -67,8 +70,8 @@ Before judging the plan:
 
 - Review one executable `plan.md` at a time
 - In orchestrated mode:
-  - derive `task-slug` from the provided `state.json`
-  - use `state.json.plan_path` as the reviewed plan path
+  - derive `task-slug` from the provided handoff
+  - use the provided `plan_path` as the reviewed plan path
 - In direct mode:
   - derive `task-slug` from the owning plan directory
   - load every phase detail file linked from the current `plan.md`
@@ -157,6 +160,7 @@ Include:
 - a YAML frontmatter block at the top with at least:
   - `plan_path`
   - `task_slug`
+  - `plan_signature`
   - `outcome`
   - `next_action`
   - `finding_signature`
@@ -172,6 +176,7 @@ Include:
 Frontmatter rules:
 
 - `outcome`: `ready` | `ready-with-findings` | `blocked`
+- `plan_signature`: a stable short fingerprint of the normalized current `plan.md` plus the linked phase detail files; if the orchestrator provided `plan_signature`, preserve it exactly
 - `requires_user_decision`: `true` only when the plan cannot proceed without a fresh user decision; otherwise `false`
 - `issue_codes`: stable, sorted short codes for the current finding set; use `[]` when no findings remain
 - `affected_phase_paths`: sorted linked phase detail paths implicated by the finding set; use `[]` when not applicable
@@ -196,6 +201,7 @@ Frontmatter rules:
 - Do not treat partial notes, briefs, or non-executable artifacts as execution-ready plans
 - Do not bypass the resolved `review_wiki_root` with hardcoded external-path reads once the workspace sync path is available
 - In orchestrated mode, do not redo review wiki bootstrap that the orchestrator already completed
+- In orchestrated mode, do not invent alternate `plan_path` or `plan_signature` metadata that conflicts with the current orchestrator handoff
 - In orchestrated mode, do not pretend stale review metadata is still valid after the plan changed on disk
 - Do not perform a second full review of upstream plans; inspect only the direct prerequisite parity needed to judge the reviewed plan's execution readiness
 - Do not ignore simpler existing flows or built-ins revealed by the scope challenge just because the written plan looks internally consistent

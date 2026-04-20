@@ -1,4 +1,4 @@
 interface:
   display_name: "Orchestrator"
-  short_description: "Run the planning loop through architect, review, approval, and materialize."
-  default_prompt: "Use $orchestrator to orchestrate the explicit architect -> review -> revise -> explicit approval gate -> materialize planning workflow, recording whether materialization passed or failed its targeted gate."
+  short_description: "Run the stateless planning loop through architect, review, approval, and materialize."
+  default_prompt: "Use $orchestrator to orchestrate the stateless artifact-driven architect -> review -> revise -> explicit approval gate -> materialize planning workflow, recording whether materialization passed or failed its targeted gate."

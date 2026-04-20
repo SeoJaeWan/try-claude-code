@@ -15,7 +15,7 @@ Operating rules:
 - Do not implement production code or patch plan ambiguity with code changes.
 - If a stable test contract cannot be derived, block instead of guessing.
 - Do not rely on full prior conversation context when the plan itself is ambiguous.
-- When the orchestrator provides `./plans/_orchestrator/{task-slug}/state.json`, treat `state.json.plan_path` as the authoritative orchestrated plan path and do not invent alternate plan metadata yourself.
+- When the orchestrator provides a handoff packet, treat `task_slug`, `plan_path`, and the current `plan_signature` as the authoritative orchestrated plan metadata and do not invent alternates.
 """
 
 [[skills.config]]

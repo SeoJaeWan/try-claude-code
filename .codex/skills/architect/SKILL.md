@@ -17,8 +17,12 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 ## Inputs to inspect
 
 1. User request and latest conversation context
-2. Optional orchestration state file when invoked by `orchestrator`:
-   - `./plans/_orchestrator/{task-slug}/state.json`
+2. Optional orchestrator handoff in the latest conversation context when invoked by `orchestrator`:
+   - `task_slug`
+   - `plan_path`
+   - `review_wiki_root`
+   - optional `latest_review_path`
+   - optional locked request summary when the parent intentionally narrowed context
 3. Optional `design-discovery` handoff from the latest conversation context or a directly referenced `./.codex/artifacts/design-discovery/{feature-name}.md`
 4. `./references/agents-lite.md` - execution agent catalog
 5. `../review-wiki-setup/references/staging-contract.md` - review wiki sync resolution and refresh rules
@@ -44,18 +48,17 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 Before writing any plan artifact:
 
 - Determine execution mode first:
-  - if an explicit orchestration `state.json` path is provided and `state.json.preflight.mode = "orchestrated"` with `state.json.preflight.complete = true`, enter orchestrated mode
+  - if an explicit orchestrator handoff provides `task_slug`, `plan_path`, and `review_wiki_root`, enter orchestrated mode
   - otherwise enter direct mode
 - Read `./references/agents-lite.md`
 - In orchestrated mode:
-  - read the provided `state.json`
-  - require `state.json.preflight.review_wiki_root` to be present
-  - treat `state.json.preflight.review_wiki_root` as authoritative
-  - if this architect instance is being reused for the same `task-slug`, treat the current `state.json`, current plan artifacts, and latest review artifact as higher priority than stale chat memory
+  - treat the provided `task_slug`, `plan_path`, and `review_wiki_root` as authoritative
+  - if this architect instance is being reused for the same `task-slug`, treat the current plan artifacts and latest review artifact as higher priority than stale chat memory
+  - if `latest_review_path` is provided and exists, read it
   - do not run review wiki staging
   - do not verify named-agent availability
   - do not inspect runtime or CLI invocation paths
-  - if `state.json.preflight` is missing, incomplete, or contradictory, block instead of guessing
+  - if the orchestrator handoff is missing required fields or contradictory, block instead of guessing
 - In direct mode:
   - read `../review-wiki-setup/references/staging-contract.md`
   - read `../review-wiki-setup/references/platform-commands.md`
@@ -109,10 +112,17 @@ Before writing any plan artifact:
   - prefer structured user-input tooling when available
   - otherwise ask concise plain-text questions in chat
 - In orchestrated mode, if `blocking` ambiguity remains before any executable plan can be written:
-  - write `./plans/_orchestrator/{task-slug}/clarification.md`
-  - emit a concrete decision packet instead of plain chat questions
+  - return a concise blocking decision packet in the response instead of writing helper files
+  - include at least:
+    - `task_slug`
+    - `needs_user_input`
+    - `next_action`
+    - `why_it_matters`
+    - `options`
+    - `recommendation`
+    - `default`
   - stop before creating or updating `./plans/**`
-- If the blocking issue is missing UI direction, hierarchy, or state presentation, make the clarification packet explicitly tell the user to run `design-discovery` or provide equivalent locked UI decisions before planning continues
+- If the blocking issue is missing UI direction, hierarchy, or state presentation, make the decision packet explicitly tell the user to run `design-discovery` or provide equivalent locked UI decisions before planning continues
 - For user-visible scope, resolve behavior well enough to define stable boundaries and expected outcomes in the plan
 - For touched public boundaries such as components, hooks, APIs, routes, or services, resolve enough detail to name the public surface that will change:
   - props / inputs / outputs
@@ -321,8 +331,7 @@ Provide a concise execution handoff summary using the handoff requirements in `{
   - matching phase detail files: `./plans/{task-slug}/phases/{nn}-{phase-slug}.md`
   - multiple executable plan summaries when required: `./plans/{task-group}-{nn}-{slice-slug}/plan.md`
   - each multi-plan artifact also owns matching phase detail files under its own `phases/`
-- Optional orchestration clarification packet when planning must stop before any executable plan is writable:
-  - `./plans/_orchestrator/{task-slug}/clarification.md`
+- Optional orchestration blocking decision packet returned in chat when planning must stop before any executable plan is writable
 - Output language: Korean
 
 ## Guardrails
@@ -337,7 +346,7 @@ Provide a concise execution handoff summary using the handoff requirements in `{
 - `visual-comparator` execution happens later; architect only plans that phase
 - Do not produce a plan with unresolved blocking ambiguity
 - Do not replace the user's wording with planner shorthand when the user's wording can be preserved in a request row
-- In orchestrated mode, do not leave pre-plan blocking questions only in chat when a `clarification.md` packet is required
+- In orchestrated mode, do not leave pre-plan blocking questions only as vague chat questions; emit a structured decision packet instead
 - Do not leave user-visible hierarchy, state presentation, or responsive behavior implicit when `design-discovery` already resolved them
 - Do not add new top-level plan sections just to mirror a `design-discovery` handoff
 - Do not treat Context7 as mandatory for every plan; use it only when unstable external facts can change the boundary, contract, or phase split

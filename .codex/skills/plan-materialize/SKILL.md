@@ -27,8 +27,10 @@ Materialize tests after planning, not during implementation.
 1. Current executable plan file:
     - `./plans/**/plan.md`
 2. Linked phase detail files referenced from the selected `plan.md`
-3. Optional orchestration state file when invoked by `orchestrator`:
-    - `./plans/_orchestrator/{task-slug}/state.json`
+3. Optional orchestrator handoff in the latest conversation context when invoked by `orchestrator`:
+    - `task_slug`
+    - `plan_path`
+    - optional `plan_signature`
 4. Existing plan-local report when present:
     - `materialize.md` adjacent to the selected executable plan
 5. Local test config and existing tests:
@@ -57,6 +59,11 @@ Materialize tests after planning, not during implementation.
   - `next_action = stop`
   - `resume_from = materialize`
 
+### Step 0.5. Determine execution mode
+
+- If an explicit orchestrator handoff provides `task_slug` and `plan_path`, enter orchestrated mode
+- Otherwise enter direct mode
+
 ### Step 1. Extract plan clauses and scenario contracts before test classification
 
 Read `plan.md` first to understand the human-facing phase order and intended change.
@@ -69,7 +76,8 @@ Then read the linked phase detail files and enumerate every selected phase-local
 
 Treat these as first-class coverage obligations.
 - In orchestrated mode:
-  - use `state.json.plan_path` as the authoritative plan path
+  - use the provided `plan_path` as the authoritative plan path
+  - if a current `plan_signature` is provided, treat it as the authoritative freshness fingerprint for this pass
 - In direct mode:
   - load every phase detail file linked from the current `plan.md`
 - In orchestrated mode, do not rely on stale prior metadata when the current plan files on disk have changed.
@@ -266,6 +274,7 @@ Include:
 - a YAML frontmatter block at the top with at least:
   - `plan_path`
   - `task_slug`
+  - `plan_signature`
   - `outcome`
   - `gate_status`
   - `blocker_type`
@@ -294,6 +303,7 @@ Include:
 Frontmatter rules:
 
 - `outcome`: `completed` | `blocked`
+- `plan_signature`: a stable short fingerprint of the normalized current `plan.md` plus the linked phase detail files; if the orchestrator provided `plan_signature`, preserve it exactly
 - `gate_status`: `passed` | `failed` | `blocked`
 - `blocker_type`: `none` | `plan_ambiguity` | `user_policy` | `external_setup`
 - `blocker_code`: use a specific code such as `setup_missing`, `local_convention_missing`, or `owner_spec_missing` when blocked; otherwise `none`
@@ -359,7 +369,7 @@ Frontmatter rules:
 - Do not silently defer selected plan coverage to a later pass
 - Do not widen targeted validation commands into full-suite regression unless the plan explicitly requires it
 - Do not use `./plans` as the durable source of truth for E2E ownership; use source-tree metadata comments and split registries
-- In orchestrated mode, do not invent alternate plan metadata that conflicts with the current plan files selected by the orchestrator
+- In orchestrated mode, do not invent alternate `plan_path` or `plan_signature` metadata that conflicts with the current orchestrator handoff
 
 </Instructions>
 </Skill_Guide>
