@@ -1,6 +1,6 @@
 
 node_modules/
-.codex/cache/
+.codex/review-wiki/
 .claude/*
 !.claude/CLAUDE.md
 test/**/workspace/
