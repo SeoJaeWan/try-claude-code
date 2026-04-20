@@ -28,6 +28,7 @@ import {
   collectInformationalReview,
   findPlanDirByBranch,
 } from "./lib/review-collector.mjs";
+import { recordHookEvent } from "./lib/telemetry.mjs";
 
 const STOP_REVIEW_TIMEOUT_MS = 15 * 60 * 1000;
 const SAME_BLOCK_ESCALATION_THRESHOLD = 3;
@@ -434,35 +435,141 @@ async function runStopReview(cwd, input = {}, worktreeDiffs = [], workspaceRoot 
   const turnCwd = workspaceRoot || cwd;
   const turnOptions = { prompt, sandbox: "read-only", persistThread: true };
 
+  const totalStart = Date.now();
+  let finalPath = "unknown";
+
   try {
     let result;
     if (existingThreadId) {
+      const resumeStart = Date.now();
       try {
         result = await withTimeout(
           runAppServerTurn(turnCwd, { ...turnOptions, resumeThreadId: existingThreadId }),
           STOP_REVIEW_TIMEOUT_MS,
         );
+        const resumeElapsed = Date.now() - resumeStart;
+        recordHookEvent({
+          kind: "stop_review_codex",
+          step: "resume",
+          ok: true,
+          elapsedMs: resumeElapsed,
+          threadId: existingThreadId,
+          sessionId,
+        });
+        logNote(`[stop-gate] Codex resume succeeded in ${resumeElapsed}ms (thread ${existingThreadId}).`);
+        finalPath = "resume";
       } catch (err) {
-        if (err.code === "ETIMEDOUT") throw err;
-        logNote(`[stop-gate] Resume of thread ${existingThreadId} failed, starting fresh thread.`);
+        const resumeElapsed = Date.now() - resumeStart;
+        const errCode = err?.code ?? null;
+        const errMessage = err?.message ?? String(err);
+        recordHookEvent({
+          kind: "stop_review_codex",
+          step: "resume",
+          ok: false,
+          elapsedMs: resumeElapsed,
+          threadId: existingThreadId,
+          errorCode: errCode,
+          errorMessage: errMessage,
+          sessionId,
+        });
+        if (errCode === "ETIMEDOUT") {
+          logNote(`[stop-gate] Codex resume timed out after ${resumeElapsed}ms (thread ${existingThreadId}).`);
+          throw err;
+        }
+        logNote(
+          `[stop-gate] Codex resume failed after ${resumeElapsed}ms (thread ${existingThreadId}, ` +
+          `code=${errCode ?? "unknown"}): ${errMessage}. Falling back to fresh thread.`
+        );
+
+        const freshStart = Date.now();
+        try {
+          result = await withTimeout(
+            runAppServerTurn(turnCwd, turnOptions),
+            STOP_REVIEW_TIMEOUT_MS,
+          );
+          const freshElapsed = Date.now() - freshStart;
+          recordHookEvent({
+            kind: "stop_review_codex",
+            step: "fresh_fallback",
+            ok: true,
+            elapsedMs: freshElapsed,
+            sessionId,
+          });
+          logNote(`[stop-gate] Codex fresh fallback succeeded in ${freshElapsed}ms.`);
+          finalPath = "fresh_fallback";
+        } catch (freshErr) {
+          const freshElapsed = Date.now() - freshStart;
+          recordHookEvent({
+            kind: "stop_review_codex",
+            step: "fresh_fallback",
+            ok: false,
+            elapsedMs: freshElapsed,
+            errorCode: freshErr?.code ?? null,
+            errorMessage: freshErr?.message ?? String(freshErr),
+            sessionId,
+          });
+          throw freshErr;
+        }
+      }
+    } else {
+      const coldStart = Date.now();
+      try {
         result = await withTimeout(
           runAppServerTurn(turnCwd, turnOptions),
           STOP_REVIEW_TIMEOUT_MS,
         );
+        const coldElapsed = Date.now() - coldStart;
+        recordHookEvent({
+          kind: "stop_review_codex",
+          step: "fresh",
+          ok: true,
+          elapsedMs: coldElapsed,
+          sessionId,
+        });
+        logNote(`[stop-gate] Codex first-turn completed in ${coldElapsed}ms (no prior thread).`);
+        finalPath = "fresh";
+      } catch (err) {
+        const coldElapsed = Date.now() - coldStart;
+        recordHookEvent({
+          kind: "stop_review_codex",
+          step: "fresh",
+          ok: false,
+          elapsedMs: coldElapsed,
+          errorCode: err?.code ?? null,
+          errorMessage: err?.message ?? String(err),
+          sessionId,
+        });
+        throw err;
       }
-    } else {
-      result = await withTimeout(
-        runAppServerTurn(turnCwd, turnOptions),
-        STOP_REVIEW_TIMEOUT_MS,
-      );
     }
 
     // Persist the thread ID so subsequent stops resume the same thread.
     if (sessionId && result.threadId) {
       setStopReviewThreadId(sessionId, result.threadId);
     }
+
+    recordHookEvent({
+      kind: "stop_review_codex",
+      step: "total",
+      ok: true,
+      elapsedMs: Date.now() - totalStart,
+      path: finalPath,
+      sessionId,
+    });
+
     return parseStopReviewOutput(result.finalMessage);
   } catch (error) {
+    recordHookEvent({
+      kind: "stop_review_codex",
+      step: "total",
+      ok: false,
+      elapsedMs: Date.now() - totalStart,
+      path: finalPath,
+      errorCode: error?.code ?? null,
+      errorMessage: error?.message ?? String(error),
+      sessionId,
+    });
+
     if (error.code === "ETIMEDOUT") {
       return {
         ok: false,
