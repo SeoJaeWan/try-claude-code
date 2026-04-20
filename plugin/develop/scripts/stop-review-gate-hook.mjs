@@ -23,10 +23,15 @@ import { sortJobsNewestFirst } from "./lib/job-control.mjs";
 import { SESSION_ID_ENV } from "./lib/tracked-jobs.mjs";
 import { resolveWorkspaceRoot } from "./lib/workspace.mjs";
 import { comparePaths } from "./lib/fs.mjs";
-import { collectBlockReview, findPlanDirByBranch } from "./lib/review-collector.mjs";
+import {
+  collectBlockReview,
+  collectInformationalReview,
+  findPlanDirByBranch,
+} from "./lib/review-collector.mjs";
 
 const STOP_REVIEW_TIMEOUT_MS = 15 * 60 * 1000;
 const SAME_BLOCK_ESCALATION_THRESHOLD = 3;
+const CONFIDENCE_THRESHOLD = 7;
 
 function fingerprintBlockReason(reason) {
   // Normalize whitespace so cosmetic differences (trailing newlines, extra
@@ -187,6 +192,36 @@ function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "
   });
 }
 
+/**
+ * Split a BLOCK payload into high-confidence (>= threshold) and low-confidence
+ * finding lines. Lines without a `[conf N]` tag are treated as legacy findings
+ * and grouped into `untagged`. Non-finding lines (headers, blank lines, the
+ * BLOCK reason line) are preserved so the reason text retains its structure.
+ */
+function partitionFindingsByConfidence(text) {
+  const lines = text.split(/\r?\n/);
+  const confRe = /\[conf\s+(\d+)\]/i;
+  const highFindings = [];
+  const lowFindings = [];
+  let taggedCount = 0;
+
+  for (const line of lines) {
+    const match = line.match(confRe);
+    if (!match) {
+      continue;
+    }
+    taggedCount += 1;
+    const confidence = Number(match[1]);
+    if (confidence >= CONFIDENCE_THRESHOLD) {
+      highFindings.push(line);
+    } else {
+      lowFindings.push(line);
+    }
+  }
+
+  return { highFindings, lowFindings, taggedCount };
+}
+
 function parseStopReviewOutput(rawOutput) {
   const text = String(rawOutput ?? "").trim();
   if (!text) {
@@ -203,10 +238,45 @@ function parseStopReviewOutput(rawOutput) {
     return { ok: true, reason: null, details: null };
   }
   if (firstLine.startsWith("BLOCK:")) {
+    const { highFindings, lowFindings, taggedCount } = partitionFindingsByConfidence(text);
+
+    // No conf tags anywhere → legacy behavior: full text drives the BLOCK.
+    if (taggedCount === 0) {
+      return {
+        ok: false,
+        reason: text,
+        details: text,
+      };
+    }
+
+    // Tags present, but no finding crossed the threshold → downgrade to ALLOW.
+    // Keep the whole output as an informational note so the suppressed findings
+    // are still visible in .codex/reviews/.
+    if (highFindings.length === 0) {
+      return {
+        ok: true,
+        reason: null,
+        details: null,
+        suppressedNote: text,
+      };
+    }
+
+    // At least one high-confidence finding → BLOCK, but narrow the reason to
+    // the high-confidence lines so re-dispatch prompts stay focused.
+    const header = firstLine;
+    const filteredReason = [header, "", ...highFindings]
+      .concat(
+        lowFindings.length > 0
+          ? ["", `(Low-confidence findings suppressed: ${lowFindings.length})`]
+          : [],
+      )
+      .join("\n");
+
     return {
       ok: false,
-      reason: text,
+      reason: filteredReason,
       details: text,
+      suppressedNote: lowFindings.length > 0 ? text : null,
     };
   }
 
@@ -469,6 +539,14 @@ async function main() {
           details: review.details,
           diff: wt.diff,
         });
+        if (review.suppressedNote) {
+          collectInformationalReview(workspaceRoot, {
+            branch: wt.branch,
+            headSha: wt.headSha,
+            note: review.suppressedNote,
+            diff: wt.diff,
+          });
+        }
       }
     } catch {
       // Review collection is best-effort — never block the gate decision.
@@ -512,6 +590,23 @@ async function main() {
   // same fingerprint start counting from 1 again.
   if (sessionId) {
     clearRecentBlockStreak(sessionId);
+  }
+
+  // If the ALLOW came from a confidence downgrade, persist the suppressed
+  // findings so the user can still inspect them later.
+  if (review.suppressedNote) {
+    try {
+      for (const wt of worktreeDiffs) {
+        collectInformationalReview(workspaceRoot, {
+          branch: wt.branch,
+          headSha: wt.headSha,
+          note: review.suppressedNote,
+          diff: wt.diff,
+        });
+      }
+    } catch {
+      // best-effort
+    }
   }
 
   logNote(runningTaskNote);

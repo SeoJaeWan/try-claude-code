@@ -97,3 +97,28 @@ export function collectBlockReview(workspaceRoot, { branch, headSha, reason, det
 
   fs.writeFileSync(filePath, content, "utf8");
 }
+
+/**
+ * Save a low-confidence (suppressed) review to {repoRoot}/.codex/reviews/{sanitized-branch}/{headSha}.info.md.
+ * Used when Codex returned BLOCK but every finding was below the confidence threshold,
+ * so the gate was downgraded to ALLOW. The note is kept for reference but does not
+ * gate the runner.
+ */
+export function collectInformationalReview(workspaceRoot, { branch, headSha, note, diff }) {
+  const repoRoot = resolveRepoRoot(workspaceRoot);
+  const dir = path.join(repoRoot, ".codex", "reviews", sanitizeBranch(branch));
+  fs.mkdirSync(dir, { recursive: true });
+
+  const filePath = path.join(dir, `${headSha}.info.md`);
+  const timestamp = nowIso();
+
+  let content = `# INFO — ${timestamp}\n\n`;
+  content += `**Branch:** ${branch}\n`;
+  content += `**Commit:** ${headSha}\n\n`;
+  content += `## Low-confidence findings (suppressed, for reference)\n\n${note}\n`;
+  if (diff) {
+    content += `\n## Diff Stat\n\n\`\`\`\n${diff}\n\`\`\`\n`;
+  }
+
+  fs.writeFileSync(filePath, content, "utf8");
+}

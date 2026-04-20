@@ -190,9 +190,59 @@ Do not proceed to the next phase until the user explicitly replies. If the user 
 
 > **BLOCK handling is automatic.** When the stop-gate returns BLOCK, the hook injects a `[plan-runner workflow directive]` into the feedback. Follow that directive — it tells you to re-dispatch the same phase agent with the BLOCK reason. Do NOT fix the code yourself in the main session.
 
+### Step 3.5. Post-phase QA verification (built-in, non-blocking)
+
+After all plan phases complete and **before** Step 4 worktree cleanup, dispatch the `qa-verifier` agent automatically. This step is NOT a plan phase — it always runs, regardless of plan content, unless the change set is trivial (see skip rule).
+
+**Skip rule:** If all files changed on the task branch are documentation or config only, skip qa-verify entirely. Run:
+
+```bash
+CHANGED=$(git -C "$WORKTREE_DIR" diff --name-only "$BASE".."$TASK_BRANCH")
+# Treat as skippable if every changed path matches one of:
+# *.md, *.mdx, .github/**, docs/**, *.yml, *.yaml, *.json (config), .eslintrc*, tsconfig*, .gitignore
+```
+
+If skippable → print `QA skipped: docs/config only.` and proceed directly to Step 4.
+
+Otherwise, dispatch:
+
+```
+Agent(
+  subagent_type: "qa-verifier",
+  prompt: "
+    ## Working directory
+    You are working in: {repo_root}/{WORKTREE_DIR}
+    cd to this directory before starting any work.
+
+    ## Inputs
+    - Plan: plans/{task-name}/plan.md
+    - Base branch: {BASE}
+    - Task branch: {TASK_BRANCH}
+    - Changed files: run `git diff {BASE}..HEAD --name-only` inside the worktree
+
+    ## Your job
+    Verify the implemented work behaves correctly. Classify the diff into frontend/backend/db tracks, run read-only checks in parallel per the qa-verify skill, write a report to plans/{task-name}/qa/, and commit only that directory.
+
+    ## Rules
+    - Read-only. Do NOT edit product source or tests.
+    - Do NOT fix bugs. Report only.
+    - This phase is informational — it does NOT block the merge decision.
+    - If a dev server or DB is unreachable, skip that track and continue others.
+    - Commit only files under plans/{task-name}/qa/ with message: docs(qa): add post-phase QA report for {task-name}
+  ",
+  description: "QA: post-phase verification"
+)
+```
+
+After the agent returns, output a brief plain-text summary so the Stop hook runs once and then end your turn naturally. Do NOT use `AskUserQuestion`.
+
+> **Stop hook behavior during QA commit:** The QA commit only modifies `plans/{task-name}/qa/**`. The Codex stop-gate should auto-allow a diff that only touches plan artifacts. If it BLOCKs, ignore the block — this phase is not a plan phase and is not gated.
+
+Do not proceed to Step 4 until the user replies. The user may inspect the QA report and decide how to continue.
+
 ### Step 4. Clean up worktree and ask user
 
-After all phases complete, the task branch has all phase commits. Remove the worktree but **stay on the base branch**. Then ask the user whether to merge:
+After all phases complete **and** the QA verification step finished (or was skipped), the task branch has all phase commits plus optionally the QA report commit. Remove the worktree but **stay on the base branch**. Then ask the user whether to merge:
 
 ```bash
 # 1. Remove worktree (frees the branch)
@@ -207,6 +257,7 @@ After cleanup, output the following as **plain text** and let your turn end natu
 
 - Summary of all phase commits: `git log --oneline $BASE..$TASK_BRANCH`
 - Changed files: `git diff --stat $BASE..$TASK_BRANCH`
+- **QA summary** (if Step 3.5 ran): one-line per track from `plans/{task-name}/qa/report.md`, plus the report path. QA FAIL does NOT block any option below — the user decides.
 - Options the user can choose:
   - "base 브랜치($BASE)에 병합" → `git merge $TASK_BRANCH --no-ff -m "merge: $TASK_BRANCH into $BASE"` then `git branch -d $TASK_BRANCH`
   - "PR 생성" → leave the task branch for PR creation
