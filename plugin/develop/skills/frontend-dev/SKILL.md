@@ -67,14 +67,68 @@ This ensures you and the project are aligned. If you cannot find enough examples
 
 1. Read plan from `plans/{task-name}/plan.md` (if present)
 2. Read `codemaps/frontend.md` (if present)
-3. **Run Convention Discovery** (above) — scan existing code for patterns
-4. Read project theme/style when the task includes UI work: `tailwind.config.*`, `app/globals.css`, component library tokens
-5. Implement the required UI and logic, following discovered conventions exactly
-6. If plan includes `tests/`: copy test files to source tree, run Red verification (`pnpm test`)
-7. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
-8. Run tests: `pnpm test` — confirm ALL pass (Green)
-9. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
-10. Return results based on plan.md
+3. **If the task references a Figma URL** — run the Figma integration workflow (see section below) before Convention Discovery
+4. **Run Convention Discovery** (above) — scan existing code for patterns
+5. Read project theme/style when the task includes UI work: `tailwind.config.*`, `app/globals.css`, component library tokens
+6. Implement the required UI and logic, following discovered conventions exactly
+7. If plan includes `tests/`: copy test files to source tree, run Red verification (`pnpm test`)
+8. If plan includes `e2e/`: copy E2E test files (contract-first — do NOT modify)
+9. Run tests: `pnpm test` — confirm ALL pass (Green)
+10. If plan includes `e2e/`: `pnpm exec playwright test` — if E2E fails, fix implementation, NOT tests
+11. Return results based on plan.md
+
+## Figma integration (read-only)
+
+When the task references a Figma URL (`figma.com/design/...`, `figma.com/make/...`), pull the design context via the Figma MCP server and adapt it to the project's stack — never copy the returned code as-is.
+
+### 1. Parse the URL
+
+- `figma.com/design/:fileKey/:fileName?node-id=:nodeId` → convert `-` to `:` in nodeId
+- `figma.com/design/:fileKey/branch/:branchKey/:fileName` → use branchKey as fileKey
+- `figma.com/make/:makeFileKey/:makeFileName` → use makeFileKey
+- `figma.com/board/:fileKey/...` → FigJam board, not supported here — ask the user for a design URL instead
+
+### 2. Fetch design context (primary)
+
+Call `mcp__plugin_figma_figma__get_design_context` with the parsed fileKey and nodeId. This is the primary entry point — it returns a code reference, a screenshot, and contextual hints (Code Connect mappings, token variables, component docs, annotations).
+
+**The returned React+Tailwind code is a REFERENCE, not final code.** Always adapt it to the target project:
+
+- If the project uses styled-components / CSS Modules / Emotion — translate the styling approach
+- If the project uses a different component library — map to the project's primitives
+- If the project does not use Tailwind — convert utility classes to the project's styling system
+
+### 3. Prefer existing project components
+
+Before writing new components, check for reusable ones already in the project:
+
+- `mcp__plugin_figma_figma__get_code_connect_map` — returns Code Connect mappings (Figma component → codebase component). If a mapping exists, use the mapped component directly instead of generating new code
+- `mcp__plugin_figma_figma__search_design_system` — search the project's design system library in Figma for components that match the intent
+- `mcp__plugin_figma_figma__get_context_for_code_connect` — when you need more detail on a Code Connect mapping before using it
+
+### 4. Map design tokens to project tokens
+
+Call `mcp__plugin_figma_figma__get_variable_defs` to extract the node's variable/token definitions (colors, spacing, typography). Map these to the project's token system:
+
+- Tailwind projects → map to `tailwind.config.*` theme tokens
+- CSS variable projects → map to `:root` CSS custom properties
+- Never hardcode hex values or pixel numbers when a matching token exists in the project
+
+If the Figma token has no project counterpart, flag it and ask whether to add a new token or approximate with an existing one.
+
+### 5. Supplementary reads (use sparingly)
+
+- `mcp__plugin_figma_figma__get_screenshot` — pull the node image when you need to eyeball the design alongside the code reference (e.g., disambiguate layout intent)
+- `mcp__plugin_figma_figma__get_metadata` — node structure when `get_design_context` doesn't give enough hierarchy detail
+- `mcp__plugin_figma_figma__get_libraries` — lists connected libraries when determining which design system to search
+
+### 6. What not to do
+
+- Do NOT copy the returned React+Tailwind code verbatim — adapt to the project stack
+- Do NOT create a new component when Code Connect or design-system search returns a usable match
+- Do NOT use write/create Figma tools (`create_*`, `generate_*`, `use_figma`, `send_code_connect_mappings`) — this agent is read-only toward Figma
+- Do NOT authenticate via MCP from inside this agent — if auth is missing, stop and ask the user to complete auth in the main session
+- Do NOT use Figma MCP for FigJam (`get_figjam`) — FigJam is a whiteboard, not a design source for implementation
 
 ## What to avoid
 

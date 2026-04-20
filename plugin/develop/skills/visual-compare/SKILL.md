@@ -62,6 +62,7 @@ Determine the two sides to compare:
 | Two URLs | Screenshot from URL A | Screenshot from URL B |
 | Two image files | Image file A | Image file B |
 | URL + selector | Screenshot of element A | Screenshot of element B |
+| Figma URL + implementation URL/selector | Figma node screenshot via Figma MCP | Screenshot from implementation URL |
 
 **Reference source rule — self-compare is invalid:**
 
@@ -76,6 +77,22 @@ If the only available reference is from the same system as current (same Storybo
 **Multi-case inventory:**
 
 When comparing multiple states (e.g., 8 context menu cases), establish the full case list upfront. Every case must have a real screenshot triplet (reference, current, diff) before the report is considered complete. Source code analysis is not a substitute for pixel comparison — it cannot catch rendering differences.
+
+### Step 1b — Fetch Figma reference (only when reference is a Figma URL)
+
+When the reference side is a Figma URL, pull the node screenshot via Figma MCP and save it as `{kind}-{state}-reference.png`. This replaces the user-provided image file step.
+
+1. Parse the URL:
+   - `figma.com/design/:fileKey/...?node-id=:nodeId` → convert `-` to `:` in nodeId
+   - `figma.com/design/:fileKey/branch/:branchKey/...` → use branchKey as fileKey
+2. Call `mcp__plugin_figma_figma__get_screenshot` with the parsed fileKey and nodeId
+3. Save the returned image to `{kind}-{state}-reference.png` via Write
+4. Optionally call `mcp__plugin_figma_figma__get_metadata` only when node structure info helps disambiguate the target selector on the current side — do NOT use its dimensions to override the scenario-based viewport rule (see Quick Reference)
+5. Use the `0.05` threshold row (Pixel-perfect spec — Figma)
+
+If the Figma MCP call fails (server unreachable, auth not completed, node not accessible), do NOT fall back to guessing — ask the user to either complete Figma auth, verify the URL, or export the node as an image file manually.
+
+Do NOT use Figma MCP for the current (implementation) side — the implementation must always be captured via `npx agent-browser`.
 
 ### Step 2 — Capture screenshots
 
@@ -248,7 +265,7 @@ Each rule pairs a prohibition with the correct alternative when the alternative 
   Instead: Rely on `passed`, `mismatchRatio`, and `dimensionsMatch` fields in the JSON output.
 
 - **Do NOT use Playwright MCP tools (`mcp__playwright__*`) or any browser MCP for capture** — they have different capture semantics and produce inconsistent results.
-  Instead: All browser interaction goes through `npx agent-browser` via Bash.
+  Instead: All browser interaction for the current (implementation) side goes through `npx agent-browser` via Bash. Figma MCP (`mcp__plugin_figma_figma__get_screenshot`, `get_metadata`) is allowed *only* for pulling the reference side when the reference is a Figma URL — see Step 1b.
 
 - **Do NOT use the same Storybook (or test harness) as both reference and current source** — this is a self-compare and produces no meaningful acceptance signal.
   Instead: Reference must come from an independent source — a live production/staging URL, a different codebase, or a user-provided image file.
