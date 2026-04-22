@@ -53,9 +53,11 @@ The orchestrator may keep only current-turn helper state such as:
 - `task_slug`
 - selected `plan_path`
 - current `plan_signature`
+- `current_handoff_signature`
 - whether the current review artifact is fresh
 - whether the current materialize artifact is fresh
 - the latest user question still awaiting an answer
+- `last_meaningful_progress_at`
 - the last named-agent outcome and exact failure text
 - per-turn retry counters
 
@@ -80,17 +82,21 @@ The handoff should include only the minimum fields needed for the role:
 - authoritative `review_wiki_root` when the role uses it
 - current `plan_signature` when freshness matters
 - latest user-request summary when the role cannot safely rely on full parent context
+- `authoritative_existing_inputs` containing only controller-verified literal paths
+- `known_missing_inputs` containing referenced but missing literal paths only as non-authoritative context
 - latest review artifact path when `plan-architect` is revising from review findings
 - explicit output path requirements for the role
 
 Do not force named planning agents to rediscover orchestrator-owned metadata from disk when the controller already selected it.
+Do not include wildcard globs, open-ended discovery prompts such as `any existing ... relevant on disk`, or instructions that ask the named agent to reinterpret missing paths into new authoritative inputs.
+When the named agent must finish with a narrow terminal result shape, state that terminal output contract explicitly in the handoff.
 
 ## Failure taxonomy
 
 Classify named-agent failures precisely instead of collapsing them into a generic stall:
 
 - `invocation_failure`: the runtime could not invoke or reuse the named agent
-- `agent_protocol_failure`: the agent replied but did not provide a usable result for the requested role
+- `agent_protocol_failure`: the agent replied or streamed progress, but did not provide a usable terminal result for the requested role before the bounded wait ended
 - `artifact_writeback_failure`: the agent claimed success but the required artifact is still missing or stale on disk
 - `no_progress`: the same artifact signature or finding signature repeated against an unchanged plan after one safe retry
 
@@ -106,6 +112,11 @@ Report the exact classification when stopping.
 - Confirm `plan-architect`, `plan-reviewer`, and `plan-materializer` definitions exist.
 - Confirm the linked local skills are present.
 - Derive the default plan path as `./plans/{task-slug}/plan.md` unless the current run explicitly targets another existing executable plan.
+- Collect task-local plan or prerequisite paths referenced by the user request, the current selected plan, or the latest fresh review/materialize artifact when they affect the next named-agent pass.
+- Resolve each referenced path literally before spawning a named agent.
+- Build `authoritative_existing_inputs` from the verified present paths only.
+- Build `known_missing_inputs` from the referenced but missing paths only as controller-owned notes; never treat them as authoritative inputs.
+- If the next architect pass depends on local upstream plan artifacts and no authoritative input remains after verification, stop and report the blocker instead of delegating authority discovery to `plan-architect`.
 - Inspect the current `plan.md`, linked phase detail files, `review.md`, and `materialize.md` when they exist.
 
 ### Step 1. Build the current orchestration picture
@@ -130,19 +141,29 @@ Report the exact classification when stopping.
   - exact `task-slug`
   - exact `plan_path`
   - authoritative `review_wiki_root`
+  - controller-verified `authoritative_existing_inputs` when upstream artifacts matter
+  - controller-owned `known_missing_inputs` when stale or missing references matter to the next pass
   - latest review artifact path when revising
   - latest request summary when the runtime did not provide full continuity safely
   - explicit write scope under `./plans/{task-slug}/`
+- Do not pass wildcard globs, open-ended discovery requests, or requests to reinterpret missing paths into new authority.
 - Require `plan-architect` to do exactly one of:
   - write or update the executable plan artifacts under `./plans/{task-slug}/`
   - return a concise blocking decision packet in chat when fresh user input is required before any plan can be written
+- Require the terminal result to be exactly one of:
+  - `result = wrote_plan` with `written_paths`
+  - `result = blocking_packet` with `task_slug`, `needs_user_input`, `next_action`, `why_it_matters`, `options`, `recommendation`, and `default`
+- Treat intermediate progress updates as non-terminal status only.
 - Do not ask `plan-architect` to write `clarification.md` or `user-gate.md`.
 - After every architect pass, re-check `plan_path` on disk and recompute the current `plan_signature`.
 - If the architect returned a blocking decision packet, ask the user directly in chat and route the answer back to `plan-architect`.
+- Use a bounded wait for the architect terminal result. If no required plan artifact and no terminal blocking packet appear by the end of that wait, classify the pass as `agent_protocol_failure`.
 - If the invocation failed, classify it as `invocation_failure`.
 - If the architect replied without a usable plan result or blocking decision packet, classify it as `agent_protocol_failure`.
 - If the architect claimed to write or update a plan but the plan artifact is still missing or stale on disk, classify it as `artifact_writeback_failure`.
-- After one safe retry in the same turn, stop and report the exact failure instead of looping indefinitely.
+- Allow one safe retry only when the controller materially changed the handoff and therefore changed `current_handoff_signature`, for example by removing stale paths, narrowing authoritative inputs, or updating the locked request summary.
+- Do not repeat the same handoff unchanged as a retry.
+- After one safe retry with a changed handoff in the same turn, stop and report the exact failure instead of looping indefinitely.
 
 ### Step 3. Run cold review
 
@@ -261,6 +282,8 @@ The orchestration is `done` only when all of the following are true:
 - Do not create or rely on `state.json`, `clarification.md`, or `user-gate.md`.
 - Do not hardcode runtime-specific spawn mechanics into the skill contract.
 - Do not ask named planning agents to rediscover `plan_path`, `plan_signature`, or `review_wiki_root` when the orchestrator already selected them.
+- Do not ask named planning agents to rediscover controller-owned authority or reinterpret missing paths into fresh authoritative inputs.
+- Do not pass open-ended discovery prompts in orchestrated handoff packets.
 - Do not trust stale review or materialize artifacts after `plan_signature` changes.
 - Do not skip explicit user approval.
 - Do not let `plan-reviewer` edit plans.

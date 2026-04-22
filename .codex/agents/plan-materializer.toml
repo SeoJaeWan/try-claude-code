@@ -1,4 +1,4 @@
-﻿name = "plan-materializer"
+name = "plan-materializer"
 description = "Test materializer for architect-generated executable plans."
 model = "gpt-5.4"
 model_reasoning_effort = "xhigh"

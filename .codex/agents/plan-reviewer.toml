@@ -1,4 +1,4 @@
-﻿name = "plan-reviewer"
+name = "plan-reviewer"
 description = "Cold reviewer for architect-generated executable plans."
 model = "gpt-5.4"
 model_reasoning_effort = "xhigh"

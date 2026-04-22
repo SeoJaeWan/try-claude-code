@@ -23,6 +23,8 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
    - `review_wiki_root`
    - optional `latest_review_path`
    - optional locked request summary when the parent intentionally narrowed context
+   - optional `authoritative_existing_inputs` containing controller-verified literal upstream artifact paths
+   - optional `known_missing_inputs` containing referenced but missing literal paths as non-authoritative warnings
 3. Optional `design-discovery` handoff from the latest conversation context or a directly referenced `./.codex/artifacts/design-discovery/{feature-name}.md`
 4. `./references/agents-lite.md` - execution agent catalog
 5. `../review-wiki-setup/references/staging-contract.md` - review wiki sync resolution and refresh rules
@@ -53,11 +55,14 @@ Before writing any plan artifact:
 - Read `./references/agents-lite.md`
 - In orchestrated mode:
   - treat the provided `task_slug`, `plan_path`, and `review_wiki_root` as authoritative
+  - if `authoritative_existing_inputs` is provided, treat only those literal paths as authoritative task-local upstream inputs
+  - if `known_missing_inputs` is provided, treat them only as explicit missing-path warnings and not as prompts for substitute discovery
   - if this architect instance is being reused for the same `task-slug`, treat the current plan artifacts and latest review artifact as higher priority than stale chat memory
   - if `latest_review_path` is provided and exists, read it
   - do not run review wiki staging
   - do not verify named-agent availability
   - do not inspect runtime or CLI invocation paths
+  - do not broaden the task by searching for substitute or similarly named upstream paths unless the controller explicitly passed them
   - if the orchestrator handoff is missing required fields or contradictory, block instead of guessing
 - In direct mode:
   - read `../review-wiki-setup/references/staging-contract.md`
@@ -122,6 +127,7 @@ Before writing any plan artifact:
     - `recommendation`
     - `default`
   - stop before creating or updating `./plans/**`
+- In orchestrated mode, if the provided authoritative inputs are insufficient, stale, or missing for safe planning, block with the decision packet instead of repairing authority through broader repo discovery
 - If the blocking issue is missing UI direction, hierarchy, or state presentation, make the decision packet explicitly tell the user to run `design-discovery` or provide equivalent locked UI decisions before planning continues
 - For user-visible scope, resolve behavior well enough to define stable boundaries and expected outcomes in the plan
 - For touched public boundaries such as components, hooks, APIs, routes, or services, resolve enough detail to name the public surface that will change:
@@ -332,6 +338,9 @@ Provide a concise execution handoff summary using the handoff requirements in `{
   - multiple executable plan summaries when required: `./plans/{task-group}-{nn}-{slice-slug}/plan.md`
   - each multi-plan artifact also owns matching phase detail files under its own `phases/`
 - Optional orchestration blocking decision packet returned in chat when planning must stop before any executable plan is writable
+- In orchestrated mode, the terminal result must be exactly one of:
+  - `result = wrote_plan` with `written_paths` listing every created or updated artifact path
+  - `result = blocking_packet` with `task_slug`, `needs_user_input`, `next_action`, `why_it_matters`, `options`, `recommendation`, and `default`
 - Output language: Korean
 
 ## Guardrails
@@ -342,11 +351,14 @@ Provide a concise execution handoff summary using the handoff requirements in `{
 - Do not treat the review wiki as optional when its registry is available; always read the registry first and route from it
 - Do not bypass the resolved `review_wiki_root` with hardcoded external-path reads once the workspace sync path is available
 - In orchestrated mode, do not redo review wiki bootstrap or named-agent preflight that the orchestrator already completed
+- In orchestrated mode, do not rediscover controller-owned authority beyond provided `authoritative_existing_inputs`
 - Do not generate or edit source-tree tests inside `architect`
 - `visual-comparator` execution happens later; architect only plans that phase
 - Do not produce a plan with unresolved blocking ambiguity
 - Do not replace the user's wording with planner shorthand when the user's wording can be preserved in a request row
 - In orchestrated mode, do not leave pre-plan blocking questions only as vague chat questions; emit a structured decision packet instead
+- In orchestrated mode, do not reinterpret `known_missing_inputs` as prompts to search for substitute paths
+- In orchestrated mode, do not finish with progress-only updates; return plan artifacts or the blocking decision packet
 - Do not leave user-visible hierarchy, state presentation, or responsive behavior implicit when `design-discovery` already resolved them
 - Do not add new top-level plan sections just to mirror a `design-discovery` handoff
 - Do not treat Context7 as mandatory for every plan; use it only when unstable external facts can change the boundary, contract, or phase split
