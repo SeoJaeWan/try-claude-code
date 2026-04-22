@@ -26,9 +26,10 @@ Create these only when missing. Do not overwrite populated files without approva
 `wiki/registry.json` is the machine-readable routing contract. It should:
 
 - list the core document paths in read order
+- optionally define stage-specific `stage_core` overrides when one stage needs a narrower core set than the default planning contract
 - list the registered pattern files
 - define the tag taxonomy
-- define selection policy for `architect` and `review`
+- define selection policy for `brainstorm`, `architect`, and `review`
 - define adjacency and lint policy
 - define ingest create-vs-update policy
 

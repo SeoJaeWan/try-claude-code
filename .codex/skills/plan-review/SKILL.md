@@ -27,7 +27,7 @@ Review the finished plan artifact against the user's request and any upstream re
 6. `../review-wiki-setup/references/staging-contract.md`
 7. `../review-wiki-setup/references/platform-commands.md`
 8. Resolved planning `review_wiki_root` containing `registry.json`, `core/`, and `patterns/`. Use `./.codex/review-wiki/sync/current` as the planning root.
-9. Every core doc listed in the registry `core` array, in listed order
+9. Every core doc listed in `stage_core.review`, or the registry `core` array when no review-specific override exists, in listed order
 10. Pattern candidates selected from the registry `patterns` list using the `review` selection mode plus matching `Apply When`
 11. `../architect/references/plan-template-sequential.md`
 12. `../architect/references/phase-template-detail.md`
@@ -61,7 +61,7 @@ Before judging the plan:
   - resolve `review_wiki_root` to `./.codex/review-wiki/sync/current`
   - if the workspace sync is missing, stop and report the missing dependency explicitly
 - read `{review_wiki_root}/registry.json`
-- read every path listed in the registry `core` array, in order, resolving relative paths from `review_wiki_root`
+- read every path listed in `stage_core.review` when present, otherwise every path listed in the registry `core` array, resolving relative paths from `review_wiki_root`
 - read `architect/references/plan-template-sequential.md`
 - read `architect/references/phase-template-detail.md`
 - read `architect/references/visual-parity-contract.md`

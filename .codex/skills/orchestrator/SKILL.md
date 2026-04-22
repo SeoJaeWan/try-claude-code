@@ -20,10 +20,11 @@ Do not use it as a generic replacement for `architect`, `plan-review`, or `plan-
 2. Existing plan artifacts under `./plans/**` relevant to the task
 3. Existing review artifact under `./plans/_orchestrator/review/{task-slug}/review.md` when present
 4. Existing plan-local `materialize.md` adjacent to the selected executable plan when present
-5. `../architect/SKILL.md`
-6. `../plan-review/SKILL.md`
-7. `../plan-materialize/SKILL.md`
-8. `../review-wiki-setup/references/staging-contract.md`
+5. Existing `./.codex/artifacts/brainstorm/**` or `./.codex/artifacts/design-discovery/**` artifacts when directly referenced or when they narrow the next architect pass
+6. `../architect/SKILL.md`
+7. `../plan-review/SKILL.md`
+8. `../plan-materialize/SKILL.md`
+9. `../review-wiki-setup/references/staging-contract.md`
 
 ## Required runtime expectations
 
@@ -136,9 +137,10 @@ Report the exact classification when stopping.
 - If `./.codex/review-wiki/sync/current` is missing, stop and route to `review-wiki-setup` instead of attempting per-run staging inside this skill.
 - Confirm the linked local `architect`, `plan-review`, and `plan-materialize` skills are present.
 - Derive the default plan path as `./plans/{task-slug}/plan.md` unless the current run explicitly targets another existing executable plan.
-- Collect task-local plan or prerequisite paths referenced by the user request, the current selected plan, or the latest fresh review/materialize artifact when they affect the next role pass.
+- Collect task-local plan or prerequisite paths referenced by the user request, the current selected plan, the latest fresh review/materialize artifact, or a directly referenced upstream `brainstorm` / `design-discovery` artifact when they affect the next role pass.
 - Resolve each referenced path literally before spawning a planning sub-agent.
 - Build `authoritative_existing_inputs` from the verified present paths only.
+- If a verified brainstorm or design-discovery artifact already locks ambiguity for the next architect pass, treat that artifact as authoritative upstream input instead of re-deriving the same decisions from stale chat memory.
 - Build `known_missing_inputs` from the referenced but missing paths only as controller-owned notes; never treat them as authoritative inputs.
 - If the next architect pass depends on local upstream plan artifacts and no authoritative input remains after verification, stop and report the blocker instead of delegating authority discovery to the architect pass.
 - Inspect the current `plan.md`, linked phase detail files, `review.md`, and `materialize.md` when they exist.
@@ -170,6 +172,7 @@ Report the exact classification when stopping.
   - controller-verified `authoritative_existing_inputs` when upstream artifacts matter
   - controller-owned `known_missing_inputs` when stale or missing references matter to the next pass
   - latest review artifact path when revising
+  - latest locked request summary or verified brainstorm artifact path when upstream ambiguity has already been resolved
   - latest request summary when the runtime did not provide full continuity safely
   - explicit write scope under `./plans/{task-slug}/`
 - Do not pass wildcard globs, open-ended discovery requests, or requests to reinterpret missing paths into new authority.

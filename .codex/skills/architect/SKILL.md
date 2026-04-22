@@ -30,7 +30,7 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 5. `../review-wiki-setup/references/staging-contract.md` - review wiki sync resolution and refresh rules
 6. `../review-wiki-setup/references/platform-commands.md` - platform-specific link and planning-root commands
 7. Resolved planning `review_wiki_root` containing `registry.json`, `core/`, `patterns/`, and selection policy. Use `./.codex/review-wiki/sync/current` as the planning root.
-8. Every core document listed in the registry `core` array, in listed order
+8. Every core document listed in `stage_core.architect`, or the registry `core` array when no architect-specific override exists, in listed order
 9. Candidate pattern files selected from the registry `patterns` list using the `architect` selection mode plus matching `Apply When`
 10. `./references/git.md` - commit message, branch naming, and worktree naming rules
 11. `./references/plan-template-sequential.md` - sequential plan template
@@ -72,7 +72,7 @@ Before writing any plan artifact:
     - report the missing dependency explicitly
     - use `review-wiki-setup` when available to repair it before continuing
 - Read `{review_wiki_root}/registry.json`
-- Read every path listed in the registry `core` array, in order, resolving relative paths from `review_wiki_root`
+- Read every path listed in `stage_core.architect` when present, otherwise every path listed in the registry `core` array, resolving relative paths from `review_wiki_root`
 - Derive initial tags from the user request and repo-local context
 - Select candidate pattern files from the registry `patterns` list using the registry `selection.architect` mode and `adjacency_rules`
 - Read only the selected pattern files whose `Apply When` clauses actually match the request or repo-local context
@@ -94,6 +94,7 @@ Before writing any plan artifact:
 ### Step 1.2. Verify unstable external facts when needed (conditional)
 
 - First consume any `brainstorm` handoff and treat its confirmed library/framework/API decisions as the default planning input
+- If a `brainstorm` handoff includes review wiki preflight findings, treat them as upstream ambiguity-resolution notes, not as a substitute for reading the active architect core docs yourself
 - If the planning boundary still depends on current library/framework/API behavior, or the upstream handoff is missing, incomplete, or risky, query Context7 before freezing the plan
 - Prefer Context7 over general web search for package docs, framework APIs, migration notes, and recommended usage patterns
 - Use Context7 to confirm only the minimum facts that can change the plan:

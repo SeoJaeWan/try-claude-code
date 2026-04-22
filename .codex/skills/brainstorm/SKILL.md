@@ -62,6 +62,34 @@ Read only what is needed:
 Do not assume or depend on `./.ai/` or any other external AI metadata directory.
 Prefer related-artifact lookup before asking the user to restate a prior decision.
 
+### 2.5. Run review wiki preflight when available
+
+If planning handoff is plausible, inspect the staged review wiki before asking the user to confirm scope:
+
+- resolve `review_wiki_root` to `./.codex/review-wiki/sync/current`
+- if the planning root exists:
+  - read `{review_wiki_root}/registry.json`
+  - read every path in `stage_core.brainstorm` when present; otherwise fall back to the registry `core` array and state that the wiki does not yet expose a brainstorm-specific core list
+  - use `selection.brainstorm` when present to select candidate pattern files
+  - read only the selected pattern files whose `Apply When` clauses materially help classify the current ambiguity
+- if the planning root is missing or unreadable and planning handoff is likely:
+  - state that the review wiki dependency is missing
+  - continue in degraded brainstorm mode instead of pretending the preflight ran
+  - recommend `review-wiki-setup` before `architect` or `orchestrator`
+
+Use the preflight only to:
+
+- classify missing information as `blocking`, `derivable`, or `deferrable`
+- surface contract, state, ownership, exclusion, and no-op questions that would later block planning
+- capture applicable pattern guidance that narrows the confirmation questions or request-lock tables
+
+Do not use the preflight to:
+
+- choose phase topology
+- assign `owner_agent`
+- enforce `plan.md` formatting
+- decide execution routing, test materialization scope, or review outcomes
+
 ### 3. Research latest information when needed
 
 If technical choices depend on external facts (library/API/pattern changes), gather current information before asking for decisions.
@@ -114,6 +142,7 @@ Rules:
 - Do not ask what can be derived from local context
 - Questions should help the user confirm scope and direction quickly
 - Prioritize blocking ambiguity that would change the implementation plan, tests, user-visible behavior, or public surface
+- If review wiki preflight ran, prioritize questions that close preflight-identified `blocking` ambiguity first
 - Prefer asking about concrete items, not planner taxonomies
 - If more than 4 blocking questions exist, ask them in rounds
 - Prefer structured user-input tooling when available; otherwise ask concise plain-text questions
@@ -159,10 +188,18 @@ Optional table when state rules matter:
    - `규칙`
    - `비고`
 
+Optional table when review wiki preflight matters:
+
+6. `review wiki preflight 메모`
+   - `검토 기준`
+   - `이번에 잠근 내용`
+   - `architect에 넘길 메모`
+   - `남은 위험`
+
 Then include:
 
 - `남은 질문` if blocking ambiguity remains
-- `추천 다음 단계` (`design-discovery`, `architect`, or direct execution)
+- `추천 다음 단계` (`review-wiki-setup`, `design-discovery`, `architect`, or direct execution)
 
 Response formatting rules:
 
@@ -186,6 +223,7 @@ Include:
 - `공개 surface 표`
 - `상태 소유권 표` when relevant
 - `제외 항목 표` when relevant
+- `review wiki preflight 메모` when relevant
 - `남은 질문 / 가정`
 - `추천 다음 단계`
 
@@ -199,6 +237,8 @@ Before handoff, confirm:
 - No user-visible UI direction remains vague enough that planning would force later design guessing
 - No exclusion was introduced without being made explicit
 - The user's requested items are still traceable in the request-lock tables
+- If review wiki preflight ran, its `blocking` findings are either locked or called out explicitly
+- If review wiki preflight could not run, the missing dependency is explicit before recommending planning
 - Blocking questions are explicit when another clarification round is still needed
 - Recommended next step is clear
 
@@ -216,7 +256,10 @@ When planning is needed and scope is decision-complete enough for planning, prov
 3. The locked `공개 surface 표`
 4. Any `상태 소유권 표` or `제외 항목 표` that matters to planning
 5. Explicit defaults or deferred low-risk choices
-6. Context7-confirmed external facts that `architect` should treat as already resolved, plus any still-risky assumptions that may require fallback verification
+6. Review wiki preflight findings that `architect` should treat as already surfaced, or an explicit note that the preflight could not run because the review wiki root was missing
+7. Context7-confirmed external facts that `architect` should treat as already resolved, plus any still-risky assumptions that may require fallback verification
+
+If planning is needed but `./.codex/review-wiki/sync/current` is missing or unreadable, recommend `review-wiki-setup` before `architect`.
 
 Do not hand off to `architect` while blocking ambiguity remains for a touched public surface, exclusion boundary, or user-visible UI direction that would force design guessing.
 
@@ -230,6 +273,7 @@ Do not hand off to `architect` while blocking ambiguity remains for a touched pu
 - Do not invent planner taxonomy as the primary way to describe the user's goal.
 - Do not depend on `./.ai/` or other external AI metadata directories.
 - Keep brainstorm-owned artifacts under `./.codex/`.
+- Do not let review wiki preflight expand `brainstorm` into phase topology, execution routing, or review-authoring work.
 - If touched public props, callbacks, or state ownership are part of the request, lock them before handoff unless the user explicitly defers them.
 - If user-visible UI direction is still materially under-specified, route to `design-discovery` before `architect`.
 - If requirements are already clear, explicitly state skip reason and route to `architect` directly.
