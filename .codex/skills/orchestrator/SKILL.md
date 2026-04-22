@@ -36,6 +36,8 @@ Do not use it as a generic replacement for `architect`, `plan-review`, or `plan-
 - Do not hardcode runtime-specific spawn tactics such as `fork_context = true` or packet-only fallbacks into the orchestration contract. Use the safest runtime invocation the platform supports at execution time.
 - Reuse a still-usable planning sub-agent when convenient, but do not persist agent ids to disk or require same-agent reuse to make progress.
 - If a planning sub-agent invocation fails, report the exact target role and the exact tool error.
+- If a planning sub-agent is still `running`, do not shut it down merely because a bounded wait timed out.
+- If the controller must shut down a still-running planning sub-agent, report that as a controller-initiated interruption rather than as agent idleness or a completed pass.
 
 ## Authoritative artifacts
 
@@ -84,6 +86,13 @@ This helper state must be safely discardable between turns.
 - If a new user turn arrives while a planning sub-agent is still running and there is recent progress, prefer waiting on or reusing the same sub-agent instead of respawning a replacement.
 - Only switch to a narrowed fallback such as `write now or block` after there has been no meaningful progress and no relevant artifact change for a sustained idle window, normally at least 5 minutes for reviewer/materializer and at least 8 minutes for architect.
 - When the same still-running sub-agent is reused after a user re-entry, keep the role, handoff authority, and output contract unchanged unless the user actually changed the plan contract.
+- A timed-out `wait_agent` call with empty status is not evidence that the sub-agent is idle, stuck, or finished; treat the pass as still live until an explicit terminal status, shutdown notification, or controller-verified sustained idle window says otherwise.
+- Before closing or replacing a role pass after a timeout, re-check both the sub-agent's recent progress messages and the full write scope for any created or updated files or directories; any such change refreshes `last_meaningful_progress_at`.
+- Never call `close_agent` on a still-running planning sub-agent unless one of the following is true:
+  - the user explicitly canceled that pass
+  - the plan contract changed and the old pass has shown no meaningful progress for the full role-specific idle window
+  - the runtime cannot safely continue reuse and the controller reports a controller-initiated interruption explicitly
+- If `close_agent` returns `previous_status = running`, treat that as proof that the controller interrupted a live pass; do not describe the pass as having ended idle.
 
 ## Handoff packet rules
 
@@ -113,6 +122,7 @@ Classify planning sub-agent failures precisely instead of collapsing them into a
 - `invocation_failure`: the runtime could not invoke or reuse the planning sub-agent
 - `agent_protocol_failure`: the agent replied or streamed progress, but did not provide a usable terminal result for the requested role before the bounded wait ended
 - `artifact_writeback_failure`: the agent claimed success but the required artifact is still missing or stale on disk
+- `controller_interruption`: the controller shut down a still-running planning sub-agent before explicit user cancellation or before the role-specific idle window was satisfied
 - `no_progress`: the same artifact signature or finding signature repeated against an unchanged plan after one safe retry
 
 Report the exact classification when stopping.
@@ -173,11 +183,15 @@ Report the exact classification when stopping.
 - Do not ask the architect pass to write `clarification.md` or `user-gate.md`.
 - After every architect pass, re-check `plan_path` on disk and recompute the current `plan_signature`.
 - If the architect returned a blocking decision packet, ask the user directly in chat and route the answer back to the next `architect` pass.
+- If `wait_agent` times out with empty status, do not treat that alone as lack of progress; first re-check the sub-agent's recent messages and the full write scope for any created or updated files or directories.
+- If the architect pass is still running and there is fresh evidence of progress, continue waiting on or reusing the same pass instead of retrying or shutting it down.
 - Use a bounded wait for the architect terminal result following the wait policy above. If no required plan artifact, no terminal blocking packet, and no fresh evidence of progress appear by the end of the allowed wait window, classify the pass as `agent_protocol_failure`.
 - If the invocation failed, classify it as `invocation_failure`.
 - If the architect replied without a usable plan result or blocking decision packet, classify it as `agent_protocol_failure`.
 - If the architect claimed to write or update a plan but the plan artifact is still missing or stale on disk, classify it as `artifact_writeback_failure`.
+- If the controller shuts down a still-running architect pass before the architect idle window is satisfied, classify it as `controller_interruption`.
 - Allow one safe retry only when the controller materially changed the handoff and therefore changed `current_handoff_signature`, for example by removing stale paths, narrowing authoritative inputs, or updating the locked request summary.
+- Do not start that retry while the earlier architect pass is still running with recent progress.
 - Do not repeat the same handoff unchanged as a retry.
 - After one safe retry with a changed handoff in the same turn, stop and report the exact failure instead of looping indefinitely.
 
@@ -206,8 +220,10 @@ Report the exact classification when stopping.
   - `affected_phase_paths`
 - After the reviewer finishes, reread `review.md` from disk instead of trusting transient chat alone.
 - If the invocation failed, classify it as `invocation_failure`.
+- If `wait_agent` times out with empty status, do not treat that alone as reviewer idleness; first re-check recent progress messages and the review write scope for created or updated files or directories.
 - If the reviewer replied without a usable review result and there was no fresh evidence of progress within the allowed wait window, classify it as `agent_protocol_failure`.
 - If the reviewer claimed success but `review.md` is still missing or stale, classify it as `artifact_writeback_failure`.
+- If the controller shuts down a still-running reviewer pass before the reviewer idle window is satisfied, classify it as `controller_interruption`.
 
 ### Step 4. Route review findings
 
@@ -259,8 +275,10 @@ At the gate:
   - `affected_phase_paths`
 - After the materializer finishes, reread `materialize.md` from disk instead of trusting transient chat alone.
 - If the invocation failed, classify it as `invocation_failure`.
+- If `wait_agent` times out with empty status, do not treat that alone as materializer idleness; first re-check recent progress messages and the materialize write scope for created or updated files or directories.
 - If the materializer replied without a usable result and there was no fresh evidence of progress within the allowed wait window, classify it as `agent_protocol_failure`.
 - If the materializer claimed success but `materialize.md` is still missing or stale, classify it as `artifact_writeback_failure`.
+- If the controller shuts down a still-running materializer pass before the materializer idle window is satisfied, classify it as `controller_interruption`.
 
 ### Step 7. Route materialize outcomes
 
