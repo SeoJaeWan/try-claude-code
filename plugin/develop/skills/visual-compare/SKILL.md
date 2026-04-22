@@ -1,6 +1,6 @@
 ---
 name: visual-compare
-description: "Visual comparison using pixelmatch and agent-browser. Captures element screenshots, runs pixel-level diff, and reports mismatch. Use for design diff, visual audit, screenshot comparison, verifying UI implementation against reference images, or comparing two URLs visually. Triggers on: reference image comparison, 'does this match the design', Figma/design spec verification, before-after UI comparison, 화면 비교, 디자인 비교, 스크린샷 비교. Use this skill even when the user just provides two images or URLs and asks what's different. Run inside the `visual-comparator` agent."
+description: "Pixel-level visual comparison for external image or URL references using pixelmatch and agent-browser. Captures element screenshots, runs pixel-level diff, and reports mismatch. Use for design diff against external references, visual audit, screenshot comparison, verifying UI implementation against a user-provided image or second URL. Triggers on: reference image comparison, before-after UI comparison, 화면 비교, 스크린샷 비교. Do NOT use for Figma URL references — route those to `figma-parity` instead. Run inside the `visual-comparator` agent."
 model: sonnet
 ---
 
@@ -31,7 +31,6 @@ Dedicated visual comparison workflow — screenshot capture, pixel diff, and mis
 |---|---|
 | General UI reference (default) | `0.1` |
 | External source (different OS or browser engine) | `0.2` |
-| Pixel-perfect spec (Figma) | `0.05` |
 
 **Artifact naming — three files per case, sharing an identical `{kind}-{state}` key:**
 
@@ -48,6 +47,8 @@ Dedicated visual comparison workflow — screenshot capture, pixel diff, and mis
 
 **Browser tool:** All capture goes through `npx agent-browser` via Bash. Playwright MCP tools (`mcp__playwright__*`) are not used for this skill.
 
+**Reference source scope:** This skill handles **external image files or URLs only**. When the reference is a Figma URL, STOP and route the task to the `figma-parity` skill / `figma-parity-auditor` agent. Pixel diff is the wrong tool for Figma references — Figma exposes tokens, components, typography, and spacing as structured data that pixel percentages discard.
+
 ---
 
 ## Workflow
@@ -62,7 +63,8 @@ Determine the two sides to compare:
 | Two URLs | Screenshot from URL A | Screenshot from URL B |
 | Two image files | Image file A | Image file B |
 | URL + selector | Screenshot of element A | Screenshot of element B |
-| Figma URL + implementation URL/selector | Figma node screenshot via Figma MCP | Screenshot from implementation URL |
+
+> Figma URL references are out of scope for this skill. Route them to `figma-parity` instead.
 
 **Reference source rule — self-compare is invalid:**
 
@@ -77,22 +79,6 @@ If the only available reference is from the same system as current (same Storybo
 **Multi-case inventory:**
 
 When comparing multiple states (e.g., 8 context menu cases), establish the full case list upfront. Every case must have a real screenshot triplet (reference, current, diff) before the report is considered complete. Source code analysis is not a substitute for pixel comparison — it cannot catch rendering differences.
-
-### Step 1b — Fetch Figma reference (only when reference is a Figma URL)
-
-When the reference side is a Figma URL, pull the node screenshot via Figma MCP and save it as `{kind}-{state}-reference.png`. This replaces the user-provided image file step.
-
-1. Parse the URL:
-   - `figma.com/design/:fileKey/...?node-id=:nodeId` → convert `-` to `:` in nodeId
-   - `figma.com/design/:fileKey/branch/:branchKey/...` → use branchKey as fileKey
-2. Call `mcp__plugin_figma_figma__get_screenshot` with the parsed fileKey and nodeId
-3. Save the returned image to `{kind}-{state}-reference.png` via Write
-4. Optionally call `mcp__plugin_figma_figma__get_metadata` only when node structure info helps disambiguate the target selector on the current side — do NOT use its dimensions to override the scenario-based viewport rule (see Quick Reference)
-5. Use the `0.05` threshold row (Pixel-perfect spec — Figma)
-
-If the Figma MCP call fails (server unreachable, auth not completed, node not accessible), do NOT fall back to guessing — ask the user to either complete Figma auth, verify the URL, or export the node as an image file manually.
-
-Do NOT use Figma MCP for the current (implementation) side — the implementation must always be captured via `npx agent-browser`.
 
 ### Step 2 — Capture screenshots
 
@@ -247,7 +233,6 @@ When `architect` split visual verification into its own phase:
 |---|---|---|
 | General UI reference | `0.1` | Default — catches meaningful differences, ignores font rendering artifacts |
 | Element-level external reference | `0.2` | When reference is captured from a different rendering environment (OS, browser engine) |
-| Pixel-perfect spec | `0.05` | Strictest — Figma/design spec must match exactly |
 
 Use `0.1` unless context implies otherwise. When reference and current are captured from different systems (e.g., blog localhost vs Storybook), `0.2` is appropriate because font rendering and subpixel differences are expected.
 
@@ -265,7 +250,10 @@ Each rule pairs a prohibition with the correct alternative when the alternative 
   Instead: Rely on `passed`, `mismatchRatio`, and `dimensionsMatch` fields in the JSON output.
 
 - **Do NOT use Playwright MCP tools (`mcp__playwright__*`) or any browser MCP for capture** — they have different capture semantics and produce inconsistent results.
-  Instead: All browser interaction for the current (implementation) side goes through `npx agent-browser` via Bash. Figma MCP (`mcp__plugin_figma_figma__get_screenshot`, `get_metadata`) is allowed *only* for pulling the reference side when the reference is a Figma URL — see Step 1b.
+  Instead: All browser interaction goes through `npx agent-browser` via Bash.
+
+- **Do NOT handle Figma URLs in this skill.**
+  Instead: Route Figma URL references to `figma-parity` — pixel diff discards the structured data Figma exposes (tokens, components, typography, spacing), and the `get_screenshot` MCP tool returns vision-only payloads that cannot be persisted as reference artifacts.
 
 - **Do NOT use the same Storybook (or test harness) as both reference and current source** — this is a self-compare and produces no meaningful acceptance signal.
   Instead: Reference must come from an independent source — a live production/staging URL, a different codebase, or a user-provided image file.

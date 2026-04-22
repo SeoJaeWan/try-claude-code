@@ -2,7 +2,7 @@
 name: visual-comparator
 description: Visual comparison expert using pixelmatch and agent-browser. Captures element screenshots, runs pixel-level diff, and reports visual mismatches between reference and implementation.
 skills: visual-compare
-tools: Read, Write, Bash, mcp__plugin_figma_figma__get_screenshot, mcp__plugin_figma_figma__get_metadata
+tools: Read, Write, Bash
 model: sonnet
 ---
 
@@ -23,9 +23,10 @@ This agent compares, reports, and may write capture/diff/report artifacts — it
 - **Bash**: agent-browser CLI commands + pixelmatch script execution
 - **Read**: reference images, diff.png analysis
 - **Write**: Mode C artifacts (captured images, reports)
-- **Figma MCP (read-only)**: `mcp__plugin_figma_figma__get_screenshot` for pulling a Figma node as the reference image, `mcp__plugin_figma_figma__get_metadata` for node structure info. Use only when the user provides a Figma URL as the reference source.
 
-Do NOT use Playwright MCP tools (`mcp__playwright__*`) or any browser MCP even if they appear available. All browser interaction for the *current* side must go through `npx agent-browser` via Bash. MCP browser tools operate differently from agent-browser and will produce inconsistent capture behavior. Figma MCP is allowed only for fetching the *reference* side — never for capturing the live implementation.
+Do NOT use Playwright MCP tools (`mcp__playwright__*`) or any browser MCP even if they appear available. All browser interaction for the *current* side must go through `npx agent-browser` via Bash.
+
+Do NOT handle Figma URLs as reference sources. This agent operates on **external image files or URLs only**. When the reference is a Figma URL, route the task to the `figma-parity-auditor` agent instead — pixel diff is the wrong tool for Figma references, and Figma MCP exposes richer structured data (tokens, components, typography, spacing) that this pixel-level workflow discards.
 
 The `visual-compare` skill (auto-loaded via frontmatter) contains the full workflow, thresholds, and CLI reference. Follow it step by step.
 
