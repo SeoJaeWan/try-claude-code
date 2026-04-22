@@ -1,6 +1,6 @@
 ---
 name: review-wiki-setup
-description: Create or verify the `~/.codex/reviewWiki` link to the Obsidian review wiki vault, bootstrap the required `raw/` and `wiki/` structure, and maintain the workspace planning root at `./.codex/review-wiki/sync/current` in either snapshot mode or optional live-link mode. Use when the review wiki link is missing, broken, moved, the vault needs first-time setup, or the workspace planning root needs to be created, repaired, refreshed, or switched between sandbox-safe snapshot behavior and link-based behavior for planning agents.
+description: Create or verify the `~/.codex/reviewWiki` link to the Obsidian review wiki vault, bootstrap the required `raw/` and `wiki/` structure, and maintain the workspace planning root at `./.codex/review-wiki/sync/current` as a live link to the external `wiki/` root for planning agents. Use when the review wiki link is missing, broken, moved, the vault needs first-time setup, or the workspace planning root needs to be created, repaired, or refreshed.
 ---
 
 # Review Wiki Setup
@@ -29,17 +29,20 @@ Use this skill to connect Codex to the Obsidian vault, create the minimum review
    - Run the platform-appropriate preparation command from `references/platform-commands.md` from the workspace root.
    - On Windows, use `stage-review-wiki.ps1`.
    - On macOS / Linux, use `stage-review-wiki.sh`.
-   - Default to `snapshot` mode so planning agents can read a workspace-local copy even when sandboxing blocks external link targets.
-   - Use `link` mode only when the runtime can safely read through a workspace link to the external `wiki/` root and the user wants immediate propagation of external edits.
+   - Prepare `./.codex/review-wiki/sync/current` as a live link to the external `wiki/` root.
+   - If the runtime cannot safely read through a workspace link to the external `wiki/` root, stop and report that blocker instead of creating a copied fallback.
    - After preparation, treat `./.codex/review-wiki/sync/current/` itself as the planning root that contains `registry.json`, `core/`, `patterns/`, and `_meta/`.
-   - Write `./.codex/review-wiki/sync/current.manifest.json` next to the planning root with the source root, destination root, mode, optional link type, and preparation timestamp.
+   - Write `./.codex/review-wiki/sync/current.manifest.json` next to the planning root with the source root, destination root, fixed `Link` mode, optional link type, and preparation timestamp.
    - Treat the workspace planning root as read-only execution input; the source of truth remains `~/.codex/reviewWiki`.
+   - If `./.codex/review-wiki/sync/current.manifest.json` is missing, unreadable, or records a different workspace `destination_root` than the current workspace, treat the planning root as stale or foreign and refresh it instead of trusting the existing link blindly.
 
 5. Verify the bootstrap and planning root.
    - Confirm the link resolves to the expected vault.
    - Confirm the required folders, registry, and core documents exist.
    - Confirm `architect`, `plan-review`, and `orchestrator` can target the same workspace planning root path.
    - If the workspace planning root was refreshed, confirm `./.codex/review-wiki/sync/current/registry.json` exists and `./.codex/review-wiki/sync/current.manifest.json` records the expected mode.
+   - Confirm the manifest `destination_root` resolves exactly to the current workspace `./.codex/review-wiki/sync/current` path rather than another repository's planning root.
+   - Confirm the manifest `source_root` still points at the expected `~/.codex/reviewWiki/wiki` source.
 
 ## Guardrails
 
@@ -47,11 +50,13 @@ Use this skill to connect Codex to the Obsidian vault, create the minimum review
 - Do not overwrite existing wiki documents just to match a new template.
 - Do not scatter environment-specific absolute paths throughout other skills; the link is the stable interface.
 - Do not treat the workspace planning root as the source of truth or edit the workspace path instead of the external wiki.
-- Do not switch to `link` mode when the runtime sandbox cannot read external link targets through the workspace path.
+- Do not create or preserve a copied fallback for `./.codex/review-wiki/sync/current`; this planning root is link-only.
+- Do not continue if the runtime cannot read external link targets through the workspace path.
 - Do not write diagnostics into `./.codex/review-wiki/sync/current` when it is prepared in `link` mode.
 - Do not write the workspace planning root outside the active workspace.
 - Do not use the workspace planning root as a substitute for repairing a broken or missing `~/.codex/reviewWiki` link.
 - Do not skip verification after link creation or planning-root refresh.
+- Do not trust a copied or stale `current.manifest.json` from another workspace just because the local `current/` folder happens to exist.
 
 ## Reference
 

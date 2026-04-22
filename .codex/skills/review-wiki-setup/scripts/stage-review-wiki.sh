@@ -4,7 +4,6 @@ set -eu
 workspace_root="${1:-$(pwd)}"
 source_wiki_root="${2:-$HOME/.codex/reviewWiki/wiki}"
 destination_root="${3:-$workspace_root/.codex/review-wiki/sync/current}"
-mode="${4:-snapshot}"
 
 resolve_existing_dir() {
     target_dir="$1"
@@ -57,14 +56,6 @@ case "${resolved_destination_root}/" in
         ;;
 esac
 
-case "$mode" in
-    snapshot|link) ;;
-    *)
-        printf 'Unsupported mode: %s\n' "$mode" >&2
-        exit 1
-        ;;
-esac
-
 if [ "$resolved_source_wiki_root" = "$resolved_destination_root" ]; then
     printf 'Source root and destination root must differ: %s\n' "$resolved_destination_root" >&2
     exit 1
@@ -73,15 +64,8 @@ fi
 rm -rf "$resolved_destination_root"
 rm -f "$manifest_path"
 mkdir -p "$destination_parent"
-link_type="null"
-
-if [ "$mode" = "link" ]; then
-    ln -s "$resolved_source_wiki_root" "$resolved_destination_root"
-    link_type="symbolic"
-else
-    mkdir -p "$resolved_destination_root"
-    cp -R "$resolved_source_wiki_root"/. "$resolved_destination_root"/
-fi
+ln -s "$resolved_source_wiki_root" "$resolved_destination_root"
+link_type="symbolic"
 
 prepared_at_utc=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
@@ -89,14 +73,10 @@ cat >"$manifest_path" <<EOF
 {
   "source_root": "$resolved_source_wiki_root",
   "destination_root": "$resolved_destination_root",
-  "mode": "$mode",
-  "link_type": $(if [ "$mode" = "link" ]; then printf '"%s"' "$link_type"; else printf 'null'; fi),
+  "mode": "Link",
+  "link_type": "$link_type",
   "prepared_at_utc": "$prepared_at_utc"
 }
 EOF
 
-if [ "$mode" = "link" ]; then
-    printf 'Prepared live review wiki planning link at %s\n' "$resolved_destination_root"
-else
-    printf 'Prepared snapshot review wiki planning root at %s\n' "$resolved_destination_root"
-fi
+printf 'Prepared live review wiki planning link at %s\n' "$resolved_destination_root"

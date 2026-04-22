@@ -2,8 +2,6 @@ param(
     [string]$WorkspaceRoot = (Get-Location).Path,
     [string]$SourceWikiRoot = (Join-Path $HOME ".codex\reviewWiki\wiki"),
     [string]$DestinationRoot = (Join-Path $WorkspaceRoot ".codex\review-wiki\sync\current"),
-    [ValidateSet("Snapshot", "Link")]
-    [string]$Mode = "Snapshot",
     [ValidateSet("Junction", "SymbolicLink")]
     [string]$LinkType = "Junction"
 )
@@ -46,25 +44,16 @@ if (Test-Path -LiteralPath $manifestPath -PathType Leaf) {
 }
 
 New-Item -ItemType Directory -Path $destinationParent -Force | Out-Null
-if ($Mode -eq "Link") {
-    New-Item -ItemType $LinkType -Path $resolvedDestinationRoot -Target $resolvedSourceWikiRoot | Out-Null
-} else {
-    New-Item -ItemType Directory -Path $resolvedDestinationRoot -Force | Out-Null
-    Copy-Item -Path (Join-Path $resolvedSourceWikiRoot "*") -Destination $resolvedDestinationRoot -Recurse -Force
-}
+New-Item -ItemType $LinkType -Path $resolvedDestinationRoot -Target $resolvedSourceWikiRoot | Out-Null
 
 $manifest = [ordered]@{
     source_root = $resolvedSourceWikiRoot
     destination_root = $resolvedDestinationRoot
-    mode = $Mode
-    link_type = if ($Mode -eq "Link") { $LinkType } else { $null }
+    mode = "Link"
+    link_type = $LinkType
     prepared_at_utc = [DateTime]::UtcNow.ToString("o")
 }
 
 $manifest | ConvertTo-Json | Set-Content -LiteralPath $manifestPath -Encoding UTF8
 
-if ($Mode -eq "Link") {
-    Write-Output "Prepared live review wiki planning link at $resolvedDestinationRoot"
-} else {
-    Write-Output "Prepared snapshot review wiki planning root at $resolvedDestinationRoot"
-}
+Write-Output "Prepared live review wiki planning link at $resolvedDestinationRoot"
