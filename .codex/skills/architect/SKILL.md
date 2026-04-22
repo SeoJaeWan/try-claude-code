@@ -168,11 +168,20 @@ Do not deep-dive into implementation details.
   - inspect only the minimum repo-local command, config, or existing source-tree convention that governs the work
   - treat that repo-local contract as the source of truth for path policy, naming, validation, scaffold shape, and rollout constraints
 - For `visual-comparator`:
-  - there is no dedicated compare CLI contract in this repository
-  - inspect only the minimum repo-local reference source, selector policy, capture path, and artifact location that govern the comparison phase
+  - when `plugin/develop/skills/visual-compare/SKILL.md` is present, inspect it as the compare execution contract
+  - otherwise inspect only the minimum repo-local reference source, selector policy, capture path, and artifact location that govern the comparison phase
+  - use `visual-comparator` only for external image or URL references; if the reference is a Figma URL, route to `figma-parity-auditor` / `figma-parity` instead of `visual-comparator`
+  - treat element-level capture, diff artifact generation, and report-only output as part of the compare execution contract
   - if visual parity is part of acceptance, also inspect `./references/visual-parity-contract.md`
   - treat the comparison mode, gating metric, non-gating metric, surface-role mapping, comparison policy, and metric treatment as part of the compare execution contract
   - treat those repo-local inputs as the source of truth for what gets captured, what gets compared, and what evidence must be committed
+- For `figma-parity-auditor`:
+  - when `plugin/develop/skills/figma-parity/SKILL.md` is present, inspect it as the compare execution contract
+  - use `figma-parity-auditor` only for Figma URL references
+  - treat Figma MCP inspection, agent-browser DOM introspection, structured per-dimension parity reporting, and report-only output as part of the compare execution contract
+  - do not route Figma URL audits through pixel diff or screenshot-only comparison when the Figma parity path is available
+  - if visual parity is part of acceptance, also inspect `./references/visual-parity-contract.md`
+  - treat those repo-local inputs as the source of truth for what gets audited, what evidence must be written, and what a later fix phase will consume
 - For `general-developer`:
   - there is no dedicated CLI contract in this repository
   - inspect only the minimum repo-local tool or validation command that governs the work
@@ -286,9 +295,10 @@ If a plan file changes cross-route journeys, auth/session transitions, redirect 
 
 ### Step 3.7. Plan reference-based visual comparison phase (conditional)
 
-If a plan implements UI against an external visual reference such as a live URL, image, screenshot set, or Figma file, and acceptance depends on comparing the implementation against that reference:
+If a plan implements UI against an external visual reference such as a live URL, image, or screenshot set, and acceptance depends on comparing the implementation against that reference:
 
 - Add a later phase with `owner_agent: visual-comparator`
+- If the reference is a Figma URL instead, route that verification phase to `figma-parity-auditor` when available rather than `visual-comparator`
 - Choose exactly one `comparison mode` per compared state or scope
 - Default to `structural parity` when fixture payloads, repeated mock media, synthetic body content, or other known non-reference-equivalent surfaces would otherwise dominate whole-canvas mismatch
 - Make that phase capture or load the reference side and the current implementation side explicitly

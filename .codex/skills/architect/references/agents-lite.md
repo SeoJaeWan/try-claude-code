@@ -11,7 +11,8 @@ For detailed planning rules, quality gates, and UI test-phase policy, read the r
 | `frontend-developer` | `frontend-dev`         | `frontend`          | frontend UI, integration, hooks, state, and API work      |
 | `backend-developer`  | `backend-dev`          | `backend`           | API, DB, auth, server logic                               |
 | `general-developer`  | `general-dev`          | `N/A`               | infrastructure, DevOps, CI/CD, deploy, and root tooling   |
-| `visual-comparator`  | `visual-compare`       | `N/A`               | reference-based visual comparison, diff artifact capture, and mismatch reporting |
+| `visual-comparator`  | `visual-compare`       | `visual-compare`    | pixel-level comparison for external image/URL references using agent-browser + pixelmatch; captures element screenshots, diff artifacts, and report-only evidence |
+| `figma-parity-auditor` | `figma-parity`      | `figma-parity`      | Figma-native parity audit for Figma URL references using Figma MCP and agent-browser DOM introspection; reports structured token, component, structure, typography, spacing, and effect deltas |
 
 ## Planning Skills (run by architect)
 
@@ -20,7 +21,8 @@ For detailed planning rules, quality gates, and UI test-phase policy, read the r
 
 ## Post-implementation Verification Agents
 
-- `visual-comparator`: runs `visual-compare` after UI implementation when a plan must compare the current UI against an external visual reference and leave repo-local capture, diff, and report artifacts for a later fix phase
+- `visual-comparator`: runs `visual-compare` after UI implementation when a plan must compare the current UI against an external image, screenshot set, or live URL reference and leave repo-local capture, diff, and report artifacts for a later fix phase
+- `figma-parity-auditor`: runs `figma-parity` after UI implementation when a plan must compare the current UI against a Figma URL reference and leave repo-local parity report artifacts for a later fix phase
 
 ## Planning Handoff Roles
 
@@ -37,3 +39,5 @@ These planning roles are handoff utilities, not valid `owner_agent` values insid
 - Architect should inspect the corresponding CLI help before finalizing implementation routing for `frontend-developer` or `backend-developer`.
 - For `general-developer`, inspect the minimum repo-local validation or tooling contract instead of a nonexistent dedicated CLI.
 - Use `visual-comparator` only for compare/report phases that produce repo-local evidence artifacts; any product-code fix belongs in a later `frontend-developer` phase.
+- Use `visual-comparator` only for external image or URL references, not Figma URLs; route Figma URL audits to `figma-parity-auditor` when that plugin path is available.
+- Use `figma-parity-auditor` only for compare/report phases that audit against Figma URLs via structured parity data; any product-code fix belongs in a later `frontend-developer` phase.
