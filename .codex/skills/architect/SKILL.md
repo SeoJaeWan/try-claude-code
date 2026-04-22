@@ -60,7 +60,7 @@ Before writing any plan artifact:
   - if this architect instance is being reused for the same `task-slug`, treat the current plan artifacts and latest review artifact as higher priority than stale chat memory
   - if `latest_review_path` is provided and exists, read it
   - do not run review wiki staging
-  - do not verify named-agent availability
+  - do not verify legacy planning-profile availability
   - do not inspect runtime or CLI invocation paths
   - do not broaden the task by searching for substitute or similarly named upstream paths unless the controller explicitly passed them
   - if the orchestrator handoff is missing required fields or contradictory, block instead of guessing
@@ -269,7 +269,7 @@ If a plan file includes implementation scope beyond documentation-only or struct
 
 1. Read `../plan-materialize/SKILL.md`
 2. Make the phase detail contracts explicit enough that `plan-materialize` can derive tests later without guessing
-3. Let execution handoff treat the named custom agent `plan-materializer` as an automatic prerequisite for implementation plans
+3. Let execution handoff treat a later `plan-materialize` sub-agent pass as an automatic prerequisite for implementation plans
 4. When the plan includes behavior, state, routing, or contract-selection changes, make the phase detail contract explicit enough for later materialization
 
 `architect` does not generate tests directly.
@@ -313,7 +313,7 @@ If a plan implements UI against an external visual reference such as a live URL,
   - the upstream detail-file `output` and `검증` restate the same contract without reinterpretation
   - the upstream detail-file `boundary` can actually establish that contract
 - Treat this self-review as internal review only
-- If the user asks for an independent critical review, finish the plan artifact and hand it off to `plan-reviewer`
+- If the user asks for an independent critical review, finish the plan artifact and hand it off to an independent `plan-review` pass
 
 ### Step 6. Compatibility policy (required)
 
@@ -327,7 +327,7 @@ If a plan implements UI against an external visual reference such as a live URL,
 ### Step 7. Execution handoff
 
 Architect does not execute implementation or source-tree test generation directly.
-If the user asks for an independent cold review before execution, route the finished executable plan to the named custom agent `plan-reviewer` after writing it. The workflow source of truth remains the `plan-review` skill.
+If the user asks for an independent cold review before execution, route the finished executable plan to an independent `plan-review` pass after writing it. The workflow source of truth remains the `plan-review` skill.
 Provide a concise execution handoff summary using the handoff requirements in `{review_wiki_root}/core/execution-handoff.md`.
 
 ## Output contract
@@ -350,7 +350,7 @@ Provide a concise execution handoff summary using the handoff requirements in `{
 - Do not write `plan.md` as if only implementers will read it
 - Do not treat the review wiki as optional when its registry is available; always read the registry first and route from it
 - Do not bypass the resolved `review_wiki_root` with hardcoded external-path reads once the workspace sync path is available
-- In orchestrated mode, do not redo review wiki bootstrap or named-agent preflight that the orchestrator already completed
+- In orchestrated mode, do not redo review wiki bootstrap or orchestration preflight that the orchestrator already completed
 - In orchestrated mode, do not rediscover controller-owned authority beyond provided `authoritative_existing_inputs`
 - Do not generate or edit source-tree tests inside `architect`
 - `visual-comparator` execution happens later; architect only plans that phase

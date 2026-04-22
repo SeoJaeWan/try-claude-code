@@ -22,18 +22,18 @@ For detailed planning rules, quality gates, and UI test-phase policy, read the r
 
 - `visual-comparator`: runs `visual-compare` after UI implementation when a plan must compare the current UI against an external visual reference and leave repo-local capture, diff, and report artifacts for a later fix phase
 
-## Named Planning Agents
+## Planning Handoff Roles
 
-- `plan-reviewer`: named custom agent that wraps the `plan-review` skill for cold review handoff after `architect` writes a finished executable plan
-- `plan-materializer`: named custom agent that wraps the `plan-materialize` skill for source-tree test materialization before implementation begins
+- `plan-review`: orchestration reviewer role normally executed through a generic sub-agent with the `plan-review` skill attached after `architect` writes a finished executable plan
+- `plan-materialize`: orchestration materializer role normally executed through a generic sub-agent with the `plan-materialize` skill attached for source-tree test materialization before implementation begins
 
-These planning agents are handoff utilities, not valid `owner_agent` values inside phase detail files.
+These planning roles are handoff utilities, not valid `owner_agent` values inside phase detail files.
 
 ## Catalog Rule
 
 - Only list execution agents or skills that actually exist in this repository.
 - Do not document hypothetical utility skills here.
-- Do not use named planning agents such as `plan-reviewer` or `plan-materializer` as phase `owner_agent` values.
+- Do not use planning handoff roles such as `plan-review` or `plan-materialize` as phase `owner_agent` values.
 - Architect should inspect the corresponding CLI help before finalizing implementation routing for `frontend-developer` or `backend-developer`.
 - For `general-developer`, inspect the minimum repo-local validation or tooling contract instead of a nonexistent dedicated CLI.
 - Use `visual-comparator` only for compare/report phases that produce repo-local evidence artifacts; any product-code fix belongs in a later `frontend-developer` phase.

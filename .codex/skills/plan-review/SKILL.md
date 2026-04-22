@@ -1,6 +1,6 @@
 ---
 name: plan-review
-description: Read-only critical review skill for executable `./plans/**/plan.md` artifacts and their linked phase detail files created by `architect`. Use when Codex needs an independent cold review before execution, checking template compliance, user-request traceability, blocking ambiguity, topology quality, owner routing, scenario-level technical input/output contracts, optional UI design-decision completeness, later `plan-materialize` derivation readiness, and registry-selected review wiki guidance without rewriting the plan.
+description: Artifact-only critical review skill for executable `./plans/**/plan.md` artifacts and their linked phase detail files created by `architect`. Use when Codex needs an independent cold review before execution, checking template compliance, user-request traceability, blocking ambiguity, topology quality, owner routing, scenario-level technical input/output contracts, optional UI design-decision completeness, later `plan-materialize` derivation readiness, and registry-selected review wiki guidance without rewriting the plan.
 ---
 
 <Skill_Guide>
@@ -11,7 +11,7 @@ Provide a cold, skeptical review of an executable plan and report blocker, major
 <Instructions>
 # plan-review
 
-Review the finished plan artifact against the user's request and any upstream request-lock handoff. Stay read-only.
+Review the finished plan artifact against the user's request and any upstream request-lock handoff. Stay read-only by policy, with exactly one allowed write: the required `review.md` artifact for the current reviewed plan.
 
 ## Inputs to inspect
 
@@ -52,6 +52,7 @@ Before judging the plan:
   - require the provided `plan_path`
   - treat the provided `plan_path` as authoritative orchestration metadata
   - if a current `plan_signature` is provided, treat it as the authoritative freshness fingerprint for this pass
+  - treat broader filesystem write capability as unavailable by policy; the only allowed write target is `./plans/_orchestrator/review/{task-slug}/review.md`
   - do not run review wiki staging
   - if the orchestrator handoff is missing required fields or contradictory, block instead of guessing
 - in direct mode:
@@ -155,6 +156,8 @@ Write:
 
 - `./plans/_orchestrator/review/{task-slug}/review.md`
 
+Write no other file.
+
 Include:
 
 - a YAML frontmatter block at the top with at least:
@@ -195,7 +198,9 @@ Frontmatter rules:
 
 ## Guardrails
 
-- Read-only: do not edit the plan, source code, or tests
+- Review-write-only: do not edit the plan, source code, or tests; only create or update the required `review.md` artifact for the reviewed plan
+- If the runtime or parent prompt exposes broader write capability, ignore that capability and self-limit to reads plus the single required review artifact write
+- Do not create scratch files, sidecar notes, helper state files, or alternate review artifacts
 - Do not silently fix or rewrite the plan inside the review
 - Do not downgrade a blocker just to keep momentum
 - Do not treat partial notes, briefs, or non-executable artifacts as execution-ready plans
