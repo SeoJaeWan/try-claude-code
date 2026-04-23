@@ -184,9 +184,10 @@ Frontmatter rules:
 - `issue_codes`: stable, sorted short codes for the current finding set; use `[]` when no findings remain
 - `affected_phase_paths`: sorted linked phase detail paths implicated by the finding set; use `[]` when not applicable
 - `next_action`:
-  - `user_gate` when `outcome = ready`
-  - `user_gate` when `requires_user_decision = true`
-  - `architect` when findings remain and `requires_user_decision = false`
+  - `developer_review` when `outcome = ready`
+  - `developer_review` when `outcome = ready-with-findings`
+  - `developer_review` when `requires_user_decision = true`
+  - `architect` when `outcome = blocked`
 - `finding_signature`: a stable short fingerprint of the normalized finding set for the currently reviewed plan; use `none` when no findings remain
 
 ### Step 6. Respond in chat
@@ -194,7 +195,7 @@ Frontmatter rules:
 - Present findings first, ordered by severity
 - Use file references to the reviewed `plan.md`, any especially relevant phase detail file, and the written `review.md` artifact
 - If the outcome is `blocked`, say execution should not proceed until `architect` revises the plan
-- If the outcome is `ready-with-findings`, separate advisory issues from blockers clearly
+- If the outcome is `ready-with-findings`, separate advisory issues from blockers clearly and note that developer review should decide whether the findings require plan revision before materialization
 
 ## Guardrails
 

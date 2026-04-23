@@ -1,4 +1,4 @@
 interface:
   display_name: "Architect"
-  short_description: "Create readable sequential implementation plans."
-  default_prompt: "Use $architect to resolve blocking ambiguity and produce readable sequential plans with a work-at-a-glance summary, phase flow, checkpoints, and linked detail files under ./plans."
+  short_description: "Create readable shape-first implementation plans."
+  default_prompt: "Use $architect to resolve blocking ambiguity and produce readable sequential plans with request scope, change shape, locked contracts, phase flow, risks, and linked detail files under ./plans."

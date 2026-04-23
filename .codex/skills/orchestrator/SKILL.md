@@ -1,11 +1,11 @@
 ---
 name: orchestrator
-description: Explicit multi-agent planning orchestrator for requests that should run through the repository's planning loop instead of a one-off planning pass. Use only when the user explicitly invokes `$orchestrator` or explicitly asks for the automated architect/review/materialize workflow, and Codex should coordinate `architect`, `plan-review`, and `plan-materialize` through generic skill-driven sub-agents with explicit user approval before test materialization.
+description: Explicit multi-agent planning orchestrator for requests that should run through the repository's planning loop instead of a one-off planning pass. Use only when the user explicitly invokes `$orchestrator` or explicitly asks for the automated architect/review/developer-review/materialize workflow, and Codex should coordinate `architect`, `plan-review`, browser-based developer review, and `plan-materialize` through generic skill-driven sub-agents with explicit developer approval before test materialization.
 ---
 
 <Skill_Guide>
 <Purpose>
-Run the repository's planning loop as a stateless, artifact-driven workflow with skill-driven planning sub-agents, explicit user approval, and no file-backed orchestration state.
+Run the repository's planning loop as a stateless, artifact-driven workflow with skill-driven planning sub-agents, browser-based developer review, explicit developer approval, and no hidden file-backed orchestration state beyond the authoritative artifacts listed below.
 </Purpose>
 
 <Instructions>
@@ -23,8 +23,10 @@ Do not use it as a generic replacement for `architect`, `plan-review`, or `plan-
 5. Existing `./.codex/artifacts/brainstorm/**` or `./.codex/artifacts/design-discovery/**` artifacts when directly referenced or when they narrow the next architect pass
 6. `../architect/SKILL.md`
 7. `../plan-review/SKILL.md`
-8. `../plan-materialize/SKILL.md`
-9. `../review-wiki-setup/references/staging-contract.md`
+8. Existing developer review artifacts under `./plans/{task-slug}/developer-review/` when present
+9. `../plan-materialize/SKILL.md`
+10. `../review-wiki-setup/references/staging-contract.md`
+11. `./references/developer-review-ui.md`
 
 ## Required runtime expectations
 
@@ -46,6 +48,7 @@ Treat only these artifacts as durable orchestration evidence:
 
 - executable plan artifacts under `./plans/{task-slug}/`
 - review artifact at `./plans/_orchestrator/review/{task-slug}/review.md`
+- developer review artifacts under `./plans/{task-slug}/developer-review/`
 - plan-local materialization report at `./plans/{task-slug}/materialize.md`
 
 Do not create a second source of truth for stage, approval, blocker routing, or agent reuse.
@@ -61,6 +64,8 @@ The orchestrator may keep only current-turn helper state such as:
 - `active_role_agent_id` for the currently running role pass when available
 - `active_role_started_at`
 - whether the current review artifact is fresh
+- whether the current developer review package is fresh
+- whether the current developer review feedback is submitted and fresh
 - whether the current materialize artifact is fresh
 - the latest user question still awaiting an answer
 - `last_meaningful_progress_at`
@@ -73,9 +78,11 @@ This helper state must be safely discardable between turns.
 
 - The current plan fingerprint is `plan_signature`: a stable short fingerprint of the current `plan.md` plus every linked phase detail file.
 - A `review.md` artifact is fresh only when both `plan_path` and `plan_signature` match the current plan artifacts on disk.
+- A developer review package is fresh only when `review-data.json` and `feedback.json` both reference the current `plan_signature`.
+- Developer review approval is valid only when `feedback.json` has `review_status = submitted`, every required step is `approved`, and its `plan_signature` matches the current plan signature.
 - A `materialize.md` artifact is fresh only when both `plan_path` and `plan_signature` match the current plan artifacts on disk.
-- User approval is valid only for the exact current `plan_signature`.
-- When `plan_signature` changes, treat previous review, approval, and materialization state as stale and recompute from the artifacts.
+- Developer approval is valid only for the exact current `plan_signature` recorded in developer review feedback.
+- When `plan_signature` changes, treat previous cold review, developer review approval, and materialization state as stale and recompute from the artifacts.
 
 ## Wait policy
 
@@ -110,6 +117,7 @@ The handoff should include only the minimum fields needed for the role:
 - `authoritative_existing_inputs` containing only controller-verified literal paths
 - `known_missing_inputs` containing referenced but missing literal paths only as non-authoritative context
 - latest review artifact path when the next `architect` pass is revising from review findings
+- latest developer review `feedback.json` path when the next `architect` pass is revising from browser feedback
 - explicit output path requirements for the role
 
 Do not force planning sub-agents to rediscover orchestrator-owned metadata from disk when the controller already selected it.
@@ -136,6 +144,7 @@ Report the exact classification when stopping.
 - Resolve the planning `review_wiki_root` to `./.codex/review-wiki/sync/current`.
 - If `./.codex/review-wiki/sync/current` is missing, stop and route to `review-wiki-setup` instead of attempting per-run staging inside this skill.
 - Confirm the linked local `architect`, `plan-review`, and `plan-materialize` skills are present.
+- Confirm `./references/developer-review-ui.md`, `./assets/developer-review/index.html`, and `../../tools/developer-review-server.mjs` are present before entering the developer review gate.
 - Derive the default plan path as `./plans/{task-slug}/plan.md` unless the current run explicitly targets another existing executable plan.
 - Collect task-local plan or prerequisite paths referenced by the user request, the current selected plan, the latest fresh review/materialize artifact, or a directly referenced upstream `brainstorm` / `design-discovery` artifact when they affect the next role pass.
 - Resolve each referenced path literally before spawning a planning sub-agent.
@@ -143,7 +152,7 @@ Report the exact classification when stopping.
 - If a verified brainstorm or design-discovery artifact already locks ambiguity for the next architect pass, treat that artifact as authoritative upstream input instead of re-deriving the same decisions from stale chat memory.
 - Build `known_missing_inputs` from the referenced but missing paths only as controller-owned notes; never treat them as authoritative inputs.
 - If the next architect pass depends on local upstream plan artifacts and no authoritative input remains after verification, stop and report the blocker instead of delegating authority discovery to the architect pass.
-- Inspect the current `plan.md`, linked phase detail files, `review.md`, and `materialize.md` when they exist.
+- Inspect the current `plan.md`, linked phase detail files, `review.md`, developer review files, and `materialize.md` when they exist.
 
 ### Step 1. Build the current orchestration picture
 
@@ -151,9 +160,10 @@ Report the exact classification when stopping.
 - If `plan.md` exists:
   - compute the current `plan_signature`
   - determine whether `review.md` is present and fresh
+  - determine whether `developer-review/review-data.json` and `developer-review/feedback.json` are present and fresh
   - determine whether `materialize.md` is present and fresh
 - Do not reconstruct hidden stage from old chat text when the artifacts disagree.
-- If current user approval cannot be tied to the current `plan_signature`, treat approval as absent and ask again later.
+- If current developer review approval cannot be tied to the current `plan_signature`, treat approval as absent and require browser review again later.
 
 ### Step 2. Run architect draft or revision
 
@@ -161,6 +171,7 @@ Report the exact classification when stopping.
   - no executable `plan.md` exists
   - the latest fresh `review.md` routes back to `architect`
   - the latest fresh `materialize.md` routes back to `architect`
+  - developer review feedback contains `needs-change`, `question`, or `out-of-scope`
   - the user requested plan changes or answered a question that changes the plan contract
 - Start a generic planning sub-agent and attach the `architect` skill.
 - Pass a handoff packet containing:
@@ -172,6 +183,7 @@ Report the exact classification when stopping.
   - controller-verified `authoritative_existing_inputs` when upstream artifacts matter
   - controller-owned `known_missing_inputs` when stale or missing references matter to the next pass
   - latest review artifact path when revising
+  - latest developer review `feedback.json` path when revising from browser feedback
   - latest locked request summary or verified brainstorm artifact path when upstream ambiguity has already been resolved
   - latest request summary when the runtime did not provide full continuity safely
   - explicit write scope under `./plans/{task-slug}/`
@@ -231,28 +243,39 @@ Report the exact classification when stopping.
 ### Step 4. Route review findings
 
 - If the fresh review outcome is `blocked`, send the findings to the next `architect` pass.
-- If the fresh review outcome is `ready-with-findings`, send the findings to the next `architect` pass.
-- If the fresh review says `requires_user_decision = true` or `next_action = user_gate`, continue to the user gate.
-- If the fresh review outcome is `ready`, continue to the user gate.
+- If the fresh review outcome is `ready-with-findings`, continue to the developer review gate and include the findings as visible review cards.
+- If the fresh review says `requires_user_decision = true`, `next_action = developer_review`, or legacy `next_action = user_gate`, continue to the developer review gate and surface the decision in the browser package.
+- If the fresh review outcome is `ready`, continue to the developer review gate.
 - If the same `finding_signature` repeats against the same `plan_signature` after one architect revision attempt, stop and report `no_progress`.
 
-### Step 5. User gate
+### Step 5. Developer review gate
 
-Always require explicit user approval before materialization.
+Always require explicit browser-based developer review before materialization.
 
 At the gate:
 
-- Present the current `plan.md` path and the latest fresh `review.md` outcome in Korean.
-- When the review or materialization result already contains enough information to ask the user directly, ask directly in chat.
-- Only ask the current `architect` pass for a short decision summary in chat when the current artifacts do not expose the decision clearly enough.
+- Read `./references/developer-review-ui.md`.
+- Create or refresh `./plans/{task-slug}/developer-review/` for the current `plan_signature`.
+- Copy `./assets/developer-review/index.html` to `./plans/{task-slug}/developer-review/index.html`.
+- Generate `review-data.json` from the current `plan.md`, linked phase detail files, and fresh `review.md`.
+- Ensure `review-data.json` is user-readable and not a raw markdown dump:
+  - Overview shows the user's request, the planner's understanding, included scope, excluded scope, change shape, major changes, risks, and review findings.
+  - Each phase step shows only that phase's goal, changes, contracts, file impact, validation, risks, and UI plan preview when applicable.
+  - UI preview is plan-level visual explanation only; do not imply functional implementation exists.
+- Initialize or reset `feedback.json` for the current `plan_signature` with `review_status = in_progress`.
+- Start or instruct the user to start the shared server:
+  - `node .codex/tools/developer-review-server.mjs plans/{task-slug}/developer-review`
+- Tell the user to review in the browser, press submit on the final step, then say `리뷰 완료` in chat.
 - Do not create `user-gate.md`.
-- If the user requests plan changes, route the request back to the next `architect` pass and rerun review.
-- If the user answers a policy question that changes the plan contract, route the answer to the next `architect` pass, rerun review, and ask for approval again.
-- If the user explicitly approves the current `plan_signature`, continue to materialization.
+- When the user says `리뷰 완료`, read `feedback.json`:
+  - if `plan_signature` differs from the current `plan_signature`, regenerate the developer review package and require review again
+  - if `review_status` is not `submitted`, ask the user to submit the browser review first
+  - if any Overview or Phase step is `needs-change`, `question`, or `out-of-scope`, route the exact feedback path and affected IDs to the next `architect` pass, rerun `plan-review`, regenerate the review UI, and require fresh browser review
+  - if every required Overview and Phase step is `approved`, treat the current `plan_signature` as explicitly approved and continue to materialization
 
 ### Step 6. Materialize tests
 
-- Invoke a `plan-materialize` materializer pass only after explicit user approval of the current `plan_signature`.
+- Invoke a `plan-materialize` materializer pass only after submitted developer review approval of the current `plan_signature`.
 - Invoke it only when the current `materialize.md` is missing or stale.
 - Start a generic planning sub-agent and attach the `plan-materialize` skill.
 - Pass a handoff packet containing:
@@ -288,9 +311,9 @@ At the gate:
 - If `outcome = completed` and `gate_status = passed`, the orchestration is done.
 - If `outcome = completed` and `gate_status = failed`, stop and tell the user that materialization finished but the targeted gate did not pass.
 - If `outcome = blocked` and `blocker_type = external_setup`, stop and tell the user which prerequisite must be added first.
-- If `outcome = blocked` and `blocker_type = plan_ambiguity`, route the blocker back to the next `architect` pass, rerun review, and require fresh approval before another materialize pass.
+- If `outcome = blocked` and `blocker_type = plan_ambiguity`, route the blocker back to the next `architect` pass, rerun review, regenerate the developer review UI, and require fresh approval before another materialize pass.
 - If `outcome = blocked` and `blocker_type = user_policy`, ask the user directly in chat:
-  - if the answer changes the plan contract, route to the next `architect` pass, rerun review, and require fresh approval
+  - if the answer changes the plan contract, route to the next `architect` pass, rerun review, regenerate the developer review UI, and require fresh approval
   - if the answer only chooses between already-planned policy variants without changing the plan files, rerun the `plan-materialize` pass against the same current `plan_signature`
 - If the same `materialize_signature` repeats against the same `plan_signature` after one architect or user intervention attempt, stop and report `no_progress`.
 
@@ -301,7 +324,7 @@ The orchestration is `done` only when all of the following are true:
 - executable plan artifacts exist
 - a fresh `review.md` exists for the current `plan_signature`
 - the latest fresh review is ready enough to proceed
-- the user explicitly approved the current `plan_signature`
+- the developer review feedback explicitly approved the current `plan_signature`
 - a fresh `materialize.md` exists for the current `plan_signature`
 - the latest fresh materialization result is `completed` with `gate_status = passed`
 
@@ -310,6 +333,7 @@ The orchestration is `done` only when all of the following are true:
 - Keep orchestration updates short.
 - Tell the user which stage is running.
 - Present user-decision questions in Korean.
+- At the developer review gate, present the browser URL or server command and tell the user to reply `리뷰 완료` after pressing submit in the browser.
 - When blocked, say which role blocked and what the next safe route would be.
 - When stopping, report the exact failure classification instead of saying only that the workflow is stuck.
 - When materialization completes but `gate_status = failed`, say that the planning workflow finished but the targeted test gate did not pass.
@@ -318,6 +342,7 @@ The orchestration is `done` only when all of the following are true:
 
 - Plan artifacts under `./plans/**`
 - Review artifact under `./plans/_orchestrator/review/{task-slug}/review.md` with YAML frontmatter status fields
+- Developer review package under `./plans/{task-slug}/developer-review/`
 - Test materialization output under plan-local `materialize.md` with YAML frontmatter status fields
 
 ## Guardrails
@@ -330,7 +355,9 @@ The orchestration is `done` only when all of the following are true:
 - Do not ask planning sub-agents to rediscover controller-owned authority or reinterpret missing paths into fresh authoritative inputs.
 - Do not pass open-ended discovery prompts in orchestrated handoff packets.
 - Do not trust stale review or materialize artifacts after `plan_signature` changes.
-- Do not skip explicit user approval.
+- Do not skip submitted developer review approval.
+- Do not show raw `plan.md` or phase markdown as the primary developer review surface.
+- Do not treat UI previews as implemented behavior; they are only visual planning previews.
 - Do not let the `plan-review` reviewer pass edit plans or write any file except the required `review.md` artifact.
 - Do not let the `plan-materialize` pass patch plan ambiguity with tests.
 - Do not abandon a still-progressing role pass just because an initial short wait expired.

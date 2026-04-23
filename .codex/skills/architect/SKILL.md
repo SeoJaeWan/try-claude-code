@@ -200,24 +200,29 @@ Do not deep-dive into implementation details.
 - Treat `plan-template-sequential.md` as the complete `plan.md` structure and `phase-template-detail.md` as the complete per-phase detail structure
 - Do not add extra top-level sections unless a core doc explicitly requires them or the user explicitly asks for them
 - Do not add a dedicated top-level design-discovery recap section; compress approved UI-direction decisions into the existing request, contract, and phase detail tables
-- Treat `plan.md` as a controller-first user-facing review artifact
-- Keep the top preamble minimal: `Branch`, a one-line `Worktree dir`, then a compact routing table with `# | Phase | Agent`
+- Treat `plan.md` as the controller-facing overview, not a duplicated implementation spec
+- Keep the top preamble minimal: `Branch`, a one-line `Worktree dir`, then the compact routing table with `# | Phase | Agent`
 - In that routing table, use the linked phase detail path in `Phase` and mirror the linked detail-file `owner_agent` in `Agent`
-- After the routing table, use the sections fixed by `plan-template-sequential.md` in the same order.
-- Keep `plan.md` reviewable without opening phase detail files first.
-- Lead with tables, not paragraph blocks.
-- The top half of `plan.md` must let a human reviewer answer:
-  - what the user asked for
-  - which concrete work bundles will change
-  - which public contracts are being locked
-  - what is explicitly excluded
-- Use `## 요청 추적` to map the user's request items to the plan scope without replacing them with planner taxonomy.
-- Use `## 작업 단위 요약` to group work by concrete boundaries such as components, hooks, routes, services, or screens.
-- Use `## 공개 계약 요약` to expose touched public surfaces before phase ordering.
-- Use `## 소유권/상태 규칙` when ownership, winner rules, open/close rules, or no-op rules matter.
-- Use `## 제외 범위` to show excluded items one row at a time with reason and approval status.
-- Use `## 단계 개요` and `## Phase 단계 설명` to explain sequence after the work bundles and public contracts are already visible.
-- End `plan.md` with `## 검토 체크리스트`.
+- After the routing table, use the sections fixed by `plan-template-sequential.md` in the same order:
+  - `## 요청과 범위`
+  - `## 변경 형상`
+  - `## 잠긴 계약`
+  - `## 실행 흐름`
+  - `## 리스크와 검증`
+  - `## 검토 체크리스트`
+- Keep `plan.md` reviewable without opening phase detail files first, but do not repeat phase-local execution details there
+- The top-level plan must let a human reviewer answer:
+  - what the user asked for, what is included, what is excluded, and what final completion means
+  - what shape the change takes across components, routes, services, data flow, or UI states
+  - which public contracts are locked before implementation starts
+  - why the phase order exists and what each phase hands off
+  - which risks or edge cases drive verification
+- Use `## 요청과 범위` to preserve the user's wording and combine inclusion, exclusion, and completion criteria in one place
+- Use `## 변경 형상` for the Ultraplan-style shape of the change: structure, flow, dependencies, and before/after deltas; add a diagram only when it clarifies the plan
+- Use `## 잠긴 계약` for touched public surfaces, `input`, `output`, ownership, callback/handoff, invalid/no-op, and visual parity contracts when relevant
+- Use `## 실행 흐름` as the only phase summary section; do not add separate phase cards that restate the same rows
+- Use `## 리스크와 검증` to connect likely failure modes to the phase, test, compare, command, or source inspection that will catch them
+- End `plan.md` with `## 검토 체크리스트`
 - When Context7 changed or confirmed a planning decision, record only the outcome in the top-level request / contract tables or the relevant phase detail file:
   - do not restate the whole lookup when `brainstorm` already resolved it; carry forward the confirmed outcome and only note the delta if `architect` had to re-check it
   - use the top-level request / contract tables for cross-phase choices such as library selection, version policy, or migration direction
@@ -227,32 +232,33 @@ Do not deep-dive into implementation details.
   - use the top-level request / contract tables for cross-phase UI direction, design-system, or hierarchy constraints
   - use the relevant phase detail file for phase-local state presentation, responsive behavior, or component interaction rules
 - Treat the compact top routing table as navigation metadata only; keep routing rationale, scenario I/O contracts, detailed validation commands, test taxonomy, and orchestration metadata out of `plan.md` unless the user explicitly asks for them
-- Keep high-level boundary changes and human-readable completion conditions in `plan.md`; keep file-level change maps and detailed constraints in the linked phase detail files
-- Write each `plan.md` phase card as a short metadata table, not a prose block
+- Keep high-level boundary changes and human-readable completion conditions in `plan.md`; keep file-level change maps and detailed scenario contracts in the linked phase detail files
 - Avoid unexplained jargon in `plan.md`
-- Make work-bundle names concrete
-- Use the phase detail files for work-bundle cards, file-level preconditions, execution ordering, constraints, and `검증`
-- Start every phase detail file with `## Phase 요약` and `## 작업 순서`
-- Then break the phase into concrete work-bundle sections such as `## 작업 묶음 A. ...`, `## 작업 묶음 B. ...`
-- Inside each work-bundle section, expose:
-  - why it changes
-  - current problem
-  - target state
-  - kept boundaries
-  - related files
-  - public contract
-  - validation points
+- Make boundary, contract, and phase names concrete
+- Use the phase detail files for execution order, changed boundaries, scenario-level `input -> output` contracts, file impact, `검증`, and `failure/validation`
+- Start every phase detail file with the phase title and `- owner_agent: \`{agent-name}\`` so runner routing remains explicit
+- Then use the phase detail sections fixed by `phase-template-detail.md` in the same order:
+  - `## 목표와 완료 신호`
+  - `## 작업 흐름`
+  - `## 변경 경계`
+  - `## 시나리오 / 계약`
+  - `## 파일 영향`
+  - `## 검증`
+  - `## 리스크 / 주의점`
+- Do not force arbitrary labeled subsections; add only the rows needed for the actual phase
+- In `## 시나리오 / 계약`, expose `scenario`, `input`, `output`, `negative/no-op`, and `owner` for every behavior-changing boundary
+- Keep `output`, `제약`, `failure/validation`, and `검증` wording visible in phase detail files when they matter so later `plan-materialize` can derive tests without guessing
 - Keep `plan.md` and each linked phase detail file in parity
 - Do not restate a conclusion already fixed in a top-level contract table unless a later skill would otherwise have to guess the contract
 - When a later phase only finalizes exports, migration, or consumer validation, record the delta from earlier phases instead of restating the full contract
 - When fallback or default-selection policy matters, prefer short rule lists or state-to-outcome mappings in the detail file
-- Keep `시작 조건` in `plan.md` short and human-readable
-- In work-bundle file tables, use `파일 | 작업 방식 | 완료 조건`
-- Keep phase detail sections table-heavy and scan-friendly; do not collapse a whole phase into one long paragraph
+- Keep `선행 조건` in phase detail files short and human-readable
+- In file impact tables, use `파일 | 작업 방식 | 완료 조건`
+- Keep phase detail files scan-friendly; use short prose only where it explains the change shape better than another table
 - Use one canonical `task-slug` per executable plan
 - For each behavior-changing phase, make the linked phase detail file precise enough that `plan-materialize` can derive a stable scenario contract without guessing
 - Do not leave multiple plausible canonical outputs unresolved inside one phase
-- If a controller cannot answer "what the user asked for, which boundaries change, which public contracts are locked, what is excluded, and what each phase fixes" from the top-level tables plus the phase work-bundle cards, the plan fails the quality bar
+- If a controller cannot answer "what was requested, what is in/out, what shape changes, which contracts are locked, what each phase fixes, and how risk is verified" from `plan.md`, the plan fails the quality bar
 
 ### Step 3.2. Choose plan count before writing (required)
 
@@ -269,7 +275,7 @@ Do not deep-dive into implementation details.
   - place each plan in its own folder
   - keep every plan sequential and template-based
   - give every plan its own `Branch` header, reviewer-facing phase summaries, and linked phase detail files
-  - if one local plan depends on another, record the same prerequisite contract in the downstream phase detail `선행조건` and in exactly one upstream phase detail `output` plus `검증`
+  - if one local plan depends on another, record the same prerequisite contract in the downstream phase detail `선행 조건` and in exactly one upstream phase detail `output` plus `검증`
 - Do not force multiple plans only because many files change or one phase would be long
 - Do not generate overview, index, DAG, or root graph files
 
@@ -328,7 +334,7 @@ If a plan implements UI against an external visual reference such as a live URL,
 
 ### Step 6. Compatibility policy (required)
 
-- Plan Artifact Interface v10 applies to newly created plans
+- Plan Artifact Interface v11 applies to newly created plans
 - Existing plans are not automatically migrated
 - If a legacy plan format is detected during update:
   - keep user-requested scope

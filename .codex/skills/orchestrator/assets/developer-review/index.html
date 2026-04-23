@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Developer Review</title>
+  <style>
+    :root {
+      --ink: #17211f;
+      --muted: #66736f;
+      --paper: #f7f1e6;
+      --panel: #fffaf0;
+      --line: #dfd1bd;
+      --accent: #0f6f5c;
+      --accent-ink: #ffffff;
+      --warn: #b66b00;
+      --danger: #b34040;
+      --soft: #e9dfcf;
+      --shadow: 0 18px 44px rgba(50, 37, 20, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 10%, rgba(15, 111, 92, 0.12), transparent 30%),
+        linear-gradient(135deg, #faf4e8 0%, #efe3d0 48%, #f7f1e6 100%);
+      font-family: "Aptos", "Segoe UI", sans-serif;
+      min-height: 100vh;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    aside {
+      border-right: 1px solid var(--line);
+      background: rgba(255, 250, 240, 0.78);
+      backdrop-filter: blur(14px);
+      padding: 28px 20px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+    }
+
+    main {
+      padding: 36px;
+    }
+
+    h1, h2, h3 {
+      font-family: "Georgia", "Times New Roman", serif;
+      letter-spacing: -0.035em;
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 0.95;
+    }
+
+    h2 {
+      font-size: clamp(26px, 3vw, 42px);
+      margin-bottom: 12px;
+    }
+
+    h3 {
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      margin-top: 18px;
+      overflow-wrap: anywhere;
+    }
+
+    .steps {
+      display: grid;
+      gap: 8px;
+      margin-top: 28px;
+    }
+
+    .step-button {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      padding: 11px 12px;
+      border-radius: 14px;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .step-button:hover {
+      transform: translateX(3px);
+      border-color: var(--accent);
+    }
+
+    .step-button.active {
+      background: var(--accent);
+      color: var(--accent-ink);
+      border-color: var(--accent);
+    }
+
+    .step-button .status-dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      margin-right: 8px;
+      background: var(--line);
+      vertical-align: 1px;
+    }
+
+    .step-button[data-status="approved"] .status-dot {
+      background: #35a36b;
+    }
+
+    .step-button[data-status="needs-change"] .status-dot {
+      background: var(--danger);
+    }
+
+    .step-button[data-status="question"] .status-dot {
+      background: var(--warn);
+    }
+
+    .step-button[data-status="out-of-scope"] .status-dot {
+      background: #68748a;
+    }
+
+    .hero {
+      background: rgba(255, 250, 240, 0.82);
+      border: 1px solid var(--line);
+      border-radius: 32px;
+      box-shadow: var(--shadow);
+      padding: clamp(24px, 5vw, 54px);
+      margin-bottom: 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      right: -120px;
+      top: -130px;
+      border-radius: 999px;
+      border: 42px solid rgba(15, 111, 92, 0.08);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 8px 22px rgba(50, 37, 20, 0.07);
+    }
+
+    .wide {
+      grid-column: 1 / -1;
+    }
+
+    .list {
+      display: grid;
+      gap: 9px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .list li {
+      padding: 10px 12px;
+      background: rgba(233, 223, 207, 0.7);
+      border-radius: 12px;
+      line-height: 1.45;
+    }
+
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .flow span {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 9px 12px;
+      font-weight: 700;
+    }
+
+    .flow .arrow {
+      color: var(--muted);
+      font-weight: 900;
+    }
+
+    .review-box {
+      margin-top: 22px;
+      background: #fffdf8;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 18px;
+    }
+
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .status-row button, .nav button, .submit {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: var(--panel);
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .status-row button.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-ink);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 112px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fffaf0;
+      color: var(--ink);
+      padding: 12px;
+      font: inherit;
+      line-height: 1.5;
+    }
+
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .nav button.primary, .submit {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-ink);
+    }
+
+    .preview {
+      border: 1px dashed var(--accent);
+      background: rgba(15, 111, 92, 0.06);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .preview img {
+      display: block;
+      max-width: 100%;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      margin-top: 12px;
+    }
+
+    .finding {
+      border-left: 4px solid var(--warn);
+      padding-left: 12px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      padding: 12px 14px;
+      background: var(--ink);
+      color: white;
+      border-radius: 14px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 160ms ease, transform 160ms ease;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 860px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      main {
+        padding: 20px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <div class="eyebrow">Developer Review</div>
+      <h3 id="navTitle">Planning Review</h3>
+      <div class="meta" id="navMeta"></div>
+      <div class="steps" id="steps"></div>
+    </aside>
+    <main>
+      <section class="hero" id="content"></section>
+      <section class="review-box" id="reviewBox"></section>
+      <nav class="nav">
+        <button id="prevBtn">Previous</button>
+        <button class="primary" id="nextBtn">Next</button>
+      </nav>
+    </main>
+  </div>
+  <div class="toast" id="toast">Saved</div>
+
+  <script>
+    const statuses = [
+      ["approved", "Approve"],
+      ["needs-change", "Needs change"],
+      ["question", "Question"],
+      ["out-of-scope", "Out of scope"]
+    ];
+
+    let model;
+    let feedback;
+    let steps = [];
+    let current = 0;
+
+    const $ = (id) => document.getElementById(id);
+
+    function asArray(value) {
+      if (!value) return [];
+      return Array.isArray(value) ? value : [value];
+    }
+
+    function esc(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#039;"
+      }[ch]));
+    }
+
+    function list(items) {
+      const normalized = asArray(items).filter(Boolean);
+      if (!normalized.length) return "<p class=\"meta\">없음</p>";
+      return `<ul class="list">${normalized.map((item) => `<li>${esc(item)}</li>`).join("")}</ul>`;
+    }
+
+    function flow(items) {
+      const normalized = asArray(items).filter(Boolean);
+      if (!normalized.length) return "";
+      return `<div class="flow">${normalized.map((item, index) => `${index ? "<b class=\"arrow\">→</b>" : ""}<span>${esc(item)}</span>`).join("")}</div>`;
+    }
+
+    function previewBlock(previews) {
+      const items = asArray(previews).filter(Boolean);
+      if (!items.length) return "";
+      return items.map((preview) => `
+        <div class="preview">
+          <strong>${esc(preview.id || "UI")}. ${esc(preview.title || "UI preview")}</strong>
+          <p>${esc(preview.description || "화면이 어떤 식으로 나타날지 보여주는 계획 preview입니다.")}</p>
+          ${preview.asset ? `<img src="${esc(preview.asset)}" alt="${esc(preview.title || "UI preview")}">` : ""}
+        </div>
+      `).join("");
+    }
+
+    async function loadJson(path, fallback) {
+      const res = await fetch(path, { cache: "no-store" });
+      if (!res.ok) return fallback;
+      return res.json();
+    }
+
+    async function init() {
+      model = await loadJson("review-data.json", null);
+      if (!model) {
+        $("content").innerHTML = "<h1>review-data.json을 찾을 수 없습니다.</h1>";
+        return;
+      }
+
+      const existing = await loadJson("/api/feedback", null);
+      feedback = existing && existing.plan_signature === model.plan_signature
+        ? existing
+        : createFeedback();
+
+      steps = [
+        { id: "overview", label: "Overview", kind: "overview" },
+        ...asArray(model.phases).map((phase, index) => ({
+          id: phase.id || `P${index + 1}`,
+          label: phase.title || `Phase ${index + 1}`,
+          kind: "phase",
+          phase
+        })),
+        { id: "final", label: "Final", kind: "final" }
+      ];
+
+      ensureStepFeedback();
+      render();
+    }
+
+    function createFeedback() {
+      return {
+        schema_version: 1,
+        task_slug: model.task_slug,
+        plan_signature: model.plan_signature,
+        review_status: "in_progress",
+        updated_at: new Date().toISOString(),
+        steps: {},
+        cards: {}
+      };
+    }
+
+    function ensureStepFeedback() {
+      steps.forEach((step) => {
+        if (!feedback.steps[step.id]) {
+          feedback.steps[step.id] = { status: "", comment: "" };
+        }
+      });
+    }
+
+    function stepStatus(id) {
+      return feedback.steps[id]?.status || "";
+    }
+
+    function render() {
+      $("navTitle").textContent = model.title || model.task_slug || "Planning Review";
+      $("navMeta").innerHTML = `
+        <div>task: <strong>${esc(model.task_slug || "")}</strong></div>
+        <div>signature: <strong>${esc(model.plan_signature || "")}</strong></div>
+        <div>review: <strong>${esc(model.review_outcome || "")}</strong></div>
+      `;
+      renderSteps();
+      renderContent();
+      renderFeedbackBox();
+      $("prevBtn").disabled = current === 0;
+      $("nextBtn").textContent = current === steps.length - 1 ? "Submit review" : "Next";
+    }
+
+    function renderSteps() {
+      $("steps").innerHTML = steps.map((step, index) => `
+        <button class="step-button ${index === current ? "active" : ""}" data-status="${esc(stepStatus(step.id))}" onclick="go(${index})">
+          <span class="status-dot"></span>${esc(step.label)}
+        </button>
+      `).join("");
+    }
+
+    function renderContent() {
+      const step = steps[current];
+      if (step.kind === "overview") renderOverview();
+      if (step.kind === "phase") renderPhase(step.phase, step.id);
+      if (step.kind === "final") renderFinal();
+    }
+
+    function renderOverview() {
+      const overview = model.overview || {};
+      $("content").innerHTML = `
+        <div class="eyebrow">Overview</div>
+        <h1>${esc(model.title || model.task_slug || "Plan Review")}</h1>
+        <p class="meta">${esc(overview.understanding || "요청을 바탕으로 이해한 전체 방향을 검토합니다.")}</p>
+        <div class="grid">
+          <article class="card"><h3>사용자 요청</h3>${list(overview.user_request)}</article>
+          <article class="card"><h3>포함 범위</h3>${list(overview.included_scope)}</article>
+          <article class="card"><h3>제외 범위</h3>${list(overview.excluded_scope)}</article>
+          <article class="card"><h3>주요 변경점</h3>${list(overview.major_changes)}</article>
+          <article class="card wide"><h3>변경 형상</h3><p>${esc(overview.change_shape || "")}</p>${flow(overview.change_flow)}</article>
+          <article class="card wide"><h3>핵심 리스크</h3>${list(overview.risks)}</article>
+          ${previewBlock(overview.ui_previews) ? `<article class="card wide"><h3>UI 계획 preview</h3>${previewBlock(overview.ui_previews)}</article>` : ""}
+        </div>
+      `;
+    }
+
+    function renderPhase(phase, stepId) {
+      $("content").innerHTML = `
+        <div class="eyebrow">${esc(stepId)}</div>
+        <h1>${esc(phase.title || stepId)}</h1>
+        <p class="meta">${esc(phase.goal || "이 phase의 목표와 실행 계약을 검토합니다.")}</p>
+        <div class="grid">
+          <article class="card"><h3>변경 내용</h3>${list(phase.changes)}</article>
+          <article class="card"><h3>검증</h3>${list(phase.validation)}</article>
+          <article class="card wide"><h3>계약</h3>${list(phase.contracts)}</article>
+          <article class="card wide"><h3>파일 영향</h3>${list(phase.file_impacts)}</article>
+          <article class="card wide"><h3>리스크 / 주의점</h3>${list(phase.risks)}</article>
+          ${previewBlock(phase.ui_previews) ? `<article class="card wide"><h3>UI 계획 preview</h3>${previewBlock(phase.ui_previews)}</article>` : ""}
+        </div>
+      `;
+    }
+
+    function renderFinal() {
+      const findings = asArray(model.review_findings);
+      const stepRows = steps.filter((step) => step.kind !== "final").map((step) => {
+        const item = feedback.steps[step.id] || {};
+        return `<li><strong>${esc(step.label)}</strong>: ${esc(item.status || "not reviewed")} ${item.comment ? `— ${esc(item.comment)}` : ""}</li>`;
+      }).join("");
+
+      $("content").innerHTML = `
+        <div class="eyebrow">Final</div>
+        <h1>리뷰 제출</h1>
+        <p class="meta">모든 step의 승인/수정 요청을 확인한 뒤 제출합니다. 제출 후 채팅에 <strong>리뷰 완료</strong>라고 알려주세요.</p>
+        <div class="grid">
+          <article class="card wide"><h3>Step 상태</h3><ul class="list">${stepRows}</ul></article>
+          <article class="card wide"><h3>Plan review findings</h3>${findings.length ? findings.map((item) => `<p class="finding">${esc(item)}</p>`).join("") : "<p class=\"meta\">없음</p>"}</article>
+        </div>
+      `;
+    }
+
+    function renderFeedbackBox() {
+      const step = steps[current];
+      const item = feedback.steps[step.id] || { status: "", comment: "" };
+      $("reviewBox").innerHTML = `
+        <h3>이 step 리뷰</h3>
+        <div class="status-row">
+          ${statuses.map(([value, label]) => `<button class="${item.status === value ? "active" : ""}" onclick="setStatus('${value}')">${label}</button>`).join("")}
+        </div>
+        <textarea id="comment" placeholder="수정 요청이나 질문을 적어주세요.">${esc(item.comment || "")}</textarea>
+      `;
+      $("comment").addEventListener("input", (event) => {
+        feedback.steps[step.id].comment = event.target.value;
+        saveDebounced();
+      });
+    }
+
+    function setStatus(status) {
+      const step = steps[current];
+      feedback.steps[step.id].status = status;
+      saveDebounced();
+      render();
+    }
+
+    function go(index) {
+      current = Math.max(0, Math.min(index, steps.length - 1));
+      render();
+    }
+
+    async function save(submitted = false) {
+      if (submitted) feedback.review_status = "submitted";
+      feedback.updated_at = new Date().toISOString();
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(feedback, null, 2)
+      });
+      if (!res.ok) throw new Error("save failed");
+      showToast(submitted ? "Submitted" : "Saved");
+    }
+
+    let saveTimer;
+    function saveDebounced() {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => save(false).catch(() => showToast("Save failed")), 250);
+    }
+
+    function showToast(message) {
+      const toast = $("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 1400);
+    }
+
+    $("prevBtn").addEventListener("click", () => go(current - 1));
+    $("nextBtn").addEventListener("click", async () => {
+      if (current === steps.length - 1) {
+        await save(true).catch(() => showToast("Submit failed"));
+        render();
+      } else {
+        go(current + 1);
+      }
+    });
+
+    window.go = go;
+    window.setStatus = setStatus;
+    init().catch((error) => {
+      $("content").innerHTML = `<h1>리뷰 UI를 불러오지 못했습니다.</h1><p>${esc(error.message)}</p>`;
+    });
+  </script>
+</body>
+</html>
