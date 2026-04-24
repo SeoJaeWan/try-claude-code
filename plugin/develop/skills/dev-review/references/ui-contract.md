@@ -47,7 +47,6 @@ Read-only summary that helps the reviewer ground themselves before diving into c
 - **Change map** — horizontal bar or table per track (`frontend`, `backend`, `db`, `config`, `docs`, `other`) showing `files`, `+additions`, `-deletions`
 - **Totals** — `total_commits`, `total_files_changed`
 - **Plan vs Result** — the `plan_vs_result[]` list rendered as rows: plan item · status badge (`achieved` green, `partial` amber, `missed` red) · evidence commit link (click scrolls to that commit step)
-- **QA verdict** — `qa_verdict[]` rows per track, status badges (`pass`, `warn`, `fail`), summary line
 - **Deviations summary** — `deviations_summary[]` as a list
 - **Open risks** — `open_risks[]` as a list
 
@@ -103,7 +102,7 @@ Read-only summary from `review-data.json.final`:
 - **Commit log** — table of all commits (short_sha · subject · author · timestamp)
 - **Merge impact** — files that will change if `task_branch` is merged into `base_branch` (`path` · `kind`)
 - **Final verdict** — computed live from `feedback.json`:
-  - "모든 카드가 승인되었습니다. Step 4 진행 준비 완료." when every card is `approved` or `out-of-scope`
+  - "모든 카드가 승인되었습니다. Step 5 진행 준비 완료." when every card is `approved` or `out-of-scope`
   - "아직 승인되지 않은 카드 N개가 있습니다." otherwise, with a count badge
 
 No feedback controls. The verdict helps the reviewer know whether a `리뷰 완료` reply will move the runner forward or trigger a rework round.

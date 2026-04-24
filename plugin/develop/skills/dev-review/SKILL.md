@@ -1,6 +1,6 @@
 ---
 name: dev-review
-description: "Browser-based developer review gate for runner-executed tasks. Triggered after runner finishes all phase commits and QA verification, before the merge/PR/later decision. Generates a commit-based review package (Overview preview → per-commit cards → Final preview) served over localhost, collects per-card status/comment/dispatch_agent feedback from the reviewer, and routes non-approved feedback back into the runner's worktree as rework, Q&A, or out-of-scope records. Invoke when runner reaches Step 3.7, when the user says '리뷰 완료', when re-running developer review after a rework round, or when the user asks '개발 리뷰', 'dev review', or 'runner 리뷰'."
+description: "Browser-based developer review gate for runner-executed tasks. Triggered after runner finishes all phase commits, before the merge/PR/later decision. Generates a commit-based review package (Overview preview → per-commit cards → Final preview) served over localhost, collects per-card status/comment/dispatch_agent feedback from the reviewer, and routes non-approved feedback back into the runner's worktree as rework, Q&A, or out-of-scope records. Invoke when runner reaches Step 4, when the user says '리뷰 완료', when re-running developer review after a rework round, or when the user asks '개발 리뷰', 'dev review', or 'runner 리뷰'."
 model: sonnet
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent
 ---
@@ -20,7 +20,7 @@ This skill mirrors `.codex/skills/orchestrator` developer review, but reviews **
 
 ## When runner invokes this skill
 
-The runner calls dev-review at its Step 3.7, after Step 3.5 QA verification and before Step 4 merge/PR/later. The worktree at `worktrees/{task-branch}` is still present and contains all phase commits plus (optionally) a QA commit.
+The runner calls dev-review at its Step 4, after all plan phases complete and before Step 5 merge/PR/later. The worktree at `worktrees/{task-branch}` is still present and contains all phase commits.
 
 Runner should invoke dev-review again after each rework round: when a `needs-change` card triggers re-dispatch, the re-dispatched agent writes new commits into the same worktree, and then dev-review regenerates the package against the new `task_head_sha`.
 
@@ -33,7 +33,6 @@ The runner passes a handoff packet containing:
 - `worktree_path` — absolute path, usually `worktrees/{task_branch}`
 - `base_branch` — branch the runner started on (HEAD stays here)
 - `task_branch` — branch name inside the worktree
-- `qa_report_path` — `plans/{task_slug}/qa/report.md` when Step 3.5 ran, otherwise null
 - `review_iteration` — 1 on first call, N+1 on each re-entry
 
 The skill infers `task_head_sha` from the worktree, derives `plan_signature` from plan artifacts, and reads prior `feedback.json` / `review-history.json` when they exist for the same `task_slug`.
@@ -76,12 +75,11 @@ node {CLAUDE_PLUGIN_ROOT}/develop/skills/dev-review/scripts/generate-review-data
   --worktree "{worktree_path}" \
   --base "{base_branch}" \
   --task-branch "{task_branch}" \
-  --qa-report "{qa_report_path_or_empty}" \
   --iteration {review_iteration} \
   --out "plans/{task_slug}/dev-review/review-data.partial.json"
 ```
 
-The helper populates every field that can be derived from git, the plan file, the QA report, and prior review artifacts. It also emits fallback cards (one per commit with at least a file-count summary) so Step 2 has a valid shape to merge into even on full interpretation failure.
+The helper populates every field that can be derived from git, the plan file, and prior review artifacts. It also emits fallback cards (one per commit with at least a file-count summary) so Step 2 has a valid shape to merge into even on full interpretation failure.
 
 Helper failure is fatal — the runner cannot continue without deterministic data. Propagate the exit code.
 
@@ -124,7 +122,7 @@ Agent(
     ## Rules
     - Do NOT invent files, lines, or commits not in the partial JSON.
     - Do NOT modify any field the generator already filled (sha, message,
-      files_changed, diff_hunks, change_map, qa_verdict, etc.).
+      files_changed, diff_hunks, change_map, etc.).
     - Return the merged JSON as your final message (path or inline — the caller
       will write it).
     - If you cannot produce cards for a commit, leave that commit's `cards`

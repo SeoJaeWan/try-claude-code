@@ -501,11 +501,10 @@ flowchart TD
     RUN["runner"]
     WT["task worktree<br/>phase commits + approvals"]
     EXEC["frontend-dev / backend-dev / general-dev / doc / guard-e2e-test"]
-    QA["qa-verify"]
     STOP["stop-review gate"]
     MERGE["user merge decision"]
 
-    U --> LOCK --> ARCH --> REVIEW --> ORCH --> DEVREV --> MAT --> RUN --> WT --> EXEC --> QA --> STOP --> MERGE
+    U --> LOCK --> ARCH --> REVIEW --> ORCH --> DEVREV --> MAT --> RUN --> WT --> EXEC --> STOP --> MERGE
 ```
 
 ### 현재 요청 처리의 실제 단계
@@ -519,8 +518,7 @@ flowchart TD
 5. 피드백이 승인되면 `plan-materialize`가 실제 테스트 파일을 source tree에 배치한다.
 6. `runner`가 task별 worktree를 만들고 phase별 agent를 순차 실행한다.
 7. `frontend-dev`나 `backend-dev`는 더 이상 CLI scaffold를 호출하지 않고, 기존 코드에서 convention을 발견한 뒤 구현한다.
-8. 구현 phase가 끝나면 `qa-verifier`가 `plans/{task}/qa/`에 읽기 전용 QA 리포트를 남긴다.
-9. 세션 stop 시점에는 stop-review gate가 현재 worktree diff를 점검하고, 마지막 merge 여부는 사용자가 결정한다.
+8. 세션 stop 시점에는 stop-review gate가 현재 worktree diff를 점검하고, 마지막 merge 여부는 사용자가 결정한다.
 
 ### 현재 시각 비교 요청 처리 단계
 
@@ -543,7 +541,7 @@ flowchart TD
 | 역할 프롬프트 | 도메인별 agent 책임 정의 | `plugin/develop/agents/frontend-developer.md`, `plugin/develop/agents/backend-developer.md`, `plugin/develop/agents/general-developer.md` |
 | runtime hook 계층 | 세션 추적, worktree 추적, stop-review gate | `plugin/develop/hooks/hooks.json`, `plugin/develop/scripts/session-lifecycle-hook.mjs`, `plugin/develop/scripts/stop-review-gate-hook.mjs`, `plugin/develop/scripts/session-restore.mjs` |
 | review / knowledge 계층 | developer review UI와 review wiki 관리 | `.codex/tools/developer-review-server.mjs`, `.codex/skills/review-wiki-setup/SKILL.md`, `.codex/skills/review-wiki-ingest/SKILL.md`, `.codex/skills/review-wiki-lint/SKILL.md` |
-| verification 계층 | QA, visual parity, full-flow E2E | `plugin/develop/skills/qa-verify/SKILL.md`, `plugin/develop/skills/figma-parity/SKILL.md`, `plugin/develop/skills/visual-compare/SKILL.md`, `plugin/develop/skills/guard-e2e-test/SKILL.md` |
+| verification 계층 | visual parity, full-flow E2E | `plugin/develop/skills/figma-parity/SKILL.md`, `plugin/develop/skills/visual-compare/SKILL.md`, `plugin/develop/skills/guard-e2e-test/SKILL.md` |
 | statusline 계층 | 상태줄 bootstrap / sync / mode 전환 | `plugin/statusline/skills/statusline/SKILL.md`, `plugin/statusline/hooks/hooks.json` |
 
 ### 현재 구조의 가장 큰 차이
@@ -807,15 +805,14 @@ flowchart LR
     DEVREV["developer review"]
     RUN["runner + worktree"]
     FE["frontend-dev<br/>convention discovery"]
-    QA["qa-verify"]
     STOP["stop-review gate"]
 
-    U --> ARCH --> PLAN --> COLD --> DEVREV --> RUN --> FE --> QA --> STOP
+    U --> ARCH --> PLAN --> COLD --> DEVREV --> RUN --> FE --> STOP
 ```
 
 특징:
 
-- 계획, review, 구현, QA, stop gate가 artifact로 연결된다.
+- 계획, review, 구현, stop gate가 artifact로 연결된다.
 - 생성기보다 plan artifact와 repo-local convention이 더 중요하다.
 - 같은 종류의 요청을 반복할수록 결과가 더 안정적이다.
 
@@ -860,7 +857,6 @@ flowchart LR
 | infra / general | `runner` 후 `general-dev` | `plugin/develop/skills/general-dev/SKILL.md` | `plan.md` + infra config examples | CI/CD, Docker, env, deploy 변경 |
 | full-flow E2E guard | plan phase 또는 구현 후 검증 | `plugin/develop/skills/guard-e2e-test/SKILL.md` | E2E conventions + user journey contract | Playwright guard spec |
 | visual parity | 시각 비교 요청 | `plugin/develop/skills/figma-parity/SKILL.md`, `plugin/develop/skills/visual-compare/SKILL.md` | Figma MCP 또는 external reference | parity report / diff artifacts |
-| QA verification | 구현 완료 후 | `plugin/develop/skills/qa-verify/SKILL.md`, `plugin/develop/agents/qa-verifier.md` | diff 분류 + acceptance bullets | `plans/*/qa/*` |
 | 세션 / runtime 보조 | 세션 시작/종료, 복구 | `plugin/develop/hooks/hooks.json`, `plugin/develop/skills/session-restore/SKILL.md`, `plugin/statusline/skills/statusline/SKILL.md` | hook contract + local runtime state | restored worktree context, statusline sync |
 
 ---
@@ -904,7 +900,6 @@ flowchart LR
 - `plugin/develop/skills/frontend-dev/SKILL.md`
 - `plugin/develop/skills/backend-dev/SKILL.md`
 - `plugin/develop/skills/runner/SKILL.md`
-- `plugin/develop/skills/qa-verify/SKILL.md`
 - `plugin/develop/skills/figma-parity/SKILL.md`
 - `plugin/develop/skills/visual-compare/SKILL.md`
 - `plugin/develop/hooks/hooks.json`

@@ -2,7 +2,7 @@
 
 The deterministic generator is `plugin/develop/skills/dev-review/scripts/generate-review-data.mjs`. The skill invokes it once per round and must be able to rely on the output without re-validating git state.
 
-This contract defines the CLI, what the script reads, what it writes, and what it guarantees. Any change to the contract is a breaking change — update the consumers in this skill's SKILL.md and runner Step 3.7 together.
+This contract defines the CLI, what the script reads, what it writes, and what it guarantees. Any change to the contract is a breaking change — update the consumers in this skill's SKILL.md and runner Step 4 together.
 
 ## CLI
 
@@ -13,7 +13,6 @@ node {CLAUDE_PLUGIN_ROOT}/develop/skills/dev-review/scripts/generate-review-data
   --worktree        <path>           # required, must exist and contain task_branch checked out
   --base            <branch>         # required, base branch name
   --task-branch     <branch>         # required, task branch name
-  --qa-report       <path-or-empty>  # optional; empty string means no QA report
   --iteration       <integer>        # required, 1 for first round, N+1 after rework
   --out             <path>           # required, where to write review-data.partial.json
   --diffs-dir       <path>           # optional, defaults to {out-dir}/assets/diffs/
@@ -56,17 +55,12 @@ Exit code `0` is the only success. Any non-zero exit must stop the runner; parti
    - Per commit: `git -C {worktree} diff {parent}..{sha}` → parsed into `diff_hunks[]`, also written as raw `.diff` to `--diffs-dir`
    - `git -C {worktree} diff --name-status {base}..HEAD` → `final.merge_impact`
 
-3. **QA report** (`--qa-report`, optional)
-   - When present, parse `plans/{task_slug}/qa/report.md` for per-track verdict blocks
-   - Expected format documented in `plugin/develop/skills/qa-verify/SKILL.md`; the helper is tolerant of missing sections (just omits tracks)
-   - Empty / missing → `overview.qa_verdict = []`
-
-4. **Available agents** (`--available-agents-dir`, repeatable)
+3. **Available agents** (`--available-agents-dir`, repeatable)
    - Defaults: `plugin/develop/agents/*.md` and `.claude/agents/*.md` relative to `CLAUDE_PLUGIN_ROOT` and workspace root
    - Each `*.md` with YAML frontmatter containing `name` and `description` becomes an entry in `available_agents[]`
    - Files without valid frontmatter are skipped with a `warn` log
 
-5. **Prior round artifacts** (`--prior-feedback`, `--prior-history`, optional)
+4. **Prior round artifacts** (`--prior-feedback`, `--prior-history`, optional)
    - When `--iteration > 1`, these should be the paths to the previous round's artifacts (typically the live `feedback.json` / `review-history.json` under the same `plans/{task_slug}/dev-review/`)
    - Used to compute `commits[].addressed_by_this_commit[]` and to emit the upcoming round's entry skeleton into history (the skill finalizes the round summary in Step 5)
 
@@ -140,6 +134,5 @@ stdout is reserved for future machine-readable output and MUST stay empty in the
 - Do NOT embed the interpretation agent's output; this script is the deterministic half.
 - Do NOT partially write `--out` on error. Write to a temp file and rename on success.
 - Do NOT let a parse failure on one commit block the whole output — log a `warn`, emit `_fallback_cards` for that commit with an extra "diff parse failed" hint, and continue.
-- Do NOT let `--qa-report` pointing at a missing file be fatal — log `info` and treat as empty.
 - Do NOT populate `cards[]`, `tests_added[]`, `deviations[]`, or any of the three interpretation overview fields. Those belong to the agent.
 - Do NOT mutate `prior_feedback` or `prior_history`. Treat them strictly as read-only inputs.

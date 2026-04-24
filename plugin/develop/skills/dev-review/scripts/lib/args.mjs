@@ -7,7 +7,6 @@ const FLAGS = {
     "--worktree",
     "--base",
     "--task-branch",
-    "--qa-report",
     "--out",
     "--diffs-dir",
     "--prior-feedback",

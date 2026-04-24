@@ -50,7 +50,7 @@ Phase tracking is automatic (hook system) — do NOT put phase numbers in commit
 2. The main context HEAD stays on the base branch at all times — during and after execution. Never checkout the task branch automatically.
 3. Task branches are created via `git worktree add -b` (one per task, not per phase).
 4. Phase agents are dispatched via `Agent` without `isolation: "worktree"` — they work directly in the worktree directory.
-5. Each phase ends with a commit. After the final phase + QA + dev-review approval (every card approved or out-of-scope), plan-runner removes the worktree and asks the user whether to merge — it never checks out the task branch. The worktree stays alive through every dev-review rework round so phase agents can keep committing into it.
+5. Each phase ends with a commit. After the final phase + dev-review approval (every card approved or out-of-scope), plan-runner removes the worktree and asks the user whether to merge — it never checks out the task branch. The worktree stays alive through every dev-review rework round so phase agents can keep committing into it.
 6. plan-runner runs from the repository root, never from inside `worktrees/**`.
 
 ---
@@ -65,8 +65,7 @@ X (base branch — HEAD stays here during execution)
     ├── commit: feat(auth): implement JWT-based login
     ├── commit: feat(auth): add token refresh middleware
     ├── commit: test(auth): add integration tests for login flow
-    ├── commit: docs(qa): add post-phase QA report for task-A       ← Step 3.5 (if not skipped)
-    ├── commit: fix(auth): token exp 15m (rework from dev-review R1) ← Step 3.7 rework commits (0..N rounds)
+    ├── commit: fix(auth): token exp 15m (rework from dev-review R1) ← Step 4 rework commits (0..N rounds)
     └── (dev-review approved)
     → worktree remove → ask user: merge into X? (HEAD stays on X)
 ```
@@ -171,7 +170,7 @@ Agent(
     - Do NOT create additional worktrees or use EnterWorktree.
     - Only implement the phase described in your phase file. Do NOT redo prior phases.
     - Commit when done: git add -A && git commit -m '{type}({scope}): {description}'
-    - Include a 1~2 line commit body explaining WHY (not what). This body is surfaced verbatim in the developer-review UI at Step 3.7, so it should read as rationale for the change, not a summary of the diff.
+    - Include a 1~2 line commit body explaining WHY (not what). This body is surfaced verbatim in the developer-review UI at Step 4, so it should read as rationale for the change, not a summary of the diff.
   ",
   description: "Phase {N}: {short summary}"
 )
@@ -194,59 +193,9 @@ Do not proceed to the next phase until the user explicitly replies. If the user 
 
 > **BLOCK handling is automatic.** When the stop-gate returns BLOCK, the hook injects a `[plan-runner workflow directive]` into the feedback. Follow that directive — it tells you to re-dispatch the same phase agent with the BLOCK reason. Do NOT fix the code yourself in the main session.
 
-### Step 3.5. Post-phase QA verification (built-in, non-blocking)
+### Step 4. Developer review gate (browser)
 
-After all plan phases complete and **before** Step 4 worktree cleanup, dispatch the `qa-verifier` agent automatically. This step is NOT a plan phase — it always runs, regardless of plan content, unless the change set is trivial (see skip rule).
-
-**Skip rule:** If all files changed on the task branch are documentation or config only, skip qa-verify entirely. Run:
-
-```bash
-CHANGED=$(git -C "$WORKTREE_DIR" diff --name-only "$BASE".."$TASK_BRANCH")
-# Treat as skippable if every changed path matches one of:
-# *.md, *.mdx, .github/**, docs/**, *.yml, *.yaml, *.json (config), .eslintrc*, tsconfig*, .gitignore
-```
-
-If skippable → print `QA skipped: docs/config only.` and proceed directly to Step 4.
-
-Otherwise, dispatch:
-
-```
-Agent(
-  subagent_type: "qa-verifier",
-  prompt: "
-    ## Working directory
-    You are working in: {repo_root}/{WORKTREE_DIR}
-    cd to this directory before starting any work.
-
-    ## Inputs
-    - Plan: plans/{task-name}/plan.md
-    - Base branch: {BASE}
-    - Task branch: {TASK_BRANCH}
-    - Changed files: run `git diff {BASE}..HEAD --name-only` inside the worktree
-
-    ## Your job
-    Verify the implemented work behaves correctly. Classify the diff into frontend/backend/db tracks, run read-only checks in parallel per the qa-verify skill, write a report to plans/{task-name}/qa/, and commit only that directory.
-
-    ## Rules
-    - Read-only. Do NOT edit product source or tests.
-    - Do NOT fix bugs. Report only.
-    - This phase is informational — it does NOT block the merge decision.
-    - If a dev server or DB is unreachable, skip that track and continue others.
-    - Commit only files under plans/{task-name}/qa/ with message: docs(qa): add post-phase QA report for {task-name}
-  ",
-  description: "QA: post-phase verification"
-)
-```
-
-After the agent returns, output a brief plain-text summary so the Stop hook runs once and then end your turn naturally. Do NOT use `AskUserQuestion`.
-
-> **Stop hook behavior during QA commit:** The QA commit only modifies `plans/{task-name}/qa/**`. The Codex stop-gate should auto-allow a diff that only touches plan artifacts. If it BLOCKs, ignore the block — this phase is not a plan phase and is not gated.
-
-Do not proceed to Step 3.7 until the user replies. The user may inspect the QA report and decide how to continue.
-
-### Step 3.7. Developer review gate (browser)
-
-After Step 3.5 completes (or is skipped), invoke the `dev-review` skill to collect explicit per-card reviewer approval before cleaning up the worktree. This gate always runs; the merge decision in Step 4 is only reached when every card is `approved` or `out-of-scope`. The worktree MUST stay alive through every rework round so phase agents can keep committing into it.
+After all plan phases complete, invoke the `dev-review` skill to collect explicit per-card reviewer approval before cleaning up the worktree. This gate always runs; the merge decision in Step 5 is only reached when every card is `approved` or `out-of-scope`. The worktree MUST stay alive through every rework round so phase agents can keep committing into it.
 
 Dispatch the skill with the runtime's skill invocation (or `Agent(subagent_type: "general-purpose", ...)` wrapping the `dev-review` skill) and pass:
 
@@ -255,14 +204,13 @@ Dispatch the skill with the runtime's skill invocation (or `Agent(subagent_type:
 - `worktree_path` — absolute path to the worktree
 - `base_branch` — `$BASE`
 - `task_branch` — `$TASK_BRANCH`
-- `qa_report_path` — `plans/{task-name}/qa/report.md` when Step 3.5 ran, otherwise empty string
 - `review_iteration` — `1` for the first gate entry, `N+1` for each re-entry after rework
 
 The skill will generate `plans/{task-name}/dev-review/`, print the server command + URL, and end its turn so the user can review in the browser and say `리뷰 완료`.
 
 On user `리뷰 완료`, re-enter the skill; it reads `feedback.json` and returns a terminal summary:
 
-- `result = "approved"` → proceed to Step 4.
+- `result = "approved"` → proceed to Step 5.
 - `result = "rework"` → for each item in `rework_items[]`, dispatch `Agent(subagent_type: item.dispatch_agent, ...)` with a prompt shaped like:
 
   ```
@@ -291,9 +239,9 @@ On user `리뷰 완료`, re-enter the skill; it reads `feedback.json` and return
 
 Do not advance past this gate on anything except `result = "approved"`. Do not remove the worktree, do not merge, do not ask about merge until approval.
 
-### Step 4. Clean up worktree and ask user
+### Step 5. Clean up worktree and ask user
 
-After Step 3.7 returns `result = "approved"`, the task branch has all phase commits, optionally the QA report commit, and any rework commits from review rounds. Remove the worktree but **stay on the base branch**. Then ask the user whether to merge:
+After Step 4 returns `result = "approved"`, the task branch has all phase commits and any rework commits from review rounds. Remove the worktree but **stay on the base branch**. Then ask the user whether to merge:
 
 ```bash
 # 1. Remove worktree (frees the branch)
@@ -308,7 +256,6 @@ After cleanup, output the following as **plain text** and let your turn end natu
 
 - Summary of all phase commits: `git log --oneline $BASE..$TASK_BRANCH`
 - Changed files: `git diff --stat $BASE..$TASK_BRANCH`
-- **QA summary** (if Step 3.5 ran): one-line per track from `plans/{task-name}/qa/report.md`, plus the report path. QA FAIL does NOT block any option below — the user decides.
 - Options the user can choose:
   - "base 브랜치($BASE)에 병합" → `git merge $TASK_BRANCH --no-ff -m "merge: $TASK_BRANCH into $BASE"` then `git branch -d $TASK_BRANCH`
   - "PR 생성" → leave the task branch for PR creation
@@ -316,7 +263,7 @@ After cleanup, output the following as **plain text** and let your turn end natu
 
 Do not merge, checkout, or delete the task branch without explicit user approval. HEAD must remain on $BASE at all times.
 
-### Step 5. Verify completion
+### Step 6. Verify completion
 
 ```bash
 # Worktree should be gone
@@ -346,7 +293,7 @@ If a phase agent fails or produces no work:
 
 ### Post-completion
 
-After Step 4, HEAD is still on the base branch. The task branch exists with all phase commits. Depending on the user's choice:
+After Step 5, HEAD is still on the base branch. The task branch exists with all phase commits. Depending on the user's choice:
 1. If merged → task branch is deleted, all commits are on the base branch
 2. If PR → task branch remains for PR creation
 3. If deferred → task branch remains, user can merge later
@@ -384,7 +331,7 @@ git rev-parse --abbrev-ref HEAD
 5. Always verify phase commits and branch before starting the next phase.
 6. Always remove the worktree before asking the user about merge. Never checkout the task branch — HEAD must stay on the base branch.
 7. Never reinterpret one request as multiple plan files or extra workstreams.
-8. Never bypass Step 3.7 developer review. The worktree stays alive until dev-review returns `approved`; rework commits and question-answer cycles both happen inside that gate.
+8. Never bypass Step 4 developer review. The worktree stays alive until dev-review returns `approved`; rework commits and question-answer cycles both happen inside that gate.
 9. Never re-dispatch rework commits to a different `dispatch_agent` than the reviewer selected in the UI. The reviewer's choice is authoritative.
 
 </Instructions>

@@ -10,7 +10,7 @@ Claude Code용 실행 플러그인과 Codex용 planning stack을 함께 실험�
 - `brainstorm -> design-discovery -> architect -> plan-review -> browser developer review -> plan-materialize` 루프가 현재 기본 planning 경로입니다.
 - developer review gate와 feedback triage가 추가되어, 리뷰 승인/수정 이력이 `plans/{task}/developer-review/` 아래 아티팩트로 남습니다.
 - review wiki staging이 copy 방식이 아니라 link-only 방식으로 고정되었고, workspace planning root는 `./.codex/review-wiki/sync/current`를 기준으로 잡습니다.
-- 실행 플러그인에 `qa-verify`, `session-restore`, `figma-parity`, `visual-compare`가 추가되거나 분리되었습니다.
+- 실행 플러그인에 `session-restore`, `figma-parity`, `visual-compare`가 추가되거나 분리되었습니다.
 - Figma URL 비교는 structured parity audit로, 외부 이미지/URL 비교는 pixel diff로 명확히 역할을 나눴습니다.
 
 ## 현재 저장소 구조
@@ -43,7 +43,7 @@ scripts/                             # workspace/운영 보조 스크립트
 
 현재 메인 실행 플러그인은 아래 범주를 갖습니다.
 
-- 실행 오케스트레이션: `runner`, `qa-verify`, `session-restore`
+- 실행 오케스트레이션: `runner`, `session-restore`
 - 개발 도메인: `frontend-dev`, `backend-dev`, `general-dev`
 - 검증/리뷰: `guard-e2e-test`, `figma-parity`, `visual-compare`
 - 작업 마감: `commit`, `pr`, `doc`
@@ -56,7 +56,6 @@ scripts/                             # workspace/운영 보조 스크립트
 - `general-developer`
 - `doc-updater`
 - `playwright-guard`
-- `qa-verifier`
 - `figma-parity-auditor`
 - `visual-comparator`
 
@@ -112,7 +111,6 @@ SessionStart 훅이 `~/.claude/statusline/` 아래 파일을 자동 동기화하
 4. `orchestrator`가 browser developer review gate와 feedback triage를 관리합니다.
 5. `plan-materialize`가 실제 테스트 파일을 소스 트리에 생성합니다.
 6. 구현 실행은 `plugin/develop`의 `runner`가 task 단위 worktree에서 수행하고, phase별 commit과 사용자 승인을 거칩니다.
-7. 모든 phase가 끝나면 `qa-verifier`가 `plans/{task}/qa/`에 읽기 전용 QA 리포트를 남깁니다.
 
 세션이 중간에 끊겨도 `session-restore`가 기존 git worktree를 현재 세션에 다시 등록할 수 있습니다.
 

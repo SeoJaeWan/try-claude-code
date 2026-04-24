@@ -28,7 +28,6 @@ import {
 } from "./lib/git.mjs";
 import { parseUnifiedDiff } from "./lib/diff.mjs";
 import { readPlan } from "./lib/plan.mjs";
-import { readQaReport } from "./lib/qa.mjs";
 import { discoverAvailableAgents, defaultAgentsDirs } from "./lib/agents.mjs";
 import { buildFallbackCards } from "./lib/fallback.mjs";
 import { classifyTrack, emptyChangeMap, mergeChangeMap, compactChangeMap } from "./lib/track.mjs";
@@ -167,8 +166,6 @@ function run(args, logger) {
     (entry) => ({ path: entry.path, kind: entry.kind }),
   );
 
-  const qaVerdict = readQaReport(args.qaReport || "");
-
   const agentDirs = args.availableAgentsDirs.length > 0
     ? args.availableAgentsDirs.map((d) => path.resolve(d))
     : defaultAgentsDirs(workspaceRoot);
@@ -198,7 +195,6 @@ function run(args, logger) {
       change_map: compactChangeMap(changeMap),
       total_commits: commitObjects.length,
       total_files_changed: totalFilesChanged,
-      qa_verdict: qaVerdict,
       plan_vs_result: [],
       deviations_summary: [],
       open_risks: [],

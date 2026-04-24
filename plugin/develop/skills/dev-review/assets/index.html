@@ -394,11 +394,7 @@
       `);
 
       parts.push(`
-        <div class="card">
-          <h3>QA 결과</h3>
-          ${renderQa(o.qa_verdict)}
-        </div>
-        <div class="card">
+        <div class="card wide">
           <h3>Deviations</h3>
           ${renderBullets(o.deviations_summary, "없음")}
         </div>
@@ -442,22 +438,6 @@
               <span class="badge ${esc(r.status)}">${esc(r.status)}</span>
               <span style="flex:1">${esc(r.plan_item)}</span>
               ${r.evidence_short_sha ? `<span style="font-family:monospace; font-size:12px">${esc(r.evidence_short_sha)}</span>` : ""}
-            </li>
-          `).join("")}
-        </ul>
-      `;
-    }
-
-    function renderQa(entries) {
-      const rows = asArray(entries);
-      if (rows.length === 0) return `<p class="meta-line">QA 리포트 없음</p>`;
-      return `
-        <ul class="list">
-          ${rows.map((r) => `
-            <li style="display:flex; gap:10px; align-items:baseline">
-              <span class="badge ${esc(r.status)}">${esc(r.status)}</span>
-              <strong>${esc(r.track)}</strong>
-              <span style="flex:1">${esc(r.summary || "")}</span>
             </li>
           `).join("")}
         </ul>
@@ -648,7 +628,7 @@
           <h1>최종 확인</h1>
           <div class="banner ${allApproved ? "success" : ""}">
             ${allApproved
-              ? "모든 카드가 승인되었습니다. 리뷰 제출 후 Step 4 (merge) 로 진행됩니다."
+              ? "모든 카드가 승인되었습니다. 리뷰 제출 후 Step 5 (merge) 로 진행됩니다."
               : `아직 승인되지 않은 카드 ${total - approvedCount}개가 있습니다. Commit step 들을 확인해주세요.`}
           </div>
         </div>

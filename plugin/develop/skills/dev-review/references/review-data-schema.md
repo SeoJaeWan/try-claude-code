@@ -51,11 +51,6 @@ The schemas below show every field. Fields marked **deterministic** are filled b
     "total_commits": 4,                        // deterministic
     "total_files_changed": 9,                  // deterministic
 
-    "qa_verdict": [                            // deterministic — from qa/report.md
-      { "track": "backend", "status": "pass", "summary": "5 tests passed" },
-      { "track": "frontend", "status": "warn", "summary": "1 lint warning" }
-    ],
-
     "plan_vs_result": [                        // interpretation — empty on failure
       {
         "plan_item": "JWT 로그인 엔드포인트 추가",
@@ -338,7 +333,7 @@ On re-entry with `review_iteration > 1`:
 | `task_slug`, `plan_path`, `plan_signature`, `base_branch`, `task_branch`, `task_head_sha`, `review_iteration`, `generated_at` | helper | fatal if missing |
 | `available_agents` | helper | empty array if no agent files found; UI shows fallback note |
 | `overview.user_request`, `plan_summary` | helper | empty strings if plan.md minimal |
-| `overview.change_map`, `total_commits`, `total_files_changed`, `qa_verdict` | helper | fatal if git/QA parsing fails |
+| `overview.change_map`, `total_commits`, `total_files_changed` | helper | fatal if git parsing fails |
 | `overview.plan_vs_result`, `deviations_summary`, `open_risks` | agent | empty arrays + `interpretation_skipped: true` |
 | `commits[].sha`, `short_sha`, `message_*`, `author*`, `timestamp`, `additions`, `deletions`, `files_changed`, `addressed_by_this_commit`, `raw_diff_path` | helper | fatal if git parsing fails |
 | `commits[].cards`, `tests_added`, `deviations` | agent | `_fallback_cards` substituted, `tests_added` / `deviations` left empty |
