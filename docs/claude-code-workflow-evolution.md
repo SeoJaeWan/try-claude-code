@@ -12,7 +12,7 @@
 1. 시기별로 사용자가 요청했을 때 어떤 진입 문서가 라우팅을 담당했는지 설명한다.
 2. 각 버전대에서 실제로 어떤 문서와 스킬과 에이전트와 코드가 연결됐는지 도식화한다.
 3. 규칙이 어디에 있었는지, 그리고 그 규칙이 설명 문서였는지 실행 강제 규칙이었는지 구분한다.
-4. 현재 구조가 왜 `plugin + planning skill + dev CLI + profiles` 조합으로 바뀌었는지 보여준다.
+4. 현재 구조가 왜 `plugin + planning skill + runtime hook + review artifact` 중심으로 바뀌었는지 보여준다.
 
 ## 범위와 해석 기준
 
@@ -40,9 +40,10 @@ flowchart LR
     E["2026-02-24<br/>v3 artifact-first"]
     F["2026-03-03<br/>v4 planner-lite + skill dispatch"]
     G["2026-03-06<br/>plugin 전환 선언"]
-    H["2026-03-15<br/>CLI-first / profile-driven"]
+    H["2026-03-15<br/>CLI-first / manifest-driven"]
+    I["2026-04-01<br/>artifact-driven planning stack"]
 
-    A --> B --> C --> D --> E --> F --> G --> H
+    A --> B --> C --> D --> E --> F --> G --> H --> I
 ```
 
 ## 버전대별 핵심 요약
@@ -56,7 +57,8 @@ flowchart LR
 | Stage 4 | 2026-02-24 ~ 2026-03-02 | artifact-first Claude/Codex 흐름 | `.claude/CLAUDE.md`, `.ai/*`, `.codex/skills/*` | artifact 기반 실행 | 문서 계약 강화 | `.ai/plans`, `.ai/requirements`, `.ai/logs` |
 | Stage 5 | 2026-03-03 ~ 2026-03-05 | skill dispatch + planner-lite | `planner-lite`, `architect`, `init-agent`, `jira` | 계획 스킬 + 실행 스킬 | 문서 계약 + 부분 자동화 | `plan.md`, 테스트 아티팩트, Jira 산출물 |
 | Stage 6 | 2026-03-06 | pluginization 전환 | `try-claude-plugin` 관련 계약 문서 | 플러그인 패키징 | 배포/마이그레이션 계약 | plugin seed/bootstrap/migration |
-| Stage 7 | 2026-03-06 ~ 현재 | plugin + CLI-first | `marketplace.json`, `plugin/skills/*`, `profiles/*`, `packages/dev-cli/*`, `.codex/skills/*` | 계획 스킬 + 플러그인 스킬 + CLI | 실행 강제 규칙 | preview/apply 생성, tests/evals |
+| Stage 7 | 2026-03-06 ~ 2026-03-31 | plugin + dev-cli 실험 | `marketplace.json`, historical `plugin/skills/*`, `docs/dev-cli-design.md`, `.codex/skills/*` | 계획 스킬 + 플러그인 스킬 + CLI | 실행 강제 규칙 | preview/apply scaffold, tests/evals |
+| Stage 8 | 2026-04-01 ~ 현재 | plugin split + artifact-driven planning | `.claude-plugin/marketplace.json`, `plugin/develop/*`, `plugin/statusline/*`, `.codex/skills/*`, `.codex/tools/*` | planning artifact + runtime hook + worktree 실행 | 아티팩트/훅 기반 실행 계약 | `plans/*`, `developer-review/*`, `qa/*`, review wiki 연동 |
 
 ---
 
@@ -434,116 +436,128 @@ flowchart LR
 
 ---
 
-## Stage 7. 2026-03-06 ~ 현재
-## `try-claude-code`의 plugin + CLI-first 시기
+## Stage 7. 2026-03-06 ~ 2026-03-31
+## `try-claude-code`의 plugin + dev-cli 실험 시기
 
-이 시기는 사실 두 단계로 다시 나뉜다.
+이 시기는 `claude-code-skills` 운영체계를 installable plugin으로 떼어내고, scaffold 규칙을 별도 runtime으로 강제해 보던 과도기였다.
 
-- `2026-03-06 ~ 2026-03-14`: 플러그인 패키징, marketplace, eval 정비
-- `2026-03-15 ~ 현재`: `dev-cli + manifest` 중심의 실행 강제 구조
+핵심 변화는 두 가지였다.
+
+- marketplace, plugin packaging, eval 정비
+- `frontend` / `backend` / `dev-cli` 조합으로 생성 규칙을 manifest recipe에 고정
+
+### 당시 구조의 최상위 지도
+
+```mermaid
+flowchart TD
+    U["User request"]
+    PLAN[".codex skills<br/>architect / plan-materialize"]
+    PSK["plugin skills<br/>frontend-dev / backend-dev"]
+    CLI["frontend / backend CLI"]
+    MANIFEST["package manifest recipe"]
+    CORE["dev-cli core runtime"]
+    TEMPLATE["template render"]
+    OUT["preview/apply files"]
+
+    U --> PLAN --> PSK --> CLI --> MANIFEST --> CORE --> TEMPLATE --> OUT
+```
+
+### 이 시기의 의미
+
+- 문서에 적어 두던 생성 규칙을 runtime recipe로 이관했다.
+- `preview/apply`와 validator를 통해 scaffold 재현성을 높이려 했다.
+- planning skill과 execution skill이 분리되었지만, 구현 중심 surface는 아직 scaffold 엔진이 강하게 쥐고 있었다.
+
+### 이 시기가 오래 가지 않은 이유
+
+`2026-04-01`에 `packages/`와 dev CLI scaffold가 제거된다. 즉 Stage 7은 "현재 구조"가 아니라, 문서 규칙을 runtime recipe로 밀어 넣어 보던 짧은 실험 단계로 읽는 편이 맞다.
+
+---
+
+## Stage 8. 2026-04-01 ~ 현재
+## plugin split + artifact-driven planning stack 시기
+
+`2026-04-01` 이후에는 구조가 다시 크게 바뀐다.
+
+- `frontend-dev`, `backend-dev`에서 CLI scaffold 의존을 제거하고 convention discovery로 전환
+- `plugin/develop`와 `plugin/statusline`으로 서브플러그인 분리
+- session lifecycle, worktree-aware stop gate, session restore 같은 runtime hook 계층 강화
+- `.codex/skills/*`를 로컬 planning stack으로 정리
+- review wiki staging, 이후 link-only planning root로 고정
+- orchestrator를 stateless, artifact-driven 흐름으로 재구성
+- browser developer review gate, feedback triage, QA verification, visual parity 스킬 분리 추가
 
 ### 현재 구조의 최상위 지도
 
 ```mermaid
 flowchart TD
     U["User request"]
-    PLAN[".codex skills<br/>brainstorm / architect / test planners"]
-    PSK["plugin skills<br/>frontend-dev / backend-dev / guard-e2e-test"]
-    CLI["frontend / backend"]
-    MANIFEST["packages/{alias}/src/manifest.mjs"]
-    CORE["packages/dev-cli/src/core/*"]
-    TEMPLATE["templates + render context"]
-    OUT["preview/apply generated files"]
+    LOCK["brainstorm / design-discovery"]
+    ARCH["architect"]
+    REVIEW["plan-review"]
+    ORCH["orchestrator"]
+    DEVREV["browser developer review<br/>review artifacts + local server"]
+    MAT["plan-materialize"]
+    RUN["runner"]
+    WT["task worktree<br/>phase commits + approvals"]
+    EXEC["frontend-dev / backend-dev / general-dev / doc / guard-e2e-test"]
+    QA["qa-verify"]
+    STOP["stop-review gate"]
+    MERGE["user merge decision"]
 
-    U --> PLAN
-    PLAN --> PSK
-    PSK --> CLI
-    CLI --> MANIFEST
-    MANIFEST --> CORE
-    CORE --> TEMPLATE
-    TEMPLATE --> OUT
+    U --> LOCK --> ARCH --> REVIEW --> ORCH --> DEVREV --> MAT --> RUN --> WT --> EXEC --> QA --> STOP --> MERGE
 ```
-
-> **역사 참고**: 이전에는 `profiles/*/profile.json`이 CLI와 core 사이에 위치했다 (2026-03-15 이전). 현재 구조에서는 각 wrapper package가 `manifest.mjs`를 직접 소유하고 `runCli({ manifest })`로 주입한다.
 
 ### 현재 요청 처리의 실제 단계
 
 예시: "대시보드 알림 필터 로직을 추가해줘"
 
-1. 복잡한 요청이면 `.codex/skills/architect/SKILL.md`가 `plans/{task-name}/plan.md`를 만든다.
-2. 구현 phase에서 `plugin/skills/frontend-dev/SKILL.md`가 실행된다.
-3. `frontend-dev`는 먼저 `frontend --help`와 `frontend component`, `frontend hook`, `frontend apiHook` 같은 CLI를 사용한다.
-4. CLI는 wrapper package의 `manifest.mjs`를 `packages/dev-cli` core runtime에 주입한다.
-5. `normalizationRules`, `validatorRules`, `render.templateFile`, `output.filePattern`이 manifest recipe에서 적용된다.
-6. preview 기본 정책으로 결과를 계산하고, `--apply`일 때만 파일을 쓴다.
-7. 그 뒤에 구현 스킬이 생성된 파일 안에 비즈니스 로직을 채운다.
+1. 요청이 모호하면 `brainstorm`이나 `design-discovery`가 목표와 UI 방향을 먼저 잠근다.
+2. `architect`가 `plans/{task}/plan.md`와 phase detail 아티팩트를 만든다.
+3. `plan-review`가 plan-only cold review를 수행한다.
+4. `orchestrator`가 browser developer review 패키지를 만들고, `.codex/tools/developer-review-server.mjs`로 로컬 review UI를 서빙한다.
+5. 피드백이 승인되면 `plan-materialize`가 실제 테스트 파일을 source tree에 배치한다.
+6. `runner`가 task별 worktree를 만들고 phase별 agent를 순차 실행한다.
+7. `frontend-dev`나 `backend-dev`는 더 이상 CLI scaffold를 호출하지 않고, 기존 코드에서 convention을 발견한 뒤 구현한다.
+8. 구현 phase가 끝나면 `qa-verifier`가 `plans/{task}/qa/`에 읽기 전용 QA 리포트를 남긴다.
+9. 세션 stop 시점에는 stop-review gate가 현재 worktree diff를 점검하고, 마지막 merge 여부는 사용자가 결정한다.
 
-### 현재 Spring feature 요청 처리 단계
+### 현재 시각 비교 요청 처리 단계
 
-예시: "상품 도메인에 Spring 기반 feature를 추가해줘"
+시각 비교는 이제 한 가지가 아니라 두 가지로 분기된다.
 
-1. 복잡한 요청이면 `.codex/skills/architect/SKILL.md`가 `plans/{task-name}/plan.md`를 만든다.
-2. 구현 phase에서 `plugin/skills/backend-dev/SKILL.md`가 실행된다.
-3. `backend-dev`는 직접 Java 파일을 만들지 않고 먼저 `backend --help`를 본다.
-4. 이어서 `backend module`, `backend requestDto`, `backend responseDto`, `backend entity`를 통해 Spring feature 뼈대를 생성한다.
-5. CLI는 `packages/backend/src/manifest.mjs`에 정의된 Spring Boot 규칙을 적용한다.
-6. 여기서 package-by-feature, lower-case package segment, `basePackage`, DTO/entity 경로 규칙이 적용된다.
-7. `--apply`일 때 아래 같은 Spring 경로에 파일이 생성된다.
+- Figma URL 기준 비교: `figma-parity`
+  - Figma MCP에서 토큰, 구조, 타이포, spacing을 읽어 structured parity audit 수행
+- 외부 이미지/URL 기준 비교: `visual-compare`
+  - `agent-browser`와 `pixelmatch`로 screenshot diff 수행
 
-```text
-src/main/java/com/example/app/product/controller/ProductController.java
-src/main/java/com/example/app/product/service/ProductService.java
-src/main/java/com/example/app/product/repository/ProductRepository.java
-src/main/java/com/example/app/product/dto/CreateProductRequest.java
-src/main/java/com/example/app/product/dto/ProductResponse.java
-src/main/java/com/example/app/product/entity/Product.java
-```
-
-8. 그 뒤에 구현 스킬이 생성된 Spring feature 패키지 안에서 비즈니스 로직과 예외 처리와 DB 매핑을 채운다.
-
-### Spring feature update 도식
-
-```mermaid
-flowchart LR
-    U["User request<br/>Spring feature update"]
-    ARCH["architect"]
-    PLAN["plans/{task}/plan.md"]
-    BD["backend-dev"]
-    TCB["backend CLI"]
-    BP["backend profile<br/>Spring Boot rules"]
-    FILES["controller/service/repository/dto/entity"]
-    IMPL["business logic implementation"]
-
-    U --> ARCH --> PLAN --> BD --> TCB --> BP --> FILES --> IMPL
-```
+즉 "디자인 비교"도 현재는 하나의 거친 skill이 아니라, reference source에 따라 서로 다른 계약을 가진 검증 스킬로 나뉜다.
 
 ### 현재 구조에서 문서와 코드의 역할 분리
 
 | 계층 | 역할 | 대표 파일 |
 |---|---|---|
-| 배포 메타 | 플러그인 공개/번들 정의 | `.claude-plugin/marketplace.json` |
-| 계획 계층 | 요청 분석, boundary-centered plan 생성, source-tree test materialization | `.codex/skills/architect/SKILL.md`, `.codex/skills/plan-materialize/SKILL.md` |
-| 실행 계층 | 역할별 워크플로 정의 | `plugin/skills/frontend-dev/SKILL.md`, `plugin/skills/backend-dev/SKILL.md` |
-| 역할 프롬프트 | 에이전트 성격과 도구 범위 | `plugin/agents/frontend-developer.md`, `plugin/agents/backend-developer.md` |
-| 규칙 소유 계층 | 네이밍/경로/검증/렌더 규칙 | `packages/{alias}/src/manifest.mjs` |
-| 런타임 엔진 | parse / normalize / write 실행 | `packages/dev-cli/src/core/*` |
-| 템플릿 계층 | 실제 scaffold 문자열 | `packages/{alias}/src/templates/*` |
+| 배포 메타 | 로컬 plugin bundle 공개 | `.claude-plugin/marketplace.json`, `.agents/plugins/marketplace.json` |
+| planning 계층 | 요청 잠금, 계획 생성, cold review, materialize, review wiki 연동 | `.codex/skills/brainstorm/SKILL.md`, `.codex/skills/architect/SKILL.md`, `.codex/skills/orchestrator/SKILL.md`, `.codex/skills/plan-review/SKILL.md`, `.codex/skills/plan-materialize/SKILL.md` |
+| 실행 계층 | worktree 기반 구현/문서화/검증 실행 | `plugin/develop/skills/runner/SKILL.md`, `plugin/develop/skills/frontend-dev/SKILL.md`, `plugin/develop/skills/backend-dev/SKILL.md`, `plugin/develop/skills/general-dev/SKILL.md` |
+| 역할 프롬프트 | 도메인별 agent 책임 정의 | `plugin/develop/agents/frontend-developer.md`, `plugin/develop/agents/backend-developer.md`, `plugin/develop/agents/general-developer.md` |
+| runtime hook 계층 | 세션 추적, worktree 추적, stop-review gate | `plugin/develop/hooks/hooks.json`, `plugin/develop/scripts/session-lifecycle-hook.mjs`, `plugin/develop/scripts/stop-review-gate-hook.mjs`, `plugin/develop/scripts/session-restore.mjs` |
+| review / knowledge 계층 | developer review UI와 review wiki 관리 | `.codex/tools/developer-review-server.mjs`, `.codex/skills/review-wiki-setup/SKILL.md`, `.codex/skills/review-wiki-ingest/SKILL.md`, `.codex/skills/review-wiki-lint/SKILL.md` |
+| verification 계층 | QA, visual parity, full-flow E2E | `plugin/develop/skills/qa-verify/SKILL.md`, `plugin/develop/skills/figma-parity/SKILL.md`, `plugin/develop/skills/visual-compare/SKILL.md`, `plugin/develop/skills/guard-e2e-test/SKILL.md` |
+| statusline 계층 | 상태줄 bootstrap / sync / mode 전환 | `plugin/statusline/skills/statusline/SKILL.md`, `plugin/statusline/hooks/hooks.json` |
 
 ### 현재 구조의 가장 큰 차이
 
-예전 구조:
+Stage 7까지는 "규칙을 실행 가능한 recipe로 옮기는 것"이 핵심이었다.
 
-- 규칙이 문서에 있었다.
-- 스킬이 문서를 읽고 Claude가 손으로 생성 패턴을 맞췄다.
+현재 구조는 거기서 한 번 더 이동했다.
 
-현재 구조:
+- 워크플로 규칙은 여전히 `SKILL.md`에 있다.
+- 하지만 구현 규칙은 더 이상 별도 scaffold CLI가 아니라, **기존 코드베이스 convention + plan artifact**에서 읽어 온다.
+- 실행 강제는 CLI runtime이 아니라 **worktree, hook, stop-review gate, developer review artifact**가 맡는다.
+- 공통 지식은 큰 coding-rules 문서 대신 **review wiki + plan/review artifact**에 축적된다.
 
-- 워크플로 규칙은 `SKILL.md`에 있다.
-- 생성 규칙은 wrapper package의 `manifest.mjs`에 있다.
-- 실행 강제는 `dev-cli core`가 맡는다.
-- 템플릿은 각 wrapper package의 `src/templates/` 안에 있다.
-
-즉, 규칙이 "설명"에서 "실행 가능한 recipe"로 이동했다.
+즉 현재는 "설명 문서 -> recipe engine"에서 멈추지 않고, "artifact + runtime guard + convention discovery" 구조로 다시 재편된 상태다.
 
 ---
 
@@ -551,22 +565,22 @@ flowchart LR
 
 이 흐름은 단순히 "버전이 올라갈수록 구조가 복잡해졌다"로 읽으면 오해가 생긴다.
 
-실제로는 아래 3가지가 같이 일어났다.
+실제로는 아래 4가지가 차례로 일어났다.
 
 1. 초기에 컸던 공통 문서 의존성이 줄었다.
 2. 스킬 간 책임 경계가 더 날카로워졌다.
-3. 중복 규칙이 문서에서 CLI/profile/runtime으로 이동했다.
+3. Stage 7에서는 반복 규칙 일부를 manifest/runtime으로 옮겼다.
+4. 현재는 그 scaffold runtime을 제거한 뒤에도 working set을 작게 유지하도록 artifact와 hook 계약을 재배치했다.
 
 ### 먼저 결론
 
-네, 맞다.
-
-전체 플로우를 시간축으로 보면 **초기에는 Claude가 읽어야 할 공통 문서가 많았고**, 중간에는 그 문서를 progressive disclosure 방식으로 잘게 나눴고, **지금은 그중 상당수가 스킬 내부 설명에서 빠지고 CLI/profile이 규칙을 소유**하게 됐다.
+전체 플로우를 시간축으로 보면 **초기에는 Claude가 읽어야 할 공통 문서가 많았고**, 중간에는 그 문서를 progressive disclosure 방식으로 잘게 나눴고, **Stage 7에서는 반복 생성 규칙을 CLI runtime으로 옮겼다가**, **현재는 계획/리뷰 아티팩트와 코드베이스 convention discovery로 다시 균형을 잡았다**.
 
 중요한 점은 "파일 개수"와 "실제로 한 번의 작업에서 읽는 문맥량"이 항상 같이 움직이지는 않는다는 것이다.
 
 - 어떤 시기에는 토큰 효율을 위해 문서를 더 잘게 쪼개서 **파일 수는 늘었지만**
 - 실제 스킬이 한 번에 읽는 **working set은 줄었다**
+- 현재는 skill 수가 다시 늘어도, 각 스킬이 읽는 책임 범위는 더 좁아질 수 있다
 
 즉 감소한 것은 단순 파일 수가 아니라, **작업당 참조 부담과 중복 설명량**이다.
 
@@ -583,18 +597,20 @@ flowchart LR
 | 2026-03-14 | `97af75e`, `5accc71` | `frontend-dev`, `ui-publish`에서 redundant section 제거 |
 | 2026-03-15 | `bd6bc9c` | references 통합, design refs 제거, typecheck/lint 문맥 제거 |
 | 2026-03-15 | `daaec82` | skill별 coding-rules 참조와 `init-coding-rules` 제거, CLI가 규칙 대체 |
+| 2026-04-01 | `b965194`, `b2cf8ad` | convention discovery 전환, `packages/` 제거로 dev CLI 실험 종료 |
+| 2026-04-02 | `e245d94` | session lifecycle + worktree-aware stop-gate 도입 |
+| 2026-04-10 | `856d24b`, `ac63606` | `plugin/develop`, `plugin/statusline` 분리와 skill 명칭 정리 |
+| 2026-04-20 | `2b7e237`, `b44b996` | QA verification 추가, orchestrator의 stateless artifact-driven 정리 |
+| 2026-04-22 | `28f8671`, `71ad200` | generic skill subagent 전환, review wiki link-only 고정 |
+| 2026-04-23 | `c81b67b` | browser developer review gate 추가 |
+| 2026-04-24 | `9d8604e`, `6eadc7c` | review feedback triage와 overview/detail split 도입 |
 
 ### 스킬 수 자체도 줄어들었는가
 
-운영 관점에서는 그렇다.
+일관되게 줄기만 한 것은 아니다.
 
-- `2026-02-22` 시점 changelog에는 **27개 스킬 검증 baseline**이 등장한다.
-- 현재 `try-claude-code`에는 로컬 기준으로
-  - `plugin/skills` 8개
-  - `.codex/skills` 5개
-  - 합계 13개 디렉토리
-
-즉 단순 수치로도 운영 스킬 세트가 줄었다.
+- Stage 7에서는 실행 surface를 CLI와 manifest로 압축하려는 경향이 강했다.
+- 현재는 planning, review, QA, visual parity, statusline이 다시 분리되면서 skill 수는 늘었다.
 
 하지만 더 중요한 것은 **카탈로그 크기보다 각 스킬이 자기 책임 안에서 더 닫히게 됐다는 점**이다.
 
@@ -622,16 +638,17 @@ flowchart LR
 
 - `plans/{task-name}/plan.md`
 - `codemaps/frontend.md` (있으면)
-- `frontend --help`
-- `frontend component` / `frontend hook` / `frontend apiHook`
+- 기존 컴포넌트, hook, page 예시 2~3개
+- UI 작업이면 `tailwind.config.*`, `app/globals.css`, 토큰 파일
+- Figma URL이 있으면 Figma MCP에서 읽은 design context
 
 중요한 차이:
 
 - `coding-rules.md`를 직접 읽어 규칙을 기억하지 않는다.
 - `design/` 전체를 먼저 읽는 것이 기본 흐름이 아니다.
-- 파일 생성 규칙은 `frontend`가 강제한다.
+- 프로젝트 convention은 별도 scaffold profile이 아니라 **현재 코드베이스에서 발견**한다.
 
-즉 **참조 대상이 문서에서 실행기 쪽으로 이동**했다.
+즉 **참조 대상이 거대한 공통 문서에서 plan artifact와 repo-local examples 쪽으로 이동**했다.
 
 ### backend-dev도 같은 흐름인가
 
@@ -653,14 +670,15 @@ flowchart LR
 
 - `plan.md`
 - `codemaps/backend.md`, `codemaps/database.md` (있으면)
-- `backend --help`
-- `backend module` / `requestDto` / `responseDto` / `entity`
+- 기존 controller / service / repository / DTO 예시 2~3개
+- build 파일과 테스트 패턴
+- 에러 응답, validation, DI 관례를 보여 주는 현재 소스
 
-즉 DB snake_case, package structure, DTO naming 같은 규칙을 문서에서 읽는 대신 `backend`와 profile이 소유한다.
+즉 DB snake_case, package structure, DTO naming 같은 규칙을 문서에서 외우는 대신 **현재 코드베이스와 plan artifact에서 직접 발견**한다.
 
 ### 중복 문서가 줄어든 방식
 
-중복 감소는 두 단계로 일어났다.
+중복 감소는 세 단계로 일어났다.
 
 #### 1. 문서 분할을 통한 중복 축소
 
@@ -674,25 +692,35 @@ flowchart LR
 - 장점: 필요한 부분만 읽는다.
 - 단점: 파일 수는 잠시 늘어날 수 있다.
 
-#### 2. 규칙 자체를 실행기로 이동해 중복 제거
+#### 2. Stage 7의 runtime recipe 이관
 
-이후에는 문서 분리만으로는 부족해서, 아예 반복 규칙을 문서 밖으로 빼기 시작했다.
+문서 분리만으로 부족한 부분은 manifest/runtime으로 옮겼다.
 
 대표 사례:
 
-- `handle/on/use` 네이밍
 - output file pattern
-- path root 제약
-- query/mutation 경로 규칙
-- DTO/entity/module 생성 패턴
+- validator rule
+- template render context
+- scaffold command surface
 
-이 규칙들이 현재는 각 wrapper package의 `src/manifest.mjs`와 `packages/dev-cli/src/core/*`로 이동했다.
+이 단계에서는 반복 생성 규칙을 별도 runtime이 소유했다.
 
-그래서 지금은 문서 중복이 줄어든다.
+#### 3. 현재의 artifact + convention discovery 재배치
 
-- 스킬마다 같은 coding-rules 설명을 반복하지 않아도 된다.
-- `init-coding-rules` 같은 보조 스킬도 제거 가능해진다.
-- skill 본문은 workflow만 설명하고, scaffold 규칙은 CLI가 처리한다.
+`2026-04-01` 이후에는 dev CLI가 제거되지만, 다시 옛날처럼 큰 문서를 읽는 구조로 돌아가지는 않았다.
+
+대신 공통 규칙이 아래로 분산된다.
+
+- planning 판단: `.codex/skills/*` + `plans/*` artifacts
+- review 지식: review wiki
+- 구현 convention: repo-local examples
+- 실행 가드: `runner`, hooks, stop-review gate
+
+그래서 지금도 문서 중복은 줄어든다.
+
+- 스킬마다 같은 coding-rules 설명을 길게 반복하지 않아도 된다.
+- 거대한 공통 문서를 항상 먼저 읽지 않아도 된다.
+- skill 본문은 workflow와 boundary를 설명하고, 실제 코드 규칙은 현행 코드베이스가 소유한다.
 
 ### 이 흐름을 한 줄로 도식화하면
 
@@ -700,8 +728,8 @@ flowchart LR
 flowchart LR
     A["초기<br/>큰 문서 + 많은 공통 참조"]
     B["중기<br/>references 분리 + progressive disclosure"]
-    C["후기<br/>중복 제거 + 역할 경계 정리"]
-    D["현재<br/>규칙의 CLI/profile 이관"]
+    C["Stage 7<br/>manifest/runtime 이관"]
+    D["현재<br/>artifact + hook + convention discovery"]
 
     A --> B --> C --> D
 ```
@@ -720,11 +748,11 @@ flowchart LR
 
 | 관점 | 초기 | 중기 | 현재 |
 |---|---|---|---|
-| 라우팅 | trigger 문구 중심 | CLAUDE + architect 중심 | planning skill + plugin skill |
-| 규칙 저장 위치 | markdown 문서 | markdown + references + plan contract | manifest.mjs + CLI core |
+| 라우팅 | trigger 문구 중심 | CLAUDE + architect 중심 | planning skill + plugin skill + review gate |
+| 규칙 저장 위치 | markdown 문서 | markdown + references + plan contract | `SKILL.md` + plan/review artifacts + repo-local conventions + hook/runtime scripts |
 | 스킬 독립성 | 낮음 | 중간 | 높음 |
 | 공통 문서 참조량 | 많음 | 분리되지만 여전히 큼 | 크게 줄어듦 |
-| 중복 설명 | 많음 | 분리/이관 중 | 상당수 제거 |
+| 중복 설명 | 많음 | 분리/이관 중 | artifact와 역할별 skill로 재배치 |
 
 ---
 
@@ -768,25 +796,27 @@ flowchart LR
 
 - 운영 절차는 강해졌지만 생성 패턴은 아직 문서 기억에 의존한다.
 
-### 3. 2026-03 현재 방식
+### 3. 2026-04 현재 방식
 
 ```mermaid
 flowchart LR
     U["요청"]
     ARCH["architect"]
     PLAN["plans/*"]
-    FE["frontend-dev skill"]
-    TCF["frontend CLI"]
-    PROFILE["frontend/shared profile"]
-    FILES["preview/apply files"]
-    IMPL["logic implementation"]
+    COLD["plan-review"]
+    DEVREV["developer review"]
+    RUN["runner + worktree"]
+    FE["frontend-dev<br/>convention discovery"]
+    QA["qa-verify"]
+    STOP["stop-review gate"]
 
-    U --> ARCH --> PLAN --> FE --> TCF --> PROFILE --> FILES --> IMPL
+    U --> ARCH --> PLAN --> COLD --> DEVREV --> RUN --> FE --> QA --> STOP
 ```
 
 특징:
 
-- 계획, 역할, 생성, 검증의 책임이 분리된다.
+- 계획, review, 구현, QA, stop gate가 artifact로 연결된다.
+- 생성기보다 plan artifact와 repo-local convention이 더 중요하다.
 - 같은 종류의 요청을 반복할수록 결과가 더 안정적이다.
 
 ---
@@ -811,23 +841,27 @@ flowchart LR
 
 ```text
 워크플로 규칙 = SKILL.md
-계획 규칙 = .codex/skills/*
-생성 규칙 = packages/{alias}/src/manifest.mjs
-실행 가드 = packages/dev-cli/src/core/*
-배포 규칙 = .claude-plugin/marketplace.json
+계획/리뷰 규칙 = .codex/skills/* + plans/* artifacts
+구현 규칙 = 기존 코드베이스 convention
+실행 가드 = hooks + runner + stop-review gate
+배포 규칙 = .claude-plugin/marketplace.json + sub-plugin metadata
 ```
 
 ---
 
 ## 작업 종류별 현재 연결 지도
 
-| 작업 종류 | 진입점 | 실행 스킬 | 생성 엔진 | 규칙 소스 | 대표 산출물 |
-|---|---|---|---|---|---|
-| 기획/분석 | `brainstorm`, `architect` | Codex planning skills | 없음 | `.codex/skills/*` | `plans/*`, 요구사항 정리 |
-| 프론트엔드 | `architect` 후 `frontend-dev` | `plugin/skills/frontend-dev/SKILL.md` | `frontend` | `packages/frontend/src/manifest.mjs` | 컴포넌트 scaffold + UI 구현 + hook/apiHook scaffold + 로직 |
-| 백엔드 | `architect` 후 `backend-dev` | `plugin/skills/backend-dev/SKILL.md` | `backend` | `packages/backend/src/manifest.mjs` | Spring feature package scaffold (`controller/service/repository/dto/entity`) |
-| full-flow E2E guard | `architect` plan phase | `plugin/skills/guard-e2e-test/SKILL.md` | 테스트 실행 | E2E references + plan artifact | Playwright guard 결과 |
-| Git 작업 | 직접 실행 가능 | `commit`, `pr` | 없음 | skill doc | commit / PR 메시지 |
+| 작업 종류 | 진입점 | 실행 스킬/도구 | 규칙 소스 | 대표 산출물 |
+|---|---|---|---|---|
+| 요청 잠금 / 기획 | `brainstorm`, `design-discovery`, `architect` | `.codex/skills/*` | review wiki + planning references | `plans/*`, phase detail, 결정 기록 |
+| cold review / developer review | `plan-review`, `orchestrator`, `developer-review-server` | `.codex/skills/plan-review/SKILL.md`, `.codex/skills/orchestrator/SKILL.md`, `.codex/tools/developer-review-server.mjs` | review policy + browser feedback + plan signature | `plans/_orchestrator/review/*`, `plans/*/developer-review/*` |
+| 프론트엔드 구현 | `runner` 후 `frontend-dev` | `plugin/develop/skills/frontend-dev/SKILL.md`, `plugin/develop/agents/frontend-developer.md` | `plan.md` + 기존 UI code conventions | 실제 소스 변경, 필요 시 test/E2E 복사 |
+| 백엔드 구현 | `runner` 후 `backend-dev` | `plugin/develop/skills/backend-dev/SKILL.md`, `plugin/develop/agents/backend-developer.md` | `plan.md` + 기존 backend/database conventions | 실제 소스 변경, 필요 시 test/E2E 복사 |
+| infra / general | `runner` 후 `general-dev` | `plugin/develop/skills/general-dev/SKILL.md` | `plan.md` + infra config examples | CI/CD, Docker, env, deploy 변경 |
+| full-flow E2E guard | plan phase 또는 구현 후 검증 | `plugin/develop/skills/guard-e2e-test/SKILL.md` | E2E conventions + user journey contract | Playwright guard spec |
+| visual parity | 시각 비교 요청 | `plugin/develop/skills/figma-parity/SKILL.md`, `plugin/develop/skills/visual-compare/SKILL.md` | Figma MCP 또는 external reference | parity report / diff artifacts |
+| QA verification | 구현 완료 후 | `plugin/develop/skills/qa-verify/SKILL.md`, `plugin/develop/agents/qa-verifier.md` | diff 분류 + acceptance bullets | `plans/*/qa/*` |
+| 세션 / runtime 보조 | 세션 시작/종료, 복구 | `plugin/develop/hooks/hooks.json`, `plugin/develop/skills/session-restore/SKILL.md`, `plugin/statusline/skills/statusline/SKILL.md` | hook contract + local runtime state | restored worktree context, statusline sync |
 
 ---
 
@@ -835,19 +869,20 @@ flowchart LR
 
 이 두 레포의 전체 흐름은 아래 문장으로 요약할 수 있다.
 
-> 처음에는 "Claude가 문서를 읽고 규칙을 기억해 개발하는 방식"이었고, 지금은 "계획 스킬이 작업을 분해하고, 실행 스킬이 역할을 나누고, CLI와 manifest가 생성 규칙을 강제하는 방식"으로 바뀌었다.
+> 처음에는 "Claude가 문서를 읽고 규칙을 기억해 개발하는 방식"이었고, 중간에는 "plugin + dev CLI가 scaffold 규칙을 강제하는 방식"을 잠깐 거쳤으며, 지금은 "계획/리뷰 아티팩트와 runtime hook이 실행을 통제하고, 각 도메인 스킬이 코드베이스에서 규칙을 발견하는 방식"으로 바뀌었다.
 
 좀 더 구체적으로 보면 다음과 같다.
 
 1. `claude-code-skills` 초기는 사람 친화적 운영 문서와 대화형 스킬이 중심이었다.
 2. 중간에는 `.claude`, `.ai`, `.codex`가 결합된 artifact-first workflow로 발전했다.
-3. 마지막에는 그 운영체계를 `try-claude-code`로 분리해 plugin/marketplace/CLI/manifest 기반 제품 구조로 바꿨다.
+3. `try-claude-code` 초기에는 plugin packaging과 dev CLI 기반 scaffold 실험이 들어갔다.
+4. 현재는 그 실험을 정리한 뒤, plugin split + planning stack + review artifact + runtime hook 구조로 재편됐다.
 
 즉, 진화 방향은 항상 같다.
 
 - 더 많은 문서가 아니라 더 명확한 책임 분리
 - 더 긴 설명이 아니라 더 강한 실행 강제
-- 더 많은 수동 기억이 아니라 더 많은 구조화된 규칙 소유
+- 더 많은 수동 기억이 아니라 더 많은 구조화된 artifact와 runtime guard
 
 ---
 
@@ -860,14 +895,21 @@ flowchart LR
 - `claude-code-skills/.claude/VERSION`
 - `claude-code-skills/.claude/skills/frontend-dev/SKILL.md`
 - `claude-code-skills/.codex/skills/architect/SKILL.md`
+- `docs/dev-cli-design.md`
 
 ### 현재 구조 확인용
 
 - `.claude-plugin/marketplace.json`
-- `plugin/skills/frontend-dev/SKILL.md`
-- `plugin/agents/frontend-developer.md`
-- `plugin/agents/backend-developer.md`
-- `packages/dev-cli/src/core/runtime/command-dispatcher.mjs`
-- `packages/frontend/src/manifest.mjs`
-- `packages/backend/src/manifest.mjs`
-- `docs/dev-cli-design.md`
+- `.agents/plugins/marketplace.json`
+- `plugin/develop/skills/frontend-dev/SKILL.md`
+- `plugin/develop/skills/backend-dev/SKILL.md`
+- `plugin/develop/skills/runner/SKILL.md`
+- `plugin/develop/skills/qa-verify/SKILL.md`
+- `plugin/develop/skills/figma-parity/SKILL.md`
+- `plugin/develop/skills/visual-compare/SKILL.md`
+- `plugin/develop/hooks/hooks.json`
+- `plugin/statusline/skills/statusline/SKILL.md`
+- `.codex/skills/orchestrator/SKILL.md`
+- `.codex/skills/plan-review/SKILL.md`
+- `.codex/skills/review-wiki-setup/SKILL.md`
+- `.codex/tools/developer-review-server.mjs`
