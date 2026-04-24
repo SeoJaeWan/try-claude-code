@@ -109,6 +109,7 @@ Judge the plan against:
 - the active review wiki core contract
 - the selected pattern guidance that actually matches the reviewed plan
 - request traceability from the user's wording to the plan tables and phase detail work bundles
+- overview/detail split quality: whether `plan.md` stays controller-facing and phase-local execution detail stays in the linked phase files
 - parity between the `plan.md` phase summary and the linked technical detail file
 - blocking ambiguity
 - topology quality and plan-count justification
@@ -121,6 +122,7 @@ Judge the plan against:
 - verification realism and repo-fit
 - whether the phase detail contracts are explicit enough for later `plan-materialize` derivation, affected-owner migration, and stable owner-test selection without guessing
 - whether the plan is explicit enough to derive a stable test diagram, failure-mode map, and reasonable parallelization lanes for the affected work
+- whether `plan.md` duplicates phase-local file maps, scenario tables, validation matrices, or long per-phase field summaries that belong in the linked detail files instead
 - `visual-comparator` planning when the active core docs or selected pattern guidance require it
 - visual parity contract alignment when the reviewed plan includes reference-based comparison acceptance
 
@@ -215,6 +217,7 @@ Frontmatter rules:
 - Do not let a plan describe behavior only as vague UI feel when later materialization would need observable outputs, no-op rules, or a stable owner boundary to test it
 - Do not let a UI plan pass when empty / loading / error / success behavior, hierarchy, or responsive behavior would still be guessed during implementation
 - Do not let summary/detail drift or unresolved contract wording force guesswork about the actual phase boundary
+- Do not let `plan.md` expand into a second implementation spec by repeating phase-local file maps, scenario contracts, validation tables, or long phase summaries that should live only in the linked detail files
 - Do not approve a plan that makes a reviewer reconstruct touched public surfaces or exclusions from prose alone
 - Do not let planner shorthand replace user-request traceability
 - Do not approve a visual parity plan that makes the reviewer infer the comparison mode, blocking gating metric, separate non-gating metric, or why a large mismatch is non-blocking

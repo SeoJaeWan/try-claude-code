@@ -211,16 +211,29 @@ Do not deep-dive into implementation details.
   - `## 리스크와 검증`
   - `## 검토 체크리스트`
 - Keep `plan.md` reviewable without opening phase detail files first, but do not repeat phase-local execution details there
+- Keep `plan.md` lean enough that a controller can approve the plan without scanning phase-local file maps, scenario grids, or validation tables
 - The top-level plan must let a human reviewer answer:
   - what the user asked for, what is included, what is excluded, and what final completion means
   - what shape the change takes across components, routes, services, data flow, or UI states
   - which public contracts are locked before implementation starts
   - why the phase order exists and what each phase hands off
   - which risks or edge cases drive verification
+- Keep only overview-level information in `plan.md`:
+  - user request, included/excluded scope, and completion criteria
+  - change shape and before/after structure
+  - cross-phase or public-surface contracts
+  - one-row-per-phase flow summary
+  - cross-phase risks and verification anchors
+- Push phase-local implementation detail into the linked phase detail files:
+  - phase field tables such as `목적`, `변경 내용`, `이전 상태`, `이후 상태`, `관련 영역`
+  - per-phase file maps or `파일 | 작업 방식 | 완료 조건` tables
+  - scenario-level contracts, validation matrices, and detailed risk tables
+  - long API grammar inventories that only one phase owns
 - Use `## 요청과 범위` to preserve the user's wording and combine inclusion, exclusion, and completion criteria in one place
 - Use `## 변경 형상` for the Ultraplan-style shape of the change: structure, flow, dependencies, and before/after deltas; add a diagram only when it clarifies the plan
-- Use `## 잠긴 계약` for touched public surfaces, `input`, `output`, ownership, callback/handoff, invalid/no-op, and visual parity contracts when relevant
+- Use `## 잠긴 계약` for touched public surfaces, `input`, `output`, ownership, callback/handoff, invalid/no-op, and visual parity contracts when relevant, but keep phase-local implementation grammar in the linked detail file unless it is needed for cross-phase approval
 - Use `## 실행 흐름` as the only phase summary section; do not add separate phase cards that restate the same rows
+- In `## 실행 흐름`, keep each phase to one summary row; do not append phase-local expansion blocks, repeated file tables, or repeated validation tables under `plan.md`
 - Use `## 리스크와 검증` to connect likely failure modes to the phase, test, compare, command, or source inspection that will catch them
 - End `plan.md` with `## 검토 체크리스트`
 - When Context7 changed or confirmed a planning decision, record only the outcome in the top-level request / contract tables or the relevant phase detail file:
@@ -233,6 +246,7 @@ Do not deep-dive into implementation details.
   - use the relevant phase detail file for phase-local state presentation, responsive behavior, or component interaction rules
 - Treat the compact top routing table as navigation metadata only; keep routing rationale, scenario I/O contracts, detailed validation commands, test taxonomy, and orchestration metadata out of `plan.md` unless the user explicitly asks for them
 - Keep high-level boundary changes and human-readable completion conditions in `plan.md`; keep file-level change maps and detailed scenario contracts in the linked phase detail files
+- Do not add top-level sections such as `전체 작업 지도`, `핵심 파일별 작업 지도`, or `단계별 실행` when they merely restate the phase detail files
 - Avoid unexplained jargon in `plan.md`
 - Make boundary, contract, and phase names concrete
 - Use the phase detail files for execution order, changed boundaries, scenario-level `input -> output` contracts, file impact, `검증`, and `failure/validation`

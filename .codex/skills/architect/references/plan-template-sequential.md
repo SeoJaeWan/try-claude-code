@@ -36,6 +36,7 @@
 | {contract-name} | `{component-hook-route-service}` | {입력/트리거} | {정상 출력/상태} | {소유권, winner rule, invalid/no-op} | {phase 또는 검증 수단} |
 
 > 시각 패리티가 acceptance에 포함되면 이 섹션에 comparison mode, gating metric, non-gating metric, local surface -> canonical surface role 매핑을 계약 행으로 추가한다.
+> 이 섹션은 cross-phase/public-surface 계약만 둔다. phase-local API grammar, 파일별 작업, 상세 검증표는 linked phase detail 파일로 내린다.
 
 ## 실행 흐름
 
@@ -44,6 +45,8 @@
 | Phase 1. {phase-title} | {이 phase가 잠그는 결과} | {변경 경계} | {관찰 가능한 완료 상태} | `./phases/01-{phase-slug}.md` |
 | Phase 2. {phase-title} | {이 phase가 잠그는 결과} | {변경 경계} | {관찰 가능한 완료 상태} | `./phases/02-{phase-slug}.md` |
 | Phase 3. {phase-title} | {이 phase가 잠그는 결과} | {변경 경계} | {관찰 가능한 완료 상태} | `./phases/03-{phase-slug}.md` |
+
+> phase당 한 행만 둔다. 이 아래에 phase-local `필드 | 내용`, `파일 | 작업 방식 | 완료 조건`, 시나리오/검증 표를 다시 풀어쓰지 않는다.
 
 ## 리스크와 검증
 
@@ -58,4 +61,5 @@
 - [ ] `변경 형상`이 전체 구조와 흐름을 설명하고 phase를 열어보지 않아도 큰 그림을 알 수 있다.
 - [ ] `잠긴 계약`에 touched public surface, input, output, ownership/no-op, 검증 위치가 보인다.
 - [ ] `실행 흐름`이 phase 순서, 목적, 주요 변경, 완료 신호를 중복 없이 보여준다.
+- [ ] `plan.md`가 phase-local 파일 맵, 시나리오/검증 표, phase field summary를 반복하지 않고 overview 역할만 유지한다.
 - [ ] `리스크와 검증`이 주요 failure mode와 검증 위치를 연결한다.
