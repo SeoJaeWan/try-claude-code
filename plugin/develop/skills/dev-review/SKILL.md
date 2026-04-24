@@ -241,10 +241,14 @@ in this worktree; build on it, do not redo prior commits.
 - Comment: "{comment}"
 
 ## Instructions
-Apply the feedback. Commit with Conventional Commits and include one or two
-lines of rationale in the commit body (why you made this change, not what).
-Do NOT touch other files unless the feedback requires it. Do NOT rebase or
-amend existing commits.
+Apply the feedback. Do NOT touch other files unless the feedback requires it.
+Do NOT rebase or amend existing commits.
+
+## Commit rules (keep these exact — the dev-review UI reads them back)
+- Format: `{type}(scope): {description}`. Allowed types: feat / fix / refactor / docs / chore / style / test. Imperative mood, ~72 characters or less.
+- Do NOT include phase identity or rework-round prefix in the subject or body. Metadata is tracked outside the commit message.
+- Include a 1~2 line WHY body explaining what the reviewer feedback asked for and why this change addresses it. The body is surfaced verbatim in the dev-review UI.
+- Full spec: `plugin/develop/references/commit-convention.md`.
 ```
 
 The runner owns the actual Agent dispatch. This skill just hands back the items.

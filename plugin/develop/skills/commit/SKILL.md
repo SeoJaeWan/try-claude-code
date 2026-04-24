@@ -19,21 +19,11 @@ Follow the base Claude Code commit workflow documented in the system prompt (HER
 ## Project-specific additions
 
 1. Ask via `AskUserQuestion` whether to commit on the current branch or create a new branch first.
-2. Use Conventional Commits: `{type}: {concise summary}` — subject line only, ≤50 characters. No body, no footer.
+2. Follow the shared convention at `plugin/develop/references/commit-convention.md` with these skill-specific tightenings:
+   - **Subject only.** Omit body and footer — this skill is for quick user-triggered commits where the diff speaks for itself.
+   - **Strict subject ≤50 characters** (tighter than the shared ≤72 ceiling).
 3. If `commitlint.config.mjs` exists and `pnpm exec commitlint --version` succeeds, run `pnpm exec commitlint --last --verbose` after commit and amend until it passes.
 4. After commit succeeds, ask via `AskUserQuestion` whether to push.
-
-## Commit type hints
-
-| Change | Type |
-|---|---|
-| New file | `feat` |
-| Bug fix | `fix` |
-| Refactor | `refactor` |
-| Style/CSS | `style` |
-| Docs | `docs` |
-| Config/build | `chore` |
-| Tests | `test` |
 
 </Instructions>
 </Skill_Guide>

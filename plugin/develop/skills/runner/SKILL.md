@@ -36,11 +36,7 @@ This skill uses manual `git worktree` management: one worktree per task, phase a
 
 ## Commit convention
 
-Conventional Commits: `{type}({scope}): {description}`
-
-Types: `feat` · `fix` · `refactor` · `docs` · `chore`
-
-Phase tracking is automatic (hook system) — do NOT put phase numbers in commit messages.
+All phase commits follow the shared convention at `plugin/develop/references/commit-convention.md`. The dispatch prompt below embeds the minimal guarantees phase agents must respect (allowed types, the phase-number ban, and the WHY-body requirement) inline, because subagents often cannot reach out to read external files. The full spec — examples, footer rules, per-consumer policy — lives in the reference file.
 
 ---
 
@@ -169,8 +165,14 @@ Agent(
     - Work directly in your current directory.
     - Do NOT create additional worktrees or use EnterWorktree.
     - Only implement the phase described in your phase file. Do NOT redo prior phases.
-    - Commit when done: git add -A && git commit -m '{type}({scope}): {description}'
-    - Include a 1~2 line commit body explaining WHY (not what). This body is surfaced verbatim in the developer-review UI at Step 4, so it should read as rationale for the change, not a summary of the diff.
+
+    ## Commit rules (keep these exact — the dev-review UI reads them back)
+    - Format: `{type}(scope): {description}`. scope is optional; description uses imperative mood and stays within ~72 characters.
+    - Allowed types: feat / fix / refactor / docs / chore / style / test.
+    - Do NOT include phase identity anywhere in the commit — no "phase 2 — ...", no "[Phase 2] ...", no "2단계: ...". The hook system tracks phase from my Agent.description, never from your commit message. A phase prefix in the subject or body only duplicates what the UI already shows and confuses reviewers.
+    - Include a 1~2 line WHY body (not a diff summary). The body is surfaced verbatim in the developer-review UI at Step 4 and is read as the rationale for the change.
+    - Commit when done: `git add -A && git commit -m '...'` using a HEREDOC or `-m`+`-m` for the body.
+    - Full spec (footer rules, examples, rationale): `plugin/develop/references/commit-convention.md`.
   ",
   description: "Phase {N}: {short summary}"
 )
@@ -228,9 +230,14 @@ On user `리뷰 완료`, re-enter the skill; it reads `feedback.json` and return
   - Comment: "{item.comment}"
 
   ## Instructions
-  Apply the feedback. Commit with Conventional Commits and include a 1~2 line body
-  explaining WHY (not what). Do NOT touch unrelated files. Do NOT rebase or amend
+  Apply the feedback. Do NOT touch unrelated files. Do NOT rebase or amend
   existing commits.
+
+  ## Commit rules (keep these exact — the dev-review UI reads them back)
+  - Format: `{type}(scope): {description}`. Allowed types: feat / fix / refactor / docs / chore / style / test. Imperative mood, ~72 characters or less.
+  - Do NOT include phase identity in the subject or body — no "phase N", no "[Phase N]", no rework-round prefix. Phase and round metadata are tracked outside the commit message.
+  - Include a 1~2 line WHY body describing what the reviewer feedback asked for and why this change addresses it. The body is surfaced verbatim in the dev-review UI.
+  - Full spec: `plugin/develop/references/commit-convention.md`.
   ```
 
   Rework items may be dispatched sequentially (safe default) or in parallel when they touch disjoint files. After all rework agents have committed, re-invoke `dev-review` with `review_iteration += 1` and loop.
