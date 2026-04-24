@@ -1,0 +1,966 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Developer Review — Implementation</title>
+  <link rel="stylesheet" href="vendor/highlight-theme.css">
+  <style>
+    :root {
+      --ink: #17211f;
+      --muted: #66736f;
+      --paper: #f7f1e6;
+      --panel: #fffaf0;
+      --line: #dfd1bd;
+      --accent: #0f6f5c;
+      --accent-ink: #ffffff;
+      --warn: #b66b00;
+      --danger: #b34040;
+      --success: #35a36b;
+      --soft: #e9dfcf;
+      --diff-add: rgba(53, 163, 107, 0.14);
+      --diff-del: rgba(179, 64, 64, 0.14);
+      --diff-add-bar: #35a36b;
+      --diff-del-bar: #b34040;
+      --shadow: 0 18px 44px rgba(50, 37, 20, 0.14);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 10%, rgba(15, 111, 92, 0.12), transparent 30%),
+        linear-gradient(135deg, #faf4e8 0%, #efe3d0 48%, #f7f1e6 100%);
+      font-family: "Aptos", "Segoe UI", sans-serif;
+      min-height: 100vh;
+    }
+
+    .shell { display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: 100vh; }
+    aside { border-right: 1px solid var(--line); background: rgba(255, 250, 240, 0.78); backdrop-filter: blur(14px); padding: 24px 18px; position: sticky; top: 0; height: 100vh; overflow: auto; }
+    main { padding: 32px; max-width: 1200px; }
+
+    h1, h2, h3 { font-family: "Georgia", "Times New Roman", serif; letter-spacing: -0.03em; margin: 0; }
+    h1 { font-size: clamp(28px, 4vw, 48px); line-height: 1.05; }
+    h2 { font-size: clamp(22px, 3vw, 32px); margin-bottom: 10px; }
+    h3 { font-size: 18px; margin-bottom: 8px; }
+
+    .eyebrow { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 10px; }
+    .meta { color: var(--muted); font-size: 12px; line-height: 1.6; margin-top: 12px; overflow-wrap: anywhere; }
+
+    .steps { display: grid; gap: 6px; margin-top: 22px; }
+    .step-button { width: 100%; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 9px 11px; border-radius: 12px; text-align: left; cursor: pointer; font-size: 13px; transition: transform 160ms ease, border-color 160ms ease, background 160ms ease; display: flex; align-items: center; gap: 8px; }
+    .step-button:hover { transform: translateX(2px); border-color: var(--accent); }
+    .step-button.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+    .step-button.preview { font-style: italic; opacity: 0.85; }
+    .step-dot { width: 9px; height: 9px; border-radius: 999px; background: transparent; border: 1px solid var(--line); flex-shrink: 0; }
+    .step-dot.approved { background: var(--success); border-color: var(--success); }
+    .step-dot.needs-change { background: var(--danger); border-color: var(--danger); }
+    .step-dot.question { background: var(--warn); border-color: var(--warn); }
+    .step-dot.out-of-scope { background: #68748a; border-color: #68748a; }
+    .step-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .history { margin-top: 26px; border-top: 1px solid var(--line); padding-top: 16px; }
+    .history summary { cursor: pointer; font-size: 12px; color: var(--muted); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+    .history-list { margin-top: 10px; display: grid; gap: 10px; }
+    .history-round { border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: var(--panel); font-size: 12px; }
+    .history-round-meta { color: var(--muted); margin-bottom: 6px; font-size: 11px; }
+    .history-round .item { padding: 6px 0; border-top: 1px dashed var(--line); }
+    .history-round .item:first-of-type { border-top: none; }
+
+    .hero { background: rgba(255, 250, 240, 0.82); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); padding: clamp(22px, 4vw, 40px); margin-bottom: 20px; position: relative; overflow: hidden; }
+
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 18px; box-shadow: 0 6px 16px rgba(50, 37, 20, 0.06); }
+    .card.wide { grid-column: 1 / -1; }
+    .card h3 { margin-bottom: 10px; }
+
+    .list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+    .list li { padding: 8px 10px; background: rgba(255, 255, 255, 0.5); border: 1px solid var(--line); border-radius: 10px; font-size: 13px; line-height: 1.5; }
+    .meta-line { color: var(--muted); font-size: 13px; line-height: 1.6; }
+
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.02em; border: 1px solid var(--line); background: var(--panel); color: var(--muted); }
+    .badge.pass, .badge.achieved, .badge.success { background: rgba(53, 163, 107, 0.12); color: #1d6e3c; border-color: rgba(53, 163, 107, 0.4); }
+    .badge.warn, .badge.partial { background: rgba(182, 107, 0, 0.12); color: #7d4a00; border-color: rgba(182, 107, 0, 0.4); }
+    .badge.fail, .badge.missed, .badge.danger { background: rgba(179, 64, 64, 0.12); color: #7d2323; border-color: rgba(179, 64, 64, 0.4); }
+    .badge.info { background: rgba(15, 111, 92, 0.1); color: var(--accent); border-color: rgba(15, 111, 92, 0.3); }
+    .badge.fallback { background: var(--soft); }
+    .badge.addressed { background: rgba(53, 163, 107, 0.12); color: #1d6e3c; border-color: rgba(53, 163, 107, 0.4); }
+    .badge.still-open { background: rgba(179, 64, 64, 0.12); color: #7d2323; border-color: rgba(179, 64, 64, 0.4); }
+
+    .commit-header { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+    .commit-header .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .commit-header .short-sha { font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 12px; padding: 2px 8px; background: var(--soft); border-radius: 6px; color: var(--ink); }
+    .commit-subject { font-size: 22px; font-weight: 700; margin: 6px 0; }
+    .commit-body { white-space: pre-wrap; font-size: 13px; color: var(--muted); background: rgba(255,255,255,0.4); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+
+    .review-card { border: 1px solid var(--line); border-radius: 16px; background: var(--panel); padding: 18px; margin-top: 14px; }
+    .review-card.fallback { border-style: dashed; }
+    .review-card-title { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; margin-bottom: 6px; }
+    .review-card-title strong { font-size: 15px; }
+    .review-card-desc { font-size: 13px; line-height: 1.55; color: var(--ink); margin: 0 0 12px; }
+
+    .evidence { margin-top: 10px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+    .evidence-head { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: var(--soft); font-family: "JetBrains Mono", monospace; font-size: 12px; }
+    .evidence pre { margin: 0; padding: 10px 12px; overflow-x: auto; font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 12.5px; line-height: 1.55; background: #1f2b28; color: #eae0cb; }
+    .evidence pre code { display: block; }
+
+    .controls { margin-top: 14px; display: grid; gap: 10px; }
+    .status-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .status-row button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 6px 12px; border-radius: 999px; cursor: pointer; font-size: 12.5px; transition: background 120ms ease, border-color 120ms ease; }
+    .status-row button.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+    .status-row button.active[data-status="needs-change"] { background: var(--danger); border-color: var(--danger); }
+    .status-row button.active[data-status="question"] { background: var(--warn); border-color: var(--warn); }
+    .status-row button.active[data-status="out-of-scope"] { background: #68748a; border-color: #68748a; }
+
+    .comment { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font: inherit; font-size: 13px; min-height: 40px; resize: vertical; background: rgba(255,255,255,0.6); }
+    .target-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .target-row input { padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 12.5px; background: rgba(255,255,255,0.6); }
+    .target-row input.file { flex: 1; min-width: 180px; }
+    .target-row input.lines { width: 100px; }
+
+    .dispatch-row { display: flex; gap: 8px; align-items: center; }
+    .dispatch-row select { padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,0.6); font-size: 12.5px; min-width: 220px; }
+    .dispatch-row.required label::after { content: " *"; color: var(--danger); }
+
+    .files-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    .files-table th, .files-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 13px; text-align: left; }
+    .files-table th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .files-table tr.expandable { cursor: pointer; }
+    .files-table tr.expandable:hover td { background: rgba(15, 111, 92, 0.05); }
+    .additions { color: #1d6e3c; font-variant-numeric: tabular-nums; }
+    .deletions { color: #7d2323; font-variant-numeric: tabular-nums; }
+
+    .diff-container { background: #1f2b28; color: #eae0cb; border-radius: 12px; margin: 10px 0; overflow: hidden; font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 12.5px; line-height: 1.5; }
+    .diff-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #16201e; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .diff-header .path { color: #eae0cb; }
+    .diff-header .toggle { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #eae0cb; padding: 2px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; }
+    .diff-body { max-height: 480px; overflow: auto; }
+    .diff-body.expanded { max-height: none; }
+    .diff-row { display: grid; grid-template-columns: 44px 44px 1fr; }
+    .diff-row .num { padding: 0 8px; color: #7a857f; text-align: right; font-size: 11px; user-select: none; }
+    .diff-row .txt { padding: 0 10px; white-space: pre; }
+    .diff-row.add .txt { background: var(--diff-add); border-left: 3px solid var(--diff-add-bar); }
+    .diff-row.del .txt { background: var(--diff-del); border-left: 3px solid var(--diff-del-bar); }
+    .diff-row.hunk { background: #12191a; color: #8c9895; padding: 6px 12px; font-size: 11px; }
+    .diff-row.hunk .num { display: none; }
+    .diff-row.expand { padding: 6px 12px; color: #8c9895; font-size: 11px; cursor: pointer; }
+
+    .diff-split { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+    .diff-split .col { border-right: 1px solid rgba(255,255,255,0.08); }
+
+    .section { margin-top: 22px; }
+    .section h3 { color: var(--ink); }
+    .section .hint { color: var(--muted); font-size: 13px; font-style: italic; }
+    .collapsible summary { cursor: pointer; padding: 8px 0; font-weight: 700; color: var(--ink); }
+
+    .nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+    .nav button { padding: 10px 20px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; font-size: 14px; }
+    .nav button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+    .nav button.primary[disabled] { opacity: 0.5; cursor: not-allowed; }
+    .nav button.submit { background: #1d6e3c; color: white; border-color: #1d6e3c; }
+    .nav button.submit[disabled] { opacity: 0.5; cursor: not-allowed; }
+    .nav .spacer { flex: 1; }
+
+    .toast { position: fixed; right: 20px; bottom: 20px; padding: 10px 14px; background: var(--ink); color: white; border-radius: 12px; opacity: 0; transform: translateY(8px); transition: opacity 160ms ease, transform 160ms ease; pointer-events: none; font-size: 13px; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    .banner { padding: 10px 14px; background: rgba(182, 107, 0, 0.1); border: 1px solid rgba(182, 107, 0, 0.35); color: #7d4a00; border-radius: 12px; margin-bottom: 14px; font-size: 13px; }
+    .banner.success { background: rgba(53, 163, 107, 0.1); border-color: rgba(53, 163, 107, 0.35); color: #1d6e3c; }
+    .banner.danger { background: rgba(179, 64, 64, 0.1); border-color: rgba(179, 64, 64, 0.35); color: #7d2323; }
+
+    @media (max-width: 860px) {
+      .shell { grid-template-columns: 1fr; }
+      aside { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+      main { padding: 20px; }
+      .grid { grid-template-columns: 1fr; }
+      .diff-split { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <div class="eyebrow">Developer Review</div>
+      <h3 id="navTitle">Implementation Review</h3>
+      <div class="meta" id="navMeta"></div>
+      <div class="steps" id="steps"></div>
+      <details class="history" id="historyPanel" hidden>
+        <summary>리뷰 이력</summary>
+        <div class="history-list" id="historyList"></div>
+      </details>
+    </aside>
+    <main>
+      <section id="content"></section>
+      <nav class="nav">
+        <button id="prevBtn">◀ 이전</button>
+        <div class="spacer"></div>
+        <button id="nextBtn" class="primary">다음 ▶</button>
+        <button id="submitBtn" class="submit" hidden>리뷰 제출</button>
+      </nav>
+    </main>
+  </div>
+  <div class="toast" id="toast">저장됨</div>
+
+  <script src="vendor/highlight.min.js"></script>
+  <script>
+    const STATUSES = [
+      ["approved", "승인"],
+      ["needs-change", "수정 필요"],
+      ["question", "질문"],
+      ["out-of-scope", "범위 외"]
+    ];
+
+    const $ = (id) => document.getElementById(id);
+    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#039;" }[ch]));
+    const asArray = (v) => (Array.isArray(v) ? v : (v == null ? [] : [v]));
+
+    let model = null;
+    let feedback = null;
+    let history = null;
+    let steps = [];
+    let current = 0;
+    let saveTimer = null;
+
+    function highlight(el) {
+      if (window.hljs && el) {
+        try { window.hljs.highlightElement(el); } catch { /* ignore */ }
+      }
+    }
+
+    async function loadJson(path, fallback) {
+      try {
+        const res = await fetch(path, { cache: "no-store" });
+        if (!res.ok) return fallback;
+        return await res.json();
+      } catch {
+        return fallback;
+      }
+    }
+
+    function createFeedback() {
+      return {
+        schema_version: 1,
+        task_slug: model?.task_slug || "",
+        plan_signature: model?.plan_signature || "",
+        task_head_sha: model?.task_head_sha || "",
+        review_status: "in_progress",
+        updated_at: new Date().toISOString(),
+        cards: {}
+      };
+    }
+
+    function cardIds() {
+      const ids = [];
+      for (const c of asArray(model?.commits)) {
+        for (const card of asArray(c.cards)) {
+          ids.push(card.id);
+        }
+      }
+      return ids;
+    }
+
+    function cardStatus(id) {
+      return feedback?.cards?.[id]?.status ?? null;
+    }
+
+    function stepStatus(step) {
+      if (step.kind !== "commit") return null;
+      const ids = asArray(step.commit.cards).map((c) => c.id);
+      if (ids.length === 0) return null;
+      const statuses = ids.map((id) => cardStatus(id));
+      if (statuses.some((s) => s === "needs-change")) return "needs-change";
+      if (statuses.some((s) => s === "question")) return "question";
+      if (statuses.every((s) => s === "approved" || s === "out-of-scope")) return "approved";
+      if (statuses.some((s) => s === "out-of-scope")) return "out-of-scope";
+      return null;
+    }
+
+    function saveFeedback(immediate = false) {
+      clearTimeout(saveTimer);
+      const run = async () => {
+        try {
+          await fetch("/api/feedback", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(feedback)
+          });
+          showToast("저장됨");
+        } catch {
+          showToast("저장 실패");
+        }
+      };
+      if (immediate) run();
+      else saveTimer = setTimeout(run, 400);
+    }
+
+    function showToast(msg) {
+      const el = $("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), 1200);
+    }
+
+    function renderSidebar() {
+      $("navMeta").innerHTML = `
+        task: ${esc(model.task_slug)}<br>
+        base: ${esc(model.base_branch)} → ${esc(model.task_branch)}<br>
+        head: <span style="font-family: monospace">${esc((model.task_head_sha || "").slice(0, 12))}</span><br>
+        iteration: ${esc(model.review_iteration)}
+      `;
+
+      const container = $("steps");
+      container.innerHTML = steps.map((step, idx) => {
+        const isActive = idx === current;
+        const previewClass = step.kind !== "commit" ? " preview" : "";
+        const status = stepStatus(step);
+        const dotClass = status ? ` step-dot ${status}` : " step-dot";
+        const dot = step.kind === "commit" ? `<span class="${dotClass.trim()}"></span>` : "<span style=\"width:9px\"></span>";
+        return `<button class="step-button${previewClass}${isActive ? " active" : ""}" data-idx="${idx}">${dot}<span class="step-label">${esc(step.label)}</span></button>`;
+      }).join("");
+
+      for (const btn of container.querySelectorAll(".step-button")) {
+        btn.addEventListener("click", () => goTo(Number(btn.dataset.idx)));
+      }
+
+      const rounds = asArray(history?.rounds);
+      if (rounds.length > 0) {
+        $("historyPanel").hidden = false;
+        $("historyList").innerHTML = rounds.map((r, i) => renderHistoryRound(r, i + 1)).join("");
+      }
+
+      updateSubmitState();
+    }
+
+    function renderHistoryRound(round, n) {
+      const items = asArray(round.items).map((it) => `
+        <div class="item">
+          <div style="font-weight:700">${esc(it.step_label || it.step_id || "")} · ${esc(it.user_status || "")}</div>
+          <div class="meta-line">${esc(it.user_comment || "")}</div>
+          ${it.dispatch_agent ? `<div class="meta-line">→ ${esc(it.dispatch_agent)}</div>` : ""}
+          ${it.resulting_commit_sha ? `<div class="meta-line">resulting: <span style="font-family:monospace">${esc(it.resulting_commit_sha.slice(0,7))}</span></div>` : ""}
+        </div>
+      `).join("");
+      return `
+        <div class="history-round">
+          <div class="history-round-meta">R${n} · ${esc(round.submitted_at || "")} · ${esc(round.resolution_state || "")}</div>
+          ${items}
+        </div>
+      `;
+    }
+
+    function renderOverview() {
+      const o = model.overview || {};
+      const parts = [];
+
+      parts.push(`
+        <div class="hero">
+          <div class="eyebrow">Overview (preview)</div>
+          <h1>구현 리뷰</h1>
+          <p class="meta-line" style="margin-top:10px">${esc(o.user_request || "요청 요약 없음")}</p>
+        </div>
+      `);
+
+      if (o.interpretation_skipped) {
+        parts.push(`<div class="banner">자동 해석이 실패하여 fallback 카드로 진행됩니다. 카드별 변경 내용을 직접 확인해주세요.</div>`);
+      }
+
+      parts.push(`<div class="grid">`);
+
+      parts.push(`
+        <div class="card wide">
+          <h3>계획 요약</h3>
+          <p class="meta-line">${esc(o.plan_summary || "없음")}</p>
+        </div>
+      `);
+
+      parts.push(`
+        <div class="card">
+          <h3>변경 지도</h3>
+          ${renderChangeMap(o.change_map)}
+        </div>
+        <div class="card">
+          <h3>총계</h3>
+          <div class="meta-line">커밋 ${esc(o.total_commits || 0)}개 · 파일 ${esc(o.total_files_changed || 0)}개</div>
+        </div>
+      `);
+
+      parts.push(`
+        <div class="card wide">
+          <h3>계획 vs 결과</h3>
+          ${renderPlanVsResult(o.plan_vs_result)}
+        </div>
+      `);
+
+      parts.push(`
+        <div class="card">
+          <h3>QA 결과</h3>
+          ${renderQa(o.qa_verdict)}
+        </div>
+        <div class="card">
+          <h3>Deviations</h3>
+          ${renderBullets(o.deviations_summary, "없음")}
+        </div>
+        <div class="card wide">
+          <h3>Open risks</h3>
+          ${renderBullets(o.open_risks, "없음")}
+        </div>
+      `);
+
+      parts.push(`</div>`);
+      return parts.join("\n");
+    }
+
+    function renderChangeMap(entries) {
+      const rows = asArray(entries);
+      if (rows.length === 0) return `<p class="meta-line">변경 없음</p>`;
+      return `
+        <table class="files-table">
+          <thead><tr><th>Track</th><th>파일</th><th>추가</th><th>삭제</th></tr></thead>
+          <tbody>
+            ${rows.map((r) => `
+              <tr>
+                <td>${esc(r.track)}</td>
+                <td>${esc(r.files)}</td>
+                <td class="additions">+${esc(r.additions)}</td>
+                <td class="deletions">-${esc(r.deletions)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderPlanVsResult(items) {
+      const rows = asArray(items);
+      if (rows.length === 0) return `<p class="meta-line">자동 판정 없음 — 각 commit을 확인해주세요.</p>`;
+      return `
+        <ul class="list">
+          ${rows.map((r) => `
+            <li style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap">
+              <span class="badge ${esc(r.status)}">${esc(r.status)}</span>
+              <span style="flex:1">${esc(r.plan_item)}</span>
+              ${r.evidence_short_sha ? `<span style="font-family:monospace; font-size:12px">${esc(r.evidence_short_sha)}</span>` : ""}
+            </li>
+          `).join("")}
+        </ul>
+      `;
+    }
+
+    function renderQa(entries) {
+      const rows = asArray(entries);
+      if (rows.length === 0) return `<p class="meta-line">QA 리포트 없음</p>`;
+      return `
+        <ul class="list">
+          ${rows.map((r) => `
+            <li style="display:flex; gap:10px; align-items:baseline">
+              <span class="badge ${esc(r.status)}">${esc(r.status)}</span>
+              <strong>${esc(r.track)}</strong>
+              <span style="flex:1">${esc(r.summary || "")}</span>
+            </li>
+          `).join("")}
+        </ul>
+      `;
+    }
+
+    function renderBullets(items, emptyText) {
+      const rows = asArray(items);
+      if (rows.length === 0) return `<p class="meta-line">${esc(emptyText)}</p>`;
+      return `<ul class="list">${rows.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>`;
+    }
+
+    function renderCommit(step) {
+      const c = step.commit;
+      const parts = [];
+
+      parts.push(`
+        <div class="commit-header">
+          <div class="row">
+            <span class="short-sha">${esc(c.short_sha)}</span>
+            <span class="meta-line">${esc(c.author)} · ${esc(c.timestamp)}</span>
+            <span class="meta-line"><span class="additions">+${esc(c.additions || 0)}</span> / <span class="deletions">-${esc(c.deletions || 0)}</span> · ${esc(asArray(c.files_changed).length)}개 파일</span>
+          </div>
+          <h2 class="commit-subject">${esc(c.message_subject)}</h2>
+          ${c.message_body ? `<details class="collapsible"><summary>커밋 본문</summary><pre class="commit-body">${esc(c.message_body)}</pre></details>` : ""}
+        </div>
+      `);
+
+      const addressed = asArray(c.addressed_by_this_commit);
+      if (addressed.length > 0) {
+        parts.push(`
+          <div class="section">
+            <details class="collapsible" open>
+              <summary>이전 라운드에서 해결된 피드백 (${addressed.length}건)</summary>
+              ${addressed.map((a) => `
+                <div class="card" style="margin-top:10px">
+                  <div class="meta-line">이전 카드: <span style="font-family:monospace">${esc(a.prior_card_id)}</span></div>
+                  <div class="review-card-desc">${esc(a.prior_comment || "코멘트 없음")}</div>
+                  ${a.resolution_evidence ? renderEvidence(a.resolution_evidence) : ""}
+                </div>
+              `).join("")}
+            </details>
+          </div>
+        `);
+      }
+
+      parts.push(`<div class="section"><h3>변경 내용</h3>`);
+      for (const card of asArray(c.cards)) {
+        parts.push(renderCard(card));
+      }
+      parts.push(`</div>`);
+
+      parts.push(`
+        <div class="section">
+          <h3>변경 파일</h3>
+          ${renderFilesTable(c)}
+        </div>
+      `);
+
+      const tests = asArray(c.tests_added);
+      if (tests.length > 0) {
+        parts.push(`
+          <div class="section">
+            <h3>추가된 테스트</h3>
+            ${tests.map((t) => `
+              <div class="card" style="margin-top:10px">
+                <strong style="font-family:monospace">${esc(t.file)}</strong>
+                <ul class="list" style="margin-top:8px">
+                  ${asArray(t.asserts).map((a) => `<li>${esc(a)}</li>`).join("")}
+                </ul>
+              </div>
+            `).join("")}
+          </div>
+        `);
+      }
+
+      const dev = asArray(c.deviations);
+      if (dev.length > 0) {
+        parts.push(`
+          <div class="section">
+            <h3>Deviations</h3>
+            <ul class="list">${dev.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>
+          </div>
+        `);
+      }
+
+      parts.push(`
+        <details class="section collapsible">
+          <summary>전체 diff 보기</summary>
+          <div id="fullDiff_${esc(c.short_sha)}"></div>
+        </details>
+      `);
+
+      return parts.join("\n");
+    }
+
+    function renderCard(card) {
+      const fb = feedback.cards[card.id] || {};
+      const status = fb.status || "";
+      const fallbackTag = card.fallback ? ` <span class="badge fallback">자동 생성</span>` : "";
+
+      const evidenceHtml = asArray(card.evidence).map(renderEvidence).join("");
+      const targetDefault = card.evidence && card.evidence[0] ? { file: card.evidence[0].file, lines: card.evidence[0].lines } : { file: "", lines: "" };
+      const target = fb.target || targetDefault;
+
+      const needsDispatch = status === "needs-change";
+      const dispatchValue = fb.dispatch_agent || "";
+
+      return `
+        <div class="review-card ${card.fallback ? "fallback" : ""}" data-card-id="${esc(card.id)}">
+          <div class="review-card-title">
+            <strong>${esc(card.title)}</strong>${fallbackTag}
+            <span class="meta-line" style="margin-left:auto; font-family:monospace">${esc(card.id)}</span>
+          </div>
+          ${card.description ? `<p class="review-card-desc">${esc(card.description)}</p>` : ""}
+          ${evidenceHtml}
+          <div class="controls">
+            <div class="status-row">
+              ${STATUSES.map(([v, label]) => `<button type="button" data-status="${v}" class="${status === v ? "active" : ""}">${label}</button>`).join("")}
+            </div>
+            <textarea class="comment" placeholder="코멘트 (선택)">${esc(fb.comment || "")}</textarea>
+            <div class="target-row">
+              <span class="meta-line">대상</span>
+              <input class="file" type="text" value="${esc(target.file || "")}" placeholder="파일 경로">
+              <input class="lines" type="text" value="${esc(target.lines || "")}" placeholder="라인 범위">
+            </div>
+            <div class="dispatch-row ${needsDispatch ? "required" : ""}" ${needsDispatch ? "" : "hidden"}>
+              <label>에이전트</label>
+              <select>
+                <option value="">선택하세요</option>
+                ${asArray(model.available_agents).map((a) => `<option value="${esc(a.name)}" ${dispatchValue === a.name ? "selected" : ""}>${esc(a.name)}${a.description ? ` — ${esc(a.description)}` : ""}</option>`).join("")}
+              </select>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderEvidence(ev) {
+      const cls = ev.language ? `language-${esc(ev.language)}` : "";
+      return `
+        <div class="evidence">
+          <div class="evidence-head">
+            <span>${esc(ev.file)}:${esc(ev.lines)}</span>
+          </div>
+          <pre><code class="${cls}">${esc(ev.snippet || "")}</code></pre>
+        </div>
+      `;
+    }
+
+    function renderFilesTable(commit) {
+      const files = asArray(commit.files_changed);
+      if (files.length === 0) return `<p class="meta-line">변경 없음</p>`;
+      return `
+        <table class="files-table">
+          <thead><tr><th>파일</th><th>종류</th><th>추가</th><th>삭제</th></tr></thead>
+          <tbody>
+            ${files.map((f, i) => `
+              <tr class="expandable" data-commit-sha="${esc(commit.short_sha)}" data-file-index="${i}">
+                <td style="font-family:monospace">${esc(f.path)}${f.old_path ? ` <span class="meta-line">← ${esc(f.old_path)}</span>` : ""}</td>
+                <td><span class="badge ${fileKindBadge(f.kind)}">${esc(f.kind)}</span></td>
+                <td class="additions">+${esc(f.additions || 0)}</td>
+                <td class="deletions">-${esc(f.deletions || 0)}</td>
+              </tr>
+              <tr class="file-diff-row" data-file-index="${i}" hidden><td colspan="4"><div class="file-diff-slot"></div></td></tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function fileKindBadge(kind) {
+      return { added: "achieved", modified: "info", deleted: "danger", renamed: "warn" }[kind] || "info";
+    }
+
+    function renderFinal() {
+      const f = model.final || {};
+      const total = cardIds().length;
+      const approvedCount = cardIds().filter((id) => {
+        const s = cardStatus(id);
+        return s === "approved" || s === "out-of-scope";
+      }).length;
+      const allApproved = total > 0 && approvedCount === total;
+
+      return `
+        <div class="hero">
+          <div class="eyebrow">Final (preview)</div>
+          <h1>최종 확인</h1>
+          <div class="banner ${allApproved ? "success" : ""}">
+            ${allApproved
+              ? "모든 카드가 승인되었습니다. 리뷰 제출 후 Step 4 (merge) 로 진행됩니다."
+              : `아직 승인되지 않은 카드 ${total - approvedCount}개가 있습니다. Commit step 들을 확인해주세요.`}
+          </div>
+        </div>
+        <div class="grid">
+          <div class="card wide">
+            <h3>커밋 로그</h3>
+            <ul class="list">
+              ${asArray(f.commit_log).map((c) => `
+                <li style="display:flex; gap:10px; align-items:baseline">
+                  <span style="font-family:monospace; font-size:12px">${esc(c.short_sha)}</span>
+                  <span style="flex:1">${esc(c.subject)}</span>
+                  <span class="meta-line">${esc(c.author)} · ${esc(c.timestamp)}</span>
+                </li>
+              `).join("")}
+            </ul>
+          </div>
+          <div class="card wide">
+            <h3>Merge 영향</h3>
+            ${renderMergeImpact(f.merge_impact)}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderMergeImpact(entries) {
+      const rows = asArray(entries);
+      if (rows.length === 0) return `<p class="meta-line">변경 없음</p>`;
+      return `
+        <table class="files-table">
+          <thead><tr><th>파일</th><th>종류</th></tr></thead>
+          <tbody>
+            ${rows.map((e) => `
+              <tr>
+                <td style="font-family:monospace">${esc(e.path)}</td>
+                <td><span class="badge ${fileKindBadge(e.kind)}">${esc(e.kind)}</span></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderCurrent() {
+      const step = steps[current];
+      $("navTitle").textContent = step.kind === "commit" ? `C${step.index + 1} · ${step.commit.short_sha}` : step.label;
+
+      const main = $("content");
+      if (step.kind === "overview") main.innerHTML = renderOverview();
+      else if (step.kind === "commit") main.innerHTML = renderCommit(step);
+      else if (step.kind === "final") main.innerHTML = renderFinal();
+
+      main.scrollTop = 0;
+      window.scrollTo({ top: 0, behavior: "instant" });
+
+      wireControls(step);
+      highlightAll();
+      attachFileToggles(step);
+      attachFullDiffLazy(step);
+
+      $("submitBtn").hidden = step.kind !== "final";
+      $("nextBtn").hidden = step.kind === "final";
+    }
+
+    function highlightAll() {
+      if (!window.hljs) return;
+      for (const el of document.querySelectorAll("pre code")) highlight(el);
+    }
+
+    function wireControls(step) {
+      if (step.kind !== "commit") return;
+      const container = $("content");
+
+      for (const cardEl of container.querySelectorAll(".review-card")) {
+        const cardId = cardEl.dataset.cardId;
+        const commentEl = cardEl.querySelector(".comment");
+        const fileEl = cardEl.querySelector(".target-row .file");
+        const linesEl = cardEl.querySelector(".target-row .lines");
+        const selectEl = cardEl.querySelector(".dispatch-row select");
+
+        for (const btn of cardEl.querySelectorAll(".status-row button")) {
+          btn.addEventListener("click", () => {
+            const status = btn.dataset.status;
+            updateCard(cardId, { status }, cardEl);
+          });
+        }
+
+        if (commentEl) {
+          commentEl.addEventListener("input", () => updateCard(cardId, { comment: commentEl.value }, cardEl, true));
+        }
+        if (fileEl) {
+          fileEl.addEventListener("input", () => updateTarget(cardId, fileEl.value, linesEl.value));
+        }
+        if (linesEl) {
+          linesEl.addEventListener("input", () => updateTarget(cardId, fileEl.value, linesEl.value));
+        }
+        if (selectEl) {
+          selectEl.addEventListener("change", () => updateCard(cardId, { dispatch_agent: selectEl.value || "" }, cardEl));
+        }
+      }
+    }
+
+    function updateCard(cardId, patch, cardEl, debounce = false) {
+      const prev = feedback.cards[cardId] || {};
+      const next = { ...prev, ...patch };
+      if (!next.status) delete next.status;
+      if (next.comment === undefined) next.comment = prev.comment || "";
+      feedback.cards[cardId] = next;
+      feedback.updated_at = new Date().toISOString();
+
+      if (patch.status) {
+        for (const btn of cardEl.querySelectorAll(".status-row button")) {
+          btn.classList.toggle("active", btn.dataset.status === patch.status);
+        }
+        const disp = cardEl.querySelector(".dispatch-row");
+        if (disp) disp.hidden = patch.status !== "needs-change";
+      }
+
+      renderSidebarDots();
+      saveFeedback(debounce);
+      updateSubmitState();
+    }
+
+    function updateTarget(cardId, file, lines) {
+      const prev = feedback.cards[cardId] || {};
+      const target = { file: file || "", lines: lines || "" };
+      feedback.cards[cardId] = { ...prev, target };
+      feedback.updated_at = new Date().toISOString();
+      saveFeedback(true);
+    }
+
+    function renderSidebarDots() {
+      for (const btn of document.querySelectorAll(".step-button")) {
+        const step = steps[Number(btn.dataset.idx)];
+        if (!step || step.kind !== "commit") continue;
+        const dot = btn.querySelector(".step-dot");
+        if (!dot) continue;
+        dot.className = "step-dot";
+        const s = stepStatus(step);
+        if (s) dot.classList.add(s);
+      }
+    }
+
+    function attachFileToggles(step) {
+      if (step.kind !== "commit") return;
+      for (const row of document.querySelectorAll(".files-table tr.expandable")) {
+        row.addEventListener("click", () => {
+          const idx = row.dataset.fileIndex;
+          const body = row.parentElement.querySelector(`tr.file-diff-row[data-file-index="${idx}"]`);
+          if (!body) return;
+          body.hidden = !body.hidden;
+          if (!body.hidden && !body.dataset.rendered) {
+            const file = step.commit.files_changed[Number(idx)];
+            const slot = body.querySelector(".file-diff-slot");
+            slot.innerHTML = renderDiff(file, "unified");
+            body.dataset.rendered = "1";
+            wireDiffToggle(slot, file);
+            for (const el of slot.querySelectorAll("pre code")) highlight(el);
+          }
+        });
+      }
+    }
+
+    function renderDiff(file, mode) {
+      const hunks = asArray(file.diff_hunks);
+      if (hunks.length === 0) {
+        return `<div class="diff-container"><div class="diff-header"><span class="path">${esc(file.path)}</span></div><div class="diff-body"><div class="diff-row hunk">(diff가 비어 있습니다. 전체 diff 보기에서 raw를 확인하세요.)</div></div></div>`;
+      }
+      const body = mode === "split" ? renderSplit(hunks) : renderUnified(hunks);
+      return `
+        <div class="diff-container" data-mode="${mode}">
+          <div class="diff-header">
+            <span class="path">${esc(file.path)}</span>
+            <button type="button" class="toggle">${mode === "split" ? "unified" : "split"}로 보기</button>
+          </div>
+          <div class="diff-body">${body}</div>
+        </div>
+      `;
+    }
+
+    function wireDiffToggle(slot, file) {
+      const btn = slot.querySelector(".diff-header .toggle");
+      if (!btn) return;
+      btn.addEventListener("click", () => {
+        const container = slot.querySelector(".diff-container");
+        const mode = container.dataset.mode === "split" ? "unified" : "split";
+        slot.innerHTML = renderDiff(file, mode);
+        wireDiffToggle(slot, file);
+        for (const el of slot.querySelectorAll("pre code")) highlight(el);
+      });
+    }
+
+    function renderUnified(hunks) {
+      return hunks.map((h) => {
+        const rows = [];
+        rows.push(`<div class="diff-row hunk">${esc(h.header)}</div>`);
+        const bef = h.before.map((l) => ({ kind: "del", line_no: l.line_no, text: l.text }));
+        const aft = h.after.map((l) => ({ kind: "add", line_no: l.line_no, text: l.text }));
+        const beforeSet = new Set(h.before.map((l) => `${l.line_no}:${l.text}`));
+        const afterSet = new Set(h.after.map((l) => `${l.line_no}:${l.text}`));
+        const common = h.before.filter((l) => afterSet.has(`${l.line_no}:${l.text}`)).map((l) => `${l.line_no}:${l.text}`);
+        const commonSet = new Set(common);
+
+        for (const l of h.before) {
+          if (commonSet.has(`${l.line_no}:${l.text}`)) continue;
+          rows.push(`<div class="diff-row del"><span class="num">${esc(l.line_no)}</span><span class="num"></span><span class="txt">${esc(l.text)}</span></div>`);
+        }
+        for (const l of h.after) {
+          if (commonSet.has(`${l.line_no}:${l.text}`)) continue;
+          rows.push(`<div class="diff-row add"><span class="num"></span><span class="num">${esc(l.line_no)}</span><span class="txt">${esc(l.text)}</span></div>`);
+        }
+        for (const l of h.after) {
+          if (!commonSet.has(`${l.line_no}:${l.text}`)) continue;
+          rows.push(`<div class="diff-row"><span class="num"></span><span class="num">${esc(l.line_no)}</span><span class="txt">${esc(l.text)}</span></div>`);
+        }
+        return rows.join("");
+      }).join("");
+    }
+
+    function renderSplit(hunks) {
+      return hunks.map((h) => {
+        const left = h.before.map((l) => `<div class="diff-row del"><span class="num">${esc(l.line_no)}</span><span class="txt">${esc(l.text)}</span></div>`).join("");
+        const right = h.after.map((l) => `<div class="diff-row add"><span class="num">${esc(l.line_no)}</span><span class="txt">${esc(l.text)}</span></div>`).join("");
+        return `
+          <div class="diff-row hunk">${esc(h.header)}</div>
+          <div class="diff-split">
+            <div class="col">${left}</div>
+            <div class="col">${right}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function attachFullDiffLazy(step) {
+      if (step.kind !== "commit") return;
+      const details = $("content").querySelector(`details.collapsible`);
+      // multiple details exist; we target the one holding full diff by id
+      const slot = $(`fullDiff_${step.commit.short_sha}`);
+      if (!slot) return;
+      const container = slot.closest("details");
+      if (!container) return;
+      container.addEventListener("toggle", async () => {
+        if (!container.open || slot.dataset.loaded) return;
+        const res = await fetch(step.commit.raw_diff_path, { cache: "no-store" });
+        const text = await res.text();
+        slot.innerHTML = `<div class="diff-container"><div class="diff-header"><span class="path">raw diff</span></div><div class="diff-body expanded"><pre style="margin:0; padding:12px"><code>${esc(text)}</code></pre></div></div>`;
+        slot.dataset.loaded = "1";
+        for (const el of slot.querySelectorAll("pre code")) highlight(el);
+      }, { once: false });
+    }
+
+    function canSubmit() {
+      const ids = cardIds();
+      if (ids.length === 0) return false;
+      for (const id of ids) {
+        const card = feedback.cards[id];
+        if (!card || !card.status) return false;
+        if (card.status === "needs-change" && !card.dispatch_agent) return false;
+      }
+      return true;
+    }
+
+    function updateSubmitState() {
+      const submit = $("submitBtn");
+      if (!submit) return;
+      submit.disabled = !canSubmit();
+    }
+
+    function goTo(idx) {
+      if (idx < 0 || idx >= steps.length) return;
+      current = idx;
+      renderSidebar();
+      renderCurrent();
+    }
+
+    async function submit() {
+      feedback.review_status = "submitted";
+      feedback.updated_at = new Date().toISOString();
+      await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(feedback)
+      });
+      showToast("리뷰가 제출되었습니다. 채팅에 '리뷰 완료'를 입력해주세요.");
+      $("submitBtn").textContent = "제출됨 · 채팅에 '리뷰 완료'를 입력하세요";
+      $("submitBtn").disabled = true;
+    }
+
+    async function init() {
+      model = await loadJson("review-data.json", null);
+      if (!model) {
+        $("content").innerHTML = `<div class="banner danger">review-data.json을 찾을 수 없습니다.</div>`;
+        return;
+      }
+      history = await loadJson("review-history.json", { rounds: [] });
+      const existing = await loadJson("/api/feedback", null);
+      feedback = (existing && existing.plan_signature === model.plan_signature) ? existing : createFeedback();
+
+      steps = [{ kind: "overview", label: "Overview" }];
+      asArray(model.commits).forEach((commit, index) => {
+        steps.push({ kind: "commit", index, commit, label: `C${index + 1} · ${commit.message_subject}` });
+      });
+      steps.push({ kind: "final", label: "Final" });
+
+      $("prevBtn").addEventListener("click", () => goTo(current - 1));
+      $("nextBtn").addEventListener("click", () => goTo(current + 1));
+      $("submitBtn").addEventListener("click", submit);
+
+      renderSidebar();
+      renderCurrent();
+    }
+
+    init();
+  </script>
+</body>
+</html>
