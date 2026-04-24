@@ -17,6 +17,7 @@ plans/{task-slug}/developer-review/
 ├── index.html
 ├── review-data.json
 ├── feedback.json
+├── review-history.json
 └── assets/
     ├── previews/
     └── diagrams/
@@ -49,10 +50,12 @@ Steps:
 5. `Final`
 
 Only one step is visible at a time. The user navigates with `Previous` and `Next`.
+When the visible step changes through `Previous`, `Next`, or direct step selection, scroll the review surface back to the top of the current step.
 
 ## Review model
 
 `review-data.json` is generated from `plan.md`, linked phase files, and `review.md`.
+`review-history.json` preserves prior submitted developer-review rounds plus the controller's resulting action summary so the browser UI can show what the user asked to change and how the planning loop responded.
 
 Required top-level fields:
 
@@ -70,6 +73,7 @@ Required top-level fields:
     "included_scope": [],
     "excluded_scope": [],
     "change_shape": "",
+    "change_flow": [],
     "major_changes": [],
     "risks": [],
     "ui_previews": []
@@ -85,6 +89,7 @@ Phase objects:
 {
   "id": "P1",
   "title": "Phase title",
+  "owner_agent": "frontend-developer",
   "goal": "",
   "changes": [],
   "contracts": [],
@@ -94,6 +99,8 @@ Phase objects:
   "ui_previews": []
 }
 ```
+
+When phase detail files define `owner_agent`, preserve that field in `review-data.json` and surface it inside each phase body. Do not require a separate sidebar summary for agent routing.
 
 UI preview objects are allowed only for user-visible UI changes. They are plan previews, not functional prototypes:
 
@@ -119,6 +126,7 @@ Use these statuses only:
 - `out-of-scope`
 
 The user controls status through HTML buttons.
+Statuses are review signals, not direct routing keys. Orchestrator should classify non-approved feedback from the status, comment, affected step, and conflict with the current locked request before choosing `brainstorm`, `design-discovery`, `architect`, or direct chat clarification.
 
 Expected shape:
 
@@ -145,13 +153,66 @@ Expected shape:
 
 When the final step is submitted, set `review_status` to `submitted`.
 
+## Review history model
+
+`review-history.json` is a durable history artifact for the developer-review loop. It is not the editable live-review state.
+
+Expected shape:
+
+```json
+{
+  "schema_version": 1,
+  "task_slug": "task-slug",
+  "current_plan_signature": "abc123",
+  "rounds": [
+    {
+      "id": "R1",
+      "submitted_at": "2026-04-23T00:00:00.000Z",
+      "source_plan_signature": "abc123",
+      "resolution_state": "resolved",
+      "summary": "P4 질문에 답변하고 같은 plan_signature에서 재리뷰를 요청했다.",
+      "resulting_plan_signature": "abc123",
+      "items": [
+        {
+          "step_id": "P4",
+          "step_label": "Phase 4",
+          "user_status": "question",
+          "user_comment": "...",
+          "triage_route": "answer_only",
+          "action_summary": [
+            "질문 의도를 채팅에서 답변했다.",
+            "같은 plan_signature에서 feedback을 초기화하고 재리뷰를 요청했다."
+          ],
+          "resolution_summary": "동일 signature 재리뷰",
+          "resulting_plan_signature": "abc123"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Rules:
+
+- Keep current editable review state in `feedback.json`; do not overwrite historical rounds there.
+- Append or update `review-history.json` before resetting same-signature feedback or regenerating the package after a revision.
+- Preserve prior rounds when `plan_signature` changes; update only `current_plan_signature` and add or complete the new resolution entry.
+- Record both the user's review and the controller's action summary so the next review pass can show what changed.
+
 ## Routing after user says `리뷰 완료`
 
 Read `feedback.json`.
 
 - If `plan_signature` differs from the current plan signature, discard the feedback and regenerate the review UI.
-- If any step or card is `needs-change`, `question`, or `out-of-scope`, pass the exact feedback path and summarized IDs to the next `architect` revision, then rerun `plan-review` and regenerate the review UI.
 - If every required step is `approved` and `review_status = submitted`, treat the current `plan_signature` as explicitly approved and continue to `plan-materialize`.
+- If any required step or card is not `approved`, developer approval is absent and feedback triage is required:
+  - append or update a review-history round before resetting `feedback.json`, regenerating the package, or changing `plan_signature`
+  - do not route directly from the raw status label alone
+  - classify non-approved feedback as `answer_only`, `request_lock`, `scope_decision`, `ui_direction`, or `plan_revision`
+  - if every non-approved item is `answer_only`, answer in chat, reset `feedback.json` to a fresh in-progress review for the same `plan_signature`, and require fresh browser review
+  - if any item is `request_lock` or `scope_decision`, run `brainstorm` first and only hand off to `architect` after the request is locked again
+  - if any item is `ui_direction`, run `design-discovery` first unless the real blocker is still product framing, in which case return to `brainstorm`
+  - if the remaining items are `plan_revision`, route the exact feedback path and affected IDs to `architect`, then rerun `plan-review` and regenerate the review UI
 - If feedback is missing, incomplete, or still `in_progress`, ask the user to finish the browser review and press submit.
 
 ## Invalidations
@@ -164,3 +225,9 @@ Any change to `plan_signature` invalidates all prior developer review approvals.
 - Do not hide `plan-review` findings; include them in Overview or Final.
 - Do not treat UI previews as implemented behavior.
 - Do not let `architect` reinterpret approved feedback. If the requested feedback changes scope or direction, revise the plan and require a fresh developer review.
+- Do not strip `owner_agent` routing from phase data when the reviewed plan defines it.
+- Do not preserve mid-page scroll position when the reviewer moves to another step.
+- Do not route non-approved feedback directly to `architect` from `question` or `needs-change` labels alone.
+- Do not leave same-signature answer-only feedback in the submitted non-approved state after the controller answered it.
+- Do not drop previous review rounds when resetting `feedback.json` or regenerating the package.
+- Do not mix editable current feedback controls with historical review/action evidence.

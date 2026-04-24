@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-description: Explicit multi-agent planning orchestrator for requests that should run through the repository's planning loop instead of a one-off planning pass. Use only when the user explicitly invokes `$orchestrator` or explicitly asks for the automated architect/review/developer-review/materialize workflow, and Codex should coordinate `architect`, `plan-review`, browser-based developer review, and `plan-materialize` through generic skill-driven sub-agents with explicit developer approval before test materialization.
+description: Explicit multi-agent planning orchestrator for requests that should run through the repository's planning loop instead of a one-off planning pass. Use only when the user explicitly invokes `$orchestrator` or explicitly asks for the automated brainstorm/design-discovery/architect/review/developer-review/materialize workflow, and Codex should coordinate upstream feedback triage, `architect`, `plan-review`, browser-based developer review, and `plan-materialize` through generic skill-driven sub-agents with explicit developer approval before test materialization.
 ---
 
 <Skill_Guide>
@@ -12,7 +12,7 @@ Run the repository's planning loop as a stateless, artifact-driven workflow with
 # orchestrator
 
 Use this skill only for explicit planning orchestration requests.
-Do not use it as a generic replacement for `architect`, `plan-review`, or `plan-materialize`.
+Do not use it as a generic replacement for `brainstorm`, `design-discovery`, `architect`, `plan-review`, or `plan-materialize`.
 
 ## Inputs to inspect
 
@@ -21,22 +21,26 @@ Do not use it as a generic replacement for `architect`, `plan-review`, or `plan-
 3. Existing review artifact under `./plans/_orchestrator/review/{task-slug}/review.md` when present
 4. Existing plan-local `materialize.md` adjacent to the selected executable plan when present
 5. Existing `./.codex/artifacts/brainstorm/**` or `./.codex/artifacts/design-discovery/**` artifacts when directly referenced or when they narrow the next architect pass
-6. `../architect/SKILL.md`
-7. `../plan-review/SKILL.md`
-8. Existing developer review artifacts under `./plans/{task-slug}/developer-review/` when present
-9. `../plan-materialize/SKILL.md`
-10. `../review-wiki-setup/references/staging-contract.md`
-11. `./references/developer-review-ui.md`
+6. `../brainstorm/SKILL.md`
+7. `../design-discovery/SKILL.md` when UI-direction feedback triage may be needed
+8. `../architect/SKILL.md`
+9. `../plan-review/SKILL.md`
+10. Existing developer review artifacts under `./plans/{task-slug}/developer-review/` when present
+11. `../plan-materialize/SKILL.md`
+12. `../review-wiki-setup/references/staging-contract.md`
+13. `./references/developer-review-ui.md`
 
 ## Required runtime expectations
 
-- This skill assumes the runtime can invoke generic planning sub-agents and attach the local `architect`, `plan-review`, or `plan-materialize` skill for the active pass.
+- This skill assumes the runtime can invoke generic planning sub-agents and attach the local `brainstorm`, `design-discovery`, `architect`, `plan-review`, or `plan-materialize` skill for the active pass.
 - If a required local skill is missing, unreadable, or cannot be attached to a sub-agent, stop and report the blocker.
 - Optional legacy planning profiles may exist under `./.codex/agents/`, but do not require them for this workflow.
-- Do not silently inline architect, reviewer, or materializer work inside this skill when the sub-agent path is available.
+- Do not silently inline brainstorm, design-discovery, architect, reviewer, or materializer work inside this skill when the sub-agent path is available.
 - Do not create, mutate, or rely on `state.json`, `clarification.md`, or `user-gate.md`.
 - Treat orchestration helper state as current-turn only. It may be recomputed from artifacts on every re-entry.
 - Do not hardcode runtime-specific spawn tactics such as `fork_context = true` or packet-only fallbacks into the orchestration contract. Use the safest runtime invocation the platform supports at execution time.
+- Prefer role-pinned live-agent reuse for `brainstorm`, `design-discovery`, `architect`, and `plan-materialize` when the same `task_slug`, role contract, and handoff authority still apply.
+- Always use a fresh reviewer pass for `plan-review`; do not reuse a prior reviewer agent by default.
 - Reuse a still-usable planning sub-agent when convenient, but do not persist agent ids to disk or require same-agent reuse to make progress.
 - If a planning sub-agent invocation fails, report the exact target role and the exact tool error.
 - If a planning sub-agent is still `running`, do not shut it down merely because a bounded wait timed out.
@@ -49,6 +53,7 @@ Treat only these artifacts as durable orchestration evidence:
 - executable plan artifacts under `./plans/{task-slug}/`
 - review artifact at `./plans/_orchestrator/review/{task-slug}/review.md`
 - developer review artifacts under `./plans/{task-slug}/developer-review/`
+- developer review history artifact at `./plans/{task-slug}/developer-review/review-history.json`
 - plan-local materialization report at `./plans/{task-slug}/materialize.md`
 
 Do not create a second source of truth for stage, approval, blocker routing, or agent reuse.
@@ -62,10 +67,12 @@ The orchestrator may keep only current-turn helper state such as:
 - current `plan_signature`
 - `current_handoff_signature`
 - `active_role_agent_id` for the currently running role pass when available
+- `live_role_agents` keyed by role for reusable `brainstorm`, `design-discovery`, `architect`, and `materializer` passes when available
 - `active_role_started_at`
 - whether the current review artifact is fresh
 - whether the current developer review package is fresh
 - whether the current developer review feedback is submitted and fresh
+- the current feedback triage route for submitted non-approved developer review feedback
 - whether the current materialize artifact is fresh
 - the latest user question still awaiting an answer
 - `last_meaningful_progress_at`
@@ -78,8 +85,10 @@ This helper state must be safely discardable between turns.
 
 - The current plan fingerprint is `plan_signature`: a stable short fingerprint of the current `plan.md` plus every linked phase detail file.
 - A `review.md` artifact is fresh only when both `plan_path` and `plan_signature` match the current plan artifacts on disk.
-- A developer review package is fresh only when `review-data.json` and `feedback.json` both reference the current `plan_signature`.
+- A developer review package is fresh only when `review-data.json`, `feedback.json`, and `review-history.json` are all present, and the current developer-review model files reference the current `plan_signature` appropriately.
 - Developer review approval is valid only when `feedback.json` has `review_status = submitted`, every required step is `approved`, and its `plan_signature` matches the current plan signature.
+- Submitted developer review feedback with any required step or card not `approved` is fresh triage input, not approval.
+- `review-history.json` may contain prior signatures, but its `current_plan_signature` must match the current plan signature whenever the developer review package is refreshed.
 - A `materialize.md` artifact is fresh only when both `plan_path` and `plan_signature` match the current plan artifacts on disk.
 - Developer approval is valid only for the exact current `plan_signature` recorded in developer review feedback.
 - When `plan_signature` changes, treat previous cold review, developer review approval, and materialization state as stale and recompute from the artifacts.
@@ -87,13 +96,15 @@ This helper state must be safely discardable between turns.
 ## Wait policy
 
 - When a role pass is on the critical path, prefer a long wait over repeated short polling.
-- For architect, reviewer, and materializer passes, the first bounded wait should normally be at least 3 minutes, and 5 minutes is preferred when the workflow is otherwise blocked on that pass.
+- For brainstorm, design-discovery, architect, reviewer, and materializer passes, the first bounded wait should normally be at least 3 minutes, and 5 minutes is preferred when the workflow is otherwise blocked on that pass.
 - If the sub-agent emits a meaningful progress update, or if the required artifact path or reviewed plan files change on disk during the wait window, refresh `last_meaningful_progress_at` and allow another bounded wait before intervening.
 - If the runtime supports a longer one-shot wait safely, prefer that over repeated short waits that make the controller look stalled or impatient.
 - Do not treat slow analysis alone as `agent_protocol_failure` while there is fresh evidence of progress.
 - If a new user turn arrives while a planning sub-agent is still running and there is recent progress, prefer waiting on or reusing the same sub-agent instead of respawning a replacement.
 - Only switch to a narrowed fallback such as `write now or block` after there has been no meaningful progress and no relevant artifact change for a sustained idle window, normally at least 5 minutes for reviewer/materializer and at least 8 minutes for architect.
 - When the same still-running sub-agent is reused after a user re-entry, keep the role, handoff authority, and output contract unchanged unless the user actually changed the plan contract.
+- For `brainstorm`, `design-discovery`, `architect`, and `materializer`, prefer reusing a compatible live role agent before spawning a replacement.
+- For `plan-review`, prefer a fresh reviewer even when a prior reviewer agent still exists.
 - A timed-out `wait_agent` call with empty status is not evidence that the sub-agent is idle, stuck, or finished; treat the pass as still live until an explicit terminal status, shutdown notification, or controller-verified sustained idle window says otherwise.
 - Before closing or replacing a role pass after a timeout, re-check both the sub-agent's recent progress messages and the full write scope for any created or updated files or directories; any such change refreshes `last_meaningful_progress_at`.
 - Never call `close_agent` on a still-running planning sub-agent unless one of the following is true:
@@ -117,7 +128,7 @@ The handoff should include only the minimum fields needed for the role:
 - `authoritative_existing_inputs` containing only controller-verified literal paths
 - `known_missing_inputs` containing referenced but missing literal paths only as non-authoritative context
 - latest review artifact path when the next `architect` pass is revising from review findings
-- latest developer review `feedback.json` path when the next `architect` pass is revising from browser feedback
+- latest developer review `feedback.json` path when the next `brainstorm`, `design-discovery`, or `architect` pass is revising from browser feedback
 - explicit output path requirements for the role
 
 Do not force planning sub-agents to rediscover orchestrator-owned metadata from disk when the controller already selected it.
@@ -143,7 +154,8 @@ Report the exact classification when stopping.
 - Derive one canonical `task-slug`.
 - Resolve the planning `review_wiki_root` to `./.codex/review-wiki/sync/current`.
 - If `./.codex/review-wiki/sync/current` is missing, stop and route to `review-wiki-setup` instead of attempting per-run staging inside this skill.
-- Confirm the linked local `architect`, `plan-review`, and `plan-materialize` skills are present.
+- Confirm the linked local `brainstorm`, `architect`, `plan-review`, and `plan-materialize` skills are present.
+- Confirm `../design-discovery/SKILL.md` before taking a UI-direction feedback route.
 - Confirm `./references/developer-review-ui.md`, `./assets/developer-review/index.html`, and `../../tools/developer-review-server.mjs` are present before entering the developer review gate.
 - Derive the default plan path as `./plans/{task-slug}/plan.md` unless the current run explicitly targets another existing executable plan.
 - Collect task-local plan or prerequisite paths referenced by the user request, the current selected plan, the latest fresh review/materialize artifact, or a directly referenced upstream `brainstorm` / `design-discovery` artifact when they affect the next role pass.
@@ -165,15 +177,23 @@ Report the exact classification when stopping.
 - Do not reconstruct hidden stage from old chat text when the artifacts disagree.
 - If current developer review approval cannot be tied to the current `plan_signature`, treat approval as absent and require browser review again later.
 
+### Step 1.5. Normalize submitted developer review feedback
+
+- Developer review approval is binary: every required Overview and Phase step must be `approved`.
+- If `feedback.json` is submitted and any required step or card is not `approved`, treat the current developer review state as `feedback_triage_pending`.
+- When feedback triage is pending, do not continue to materialization and do not route directly to `architect` from the raw feedback labels alone.
+- Use the feedback triage rules in Step 5.5 to decide whether the next safe route is direct chat clarification, `brainstorm`, `design-discovery`, or `architect`.
+
 ### Step 2. Run architect draft or revision
 
 - Invoke an `architect` pass when:
   - no executable `plan.md` exists
   - the latest fresh `review.md` routes back to `architect`
   - the latest fresh `materialize.md` routes back to `architect`
-  - developer review feedback contains `needs-change`, `question`, or `out-of-scope`
+  - developer review feedback triage resolved to `plan_revision`
+  - a completed `brainstorm` or `design-discovery` pass locked the missing decisions and the next safe route is `architect`
   - the user requested plan changes or answered a question that changes the plan contract
-- Start a generic planning sub-agent and attach the `architect` skill.
+- Reuse the live `architect` role agent for the same `task_slug` when it is still compatible with the current handoff authority; otherwise start a new generic planning sub-agent and attach the `architect` skill.
 - Pass a handoff packet containing:
   - target skill = `architect`
   - role label = `architect`
@@ -213,7 +233,8 @@ Report the exact classification when stopping.
 ### Step 3. Run cold review
 
 - Invoke a `plan-review` reviewer pass only when an executable `plan.md` exists and the current `review.md` is missing or stale.
-- Start a generic planning sub-agent and attach the `plan-review` skill.
+- Always start a fresh generic planning sub-agent and attach the `plan-review` skill.
+- Do not reuse a prior reviewer agent for the cold-review pass unless the runtime leaves no safe alternative and the controller reports that exception explicitly.
 - Pass a handoff packet containing:
   - target skill = `plan-review`
   - role label = `reviewer`
@@ -258,10 +279,14 @@ At the gate:
 - Create or refresh `./plans/{task-slug}/developer-review/` for the current `plan_signature`.
 - Copy `./assets/developer-review/index.html` to `./plans/{task-slug}/developer-review/index.html`.
 - Generate `review-data.json` from the current `plan.md`, linked phase detail files, and fresh `review.md`.
+- Create or refresh `review-history.json` for the current `task-slug` and `plan_signature`.
 - Ensure `review-data.json` is user-readable and not a raw markdown dump:
   - Overview shows the user's request, the planner's understanding, included scope, excluded scope, change shape, major changes, risks, and review findings.
-  - Each phase step shows only that phase's goal, changes, contracts, file impact, validation, risks, and UI plan preview when applicable.
+  - Each phase step shows only that phase's goal, changes, contracts, file impact, validation, risks, UI plan preview when applicable, and the phase `owner_agent` when known.
+  - When generating phase data, preserve `owner_agent` from the phase detail artifact instead of dropping it.
   - UI preview is plan-level visual explanation only; do not imply functional implementation exists.
+  - `Previous`, `Next`, and direct step navigation reset the visible review content to the top of the current step.
+- Ensure the developer review package also exposes historical developer-review rounds and controller action summaries from `review-history.json` so the reviewer can see what changed since prior feedback.
 - Initialize or reset `feedback.json` for the current `plan_signature` with `review_status = in_progress`.
 - Start or instruct the user to start the shared server:
   - `node .codex/tools/developer-review-server.mjs plans/{task-slug}/developer-review`
@@ -270,14 +295,82 @@ At the gate:
 - When the user says `리뷰 완료`, read `feedback.json`:
   - if `plan_signature` differs from the current `plan_signature`, regenerate the developer review package and require review again
   - if `review_status` is not `submitted`, ask the user to submit the browser review first
-  - if any Overview or Phase step is `needs-change`, `question`, or `out-of-scope`, route the exact feedback path and affected IDs to the next `architect` pass, rerun `plan-review`, regenerate the review UI, and require fresh browser review
   - if every required Overview and Phase step is `approved`, treat the current `plan_signature` as explicitly approved and continue to materialization
+  - if any required Overview or Phase step or card is not `approved`, run Step 5.5 feedback triage before choosing any next role pass
+
+### Step 5.5. Triage non-approved developer review feedback
+
+- Treat `approved` vs `not approved` as the approval gate. Raw labels such as `needs-change`, `question`, and `out-of-scope` are routing hints, not routing decisions by themselves.
+- Collect every non-approved step or card with its `status`, `comment`, affected IDs, and whether it conflicts with the current locked request, scope, public contract, or UI direction.
+- Before resetting `feedback.json`, regenerating the package, or changing `plan_signature`, append or update a round in `review-history.json`.
+- Each history round must record:
+  - the submitted user feedback per step or card
+  - the chosen triage route
+  - the controller or sub-agent action summary
+  - whether the result was same-signature re-review or a new plan signature
+- Preserve previous rounds when a new plan signature is produced; do not replace history with only the latest submitted feedback.
+- Classify each non-approved item into one of:
+  - `answer_only`: the user needs explanation or evidence, but the current plan contract can still stand unchanged
+  - `request_lock`: the user's goal, scope, acceptance, exclusions, policy, or public surface is no longer locked enough for planning
+  - `scope_decision`: the user is deciding whether something belongs in or out of the plan, or a requested change conflicts with the current included/excluded scope
+  - `ui_direction`: the real blocker is user-visible hierarchy, state presentation, responsive behavior, or design-system direction
+  - `plan_revision`: the request is still locked, and the plan itself should be revised
+- If a non-approved item is too thin to classify safely from its status and comment, ask the user concise direct questions in Korean before choosing a route.
+- When multiple categories appear, resolve them in this order:
+  - `scope_decision` or `request_lock`
+  - `ui_direction`
+  - `plan_revision`
+  - `answer_only`
+- If every non-approved item is `answer_only`:
+  - answer the user directly in chat from the current plan, review artifact, and developer review package
+  - update the active history round with the chat answer summary and a same-signature re-review outcome
+  - refresh `feedback.json` for the same current `plan_signature` with `review_status = in_progress` and blank step state, or regenerate the package equivalently
+  - require a fresh browser review against the same current `plan_signature`
+  - do not invoke `architect`
+- If any non-approved item is `scope_decision` or `request_lock`:
+  - ask the user direct questions first when the blocking choice is still underspecified
+  - then reuse the live `brainstorm` role agent for the same `task_slug` when it is still compatible with the current handoff authority; otherwise start a new generic planning sub-agent and attach the `brainstorm` skill
+  - pass a handoff packet containing:
+    - target skill = `brainstorm`
+    - role label = `brainstorm`
+    - exact `task-slug`
+    - exact `plan_path`
+    - authoritative `review_wiki_root`
+    - current `plan_signature`
+    - latest developer review `feedback.json` path
+    - latest locked request summary when available
+    - controller-verified `authoritative_existing_inputs` that narrow the ambiguity
+    - explicit output contract in chat only unless the user explicitly asked for a written artifact
+  - require the brainstorm pass to finish with exactly one of:
+    - `result = locked_request` with `task_slug`, `locked_request_summary`, `next_action`, and `artifact_paths`
+    - `result = needs_user_input` with `task_slug`, `needs_user_input`, `next_action`, `why_it_matters`, and `questions`
+  - if the brainstorm pass returns `needs_user_input`, ask the user directly in chat and route the answer back to the next `brainstorm` pass
+  - if the brainstorm pass returns `locked_request`, update the active history round with the locked-request summary and continue with the returned `next_action`
+- If any non-approved item is `ui_direction`:
+  - if product framing or scope is still unstable, route to `brainstorm` first instead of `design-discovery`
+  - otherwise reuse the live `design-discovery` role agent for the same `task_slug` when it is still compatible with the current handoff authority; otherwise start a new generic planning sub-agent and attach the `design-discovery` skill
+  - pass a handoff packet containing:
+    - target skill = `design-discovery`
+    - role label = `design-discovery`
+    - exact `task-slug`
+    - exact `plan_path`
+    - current `plan_signature`
+    - latest developer review `feedback.json` path
+    - latest locked request summary when available
+    - controller-verified `authoritative_existing_inputs` that narrow the UI direction question
+    - explicit output contract in chat only unless the user explicitly asked for a written artifact
+  - require the design-discovery pass to finish with exactly one of:
+    - `result = locked_ui_direction` with `task_slug`, `ui_direction_summary`, `next_action`, and `artifact_paths`
+    - `result = needs_user_input` with `task_slug`, `needs_user_input`, `next_action`, `why_it_matters`, and `questions`
+  - if the design-discovery pass returns `needs_user_input`, ask the user directly in chat and route the answer back to the next `design-discovery` pass
+  - if the design-discovery pass returns `locked_ui_direction`, update the active history round with the locked UI-direction summary and continue with the returned `next_action`
+- If the remaining non-approved items are all `plan_revision`, record the revision route in `review-history.json`, route the exact feedback path and affected IDs to the next `architect` pass, rerun `plan-review`, regenerate the review UI, and require fresh browser review
 
 ### Step 6. Materialize tests
 
 - Invoke a `plan-materialize` materializer pass only after submitted developer review approval of the current `plan_signature`.
 - Invoke it only when the current `materialize.md` is missing or stale.
-- Start a generic planning sub-agent and attach the `plan-materialize` skill.
+- Reuse the live `materializer` role agent for the same `task_slug` when it is still compatible with the current handoff authority; otherwise start a new generic planning sub-agent and attach the `plan-materialize` skill.
 - Pass a handoff packet containing:
   - target skill = `plan-materialize`
   - role label = `materializer`
@@ -334,6 +427,8 @@ The orchestration is `done` only when all of the following are true:
 - Tell the user which stage is running.
 - Present user-decision questions in Korean.
 - At the developer review gate, present the browser URL or server command and tell the user to reply `리뷰 완료` after pressing submit in the browser.
+- When developer review feedback is not fully approved, say that feedback triage is running and name the next safe route: chat clarification, `brainstorm`, `design-discovery`, or `architect`.
+- When a new developer review package is shown after feedback triage, keep prior review comments and controller actions visible through the package history instead of summarizing them only in transient chat.
 - When blocked, say which role blocked and what the next safe route would be.
 - When stopping, report the exact failure classification instead of saying only that the workflow is stuck.
 - When materialization completes but `gate_status = failed`, say that the planning workflow finished but the targeted test gate did not pass.
@@ -343,11 +438,12 @@ The orchestration is `done` only when all of the following are true:
 - Plan artifacts under `./plans/**`
 - Review artifact under `./plans/_orchestrator/review/{task-slug}/review.md` with YAML frontmatter status fields
 - Developer review package under `./plans/{task-slug}/developer-review/`
+- Developer review history artifact under `./plans/{task-slug}/developer-review/review-history.json`
 - Test materialization output under plan-local `materialize.md` with YAML frontmatter status fields
 
 ## Guardrails
 
-- Orchestrate only: do not substitute for `architect`, `plan-review`, or `plan-materialize`.
+- Orchestrate only: do not substitute for `brainstorm`, `design-discovery`, `architect`, `plan-review`, or `plan-materialize`.
 - Do not implement production code.
 - Do not create or rely on `state.json`, `clarification.md`, or `user-gate.md`.
 - Do not hardcode runtime-specific spawn mechanics into the skill contract.
@@ -364,6 +460,14 @@ The orchestration is `done` only when all of the following are true:
 - Do not respawn duplicate planning sub-agents for the same unchanged handoff when the earlier pass is still running and making recent progress.
 - Do not bypass review after architect revisions.
 - Do not reuse approval after the plan changes.
+- Do not route non-approved developer review feedback directly to `architect` from status labels alone.
+- Do not treat `question` as automatically meaning `architect`.
+- Do not continue to materialization while any required developer review step or card is not `approved`.
+- Do not leave answer-only feedback in the same submitted non-approved state after you answered it; reset or regenerate the review package before asking for re-review.
+- Do not lose prior review comments and controller responses when resetting same-signature feedback or regenerating the developer review package.
+- Do not use `feedback.json` as both the editable live-review state and the historical review/action log.
+- Do not respawn `brainstorm`, `design-discovery`, `architect`, or `materializer` by reflex when a compatible live role agent already exists.
+- Do not reuse the prior `plan-review` reviewer by default; cold review stays fresh.
 - Do not keep looping silently when the same signature repeats with no plan progress.
 - Do not collapse invocation, protocol, and artifact-writeback failures into one generic stall.
 

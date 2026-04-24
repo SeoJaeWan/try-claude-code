@@ -295,6 +295,113 @@
       margin-top: 12px;
     }
 
+    .phase-owner {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 18px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(233, 223, 207, 0.52);
+      font-size: 13px;
+    }
+
+    .phase-owner-label {
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 11px;
+    }
+
+    .history-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .history-entry {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 253, 248, 0.92);
+      padding: 16px;
+    }
+
+    .history-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .history-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      margin-bottom: 12px;
+    }
+
+    .history-pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 800;
+      border: 1px solid var(--line);
+      background: var(--soft);
+      color: var(--ink);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .history-pill.status-needs-change {
+      background: rgba(179, 64, 64, 0.12);
+      border-color: rgba(179, 64, 64, 0.28);
+      color: var(--danger);
+    }
+
+    .history-pill.status-question {
+      background: rgba(182, 107, 0, 0.12);
+      border-color: rgba(182, 107, 0, 0.28);
+      color: var(--warn);
+    }
+
+    .history-pill.status-out-of-scope {
+      background: rgba(104, 116, 138, 0.14);
+      border-color: rgba(104, 116, 138, 0.28);
+      color: #556172;
+    }
+
+    .history-pill.status-approved,
+    .history-pill.resolution-resolved {
+      background: rgba(53, 163, 107, 0.12);
+      border-color: rgba(53, 163, 107, 0.28);
+      color: #24724b;
+    }
+
+    .history-row + .history-row {
+      margin-top: 10px;
+    }
+
+    .history-row strong {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 6px;
+      letter-spacing: 0.02em;
+    }
+
+    .history-row p {
+      margin: 0;
+      line-height: 1.55;
+    }
+
+    .history-row ul {
+      margin: 0;
+      padding-left: 18px;
+      line-height: 1.55;
+    }
+
     .finding {
       border-left: 4px solid var(--warn);
       padding-left: 12px;
@@ -370,6 +477,7 @@
 
     let model;
     let feedback;
+    let reviewHistory;
     let steps = [];
     let current = 0;
 
@@ -414,6 +522,111 @@
       `).join("");
     }
 
+    function cssToken(value) {
+      return String(value ?? "").toLowerCase().replace(/[^a-z0-9_-]+/g, "-");
+    }
+
+    function historyLabel(value) {
+      return {
+        approved: "Approved",
+        "needs-change": "Needs Change",
+        question: "Question",
+        "out-of-scope": "Out of Scope",
+        answer_only: "Answer Only",
+        request_lock: "Request Lock",
+        scope_decision: "Scope Decision",
+        ui_direction: "UI Direction",
+        plan_revision: "Plan Revision",
+        resolved: "Resolved",
+        active: "Active",
+        superseded: "Superseded"
+      }[value] || value;
+    }
+
+    function createHistoryFallback() {
+      return {
+        schema_version: 1,
+        task_slug: model?.task_slug || "",
+        current_plan_signature: model?.plan_signature || "",
+        rounds: []
+      };
+    }
+
+    function historyRounds() {
+      return asArray(reviewHistory?.rounds).filter((round) => round && typeof round === "object");
+    }
+
+    function normalizedHistoryEntries(stepId) {
+      const entries = [];
+      historyRounds().forEach((round, roundIndex) => {
+        asArray(round.items).forEach((item) => {
+          if (!item || typeof item !== "object") return;
+          if (stepId && item.step_id !== stepId) return;
+          entries.push({
+            roundId: round.id || `R${roundIndex + 1}`,
+            stepId: item.step_id || "",
+            stepLabel: item.step_label || item.step_id || "",
+            submittedAt: round.submitted_at || round.updated_at || "",
+            sourcePlanSignature: round.source_plan_signature || round.plan_signature || "",
+            resultingPlanSignature: item.resulting_plan_signature || round.resulting_plan_signature || "",
+            resolutionState: item.resolution_state || round.resolution_state || "",
+            summary: item.resolution_summary || round.summary || "",
+            userStatus: item.user_status || "",
+            userComment: item.user_comment || "",
+            triageRoute: item.triage_route || round.triage_route || "",
+            actionSummary: asArray(item.action_summary).filter(Boolean)
+          });
+        });
+      });
+      return entries;
+    }
+
+    function renderHistoryEntries(entries, options = {}) {
+      const { emptyText = "아직 기록된 리뷰 이력이 없습니다.", showStepLabel = false } = options;
+      if (!entries.length) return `<p class="meta">${esc(emptyText)}</p>`;
+      return `
+        <div class="history-list">
+          ${entries.map((entry) => `
+            <article class="history-entry">
+              <div class="history-meta">
+                Round ${esc(entry.roundId)}
+                ${entry.submittedAt ? ` · ${esc(entry.submittedAt)}` : ""}
+                ${entry.sourcePlanSignature ? ` · from ${esc(entry.sourcePlanSignature)}` : ""}
+                ${entry.resultingPlanSignature ? ` · to ${esc(entry.resultingPlanSignature)}` : ""}
+              </div>
+              <div class="history-pills">
+                ${entry.userStatus ? `<span class="history-pill status-${cssToken(entry.userStatus)}">${esc(historyLabel(entry.userStatus))}</span>` : ""}
+                ${entry.triageRoute ? `<span class="history-pill route-${cssToken(entry.triageRoute)}">${esc(historyLabel(entry.triageRoute))}</span>` : ""}
+                ${entry.resolutionState ? `<span class="history-pill resolution-${cssToken(entry.resolutionState)}">${esc(historyLabel(entry.resolutionState))}</span>` : ""}
+              </div>
+              ${showStepLabel && entry.stepLabel ? `
+                <div class="history-row">
+                  <strong>대상 step</strong>
+                  <p>${esc(entry.stepLabel)}</p>
+                </div>
+              ` : ""}
+              <div class="history-row">
+                <strong>사용자 리뷰</strong>
+                <p>${esc(entry.userComment || "코멘트 없음")}</p>
+              </div>
+              ${entry.actionSummary.length ? `
+                <div class="history-row">
+                  <strong>조치</strong>
+                  <ul>${entry.actionSummary.map((item) => `<li>${esc(item)}</li>`).join("")}</ul>
+                </div>
+              ` : ""}
+              ${entry.summary ? `
+                <div class="history-row">
+                  <strong>결과</strong>
+                  <p>${esc(entry.summary)}</p>
+                </div>
+              ` : ""}
+            </article>
+          `).join("")}
+        </div>
+      `;
+    }
+
     async function loadJson(path, fallback) {
       const res = await fetch(path, { cache: "no-store" });
       if (!res.ok) return fallback;
@@ -427,6 +640,7 @@
         return;
       }
 
+      reviewHistory = await loadJson("review-history.json", createHistoryFallback());
       const existing = await loadJson("/api/feedback", null);
       feedback = existing && existing.plan_signature === model.plan_signature
         ? existing
@@ -502,6 +716,7 @@
 
     function renderOverview() {
       const overview = model.overview || {};
+      const history = normalizedHistoryEntries("overview");
       $("content").innerHTML = `
         <div class="eyebrow">Overview</div>
         <h1>${esc(model.title || model.task_slug || "Plan Review")}</h1>
@@ -513,22 +728,31 @@
           <article class="card"><h3>주요 변경점</h3>${list(overview.major_changes)}</article>
           <article class="card wide"><h3>변경 형상</h3><p>${esc(overview.change_shape || "")}</p>${flow(overview.change_flow)}</article>
           <article class="card wide"><h3>핵심 리스크</h3>${list(overview.risks)}</article>
+          ${history.length ? `<article class="card wide"><h3>이전 리뷰와 조치</h3>${renderHistoryEntries(history, { emptyText: "이전 overview 리뷰 이력이 없습니다." })}</article>` : ""}
           ${previewBlock(overview.ui_previews) ? `<article class="card wide"><h3>UI 계획 preview</h3>${previewBlock(overview.ui_previews)}</article>` : ""}
         </div>
       `;
     }
 
     function renderPhase(phase, stepId) {
+      const history = normalizedHistoryEntries(stepId);
       $("content").innerHTML = `
         <div class="eyebrow">${esc(stepId)}</div>
         <h1>${esc(phase.title || stepId)}</h1>
         <p class="meta">${esc(phase.goal || "이 phase의 목표와 실행 계약을 검토합니다.")}</p>
+        ${phase.owner_agent ? `
+          <div class="phase-owner">
+            <span class="phase-owner-label">담당 agent</span>
+            <strong>${esc(phase.owner_agent)}</strong>
+          </div>
+        ` : ""}
         <div class="grid">
           <article class="card"><h3>변경 내용</h3>${list(phase.changes)}</article>
           <article class="card"><h3>검증</h3>${list(phase.validation)}</article>
           <article class="card wide"><h3>계약</h3>${list(phase.contracts)}</article>
           <article class="card wide"><h3>파일 영향</h3>${list(phase.file_impacts)}</article>
           <article class="card wide"><h3>리스크 / 주의점</h3>${list(phase.risks)}</article>
+          ${history.length ? `<article class="card wide"><h3>이전 리뷰와 조치</h3>${renderHistoryEntries(history, { emptyText: "이전 phase 리뷰 이력이 없습니다." })}</article>` : ""}
           ${previewBlock(phase.ui_previews) ? `<article class="card wide"><h3>UI 계획 preview</h3>${previewBlock(phase.ui_previews)}</article>` : ""}
         </div>
       `;
@@ -536,6 +760,7 @@
 
     function renderFinal() {
       const findings = asArray(model.review_findings);
+      const history = normalizedHistoryEntries("");
       const stepRows = steps.filter((step) => step.kind !== "final").map((step) => {
         const item = feedback.steps[step.id] || {};
         return `<li><strong>${esc(step.label)}</strong>: ${esc(item.status || "not reviewed")} ${item.comment ? `— ${esc(item.comment)}` : ""}</li>`;
@@ -548,6 +773,7 @@
         <div class="grid">
           <article class="card wide"><h3>Step 상태</h3><ul class="list">${stepRows}</ul></article>
           <article class="card wide"><h3>Plan review findings</h3>${findings.length ? findings.map((item) => `<p class="finding">${esc(item)}</p>`).join("") : "<p class=\"meta\">없음</p>"}</article>
+          ${history.length ? `<article class="card wide"><h3>리뷰 이력과 조치 요약</h3>${renderHistoryEntries(history, { emptyText: "기록된 리뷰 이력이 없습니다.", showStepLabel: true })}</article>` : ""}
         </div>
       `;
     }
@@ -575,9 +801,19 @@
       render();
     }
 
+    function scrollStepTop() {
+      const content = $("content");
+      if (content?.scrollIntoView) {
+        content.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
     function go(index) {
       current = Math.max(0, Math.min(index, steps.length - 1));
       render();
+      scrollStepTop();
     }
 
     async function save(submitted = false) {
