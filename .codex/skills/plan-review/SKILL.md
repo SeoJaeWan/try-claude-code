@@ -93,7 +93,7 @@ Before judging the plan:
 - If a reviewed phase detail names a local prerequisite plan in the local prerequisite field, load only that directly referenced plan and inspect only the minimum upstream phase needed to verify the prerequisite contract
 - Do not recurse into a larger plan graph or turn the review into a full multi-plan orchestration pass
 
-### Step 1.5. Run a scope challenge before the main review
+### Step 2. Run a scope challenge before the main review
 
 Before the main review, challenge the plan shape itself:
 
@@ -102,11 +102,11 @@ Before the main review, challenge the plan shape itself:
 - if the plan introduces a new pattern, abstraction, or service, verify whether a repo-local pattern or framework built-in should be preferred instead
 - treat scope-challenge findings as first-class review evidence, not side notes
 
-### Step 2. Run the main review
+### Step 3. Run the main review
 
 Judge the plan against:
 
-- scope-challenge findings from Step 1.5
+- scope-challenge findings from Step 2
 - template compliance
 - the active review wiki core contract
 - the selected pattern guidance that actually matches the reviewed plan
@@ -139,7 +139,7 @@ When UI scope exists, run a conditional design pass before the general engineeri
 
 Prefer findings over compliments. Do not invent repo facts that the plan does not support.
 
-### Step 3. Classify findings
+### Step 4. Classify findings
 
 - Use the severity model in `references/review-policy.md`
 - Record only real issues that materially affect execution readiness, contract clarity, or later test derivation
@@ -149,14 +149,14 @@ Prefer findings over compliments. Do not invent repo facts that the plan does no
 - Missing UI direction or state coverage is at least `major`, and `blocker` when implementation would have to invent critical user-visible behavior
 - If no findings remain, say so explicitly
 
-### Step 4. Decide the outcome
+### Step 5. Decide the outcome
 
 - Mark the review `blocked` if any `blocker` finding exists
 - Mark the review `ready-with-findings` if no blocker exists but `major` or `minor` findings remain
 - Mark the review `ready` only when no findings remain
 - Do not rewrite the plan in this skill
 
-### Step 5. Write the review artifact
+### Step 6. Write the review artifact
 
 Write:
 
@@ -198,7 +198,7 @@ Frontmatter rules:
   - `architect` when `outcome = blocked`
 - `finding_signature`: a stable short fingerprint of the normalized finding set for the currently reviewed plan; use `none` when no findings remain
 
-### Step 6. Respond in chat
+### Step 7. Respond in chat
 
 - Present findings first, ordered by severity
 - Use file references to the reviewed `plan.md`, any especially relevant phase detail file, and the written `review.md` artifact

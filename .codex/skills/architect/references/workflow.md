@@ -50,7 +50,7 @@ Before writing any plan artifact:
 - Treat the scenario's `input -> output` contract as the planning primitive
 - Do not replace the user's wording with planner shorthand when a concrete itemized restatement is possible
 
-### Step 1.2. Verify unstable external facts when needed (conditional)
+### Step 2. Verify unstable external facts when needed (conditional)
 
 - First consume any `brainstorm` handoff and treat its confirmed library/framework/API decisions as the default planning input
 - If a `brainstorm` handoff includes review wiki preflight findings, treat them as upstream ambiguity-resolution notes, not as a substitute for reading the active architect core docs yourself
@@ -67,7 +67,7 @@ Before writing any plan artifact:
   - ask the user to confirm the risky assumption only when it would change the plan boundary or phase contract
 - Do not dump raw documentation into the plan; compress the result into planning-relevant constraints and choices only
 
-### Step 1.5. Resolve blocking decisions before planning (required)
+### Step 3. Resolve blocking decisions before planning (required)
 
 - Do not write any plan artifact while `blocking` ambiguity remains
 - Route unresolved `blocking` ambiguity to `brainstorm` first
@@ -112,7 +112,7 @@ Before writing any plan artifact:
 - Do not hide unresolved blocking decisions outside the relevant phase or plan file
 - Carry forward `deferrable` items only as inline phase defaults or short constraint notes when they matter to execution
 
-### Step 2. Gather high-level context (optional)
+### Step 4. Gather high-level context (optional)
 
 Use high-level inspection only:
 
@@ -125,7 +125,7 @@ Use high-level inspection only:
 
 Do not deep-dive into implementation details.
 
-### Step 2.5. Resolve execution contracts before routing (required for implementation plans)
+### Step 5. Resolve execution contracts before routing (required for implementation plans)
 
 - Before assigning `owner_agent`, apply the active review wiki execution-routing and test/review handoff core docs.
 - Use `./references/agents-lite.md` only as the local catalog of available execution agents.
@@ -135,7 +135,7 @@ Do not deep-dive into implementation details.
 - If one request spans multiple concerns, inspect each relevant local contract instead of guessing from stale skill prose.
 - Do not explain detailed task-by-task command situations in the plan prompt itself; defer command selection details to execution time.
 
-### Step 3. Design plan structure
+### Step 6. Design plan structure
 
 - Create executable plan artifacts under `./plans/`
 - Draft every `plan.md` from `plan-template-sequential.md`
@@ -224,7 +224,7 @@ Do not deep-dive into implementation details.
 - Do not leave multiple plausible canonical outputs unresolved inside one phase
 - If a controller cannot answer "what was requested, what is in/out, what shape changes, which contracts are locked, what each phase fixes, and how risk is verified" from `plan.md`, the plan fails the quality bar
 
-### Step 3.2. Choose plan count before writing (required)
+### Step 7. Choose plan count before writing (required)
 
 - Default to one sequential executable plan at `./plans/{task-slug}/plan.md`
 - Emit multiple standalone executable plans only when the active core contract says the request contains multiple independently mergeable change boundaries
@@ -243,7 +243,7 @@ Do not deep-dive into implementation details.
 - Do not force multiple plans only because many files change or one phase would be long
 - Do not generate overview, index, DAG, or root graph files
 
-### Step 3.5. Prepare automatic test materialization (conditional)
+### Step 8. Prepare automatic test materialization (conditional)
 
 If a plan file includes implementation scope beyond documentation-only or structural-only work:
 
@@ -256,7 +256,7 @@ If a plan file includes implementation scope beyond documentation-only or struct
 `plan-materialize` later decides `unit`, `runtime`, selected `e2e`, `skip`, or `block` from the plan summary, the phase detail files, and local project conventions.
 `architect` does not enumerate owner-test inventories or choose concrete test files.
 
-### Step 3.6. Plan journey and full-flow E2E ownership in `plan-materialize` (conditional)
+### Step 9. Plan journey and full-flow E2E ownership in `plan-materialize` (conditional)
 
 If a plan file changes cross-route journeys, auth/session transitions, redirect chains, persisted browser state, or any release-critical flow that needs regression hardening:
 
@@ -264,7 +264,7 @@ If a plan file changes cross-route journeys, auth/session transitions, redirect 
 - Make the changed journey contract explicit enough that `plan-materialize` can materialize the selected full-flow E2E directly
 - Define trigger, scope, state checkpoints, and expected outputs in the relevant phase detail file using the active review wiki core docs
 
-### Step 3.7. Plan reference-based visual comparison phase (conditional)
+### Step 10. Plan reference-based visual comparison phase (conditional)
 
 If a plan implements UI against a reference and acceptance depends on comparing against that reference:
 
@@ -272,12 +272,12 @@ If a plan implements UI against a reference and acceptance depends on comparing 
 - Use `./references/visual-parity-contract.md` for local comparison-mode, metric, and surface-role schema when a comparison phase is required.
 - Put comparison evidence, pass/fail decision, and any later fix handoff in the phase detail file.
 
-### Step 4. Quality gates (required)
+### Step 11. Quality gates (required)
 
 - Run the quality-gate checklist in `{review_wiki_root}/core/quality-gates.md` before finalizing
 - Treat missing review wiki routing or skipped applicable wiki guidance as a failed quality gate
 
-### Step 5. Self-review gate (required)
+### Step 12. Self-review gate (required)
 
 - Re-run the same checklist in `{review_wiki_root}/core/quality-gates.md`
 - Incorporate critical findings before handoff
@@ -288,7 +288,7 @@ If a plan implements UI against a reference and acceptance depends on comparing 
 - Treat this self-review as internal review only
 - If the user asks for an independent critical review, finish the plan artifact and hand it off to an independent `plan-review` pass
 
-### Step 6. Compatibility policy (required)
+### Step 13. Compatibility policy (required)
 
 - Plan Artifact Interface v11 applies to newly created plans
 - Existing plans are not automatically migrated
@@ -297,7 +297,7 @@ If a plan implements UI against a reference and acceptance depends on comparing 
   - add a warning note near the top of the plan
   - avoid broad migration unless explicitly requested
 
-### Step 7. Execution handoff
+### Step 14. Execution handoff
 
 Architect does not execute implementation or source-tree test generation directly.
 If the user asks for an independent cold review before execution, route the finished executable plan to an independent `plan-review` pass after writing it. The workflow source of truth remains the `plan-review` skill.

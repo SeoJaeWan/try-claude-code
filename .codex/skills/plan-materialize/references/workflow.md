@@ -32,12 +32,12 @@
   - `next_action = stop`
   - `resume_from = materialize`
 
-### Step 0.5. Determine execution mode
+### Step 1. Determine execution mode
 
 - If an explicit orchestrator handoff provides `task_slug` and `plan_path`, enter orchestrated mode
 - Otherwise enter direct mode
 
-### Step 1. Extract plan clauses and scenario contracts before test classification
+### Step 2. Extract plan clauses and scenario contracts before test classification
 
 Read `plan.md` first to understand the human-facing phase order and intended change.
 Then read the linked phase detail files and enumerate every selected phase-local clause from:
@@ -100,7 +100,7 @@ Blocker typing rules:
 - use `blocker_type = user_policy` only when the blocker truly depends on a fresh user decision rather than a missing technical contract
 - use `blocker_type = external_setup` only when the source tree or test environment is missing a prerequisite that the current plan revision cannot supply
 
-### Step 1.3. Scan affected existing owner tests before choosing layers
+### Step 3. Scan affected existing owner tests before choosing layers
 
 - Before classifying test layers, search for existing owner tests that already freeze the selected clause's boundary or observable contract
 - Build an affected-owner set across local unit, runtime, compare, and E2E owners:
@@ -111,7 +111,7 @@ Blocker typing rules:
 - Do not widen this into unrelated regression gardening; include only tests whose assertions, helper contracts, or owner role would become misleading after the selected clause changes
 - If you cannot tell whether a nearby owner test still expresses the same canonical contract, inspect it and decide `keep`, `update`, or `delete` before continuing
 
-### Step 1.5. Classify scenario boundaries into test ownership areas
+### Step 4. Classify scenario boundaries into test ownership areas
 
 Classification rules:
 
@@ -142,7 +142,7 @@ Classification rules:
     - prefer tests for how the app consumes a registry or selected entry over duplicating registry contents in assertions
 - Source topology boundary: source-inspection tests are allowed only when the plan selects the source topology as the contract. Pair them with behavior tests whenever the topology exists to enable user-visible behavior or runtime interpretation.
 
-### Step 2. Map boundaries to existing tests and affected owners
+### Step 5. Map boundaries to existing tests and affected owners
 
 Always try to update an existing test before creating a new one.
 Every selected clause must end this step in exactly one state:
@@ -154,7 +154,7 @@ Every selected clause must end this step in exactly one state:
 
 `covered` means the test would fail if the selected behavior, state transition, final output, or explicitly selected source topology is wrong. A test that only checks a nearby file exists, a route loads, a label appears, or a button can be clicked is not coverage for a richer plan clause unless that exact weak observation is the clause.
 
-Before finalizing `create`, `update`, or `delete`, reconcile the affected-owner set from Step 1.3 so no stale canonical owner survives by accident.
+Before finalizing `create`, `update`, or `delete`, reconcile the affected-owner set from Step 3 so no stale canonical owner survives by accident.
 
 #### Unit tests
 
@@ -192,7 +192,7 @@ Before finalizing `create`, `update`, or `delete`, reconcile the affected-owner 
   - `next_action = stop`
   - `resume_from = materialize`
 
-### Step 3. Materialize unit tests
+### Step 6. Materialize unit tests
 
 - Follow `references/unit-test-conventions.md`
 - Write tests directly into the source tree using the repo's current test layout
@@ -217,7 +217,7 @@ Before finalizing `create`, `update`, or `delete`, reconcile the affected-owner 
 - Do not edit production code, fixtures outside the test tree, or test config during this skill
 - If the unit test imports a planned module that does not exist yet, keep the import to the planned path when that path is locked by the plan and report the test as a completion-blocking red contract. Do not replace it with filesystem/string inspection just to make the suite pass.
 
-### Step 3.5. Materialize runtime integration tests
+### Step 7. Materialize runtime integration tests
 
 - Follow the repo's existing rendered-harness and runtime-owner patterns before inventing a new style
 - Keep runtime tests focused on observable input -> output contracts:
@@ -230,7 +230,7 @@ Before finalizing `create`, `update`, or `delete`, reconcile the affected-owner 
 - Do not freeze decorative layout, exact color, or other high-churn presentation details unless the selected clause makes that visual contract durable
 - Do not shrink a browser-dependent clause into runtime coverage when the selected contract requires a real browser engine
 
-### Step 4. Materialize E2E tests
+### Step 8. Materialize E2E tests
 
 - Follow `references/e2e-test-conventions.md`
 - Use only the runner already configured in the project
@@ -244,7 +244,7 @@ Before finalizing `create`, `update`, or `delete`, reconcile the affected-owner 
 - Add metadata comments to E2E specs so future updates can find them reliably
 - When split is required, create a registry file only for that UI area
 
-### Step 5. Run targeted validation
+### Step 9. Run targeted validation
 
 After editing tests, run the narrowest available validation commands for the changed coverage:
 
@@ -255,7 +255,7 @@ After editing tests, run the narrowest available validation commands for the cha
 - If any targeted validation for the affected owner-test set fails, record that as a gate failure; do not present materialization completion as equivalent to a passed gate
 - In `TDD contract mode`, if the selected command path or runner/config ownership is not implemented yet, do not block after writing the tests. Record those commands as `not run`, set `gate_status = failed`, and explain that the materialized tests are completion-blocking red contracts until the planned harness exists and passes them.
 
-### Step 6. Write the materialization report
+### Step 10. Write the materialization report
 
 Write `materialize.md` adjacent to the selected executable `plan.md`.
 
@@ -317,7 +317,7 @@ Frontmatter rules:
 - `blocked_clause_ids`: sorted clause identifiers blocked in this pass; use `[]` when not applicable
 - `affected_phase_paths`: sorted linked phase detail paths implicated by the materialization result; use `[]` when not applicable
 
-### Step 7. Verify before completion
+### Step 11. Verify before completion
 
 - Every selected clause from `output`, `constraint`, `failure-validation`, and `validation` has an owner test, an execution command, or an explicit blocker
 - Every selected test-expressible clause has explicit source-tree test coverage or an explicit blocker

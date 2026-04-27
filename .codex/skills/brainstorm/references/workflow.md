@@ -34,7 +34,7 @@ Read only what is needed:
 Do not assume or depend on `./.ai/` or any other external AI metadata directory.
 Prefer related-artifact lookup before asking the user to restate a prior decision.
 
-### 2.5. Run review wiki preflight when available
+### 3. Run review wiki preflight when available
 
 If planning handoff is plausible, inspect the staged review wiki before asking the user to confirm scope:
 
@@ -62,14 +62,14 @@ Do not use the preflight to:
 - enforce `plan.md` formatting
 - decide execution routing, test materialization scope, or review outcomes
 
-### 3. Research latest information when needed
+### 4. Research latest information when needed
 
 If technical choices depend on external facts (library/API/pattern changes), gather current information before asking for decisions.
 If the choice is primarily about library, framework, package docs, API shape, migration path, or deprecation status, prefer Context7 before general web search.
 Use Context7 only for the minimum facts that change the option comparison, recommendation, or blocking questions.
 If reliable research tooling is unavailable, state that clearly and ask the user to confirm assumptions.
 
-### 4. Challenge premises (required when the problem framing can still change the plan)
+### 5. Challenge premises (required when the problem framing can still change the plan)
 
 Before comparing implementation approaches, test the current framing:
 
@@ -85,7 +85,7 @@ Rules:
 - Use premise challenges to reduce plan risk, not to expand scope for its own sake.
 - If the premise itself is unstable, resolve that before comparing implementation approaches.
 
-### 5. Compare approaches (required when real alternatives remain)
+### 6. Compare approaches (required when real alternatives remain)
 
 Present 2-3 options only when multiple viable directions still remain after reading the user's request and local context.
 Present the option comparison as a markdown table.
@@ -104,7 +104,7 @@ Rules:
 
 Then recommend one option with concise rationale (YAGNI, maintainability, delivery risk).
 
-### 6. Ask confirmation-focused questions
+### 7. Ask confirmation-focused questions
 
 Ask only unresolved high-impact questions.
 
@@ -120,7 +120,7 @@ Rules:
 - If more than 4 blocking questions exist, ask them in rounds
 - Prefer structured user-input tooling when available; otherwise ask concise plain-text questions
 
-### 7. Produce request-lock snapshot (default)
+### 8. Produce request-lock snapshot (default)
 
 Return a concise request-lock snapshot in the response using markdown tables.
 
@@ -185,7 +185,7 @@ Response formatting rules:
 - Do not let planner shorthand replace the user's wording in the tables.
 - If user-visible UI direction remains blocking, recommend `design-discovery` before `architect`.
 
-### 8. Optional artifact export (only on explicit user request)
+### 9. Optional artifact export (only on explicit user request)
 
 If and only if the user explicitly asks for a written artifact, export to:
 
@@ -202,7 +202,7 @@ Include:
 - `남은 질문 / 가정`
 - `추천 다음 단계`
 
-### 9. Quality gate before handoff
+### 10. Quality gate before handoff
 
 Before handoff, confirm:
 
@@ -217,7 +217,7 @@ Before handoff, confirm:
 - Blocking questions are explicit when another clarification round is still needed
 - Recommended next step is clear
 
-### 10. Handoff to `design-discovery` or `architect` (when needed)
+### 11. Handoff to `design-discovery` or `architect` (when needed)
 
 If user-visible UI direction such as hierarchy, state presentation, responsive behavior, or design-system fit remains blocking:
 
