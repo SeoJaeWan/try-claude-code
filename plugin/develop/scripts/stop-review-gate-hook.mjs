@@ -223,6 +223,48 @@ function partitionFindingsByConfidence(text) {
   return { highFindings, lowFindings, taggedCount };
 }
 
+/**
+ * Inspect a `runAppServerTurn` result for an explicit failure signal
+ * (Codex `error` notification or upgrade-required stderr). Returns a
+ * formatted user-facing reason string, or null if no signal was found.
+ *
+ * The most common case this catches: OpenAI server returns 400
+ * "requires a newer version of Codex" when the local CLI is too old
+ * for the model the server is routing to. Without this, the hook would
+ * surface the misleading "returned no final output" message instead.
+ */
+function diagnoseCodexFailure(result) {
+  const errorMessage = String(result?.error?.message ?? result?.error ?? "").trim();
+  const stderrText = String(result?.stderr ?? "").trim();
+  const combined = `${errorMessage}\n${stderrText}`;
+
+  if (!errorMessage && !stderrText) {
+    return null;
+  }
+
+  // Upgrade-required: server says the local CLI is too old for the
+  // current default model. Surface a clear remediation instead of the
+  // generic empty-output warning.
+  if (/requires? a newer version of (?:the )?(?:Codex|app|CLI)|please upgrade.*Codex|newer version of Codex/i.test(combined)) {
+    const detail = errorMessage || stderrText.split(/\r?\n/).find((l) => l.includes("requires")) || stderrText.split(/\r?\n/, 1)[0];
+    return [
+      "Codex CLI 버전이 OpenAI 서버가 요구하는 모델 버전보다 낮습니다.",
+      "다음 명령으로 업그레이드 후 다시 시도하세요:",
+      "",
+      "    npm i -g @openai/codex@latest",
+      "",
+      `원본 에러: ${detail}`,
+    ].join("\n");
+  }
+
+  // Generic Codex-side failure: at least surface the actual message
+  // rather than the misleading "returned no final output" warning.
+  if (errorMessage) {
+    return `Codex 측 에러로 리뷰가 완료되지 않았습니다: ${errorMessage}`;
+  }
+  return null;
+}
+
 function parseStopReviewOutput(rawOutput) {
   const text = String(rawOutput ?? "").trim();
   if (!text) {
@@ -556,6 +598,18 @@ async function runStopReview(cwd, input = {}, worktreeDiffs = [], workspaceRoot 
       path: finalPath,
       sessionId,
     });
+
+    // If Codex finished the protocol turn but emitted no agent message
+    // (e.g. OpenAI rejected the request because the local CLI is too old
+    // for the routed model), surface the actual diagnostic instead of the
+    // generic "no final output" warning.
+    const finalText = String(result.finalMessage ?? "").trim();
+    if (!finalText) {
+      const diagnosed = diagnoseCodexFailure(result);
+      if (diagnosed) {
+        return { ok: false, reason: diagnosed, details: null };
+      }
+    }
 
     return parseStopReviewOutput(result.finalMessage);
   } catch (error) {
