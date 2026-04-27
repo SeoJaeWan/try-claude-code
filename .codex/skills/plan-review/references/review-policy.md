@@ -47,7 +47,7 @@ Typical blocker cases:
 - a user-visible exclusion is introduced without explicit reason and approval status
 - the plan requires a reviewer to read every phase detail file just to understand what concrete boundaries will change
 - plan count or topology that is clearly over-split, under-justified, or not independently mergeable under the active core contract
-- missing `visual-comparator` phase when the active core docs or selected pattern guidance require it
+- missing reference-comparison phase when the active core docs or selected pattern guidance require it
 - a visual parity plan claims scoped, structural, or non-blocking comparison closure without an explicit `comparison mode`, `gating metric`, and separate `non-gating metric` decision
 - a visual parity plan uses task-local UI nouns as if they were the canonical reusable surface taxonomy
 - a visual parity plan relies on whole-canvas mismatch as the only success metric while also claiming scoped or structural closure
@@ -111,7 +111,7 @@ Required focus areas:
 7. routing and ownership fit
 8. verification realism
 9. `plan-materialize` derivation readiness
-10. `visual-comparator` planning when relevant
+10. reference-comparison planning when relevant
 11. direct prerequisite contract parity when relevant
 12. visual parity contract alignment when relevant
 

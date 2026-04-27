@@ -127,38 +127,18 @@ Do not deep-dive into implementation details.
 
 ### Step 2.5. Resolve execution contracts before routing (required for implementation plans)
 
-- Before assigning `owner_agent` to implementation phases, inspect the relevant execution contract for the work type
-- For `frontend-developer` or `backend-developer`:
-  - there is no dedicated frontend/backend CLI contract in this repository
-  - inspect only the minimum repo-local command, config, or existing source-tree convention that governs the work
-  - treat that repo-local contract as the source of truth for path policy, naming, validation, scaffold shape, and rollout constraints
-- For `visual-comparator`:
-  - when `plugin/develop/skills/visual-compare/SKILL.md` is present, inspect it as the compare execution contract
-  - otherwise inspect only the minimum repo-local reference source, selector policy, capture path, and artifact location that govern the comparison phase
-  - use `visual-comparator` only for external image or URL references; if the reference is a Figma URL, route to `figma-parity-auditor` / `figma-parity` instead of `visual-comparator`
-  - treat element-level capture, diff artifact generation, and report-only output as part of the compare execution contract
-  - if visual parity is part of acceptance, also inspect `./references/visual-parity-contract.md`
-  - treat the comparison mode, gating metric, non-gating metric, surface-role mapping, comparison policy, and metric treatment as part of the compare execution contract
-  - treat those repo-local inputs as the source of truth for what gets captured, what gets compared, and what evidence must be committed
-- For `figma-parity-auditor`:
-  - when `plugin/develop/skills/figma-parity/SKILL.md` is present, inspect it as the compare execution contract
-  - use `figma-parity-auditor` only for Figma URL references
-  - treat Figma MCP inspection, agent-browser DOM introspection, structured per-dimension parity reporting, and report-only output as part of the compare execution contract
-  - do not route Figma URL audits through pixel diff or screenshot-only comparison when the Figma parity path is available
-  - if visual parity is part of acceptance, also inspect `./references/visual-parity-contract.md`
-  - treat those repo-local inputs as the source of truth for what gets audited, what evidence must be written, and what a later fix phase will consume
-- For `general-developer`:
-  - there is no dedicated CLI contract in this repository
-  - inspect only the minimum repo-local tool or validation command that governs the work
-  - use those commands as the active execution contract for file boundaries, validation, and rollout constraints
-- Use those contracts to confirm execution routing, phase boundaries, and inline defaults or constraints inside the relevant phase blocks
-- If one request spans multiple concerns, inspect each relevant contract instead of guessing from stale skill prose
-- Do not explain detailed task-by-task command situations in the plan prompt itself; defer command selection details to execution time
+- Before assigning `owner_agent`, apply the active review wiki execution-routing and test/review handoff core docs.
+- Use `./references/agents-lite.md` only as the local catalog of available execution agents.
+- Inspect the minimum repo-local command, config, plugin skill, or source-tree convention that governs the selected work type.
+- If visual comparison acceptance is in scope, inspect `./references/visual-parity-contract.md` for local metric and surface-role schema only.
+- Use those local contracts to confirm path policy, naming, validation, scaffold shape, evidence artifacts, and rollout constraints inside the relevant phase blocks.
+- If one request spans multiple concerns, inspect each relevant local contract instead of guessing from stale skill prose.
+- Do not explain detailed task-by-task command situations in the plan prompt itself; defer command selection details to execution time.
 
 ### Step 3. Design plan structure
 
 - Create executable plan artifacts under `./plans/`
-- Draft every top-level execution-contract `plan.md` from `plan-template-sequential.md`
+- Draft every `plan.md` from `plan-template-sequential.md`
 - Draft one technical detail file per phase under `./plans/{task-slug}/phases/` from `phase-template-detail.md`
 - Apply `terminology-policy.md` before writing any visible plan prose:
   - keep English for exact identifiers, commands, paths, API names, schema keys, agent names, and canonical taxonomy IDs
@@ -168,7 +148,7 @@ Do not deep-dive into implementation details.
 - Treat `plan-template-sequential.md` as the complete `plan.md` structure and `phase-template-detail.md` as the complete per-phase detail structure
 - Do not add extra top-level sections unless a core doc explicitly requires them or the user explicitly asks for them
 - Do not add a dedicated top-level design-discovery recap section; compress approved UI-direction decisions into the existing request, contract, and phase detail tables
-- Treat `plan.md` as the top-level execution contract shared by AI agents and the review pipeline, not a duplicated implementation spec
+- Apply the active review wiki plan-artifact contract for the `plan.md` / phase-detail split; do not duplicate phase-local implementation detail in `plan.md`.
 - Keep the top preamble minimal: `Branch`, a one-line `Worktree dir`, then the compact routing table with `# | Phase | Agent`
 - In that routing table, use the linked phase detail path in `Phase` and mirror the linked detail-file `owner_agent` in `Agent`
 - After the routing table, use the sections fixed by `plan-template-sequential.md` in the same order:
@@ -286,19 +266,11 @@ If a plan file changes cross-route journeys, auth/session transitions, redirect 
 
 ### Step 3.7. Plan reference-based visual comparison phase (conditional)
 
-If a plan implements UI against an external visual reference such as a live URL, image, or screenshot set, and acceptance depends on comparing the implementation against that reference:
+If a plan implements UI against a reference and acceptance depends on comparing against that reference:
 
-- Add a later phase with `owner_agent: visual-comparator`
-- If the reference is a Figma URL instead, route that verification phase to `figma-parity-auditor` when available rather than `visual-comparator`
-- Choose exactly one `comparison mode` per compared state or scope
-- Default to `structural parity` when fixture payloads, repeated mock media, synthetic body content, or other known non-reference-equivalent surfaces would otherwise dominate whole-canvas mismatch
-- Make that phase capture or load the reference side and the current implementation side explicitly
-- Make the phase detail file state one blocking `gating metric` and one separate `non-gating metric`, or `none` when no advisory metric is needed
-- Use the canonical surface roles from `./references/visual-parity-contract.md`; task-local nouns can appear only as local mapping notes
-- For each relevant surface, declare the `comparison policy` and `metric treatment`
-- Require repo-local capture, diff, and report artifacts plus a pass/fail decision in the phase detail file
-- Require the report contract to separate blocking pass/fail from global drift reporting
-- If failed comparison can lead to more UI work, add a subsequent `frontend-developer` phase for fixes instead of hiding rework inside the compare phase
+- Apply the active review wiki execution-routing and test/review handoff core docs to decide whether a comparison phase is required.
+- Use `./references/visual-parity-contract.md` for local comparison-mode, metric, and surface-role schema when a comparison phase is required.
+- Put comparison evidence, pass/fail decision, and any later fix handoff in the phase detail file.
 
 ### Step 4. Quality gates (required)
 
@@ -309,7 +281,7 @@ If a plan implements UI against an external visual reference such as a live URL,
 
 - Re-run the same checklist in `{review_wiki_root}/core/quality-gates.md`
 - Incorporate critical findings before handoff
-- When multiple local plans exist, verify one-hop prerequisite parity before handoff:
+- When multiple local plans exist and selected review wiki guidance requires prerequisite parity, verify it before handoff:
   - each downstream detail-file `선행조건` maps to a specific upstream phase
   - the upstream detail-file `output` and `검증` restate the same contract without reinterpretation
   - the upstream detail-file `boundary` can actually establish that contract

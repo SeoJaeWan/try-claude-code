@@ -4,7 +4,7 @@
 
 - Planning only: do not write implementation code
 - Every executable plan file is sequential-only
-- Do not write `plan.md` as if only implementers will read it
+- Follow the active review wiki plan artifact contract for the intended `plan.md` audience and detail split
 - Do not treat the review wiki as optional when its registry is available; always read the registry first and route from it
 - Do not bypass the resolved `review_wiki_root` with hardcoded external-path reads once the workspace sync path is available
 - In orchestrated mode, do not redo review wiki bootstrap or orchestration preflight that the orchestrator already completed

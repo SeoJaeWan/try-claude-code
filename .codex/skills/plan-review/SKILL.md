@@ -112,7 +112,7 @@ Judge the plan against:
 - the selected pattern guidance that actually matches the reviewed plan
 - request traceability from the user's wording to the plan tables and phase detail work bundles
 - Korean-first visible prose quality under `architect/references/terminology-policy.md`
-- overview/detail split quality: whether `plan.md` stays a top-level execution contract and phase-local execution detail stays in the linked phase files
+- overview/detail split quality under the active review wiki plan artifact contract
 - parity between the `plan.md` phase summary and the linked technical detail file
 - blocking ambiguity
 - topology quality and plan-count justification
@@ -126,7 +126,7 @@ Judge the plan against:
 - whether the phase detail contracts are explicit enough for later `plan-materialize` derivation, affected-owner migration, and stable owner-test selection without guessing
 - whether the plan is explicit enough to derive a stable test diagram, failure-mode map, and reasonable parallelization lanes for the affected work
 - whether `plan.md` duplicates phase-local file maps, scenario tables, validation matrices, or long per-phase field summaries that belong in the linked detail files instead
-- `visual-comparator` planning when the active core docs or selected pattern guidance require it
+- reference-based comparison planning when the active core docs or selected pattern guidance require it
 - visual parity contract alignment when the reviewed plan includes reference-based comparison acceptance
 
 When UI scope exists, run a conditional design pass before the general engineering judgment:
@@ -227,8 +227,7 @@ Frontmatter rules:
 - Do not approve a plan that makes a reviewer reconstruct affected public boundaries or exclusions from prose alone
 - Do not let planner shorthand replace user-request traceability
 - Do not approve visible plan prose that mixes English planner shorthand into Korean explanations when the terminology policy gives a natural Korean term
-- Do not approve a visual parity plan that makes the reviewer infer the comparison mode, blocking gating metric, separate non-gating metric, or why a large mismatch is non-blocking
-- Do not approve a visual parity plan that treats task-local UI nouns as reusable taxonomy instead of mapping them to canonical surface roles
+- When reference-based comparison is in scope, apply the active review wiki guidance plus `architect/references/visual-parity-contract.md` instead of reinterpreting local UI nouns or inferred metrics.
 
 </Instructions>
 </Skill_Guide>

@@ -38,6 +38,4 @@ These planning roles are handoff utilities, not valid `owner_agent` values insid
 - Do not use planning handoff roles such as `plan-review` or `plan-materialize` as phase `owner_agent` values.
 - Architect should inspect the corresponding CLI help before finalizing implementation routing for `frontend-developer` or `backend-developer`.
 - For `general-developer`, inspect the minimum repo-local validation or tooling contract instead of a nonexistent dedicated CLI.
-- Use `visual-comparator` only for compare/report phases that produce repo-local evidence artifacts; any product-code fix belongs in a later `frontend-developer` phase.
-- Use `visual-comparator` only for external image or URL references, not Figma URLs; route Figma URL audits to `figma-parity-auditor` when that plugin path is available.
-- Use `figma-parity-auditor` only for compare/report phases that audit against Figma URLs via structured parity data; any product-code fix belongs in a later `frontend-developer` phase.
+- Follow the active review wiki execution-routing and test/review handoff core docs for when these agents may be assigned.

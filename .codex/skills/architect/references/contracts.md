@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Create decision-complete implementation plans as one or more sequential executable plans, with explicit execution phases, scenario-first boundary I/O contracts, and top-level execution-contract plan artifacts that preserve the user's wording, expose concrete work bundles and public contracts before execution order, and keep later execution from guessing.
+Create decision-complete implementation plans as one or more sequential executable plans that follow the active review wiki core contracts, preserve the user's wording, expose concrete work bundles, and keep later execution from guessing.
 
 ## Entry Notes
 
