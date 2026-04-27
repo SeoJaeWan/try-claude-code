@@ -18,8 +18,11 @@
 - Do not add test assertions, validation paths, state coverage, or edge cases that are outside the selected plan clauses or their declared risk patterns
 - Do not replace behavior, flow, state, codegen, or final-output contracts with file-existence/source-string tests merely because implementation or harness files are not present yet
 - Do not mark a behavior clause covered by smoke tests that only prove rendering, heading visibility, non-empty copy text, or absence of console errors
+- Do not place tests in a neighboring package just because its runner currently exists; do not let test placement move the selected behavior out of its owning app/module
 - Do not freeze exact export inventories or negative-only import/export assertions unless the plan explicitly identifies that inventory as the stable public contract
+- Do not freeze volatile metadata snapshots such as exact registry counts, temporary source splits, deprecated sibling names, or excluded names unless the plan explicitly makes that exact snapshot the durable user-visible contract
 - Do not create package-root export tests that only prove re-export identity, legacy alias absence, or private symbol absence unless the external import behavior itself is the selected durable feature contract
+- Do not rely on negative/no-op assertions alone when the plan also defines a valid output; materialize the positive path first
 - Do not silently shrink a selected full-flow journey into a UI-area-only test just because a narrower owner already exists
 - Do not silently defer selected plan coverage to a later pass
 - Do not widen targeted validation commands into full-suite regression unless the plan explicitly requires it

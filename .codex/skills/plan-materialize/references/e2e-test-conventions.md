@@ -93,6 +93,8 @@ Registry is an exception path, not the default.
 - Cover only the interaction paths, validation/error paths, and boundary states explicitly selected by the plan or implied by its declared risk patterns
 - When one spec can close multiple selected clauses on the same UI area, prefer updating that owner spec instead of scattering coverage
 - Do not promote manual QA ideas into E2E assertions unless the plan names them as contract
+- For synchronization clauses, assert the positive user-visible update first, then assert stale/forbidden output is absent when the plan requires it
+- Do not duplicate volatile registry contents such as exact counts or full item lists in E2E unless that full list is the selected user-visible contract; prefer representative required entries plus separate behavior tests for lookup/selection rules
 
 ## Prohibited
 

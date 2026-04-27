@@ -32,6 +32,9 @@ Do not create a new boundary test solely because the code exists; create it only
 - Avoid planner shorthand in test intent text; use Korean terms such as `사용자 행동`, `완료 조건`, `변경 경계`, and `공개 경계` instead of `user action`, `completion condition`, `boundary`, or `surface`
 - Use `// Arrange`, `// Act`, `// Assert` comments when the local test style permits
 - Include explicit happy-path, non-happy-path, edge, or exception coverage only when the selected plan clause or its risk pattern requires it
+- When the plan defines both an allowed output and a forbidden/no-op output, assert the allowed output first and then assert the forbidden path is absent or inert
+- Prefer concrete final outputs over vague intent checks: exact generated code, normalized props, selected state, visible control list, callback firing, or serialized result
+- For replacement behavior such as demo handlers replacing snapshot callbacks, assert the replacement actually runs and the replaced path does not run
 - Mock external boundaries only
 
 ## Risk-pattern coverage
@@ -72,5 +75,6 @@ If a feature introduces a new final interpretation boundary, do not stop at a se
 
 - Follow the repository's current placement convention
 - Keep the test inside the source tree, not under `plans/`
+- Keep the test in the app/module that owns the selected behavior; do not move it to an adjacent package only to reuse an existing runner
 - If the repository layout is ambiguous, stop and escalate
 - If a new production module path is only a candidate or example in the plan, do not create a sibling test that makes that topology real; return the ambiguity to `architect`

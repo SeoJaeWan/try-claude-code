@@ -17,6 +17,7 @@
   - the selected plan exposes enough behavior contract to author failing-capable tests
   - the repository already signals the same broad stack or adjacent convention strongly enough to author tests consistently, or the plan locks a first-time stack
   - the report records which validation commands could not be run yet and states that plan completion remains blocked until they pass
+- Do not place tests in an adjacent package only because that package has an existing runner. The owner test must live in the target app/module that owns the selected behavior, unless the plan explicitly selects the adjacent package as the durable owner.
 - If a needed test type has no existing setup, stop immediately with:
   - `outcome = blocked`
   - `blocker_type = external_setup`
@@ -84,6 +85,7 @@ If a clause is not directly test-expressible, do not pretend adjacent tests cove
 Map it to the narrowest execution command already selected by the plan, or return a blocker.
 For UI and flow clauses, derive the user interaction sequence and observable outcome before choosing E2E or runtime coverage. A test that only asserts page load, panel title visibility, copy-button existence, or absence of console errors does not close a clause about synchronized state, canonical output, route interpretation, validation, or workflow completion.
 For function, mapper, codegen, state, permission, selection, or serialization clauses, derive the input object/state and exact output or negative output before choosing unit/runtime coverage.
+When a selected scenario has both a valid output and a prohibited output, materialize the valid output first, then add the prohibited/no-op assertion. Negative-only coverage is insufficient when the plan also defines what must happen.
 If the phase detail files do not expose enough information to derive this `input -> output` contract, stop and return the missing contract to `architect`.
 If `plan.md` and a linked phase detail file disagree on what changes in that phase, stop and return a blocker instead of picking one.
 If source topology affects owner-test placement and the plan does not clearly distinguish committed paths from examples or candidates, stop and return a blocker instead of letting tests establish the structure.
@@ -135,6 +137,9 @@ Classification rules:
 - Export or import inventory is not a test boundary by default
     - materialize it only when the plan explicitly selects a stable public API contract whose presence or absence is itself the feature behavior
     - do not materialize package-root re-export wiring, owner-entry identity checks, or negative export absence checks when they only freeze internal module plumbing rather than external feature behavior
+- Volatile metadata snapshots are not a test boundary by default
+    - do not freeze exact item counts, temporary inventory splits, deprecated/excluded sibling names, or current registry internals unless the plan identifies that exact inventory as the durable user-visible contract
+    - prefer tests for how the app consumes a registry or selected entry over duplicating registry contents in assertions
 - Source topology boundary: source-inspection tests are allowed only when the plan selects the source topology as the contract. Pair them with behavior tests whenever the topology exists to enable user-visible behavior or runtime interpretation.
 
 ### Step 2. Map boundaries to existing tests and affected owners
@@ -199,11 +204,13 @@ Before finalizing `create`, `update`, or `delete`, reconcile the affected-owner 
 - Create a new helper test file only when the plan implies a stable logic boundary that can own the scenario long-term
     - if the invariant naturally belongs inside an existing selection or projection helper, fold coverage into that boundary instead of creating one-helper-per-rule files
 - Cover both `must happen` and important `must not happen` outputs when the scenario contract requires them
+- Put the best-case or valid-output assertion before negative/no-op assertions when both are part of the same selected behavior
 - When the scenario has competing completion paths, pin both the winning path and the losing path that must become no-op
 - When the scenario has deferred execution, pin the terminal state and verify that disallowed side effects do not fire on rejected or losing paths
 - When side effects are coupled to state, verify the side effect only occurs on the state transition that is allowed to emit it
 - If the scenario introduces a new final output interpretation path, add a test at that final-interpretation boundary instead of stopping at an earlier boundary-contract test
 - Do not treat selection-only tests or boundary-contract tests as sufficient when the final interpreted output is a feature-specific contract
+- When one execution path replaces another, assert the replacement behavior at the observable boundary, not only object identity. For callbacks or handlers, call the resulting handler or drive the interaction and assert the allowed handler fires while the disallowed path does not.
 - Do not harden a sibling contract that the plan did not select as canonical
 - Do not add generic happy-path, edge-case, or exception assertions unless the selected clause or its risk pattern requires them
 - If the plan's terminal state retires a boundary or UI area, delete the obsolete test instead of replacing it with a placeholder test
