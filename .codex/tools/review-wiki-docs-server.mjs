@@ -1564,11 +1564,16 @@ function showFeedbackForSelection(selection) {
     anchor: location.hash || ""
   };
   const width = Math.min(380, window.innerWidth - 24);
-  const left = Math.min(Math.max(12, rect.left + window.scrollX), window.scrollX + window.innerWidth - width - 12);
-  const top = Math.min(rect.bottom + window.scrollY + 10, window.scrollY + window.innerHeight - 220);
-  popover.style.left = left + "px";
-  popover.style.top = Math.max(12, top) + "px";
+  popover.style.visibility = "hidden";
   popover.hidden = false;
+  const height = Math.min(popover.offsetHeight || 220, window.innerHeight - 24);
+  const left = Math.min(Math.max(12, rect.left), window.innerWidth - width - 12);
+  const preferredTop = rect.bottom + 10;
+  const fallbackTop = rect.top - height - 10;
+  const top = preferredTop + height <= window.innerHeight - 12 ? preferredTop : fallbackTop;
+  popover.style.left = left + "px";
+  popover.style.top = Math.min(Math.max(12, top), window.innerHeight - height - 12) + "px";
+  popover.style.visibility = "";
   commentField.focus();
 }
 
