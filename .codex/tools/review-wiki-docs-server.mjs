@@ -248,6 +248,32 @@ function trimSummary(value, max = 180) {
   return `${text.slice(0, max - 1).trim()}...`;
 }
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function comparableText(value) {
+  return stripMarkdown(value).replace(/\s+/g, " ").trim();
+}
+
+function documentBodyMarkdown(doc) {
+  let markdown = doc.content.replace(/\r\n/g, "\n").replace(/^\s+/, "");
+  const titlePattern = new RegExp(`^#\\s+${escapeRegExp(doc.title)}\\s*\\n+`);
+  markdown = markdown.replace(titlePattern, "");
+
+  const lines = markdown.split("\n");
+  if (/^##\s+\uac1c\uc694\s*$/.test(lines[0] || "")) {
+    const nextHeading = lines.findIndex((line, index) => index > 0 && /^#{1,6}\s+/.test(line));
+    const sectionEnd = nextHeading === -1 ? lines.length : nextHeading;
+    const overviewBody = lines.slice(1, sectionEnd).join("\n");
+    if (doc.summary && comparableText(overviewBody) === comparableText(doc.summary)) {
+      markdown = lines.slice(sectionEnd).join("\n").replace(/^\s+/, "");
+    }
+  }
+
+  return markdown;
+}
+
 function slugFromPath(filePath) {
   return path.basename(filePath, path.extname(filePath));
 }
@@ -827,7 +853,7 @@ function renderDocument(model, doc, currentPath) {
     ${doc.summary ? `<p class="lead">${escapeHtml(doc.summary)}</p>` : ""}
     ${tagLinks ? `<div class="tag-row">${tagLinks}</div>` : ""}
   </header>
-  ${markdownToHtml(doc.content, model.routeMap)}`;
+  ${markdownToHtml(documentBodyMarkdown(doc), model.routeMap)}`;
 
   return renderLayout({ model, currentPath, title: doc.title, content, document: doc });
 }
