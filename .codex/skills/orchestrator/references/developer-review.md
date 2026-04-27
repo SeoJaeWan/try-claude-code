@@ -13,7 +13,7 @@ At the gate:
 
 - Read `./references/developer-review-ui.md`.
 - Create or refresh `./plans/{task-slug}/developer-review/` for current `plan_signature`.
-- Copy `./assets/developer-review/index.html` to `./plans/{task-slug}/developer-review/index.html`.
+- Do not copy `./assets/developer-review/index.html` into the plan folder; the shared server serves the fixed HTML app from `.codex`.
 - Generate `review-data.json` from current `plan.md`, linked phase detail files, and fresh `review.md`.
 - Create or refresh `review-history.json` for current `task-slug` and `plan_signature`.
 - Ensure `review-data.json` is user-readable and not a raw markdown dump:
@@ -24,14 +24,16 @@ At the gate:
   - `Previous`, `Next`, and direct step navigation reset visible review content to the top of the current step.
 - Ensure the developer review package exposes historical rounds and controller action summaries from `review-history.json`.
 - Initialize or reset `feedback.json` for current `plan_signature` with `review_status = in_progress`.
-- Start or instruct the user to start the shared server:
-  - `node .codex/tools/developer-review-server.mjs plans/{task-slug}/developer-review`
-- Tell the user to review in the browser, press submit on the final step, then say `리뷰 완료` in chat.
+- Auto-start the shared server in the background; do not ask the user to run a `node` command:
+  1. Health-check first: `node -e "fetch('http://localhost:9797/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"`. Exit `0` means a compatible shared server is still alive; reuse it.
+  2. Otherwise launch with the `Bash` tool using `run_in_background: true`: `node .codex/tools/developer-review-server.mjs`.
+  3. Re-run the global health-check, then check `http://localhost:9797/api/reviews/{task-slug}/health` to confirm the task route and current `plan_signature`. On `EADDRINUSE` from a foreign process, retry the launch with `--port 9798` or another free port and tell the user the alternate URL.
+- Tell the user in Korean: the server is running in the background, open `http://localhost:9797/review/{task-slug}`, press submit on the final step, then say `review complete` in chat.
 - Do not create `user-gate.md`.
 
-When the user says `리뷰 완료`, read `feedback.json`:
+When the user says `review complete`, read `feedback.json`:
 
-- if `plan_signature` differs from current `plan_signature`, regenerate the package and require review again
+- if `task_slug` or `plan_signature` differs from current plan state, regenerate the package and require review again
 - if `review_status` is not `submitted`, ask the user to submit the browser review first
 - if every required Overview and Phase step is `approved`, treat current `plan_signature` as explicitly approved and continue to Step 7 before materialization
 - if any required Overview or Phase step or card is not `approved`, run Step 6 before choosing the next role pass
@@ -68,7 +70,7 @@ Route by triage result:
 - `answer_only`: answer in chat from current plan/review/package, update active history round with answer summary and same-signature re-review outcome, refresh `feedback.json` for the same signature, require fresh browser review, and do not invoke `architect`.
 - `scope_decision` or `request_lock`: ask direct questions first when underspecified, then run or reuse `brainstorm` with exact task, plan, `review_wiki_root`, current `plan_signature`, latest `feedback.json`, locked request summary when available, verified inputs, and chat-only output contract unless the user asked for an artifact.
 - `ui_direction`: route to `brainstorm` first if product framing or scope is unstable; otherwise run or reuse `design-discovery` with exact task, plan, current signature, latest `feedback.json`, locked request summary when available, verified inputs, and chat-only output contract unless the user asked for an artifact.
-- `plan_revision`: record the revision route in `review-history.json`, run Step 7, route exact feedback path and affected IDs to `architect`, rerun `plan-review`, regenerate the review UI, and require fresh browser review.
+- `plan_revision`: record the revision route in `review-history.json`, run Step 7, route exact feedback path and affected IDs to `architect`, rerun `plan-review`, regenerate the review data package, and require fresh browser review.
 
 Required sub-agent terminal results:
 

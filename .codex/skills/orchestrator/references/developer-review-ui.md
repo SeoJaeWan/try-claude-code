@@ -4,38 +4,58 @@ Use this reference when `orchestrator` has a reviewed plan and must collect expl
 
 ## When to create
 
-Create the review package after `plan-review` produces a fresh `ready` or `ready-with-findings` review for the current `plan_signature`, and before materialization.
+Create or refresh the review data package after `plan-review` produces a fresh `ready` or `ready-with-findings` review for the current `plan_signature`, and before materialization.
 
 Do not create it for `blocked` reviews. Route blockers back to `architect`.
 
 ## Paths
 
-Write the package under:
+Write only data, feedback, history, and preview assets under:
 
 ```text
 plans/{task-slug}/developer-review/
-├── index.html
-├── review-data.json
-├── feedback.json
-├── review-history.json
-└── assets/
-    ├── previews/
-    └── diagrams/
++-- review-data.json
++-- feedback.json
++-- review-history.json
++-- assets/
+    +-- previews/
+    +-- diagrams/
 ```
 
-Use the shared browser app template:
+Do not copy `index.html` into `plans/{task-slug}/developer-review/`.
+
+The browser review app is a single shared HTML file:
 
 ```text
 .codex/skills/orchestrator/assets/developer-review/index.html
 ```
 
-Serve and persist feedback with:
+The orchestrator auto-starts the shared server in the background on port `9797` (see `developer-review.md` Step 5):
 
 ```text
-node .codex/tools/developer-review-server.mjs plans/{task-slug}/developer-review
+node .codex/tools/developer-review-server.mjs
 ```
 
-The user finishes review by saying `리뷰 완료` in chat. Do not rely on filesystem watching as the completion signal.
+Open a task review at:
+
+```text
+http://localhost:9797/review/{task-slug}
+```
+
+The shared server supports multiple task reviews at the same time. Task-specific data is served through:
+
+```text
+GET  /api/reviews/{task-slug}/review-data
+GET  /api/reviews/{task-slug}/review-history
+GET  /api/reviews/{task-slug}/feedback
+POST /api/reviews/{task-slug}/feedback
+GET  /api/reviews/{task-slug}/health
+GET  /review-assets/{task-slug}/...
+```
+
+`task-slug` must contain only ASCII letters, digits, `_`, and `-`. The server resolves all task data and asset requests under `plans/{task-slug}/developer-review/`.
+
+The user finishes review by saying `review complete` in chat after pressing submit in the browser. Do not rely on filesystem watching as the completion signal.
 
 ## Review shape
 
@@ -114,9 +134,11 @@ UI preview objects are allowed only for user-visible UI changes. They are plan p
 }
 ```
 
+Preview `asset` values should stay relative to `plans/{task-slug}/developer-review/`. The shared HTML rewrites relative preview paths through `/review-assets/{task-slug}/...`.
+
 ## Feedback model
 
-The server writes `feedback.json`.
+The server writes `feedback.json`. When writing feedback, the server rejects stale or cross-task submissions unless the posted `task_slug` and `plan_signature` match the current `review-data.json`.
 
 Use these statuses only:
 
@@ -170,7 +192,7 @@ Expected shape:
       "submitted_at": "2026-04-23T00:00:00.000Z",
       "source_plan_signature": "abc123",
       "resolution_state": "resolved",
-      "summary": "P4 질문에 답변하고 같은 plan_signature에서 재리뷰를 요청했다.",
+      "summary": "Summary of the review round and controller response.",
       "resulting_plan_signature": "abc123",
       "items": [
         {
@@ -180,10 +202,10 @@ Expected shape:
           "user_comment": "...",
           "triage_route": "answer_only",
           "action_summary": [
-            "질문 의도를 채팅에서 답변했다.",
-            "같은 plan_signature에서 feedback을 초기화하고 재리뷰를 요청했다."
+            "Answered the user's question.",
+            "Reset feedback for same-signature re-review."
           ],
-          "resolution_summary": "동일 signature 재리뷰",
+          "resolution_summary": "Same signature re-review required.",
           "resulting_plan_signature": "abc123"
         }
       ]
@@ -199,11 +221,11 @@ Rules:
 - Preserve prior rounds when `plan_signature` changes; update only `current_plan_signature` and add or complete the new resolution entry.
 - Record both the user's review and the controller's action summary so the next review pass can show what changed.
 
-## Routing after user says `리뷰 완료`
+## Routing after user says `review complete`
 
 Read `feedback.json`.
 
-- If `plan_signature` differs from the current plan signature, discard the feedback and regenerate the review UI.
+- If `plan_signature` differs from the current plan signature, discard the feedback and regenerate the review data package.
 - If every required step is `approved` and `review_status = submitted`, treat the current `plan_signature` as explicitly approved and continue to `plan-materialize`.
 - If any required step or card is not `approved`, developer approval is absent and feedback triage is required:
   - append or update a review-history round before resetting `feedback.json`, regenerating the package, or changing `plan_signature`
@@ -212,12 +234,12 @@ Read `feedback.json`.
   - if every non-approved item is `answer_only`, answer in chat, reset `feedback.json` to a fresh in-progress review for the same `plan_signature`, and require fresh browser review
   - if any item is `request_lock` or `scope_decision`, run `brainstorm` first and only hand off to `architect` after the request is locked again
   - if any item is `ui_direction`, run `design-discovery` first unless the real blocker is still product framing, in which case return to `brainstorm`
-  - if the remaining items are `plan_revision`, route the exact feedback path and affected IDs to `architect`, then rerun `plan-review` and regenerate the review UI
+  - if the remaining items are `plan_revision`, route the exact feedback path and affected IDs to `architect`, then rerun `plan-review` and regenerate the review data package
 - If feedback is missing, incomplete, or still `in_progress`, ask the user to finish the browser review and press submit.
 
 ## Invalidations
 
-Any change to `plan_signature` invalidates all prior developer review approvals. Regenerate the review package and require review again.
+Any change to `plan_signature` invalidates all prior developer review approvals. Regenerate the review data package and require review again.
 
 ## Guardrails
 

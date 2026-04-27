@@ -13,7 +13,7 @@ Use this skill to process review inbox files into the review wiki. Resolve the r
    - Input inbox root: main repository root `.codex/reviews/`
    - Input file pattern: `.codex/reviews/**/*.md`
    - Review wiki root: `~/.codex/reviewWiki`
-   - Required output directories: `raw/`, `wiki/`, `wiki/core/`, `wiki/patterns/`, `wiki/_meta/`
+   - Required output directories: `raw/`, `wiki/`, `wiki/core/`, `wiki/patterns/`, `wiki/tags/`, `wiki/_meta/`
    - Required control file: `wiki/registry.json`
    - If the link is missing or broken, stop and use `review-wiki-setup`.
    - If running from a worktree or nested workspace, resolve the main repository root first.
@@ -51,16 +51,18 @@ Use this skill to process review inbox files into the review wiki. Resolve the r
    - If the new evidence describes a compatible but distinct failure pattern, create a new rule file.
    - If the new evidence conflicts with an older rule, do not auto-replace it. Draft the exact replacement proposal, including file and registry edits, and ask the user to approve replacing the older rule with the newer one.
 
-7. Write or update the affected pattern files.
+7. Write or update the affected docs-first source files.
+   - Treat existing wiki files as the human-readable documentation surface; do not create a separate generated docs copy.
    - Use one markdown file per promoted rule under `wiki/patterns/`.
-   - Use the pattern-file schema from the reference file.
+   - Use the docs-first pattern-file schema from the reference file.
    - Add `raw_sources` backlinks.
    - Favor concise, imperative planning guidance over long summaries.
    - Strengthen existing `해야 할 것` or `피해야 할 것` guidance only when the new evidence actually changes the rule.
    - Update `wiki/registry.json` in the same batch whenever a pattern file is created, removed, or renamed.
+   - Refresh affected raw evidence pages, tag pages, and core links so the readable docs and Obsidian graph stay in the same files.
 
 8. Finalize atomically per ingest batch.
-   - Delete the source inbox files only after the raw batch, wiki changes, and registry updates all succeed.
+   - Delete the source inbox files only after the raw batch, docs-first wiki changes, graph links, tag pages, and registry updates all succeed.
    - If any step fails, stop immediately and keep the source review files in place.
    - If the ingest batch succeeds, remove the remaining source review files from the inbox.
    - Do not continue with partial cleanup after a failed batch.

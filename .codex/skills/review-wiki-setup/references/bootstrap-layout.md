@@ -9,6 +9,8 @@
 - `wiki/tags/`
 - `wiki/_meta/`
 
+Do not create `wiki/docs/`. The existing `wiki/core/**`, `wiki/patterns/**`, `wiki/tags/**`, and `raw/**` files are the docs-first source documents.
+
 ## Required Initial Files
 
 - `wiki/registry.json`
@@ -22,7 +24,7 @@
 
 Create these only when missing. Do not overwrite populated files without approval.
 
-Do not create a default `wiki/index.md`. Obsidian graph navigation is built from explicit wikilinks and tag graph notes under `wiki/tags/**`.
+Do not create a default `wiki/index.md`. Obsidian graph navigation is built from explicit wikilinks and tag pages under `wiki/tags/**`.
 
 ## Registry Purpose
 
@@ -32,6 +34,7 @@ Do not create a default `wiki/index.md`. Obsidian graph navigation is built from
 - optionally define stage-specific `stage_core` overrides when one stage needs a narrower core set than the default planning contract
 - list the registered pattern files
 - define the tag taxonomy
+- define `document_model` as `docs-first-source`
 - define `graph_notes_root`, normally `tags`
 - define selection policy for `brainstorm`, `architect`, and `review`
 - define adjacency and lint policy
@@ -49,12 +52,23 @@ Seed these planning concerns:
 - `quality-gates.md`
 - `execution-handoff.md`
 
-## Graph Notes
+## Docs-First Source Documents
 
-Create tag graph notes lazily from the registry taxonomy:
+The review wiki is its own human-readable documentation. Keep one source of truth:
+
+- `wiki/core/**` are concept and workflow policy pages
+- `wiki/patterns/**` are rule reference pages
+- `wiki/tags/**` are category and navigation pages
+- `raw/**` are evidence reference pages
+
+Do not generate separate duplicate docs from these files.
+
+## Tag Pages
+
+Create tag pages lazily from the registry taxonomy:
 
 - `wiki/tags/{tag_group}/{tag_value}.md`
 
 The initial taxonomy should include `status: [promoted, raw-only]` so raw evidence always has a graph anchor.
 
-These notes are Obsidian navigation hubs. They should link to matching pattern files and raw records, and stage tag notes may also link to core documents that are loaded for that stage.
+These notes are readable category pages and Obsidian graph hubs. They should link to matching pattern files and raw records with one bullet per linked page, and stage tag notes may also link to core documents that are loaded for that stage.

@@ -111,7 +111,7 @@ Follow [developer-review-learning.md](developer-review-learning.md). Capture reu
 - `outcome = completed` and `gate_status = passed`: orchestration can complete.
 - `outcome = completed` and `gate_status = failed`: stop and tell the user materialization finished but the targeted gate did not pass.
 - `outcome = blocked` and `blocker_type = external_setup`: stop and tell the user which prerequisite must be added first.
-- `outcome = blocked` and `blocker_type = plan_ambiguity`: route blocker back to `architect`, rerun review, regenerate developer review UI, and require fresh approval before another materialize pass.
+- `outcome = blocked` and `blocker_type = plan_ambiguity`: route blocker back to `architect`, rerun review, regenerate the developer review data package, and require fresh approval before another materialize pass.
 - `outcome = blocked` and `blocker_type = user_policy`: ask the user directly in chat. If the answer changes the plan contract, route to `architect`; if it only chooses between already planned policy variants, rerun `plan-materialize` against the same signature.
 - If the same `materialize_signature` repeats against the same `plan_signature` after one architect or user intervention attempt, stop and report `no_progress`.
 

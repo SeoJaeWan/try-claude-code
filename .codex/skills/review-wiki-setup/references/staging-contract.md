@@ -20,6 +20,7 @@ After refresh or repair, the planning root is `./.codex/review-wiki/sync/current
 - `./.codex/review-wiki/sync/current/registry.json`
 - `./.codex/review-wiki/sync/current/core/**`
 - `./.codex/review-wiki/sync/current/patterns/**`
+- `./.codex/review-wiki/sync/current/tags/**`
 - `./.codex/review-wiki/sync/current/_meta/**`
 
 The manifest lives next to the planning root so diagnostics do not modify the external source root.

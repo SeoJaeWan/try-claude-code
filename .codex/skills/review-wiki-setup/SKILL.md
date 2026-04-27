@@ -20,7 +20,7 @@ Use this skill to connect Codex to the Obsidian vault, create the minimum review
    - Do not continue bootstrapping against the wrong root.
 
 3. Bootstrap the vault structure.
-   - Create `raw/`, `wiki/`, `wiki/core/`, `wiki/patterns/`, and `wiki/_meta/` if they do not exist.
+   - Create `raw/`, `wiki/`, `wiki/core/`, `wiki/patterns/`, `wiki/tags/`, and `wiki/_meta/` if they do not exist.
    - Seed `wiki/registry.json` if missing.
    - Seed the core planning documents if missing.
    - Preserve existing user content; do not overwrite populated files without explicit approval.
@@ -31,7 +31,7 @@ Use this skill to connect Codex to the Obsidian vault, create the minimum review
    - On macOS / Linux, use `stage-review-wiki.sh`.
    - Prepare `./.codex/review-wiki/sync/current` as a live link to the external `wiki/` root.
    - If the runtime cannot safely read through a workspace link to the external `wiki/` root, stop and report that blocker instead of creating a copied fallback.
-   - After preparation, treat `./.codex/review-wiki/sync/current/` itself as the planning root that contains `registry.json`, `core/`, `patterns/`, and `_meta/`.
+   - After preparation, treat `./.codex/review-wiki/sync/current/` itself as the planning root that contains `registry.json`, `core/`, `patterns/`, `tags/`, and `_meta/`.
    - Write `./.codex/review-wiki/sync/current.manifest.json` next to the planning root with the source root, destination root, fixed `Link` mode, optional link type, and preparation timestamp.
    - Treat the workspace planning root as read-only execution input; the source of truth remains `~/.codex/reviewWiki`.
    - If `./.codex/review-wiki/sync/current.manifest.json` is missing, unreadable, or records a different workspace `destination_root` than the current workspace, treat the planning root as stale or foreign and refresh it instead of trusting the existing link blindly.

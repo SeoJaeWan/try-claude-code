@@ -1,4 +1,4 @@
-# Orchestrator Contracts
+﻿# Orchestrator Contracts
 
 ## Table of Contents
 
@@ -146,7 +146,7 @@ Report the exact classification when stopping.
 - Keep orchestration updates short.
 - Tell the user which stage is running.
 - Present user-decision questions in Korean.
-- At the developer review gate, present the browser URL or server command and tell the user to reply `리뷰 완료` after pressing submit in the browser.
+- Current developer review gates must present `http://localhost:9797/review/{task-slug}` or the chosen alternate port URL and tell the user to reply `review complete` after pressing submit in the browser.
 - When developer review feedback is not fully approved, say that feedback triage is running and name the next safe route: chat clarification, `brainstorm`, `design-discovery`, or `architect`.
 - When a new developer review package is shown after feedback triage, keep prior review comments and controller actions visible through the package history.
 - When developer review learning capture runs, say whether it produced reusable review wiki candidates, raw-only evidence, or no promotable learning.

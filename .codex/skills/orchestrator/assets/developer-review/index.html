@@ -633,15 +633,59 @@
       return res.json();
     }
 
+    function taskSlugFromUrl() {
+      const match = window.location.pathname.match(/^\/review\/([A-Za-z0-9_-]+)$/);
+      return match ? match[1] : "";
+    }
+
+    function apiPath(resource) {
+      const taskSlug = taskSlugFromUrl();
+      if (!taskSlug) return "";
+      return `/api/reviews/${taskSlug}/${resource}`;
+    }
+
+    function normalizePreviewAssets(value) {
+      const taskSlug = taskSlugFromUrl();
+      if (!taskSlug || !value) return value;
+
+      const normalizeOne = (preview) => {
+        if (!preview || typeof preview !== "object" || typeof preview.asset !== "string") {
+          return preview;
+        }
+        if (/^(?:https?:)?\/\//.test(preview.asset) || preview.asset.startsWith("/")) {
+          return preview;
+        }
+        const asset = preview.asset.replace(/^assets\//, "");
+        return { ...preview, asset: `/review-assets/${taskSlug}/${asset}` };
+      };
+
+      const normalizeContainer = (container) => {
+        if (!container || typeof container !== "object") return;
+        if (Array.isArray(container.ui_previews)) {
+          container.ui_previews = container.ui_previews.map(normalizeOne);
+        }
+      };
+
+      normalizeContainer(value.overview);
+      asArray(value.phases).forEach(normalizeContainer);
+      return value;
+    }
+
     async function init() {
-      model = await loadJson("review-data.json", null);
+      const reviewDataPath = apiPath("review-data");
+      if (!reviewDataPath) {
+        $("content").innerHTML = "<h1>Invalid review URL.</h1>";
+        return;
+      }
+
+      model = normalizePreviewAssets(await loadJson(reviewDataPath, null));
       if (!model) {
         $("content").innerHTML = "<h1>review-data.json을 찾을 수 없습니다.</h1>";
         return;
       }
 
-      reviewHistory = await loadJson("review-history.json", createHistoryFallback());
-      const existing = await loadJson("/api/feedback", null);
+      reviewHistory = await loadJson(apiPath("review-history"), createHistoryFallback());
+      const existing = await loadJson(apiPath("feedback"), null);
       feedback = existing && existing.plan_signature === model.plan_signature
         ? existing
         : createFeedback();
@@ -819,7 +863,7 @@
     async function save(submitted = false) {
       if (submitted) feedback.review_status = "submitted";
       feedback.updated_at = new Date().toISOString();
-      const res = await fetch("/api/feedback", {
+      const res = await fetch(apiPath("feedback"), {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(feedback, null, 2)
