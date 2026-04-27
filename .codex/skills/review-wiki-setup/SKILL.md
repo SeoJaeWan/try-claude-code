@@ -20,7 +20,7 @@ Use this skill to connect Codex to the Obsidian vault, create the minimum review
    - Do not continue bootstrapping against the wrong root.
 
 3. Bootstrap the vault structure.
-   - Create `raw/`, `wiki/`, `wiki/core/`, `wiki/patterns/`, `wiki/tags/`, and `wiki/_meta/` if they do not exist.
+   - Create `raw/`, `wiki/`, `wiki/core/`, `wiki/patterns/`, `wiki/tags/`, `wiki/_meta/`, `feedback/`, `feedback/inbox/`, `feedback/applied/`, `feedback/rejected/`, `feedback/needs-decision/`, `feedback/stale/`, and `history/` if they do not exist.
    - Seed `wiki/registry.json` if missing.
    - Seed the core planning documents if missing.
    - Preserve existing user content; do not overwrite populated files without explicit approval.

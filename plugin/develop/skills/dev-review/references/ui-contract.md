@@ -25,13 +25,13 @@ plugin/develop/skills/dev-review/    ← html-root (one global copy)
         └── highlight-theme.css
 ```
 
-Serve with the **plugin-internal** dev-review server (NOT the orchestrator's server in `.codex/tools/`). The dev-review skill auto-starts this in the background on port `9797` (see SKILL.md Step 6):
+Serve with the **plugin-internal** dev-review server (NOT the orchestrator's server in `.codex/tools/`). The dev-review skill auto-starts this in the background on port `8787` (see SKILL.md Step 6):
 
 ```text
 node "${CLAUDE_PLUGIN_ROOT}/develop/skills/dev-review/scripts/server.mjs"
 ```
 
-The server is **multi-review**: one process hosts every task under `plans/*/dev-review/` and routes them at `/review/{task-slug}`. The reviewer opens `http://localhost:9797/review/{task_slug}` for each task; parallel Claude sessions share the same port without collision (the second session's health-check finds the first one and reuses it).
+The server is **multi-review**: one process hosts every task under `plans/*/dev-review/` and routes them at `/review/{task-slug}`. The reviewer opens `http://localhost:8787/review/{task_slug}` for each task; parallel Claude sessions share the same port without collision (the second session's health-check finds the first one and reuses it).
 
 URL routing inside the server:
 

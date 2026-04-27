@@ -12,6 +12,7 @@
   - `wiki/patterns/`
   - `wiki/tags/`
   - `wiki/_meta/`
+  - `history/`
 - Required control file:
   - `wiki/registry.json`
 
@@ -26,6 +27,16 @@ The current review collector writes BLOCK reviews to:
 `.codex/reviews/{sanitized-branch}/{headSha}.md`
 
 Do not assume a flat inbox. Always scan recursively.
+
+## Operation History
+
+Every successful, blocked, partial, or failed ingest batch should write one history JSON record under:
+
+`history/YYYY/MM/{YYYYMMDD-HHMMSS}-ingest.json`
+
+The history record is for docs display and audit. It must summarize inputs, raw records, pattern changes, registry changes, validation results, and source review cleanup. It must not store full review text and must not become the source of truth.
+
+Read `references/history-model.md` before writing history records.
 
 ## Raw File Naming
 

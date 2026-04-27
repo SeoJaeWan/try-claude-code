@@ -1,6 +1,6 @@
 ---
 name: review-wiki-lint
-description: Audit the review wiki for registry drift, broken raw backlinks, duplicate or conflicting pattern rules, orphan registrations, taxonomy drift, Obsidian graph-link drift, docs-first source formatting, and document consistency problems. Use when Codex needs to prepare a proposed cleanup report in `wiki/_meta/lint-report.md` and wait for explicit user approval before applying any wiki cleanup.
+description: Audit the review wiki for registry drift, broken raw backlinks, duplicate or conflicting pattern rules, orphan registrations, taxonomy drift, Obsidian graph-link drift, docs-first source formatting, feedback/history record consistency, and document consistency problems. Use when Codex needs to prepare a proposed cleanup report in `wiki/_meta/lint-report.md` and wait for explicit user approval before applying any wiki cleanup.
 ---
 
 # Review Wiki Lint
@@ -22,7 +22,7 @@ Use this skill to inspect the review wiki without silently rewriting it. Resolve
    - Inspect only as much raw material as needed to verify broken or suspicious backlinks.
 
 3. Run the lint checks from the reference checklist.
-   - Look for registry drift, broken `raw_sources`, broken Obsidian wikilinks, duplicate or conflicting rules, orphan registrations, unregistered files, taxonomy drift, overbroad tags, stale guidance, Korean-schema drift, Korean terminology drift, docs-first source drift, and tag-page drift.
+   - Look for registry drift, broken `raw_sources`, broken Obsidian wikilinks, duplicate or conflicting rules, orphan registrations, unregistered files, taxonomy drift, overbroad tags, stale guidance, Korean-schema drift, Korean terminology drift, docs-first source drift, tag-page drift, malformed feedback records, and malformed history records.
    - Treat lint as a review pass, not an excuse to rewrite the whole wiki.
 
 4. Write the proposed cleanup plan to `wiki/_meta/lint-report.md`.
@@ -54,6 +54,8 @@ Use this skill to inspect the review wiki without silently rewriting it. Resolve
 - Ensure human-readable prose is Korean-first and does not contain avoidable mixed phrases like `user action`, `surface`, `boundary`, `contract`, `validation`, `state`, `phase`, or `owner` unless the term is a code/API/schema/path/tag token.
 - Ensure tag pages avoid long comma-separated link lines and use readable bullet lists for related patterns and raw evidence.
 - Ensure new pattern files still match the one-file-per-rule registry model rather than turning into freeform note sprawl.
+- Ensure feedback outcome folders and history root exist when docs feedback is enabled.
+- Ensure feedback and history JSON records are valid and do not claim changed files that are missing.
 
 ## Guardrails
 
@@ -61,6 +63,7 @@ Use this skill to inspect the review wiki without silently rewriting it. Resolve
 - Do not delete raw evidence or wiki documents without explicit approval.
 - Do not rewrite whole documents when a narrow rule edit is enough.
 - Do not treat lint as a semantic re-ingest pass; stay focused on quality, consistency, routing integrity, and graph-link integrity.
+- Do not rewrite feedback or history records except to report malformed records or apply user-approved cleanup.
 
 ## Reference
 

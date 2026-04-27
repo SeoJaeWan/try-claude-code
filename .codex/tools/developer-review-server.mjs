@@ -21,7 +21,7 @@ const sharedIndexPath = path.join(
 const argv = process.argv.slice(2);
 
 if (argv.includes("--help") || argv.includes("-h")) {
-  console.log("Usage: node .codex/tools/developer-review-server.mjs [review-dir] [--port 9797]");
+  console.log("Usage: node .codex/tools/developer-review-server.mjs [review-dir] [--port 8787]");
   console.log("");
   console.log("Open reviews at /review/{task-slug}.");
   console.log("When [review-dir] is passed, / redirects to the matching /review/{task-slug} URL.");
@@ -54,8 +54,8 @@ function positionalArgs() {
 const legacyReviewRootArg = positionalArgs()[0];
 const legacyReviewRoot = legacyReviewRootArg ? path.resolve(process.cwd(), legacyReviewRootArg) : null;
 const portArg = takeFlag("--port");
-const requestedPort = portArg !== null ? Number(portArg) : 9797;
-const port = Number.isFinite(requestedPort) ? requestedPort : 9797;
+const requestedPort = portArg !== null ? Number(portArg) : 8787;
+const port = Number.isFinite(requestedPort) ? requestedPort : 8787;
 
 function sendJson(res, status, value) {
   const body = JSON.stringify(value, null, 2);

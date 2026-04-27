@@ -1,11 +1,11 @@
 ---
 name: review-wiki-ingest
-description: Ingest Codex review files from the main repository root under `.codex/reviews/**/*.md` into the user-level review wiki by reading the source reviews, matching them to plans by branch, normalizing them into integrated raw evidence records, promoting planning-relevant feedback into registry-backed pattern rule files, updating `wiki/registry.json`, and deleting source review files only after batch success. Use when Codex needs to convert collected BLOCK review output into durable planning knowledge for future `architect` and `plan-review` runs.
+description: Ingest Codex review files from the main repository root under `.codex/reviews/**/*.md` into the user-level review wiki by reading the source reviews, matching them to plans by branch, normalizing them into integrated raw evidence records, promoting planning-relevant feedback into registry-backed pattern rule files, updating `wiki/registry.json`, writing operation history, and deleting source review files only after batch success. Use when Codex needs to convert collected BLOCK review output into durable planning knowledge for future `architect` and `plan-review` runs.
 ---
 
 # Review Wiki Ingest
 
-Use this skill to process review inbox files into the review wiki. Resolve the review wiki root from `~/.codex/reviewWiki`, then read [references/data-model.md](references/data-model.md) before editing raw or wiki files.
+Use this skill to process review inbox files into the review wiki. Resolve the review wiki root from `~/.codex/reviewWiki`, then read [references/data-model.md](references/data-model.md) and [references/history-model.md](references/history-model.md) before editing raw or wiki files.
 
 ## Workflow
 
@@ -14,6 +14,7 @@ Use this skill to process review inbox files into the review wiki. Resolve the r
    - Input file pattern: `.codex/reviews/**/*.md`
    - Review wiki root: `~/.codex/reviewWiki`
    - Required output directories: `raw/`, `wiki/`, `wiki/core/`, `wiki/patterns/`, `wiki/tags/`, `wiki/_meta/`
+   - Required operation history root: `history/`
    - Required control file: `wiki/registry.json`
    - If the link is missing or broken, stop and use `review-wiki-setup`.
    - If running from a worktree or nested workspace, resolve the main repository root first.
@@ -66,6 +67,7 @@ Use this skill to process review inbox files into the review wiki. Resolve the r
    - If any step fails, stop immediately and keep the source review files in place.
    - If the ingest batch succeeds, remove the remaining source review files from the inbox.
    - Do not continue with partial cleanup after a failed batch.
+   - Write one operation history record under `history/YYYY/MM/` with `type: ingest`, input reviews, changed files, validation status, and source review cleanup outcome.
 
 ## Promotion Rules
 
@@ -86,3 +88,4 @@ Use this skill to process review inbox files into the review wiki. Resolve the r
 ## Reference
 
 - Read [references/data-model.md](references/data-model.md) for path contracts, raw schema, registry schema, pattern-file schema, file naming, and promotion policy.
+- Read [references/history-model.md](references/history-model.md) for operation history schema and docs exposure rules.

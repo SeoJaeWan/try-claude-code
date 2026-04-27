@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Wiki Apply Feedback"
+  short_description: "Apply docs feedback JSON into review wiki source documents with history."
+  default_prompt: "Use this skill when Codex needs to process review wiki docs feedback JSON files, update the source wiki documents, refresh graph/tag links, validate the result, and write operation history."

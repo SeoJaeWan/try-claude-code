@@ -8,6 +8,13 @@
 - `wiki/patterns/`
 - `wiki/tags/`
 - `wiki/_meta/`
+- `feedback/`
+- `feedback/inbox/`
+- `feedback/applied/`
+- `feedback/rejected/`
+- `feedback/needs-decision/`
+- `feedback/stale/`
+- `history/`
 
 Do not create `wiki/docs/`. The existing `wiki/core/**`, `wiki/patterns/**`, `wiki/tags/**`, and `raw/**` files are the docs-first source documents.
 
@@ -72,3 +79,13 @@ Create tag pages lazily from the registry taxonomy:
 The initial taxonomy should include `status: [promoted, raw-only]` so raw evidence always has a graph anchor.
 
 These notes are readable category pages and Obsidian graph hubs. They should link to matching pattern files and raw records with one bullet per linked page, and stage tag notes may also link to core documents that are loaded for that stage.
+
+## Feedback and History
+
+Create feedback and history directories for docs-driven wiki maintenance:
+
+- `feedback/inbox/` stores new docs annotation JSON files.
+- `feedback/applied/`, `feedback/rejected/`, `feedback/needs-decision/`, and `feedback/stale/` store processed feedback records.
+- `history/YYYY/MM/` stores operation history JSON records produced by ingest, feedback application, setup, lint, or other maintenance steps.
+
+Feedback and history are not canonical wiki content. They are inputs and audit logs. The source of truth remains `wiki/**`, `raw/**`, and `wiki/registry.json`.

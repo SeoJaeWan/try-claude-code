@@ -35,6 +35,11 @@ Lint the review wiki for routing integrity, evidence integrity, Korean docs-firs
 - overbroad tags or weak `적용 조건` clauses are identified
 - new pattern files still fit the one-file-per-rule registry model instead of becoming freeform note sprawl
 - no generated duplicate documentation surface is introduced
+- feedback outcome folders exist when feedback records are present
+- history JSON records under `history/**` are valid JSON
+- history records include `id`, `type`, `status`, `started_at`, `finished_at`, `inputs`, `changes`, `summary`, and `validation`
+- history records do not store full source documents or full review files
+- feedback records under `feedback/**` are valid JSON and have status values matching their folder
 
 ## Report Path
 
