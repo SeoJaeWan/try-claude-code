@@ -1,4 +1,4 @@
 interface:
   display_name: "Orchestrator"
-  short_description: "Run planning with role-pinned agent reuse, fresh cold review, browser approval, and materialize."
-  default_prompt: "Use $orchestrator to orchestrate the stateless artifact-driven brainstorm/design-discovery/architect -> fresh cold review -> browser developer review with review history -> feedback triage -> revise -> materialize planning workflow, reusing compatible live role agents except for plan-review."
+  short_description: "Coordinate planning, review, approval, learning."
+  default_prompt: "Use $orchestrator to run the stateless artifact-driven planning workflow: brainstorm/design-discovery/architect, fresh cold review, browser developer review with history, feedback triage, developer-review learning capture, and plan-materialize with explicit approval."

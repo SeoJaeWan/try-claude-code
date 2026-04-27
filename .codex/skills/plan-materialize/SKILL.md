@@ -5,7 +5,7 @@ description: Create or update source-tree unit tests, runtime integration tests,
 
 <Skill_Guide>
 <Purpose>
-Turn an `architect` plan into source-tree TDD and a trustworthy gate report that close the full selected plan contract without touching production code, using plan-clause traceability, owner-test impact scanning, and local test conventions before selecting test layers or boundaries.
+Turn an `architect` plan into source-tree TDD and a trustworthy gate report that close the full selected plan contract without touching production code, using plan-clause traceability, owner-test impact scanning, and local test conventions before selecting test layers or boundaries. When the user explicitly asks for test-only scaffolding, this skill may also create the planned test-directory shape and contract tests before the target production tree or app harness is fully implemented.
 </Purpose>
 
 <Instructions>
@@ -21,6 +21,7 @@ Materialize tests after planning, not during implementation.
 - Allow new assertions only when they trace back to an explicit plan clause or a risk pattern already implied by that clause
 - Update or delete stale owner tests when a selected clause changes the canonical truth they freeze
 - Distinguish test materialization completion from gate pass/fail in the final report
+- When the user explicitly requests test-only scaffolding, allow missing target app/module trees to be created only as test-path scaffolding. In that mode, do not add production code or runner config, and report skipped validation explicitly.
 
 ## Inputs to inspect
 
@@ -46,6 +47,12 @@ Materialize tests after planning, not during implementation.
 - Inspect the repository before generating anything
 - Detect existing runners, assertion style, mocking style, naming, and file layout
 - Reuse the current stack; do not introduce a new unit or E2E framework
+- If the user explicitly requests test-only scaffolding aligned to the planned folder structure, enter `test-scaffold mode`
+- In `test-scaffold mode`, you may create missing source-tree test directories and owner test files even when the target app/module implementation tree is missing
+- In `test-scaffold mode`, missing runner/config/package ownership does not block writing tests by itself as long as:
+  - the planned runner is explicitly locked by the plan
+  - the repository already signals the same broad stack or adjacent convention strongly enough to author tests consistently
+  - the report records which validation commands could not be run yet
 - If a needed test type has no existing setup, stop immediately with:
   - `outcome = blocked`
   - `blocker_type = external_setup`
@@ -261,6 +268,7 @@ After editing tests, run the narrowest available validation commands for the cha
 - Do not widen targeted validation into a full suite unless the plan explicitly selects that suite as the validation surface
 - For non-test execution clauses such as `tsc`, `build`, or manual inspection, record the required command or blocker explicitly; do not silently count targeted tests as equivalent
 - If any targeted validation for the affected owner-test set fails, record that as a gate failure; do not present materialization completion as equivalent to a passed gate
+- In `test-scaffold mode`, if the selected command path or runner/config ownership is not implemented yet, do not block after writing the tests. Record those commands as `not run`, set `gate_status = failed`, and explain that validation is deferred until the planned harness exists.
 
 ### Step 6. Write the materialization report
 
@@ -351,8 +359,9 @@ Frontmatter rules:
 ## Guardrails
 
 - Test files only: never implement production code
-- Do not create or edit test setup/config files
-- Stop when the required test setup does not already exist
+- Do not create or edit test setup/config files unless the user explicitly asked for that separate setup work outside this skill
+- In `test-scaffold mode`, you may create missing test directories under the planned source-tree location, but still do not add production modules just to satisfy imports
+- Stop when the required test setup does not already exist, unless the user explicitly requested `test-scaffold mode` and the missing setup is only the not-yet-implemented target app/module harness
 - Stop when the plan is too ambiguous to derive a stable test contract
 - Stop when `plan.md` and its linked phase detail files drift enough that the technical source of truth is unclear
 - Stop when a selected clause from `output`, `constraint`, `failure-validation`, or `validation` cannot be traced to a stable owner test or execution command
