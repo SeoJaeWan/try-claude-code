@@ -42,11 +42,11 @@ const htmlRoot = path.resolve(__dirname, "..", "assets");
 const argv = process.argv.slice(2);
 
 if (argv.includes("--help") || argv.includes("-h")) {
-  console.log("Usage: node plugin/develop/skills/dev-review/scripts/server.mjs [--plans-root <path>] [--port 8787]");
+  console.log("Usage: node plugin/develop/skills/dev-review/scripts/server.mjs [--plans-root <path>] [--port 9797]");
   console.log("");
   console.log("  --plans-root  defaults to ${cwd}/plans. The server resolves each task review");
   console.log("                under {plans-root}/{task-slug}/dev-review/.");
-  console.log("  --port        default 8787.");
+  console.log("  --port        default 9797.");
   console.log("");
   console.log("Open a task review at http://localhost:{port}/review/{task-slug}.");
   console.log("Multiple Claude sessions may share one server: the second session's");
@@ -67,8 +67,8 @@ const plansRoot = plansRootArg
   ? path.resolve(process.cwd(), plansRootArg)
   : path.resolve(process.cwd(), "plans");
 const portArg = takeFlag("--port");
-const requestedPort = portArg !== null ? Number(portArg) : 8787;
-const port = Number.isFinite(requestedPort) ? requestedPort : 8787;
+const requestedPort = portArg !== null ? Number(portArg) : 9797;
+const port = Number.isFinite(requestedPort) ? requestedPort : 9797;
 
 const SLUG_RE = /^[A-Za-z0-9_-]+$/;
 const isSafeSlug = (s) => typeof s === "string" && SLUG_RE.test(s);

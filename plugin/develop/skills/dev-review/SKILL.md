@@ -227,11 +227,11 @@ The plugin's dev-review server is **multi-review**: one server process hosts eve
 1. Health-check first to avoid duplicate launches:
 
    ```bash
-   node -e "fetch('http://localhost:8787/api/health').then(r=>r.json()).then(j=>process.exit(j.ok && j.kind==='dev-review' ? 0 : 1)).catch(()=>process.exit(1))"
+   node -e "fetch('http://localhost:9797/api/health').then(r=>r.json()).then(j=>process.exit(j.ok && j.kind==='dev-review' ? 0 : 1)).catch(()=>process.exit(1))"
    ```
 
    - exit `0` → a compatible dev-review server is already up. Skip launching, reuse it. Both your task and any other in-flight task will be served by it.
-   - exit non-zero → continue to step 2. (A 200 response with a different `kind` indicates port collision with a non-dev-review process; in that case launch on `--port 8788` and tell the user the alternate URL.)
+   - exit non-zero → continue to step 2. (A 200 response with a different `kind` indicates port collision with a non-dev-review process; in that case launch on `--port 9798` and tell the user the alternate URL.)
 
 2. Launch the plugin's dev-review server in the background from the repo root (NOT from inside the worktree). The server auto-resolves its html-root from `__dirname` and uses `${cwd}/plans` as the plans-root, so no positional task argument is needed — multiple sessions add their own `/review/{slug}` to the running process by simply existing under `plans/`:
 
@@ -251,7 +251,7 @@ The plugin's dev-review server is **multi-review**: one server process hosts eve
 
    ```
    리뷰 서버가 백그라운드에서 실행 중입니다.
-   브라우저에서 http://localhost:8787/review/{task_slug} 를 열어 리뷰를 진행해주세요.
+   브라우저에서 http://localhost:9797/review/{task_slug} 를 열어 리뷰를 진행해주세요.
    submit을 누른 뒤 채팅에 `리뷰 완료`라고 답장해주세요.
    ```
 
@@ -346,7 +346,7 @@ The runner owns the actual Agent dispatch. This skill just hands back the items.
 | `feedback.json` missing or malformed on re-entry | Treat as in-progress; ask the user to submit in the browser. |
 | `plan_signature` drift between `review-data.json` and `feedback.json` | Regenerate the package, warn the reviewer. |
 | Worktree disappeared | Stop, report controller error (the runner must keep the worktree alive until approved). |
-| Server port 8787 in use by an unrelated process | The launcher's first health-check returns 0 only when the dev-review server is already there (route `/api/health` returns `kind: "dev-review"`); the orchestrator's server returns `mode: "multi-review"` and a foreign process returns whatever else. If `/api/health` returns 200 but `kind != "dev-review"`, treat it as port collision and retry the launch with `--port 8788` (or the next free port). Tell the user the alternate URL. |
+| Server port 9797 in use by an unrelated process | The launcher's first health-check returns 0 only when the dev-review server is already there (route `/api/health` returns `kind: "dev-review"`); the orchestrator's server returns `mode: "multi-review"` and a foreign process returns whatever else. If `/api/health` returns 200 but `kind != "dev-review"`, treat it as port collision and retry the launch with `--port 9798` (or the next free port). Tell the user the alternate URL. |
 
 ## Guardrails
 
