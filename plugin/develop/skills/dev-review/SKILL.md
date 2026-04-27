@@ -64,8 +64,8 @@ plugin/develop/skills/dev-review/    ← html-root (one global copy)
 - `plan_path` exists and `worktree_path` contains the `task_branch` checked out.
 - `task_head_sha = git -C {worktree_path} rev-parse HEAD`.
 - There is at least one commit in `base_branch..task_head_sha`. An empty commit range is a caller bug — stop and report.
-- The plugin's dev-review server `${CLAUDE_PLUGIN_ROOT}/develop/skills/dev-review/scripts/server.mjs` exists. This server is **plugin-internal** — it is intentionally separate from `.codex/tools/developer-review-server.mjs` (which belongs to the orchestrator). Do not reference the orchestrator's server from this skill.
-- The plugin html-root is readable: `${CLAUDE_PLUGIN_ROOT}/develop/skills/dev-review/assets/index.html` AND `${CLAUDE_PLUGIN_ROOT}/develop/skills/dev-review/assets/vendor/highlight.min.js`. If either is missing, stop — the plugin install is broken and there's no point regenerating data the browser can't render.
+- The plugin's dev-review server `${CLAUDE_PLUGIN_ROOT}/skills/dev-review/scripts/server.mjs` exists. This server is **plugin-internal** — it is intentionally separate from `.codex/tools/developer-review-server.mjs` (which belongs to the orchestrator). Do not reference the orchestrator's server from this skill.
+- The plugin html-root is readable: `${CLAUDE_PLUGIN_ROOT}/skills/dev-review/assets/index.html` AND `${CLAUDE_PLUGIN_ROOT}/skills/dev-review/assets/vendor/highlight.min.js`. If either is missing, stop — the plugin install is broken and there's no point regenerating data the browser can't render.
 
 If validation fails, do not write partial artifacts. Report the exact blocker so the runner can surface it to the user.
 
@@ -74,17 +74,20 @@ If validation fails, do not write partial artifacts. Report the exact blocker so
 Call the helper script with absolute paths:
 
 ```bash
-node {CLAUDE_PLUGIN_ROOT}/develop/skills/dev-review/scripts/generate-review-data.mjs \
+node "${CLAUDE_PLUGIN_ROOT}/skills/dev-review/scripts/generate-review-data.mjs" \
   --task-slug "{task_slug}" \
   --plan-path "{plan_path}" \
   --worktree "{worktree_path}" \
   --base "{base_branch}" \
   --task-branch "{task_branch}" \
   --iteration {review_iteration} \
+  --available-agents-dir "${CLAUDE_PLUGIN_ROOT}/agents" \
   --out "plans/{task_slug}/dev-review/review-data.partial.json"
 ```
 
 The helper populates every field that can be derived from git, the plan file, and prior review artifacts. It also emits fallback cards (one per commit with at least a file-count summary) so Step 2 has a valid shape to merge into even on full interpretation failure.
+
+The `--available-agents-dir` flag is **required** so `available_agents` is populated even when `CLAUDE_PLUGIN_ROOT` does not propagate into the helper's process env. Without it the dispatch dropdown in the browser is empty and reviewers cannot route `needs-change` cards.
 
 Helper failure is fatal — the runner cannot continue without deterministic data. Propagate the exit code.
 
@@ -110,10 +113,16 @@ Agent(
 
     ## Tasks
     For each commit in `commits[]`:
-    - Produce `cards[]` (title, description, evidence[]) grouping meaningful change
-      units. Evidence `file` + `lines` must exist in that commit's actual diff —
-      the generator's `files_changed` list is authoritative, anything outside it
-      is hallucination.
+    - Produce `cards[]` (id, title, description, evidence[]) grouping meaningful
+      change units. Evidence `file` + `lines` must exist in that commit's actual
+      diff — the generator's `files_changed` list is authoritative, anything
+      outside it is hallucination.
+      - Each card MUST carry an `id` field formatted exactly as
+        `${commit.short_sha}.C${index+1}` (1-indexed within that commit's
+        cards). Example: for commit `b0a530e` the cards become `b0a530e.C1`,
+        `b0a530e.C2`, ... The browser keys per-card feedback by this id, so a
+        missing or duplicate id collapses every reviewer click into the same
+        empty-string bucket.
       - Each evidence item should carry `file`, `lines`, and a short `note`
         explaining what to look at. `snippet` is optional — when omitted the
         UI shows just file:lines + note (no empty code block). Only include
@@ -195,6 +204,7 @@ Treat any output that fails JSON.parse, modifies a generator-owned field, or ref
 ### Step 3. Write final artifacts and clean intermediates
 
 - Merge agent output with the partial JSON. For each commit: if `cards[]` is empty, substitute `_fallback_cards`. Strip `_fallback_cards` from the final JSON.
+- Enforce card `id` deterministically. After merge, walk every commit's final `cards[]` and overwrite each `cards[idx].id` to `${commit.short_sha}.C${idx+1}` (1-indexed) regardless of whether the interpretation agent provided one. The Step 2 prompt asks the agent to set this id, but treat that as a hint — interpretation occasionally drops the field, returns duplicates, or returns a typo'd shape, and any of those collapse the browser's per-card feedback into a single empty-key bucket. Resetting the id at merge time is cheap and makes the contract independent of agent reliability.
 - Write `plans/{task_slug}/dev-review/review-data.json`.
 - Raw diffs (one file per commit, named `{short_sha}.diff`) are already written by the generator under `assets/diffs/`.
 - Do NOT copy `index.html` or `assets/vendor/` into the data folder. The server now serves those from the plugin html-root (see Step 6). The data folder is data-only — keeping it free of UI assets means a UI bug fix in the plugin propagates to every prior task without re-running anything.
@@ -237,7 +247,7 @@ The plugin's dev-review server is **multi-review**: one server process hosts eve
 
    ```
    Bash(
-     command: "node \"${CLAUDE_PLUGIN_ROOT}/develop/skills/dev-review/scripts/server.mjs\"",
+     command: "node \"${CLAUDE_PLUGIN_ROOT}/skills/dev-review/scripts/server.mjs\"",
      run_in_background: true,
      description: "Start dev-review server in background"
    )
