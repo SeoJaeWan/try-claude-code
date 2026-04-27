@@ -57,7 +57,6 @@ All phase commits follow the shared convention at `plugin/develop/references/com
 X (base branch — HEAD stays here during execution)
 │
 └── git worktree add -b task-A worktrees/task-A X
-    ├── commit: docs(plan): add plan and test contracts for task-A  ← plan folder contents + materialized tests (auto)
     ├── commit: feat(auth): implement JWT-based login
     ├── commit: feat(auth): add token refresh middleware
     ├── commit: test(auth): add integration tests for login flow
@@ -125,27 +124,15 @@ fi
 git worktree add -b "$TASK_BRANCH" "$WORKTREE_DIR" "$BASE"
 ```
 
-After creating the worktree, copy the entire plan folder into it and commit as the first commit on the task branch. This ensures the plan, test contracts, and any other artifacts under the plan folder are included when the task branch is merged.
+The plan folder (`plans/{task-name}/`) is **not** copied into the worktree. It stays in the main repo as the single source of truth — phase agents read it via the absolute path passed in their dispatch prompt (Step 3). This avoids two-location drift during rework rounds and keeps the task branch history limited to real implementation commits.
 
-```bash
-# Copy the entire plan folder into the worktree. Uses a Node helper instead
-# of `cp -r` / `mkdir -p` so this works identically on Windows (cmd/PowerShell),
-# macOS, and Linux without requiring Bash-specific utilities.
-PLAN_DIR="plans/{task-name}"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/plan-copy.mjs" "$PLAN_DIR" "$WORKTREE_DIR/$PLAN_DIR"
-
-# Commit plan artifacts as the first commit
-git -C "$WORKTREE_DIR" add -A
-git -C "$WORKTREE_DIR" commit -m "docs(plan): add plan and test contracts for {task-name}"
-```
-
-After this step, HEAD is still on `$BASE` in the main repo. The worktree has its own checkout of `$TASK_BRANCH` with the plan folder contents as the first commit.
+After this step, HEAD is still on `$BASE` in the main repo. The worktree has its own checkout of `$TASK_BRANCH` with no commits beyond `$BASE` yet.
 
 ### Step 3. Execute phases
 
 Read the Phase Index table from the top of plan.md to get the ordered list of `(phase_file_path, owner_agent)` pairs. For each row in order, dispatch the phase agent and then end your turn so the stop-gate can review.
 
-The agent's job is to read its own phase file and execute it — don't inline the phase content into the prompt. The phase file lives inside the worktree (it was copied there in Step 2), so the agent can read it directly from the working directory.
+The agent's job is to read its own phase file and execute it — don't inline the phase content into the prompt. The phase file lives in the **main repo** under `plans/{task-name}/phases/`, not inside the worktree. Pass an **absolute path** so the agent can read it from any cwd: resolve `phase_file_path` against the main repo root (e.g., `${repo_root}/plans/{task-name}/phases/01-foo.md`). Phase files are read-only during execution; agents cd into the worktree for code changes and read the plan from the main repo.
 
 > **Contract**: The exact shape of `description` and the leading `prompt` header below is a contract shared with `plugin/develop/scripts/lib/contract.mjs` (regexes and builder functions) and the hook CI tests. Do NOT alter the `"Phase N: ..."` description form or the `"## Working directory / You are working in: ..."` block. If you need a new shape, update contract.mjs and the unit tests together.
 
@@ -158,7 +145,8 @@ Agent(
     cd to this directory before starting any work.
 
     ## Your phase
-    Read and execute the phase contract at: {phase_file_path}
+    Read and execute the phase contract at: {absolute_phase_file_path}
+    (This is an absolute path in the main repo, outside your worktree. Read it as-is; do not try to resolve it relative to your cwd.)
     That file contains your complete task spec, boundary, acceptance criteria, and validation checklist.
 
     ## Rules
@@ -182,8 +170,9 @@ Agent(
 
 1. The `description` field MUST start with `"Phase N:"` (literal word "Phase", a space, the phase number, a colon). Examples of correctly formatted descriptions: `"Phase 1: implement login"`, `"Phase 10: final cleanup"`. Examples that WILL break the hook contract: `"[Phase 1] …"`, `"1단계: …"`, `"phase one: …"`.
 2. The `prompt` MUST include a line reading exactly `"You are working in: <absolute_worktree_path>"`. Do not rename this header, do not translate it, and do not wrap the path in quotes.
+3. The `phase_file_path` injected after `"Read and execute the phase contract at:"` MUST be an absolute path in the main repo (e.g., `/abs/.../plans/{task-name}/phases/NN-slug.md`), not a relative path. The agent's cwd is the worktree, so a relative path won't resolve to the plan file.
 
-If either check fails, fix the dispatch before calling `Agent`. These strings are the shared contract with `scripts/lib/contract.mjs`; drift will cause the Stop hook to lose phase context silently.
+If any check fails, fix the dispatch before calling `Agent`. The first two strings are the shared contract with `scripts/lib/contract.mjs`; drift will cause the Stop hook to lose phase context silently.
 
 After the agent returns, output a brief report as **plain text** and let your turn end naturally. Do NOT use `AskUserQuestion` — just output text so that `end_turn` triggers the Stop hook.
 

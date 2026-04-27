@@ -26,19 +26,6 @@ jobs:
       - name: Run hook contract tests
         run: npm test
 
-      - name: Smoke test plan-copy helper
-        shell: bash
-        run: |
-          set -e
-          tmpdir="${RUNNER_TEMP:-/tmp}/plan-copy-ci"
-          rm -rf "$tmpdir"
-          mkdir -p "$tmpdir/src/phases"
-          echo "plan" > "$tmpdir/src/plan.md"
-          echo "phase" > "$tmpdir/src/phases/01-foo.md"
-          node plugin/develop/scripts/plan-copy.mjs "$tmpdir/src" "$tmpdir/dst"
-          test -f "$tmpdir/dst/plan.md"
-          test -f "$tmpdir/dst/phases/01-foo.md"
-
       - name: Smoke test SessionStart Codex probe (no Codex expected)
         shell: bash
         run: |

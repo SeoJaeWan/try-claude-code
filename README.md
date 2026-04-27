@@ -159,7 +159,6 @@ npm test
 
 이 명령은 hook contract 테스트를 실행합니다. CI의 [plugin-test.yml](./.github/workflows/plugin-test.yml)은 여기에 더해 아래 smoke test도 함께 돌립니다.
 
-- `plugin/develop/scripts/plan-copy.mjs`
 - `plugin/develop/scripts/session-lifecycle-hook.mjs`의 SessionStart Codex probe
 
 매트릭스는 `ubuntu / macOS / windows x Node 20, 22`입니다.
