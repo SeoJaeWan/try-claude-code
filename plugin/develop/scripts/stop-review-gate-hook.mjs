@@ -771,6 +771,14 @@ async function main() {
   }
 
   logNote(runningTaskNote);
+
+  // Skipped runs stay silent — SessionStart already explained why Codex is unavailable.
+  if (!review.skipped) {
+    const note = review.suppressedNote
+      ? "Stop-gate review 통과 (저신뢰 finding은 .codex/reviews/에 기록됨)"
+      : "Stop-gate review 통과";
+    emitDecision({ systemMessage: note });
+  }
 }
 
 main();
