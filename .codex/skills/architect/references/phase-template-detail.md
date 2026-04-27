@@ -1,4 +1,4 @@
-# Phase {n}. {phase-title}
+# 단계 {n}. {단계 제목}
 
 - owner_agent: `{agent-name}`
 
@@ -6,9 +6,9 @@
 
 | 항목 | 내용 |
 | --- | --- |
-| 목표 | {이번 phase가 남기는 구체적 결과} |
-| 선행 조건 | {직전 phase 또는 local prerequisite 계약. 없으면 `none`} |
-| output | {phase 완료 후 다음 phase나 사용자에게 제공되는 canonical output} |
+| 목표 | {이번 단계가 남기는 구체적 결과} |
+| 선행 조건 | {직전 단계 또는 로컬 선행 계약. 없으면 `none`} |
+| output | {단계 완료 후 다음 단계나 사용자에게 제공되는 표준 출력} |
 | 완료 신호 | {리뷰어/실행자가 확인할 수 있는 완료 상태} |
 
 ## 작업 흐름
@@ -20,19 +20,19 @@
 
 ## 변경 경계
 
-| boundary | 변경 내용 | 유지할 것 | 제약 |
+| `boundary` (변경 경계) | 변경 내용 | 유지할 것 | 제약 |
 | --- | --- | --- | --- |
-| `{boundary-name}` | {변경할 동작/구조} | {건드리지 않을 경계} | {제약. 없으면 `없음`} |
-| `{boundary-name}` | {변경할 동작/구조} | {건드리지 않을 경계} | {제약. 없으면 `없음`} |
+| `{변경-경계-이름}` | {변경할 동작/구조} | {건드리지 않을 경계} | {제약. 없으면 `없음`} |
+| `{변경-경계-이름}` | {변경할 동작/구조} | {건드리지 않을 경계} | {제약. 없으면 `없음`} |
 
 ## 시나리오 / 계약
 
-| scenario | input | output | negative/no-op | owner |
+| scenario (시나리오) | input | output | negative/no-op | owner |
 | --- | --- | --- | --- | --- |
-| {scenario/trigger} | {입력, precondition, 시작 state} | {반드시 발생해야 하는 canonical output} | {발생하면 안 되는 출력 또는 no-op 규칙} | {state/API/component/test owner} |
-| {scenario/trigger} | {입력, precondition, 시작 state} | {반드시 발생해야 하는 canonical output} | {발생하면 안 되는 출력 또는 no-op 규칙} | {state/API/component/test owner} |
+| {시나리오/트리거} | {입력, 사전 조건, 시작 상태} | {반드시 발생해야 하는 표준 출력} | {발생하면 안 되는 출력 또는 no-op 규칙} | {상태/API/component/test 소유자} |
+| {시나리오/트리거} | {입력, 사전 조건, 시작 상태} | {반드시 발생해야 하는 표준 출력} | {발생하면 안 되는 출력 또는 no-op 규칙} | {상태/API/component/test 소유자} |
 
-> visual acceptance가 이 phase의 일부라면 comparison mode, gating metric, non-gating metric, comparison policy, metric treatment를 이 section의 별도 row나 짧은 보조 표로 추가한다.
+> 시각 비교 인수가 이 단계의 일부라면 비교 모드, 차단 기준 지표, 참고 지표, 비교 정책, 지표 처리를 이 섹션의 별도 행이나 짧은 보조 표로 추가한다. 그대로 맞춰야 하는 표준 ID는 코드 표기로 남긴다.
 
 ## 파일 영향
 
@@ -45,8 +45,8 @@
 
 | 검증 항목 | 확인 수단 | 기대 결과 |
 | --- | --- | --- |
-| {검증이 필요한 계약 또는 state} | {test / story / compare / source inspection / command} | {기대 결과} |
-| {검증이 필요한 계약 또는 state} | {test / story / compare / source inspection / command} | {기대 결과} |
+| {검증이 필요한 계약 또는 상태} | {테스트 / story / 비교 / 소스 확인 / 명령} | {기대 결과} |
+| {검증이 필요한 계약 또는 상태} | {테스트 / story / 비교 / 소스 확인 / 명령} | {기대 결과} |
 
 ## 리스크 / 주의점
 

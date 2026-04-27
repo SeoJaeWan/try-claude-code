@@ -42,7 +42,8 @@ Typical blocker cases:
 - missing recipient, delivery target, or final interpretation boundary when relevant
 - missing winner rule, loser no-op rule, terminal-state rule, or side-effect coupling for risky scenarios
 - the plan cannot be traced back to the user's requested items without guesswork
-- a touched public surface exists, but the plan leaves props, callbacks, outputs, or ownership vague enough that implementation would have to guess
+- an affected public boundary exists, but the plan leaves props, callbacks, outputs, or ownership vague enough that implementation would have to guess
+- English planner shorthand in visible prose hides user-visible behavior, public contracts, ownership, completion criteria, or verification meaning enough that a reviewer must reinterpret the plan
 - a user-visible exclusion is introduced without explicit reason and approval status
 - the plan requires a reviewer to read every phase detail file just to understand what concrete boundaries will change
 - plan count or topology that is clearly over-split, under-justified, or not independently mergeable under the active core contract
@@ -64,12 +65,13 @@ Typical major cases:
 - topology is defensible but likely suboptimal
 - phase boundaries are technically valid but hide important sequencing or ownership assumptions
 - the `plan.md` summary and technical detail file are individually plausible but drift in wording enough to raise rework risk
-- a required file-level change map or completion condition is present but too thin to support the claimed boundary confidently
+- a required file-level change map or completion criterion is present but too thin to support the claimed boundary confidently
 - repo-fit claims exist but rely on thin local evidence
 - `plan-materialize` can probably proceed, but the phase contract is thinner than it should be for later test derivation
 - a local prerequisite relationship probably works, but the downstream detail-file `선행조건` and upstream `output` or `검증` use thinner or drifted wording that raises rework risk
 - user-request traceability exists but is thinner than it should be, such as vague request rows or weak exclusion reasoning
 - work bundles are named, but the concrete public contract is still harder to scan than it should be
+- visible prose repeatedly uses English planner shorthand where `architect/references/terminology-policy.md` defines a Korean-first term, and the mixing reduces scanability or confidence
 - a visual parity contract exists, but its surface-role mapping, comparison policy, or metric-treatment detail is too thin to support confident review
 
 ### Minor
@@ -80,6 +82,7 @@ Typical minor cases:
 
 - optional contract notes are slightly uneven but still unambiguous
 - low-risk repetition or labeling drift exists in explanatory prose without changing the boundary
+- isolated terminology drift exists in visible prose, but the contract remains clear and no reviewer would have to guess behavior or ownership
 
 Prefer no finding over a low-value minor note.
 
@@ -93,8 +96,9 @@ Check the plan against:
 2. selected pattern files that match the reviewed plan under the registry `selection.review` policy
 3. `architect/references/plan-template-sequential.md`
 4. `architect/references/phase-template-detail.md`
-5. repo-local execution contracts only when the plan makes a concrete claim that depends on them
-6. directly referenced local prerequisite plan files only for one-hop contract parity when the reviewed phase detail names them in `선행조건`
+5. `architect/references/terminology-policy.md`
+6. repo-local execution contracts only when the plan makes a concrete claim that depends on them
+7. directly referenced local prerequisite plan files only for one-hop contract parity when the reviewed phase detail names them in `선행조건`
 
 Required focus areas:
 
@@ -103,12 +107,13 @@ Required focus areas:
 3. request traceability from user wording to plan scope
 4. blocking ambiguity and scenario completeness
 5. plan count and topology quality
-6. routing and ownership fit
-7. verification realism
-8. `plan-materialize` derivation readiness
-9. `visual-comparator` planning when relevant
-10. direct prerequisite contract parity when relevant
-11. visual parity contract alignment when relevant
+6. Korean-first visible prose terminology
+7. routing and ownership fit
+8. verification realism
+9. `plan-materialize` derivation readiness
+10. `visual-comparator` planning when relevant
+11. direct prerequisite contract parity when relevant
+12. visual parity contract alignment when relevant
 
 ### One-Hop Prerequisite Audit
 

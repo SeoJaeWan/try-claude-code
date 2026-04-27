@@ -4,7 +4,7 @@ Use this when `plan-materialize` handles frontend user-visible boundaries.
 
 ## Scope rules
 
-- Materialize only the selected surface or journey E2E owned by the plan
+- Materialize only the selected UI area (`surface_id`) or journey E2E owned by the plan
 - Materialize cross-route journeys, auth/session transitions, redirect chains, persisted browser state, or other full-flow coverage only when those journeys are explicitly selected by the plan
 - E2E is the default only for frontend user-visible clauses explicitly selected by the plan
 - Presentation-only changes may skip E2E only with an explicit skip reason
@@ -21,7 +21,7 @@ Use this when `plan-materialize` handles frontend user-visible boundaries.
 ## Update strategy
 
 - Default: `modify-first, create-if-new-owner`
-- Search order for existing surface ownership:
+- Search order for existing UI-area ownership:
     1. `@journey_id`
     2. `@surface_id`
     3. `@route`
@@ -54,7 +54,7 @@ The metadata comment is the default durable lookup key.
 
 ## Split registry
 
-Only when one surface must be split across multiple specs, add a registry file next to the specs:
+Only when one UI area must be split across multiple specs, add a registry file next to the specs:
 
 ```json
 {
@@ -70,6 +70,10 @@ Only when one surface must be split across multiple specs, add a registry file n
 Registry is an exception path, not the default.
 
 ## Authoring rules
+
+- Write human-readable scenario names, comments, and report reasons in Korean-first prose unless the repository has an established English-only test style
+- Keep English for metadata keys, test IDs, routes, file names, selectors, runner APIs, and exact product copy
+- Use Korean terms such as `사용자 행동`, `완료 조건`, `변경 경계`, and `공개 경계` instead of planner shorthand such as `user action`, `completion condition`, `boundary`, or `surface`
 
 ### Playwright
 
@@ -87,13 +91,13 @@ Registry is an exception path, not the default.
 ## Coverage expectations
 
 - Cover only the interaction paths, validation/error paths, and boundary states explicitly selected by the plan or implied by its declared risk patterns
-- When one spec can close multiple selected clauses on the same surface, prefer updating that owner spec instead of scattering coverage
+- When one spec can close multiple selected clauses on the same UI area, prefer updating that owner spec instead of scattering coverage
 - Do not promote manual QA ideas into E2E assertions unless the plan names them as contract
 
 ## Prohibited
 
 - Plan-external cross-route regression journeys
 - CSS/XPath selectors when stable test ids exist
-- Duplicating an existing surface spec instead of updating it
-- Using `plans/` as the source of truth for surface ownership
+- Duplicating an existing UI-area spec instead of updating it
+- Using `plans/` as the source of truth for UI-area ownership
 - Adding empty/loading/success/error variants just because they are common UI states when the plan did not select them

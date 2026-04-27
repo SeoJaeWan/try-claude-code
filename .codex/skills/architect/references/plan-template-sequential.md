@@ -25,41 +25,41 @@
 
 | 변경 축 | 현재 | 목표 |
 | --- | --- | --- |
-| {boundary-or-flow} | {현재 구조/흐름} | {변경 후 구조/흐름} |
-| {boundary-or-flow} | {현재 구조/흐름} | {변경 후 구조/흐름} |
+| {변경 경계 또는 흐름} | {현재 구조/흐름} | {변경 후 구조/흐름} |
+| {변경 경계 또는 흐름} | {현재 구조/흐름} | {변경 후 구조/흐름} |
 
 ## 잠긴 계약
 
-| 계약 | 대상 경계 | input | output | ownership / no-op | 검증 위치 |
+| 계약 | 대상 경계 | input | output | 소유권 / no-op | 검증 위치 |
 | --- | --- | --- | --- | --- | --- |
-| {contract-name} | `{component-hook-route-service}` | {입력/trigger} | {정상 출력/state} | {소유권, winner rule, invalid/no-op} | {phase 또는 검증 수단} |
-| {contract-name} | `{component-hook-route-service}` | {입력/trigger} | {정상 출력/state} | {소유권, winner rule, invalid/no-op} | {phase 또는 검증 수단} |
+| {계약 이름} | `{component-hook-route-service}` | {입력/트리거} | {정상 출력/상태} | {소유권, 승자 규칙, invalid/no-op} | {단계 또는 검증 수단} |
+| {계약 이름} | `{component-hook-route-service}` | {입력/트리거} | {정상 출력/상태} | {소유권, 승자 규칙, invalid/no-op} | {단계 또는 검증 수단} |
 
-> visual acceptance가 포함되면 이 section에 comparison mode, gating metric, non-gating metric, local surface -> canonical surface role mapping을 추가한다.
-> 이 section은 cross-phase/public-surface 계약만 다룬다. phase-local API grammar, 파일별 작업, 상세 검증표는 linked phase detail file로 내린다.
+> 시각 비교 인수가 포함되면 이 섹션에 비교 모드, 차단 기준 지표, 참고 지표, 로컬 영역을 표준 영역 역할로 매핑한 내용을 추가한다. 표준 역할 ID처럼 그대로 맞춰야 하는 값은 코드 표기로 남긴다.
+> 이 섹션은 단계 간 계약과 공개 경계 계약만 다룬다. 단계 내부 API 문법, 파일별 작업, 상세 검증표는 연결된 단계 상세 문서로 내린다.
 
 ## 실행 흐름
 
 | Phase | 목적 | 주요 변경 | 완료 신호 | 상세 문서 |
 | --- | --- | --- | --- | --- |
-| Phase 1. {phase-title} | {이 phase가 남기는 결과} | {변경 경계} | {관찰 가능한 완료 상태} | `./phases/01-{phase-slug}.md` |
-| Phase 2. {phase-title} | {이 phase가 남기는 결과} | {변경 경계} | {관찰 가능한 완료 상태} | `./phases/02-{phase-slug}.md` |
-| Phase 3. {phase-title} | {이 phase가 남기는 결과} | {변경 경계} | {관찰 가능한 완료 상태} | `./phases/03-{phase-slug}.md` |
+| 단계 1. {단계 제목} | {이 단계가 남기는 결과} | {변경 경계} | {관찰 가능한 완료 상태} | `./phases/01-{phase-slug}.md` |
+| 단계 2. {단계 제목} | {이 단계가 남기는 결과} | {변경 경계} | {관찰 가능한 완료 상태} | `./phases/02-{phase-slug}.md` |
+| 단계 3. {단계 제목} | {이 단계가 남기는 결과} | {변경 경계} | {관찰 가능한 완료 상태} | `./phases/03-{phase-slug}.md` |
 
-> phase마다 한 row만 둔다. phase-local field table, 파일별 작업 table, scenario/검증 table을 여기서 반복하지 않는다.
+> 단계마다 한 행만 둔다. 단계 내부 필드 표, 파일별 작업 표, 시나리오/검증 표를 여기서 반복하지 않는다.
 
 ## 리스크와 검증
 
-| 리스크 / edge case | 영향 | 완화 또는 검증 |
+| 리스크 / 엣지 케이스 | 영향 | 완화 또는 검증 |
 | --- | --- | --- |
-| {risk-or-edge-case} | {영향받는 경계/사용자 결과} | {검증 phase, test, compare, source inspection} |
-| {risk-or-edge-case} | {영향받는 경계/사용자 결과} | {검증 phase, test, compare, source inspection} |
+| {리스크 또는 엣지 케이스} | {영향받는 경계/사용자 결과} | {검증 단계, 테스트, 비교, 소스 확인} |
+| {리스크 또는 엣지 케이스} | {영향받는 경계/사용자 결과} | {검증 단계, 테스트, 비교, 소스 확인} |
 
 ## 검토 체크리스트
 
 - [ ] `요청과 범위`만 읽어도 사용자 요청, 포함 범위, 제외 범위, 완료 기준이 보인다.
 - [ ] `변경 형상`이 전체 구조와 흐름을 설명하고 phase detail을 열지 않아도 큰 그림을 이해할 수 있다.
-- [ ] `잠긴 계약`에 touched public surface, input, output, ownership/no-op, 검증 위치가 보인다.
-- [ ] `실행 흐름`이 phase 순서, 목적, 주요 변경, 완료 신호를 중복 없이 보여준다.
-- [ ] `plan.md`는 phase-local file map, scenario/검증 matrix, phase field summary를 반복하지 않고 overview 역할만 유지한다.
-- [ ] `리스크와 검증`은 주요 failure mode와 검증 위치를 연결한다.
+- [ ] `잠긴 계약`에 영향받는 공개 경계, `input`, `output`, 소유권/no-op, 검증 위치가 보인다.
+- [ ] `실행 흐름`이 단계 순서, 목적, 주요 변경, 완료 신호를 중복 없이 보여준다.
+- [ ] `plan.md`는 단계 내부 파일 지도, 시나리오/검증 표, 단계 필드 요약을 반복하지 않고 개요 역할만 유지한다.
+- [ ] `리스크와 검증`은 주요 실패 형태와 검증 위치를 연결한다.

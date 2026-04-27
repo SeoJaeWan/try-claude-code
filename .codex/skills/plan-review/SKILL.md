@@ -1,6 +1,6 @@
 ---
 name: plan-review
-description: Artifact-only critical review skill for executable `./plans/**/plan.md` artifacts and their linked phase detail files created by `architect`. Use when Codex needs an independent cold review before execution, checking template compliance, user-request traceability, blocking ambiguity, topology quality, owner routing, scenario-level technical input/output contracts, optional UI design-decision completeness, later `plan-materialize` derivation readiness, and registry-selected review wiki guidance without rewriting the plan.
+description: Artifact-only critical review skill for executable `./plans/**/plan.md` artifacts and their linked phase detail files created by `architect`. Use when Codex needs an independent cold review before execution, checking template compliance, Korean-first visible prose terminology, user-request traceability, blocking ambiguity, topology quality, owner routing, scenario-level technical input/output contracts, optional UI design-decision completeness, later `plan-materialize` derivation readiness, and registry-selected review wiki guidance without rewriting the plan.
 ---
 
 <Skill_Guide>
@@ -31,11 +31,12 @@ Review the finished plan artifact against the user's request and any upstream re
 10. Pattern candidates selected from the registry `patterns` list using the `review` selection mode plus matching `적용 조건`
 11. `../architect/references/plan-template-sequential.md`
 12. `../architect/references/phase-template-detail.md`
-13. `../architect/references/visual-parity-contract.md`
-14. `../architect/references/agents-lite.md`
-15. `./references/review-policy.md`
-16. Repo-local execution contracts only when needed to verify routing, validation, or repo-fit claims in the plan
-17. Directly referenced local prerequisite plan files only when the reviewed phase detail names them in the local prerequisite field
+13. `../architect/references/terminology-policy.md`
+14. `../architect/references/visual-parity-contract.md`
+15. `../architect/references/agents-lite.md`
+16. `./references/review-policy.md`
+17. Repo-local execution contracts only when needed to verify routing, validation, or repo-fit claims in the plan
+18. Directly referenced local prerequisite plan files only when the reviewed phase detail names them in the local prerequisite field
 
 ## Workflow
 
@@ -64,6 +65,7 @@ Before judging the plan:
 - read every path listed in `stage_core.review` when present, otherwise every path listed in the registry `core` array, resolving relative paths from `review_wiki_root`
 - read `architect/references/plan-template-sequential.md`
 - read `architect/references/phase-template-detail.md`
+- read `architect/references/terminology-policy.md`
 - read `architect/references/visual-parity-contract.md`
 - read `plan-review/references/review-policy.md`
 
@@ -109,6 +111,7 @@ Judge the plan against:
 - the active review wiki core contract
 - the selected pattern guidance that actually matches the reviewed plan
 - request traceability from the user's wording to the plan tables and phase detail work bundles
+- Korean-first visible prose quality under `architect/references/terminology-policy.md`
 - overview/detail split quality: whether `plan.md` stays controller-facing and phase-local execution detail stays in the linked phase files
 - parity between the `plan.md` phase summary and the linked technical detail file
 - blocking ambiguity
@@ -116,7 +119,7 @@ Judge the plan against:
 - `owner_agent` routing
 - scenario-level `input -> output` contract completeness in the phase detail files
 - canonical outputs, negative outputs, and recipients or interpretation boundaries when relevant
-- touched public surface concreteness: props, callbacks, outputs, ownership, invalid/no-op rules, and exclusions when relevant
+- affected public boundary concreteness: props, callbacks, outputs, ownership, invalid/no-op rules, and exclusions when relevant
 - observable outputs and no-op rules for interactive or stateful behavior when later test materialization would otherwise have to guess
 - one-hop prerequisite contract parity when the reviewed plan references a local prerequisite plan
 - verification realism and repo-fit
@@ -142,6 +145,7 @@ Prefer findings over compliments. Do not invent repo facts that the plan does no
 - Record only real issues that materially affect execution readiness, contract clarity, or later test derivation
 - When a weakness comes from an explicit user tradeoff, note it accurately instead of silently normalizing it away
 - If the plan introduces planner terminology that obscures the user's wording, review the loss of traceability rather than accepting the shorthand automatically
+- If visible prose uses English planner shorthand where `terminology-policy.md` provides a Korean-first term, record it as `minor`; raise to `major` when it obscures behavior, public contracts, ownership, completion criteria, or verification meaning
 - Missing UI direction or state coverage is at least `major`, and `blocker` when implementation would have to invent critical user-visible behavior
 - If no findings remain, say so explicitly
 
@@ -159,6 +163,8 @@ Write:
 - `./plans/_orchestrator/review/{task-slug}/review.md`
 
 Write no other file.
+
+Apply `../architect/references/terminology-policy.md` to human-readable review findings and readiness notes. Keep YAML keys, issue codes, paths, commands, and exact quoted plan text literal.
 
 Include:
 
@@ -218,8 +224,9 @@ Frontmatter rules:
 - Do not let a UI plan pass when empty / loading / error / success behavior, hierarchy, or responsive behavior would still be guessed during implementation
 - Do not let summary/detail drift or unresolved contract wording force guesswork about the actual phase boundary
 - Do not let `plan.md` expand into a second implementation spec by repeating phase-local file maps, scenario contracts, validation tables, or long phase summaries that should live only in the linked detail files
-- Do not approve a plan that makes a reviewer reconstruct touched public surfaces or exclusions from prose alone
+- Do not approve a plan that makes a reviewer reconstruct affected public boundaries or exclusions from prose alone
 - Do not let planner shorthand replace user-request traceability
+- Do not approve visible plan prose that mixes English planner shorthand into Korean explanations when the terminology policy gives a natural Korean term
 - Do not approve a visual parity plan that makes the reviewer infer the comparison mode, blocking gating metric, separate non-gating metric, or why a large mismatch is non-blocking
 - Do not approve a visual parity plan that treats task-local UI nouns as reusable taxonomy instead of mapping them to canonical surface roles
 

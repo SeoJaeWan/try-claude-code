@@ -1,4 +1,4 @@
 interface:
   display_name: "Brainstorm"
   short_description: "Lock ambiguity with review-wiki-aware tables before planning."
-  default_prompt: "Use $brainstorm to run review-wiki-aware request locking, compare viable policy directions in tables, and hand off only decision-complete scope to planning."
+  default_prompt: "Use $brainstorm to run review-wiki-aware Korean-first request locking, compare viable policy directions in tables, and hand off only decision-complete scope to planning."
