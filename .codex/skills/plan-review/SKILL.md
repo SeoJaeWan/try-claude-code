@@ -28,7 +28,7 @@ Review the finished plan artifact against the user's request and any upstream re
 7. `../review-wiki-setup/references/platform-commands.md`
 8. Resolved planning `review_wiki_root` containing `registry.json`, `core/`, and `patterns/`. Use `./.codex/review-wiki/sync/current` as the planning root.
 9. Every core doc listed in `stage_core.review`, or the registry `core` array when no review-specific override exists, in listed order
-10. Pattern candidates selected from the registry `patterns` list using the `review` selection mode plus matching `Apply When`
+10. Pattern candidates selected from the registry `patterns` list using the `review` selection mode plus matching `적용 조건`
 11. `../architect/references/plan-template-sequential.md`
 12. `../architect/references/phase-template-detail.md`
 13. `../architect/references/visual-parity-contract.md`
@@ -80,7 +80,7 @@ Before judging the plan:
 - Derive the user-request items that the plan claims to address from the latest user request and conversation context
 - Derive review tags from the reviewed `plan.md`, linked phase detail files, and any explicit scope words in the request metadata when present
 - Select candidate pattern files from the registry `patterns` list using the registry `selection.review` mode and `adjacency_rules`
-- Read only the selected pattern files whose `Apply When` clauses actually match the reviewed plan or its phase detail files
+- Read only the selected pattern files whose `적용 조건` clauses actually match the reviewed plan or its phase detail files
 - In orchestrated mode, do not treat stale prior findings as authoritative just because the same reviewer instance is being reused
 - Treat the plan summary, linked phase detail files, required references, and the user request items as the source of truth
 - If this reviewer instance is being reused inside the same orchestration run, treat prior findings as untrusted history and re-evaluate the current plan files from disk

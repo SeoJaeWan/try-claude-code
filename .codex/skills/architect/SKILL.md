@@ -31,7 +31,7 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 6. `../review-wiki-setup/references/platform-commands.md` - platform-specific link and planning-root commands
 7. Resolved planning `review_wiki_root` containing `registry.json`, `core/`, `patterns/`, and selection policy. Use `./.codex/review-wiki/sync/current` as the planning root.
 8. Every core document listed in `stage_core.architect`, or the registry `core` array when no architect-specific override exists, in listed order
-9. Candidate pattern files selected from the registry `patterns` list using the `architect` selection mode plus matching `Apply When`
+9. Candidate pattern files selected from the registry `patterns` list using the `architect` selection mode plus matching `적용 조건`
 10. `./references/git.md` - commit message, branch naming, and worktree naming rules
 11. `./references/plan-template-sequential.md` - sequential plan template
 12. `./references/phase-template-detail.md` - per-phase technical detail template
@@ -75,7 +75,7 @@ Before writing any plan artifact:
 - Read every path listed in `stage_core.architect` when present, otherwise every path listed in the registry `core` array, resolving relative paths from `review_wiki_root`
 - Derive initial tags from the user request and repo-local context
 - Select candidate pattern files from the registry `patterns` list using the registry `selection.architect` mode and `adjacency_rules`
-- Read only the selected pattern files whose `Apply When` clauses actually match the request or repo-local context
+- Read only the selected pattern files whose `적용 조건` clauses actually match the request or repo-local context
 - Do not skip the registry because the request looks familiar; it is the mandatory routing contract
 
 ### Step 1. Analyze request

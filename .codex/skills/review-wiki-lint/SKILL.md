@@ -1,6 +1,6 @@
 ---
 name: review-wiki-lint
-description: Audit the review wiki for registry drift, broken raw backlinks, duplicate or conflicting pattern rules, orphan registrations, taxonomy drift, and document consistency problems. Use when Codex needs to prepare a proposed cleanup report in `wiki/_meta/lint-report.md` and wait for explicit user approval before applying any wiki cleanup.
+description: Audit the review wiki for registry drift, broken raw backlinks, duplicate or conflicting pattern rules, orphan registrations, taxonomy drift, Obsidian graph-link drift, and document consistency problems. Use when Codex needs to prepare a proposed cleanup report in `wiki/_meta/lint-report.md` and wait for explicit user approval before applying any wiki cleanup.
 ---
 
 # Review Wiki Lint
@@ -14,14 +14,15 @@ Use this skill to inspect the review wiki without silently rewriting it. Resolve
    - Required working files: `wiki/registry.json` and `wiki/_meta/lint-report.md`
    - If the link is missing or broken, stop and use `review-wiki-setup`.
 
-2. Read the current routing surface first.
+2. Read the current routing and graph surface first.
    - Read `wiki/registry.json`.
    - Read every core document listed in the registry.
    - Read every registered pattern file.
+   - Read every tag graph note under `wiki/{graph_notes_root}/`.
    - Inspect only as much raw material as needed to verify broken or suspicious backlinks.
 
 3. Run the lint checks from the reference checklist.
-   - Look for registry drift, broken `raw_sources`, duplicate or conflicting rules, orphan registrations, unregistered files, taxonomy drift, overbroad tags, and stale guidance.
+   - Look for registry drift, broken `raw_sources`, broken Obsidian wikilinks, duplicate or conflicting rules, orphan registrations, unregistered files, taxonomy drift, overbroad tags, stale guidance, Korean-schema drift, and graph-note drift.
    - Treat lint as a review pass, not an excuse to rewrite the whole wiki.
 
 4. Write the proposed cleanup plan to `wiki/_meta/lint-report.md`.
@@ -38,9 +39,16 @@ Use this skill to inspect the review wiki without silently rewriting it. Resolve
 
 - Ensure every core document and promoted pattern file used by planning is registered in `wiki/registry.json`.
 - Ensure the registry does not contain orphan core or pattern paths.
+- Ensure `wiki/index.md` is absent and registry `indexes` is absent.
+- Ensure `graph_notes_root` exists and every taxonomy value has a graph note under `wiki/tags/{tag_group}/{tag_value}.md`.
 - Ensure every promoted pattern has at least one valid raw backlink.
+- Ensure pattern `## 연결` sections link to all tag graph notes and all `raw_sources`.
+- Ensure every raw document has a `## 연결` section with a status tag note, and promoted or referenced raw records link back to every matching pattern.
+- Ensure graph notes link to every pattern and raw record carrying that tag.
 - Ensure duplicate or conflicting rules are identified across exact and adjacent tag groups.
 - Ensure stale guidance is marked or rewritten only when the raw evidence and current core contract justify it.
+- Ensure promoted pattern frontmatter includes Korean `title` and `summary`.
+- Ensure promoted pattern bodies use the Korean headings `요약`, `적용 조건`, `해야 할 것`, `피해야 할 것`, `이유`, and `연결`.
 - Ensure new pattern files still match the one-file-per-rule registry model rather than turning into freeform note sprawl.
 
 ## Guardrails
@@ -48,7 +56,7 @@ Use this skill to inspect the review wiki without silently rewriting it. Resolve
 - Do not modify wiki content before writing the proposed cleanup report.
 - Do not delete raw evidence or wiki documents without explicit approval.
 - Do not rewrite whole documents when a narrow rule edit is enough.
-- Do not treat lint as a semantic re-ingest pass; stay focused on quality, consistency, and routing integrity.
+- Do not treat lint as a semantic re-ingest pass; stay focused on quality, consistency, routing integrity, and graph-link integrity.
 
 ## Reference
 

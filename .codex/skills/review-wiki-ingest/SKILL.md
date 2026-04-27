@@ -56,7 +56,7 @@ Use this skill to process review inbox files into the review wiki. Resolve the r
    - Use the pattern-file schema from the reference file.
    - Add `raw_sources` backlinks.
    - Favor concise, imperative planning guidance over long summaries.
-   - Strengthen existing `Do` or `Avoid` guidance only when the new evidence actually changes the rule.
+   - Strengthen existing `해야 할 것` or `피해야 할 것` guidance only when the new evidence actually changes the rule.
    - Update `wiki/registry.json` in the same batch whenever a pattern file is created, removed, or renamed.
 
 8. Finalize atomically per ingest batch.

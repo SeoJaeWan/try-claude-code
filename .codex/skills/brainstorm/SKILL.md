@@ -71,7 +71,7 @@ If planning handoff is plausible, inspect the staged review wiki before asking t
   - read `{review_wiki_root}/registry.json`
   - read every path in `stage_core.brainstorm` when present; otherwise fall back to the registry `core` array and state that the wiki does not yet expose a brainstorm-specific core list
   - use `selection.brainstorm` when present to select candidate pattern files
-  - read only the selected pattern files whose `Apply When` clauses materially help classify the current ambiguity
+  - read only the selected pattern files whose `적용 조건` clauses materially help classify the current ambiguity
 - if the planning root is missing or unreadable and planning handoff is likely:
   - state that the review wiki dependency is missing
   - continue in degraded brainstorm mode instead of pretending the preflight ran

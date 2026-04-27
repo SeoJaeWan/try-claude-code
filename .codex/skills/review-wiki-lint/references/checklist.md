@@ -2,21 +2,32 @@
 
 ## Scope
 
-Lint the review wiki for routing integrity and evidence integrity. Favor narrow fixes over broad cleanup.
+Lint the review wiki for routing integrity, evidence integrity, Korean-schema consistency, and Obsidian graph-link integrity. Favor narrow fixes over broad cleanup.
 
 ## Checks
 
 - `wiki/registry.json` exists and is valid JSON
 - every core document listed in the registry exists
+- registry has no `indexes` field
+- `wiki/index.md` does not exist
+- registry `graph_notes_root` exists and resolves to `wiki/tags`
+- registry `tag_taxonomy.status` contains `promoted` and `raw-only`
 - every registered pattern file exists
 - every pattern file under `wiki/patterns/` is registered in the registry
+- every tag value in `tag_taxonomy` has a note at `wiki/tags/{tag_group}/{tag_value}.md`
+- every tag note links to the patterns and raw records that carry that tag
 - every promoted pattern has at least one valid `raw_sources` backlink
 - `raw_sources` targets actually exist
+- every promoted pattern has `title` and `summary` frontmatter values written in Korean
+- every promoted pattern body includes `요약`, `적용 조건`, `해야 할 것`, `피해야 할 것`, `이유`, and `연결`
+- every promoted pattern `## 연결` section links to all frontmatter tag notes and all `raw_sources`
+- every raw document has a `## 연결` section with a status tag note
+- every promoted or pattern-referenced raw document `## 연결` section links back to every matching pattern
 - duplicate rules are merged or clearly separated by scope
 - conflicting rules are flagged across exact and adjacent tag groups
 - stale guidance is identified when raw evidence or current core contract no longer supports it
 - tag vocabulary matches the registry taxonomy
-- overbroad tags or weak `Apply When` clauses are identified
+- overbroad tags or weak `적용 조건` clauses are identified
 - new pattern files still fit the one-file-per-rule registry model instead of becoming freeform note sprawl
 
 ## Report Path
@@ -32,20 +43,20 @@ Use this shape:
 ```md
 # Review Wiki Lint Report
 
-## Summary
+## 요약
 - date:
 - scope:
 - blocking issues:
 - optional tidy-ups:
 
-## Proposed Changes
+## 제안 변경
 - [ ] change 1
 - [ ] change 2
 
-## Deferred
+## 보류
 - item
 
-## Approval
+## 승인
 - status: pending
 - approved scope:
 ```

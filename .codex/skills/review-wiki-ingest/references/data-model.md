@@ -10,6 +10,7 @@
   - `wiki/`
   - `wiki/core/`
   - `wiki/patterns/`
+  - `wiki/tags/`
   - `wiki/_meta/`
 - Required control file:
   - `wiki/registry.json`
@@ -55,6 +56,20 @@ Store these fields before the normalized body:
 - `normalized_findings`
 - `planning_implication`
 
+Write the values of `normalized_findings`, `planning_implication`, and the normalized body in Korean. Keep metadata keys, paths, branches, commits, rule ids, and status values in their existing machine-readable form.
+
+After the normalized body, always include `## 연결`.
+
+In raw `## 연결`, include:
+
+- one status wikilink, usually `[[wiki/tags/status/promoted|status: promoted]]` or `[[wiki/tags/status/raw-only|status: raw-only]]`
+- inherited tag wikilinks when the raw record is linked to promoted patterns
+- one promoted-rule wikilink for each promoted or referenced pattern, when applicable
+
+Promoted-rule links should use an Obsidian wikilink such as:
+
+`[[wiki/patterns/contracts-bind-accessibility-ids-to-rendered-slots|접근성 ID를 실제 렌더링 슬롯에 묶기]]`
+
 Suggested `status` values:
 
 - `raw-only`
@@ -70,6 +85,7 @@ Suggested `status` values:
 - core document order
 - pattern file registration
 - tag vocabulary
+- graph note root
 - selection policy
 - adjacency rules
 - lint policy
@@ -80,27 +96,48 @@ Every promoted pattern file must be registered in the registry `patterns` array 
 - `rule_id`
 - `path`
 
+Graph notes use:
+
+- `graph_notes_root`: `tags`
+- `wiki/tags/{tag_group}/{tag_value}.md`
+
+The tag taxonomy should include `status: [promoted, raw-only]` so raw-only evidence has a graph anchor even when it has not been promoted into a reusable pattern.
+
+Graph notes are navigation hubs for Obsidian graph view. They should link to matching patterns, matching raw records, and stage core documents when the tag is stage-related. They are not pattern-selection candidates and are not registered in the `patterns` array.
+
 ## Pattern File Schema
 
 Every promoted pattern file should include YAML frontmatter with:
 
 - `rule_id`
+- `title`
+- `summary`
 - `tags`
 - `raw_sources`
 
+Write `title`, `summary`, and all human-readable body content in Korean. Keep `rule_id`, filenames, tag keys and values, paths, and raw-source paths in English.
+
 Every promoted pattern file body should include:
 
-- `Summary`
-- `Apply When`
-- `Do`
-- `Avoid`
-- `Why`
+- `요약`
+- `적용 조건`
+- `해야 할 것`
+- `피해야 할 것`
+- `이유`
+- `연결`
 
-Use imperative language in `Do` and `Avoid`. Keep the file short enough that `architect` can scan it while planning.
+Use imperative language in `해야 할 것` and `피해야 할 것`. Keep the file short enough that `architect` can scan it while planning.
+
+In `## 연결`, include:
+
+- one wikilink for each tag note in the pattern frontmatter
+- one wikilink for each `raw_sources` entry
 
 Pattern filenames should use:
 
 - `wiki/patterns/{rule_id}.md`
+
+Do not create a default `wiki/index.md`. Obsidian graph navigation should come from `wiki/tags/**` graph notes and explicit pattern/raw/core wikilinks.
 
 ## Plan Matching
 
@@ -166,6 +203,8 @@ When the new evidence conflicts with an older rule:
 - ask the user to approve the replacement before applying it
 
 Whenever a pattern file is created, removed, or renamed, update `wiki/registry.json` in the same operation.
+
+Whenever a pattern's tags or raw sources change, refresh its `## 연결` section, the affected raw `## 연결` sections, and the affected `wiki/tags/**` graph notes in the same batch.
 
 ## Failure Policy
 
