@@ -6,25 +6,53 @@ This is the implementation-review counterpart to `.codex/skills/orchestrator/ref
 
 ## Paths
 
+The runner's dev-review uses a **two-root layout**: per-task data lives in the plan folder; HTML and the highlight.js vendor bundle live exclusively in the plugin and are served straight from there. The data folder is data-only.
+
 ```text
-plans/{task_slug}/dev-review/
-├── index.html                    # from plugin/develop/skills/dev-review/assets/index.html
-├── review-data.json              # regenerated every round
-├── feedback.json                 # written by server on each reviewer action
-├── review-history.json           # append-only record of prior rounds
+plans/{task_slug}/dev-review/        ← data-root (per-task)
+├── review-data.json                # regenerated every round
+├── feedback.json                   # written by server on each reviewer action
+├── review-history.json             # append-only record of prior rounds
 └── assets/
-    ├── diffs/
-    │   └── {short_sha}.diff      # one raw unified diff per commit
+    └── diffs/
+        └── {short_sha}.diff        # one raw unified diff per commit
+
+plugin/develop/skills/dev-review/    ← html-root (one global copy)
+└── assets/
+    ├── index.html                  # served at "/"
     └── vendor/
-        ├── highlight.min.js
+        ├── highlight.min.js        # served at "/vendor/..."
         └── highlight-theme.css
 ```
 
-Serve with the shared static server:
+Serve with the **plugin-internal** dev-review server (NOT the orchestrator's server in `.codex/tools/`). The dev-review skill auto-starts this in the background on port `9797` (see SKILL.md Step 6):
 
 ```text
-node .codex/tools/developer-review-server.mjs plans/{task_slug}/dev-review
+node "${CLAUDE_PLUGIN_ROOT}/develop/skills/dev-review/scripts/server.mjs"
 ```
+
+The server is **multi-review**: one process hosts every task under `plans/*/dev-review/` and routes them at `/review/{task-slug}`. The reviewer opens `http://localhost:9797/review/{task_slug}` for each task; parallel Claude sessions share the same port without collision (the second session's health-check finds the first one and reuses it).
+
+URL routing inside the server:
+
+```text
+GET  /api/health                                  # server diagnostic; returns kind:"dev-review"
+GET  /                                            # listing page
+GET  /review/{slug}                               # SPA shell, with <base href="/review/{slug}/">
+GET  /review/{slug}/vendor/{...}                  # plugin html-root assets
+GET  /review/{slug}/review-data.json              # plans/{slug}/dev-review/
+GET  /review/{slug}/feedback.json                 # plans/{slug}/dev-review/
+GET  /review/{slug}/review-history.json           # plans/{slug}/dev-review/
+GET  /review/{slug}/assets/diffs/{...}            # plans/{slug}/dev-review/assets/diffs/
+GET  /review/{slug}/api/health                    # per-review diagnostic w/ plan_signature
+GET  /review/{slug}/api/review-data               # JSON proxy
+GET  /review/{slug}/api/feedback                  # JSON proxy
+POST /review/{slug}/api/feedback                  # write w/ task_slug + plan_signature check
+```
+
+The HTML uses purely relative URLs; the server injects `<base href="/review/{slug}/">` per request so every fetch (`review-data.json`, `vendor/highlight.min.js`, `assets/diffs/abc.diff`, `api/feedback`) resolves into the right slug's URL space without any per-task HTML mutation.
+
+The orchestrator's planning-review server at `.codex/tools/developer-review-server.mjs` is a separate process for a separate workflow. The two never share state and should never be used interchangeably.
 
 The reviewer finishes by saying `리뷰 완료` in chat. The UI does not signal completion to the shell.
 

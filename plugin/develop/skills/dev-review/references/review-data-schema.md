@@ -41,8 +41,10 @@ The schemas below show every field. Fields marked **deterministic** are filled b
   ],
 
   "overview": {
-    "user_request": "로그인 기능 추가...",     // deterministic — from plan.md
-    "plan_summary": "JWT 기반 인증...",        // deterministic — extracted
+    "user_request": "로그인 기능 추가...",     // deterministic seed (string) | interpretation may
+                                                // replace with array<string> of locked-request bullets
+    "plan_summary": "JWT 기반 인증...",        // deterministic seed (string) | interpretation may
+                                                // replace with array<string> of summary bullets
     "change_map": [                            // deterministic
       { "track": "backend", "files": 5, "additions": 142, "deletions": 23 },
       { "track": "frontend", "files": 3, "additions": 88, "deletions": 12 },
@@ -87,21 +89,16 @@ The schemas below show every field. Fields marked **deterministic** are filled b
           "kind": "modified",                  // "added" | "modified" | "deleted" | "renamed"
           "old_path": null,                    // set for "renamed"
           "additions": 42,
-          "deletions": 3,
-          "diff_hunks": [
-            {
-              "header": "@@ -10,3 +10,5 @@",
-              "before": [
-                { "line_no": 10, "text": "function signToken(user) {" }
-              ],
-              "after": [
-                { "line_no": 10, "text": "function signToken(user, opts = {}) {" },
-                { "line_no": 11, "text": "  const exp = opts.exp ?? 15 * 60;" }
-              ]
-            }
-          ]
+          "deletions": 3
+          // NOTE: diff_hunks is intentionally NOT inlined here.
+          // The browser fetches `assets/diffs/{short_sha}.diff` and parses
+          // unified-diff text on demand. This collapses ~hundreds of KB of
+          // duplicate state out of review-data.json and keeps a single
+          // source of truth for the actual diff bytes.
         }
       ],
+      "raw_diff_path": "assets/diffs/abc123a.diff", // deterministic — relative
+                                                     // path the browser fetches+parses
 
       "cards": [                               // interpretation
         {
@@ -113,7 +110,13 @@ The schemas below show every field. Fields marked **deterministic** are filled b
             {
               "file": "src/auth.ts",
               "lines": "10-22",
-              "snippet": "function signToken(user, opts = {}) {\n  ...",
+              "note": "signToken이 두 번째 인자로 옵션 객체를 받도록 변경", // optional; surfaced verbatim in UI
+              "snippet": "function signToken(user, opts = {}) {\n  ...",  // optional — when omitted, the
+                                                                          // UI lazy-fills the code from the
+                                                                          // commit's raw diff using
+                                                                          // file:lines as the lookup key.
+                                                                          // Provide only when you can quote
+                                                                          // it verbatim from the diff.
               "language": "typescript"
             }
           ]

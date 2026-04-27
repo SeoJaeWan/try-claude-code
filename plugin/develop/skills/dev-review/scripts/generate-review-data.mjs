@@ -122,7 +122,17 @@ function run(args, logger) {
     const nameStatus = commitNameStatus(worktreeAbs, meta.sha);
     const numstat = commitNumstat(worktreeAbs, meta.sha);
 
-    const files_changed = assembleFiles(parsedFiles, nameStatus, numstat);
+    // diff_hunks is intentionally dropped from review-data.json — the browser
+    // parses the per-commit raw .diff on demand. Inlining hunks bloats the
+    // JSON to hundreds of KB and the UI already lazy-fetches raw_diff_path
+    // for the full-diff view; this collapses the storage onto one source.
+    const files_changed = assembleFiles(parsedFiles, nameStatus, numstat).map((f) => ({
+      path: f.path,
+      kind: f.kind,
+      old_path: f.old_path,
+      additions: f.additions,
+      deletions: f.deletions,
+    }));
     const totals = files_changed.reduce(
       (acc, f) => ({
         additions: acc.additions + (f.additions || 0),

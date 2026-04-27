@@ -52,11 +52,12 @@ Exit code `0` is the only success. Any non-zero exit must stop the runner; parti
    - `git -C {worktree} diff --numstat {base}..HEAD` → total_files_changed / change_map totals
    - Per commit: `git -C {worktree} show --format= --numstat {sha}` → files_changed additions/deletions
    - Per commit: `git -C {worktree} show --format= --name-status {sha}` → files_changed kinds (A/M/D/R)
-   - Per commit: `git -C {worktree} diff {parent}..{sha}` → parsed into `diff_hunks[]`, also written as raw `.diff` to `--diffs-dir`
+   - Per commit: `git -C {worktree} diff {parent}..{sha}` → written as raw `.diff` to `--diffs-dir`. Parsed hunks are NOT inlined into review-data.json; the browser fetches the raw .diff and parses it client-side on demand. This keeps review-data.json roughly two orders of magnitude smaller for typical task branches.
    - `git -C {worktree} diff --name-status {base}..HEAD` → `final.merge_impact`
 
 3. **Available agents** (`--available-agents-dir`, repeatable)
-   - Defaults: `plugin/develop/agents/*.md` and `.claude/agents/*.md` relative to `CLAUDE_PLUGIN_ROOT` and workspace root
+   - Defaults (in order): `${workspaceRoot}/plugin/develop/agents/*.md`, `${workspaceRoot}/.claude/agents/*.md`, `${CLAUDE_PLUGIN_ROOT}/develop/agents/*.md`, `${CLAUDE_PLUGIN_ROOT}/agents/*.md`
+   - The `CLAUDE_PLUGIN_ROOT` paths are critical when the dev-review skill is loaded from an installed plugin into a consumer repo (e.g., `try-claude-code` → `figma-test`). Without that fallback, `available_agents` resolves to `[]` and the "needs-change" dispatch dropdown is empty, blocking review submission.
    - Each `*.md` with YAML frontmatter containing `name` and `description` becomes an entry in `available_agents[]`
    - Files without valid frontmatter are skipped with a `warn` log
 

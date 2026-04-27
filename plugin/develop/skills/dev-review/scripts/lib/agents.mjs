@@ -50,8 +50,23 @@ export function discoverAvailableAgents(dirs, logger) {
 }
 
 export function defaultAgentsDirs(workspaceRoot) {
-  return [
+  // Workspace-local locations (this is where skill code in the host repo lives).
+  const dirs = [
     path.resolve(workspaceRoot, "plugin/develop/agents"),
     path.resolve(workspaceRoot, ".claude/agents"),
   ];
+
+  // Plugin-local locations. When the dev-review skill is loaded as part of an
+  // installed plugin (e.g. from `try-claude-code` into a consumer repo like
+  // `figma-test`), the agents live next to the skill itself, not in the
+  // consumer's workspace. Without this fallback, available_agents always
+  // resolves to [] in consumer projects and the "needs-change" dispatch
+  // dropdown is empty.
+  const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
+  if (pluginRoot) {
+    dirs.push(path.resolve(pluginRoot, "develop/agents"));
+    dirs.push(path.resolve(pluginRoot, "agents"));
+  }
+
+  return dirs;
 }
