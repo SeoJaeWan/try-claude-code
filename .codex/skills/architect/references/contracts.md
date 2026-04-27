@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Create decision-complete implementation plans as one or more sequential executable plans, with explicit execution phases, scenario-first boundary I/O contracts, and controller-first plan artifacts that preserve the user's wording, expose concrete work bundles and public contracts before execution order, and keep later execution from guessing.
+Create decision-complete implementation plans as one or more sequential executable plans, with explicit execution phases, scenario-first boundary I/O contracts, and top-level execution-contract plan artifacts that preserve the user's wording, expose concrete work bundles and public contracts before execution order, and keep later execution from guessing.
 
 ## Entry Notes
 
@@ -21,7 +21,7 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
    - optional `authoritative_existing_inputs` containing controller-verified literal upstream artifact paths
    - optional `known_missing_inputs` containing referenced but missing literal paths as non-authoritative warnings
 3. Optional `design-discovery` handoff from the latest conversation context or a directly referenced `./.codex/artifacts/design-discovery/{feature-name}.md`
-4. `./references/agents-lite.md` - execution agent catalog
+4. `./references/agents-lite.md` - canonical `owner_agent` catalog
 5. `../review-wiki-setup/references/staging-contract.md` - review wiki sync resolution and refresh rules
 6. `../review-wiki-setup/references/platform-commands.md` - platform-specific link and planning-root commands
 7. Resolved planning `review_wiki_root` containing `registry.json`, `core/`, `patterns/`, and selection policy. Use `./.codex/review-wiki/sync/current` as the planning root.

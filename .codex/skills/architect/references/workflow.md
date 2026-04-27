@@ -158,7 +158,7 @@ Do not deep-dive into implementation details.
 ### Step 3. Design plan structure
 
 - Create executable plan artifacts under `./plans/`
-- Draft every reviewer-facing `plan.md` from `plan-template-sequential.md`
+- Draft every top-level execution-contract `plan.md` from `plan-template-sequential.md`
 - Draft one technical detail file per phase under `./plans/{task-slug}/phases/` from `phase-template-detail.md`
 - Apply `terminology-policy.md` before writing any visible plan prose:
   - keep English for exact identifiers, commands, paths, API names, schema keys, agent names, and canonical taxonomy IDs
@@ -168,7 +168,7 @@ Do not deep-dive into implementation details.
 - Treat `plan-template-sequential.md` as the complete `plan.md` structure and `phase-template-detail.md` as the complete per-phase detail structure
 - Do not add extra top-level sections unless a core doc explicitly requires them or the user explicitly asks for them
 - Do not add a dedicated top-level design-discovery recap section; compress approved UI-direction decisions into the existing request, contract, and phase detail tables
-- Treat `plan.md` as the controller-facing overview, not a duplicated implementation spec
+- Treat `plan.md` as the top-level execution contract shared by AI agents and the review pipeline, not a duplicated implementation spec
 - Keep the top preamble minimal: `Branch`, a one-line `Worktree dir`, then the compact routing table with `# | Phase | Agent`
 - In that routing table, use the linked phase detail path in `Phase` and mirror the linked detail-file `owner_agent` in `Agent`
 - After the routing table, use the sections fixed by `plan-template-sequential.md` in the same order:
@@ -179,7 +179,7 @@ Do not deep-dive into implementation details.
   - `## 리스크와 검증`
   - `## 검토 체크리스트`
 - Keep `plan.md` reviewable without opening phase detail files first, but do not repeat phase-local execution details there
-- Keep `plan.md` lean enough that a controller can approve the plan without scanning phase-local file maps, scenario grids, or validation tables
+- Keep `plan.md` lean enough that an agent or review pass can validate the plan without scanning phase-local file maps, scenario grids, or validation tables
 - The top-level plan must let a human reviewer answer:
   - what the user asked for, what is included, what is excluded, and what final completion means
   - what shape the change takes across components, routes, services, data flow, or UI states
@@ -258,7 +258,7 @@ Do not deep-dive into implementation details.
   - write one executable plan per boundary
   - place each plan in its own folder
   - keep every plan sequential and template-based
-  - give every plan its own `Branch` header, reviewer-facing phase summaries, and linked phase detail files
+  - give every plan its own `Branch` header, top-level phase summaries, and linked phase detail files
   - if one local plan depends on another, record the same prerequisite contract in the downstream phase detail `선행 조건` and in exactly one upstream phase detail `output` plus `검증`
 - Do not force multiple plans only because many files change or one phase would be long
 - Do not generate overview, index, DAG, or root graph files

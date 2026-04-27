@@ -112,7 +112,7 @@ Judge the plan against:
 - the selected pattern guidance that actually matches the reviewed plan
 - request traceability from the user's wording to the plan tables and phase detail work bundles
 - Korean-first visible prose quality under `architect/references/terminology-policy.md`
-- overview/detail split quality: whether `plan.md` stays controller-facing and phase-local execution detail stays in the linked phase files
+- overview/detail split quality: whether `plan.md` stays a top-level execution contract and phase-local execution detail stays in the linked phase files
 - parity between the `plan.md` phase summary and the linked technical detail file
 - blocking ambiguity
 - topology quality and plan-count justification

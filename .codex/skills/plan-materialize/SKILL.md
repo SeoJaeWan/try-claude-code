@@ -1,6 +1,6 @@
 ---
 name: plan-materialize
-description: Create or update source-tree TDD contract tests, runtime integration tests, and selected E2E tests from an architect plan. Use after `architect` when a reviewer-facing `plan.md` and linked phase detail files define implementation boundaries and completion contracts, including first-work situations where the target app or test harness may not exist yet but Codex must still materialize failing/blocked tests that gate plan completion, plus owner-test migration, bounded UI-area coverage, explicitly selected full-flow journeys such as auth/session, redirect, and cross-route behavior, and Korean-first materialization reports/test descriptions that keep English only for code, runner, schema, and exact identifier terms.
+description: Create or update source-tree TDD contract tests, runtime integration tests, and selected E2E tests from an architect plan. Use after `architect` when a top-level execution-contract `plan.md` and linked phase detail files define implementation boundaries and completion contracts, including first-work situations where the target app or test harness may not exist yet but Codex must still materialize failing/blocked tests that gate plan completion, plus owner-test migration, bounded UI-area coverage, explicitly selected full-flow journeys such as auth/session, redirect, and cross-route behavior, and Korean-first materialization reports/test descriptions that keep English only for code, runner, schema, and exact identifier terms.
 ---
 
 # Plan Materialize
