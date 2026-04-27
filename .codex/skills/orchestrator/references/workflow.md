@@ -23,7 +23,7 @@ Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output ru
 - If `./.codex/review-wiki/sync/current` is missing, stop and route to `review-wiki-setup` instead of attempting per-run staging inside this skill.
 - Confirm the linked local `brainstorm`, `architect`, `plan-review`, and `plan-materialize` skills are present.
 - Confirm `../design-discovery/SKILL.md` before taking a UI-direction feedback route.
-- Confirm `./references/developer-review-ui.md`, `./assets/developer-review/index.html`, and `../../tools/developer-review-server.mjs` are present before entering the developer review gate.
+- Confirm `./references/developer-review-ui.md`, `./assets/developer-review/index.html`, `../../tools/developer-review-server.mjs`, and `../../tools/start-developer-review-server.mjs` are present before entering the developer review gate.
 - Derive the default plan path as `./plans/{task-slug}/plan.md` unless the current run explicitly targets another existing executable plan.
 - Collect task-local plan or prerequisite paths referenced by the user request, current selected plan, latest fresh review/materialize artifact, or directly referenced upstream `brainstorm` / `design-discovery` artifact when they affect the next role pass.
 - Resolve each referenced path literally before spawning a planning sub-agent.

@@ -26,9 +26,8 @@ Use this skill to connect Codex to the Obsidian vault, create the minimum review
    - Preserve existing user content; do not overwrite populated files without explicit approval.
 
 4. Refresh or repair the workspace planning root when requested.
-   - Run the platform-appropriate preparation command from `references/platform-commands.md` from the workspace root.
-   - On Windows, use `stage-review-wiki.ps1`.
-   - On macOS / Linux, use `stage-review-wiki.sh`.
+   - Run the platform-neutral preparation command from `references/platform-commands.md` from the workspace root.
+   - Use `node .codex/tools/stage-review-wiki.mjs` on Windows, macOS, and Linux.
    - Prepare `./.codex/review-wiki/sync/current` as a live link to the external `wiki/` root.
    - If the runtime cannot safely read through a workspace link to the external `wiki/` root, stop and report that blocker instead of creating a copied fallback.
    - After preparation, treat `./.codex/review-wiki/sync/current/` itself as the planning root that contains `registry.json`, `core/`, `patterns/`, `tags/`, and `_meta/`.
@@ -60,6 +59,6 @@ Use this skill to connect Codex to the Obsidian vault, create the minimum review
 
 ## Reference
 
-- Read [references/platform-commands.md](references/platform-commands.md) for Windows, macOS, and Linux link and planning-root commands.
+- Read [references/platform-commands.md](references/platform-commands.md) for the platform-neutral Node staging command and optional first-time vault link commands.
 - Read [references/bootstrap-layout.md](references/bootstrap-layout.md) for the initial directory and document set.
 - Read [references/staging-contract.md](references/staging-contract.md) for the workspace planning root contract and link rules.

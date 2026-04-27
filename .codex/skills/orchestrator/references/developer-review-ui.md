@@ -30,16 +30,16 @@ The browser review app is a single shared HTML file:
 .codex/skills/orchestrator/assets/developer-review/index.html
 ```
 
-The orchestrator auto-starts the shared server in the background on port `8787` (see `developer-review.md` Step 5):
+The orchestrator auto-starts or reuses the shared server through the platform-neutral launcher (see `developer-review.md` Step 5):
 
 ```text
-node .codex/tools/developer-review-server.mjs
+node .codex/tools/start-developer-review-server.mjs --task-slug {task-slug} --plan-signature {plan_signature}
 ```
 
-Open a task review at:
+The launcher prints the task review URL:
 
 ```text
-http://localhost:8787/review/{task-slug}
+developer_review_url=http://localhost:{port}/review/{task-slug}
 ```
 
 The shared server supports multiple task reviews at the same time. Task-specific data is served through:

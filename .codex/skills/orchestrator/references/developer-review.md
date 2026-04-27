@@ -24,11 +24,11 @@ At the gate:
   - `Previous`, `Next`, and direct step navigation reset visible review content to the top of the current step.
 - Ensure the developer review package exposes historical rounds and controller action summaries from `review-history.json`.
 - Initialize or reset `feedback.json` for current `plan_signature` with `review_status = in_progress`.
-- Auto-start the shared server in the background; do not ask the user to run a `node` command:
-  1. Health-check first: `node -e "fetch('http://localhost:8787/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"`. Exit `0` means a compatible shared server is still alive; reuse it.
-  2. Otherwise launch with the `Bash` tool using `run_in_background: true`: `node .codex/tools/developer-review-server.mjs`.
-  3. Re-run the global health-check, then check `http://localhost:8787/api/reviews/{task-slug}/health` to confirm the task route and current `plan_signature`. On `EADDRINUSE` from a foreign process, retry the launch with `--port 8788` or another free port and tell the user the alternate URL.
-- Tell the user in Korean: the server is running in the background, open `http://localhost:8787/review/{task-slug}`, press submit on the final step, then say `review complete` in chat.
+- Auto-start the shared server through the platform-neutral Node launcher; do not ask the user to run a `node` command:
+  1. Run `node .codex/tools/start-developer-review-server.mjs --task-slug {task-slug} --plan-signature {plan_signature}` from the repository root.
+  2. The launcher must health-check existing compatible servers, start `.codex/tools/developer-review-server.mjs` as a detached background process when needed, skip foreign processes on occupied ports, choose an alternate port when needed, and print `developer_review_url=...`.
+  3. Treat a non-zero launcher exit as a developer-review gate blocker and report the exact command output.
+- Tell the user in Korean: the server is running in the background, open the printed `developer_review_url`, press submit on the final step, then say `review complete` in chat.
 - Do not create `user-gate.md`.
 
 When the user says `review complete`, read `feedback.json`:

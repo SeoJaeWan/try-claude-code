@@ -8,10 +8,9 @@ Use this contract whenever planning agents need a workspace-local planning root 
 - Workspace planning root: `./.codex/review-wiki/sync/current`
 - Planning-root manifest: `./.codex/review-wiki/sync/current.manifest.json`
 
-Use the platform-appropriate preparation command from `references/platform-commands.md`:
+Use the platform-neutral preparation command from `references/platform-commands.md`:
 
-- Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.ps1`
-- macOS / Linux: `sh ./.codex/skills/review-wiki-setup/scripts/stage-review-wiki.sh`
+- `node .codex/tools/stage-review-wiki.mjs`
 
 The workspace planning root always resolves at `./.codex/review-wiki/sync/current`. It is prepared as a live directory link to the external `wiki/` root.
 
