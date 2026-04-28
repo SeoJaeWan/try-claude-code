@@ -6,7 +6,8 @@
  * Ported from claude-code-status gmail.ts.
  */
 
-import { exec } from "node:child_process";
+import { spawn } from "node:child_process";
+import process from "node:process";
 import { writeCacheFile, acquireLock, releaseLock } from "./status-cache.mjs";
 
 const SERVICE = "gmail";
@@ -38,12 +39,40 @@ function classifyError(err, exitCode) {
 // Run gws command
 // ---------------------------------------------------------------------------
 
+// Route Windows commands through cmd.exe so that `gws.cmd` (the shape an
+// npm-installed CLI takes on Windows) resolves without `shell: true` + args,
+// which triggers Node's DEP0190 deprecation. POSIX spawns directly.
+function buildGwsSpec(args) {
+  if (process.platform !== "win32") {
+    return { command: "gws", args };
+  }
+  return {
+    command: process.env.ComSpec || "cmd.exe",
+    args: ["/d", "/s", "/c", "gws", ...args],
+  };
+}
+
 function runGws(args) {
-  const escaped = args.map(a => `"${a.replace(/"/g, '\\"')}"`).join(" ");
   return new Promise((resolve) => {
-    exec(`gws ${escaped}`, { timeout: 15_000, windowsHide: true }, (err, stdout, stderr) => {
-      const exitCode = err && "code" in err ? err.code : 0;
-      resolve({ stdout: stdout ?? "", stderr: stderr ?? "", exitCode });
+    const spec = buildGwsSpec(args);
+    let stdout = "";
+    let stderr = "";
+    const child = spawn(spec.command, spec.args, {
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const timer = setTimeout(() => child.kill(), 15_000);
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => { stdout += chunk; });
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      resolve({ stdout, stderr, exitCode: code ?? 0 });
+    });
+    child.on("error", (err) => {
+      clearTimeout(timer);
+      resolve({ stdout, stderr: err?.message ?? String(err), exitCode: -1 });
     });
   });
 }

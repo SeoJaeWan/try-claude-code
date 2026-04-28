@@ -27,16 +27,19 @@ export function absoluteNormalizePath(p) {
   return toPosixPath(path.resolve(p));
 }
 
-// Compare two paths for equality with OS-appropriate case sensitivity.
-// Inputs are resolved to absolute POSIX form before comparison; use this
-// instead of raw string equality for worktree and session-stored paths.
+// Compare two paths for equality. When both sides resolve on disk, defer to the
+// OS via `realpathSync` (which canonicalizes case on Windows and follows links
+// on POSIX); otherwise fall back to absolute POSIX-form string equality. Use
+// this instead of raw string equality for worktree and session-stored paths.
 export function comparePaths(a, b) {
   const na = absoluteNormalizePath(a);
   const nb = absoluteNormalizePath(b);
   if (!na || !nb) return na === nb;
-  return process.platform === "win32"
-    ? na.toLowerCase() === nb.toLowerCase()
-    : na === nb;
+  try {
+    return fs.realpathSync.native(na) === fs.realpathSync.native(nb);
+  } catch {
+    return na === nb;
+  }
 }
 
 export function createTempDir(prefix = "codex-plugin-") {

@@ -492,7 +492,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     U["User request"]
-    LOCK["brainstorm / design-discovery"]
+    LOCK["request-scope / UI direction lock"]
     ARCH["architect"]
     REVIEW["plan-review"]
     ORCH["orchestrator"]
@@ -511,7 +511,7 @@ flowchart TD
 
 예시: "대시보드 알림 필터 로직을 추가해줘"
 
-1. 요청이 모호하면 `brainstorm`이나 `design-discovery`가 목표와 UI 방향을 먼저 잠근다.
+1. 요청이 모호하면 request-scope나 UI direction 선결정을 먼저 잠근다.
 2. `architect`가 `plans/{task}/plan.md`와 phase detail 아티팩트를 만든다.
 3. `plan-review`가 plan-only cold review를 수행한다.
 4. `orchestrator`가 browser developer review 패키지를 만들고, `.codex/tools/developer-review-server.mjs`로 로컬 review UI를 서빙한다.
@@ -850,7 +850,7 @@ flowchart LR
 
 | 작업 종류 | 진입점 | 실행 스킬/도구 | 규칙 소스 | 대표 산출물 |
 |---|---|---|---|---|
-| 요청 잠금 / 기획 | `brainstorm`, `design-discovery`, `architect` | `.codex/skills/*` | review wiki + planning references | `plans/*`, phase detail, 결정 기록 |
+| 요청 잠금 / 기획 | `brainstorm`, `ui-spec`, `architect` | `.codex/skills/*` | review wiki + planning references | `plans/*`, phase detail, 결정 기록 |
 | cold review / developer review | `plan-review`, `orchestrator`, `developer-review-server` | `.codex/skills/plan-review/SKILL.md`, `.codex/skills/orchestrator/SKILL.md`, `.codex/tools/developer-review-server.mjs` | review policy + browser feedback + plan signature | `plans/_orchestrator/review/*`, `plans/*/developer-review/*` |
 | 프론트엔드 구현 | `runner` 후 `frontend-dev` | `plugin/develop/skills/frontend-dev/SKILL.md`, `plugin/develop/agents/frontend-developer.md` | `plan.md` + 기존 UI code conventions | 실제 소스 변경, 필요 시 test/E2E 복사 |
 | 백엔드 구현 | `runner` 후 `backend-dev` | `plugin/develop/skills/backend-dev/SKILL.md`, `plugin/develop/agents/backend-developer.md` | `plan.md` + 기존 backend/database conventions | 실제 소스 변경, 필요 시 test/E2E 복사 |

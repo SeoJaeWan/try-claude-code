@@ -1,14 +1,28 @@
 import { spawnSync } from "node:child_process";
 import process from "node:process";
 
+// Route Windows commands through cmd.exe so that `.cmd`/`.bat` shims (the shape
+// npm-installed CLIs take on Windows) resolve without `shell: true` + args-array,
+// which triggers Node's DEP0190 deprecation. POSIX spawns the command directly.
+export function buildSpawnSpec(command, args = []) {
+  if (process.platform !== "win32") {
+    return { command, args };
+  }
+  return {
+    command: process.env.ComSpec || "cmd.exe",
+    args: ["/d", "/s", "/c", command, ...args]
+  };
+}
+
 export function runCommand(command, args = [], options = {}) {
-  const result = spawnSync(command, args, {
+  const spec = buildSpawnSpec(command, args);
+  const result = spawnSync(spec.command, spec.args, {
     cwd: options.cwd,
     env: options.env,
     encoding: "utf8",
     input: options.input,
     stdio: options.stdio ?? "pipe",
-    shell: process.platform === "win32",
+    timeout: options.timeout,
     windowsHide: true
   });
 

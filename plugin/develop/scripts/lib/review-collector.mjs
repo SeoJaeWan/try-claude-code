@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -53,10 +53,11 @@ export function findPlanDirByBranch(workspaceRoot, branch) {
  */
 function resolveRepoRoot(cwd) {
   try {
-    const raw = execSync("git worktree list --porcelain", {
+    const raw = execFileSync("git", ["worktree", "list", "--porcelain"], {
       cwd,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
+      windowsHide: true,
     });
     const match = raw.match(/^worktree\s+(.+)/m);
     return match ? match[1].trim() : cwd;

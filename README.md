@@ -7,7 +7,7 @@ Claude Code용 실행 플러그인과 Codex용 planning stack을 함께 실험�
 ## 최근 커밋 기준으로 반영된 변화
 
 - planning 흐름이 예전 named planning agent 중심에서, generic skill sub-agent + artifact-driven orchestrator 중심으로 이동했습니다.
-- `brainstorm -> design-discovery -> architect -> plan-review -> browser developer review -> plan-materialize` 루프가 현재 기본 planning 경로입니다.
+- `brainstorm -> ui-spec -> architect -> plan-review -> browser developer review -> plan-materialize` 루프가 현재 기본 planning 경로입니다.
 - developer review gate와 feedback triage가 추가되어, 리뷰 승인/수정 이력이 `plans/{task}/developer-review/` 아래 아티팩트로 남습니다.
 - review wiki staging이 copy 방식이 아니라 link-only 방식으로 고정되었고, workspace planning root는 `./.codex/review-wiki/sync/current`를 기준으로 잡습니다.
 - 실행 플러그인에 `session-restore`, `figma-parity`, `visual-compare`가 추가되거나 분리되었습니다.
@@ -85,7 +85,7 @@ SessionStart 훅이 `~/.claude/statusline/` 아래 파일을 자동 동기화하
 | 스킬 | 역할 |
 |---|---|
 | `brainstorm` | 요청의 목표, 범위, public surface, 제외 범위를 먼저 잠그는 entrypoint |
-| `design-discovery` | UI 방향이 불명확할 때 화면/상태/반응형 방향을 먼저 고정 |
+| `ui-spec` | UI 방향이 불명확할 때 화면/상태/반응형 방향을 먼저 고정 |
 | `architect` | 실행 가능한 `plan.md`와 phase detail 아티팩트를 작성 |
 | `plan-review` | 계획 아티팩트만 읽고 cold review 수행 |
 | `orchestrator` | stateless, artifact-driven planning loop 전체를 조율 |
@@ -105,7 +105,7 @@ SessionStart 훅이 `~/.claude/statusline/` 아래 파일을 자동 동기화하
 
 대략적인 흐름은 아래와 같습니다.
 
-1. 복잡한 요청은 `brainstorm` 또는 `design-discovery`로 선결정을 잠급니다.
+1. 복잡한 요청은 request-scope 또는 UI direction 선결정을 잠급니다.
 2. `architect`가 실행 가능한 계획 아티팩트를 `plans/{task}/`에 씁니다.
 3. `plan-review`가 plan-only cold review를 수행합니다.
 4. `orchestrator`가 browser developer review gate와 feedback triage를 관리합니다.

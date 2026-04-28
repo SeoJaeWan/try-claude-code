@@ -3,7 +3,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { spawnSync } from "node:child_process";
 
 import {
   createSession,
@@ -16,6 +15,7 @@ import {
   addSessionWarning
 } from "./lib/sessions.mjs";
 import { toPosixPath } from "./lib/fs.mjs";
+import { runCommand } from "./lib/process.mjs";
 import {
   PHASE_DESC_RE,
   SOFT_PHASE_HINT_RE,
@@ -54,19 +54,8 @@ function appendEnvVar(name, value) {
 // ---------------------------------------------------------------------------
 
 function probeCodex() {
-  // Route through cmd.exe on Windows so `.cmd` shims (the shape npm-installed
-  // CLIs take on Windows) resolve without needing `shell: true` + args, which
-  // triggers Node's DEP0190 warning. POSIX can spawn `codex` directly.
-  const spec = process.platform === "win32"
-    ? { cmd: "cmd.exe", args: ["/C", "codex", "--version"] }
-    : { cmd: "codex", args: ["--version"] };
   try {
-    const r = spawnSync(spec.cmd, spec.args, {
-      stdio: "pipe",
-      encoding: "utf8",
-      windowsHide: true,
-      timeout: 3000
-    });
+    const r = runCommand("codex", ["--version"], { timeout: 3000 });
     if (r.status === 0) {
       return { ok: true, version: (r.stdout || r.stderr || "").trim() };
     }
@@ -78,15 +67,7 @@ function probeCodex() {
 }
 
 function codexInstallHint() {
-  const base = "npm install -g @openai/codex";
-  switch (process.platform) {
-    case "darwin":
-      return `${base}   (alternative: brew install codex, if your tap provides it)`;
-    case "win32":
-      return `${base}   (alternative: winget install OpenAI.Codex, if available)`;
-    default:
-      return base;
-  }
+  return "npm install -g @openai/codex";
 }
 
 function reportCodexProbe(probe) {

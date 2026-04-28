@@ -23,7 +23,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import {
   buildBox,
   colorPct,
@@ -214,7 +214,7 @@ function renderGit(sessionId) {
 
   // Current branch
   try {
-    const branch = execSync("git branch --show-current", {
+    const branch = execFileSync("git", ["branch", "--show-current"], {
       encoding: "utf8",
       timeout: 3000,
       windowsHide: true,
