@@ -236,6 +236,18 @@ Card ids are `{short_sha}.C{index}` where `index` starts at 1. The helper enforc
       "status": "out-of-scope",
       "comment": "이건 별도 task로 분리합니다"
     }
+  },
+
+  "preview_routes": {                            // optional — written by the
+                                                 // browser when the reviewer
+                                                 // edits the live preview
+                                                 // panel's route input on a
+                                                 // commit. Keyed by
+                                                 // commit.short_sha. Picked
+                                                 // up on next entry to that
+                                                 // commit step.
+    "abc123a": "/users/42",
+    "def456b": "/settings"
   }
 }
 ```
@@ -246,6 +258,7 @@ Card ids are `{short_sha}.C{index}` where `index` starts at 1. The helper enforc
 - `comment` may be empty string.
 - `target` is optional for any status; defaults to the first evidence entry of the card in `review-data.json` when absent.
 - `dispatch_agent` is **required** when `status === "needs-change"`. The skill rejects a submitted feedback that has a `needs-change` card without `dispatch_agent`, treating it as a `question` card and asking the reviewer to reopen the browser to pick an agent.
+- `preview_routes` is optional. Keys are commit `short_sha`; values are paths starting with `/`. The browser uses this to override the heuristic route for that commit's iframe. The dev-review skill ignores it for routing decisions — it is purely UI state.
 - Unknown fields are preserved (forward-compat).
 
 ### Round boundary
