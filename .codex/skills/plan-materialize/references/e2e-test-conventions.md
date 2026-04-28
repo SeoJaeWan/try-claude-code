@@ -73,6 +73,11 @@ Registry is an exception path, not the default.
 
 - Write human-readable scenario names, comments, and report reasons in Korean-first prose unless the repository has an established English-only test style
 - Keep English for metadata keys, test IDs, routes, file names, selectors, runner APIs, and exact product copy
+- Write each E2E `test` name as a concrete user-visible behavior example: `{condition or page}에서 {user action}하면 {visible/output result}가 나온다`
+- Use `test.describe` for the journey or UI area only; keep the condition/action/result in each `test` or table row case name
+- Do not expose materialization mechanics in test names. Avoid terms such as `coverage`, `matrix`, `boundary`, `contract`, `owner`, `final recipient`, and `surface` unless they are exact product/domain words in the repository.
+- For table-driven or registry-driven E2E tests, each row must carry a human-readable `caseName` that names the user action and expected result, not only the slug or registry key
+- The assertions in each case must directly prove the result named by the `test` or `caseName`
 - Use Korean terms such as `사용자 행동`, `완료 조건`, `변경 경계`, and `공개 경계` instead of planner shorthand such as `user action`, `completion condition`, `boundary`, or `surface`
 
 ### Playwright
@@ -95,6 +100,7 @@ Registry is an exception path, not the default.
 - Do not promote manual QA ideas into E2E assertions unless the plan names them as contract
 - For synchronization clauses, assert the positive user-visible update first, then assert stale/forbidden output is absent when the plan requires it
 - Do not duplicate volatile registry contents such as exact counts or full item lists in E2E unless that full list is the selected user-visible contract; prefer representative required entries plus separate behavior tests for lookup/selection rules
+- When the full registry or inventory is the selected contract, keep the inventory completeness assertion separate from behavior examples, and still give each behavior row a readable `caseName`
 
 ## Prohibited
 

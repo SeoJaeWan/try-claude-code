@@ -29,6 +29,12 @@ Do not create a new boundary test solely because the code exists; create it only
 - Keep tests deterministic and isolated
 - Use Korean-first `describe` / `it` intent text when the repo does not prohibit it
 - Keep English in test names only for code identifiers, API names, domain constants, exact event names, runner terms, or quoted product text
+- Use `describe` for the small behavior owner, such as a function, hook, mapper, state reducer, or rendered component boundary
+- Write each `it` / `test` name as a concrete behavior example: `{condition}에서 {action}하면 {expected result}가 나온다`
+- If there is no meaningful external action, phrase the trigger as the function call or state transition, such as `{input}을 전달하면 {output}을 반환한다`
+- Keep negative/no-op rules in the same behavior sentence only when they belong to the same selected scenario, such as `{valid action}하면 {allowed result}가 나오고 {forbidden result}는 바뀌지 않는다`
+- Do not expose materialization mechanics in test names. Avoid terms such as `coverage`, `matrix`, `boundary`, `contract`, `owner`, `final recipient`, and `surface` unless they are exact product/domain words in the repository.
+- The assertions in the test must directly prove the result named by the `it` / `test` sentence
 - Avoid planner shorthand in test intent text; use Korean terms such as `사용자 행동`, `완료 조건`, `변경 경계`, and `공개 경계` instead of `user action`, `completion condition`, `boundary`, or `surface`
 - Use `// Arrange`, `// Act`, `// Assert` comments when the local test style permits
 - Include explicit happy-path, non-happy-path, edge, or exception coverage only when the selected plan clause or its risk pattern requires it

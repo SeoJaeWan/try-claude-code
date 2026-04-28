@@ -29,3 +29,5 @@
 - Do not use `./plans` as the durable source of truth for E2E ownership; use source-tree metadata comments and split registries
 - In orchestrated mode, do not invent alternate `plan_path` or `plan_signature` metadata that conflicts with the current orchestrator handoff
 - Do not leave English planner shorthand in `materialize.md` explanations or test intent strings unless it is an exact identifier, schema key, command, runner term, or quoted plan text
+- Do not name source-tree tests after materialization mechanics such as coverage matrix, exact slug set, owner, boundary, final recipient, or contract unless those words are exact product/domain terms
+- Do not let `materialize.md` be the only place where a test's intent can be understood; each new or updated source-tree test name must read as a concrete condition/action/result behavior example

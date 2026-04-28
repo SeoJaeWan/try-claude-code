@@ -66,12 +66,17 @@ Then extract each phase-local boundary from the detail file `boundary`, `input`,
 
 For every behavior-changing boundary, derive a stable scenario contract first:
 
+- condition or starting state
 - scenario or trigger
+- user action or function call when applicable
 - inputs and preconditions
 - canonical outputs that must happen
 - negative outputs that must not happen when policy depends on absence
 - recipient, delivery target, or final interpretation boundary when route behavior, notification, permission, or interpretation matters
 - key invariants
+- source-tree test sentence in a concrete behavior-example form, such as `{condition}에서 {action}하면 {expected result}가 나온다`
+
+Write the source-tree test sentence before choosing assertions. It must read as a behavior example, not as a materialization report row. Keep plan-clause traceability in `materialize.md`; use `describe` / `it` / `test` names to show the concrete condition, action, and result that the test proves.
 
 Also inspect whether the scenario carries any high-risk execution pattern:
 
@@ -197,6 +202,7 @@ Before finalizing `create`, `update`, or `delete`, reconcile the affected-owner 
 - Follow `references/unit-test-conventions.md`
 - Write tests directly into the source tree using the repo's current test layout
 - Keep tests boundary-first, scenario-anchored, and deterministic
+- Name each new or updated test from the scenario's behavior-example sentence so the source-tree test reads as "what happens in this case" rather than "what coverage exists"
 - Prefer direct unit tests for deterministic logic, mapper, codegen, serializer, selector, state reducer, permission, validation, and final interpretation boundaries
 - Derive every new assertion from an explicit selected plan clause or a risk-pattern invariant already implied by that clause
 - Update existing unit tests when the boundary already exists
@@ -237,6 +243,7 @@ Before finalizing `create`, `update`, or `delete`, reconcile the affected-owner 
 - In `TDD contract mode`, use the runner and spec root explicitly locked by the plan even if the config file is not implemented yet; record the command as not run/failed until the harness exists
 - Materialize only the selected bounded UI-area or full-flow journey tests; do not add plan-external regression sweeps
 - Derive every scenario and assertion from explicit selected plan clauses only
+- Name each E2E scenario as a user-visible behavior example: condition, user action, and visible/output result
 - For UI synchronization clauses, drive the actual user controls and assert every selected visible/output recipient that must share state, such as preview, generated code, copied text, URL, active navigation, persisted state, or submitted payload
 - Do not count "route loads", "section headings are visible", "no console errors", or "copy result is non-empty" as sufficient unless the selected clause is exactly a smoke/reachability contract
 - Update the existing owner test when the same UI area or journey already exists
@@ -321,6 +328,7 @@ Frontmatter rules:
 
 - Every selected clause from `output`, `constraint`, `failure-validation`, and `validation` has an owner test, an execution command, or an explicit blocker
 - Every selected test-expressible clause has explicit source-tree test coverage or an explicit blocker
+- Every new or updated source-tree test has a behavior-example name that exposes the condition/action/result without relying on `materialize.md`
 - Every selected execution clause has an explicit narrow command or an explicit blocker
 - Every behavior-changing selected scenario has explicit `must happen` coverage, important `must not happen` coverage, or an explicit blocker
 - Every user-facing interaction clause drives the selected user interaction and asserts all selected output recipients, or has an explicit blocker
