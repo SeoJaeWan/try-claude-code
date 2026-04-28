@@ -798,13 +798,28 @@ async function main() {
     runningTaskNote,
   });
 
-  // 4) Control flow — only BLOCK emits a decision payload.
+  // 4) Control flow.
+  // BLOCK → emit a decision payload that halts the turn with the reason.
+  // ALLOW / ALLOW_DOWNGRADED → emit `systemMessage` so the user actually sees
+  //   the result. Stderr alone is not enough: Claude Code swallows stderr from
+  //   a Stop hook that exits 0 without a decision, so without systemMessage
+  //   the ALLOW case is silent in the UI.
   if (outcome === "block") {
     const fullReason = review.reason + plannerDirective + escalationNote;
     emitDecision({
       decision: "block",
       reason: runningTaskNote ? `${runningTaskNote} ${fullReason}` : fullReason,
     });
+  } else if (outcome === "allow" || outcome === "allow_downgraded") {
+    const shortSha = primaryWt.headSha ? String(primaryWt.headSha).slice(0, 7) : "?";
+    const tag =
+      outcome === "allow_downgraded"
+        ? "[stop-gate] ALLOW (저신뢰 BLOCK 다운그레이드 — .codex/reviews/ 참고)"
+        : "[stop-gate] ALLOW";
+    const systemMessage = runningTaskNote
+      ? `${tag} — ${primaryWt.branch ?? "?"}@${shortSha}\n\n${runningTaskNote}`
+      : `${tag} — ${primaryWt.branch ?? "?"}@${shortSha}`;
+    emitDecision({ systemMessage });
   }
 }
 
