@@ -14,9 +14,24 @@ const SPAWN_TIMEOUT_MS = 90 * 1000;
 const HEALTH_POLL_MS = 200;
 const INSTALL_TIMEOUT_MS = 10 * 60 * 1000;
 const SWEEP_INTERVAL_MS = 60 * 1000;
+const LOG_BUFFER_LINES = 60;
 
 const pool = new Map();
 let sweepTimer = null;
+
+function pushLog(entry, source, chunk) {
+  if (!entry || !entry.logBuffer) return;
+  const text = chunk.toString();
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (i === lines.length - 1 && line === "") break;
+    const trimmed = line.replace(/\[[0-9;]*[A-Za-z]/g, "").trimEnd();
+    if (!trimmed) continue;
+    entry.logBuffer.push(`[${source}] ${trimmed}`);
+    while (entry.logBuffer.length > LOG_BUFFER_LINES) entry.logBuffer.shift();
+  }
+}
 
 function ensureSweep() {
   if (sweepTimer) return;
@@ -33,12 +48,14 @@ function ensureSweep() {
 
 export function getPreviewStatus(slug) {
   const entry = pool.get(slug);
-  if (!entry) return { status: "idle" };
+  if (!entry) return { status: "idle", last_log: [] };
   return {
     status: entry.status,
     port: entry.port,
     error: entry.error,
     framework_hint: entry.params?.frameworkHint || null,
+    last_log: entry.logBuffer ? entry.logBuffer.slice(-30) : [],
+    spawn_started_at: entry.spawnStartedAt || null,
   };
 }
 
@@ -65,10 +82,12 @@ export async function acquirePreview(slug, params) {
     slug,
     status: "spawning",
     lastTouched: Date.now(),
+    spawnStartedAt: Date.now(),
     proc: null,
     port: null,
     error: null,
     params,
+    logBuffer: [],
   };
   pool.set(slug, entry);
   entry.readyPromise = spawnDevServer(entry).catch((err) => {
@@ -84,14 +103,28 @@ export async function acquirePreview(slug, params) {
 
 async function spawnDevServer(entry) {
   const { worktreePath, packagePath, packageManager } = entry.params;
+  if (!fs.existsSync(worktreePath)) {
+    entry.status = "error";
+    entry.error = `worktreePath does not exist: ${worktreePath}`;
+    pushLog(entry, "system", entry.error);
+    throw new Error(entry.error);
+  }
+  if (!fs.existsSync(packagePath)) {
+    entry.status = "error";
+    entry.error = `packagePath does not exist: ${packagePath}`;
+    pushLog(entry, "system", entry.error);
+    throw new Error(entry.error);
+  }
   const nodeModules = path.join(packagePath, "node_modules");
   if (!fs.existsSync(nodeModules)) {
     entry.status = "installing";
-    await runInstall(packageManager, worktreePath);
+    pushLog(entry, "system", `node_modules not found, running ${packageManager} install at ${worktreePath}`);
+    await runInstall(packageManager, worktreePath, entry);
   }
   const port = await pickFreePort();
   entry.port = port;
   entry.status = "spawning";
+  pushLog(entry, "system", `spawning ${packageManager} dev on port ${port}`);
 
   const args = buildDevArgs(packageManager, port);
   const proc = spawn(packageManager, args, {
@@ -108,18 +141,26 @@ async function spawnDevServer(entry) {
   });
   entry.proc = proc;
 
-  proc.stdout?.on("data", () => {});
-  proc.stderr?.on("data", () => {});
+  proc.stdout?.on("data", (d) => pushLog(entry, "stdout", d));
+  proc.stderr?.on("data", (d) => pushLog(entry, "stderr", d));
+  proc.on("error", (err) => {
+    if (entry.status === "ready" || entry.status === "error") return;
+    entry.status = "error";
+    entry.error = `spawn failed: ${err.message}`;
+    pushLog(entry, "system", entry.error);
+  });
   proc.on("exit", (code, signal) => {
     if (entry.status === "ready" || entry.status === "error") return;
     entry.status = "error";
     entry.error = `dev server exited (code=${code}, signal=${signal})`;
+    pushLog(entry, "system", entry.error);
   });
 
   await waitForReady(port, () => entry.status === "error");
   if (entry.status === "error") throw new Error(entry.error);
   entry.status = "ready";
   entry.lastTouched = Date.now();
+  pushLog(entry, "system", `ready on http://localhost:${port}`);
 }
 
 function buildDevArgs(packageManager, port) {
@@ -167,7 +208,7 @@ function pingPort(port) {
   });
 }
 
-async function runInstall(packageManager, cwd) {
+async function runInstall(packageManager, cwd, entry) {
   return new Promise((resolve, reject) => {
     const proc = spawn(packageManager, ["install"], {
       cwd,
@@ -176,8 +217,11 @@ async function runInstall(packageManager, cwd) {
       shell: process.platform === "win32",
     });
     let stderr = "";
-    proc.stderr?.on("data", (d) => { stderr += d.toString(); });
-    proc.stdout?.on("data", () => {});
+    proc.stderr?.on("data", (d) => {
+      stderr += d.toString();
+      pushLog(entry, "install:stderr", d);
+    });
+    proc.stdout?.on("data", (d) => pushLog(entry, "install:stdout", d));
     const timer = setTimeout(() => {
       try { proc.kill("SIGKILL"); } catch {}
       reject(new Error(`${packageManager} install timed out after ${INSTALL_TIMEOUT_MS}ms`));

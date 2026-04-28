@@ -254,15 +254,34 @@
       position: absolute;
       inset: 0;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 24px;
+      padding: 20px;
+      gap: 12px;
       color: var(--muted);
       font-size: 13px;
       line-height: 1.6;
+      overflow: auto;
     }
     .preview-panel-placeholder.error { background: rgba(179, 64, 64, 0.06); color: #7d2323; }
+    .preview-panel-log {
+      width: 100%;
+      max-height: 260px;
+      overflow: auto;
+      margin: 0;
+      padding: 10px 12px;
+      background: rgba(0, 0, 0, 0.06);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      text-align: left;
+      white-space: pre-wrap;
+      color: var(--ink);
+    }
     @media (max-width: 1280px) {
       .shell.has-preview { grid-template-columns: 320px minmax(0, 1fr); }
       .preview-panel { display: none; }
@@ -290,7 +309,7 @@
         <button id="submitBtn" class="submit" hidden>리뷰 제출</button>
       </nav>
     </main>
-    <aside class="preview-panel" id="previewPanel" hidden>
+    <section class="preview-panel" id="previewPanel" hidden>
       <div class="preview-panel-head">
         <span class="badge" id="previewStatus">대기</span>
         <input class="preview-panel-route" id="previewRoute" type="text" placeholder="/" spellcheck="false" autocomplete="off">
@@ -298,7 +317,7 @@
       <div class="preview-panel-body" id="previewBody">
         <div class="preview-panel-placeholder">로드 대기 중…</div>
       </div>
-    </aside>
+    </section>
   </div>
   <div class="toast" id="toast">저장됨</div>
 
@@ -1368,10 +1387,13 @@
       el.className = "badge" + (kind ? " " + kind : "");
     }
 
-    function showPreviewPlaceholder(text, isError) {
+    function showPreviewPlaceholder(text, isError, log) {
       const body = $("previewBody");
       if (!body) return;
-      body.innerHTML = `<div class="preview-panel-placeholder${isError ? " error" : ""}">${esc(text)}</div>`;
+      const logHtml = (log && log.length)
+        ? `<pre class="preview-panel-log">${esc(log.join("\n"))}</pre>`
+        : "";
+      body.innerHTML = `<div class="preview-panel-placeholder${isError ? " error" : ""}"><div>${esc(text)}</div>${logHtml}</div>`;
     }
 
     function loadPreviewIframe(route) {
@@ -1428,21 +1450,35 @@
         showPreviewPlaceholder(`프리뷰 비활성화 — ${s.reason || "지원되지 않음"}`);
         return;
       }
+      const elapsed = s.spawn_started_at ? Date.now() - s.spawn_started_at : 0;
+      const slow = elapsed > 30 * 1000;
       if (s.status === "installing") {
-        setPreviewBadge("install 중", "warn");
-        showPreviewPlaceholder("node_modules 설치 중… (수 분 소요 가능)");
+        setPreviewBadge(slow ? "install 중 (느림)" : "install 중", "warn");
+        showPreviewPlaceholder(
+          slow
+            ? `node_modules 설치가 ${Math.round(elapsed / 1000)}초째 진행 중입니다. install 로그:`
+            : "node_modules 설치 중… (수 분 소요 가능)",
+          false,
+          slow ? s.last_log : null
+        );
         previewPollTimer = setTimeout(pollPreviewStatus, PREVIEW_POLL_MS);
         return;
       }
       if (s.status === "spawning") {
-        setPreviewBadge("부팅 중", "warn");
-        showPreviewPlaceholder("dev server 부팅 중…");
+        setPreviewBadge(slow ? "부팅 중 (느림)" : "부팅 중", "warn");
+        showPreviewPlaceholder(
+          slow
+            ? `dev server 부팅이 ${Math.round(elapsed / 1000)}초째 지속됩니다. 자식 프로세스 로그:`
+            : "dev server 부팅 중…",
+          false,
+          slow ? s.last_log : null
+        );
         previewPollTimer = setTimeout(pollPreviewStatus, PREVIEW_POLL_MS);
         return;
       }
       if (s.status === "error") {
         setPreviewBadge("오류", "fail");
-        showPreviewPlaceholder(`오류: ${s.error || "알 수 없음"}`, true);
+        showPreviewPlaceholder(`오류: ${s.error || "알 수 없음"}`, true, s.last_log);
         return;
       }
       if (s.status === "ready") {

@@ -284,7 +284,19 @@ async function getOrDetectPreview(slug) {
   const model = await readJsonFile(path.join(dataRoot, "review-data.json"), null);
   if (!model) return null;
   const cached = detectCache.get(slug);
-  if (cached && cached.task_head_sha === model.task_head_sha) return cached;
+  // Cache must also be invalidated when the worktree disappeared on disk
+  // (runner cleanup, manual `git worktree remove`, etc). A stale cache
+  // would otherwise keep reporting supported=true and acquirePreview()
+  // would crash on spawn.
+  if (
+    cached &&
+    cached.task_head_sha === model.task_head_sha &&
+    cached.target.worktreePath &&
+    existsSync(cached.target.worktreePath)
+  ) {
+    return cached;
+  }
+  if (cached) detectCache.delete(slug);
   // worktree_path is written by the helper as an absolute path; older
   // review-data files may not have it, so fall back to the conventional
   // worktrees/{task_branch} location relative to plansRoot's parent.
@@ -328,6 +340,8 @@ async function handlePreviewStatus(res, slug) {
     package_manager: detect.target.packageManager,
     status: poolStatus.status,
     error: poolStatus.error || null,
+    last_log: poolStatus.last_log || [],
+    spawn_started_at: poolStatus.spawn_started_at || null,
     url:
       poolStatus.status === "ready" && poolStatus.port
         ? `http://localhost:${poolStatus.port}`
@@ -447,3 +461,14 @@ async function gracefulShutdown(signal) {
 }
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+
+// Keep the dev-review server alive when a child dev server's spawn flow
+// throws asynchronously. Without this, an ENOENT on a stale worktree path
+// can take down the whole process and leave reviewers staring at a frozen
+// "부팅 중…" placeholder.
+process.on("unhandledRejection", (err) => {
+  console.error("[dev-review] unhandledRejection:", err);
+});
+process.on("uncaughtException", (err) => {
+  console.error("[dev-review] uncaughtException:", err);
+});
