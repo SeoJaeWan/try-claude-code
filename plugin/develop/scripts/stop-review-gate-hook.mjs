@@ -651,6 +651,75 @@ async function runStopReview(cwd, input = {}, worktreeDiffs = [], workspaceRoot 
   }
 }
 
+function classifyOutcome(review) {
+  if (review.skipped) return "skipped";
+  if (!review.ok) return "block";
+  if (review.suppressedNote) return "allow_downgraded";
+  return "allow";
+}
+
+function persistReviewArtifacts(outcome, review, worktreeDiffs, workspaceRoot) {
+  if (outcome !== "block" && outcome !== "allow_downgraded") {
+    return;
+  }
+  try {
+    for (const wt of worktreeDiffs) {
+      if (outcome === "block") {
+        collectBlockReview(workspaceRoot, {
+          branch: wt.branch,
+          headSha: wt.headSha,
+          reason: review.reason,
+          details: review.details,
+          diff: wt.diff,
+        });
+      }
+      if (review.suppressedNote) {
+        collectInformationalReview(workspaceRoot, {
+          branch: wt.branch,
+          headSha: wt.headSha,
+          note: review.suppressedNote,
+          diff: wt.diff,
+        });
+      }
+    }
+  } catch {
+    // best-effort — never block the gate decision on persistence failure.
+  }
+}
+
+// Single CLI output channel for stop-gate review results. ALLOW / BLOCK /
+// downgraded ALLOW all flow through here so verbosity, formatting, and
+// visibility can be tuned in one place. Decision flow (block emit) stays
+// separate in main().
+function emitReviewLog({ outcome, branch, headSha, reason, runningTaskNote }) {
+  // Skipped runs stay silent (SessionStart already warned). Still surface the
+  // running-task hint if any so it does not get swallowed.
+  if (outcome === "skipped") {
+    if (runningTaskNote) {
+      process.stderr.write(`${runningTaskNote}\n`);
+    }
+    return;
+  }
+
+  const tag = {
+    allow: "[stop-gate] ALLOW",
+    allow_downgraded: "[stop-gate] ALLOW (저신뢰 BLOCK 다운그레이드 — .codex/reviews/ 참고)",
+    block: "[stop-gate] BLOCK",
+  }[outcome] ?? "[stop-gate]";
+
+  const shortSha = headSha ? String(headSha).slice(0, 7) : "?";
+  const lines = [`${tag} — ${branch ?? "?"}@${shortSha}`];
+
+  if (outcome === "block" && reason) {
+    lines.push("", reason);
+  }
+  if (runningTaskNote) {
+    lines.push("", runningTaskNote);
+  }
+
+  process.stderr.write(lines.join("\n") + "\n");
+}
+
 async function main() {
   const input = readHookInput();
   const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
@@ -690,36 +759,17 @@ async function main() {
     markWorktreesReviewed(sessionId, worktreeDiffs);
   }
 
-  if (!review.ok) {
-    try {
-      for (const wt of worktreeDiffs) {
-        collectBlockReview(workspaceRoot, {
-          branch: wt.branch,
-          headSha: wt.headSha,
-          reason: review.reason,
-          details: review.details,
-          diff: wt.diff,
-        });
-        if (review.suppressedNote) {
-          collectInformationalReview(workspaceRoot, {
-            branch: wt.branch,
-            headSha: wt.headSha,
-            note: review.suppressedNote,
-            diff: wt.diff,
-          });
-        }
-      }
-    } catch {
-      // Review collection is best-effort — never block the gate decision.
-    }
+  const outcome = classifyOutcome(review);
+  const primaryWt = worktreeDiffs[0] ?? {};
 
-    // If this BLOCK is in a plan-runner worktree context, append a directive
-    // telling the main session to re-dispatch the phase agent for the fix.
-    const plannerDirective = buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, session);
+  // 1) Persist artifacts (BLOCK reasons + suppressed notes).
+  persistReviewArtifacts(outcome, review, worktreeDiffs, workspaceRoot);
 
-    // Track consecutive BLOCKs with the same fingerprint so the user can be
-    // escalated when the same issue survives multiple re-dispatch attempts.
-    let escalationNote = "";
+  // 2) Session state: streak counter + planner/escalation directive (BLOCK only).
+  let plannerDirective = "";
+  let escalationNote = "";
+  if (outcome === "block") {
+    plannerDirective = buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, session);
     if (sessionId) {
       const fingerprint = fingerprintBlockReason(review.reason);
       const { count } = recordBlock(sessionId, fingerprint);
@@ -735,49 +785,26 @@ async function main() {
         ].join("\n");
       }
     }
-
-    const fullReason = review.reason + plannerDirective + escalationNote;
-
-    emitDecision({
-      decision: "block",
-      reason: runningTaskNote
-        ? `${runningTaskNote} ${fullReason}`
-        : fullReason,
-    });
-    return;
-  }
-
-  // ALLOW path — clear the consecutive-BLOCK streak so future BLOCKs with the
-  // same fingerprint start counting from 1 again.
-  if (sessionId) {
+  } else if (sessionId) {
     clearRecentBlockStreak(sessionId);
   }
 
-  // If the ALLOW came from a confidence downgrade, persist the suppressed
-  // findings so the user can still inspect them later.
-  if (review.suppressedNote) {
-    try {
-      for (const wt of worktreeDiffs) {
-        collectInformationalReview(workspaceRoot, {
-          branch: wt.branch,
-          headSha: wt.headSha,
-          note: review.suppressedNote,
-          diff: wt.diff,
-        });
-      }
-    } catch {
-      // best-effort
-    }
-  }
+  // 3) Unified CLI log — single source of truth for terminal output.
+  emitReviewLog({
+    outcome,
+    branch: primaryWt.branch,
+    headSha: primaryWt.headSha,
+    reason: review.reason,
+    runningTaskNote,
+  });
 
-  logNote(runningTaskNote);
-
-  // Skipped runs stay silent — SessionStart already explained why Codex is unavailable.
-  if (!review.skipped) {
-    const note = review.suppressedNote
-      ? "Stop-gate review 통과 (저신뢰 finding은 .codex/reviews/에 기록됨)"
-      : "Stop-gate review 통과";
-    emitDecision({ systemMessage: note });
+  // 4) Control flow — only BLOCK emits a decision payload.
+  if (outcome === "block") {
+    const fullReason = review.reason + plannerDirective + escalationNote;
+    emitDecision({
+      decision: "block",
+      reason: runningTaskNote ? `${runningTaskNote} ${fullReason}` : fullReason,
+    });
   }
 }
 
