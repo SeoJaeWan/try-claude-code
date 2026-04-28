@@ -136,5 +136,4 @@ stdout is reserved for future machine-readable output and MUST stay empty in the
 - Do NOT partially write `--out` on error. Write to a temp file and rename on success.
 - Do NOT let a parse failure on one commit block the whole output — log a `warn`, emit `_fallback_cards` for that commit with an extra "diff parse failed" hint, and continue.
 - Do NOT populate `cards[]`, `tests_added[]`, `deviations[]`, or any of the three interpretation overview fields. Those belong to the agent.
-- Do NOT populate the top-level `preview` block. The skill's Step 3 owns that decision (it requires reading workspace topology and judging library-vs-app, which is outside the helper's deterministic remit).
 - Do NOT mutate `prior_feedback` or `prior_history`. Treat them strictly as read-only inputs.

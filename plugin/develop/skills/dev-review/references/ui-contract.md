@@ -48,7 +48,6 @@ GET  /review/{slug}/api/health                    # per-review diagnostic w/ pla
 GET  /review/{slug}/api/review-data               # JSON proxy
 GET  /review/{slug}/api/feedback                  # JSON proxy
 POST /review/{slug}/api/feedback                  # write w/ task_slug + plan_signature check
-GET  /review/{slug}/api/preview/status            # live preview pool state; lazy-spawns dev server
 ```
 
 The HTML uses purely relative URLs; the server injects `<base href="/review/{slug}/">` per request so every fetch (`review-data.json`, `vendor/highlight.min.js`, `assets/diffs/abc.diff`, `api/feedback`) resolves into the right slug's URL space without any per-task HTML mutation.
@@ -135,56 +134,6 @@ Read-only summary from `review-data.json.final`:
   - "아직 승인되지 않은 카드 N개가 있습니다." otherwise, with a count badge
 
 No feedback controls. The verdict helps the reviewer know whether a `리뷰 완료` reply will move the runner forward or trigger a rework round.
-
-## Preview panel (commit steps only)
-
-A right-side sticky panel that embeds the worktree's dev server in an iframe so the reviewer sees the rendered UI alongside the commit's diff. Visible only on commit steps; hidden on Overview / Final and on viewports narrower than 1280px.
-
-### Lifecycle
-
-- On the first commit-step entry, the browser polls `GET api/preview/status` every 2s until the server reports `status === "ready"`.
-- The dev-review server lazily spawns the dev server on the first poll. `pnpm install` runs first if `node_modules` is absent.
-- The dev server runs on a separate free port; `status.url` is `http://localhost:{N}` (cross-origin to the dev-review UI). The iframe `src` is built as `status.url + route`.
-- After 10 minutes of inactivity the dev-review server SIGTERMs the dev server. The next poll respawns it.
-
-### Status badge
-
-Top-left of the panel head:
-
-| `status` | Badge label | Body |
-|---|---|---|
-| `unsupported` | "미지원" (warn) | Inline reason ("no scripts.dev", etc.) |
-| `installing` | "install 중" (warn) | "node_modules 설치 중…" |
-| `spawning` | "부팅 중" (warn) | "dev server 부팅 중…" |
-| `ready` | "ready" (pass) | iframe |
-| `error` | "오류" (fail) | error message |
-| iframe load timeout (5s) | "로드 실패" (fail) | "iframe 로드 실패. 코드 변경만 검토하세요." |
-
-### Route resolution
-
-For each commit step, the iframe loads `status.url + route` where `route` is, in priority order:
-
-1. `feedback.json.preview_routes[commit.short_sha]` — reviewer override
-2. Client-side heuristic on the commit's first card's first evidence file:
-   - Next App Router (`app/foo/page.tsx` → `/foo`, `(group)` segments dropped)
-   - Next Pages Router (`pages/foo.tsx` → `/foo`, `pages/index.tsx` → `/`)
-3. `/`
-
-The framework hint comes from `api/preview/status.framework_hint`, derived server-side from the chosen package's `package.json` deps (`next` / `vite` / `react-scripts` / `expo`). Vite/CRA/Expo always fall through to step 3 because their routers are runtime-defined.
-
-### Route input
-
-A monospace text field next to the badge. Default value is the resolved route (above). Edits commit on `change` (blur) or Enter:
-
-- The iframe reloads immediately with the new path.
-- The value is saved to `feedback.json.preview_routes[commit.short_sha]` (or removed when reset to `/`).
-- Re-entering the commit step re-loads the saved route, not the heuristic.
-
-The iframe is cross-origin, so reviewer-driven in-iframe navigation cannot be tracked automatically. To "save" the route the reviewer landed on, they must type it into the input field and press Enter.
-
-### Hide-on-narrow
-
-At viewports under 1280px the `.shell` falls back to 2-column layout and the panel is `display: none`. The reviewer can still complete the review purely from the diff/cards.
 
 ## Cards
 

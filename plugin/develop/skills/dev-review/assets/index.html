@@ -210,82 +210,6 @@
       .diff-split { grid-template-columns: 1fr; }
     }
 
-    /* Live preview panel — shown only on commit steps when the dev-review
-       server reports a supported worktree. The dev server runs on a separate
-       port so the iframe is cross-origin; reviewers cannot navigate inside
-       the iframe and have it auto-recorded — they edit the route box and
-       iframe reloads. */
-    .shell.has-preview { grid-template-columns: 320px minmax(0, 1fr) 480px; }
-    .preview-panel {
-      border-left: 1px solid var(--line);
-      background: var(--panel);
-      position: sticky;
-      top: 0;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
-    .preview-panel[hidden] { display: none !important; }
-    .preview-panel-head {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--line);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .preview-panel-head .badge { white-space: nowrap; }
-    .preview-panel-route {
-      flex: 1;
-      min-width: 120px;
-      font-family: "JetBrains Mono", "Fira Code", monospace;
-      font-size: 12px;
-      padding: 5px 8px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.6);
-      color: var(--ink);
-    }
-    .preview-panel-route:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-    .preview-panel-body { flex: 1; position: relative; background: #fff; }
-    .preview-panel-body iframe { width: 100%; height: 100%; border: 0; display: block; }
-    .preview-panel-placeholder {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 20px;
-      gap: 12px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.6;
-      overflow: auto;
-    }
-    .preview-panel-placeholder.error { background: rgba(179, 64, 64, 0.06); color: #7d2323; }
-    .preview-panel-log {
-      width: 100%;
-      max-height: 260px;
-      overflow: auto;
-      margin: 0;
-      padding: 10px 12px;
-      background: rgba(0, 0, 0, 0.06);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      font-family: "JetBrains Mono", "Fira Code", monospace;
-      font-size: 11px;
-      line-height: 1.5;
-      text-align: left;
-      white-space: pre-wrap;
-      color: var(--ink);
-    }
-    @media (max-width: 1280px) {
-      .shell.has-preview { grid-template-columns: 320px minmax(0, 1fr); }
-      .preview-panel { display: none; }
-    }
   </style>
 </head>
 <body>
@@ -309,15 +233,6 @@
         <button id="submitBtn" class="submit" hidden>리뷰 제출</button>
       </nav>
     </main>
-    <section class="preview-panel" id="previewPanel" hidden>
-      <div class="preview-panel-head">
-        <span class="badge" id="previewStatus">대기</span>
-        <input class="preview-panel-route" id="previewRoute" type="text" placeholder="/" spellcheck="false" autocomplete="off">
-      </div>
-      <div class="preview-panel-body" id="previewBody">
-        <div class="preview-panel-placeholder">로드 대기 중…</div>
-      </div>
-    </section>
   </div>
   <div class="toast" id="toast">저장됨</div>
 
@@ -439,8 +354,7 @@
         task_head_sha: model?.task_head_sha || "",
         review_status: "in_progress",
         updated_at: new Date().toISOString(),
-        cards: {},
-        preview_routes: {}
+        cards: {}
       };
     }
 
@@ -1112,8 +1026,6 @@
 
       $("submitBtn").hidden = step.kind !== "final";
       $("nextBtn").hidden = step.kind === "final";
-
-      updatePreviewForCurrent();
     }
 
     function highlightAll() {
@@ -1320,225 +1232,6 @@
       $("submitBtn").disabled = true;
     }
 
-    // === Live preview panel ===
-    // The preview panel embeds the worktree's dev server (started by the
-    // dev-review server pool) in an iframe on a separate port. The iframe
-    // is therefore cross-origin: contentWindow.location is unreadable, so
-    // reviewers cannot have an in-iframe navigation auto-recorded. They
-    // edit the route input instead, which reloads the iframe and saves
-    // the override per-commit in feedback.preview_routes.
-    let previewState = null;
-    let previewPollTimer = null;
-    let previewLoadTimer = null;
-    const PREVIEW_POLL_MS = 2000;
-    const PREVIEW_LOAD_TIMEOUT_MS = 5000;
-
-    function inferRouteFromFile(file, hint) {
-      if (!file || !hint) return null;
-      const norm = String(file).split("\\").join("/");
-      if (hint === "next-app") {
-        const m = norm.match(/(?:^|\/)app\/(.+)\/page\.(?:tsx|jsx|ts|js|mdx)$/);
-        if (!m) return null;
-        const segments = m[1].split("/").filter((s) => !(s.startsWith("(") && s.endsWith(")")));
-        return "/" + segments.join("/");
-      }
-      if (hint === "next-pages") {
-        const m = norm.match(/(?:^|\/)pages\/(.+)\.(?:tsx|jsx|ts|js|mdx)$/);
-        if (!m) return null;
-        const route = m[1].replace(/\/index$/, "").replace(/^index$/, "");
-        return route === "" ? "/" : "/" + route;
-      }
-      return null;
-    }
-
-    function getCommitOverrideRoute(commit) {
-      if (!feedback || !commit) return null;
-      return feedback.preview_routes?.[commit.short_sha] || null;
-    }
-
-    function setCommitOverrideRoute(commit, route) {
-      if (!feedback || !commit) return;
-      feedback.preview_routes = feedback.preview_routes || {};
-      if (route) feedback.preview_routes[commit.short_sha] = route;
-      else delete feedback.preview_routes[commit.short_sha];
-      feedback.updated_at = new Date().toISOString();
-      saveFeedback(true);
-    }
-
-    function pickRouteForCommit(commit) {
-      const override = getCommitOverrideRoute(commit);
-      if (override) return override;
-      const hint = previewState?.framework_hint;
-      if (hint && commit.cards) {
-        for (const card of commit.cards) {
-          for (const ev of (card.evidence || [])) {
-            const r = inferRouteFromFile(ev.file, hint);
-            if (r) return r;
-          }
-        }
-      }
-      return "/";
-    }
-
-    function setPreviewBadge(text, kind) {
-      const el = $("previewStatus");
-      if (!el) return;
-      el.textContent = text;
-      el.className = "badge" + (kind ? " " + kind : "");
-    }
-
-    function showPreviewPlaceholder(text, isError, log) {
-      const body = $("previewBody");
-      if (!body) return;
-      const logHtml = (log && log.length)
-        ? `<pre class="preview-panel-log">${esc(log.join("\n"))}</pre>`
-        : "";
-      body.innerHTML = `<div class="preview-panel-placeholder${isError ? " error" : ""}"><div>${esc(text)}</div>${logHtml}</div>`;
-    }
-
-    function loadPreviewIframe(route) {
-      const body = $("previewBody");
-      if (!body) return;
-      if (!previewState || !previewState.url) {
-        showPreviewPlaceholder("dev server 준비 중…");
-        return;
-      }
-      const sub = route && route.startsWith("/") ? route : "/" + (route || "");
-      const url = previewState.url.replace(/\/$/, "") + sub;
-      body.innerHTML = `<iframe id="previewFrame" src="${esc(url)}" referrerpolicy="no-referrer"></iframe>`;
-      const frame = $("previewFrame");
-      if (!frame) return;
-      if (previewLoadTimer) clearTimeout(previewLoadTimer);
-      let loaded = false;
-      previewLoadTimer = setTimeout(() => {
-        if (loaded) return;
-        showPreviewPlaceholder("iframe 로드 실패. 코드 변경만 검토하세요.", true);
-        setPreviewBadge("로드 실패", "fail");
-      }, PREVIEW_LOAD_TIMEOUT_MS);
-      frame.addEventListener("load", () => {
-        loaded = true;
-        if (previewLoadTimer) clearTimeout(previewLoadTimer);
-        setPreviewBadge("ready", "pass");
-      }, { once: true });
-      frame.addEventListener("error", () => {
-        loaded = true;
-        if (previewLoadTimer) clearTimeout(previewLoadTimer);
-        showPreviewPlaceholder("iframe 로드 실패. 코드 변경만 검토하세요.", true);
-        setPreviewBadge("로드 실패", "fail");
-      }, { once: true });
-    }
-
-    async function pollPreviewStatus() {
-      if (previewPollTimer) {
-        clearTimeout(previewPollTimer);
-        previewPollTimer = null;
-      }
-      let s;
-      try {
-        const res = await fetch("api/preview/status", { cache: "no-store" });
-        s = res.ok ? await res.json() : null;
-      } catch {
-        s = null;
-      }
-      previewState = s;
-      if (!s) {
-        setPreviewBadge("연결 실패", "fail");
-        return;
-      }
-      if (!s.supported) {
-        setPreviewBadge("미지원", "warn");
-        showPreviewPlaceholder(`프리뷰 비활성화 — ${s.reason || "지원되지 않음"}`);
-        return;
-      }
-      const elapsed = s.spawn_started_at ? Date.now() - s.spawn_started_at : 0;
-      const slow = elapsed > 30 * 1000;
-      if (s.status === "installing") {
-        setPreviewBadge(slow ? "install 중 (느림)" : "install 중", "warn");
-        showPreviewPlaceholder(
-          slow
-            ? `node_modules 설치가 ${Math.round(elapsed / 1000)}초째 진행 중입니다. install 로그:`
-            : "node_modules 설치 중… (수 분 소요 가능)",
-          false,
-          slow ? s.last_log : null
-        );
-        previewPollTimer = setTimeout(pollPreviewStatus, PREVIEW_POLL_MS);
-        return;
-      }
-      if (s.status === "spawning") {
-        setPreviewBadge(slow ? "부팅 중 (느림)" : "부팅 중", "warn");
-        showPreviewPlaceholder(
-          slow
-            ? `dev server 부팅이 ${Math.round(elapsed / 1000)}초째 지속됩니다. 자식 프로세스 로그:`
-            : "dev server 부팅 중…",
-          false,
-          slow ? s.last_log : null
-        );
-        previewPollTimer = setTimeout(pollPreviewStatus, PREVIEW_POLL_MS);
-        return;
-      }
-      if (s.status === "error") {
-        setPreviewBadge("오류", "fail");
-        showPreviewPlaceholder(`오류: ${s.error || "알 수 없음"}`, true, s.last_log);
-        return;
-      }
-      if (s.status === "ready") {
-        setPreviewBadge("ready", "pass");
-        const step = steps[current];
-        if (step?.kind === "commit") {
-          const route = pickRouteForCommit(step.commit);
-          $("previewRoute").value = route;
-          loadPreviewIframe(route);
-        }
-      }
-    }
-
-    function updatePreviewForCurrent() {
-      const step = steps[current];
-      const isCommit = step?.kind === "commit";
-      const panel = $("previewPanel");
-      const shell = document.querySelector(".shell");
-      if (!panel || !shell) return;
-      panel.hidden = !isCommit;
-      shell.classList.toggle("has-preview", isCommit);
-      if (!isCommit) return;
-      if (!previewState) {
-        showPreviewPlaceholder("프리뷰 상태 확인 중…");
-        pollPreviewStatus();
-        return;
-      }
-      if (!previewState.supported) {
-        showPreviewPlaceholder(`프리뷰 비활성화 — ${previewState.reason || "지원되지 않음"}`);
-        return;
-      }
-      if (previewState.status !== "ready") {
-        pollPreviewStatus();
-        return;
-      }
-      const route = pickRouteForCommit(step.commit);
-      $("previewRoute").value = route;
-      loadPreviewIframe(route);
-    }
-
-    function wirePreviewControls() {
-      const routeInput = $("previewRoute");
-      if (!routeInput) return;
-      const apply = () => {
-        const route = routeInput.value || "/";
-        const step = steps[current];
-        if (step?.kind === "commit") {
-          setCommitOverrideRoute(step.commit, route === "/" ? null : route);
-          loadPreviewIframe(route);
-        }
-      };
-      routeInput.addEventListener("change", apply);
-      routeInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          apply();
-        }
-      });
-    }
-
     async function init() {
       model = await loadJson("review-data.json", null);
       if (!model) {
@@ -1548,7 +1241,6 @@
       history = await loadJson("review-history.json", { rounds: [] });
       const existing = await loadJson("api/feedback", null);
       feedback = (existing && existing.plan_signature === model.plan_signature) ? existing : createFeedback();
-      if (!feedback.preview_routes) feedback.preview_routes = {};
 
       steps = [{ kind: "overview", label: "Overview" }];
       asArray(model.commits).forEach((commit, index) => {
@@ -1559,7 +1251,6 @@
       $("prevBtn").addEventListener("click", () => goTo(current - 1));
       $("nextBtn").addEventListener("click", () => goTo(current + 1));
       $("submitBtn").addEventListener("click", submit);
-      wirePreviewControls();
 
       renderSidebar();
       renderCurrent();

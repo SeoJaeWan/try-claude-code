@@ -23,11 +23,9 @@ The schemas below show every field. Fields marked **deterministic** are filled b
   "task_branch": "task-auth-login",            // deterministic
   "task_head_sha": "def4569...",               // deterministic — full 40-char sha
   "worktree_path": "/abs/path/worktrees/task-auth-login", // deterministic — absolute path to the
-                                                          // task worktree on the local machine. The
-                                                          // dev-review server reads this to spawn
-                                                          // a live preview dev server. Not portable
-                                                          // across machines, but review-data is
-                                                          // per-machine anyway.
+                                                          // task worktree on the local machine. Not
+                                                          // portable across machines, but review-data
+                                                          // is per-machine anyway.
   "review_iteration": 2,                       // deterministic — passed in by runner
   "generated_at": "2026-04-24T10:30:00Z",      // deterministic
 
@@ -45,33 +43,6 @@ The schemas below show every field. Fields marked **deterministic** are filled b
       "description": "Infra, DevOps, cross-cutting"
     }
   ],
-
-  "preview": {                                 // skill — written by Step 3
-                                                // The dev-review server reads this verbatim and
-                                                // does no detection of its own. Re-decided every
-                                                // round; never carried over.
-    "supported": true,
-    "package_path": "/abs/path/worktrees/task-x/apps/design-system",
-                                                // absolute. The pool spawns the dev server with
-                                                //   cwd = package_path
-                                                //   cmd = {package_manager} dev
-                                                //   env.PORT = <free port>
-    "package_manager": "pnpm",                 // "pnpm" | "yarn" | "npm" | "bun"
-    "framework_hint": "vite",                  // "next-app" | "next-pages" | "vite" | "cra" |
-                                                //   "expo" | "unknown" — used by the browser to
-                                                //   pick a route heuristic per commit
-    "dev_command": "pnpm dev",                 // informational; pool ignores and uses
-                                                //   `{package_manager} dev` directly
-    "rationale": "packages/ui는 build-only 라이브러리(scripts.dev 없음). apps/design-system이 @repo/ui를 workspace:*로 소비하며 vite dev 보유."
-                                                // why this package was chosen; surfaced in UI
-                                                // tooltip / status area
-  },
-  // When no package qualifies:
-  // "preview": {
-  //   "supported": false,
-  //   "reason": "no package with scripts.dev consumes packages/ui",  // shown verbatim in UI
-  //   "rationale": "..."                                              // optional
-  // }
 
   "overview": {
     "user_request": "로그인 기능 추가...",     // deterministic seed (string) | interpretation may
@@ -263,18 +234,6 @@ Card ids are `{short_sha}.C{index}` where `index` starts at 1. The helper enforc
       "status": "out-of-scope",
       "comment": "이건 별도 task로 분리합니다"
     }
-  },
-
-  "preview_routes": {                            // optional — written by the
-                                                 // browser when the reviewer
-                                                 // edits the live preview
-                                                 // panel's route input on a
-                                                 // commit. Keyed by
-                                                 // commit.short_sha. Picked
-                                                 // up on next entry to that
-                                                 // commit step.
-    "abc123a": "/users/42",
-    "def456b": "/settings"
   }
 }
 ```
@@ -285,7 +244,6 @@ Card ids are `{short_sha}.C{index}` where `index` starts at 1. The helper enforc
 - `comment` may be empty string.
 - `target` is optional for any status; defaults to the first evidence entry of the card in `review-data.json` when absent.
 - `dispatch_agent` is **required** when `status === "needs-change"`. The skill rejects a submitted feedback that has a `needs-change` card without `dispatch_agent`, treating it as a `question` card and asking the reviewer to reopen the browser to pick an agent.
-- `preview_routes` is optional. Keys are commit `short_sha`; values are paths starting with `/`. The browser uses this to override the heuristic route for that commit's iframe. The dev-review skill ignores it for routing decisions — it is purely UI state.
 - Unknown fields are preserved (forward-compat).
 
 ### Round boundary
@@ -381,7 +339,6 @@ On re-entry with `review_iteration > 1`:
 |---|---|---|
 | `task_slug`, `plan_path`, `plan_signature`, `base_branch`, `task_branch`, `task_head_sha`, `review_iteration`, `generated_at` | helper | fatal if missing |
 | `available_agents` | helper | empty array if no agent files found; UI shows fallback note |
-| `preview` | skill (Step 3) | `{ supported: false, reason: "..." }`; UI shows "프리뷰 비활성화" |
 | `overview.user_request`, `plan_summary` | helper | empty strings if plan.md minimal |
 | `overview.change_map`, `total_commits`, `total_files_changed` | helper | fatal if git parsing fails |
 | `overview.plan_vs_result`, `deviations_summary`, `open_risks` | agent | empty arrays + `interpretation_skipped: true` |
