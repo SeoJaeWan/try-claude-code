@@ -21,14 +21,13 @@ Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output ru
 - Derive one canonical `task-slug`.
 - Resolve the planning `review_wiki_root` to `./.codex/review-wiki/sync/current`.
 - If `./.codex/review-wiki/sync/current` is missing, stop and route to `review-wiki-setup` instead of attempting per-run staging inside this skill.
-- Confirm the linked local `brainstorm`, `architect`, `plan-review`, and `plan-materialize` skills are present.
-- Confirm `../design-discovery/SKILL.md` before taking a UI-direction feedback route.
+- Confirm the linked local request-scope, UI-spec, `architect`, `plan-review`, and `plan-materialize` capabilities are present before routing to them.
 - Confirm `./references/developer-review-ui.md`, `./assets/developer-review/index.html`, `../../tools/developer-review-server.mjs`, and `../../tools/start-developer-review-server.mjs` are present before entering the developer review gate.
 - Derive the default plan path as `./plans/{task-slug}/plan.md` unless the current run explicitly targets another existing executable plan.
-- Collect task-local plan or prerequisite paths referenced by the user request, current selected plan, latest fresh review/materialize artifact, or directly referenced upstream `brainstorm` / `design-discovery` artifact when they affect the next role pass.
+- Collect task-local plan or prerequisite paths referenced by the user request, current selected plan, latest fresh review/materialize artifact, or directly referenced upstream decision artifact when they affect the next role pass.
 - Resolve each referenced path literally before spawning a planning sub-agent.
 - Build `authoritative_existing_inputs` from verified present paths only.
-- If a verified brainstorm or design-discovery artifact already locks ambiguity for the next architect pass, treat that artifact as authoritative upstream input.
+- If a verified upstream decision artifact already locks ambiguity for the next architect pass, treat that artifact as authoritative upstream input.
 - Build `known_missing_inputs` from referenced but missing paths only as controller-owned notes.
 - If the next architect pass depends on local upstream plan artifacts and no authoritative input remains after verification, stop and report the blocker.
 - Inspect current `plan.md`, linked phase detail files, `review.md`, developer review files, and `materialize.md` when they exist.
@@ -42,7 +41,7 @@ Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output ru
 - Developer review approval is binary: every required Overview and Phase step must be `approved`.
 - If `feedback.json` is submitted and any required step or card is not `approved`, treat the state as `feedback_triage_pending`.
 - When feedback triage is pending, do not continue to materialization and do not route directly to `architect` from raw feedback labels.
-- Use Step 6 to decide whether the next safe route is chat clarification, `brainstorm`, `design-discovery`, or `architect`.
+- Use Step 6 to decide whether the next safe route is chat clarification, request-scope locking, UI direction locking, or `architect`.
 
 ## Step 2. Run Architect Draft or Revision
 
@@ -52,7 +51,7 @@ Invoke `architect` when:
 - latest fresh `review.md` routes back to `architect`
 - latest fresh `materialize.md` routes back to `architect`
 - developer review feedback triage resolved to `plan_revision`
-- completed `brainstorm` or `design-discovery` locked missing decisions and next safe route is `architect`
+- completed upstream decision work locked missing decisions and next safe route is `architect`
 - user requested plan changes or answered a question that changes the plan contract
 
 Controller requirements:

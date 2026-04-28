@@ -1,4 +1,4 @@
-# Design Discovery Guardrails
+# UI Spec Guardrails
 
 ## Guardrails
 
@@ -9,5 +9,5 @@
 - Do not route backend-only work here.
 - Do not invent a new design system when existing constraints already settle the decision.
 - Do not let implementation-time design guessing survive for key hierarchy, state presentation, or responsive behavior.
-- If the real blocker is scope, policy, or product framing, route back to `brainstorm`.
+- If the real blocker is scope, policy, or product framing, stop with a clear missing request-scope decision.
 - Keep the output concise, table-heavy, and in Korean.

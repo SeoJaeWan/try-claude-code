@@ -6,7 +6,7 @@ Create decision-complete implementation plans as one or more sequential executab
 
 ## Entry Notes
 
-Use this as the preferred planning entrypoint for complex or high-impact requests, or after `brainstorm` confirms key decisions.
+Use this as the preferred planning entrypoint for complex or high-impact requests, or after upstream decisions have locked the request scope enough for planning.
 Direct agent execution is allowed for focused low-risk tasks when the user explicitly chooses it.
 
 ## Inputs to inspect
@@ -20,7 +20,7 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
    - optional locked request summary when the parent intentionally narrowed context
    - optional `authoritative_existing_inputs` containing controller-verified literal upstream artifact paths
    - optional `known_missing_inputs` containing referenced but missing literal paths as non-authoritative warnings
-3. Optional `design-discovery` handoff from the latest conversation context or a directly referenced `./.codex/artifacts/design-discovery/{feature-name}.md`
+3. Optional locked UI direction handoff from the latest conversation context or a directly referenced `./.codex/artifacts/ui-spec/{feature-name}.md`
 4. `./references/agents-lite.md` - canonical `owner_agent` catalog
 5. `../review-wiki-setup/references/staging-contract.md` - review wiki sync resolution and refresh rules
 6. `../review-wiki-setup/references/platform-commands.md` - platform-specific link and planning-root commands
@@ -35,7 +35,7 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 15. Relevant execution contracts only when routing or mode-sensitive conventions matter:
    - inspect only the minimum repo-local tool/validation/runtime contract that governs the work
    - examples: `package.json` scripts, framework config, test config, CI config schema, deploy script entrypoints, or existing source-tree placement conventions
-16. Context7 MCP tools only as fallback when external library or API facts can still change the planning boundary after local inspection and any prior `brainstorm` handoff:
+16. Context7 MCP tools only as fallback when external library or API facts can still change the planning boundary after local inspection and any prior upstream decision handoff:
    - use Context7 only for version-sensitive library/framework/API behavior, migration constraints, deprecation status, or current recommended patterns
    - do not use Context7 for repo-local conventions, stable language basics, or facts already derivable from local context
 

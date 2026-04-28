@@ -148,7 +148,7 @@ Use these statuses only:
 - `out-of-scope`
 
 The user controls status through HTML buttons.
-Statuses are review signals, not direct routing keys. Orchestrator should classify non-approved feedback from the status, comment, affected step, and conflict with the current locked request before choosing `brainstorm`, `design-discovery`, `architect`, or direct chat clarification.
+Statuses are review signals, not direct routing keys. Orchestrator should classify non-approved feedback from the status, comment, affected step, and conflict with the current locked request before choosing request-scope locking, UI direction locking, `architect`, or direct chat clarification.
 
 Expected shape:
 
@@ -232,8 +232,8 @@ Read `feedback.json`.
   - do not route directly from the raw status label alone
   - classify non-approved feedback as `answer_only`, `request_lock`, `scope_decision`, `ui_direction`, or `plan_revision`
   - if every non-approved item is `answer_only`, answer in chat, reset `feedback.json` to a fresh in-progress review for the same `plan_signature`, and require fresh browser review
-  - if any item is `request_lock` or `scope_decision`, run `brainstorm` first and only hand off to `architect` after the request is locked again
-  - if any item is `ui_direction`, run `design-discovery` first unless the real blocker is still product framing, in which case return to `brainstorm`
+  - if any item is `request_lock` or `scope_decision`, lock request scope first and only hand off to `architect` after the request is locked again
+  - if any item is `ui_direction`, lock UI direction first unless the real blocker is still product framing, in which case return to request-scope clarification
   - if the remaining items are `plan_revision`, route the exact feedback path and affected IDs to `architect`, then rerun `plan-review` and regenerate the review data package
 - If feedback is missing, incomplete, or still `in_progress`, ask the user to finish the browser review and press submit.
 

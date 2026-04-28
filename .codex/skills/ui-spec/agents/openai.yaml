@@ -1,0 +1,6 @@
+interface:
+  display_name: "UI Spec"
+  short_description: "Lock UI direction before planning"
+  default_prompt: "Use $ui-spec to resolve user-visible UI direction through Korean-first consultation-first specification and optional variant exploration."
+policy:
+  allow_implicit_invocation: false

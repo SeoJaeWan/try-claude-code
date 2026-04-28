@@ -1,6 +1,6 @@
 # Korean-First Plan Terminology
 
-Use this policy when writing visible `plan.md` prose, phase detail prose, upstream `brainstorm` / `design-discovery` handoff tables, and `plan-review` findings.
+Use this policy when writing visible `plan.md` prose, phase detail prose, upstream request-scope or UI-direction handoff tables, and `plan-review` findings.
 
 ## Core Rule
 

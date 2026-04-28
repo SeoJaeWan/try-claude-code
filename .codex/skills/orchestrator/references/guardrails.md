@@ -1,6 +1,6 @@
 # Orchestrator Guardrails
 
-- Orchestrate only: do not substitute for `brainstorm`, `design-discovery`, `architect`, `plan-review`, or `plan-materialize`.
+- Orchestrate only: do not substitute for request-scope locking, UI direction locking, `architect`, `plan-review`, or `plan-materialize`.
 - Do not implement production code.
 - Do not create or rely on `state.json`, `clarification.md`, or `user-gate.md`.
 - Do not hardcode runtime-specific spawn mechanics into the skill contract.
@@ -25,7 +25,7 @@
 - Do not use `feedback.json` as both the editable live-review state and the historical review/action log.
 - Do not turn raw developer review comments into review wiki pattern rules before triage and generalization.
 - Do not let developer review learning capture become a hidden materialization approval gate.
-- Do not respawn `brainstorm`, `design-discovery`, `architect`, or `materializer` by reflex when a compatible live role agent already exists.
+- Do not respawn request-scope, UI-spec, `architect`, or materializer role agents by reflex when a compatible live role agent already exists.
 - Do not reuse the prior `plan-review` reviewer by default; cold review stays fresh.
 - Do not keep looping silently when the same signature repeats with no plan progress.
 - Do not collapse invocation, protocol, and artifact-writeback failures into one generic stall.

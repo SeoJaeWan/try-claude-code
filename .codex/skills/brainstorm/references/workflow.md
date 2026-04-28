@@ -27,7 +27,8 @@ Read only what is needed:
 - Relevant folders and files inferred from the request
 - Repository folder structure to locate current boundaries and ownership
 - Existing code, tests, docs, and UI behavior that can answer questions without user input
-- Existing `./plans/**`, `./.codex/artifacts/brainstorm/**`, and `./.codex/artifacts/design-discovery/**` artifacts when nearby prior work may answer the same question or reduce repeated clarification
+- Existing `./plans/**`, `./.codex/artifacts/brainstorm/**`, and `./.codex/artifacts/ui-spec/**` artifacts when nearby prior work may answer the same question or reduce repeated clarification
+- Legacy `./.codex/artifacts/design-discovery/**` artifacts only as read-only compatibility input when directly relevant
 - `./.codex/` references only when they directly constrain this workflow
 - `../architect/references/terminology-policy.md` when producing request-lock or planning handoff text
 
@@ -47,7 +48,7 @@ If planning handoff is plausible, inspect the staged review wiki before asking t
 - if the planning root is missing or unreadable and planning handoff is likely:
   - state that the review wiki dependency is missing
   - continue in degraded brainstorm mode instead of pretending the preflight ran
-  - recommend `review-wiki-setup` before `architect` or `orchestrator`
+  - state that review wiki setup is required before planning
 
 Use the preflight only to:
 
@@ -174,7 +175,7 @@ Optional table when review wiki preflight matters:
 Then include:
 
 - `남은 질문` if blocking ambiguity remains
-- `추천 다음 단계` (`review-wiki-setup`, `design-discovery`, `architect`, or direct execution)
+- `추천 다음 상태` such as `needs_review_wiki_setup`, `needs_locked_ui_direction`, `ready_for_planning`, or `ready_for_direct_execution`
 
 Response formatting rules:
 
@@ -183,7 +184,7 @@ Response formatting rules:
 - Keep confirmation-focused questions as a short numbered list so the user can reply quickly.
 - Do not leave the main comparison or request-lock snapshot as plain bullet lists unless the user explicitly asks for a different format.
 - Do not let planner shorthand replace the user's wording in the tables.
-- If user-visible UI direction remains blocking, recommend `design-discovery` before `architect`.
+- If user-visible UI direction remains blocking, state that `locked_ui_direction` is required before planning can continue.
 
 ### 9. Optional artifact export (only on explicit user request)
 
@@ -200,7 +201,7 @@ Include:
 - `제외 항목 표` when relevant
 - `review wiki preflight 메모` when relevant
 - `남은 질문 / 가정`
-- `추천 다음 단계`
+- `추천 다음 상태`
 
 ### 10. Quality gate before handoff
 
@@ -215,13 +216,14 @@ Before handoff, confirm:
 - If review wiki preflight ran, its `blocking` findings are either locked or called out explicitly
 - If review wiki preflight could not run, the missing dependency is explicit before recommending planning
 - Blocking questions are explicit when another clarification round is still needed
-- Recommended next step is clear
+- Recommended next state is clear
 
-### 11. Handoff to `design-discovery` or `architect` (when needed)
+### 11. Handoff (when needed)
 
 If user-visible UI direction such as hierarchy, state presentation, responsive behavior, or design-system fit remains blocking:
 
-- hand off the locked request scope to `design-discovery` before `architect`
+- hand off the locked request scope as `locked_request_scope`
+- state that `locked_ui_direction` is still required before planning
 - make the unresolved UI-direction questions explicit instead of burying them in prose
 
 When planning is needed and scope is decision-complete enough for planning, provide:
@@ -234,6 +236,6 @@ When planning is needed and scope is decision-complete enough for planning, prov
 6. Review wiki preflight findings that `architect` should treat as already surfaced, or an explicit note that the preflight could not run because the review wiki root was missing
 7. Context7-confirmed external facts that `architect` should treat as already resolved, plus any still-risky assumptions that may require fallback verification
 
-If planning is needed but `./.codex/review-wiki/sync/current` is missing or unreadable, recommend `review-wiki-setup` before `architect`.
+If planning is needed but `./.codex/review-wiki/sync/current` is missing or unreadable, state that review wiki setup is required before planning.
 
-Do not hand off to `architect` while blocking ambiguity remains for a touched public boundary, exclusion boundary, or user-visible UI direction that would force design guessing.
+Do not present the request as planning-ready while blocking ambiguity remains for a touched public boundary, exclusion boundary, or user-visible UI direction that would force design guessing.

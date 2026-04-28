@@ -1,13 +1,13 @@
 ---
 name: orchestrator
-description: Explicit multi-agent planning orchestrator for requests that should run through the repository's planning loop instead of a one-off planning pass. Use only when the user explicitly invokes `$orchestrator` or explicitly asks for the automated brainstorm/design-discovery/architect/review/developer-review/materialize workflow, and Codex should coordinate upstream feedback triage, `architect`, `plan-review`, browser-based developer review, developer-review learning capture, and `plan-materialize` through generic skill-driven sub-agents with explicit developer approval before test materialization.
+description: Explicit multi-agent planning orchestrator for requests that should run through the repository's planning loop instead of a one-off planning pass. Use only when the user explicitly invokes `$orchestrator` or explicitly asks for the automated planning/review/developer-review/materialize workflow, and Codex should coordinate upstream feedback triage, `architect`, `plan-review`, browser-based developer review, developer-review learning capture, and `plan-materialize` through generic skill-driven sub-agents with explicit developer approval before test materialization.
 ---
 
 # Orchestrator
 
 Run the repository's planning loop as a stateless, artifact-driven workflow with skill-driven planning sub-agents, fresh cold review, browser-based developer approval, developer-review learning capture, and test materialization.
 
-Use this skill only for explicit planning orchestration requests. Do not use it as a generic replacement for `brainstorm`, `design-discovery`, `architect`, `plan-review`, or `plan-materialize`.
+Use this skill only for explicit planning orchestration requests. Do not use it as a generic replacement for request-scope locking, UI direction locking, `architect`, `plan-review`, or `plan-materialize`.
 
 ## Required Reading
 

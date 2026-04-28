@@ -5,7 +5,7 @@ description: Codex entry skill for request-lock brainstorming. Use when the user
 
 # Brainstorm
 
-Lock ambiguous request scope, public boundaries, ownership, exclusions, and pre-planning risks before `architect` writes executable plans.
+Lock ambiguous request scope, public boundaries, ownership, exclusions, and pre-planning risks before executable planning.
 
 ## Required Reading
 
@@ -22,4 +22,4 @@ Read these references in order whenever this skill runs:
 - Treat the user wording as canonical and avoid replacing it with planner shorthand.
 - Ask only unresolved high-impact questions and derive everything possible from local context first.
 - Return Korean-first tables for request lock, work bundles, public boundaries, exclusions, state ownership, and review wiki preflight when relevant.
-- Do not hand off to `architect` while blocking ambiguity remains.
+- Do not present the request as planning-ready while blocking ambiguity remains.

@@ -1,8 +1,8 @@
-# Design Discovery Contracts
+# UI Spec Contracts
 
 ## Purpose
 
-Lock user-visible UI direction after `brainstorm` and before `architect` so planning does not guess hierarchy, state presentation, responsive behavior, or design-system alignment.
+Lock user-visible UI direction so planning does not guess hierarchy, state presentation, responsive behavior, or design-system alignment.
 
 ## Entry Notes
 
@@ -12,7 +12,7 @@ This skill is intended for explicit manual invocation, not as a default planning
 ## When to use
 
 - A request changes user-visible screens, pages, components, layouts, or interaction states.
-- `brainstorm` clarified the product scope, but the UI direction is still too fuzzy for `architect`.
+- Product scope is clear enough, but the UI direction is still too fuzzy for planning.
 - Multiple plausible visual or hierarchy directions remain.
 - The user wants to compare UI directions before committing to a plan.
 - The current ambiguity is about what the user should see, not about backend behavior alone.
@@ -20,6 +20,6 @@ This skill is intended for explicit manual invocation, not as a default planning
 ## When not to use
 
 - The request is backend-only, API-only, data-only, or infrastructure-only.
-- The existing design direction is already fixed enough that `architect` can plan safely.
+- The existing design direction is already fixed enough for safe planning.
 - The task is a post-implementation live-site audit or fix loop.
-- The real blocker is product scope or policy ambiguity that should go back to `brainstorm`.
+- The real blocker is product scope or policy ambiguity rather than UI direction.

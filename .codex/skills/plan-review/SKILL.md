@@ -18,7 +18,7 @@ Review the finished plan artifact against the user's request and any upstream re
 1. Latest user request and latest conversation context
 2. Target executable plan file: `./plans/**/plan.md`
 3. Linked phase detail files referenced from that `plan.md`
-4. Optional directly referenced `./.codex/artifacts/design-discovery/{feature-name}.md` artifact or latest `design-discovery` handoff when UI scope exists
+4. Optional directly referenced `./.codex/artifacts/ui-spec/{feature-name}.md` artifact or latest locked UI direction handoff when UI scope exists
 5. Optional orchestrator handoff in the latest conversation context when invoked by `orchestrator`:
    - `task_slug`
    - `plan_path`
@@ -89,7 +89,7 @@ Before judging the plan:
 - Do not let the plan hide user-request loss behind planner shorthand
 - Do not infer missing policy from the original user request when the plan itself is ambiguous
 - Detect whether the reviewed plan includes UI scope such as screens, pages, components, layouts, state presentation, or responsive behavior
-- If UI scope exists and a `design-discovery` artifact or handoff is directly available, treat it as secondary context for the intended direction; the reviewed plan remains the source of truth for what will actually ship
+- If UI scope exists and a locked UI direction artifact or handoff is directly available, treat it as secondary context for the intended direction; the reviewed plan remains the source of truth for what will actually ship
 - If a reviewed phase detail names a local prerequisite plan in the local prerequisite field, load only that directly referenced plan and inspect only the minimum upstream phase needed to verify the prerequisite contract
 - Do not recurse into a larger plan graph or turn the review into a full multi-plan orchestration pass
 
@@ -134,7 +134,7 @@ When UI scope exists, run a conditional design pass before the general engineeri
 - information hierarchy and user-visible emphasis
 - empty / loading / error / success state coverage
 - responsive and accessibility implications that materially affect implementation
-- alignment with locked UI direction or `design-discovery` guidance when present
+- alignment with locked UI direction guidance when present
 - whether implementation would still have to invent key user-visible design decisions
 
 Prefer findings over compliments. Do not invent repo facts that the plan does not support.

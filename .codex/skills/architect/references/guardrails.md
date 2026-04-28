@@ -16,10 +16,10 @@
 - In orchestrated mode, do not leave pre-plan blocking questions only as vague chat questions; emit a structured decision packet instead
 - In orchestrated mode, do not reinterpret `known_missing_inputs` as prompts to search for substitute paths
 - In orchestrated mode, do not finish with progress-only updates; return plan artifacts or the blocking decision packet
-- Do not leave user-visible hierarchy, state presentation, or responsive behavior implicit when `design-discovery` already resolved them
-- Do not add new top-level plan sections just to mirror a `design-discovery` handoff
+- Do not leave user-visible hierarchy, state presentation, or responsive behavior implicit when upstream UI direction already resolved them
+- Do not add new top-level plan sections just to mirror an upstream UI direction handoff
 - Do not treat Context7 as mandatory for every plan; use it only when unstable external facts can change the boundary, contract, or phase split
-- Do not re-query Context7 just because it is available when `brainstorm` already resolved the relevant library/framework/API decision well enough for planning
+- Do not re-query Context7 just because it is available when upstream decisions already resolved the relevant library/framework/API decision well enough for planning
 - Do not leave Context7-derived constraints only in transient reasoning; if they matter, compress them into the top-level request / contract tables or the relevant phase detail file
 - Do not generate multiple executable plan files unless the active core plan-count rule requires it
 - Do not generate overview, index, DAG, or root graph files

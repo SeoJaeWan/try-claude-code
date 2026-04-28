@@ -38,12 +38,12 @@ Before writing any plan artifact:
 
 ### Step 1. Analyze request
 
-- First consume any `design-discovery` handoff and treat its approved UI direction, hierarchy, state-presentation expectations, responsive constraints, reuse rules, and referenced visuals as the default planning input for UI work
+- First consume any locked UI direction handoff and treat its approved hierarchy, state-presentation expectations, responsive constraints, reuse rules, and referenced visuals as the default planning input for UI work
 - Clarify goals, boundaries, constraints, acceptance criteria, and feature policy
 - Treat the user's wording as canonical and keep it traceable through the plan
 - Decompose the request into concrete items and touched work bundles before naming phases
 - Classify missing information as `blocking`, `derivable`, or `deferrable` using the active review wiki core decision policy
-- Treat new production source topology as `blocking` unless it is uniquely derivable from existing repo conventions or an upstream `brainstorm` / user decision
+- Treat new production source topology as `blocking` unless it is uniquely derivable from existing repo conventions or an upstream request-scope / user decision
 - Apply relevant selected pattern guidance before deciding that a boundary, canonical identifier, prerequisite, or verification strategy is already obvious
 - Derive what can be confirmed from local context before asking the user
 - For behavior-changing work, identify the domain scenario first rather than jumping to implementation layers
@@ -52,8 +52,8 @@ Before writing any plan artifact:
 
 ### Step 2. Verify unstable external facts when needed (conditional)
 
-- First consume any `brainstorm` handoff and treat its confirmed library/framework/API decisions as the default planning input
-- If a `brainstorm` handoff includes review wiki preflight findings, treat them as upstream ambiguity-resolution notes, not as a substitute for reading the active architect core docs yourself
+- First consume any upstream request-scope handoff and treat its confirmed library/framework/API decisions as the default planning input
+- If an upstream request-scope handoff includes review wiki preflight findings, treat them as ambiguity-resolution notes, not as a substitute for reading the active architect core docs yourself
 - If the planning boundary still depends on current library/framework/API behavior, or the upstream handoff is missing, incomplete, or risky, query Context7 before freezing the plan
 - Prefer Context7 over general web search for package docs, framework APIs, migration notes, and recommended usage patterns
 - Use Context7 to confirm only the minimum facts that can change the plan:
@@ -70,8 +70,8 @@ Before writing any plan artifact:
 ### Step 3. Resolve blocking decisions before planning (required)
 
 - Do not write any plan artifact while `blocking` ambiguity remains
-- Route unresolved `blocking` ambiguity to `brainstorm` first
-- If UI scope exists and user-visible hierarchy, state presentation, responsive behavior, or design-system fit are still ambiguous enough that planning would force later design guessing, route that ambiguity to `design-discovery` before writing the plan
+- Stop with a missing-decision packet when unresolved `blocking` ambiguity remains
+- If UI scope exists and user-visible hierarchy, state presentation, responsive behavior, or design-system fit are still ambiguous enough that planning would force later design guessing, require `locked_ui_direction` before writing the plan
 - If direct clarification is necessary, ask only concise, actionable questions:
   - batch at most 4 blocking questions at once
   - prefer structured user-input tooling when available
@@ -88,7 +88,7 @@ Before writing any plan artifact:
     - `default`
   - stop before creating or updating `./plans/**`
 - In orchestrated mode, if the provided authoritative inputs are insufficient, stale, or missing for safe planning, block with the decision packet instead of repairing authority through broader repo discovery
-- If the blocking issue is missing UI direction, hierarchy, or state presentation, make the decision packet explicitly tell the user to run `design-discovery` or provide equivalent locked UI decisions before planning continues
+- If the blocking issue is missing UI direction, hierarchy, or state presentation, make the decision packet explicitly request `locked_ui_direction` or equivalent concrete UI decisions before planning continues
 - For user-visible scope, resolve behavior well enough to define stable boundaries and expected outcomes in the plan
 - For touched public boundaries such as components, hooks, APIs, routes, or services, resolve enough detail to name the public boundary that will change:
   - props / inputs / outputs
@@ -98,7 +98,7 @@ Before writing any plan artifact:
   - explicit exclusions that need user approval
 - For new files, folders, modules, or test-owner placement that will shape implementation:
   - derive the source topology from existing repo conventions before naming concrete paths
-  - if multiple placements are plausible, route the decision to `brainstorm` or ask the user before writing plan artifacts
+  - if multiple placements are plausible, ask for a locked request-scope decision before writing plan artifacts
   - do not record candidate or example paths as if they are committed file contracts
   - when topology is intentionally selected, make the owning boundary and rationale visible in `변경 형상`, `잠긴 계약`, or the relevant phase detail
 - For notification, permission, routing, workflow, state-transition, or other behavior-changing scope, resolve enough detail to define:
@@ -120,7 +120,7 @@ Use high-level inspection only:
 - tech stack and major boundaries
 - expected integration points
 - existing policies, contracts, behaviors, and conventions that answer missing questions
-- `design-discovery` outcomes when they materially affect user-visible planning boundaries, hierarchy, or state coverage
+- locked UI direction outcomes when they materially affect user-visible planning boundaries, hierarchy, or state coverage
 - the selected pattern files when they affect split topology, contracts, state/validation, rollout, rollback, or verification quality
 
 Do not deep-dive into implementation details.
@@ -147,7 +147,7 @@ Do not deep-dive into implementation details.
 - Required branch headers, phase metadata, routing policy, and execution handoff rules must follow the active review wiki core docs
 - Treat `plan-template-sequential.md` as the complete `plan.md` structure and `phase-template-detail.md` as the complete per-phase detail structure
 - Do not add extra top-level sections unless a core doc explicitly requires them or the user explicitly asks for them
-- Do not add a dedicated top-level design-discovery recap section; compress approved UI-direction decisions into the existing request, contract, and phase detail tables
+- Do not add a dedicated top-level upstream UI recap section; compress approved UI-direction decisions into the existing request, contract, and phase detail tables
 - Apply the active review wiki plan-artifact contract for the `plan.md` / phase-detail split; do not duplicate phase-local implementation detail in `plan.md`.
 - Keep the top preamble minimal: `Branch`, a one-line `Worktree dir`, then the compact routing table with `# | Phase | Agent`
 - In that routing table, use the linked phase detail path in `Phase` and mirror the linked detail-file `owner_agent` in `Agent`
@@ -185,10 +185,10 @@ Do not deep-dive into implementation details.
 - Use `## 리스크와 검증` to connect likely failure modes to the phase, test, compare, command, or source inspection that will catch them
 - End `plan.md` with `## 검토 체크리스트`
 - When Context7 changed or confirmed a planning decision, record only the outcome in the top-level request / contract tables or the relevant phase detail file:
-  - do not restate the whole lookup when `brainstorm` already resolved it; carry forward the confirmed outcome and only note the delta if `architect` had to re-check it
+  - do not restate the whole lookup when upstream decisions already resolved it; carry forward the confirmed outcome and only note the delta if `architect` had to re-check it
   - use the top-level request / contract tables for cross-phase choices such as library selection, version policy, or migration direction
   - use the relevant phase detail file for phase-local API constraints, deprecations, or integration rules
-- When a `design-discovery` handoff exists, record only the locked outcome in the top-level request / contract tables or the relevant phase detail file:
+- When a locked UI direction handoff exists, record only the locked outcome in the top-level request / contract tables or the relevant phase detail file:
   - do not restate the whole consultation history or variant loop
   - use the top-level request / contract tables for cross-phase UI direction, design-system, or hierarchy constraints
   - use the relevant phase detail file for phase-local state presentation, responsive behavior, or component interaction rules

@@ -1,4 +1,4 @@
-# Design Discovery Workflow
+# UI Spec Workflow
 
 ## Workflow
 
@@ -7,16 +7,17 @@
 Read only what is needed:
 
 - Latest user request and latest conversation context
-- Any `brainstorm` handoff already produced in the current thread
+- Any locked request-scope handoff already produced in the current thread
 - Relevant local UI code, routes, components, or screens inferred from the request
 - Existing design-system or brand constraints when present
-- Existing screenshots, referenced mockups, or directly relevant prior `./.codex/artifacts/design-discovery/**` artifacts when they reduce repeated discovery
+- Existing screenshots, referenced mockups, or directly relevant prior `./.codex/artifacts/ui-spec/**` artifacts when they reduce repeated specification work
+- Legacy `./.codex/artifacts/design-discovery/**` artifacts only as read-only compatibility input when directly relevant
 - `../architect/references/terminology-policy.md` when producing UI direction snapshots or handoff text
 
 Rules:
 
 - Stay focused on the user-visible scope that planning would otherwise guess.
-- If the problem definition itself is unstable, stop and route back to `brainstorm`.
+- If the problem definition itself is unstable, stop with a clear missing request-scope decision instead of producing UI direction.
 - Do not perform a full live-site audit in this skill.
 
 ### 2. Run consultation mode first (required)
@@ -29,13 +30,13 @@ Lock the direction in words before generating variants:
 - empty / loading / error / success state expectations
 - responsive and accessibility expectations that materially affect planning
 - reuse vs new-pattern expectations
-- design-system, tone, or visual constraints that `architect` must preserve
+- design-system, tone, or visual constraints that downstream planning must preserve
 
 Rules:
 
 - Ask only high-impact questions that materially change the plan.
 - Prefer concrete UI outcomes over abstract design jargon.
-- Keep the result tight enough that `architect` can compress it into existing plan tables without adding new top-level sections.
+- Keep the result tight enough that downstream planning can consume it without adding a recap section.
 
 ### 3. Decide whether shotgun mode is needed
 
@@ -64,7 +65,7 @@ For each direction include:
 
 Then recommend one direction and note the fallback.
 
-### 5. Produce the design-direction snapshot
+### 5. Produce the UI-spec snapshot
 
 Return a concise snapshot using markdown tables.
 
@@ -75,7 +76,7 @@ Apply `../architect/references/terminology-policy.md` to all human-readable tabl
 1. `UI 방향 요약 표`
    - `대상 영역`
    - `이번에 고정한 방향`
-   - `architect 반영 메모`
+   - `계획 반영 메모`
    - `남은 미결정`
 
 2. `상태/표현 규칙 표`
@@ -102,13 +103,13 @@ Optional when shotgun mode ran:
 Then include:
 
 - `남은 질문` if blocking UI-direction ambiguity remains
-- `추천 다음 단계` (`architect` or `brainstorm`)
+- `추천 다음 상태` (`locked_ui_direction` or `needs_request_scope_decision`)
 
 ### 6. Optional artifact export (only on explicit user request)
 
-If and only if the user explicitly asks for a written artifact, export to:
+If and only if the user explicitly asks for a written artifact, export new artifacts to:
 
-- `./.codex/artifacts/design-discovery/{feature-name}.md`
+- `./.codex/artifacts/ui-spec/{feature-name}.md`
 
 Include:
 
@@ -118,11 +119,11 @@ Include:
 - `변형 비교 표` when shotgun mode ran
 - approved visual references or notes when present
 - `남은 질문 / 가정`
-- `추천 다음 단계`
+- `추천 다음 상태`
 
-### 7. Handoff to architect
+### 7. Handoff
 
-When planning should continue, hand off:
+When planning should continue, hand off a `locked_ui_direction` packet containing:
 
 1. locked UI areas and journeys
 2. the approved hierarchy and emphasis rules
@@ -131,4 +132,4 @@ When planning should continue, hand off:
 5. approved visual references or variant notes when present
 6. explicit low-risk defaults vs still-blocking UI questions
 
-Do not hand off to `architect` while blocking UI-direction ambiguity remains.
+Do not present `locked_ui_direction` while blocking UI-direction ambiguity remains.

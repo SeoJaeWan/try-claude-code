@@ -1,6 +1,6 @@
 ---
 name: architect
-description: Codex entry skill for request-traceable implementation planning. Use when a request needs one or more executable plan artifacts under `./plans` after resolving blocking product policy, UX, contract, schema, validation, state, permission, and any upstream UI-direction ambiguity handled by `brainstorm` or `design-discovery`, following the active review wiki plan artifact contract and linking per-phase technical detail files for later `plan-review` and `plan-materialize`.
+description: Codex entry skill for request-traceable implementation planning. Use when a request needs one or more executable plan artifacts under `./plans` after blocking product policy, UX, contract, schema, validation, state, permission, and UI-direction ambiguity has been resolved into usable upstream decisions, following the active review wiki plan artifact contract and linking per-phase technical detail files for later `plan-review` and `plan-materialize`.
 ---
 
 # Architect
@@ -27,6 +27,6 @@ Read these references only when the corresponding scope is active:
 
 - Planning only: do not write implementation code or source-tree tests.
 - Treat review wiki registry/core/pattern guidance as mandatory when the planning root is available.
-- Resolve blocking ambiguity before writing plan artifacts; route unresolved product or UI direction to `brainstorm` or `design-discovery`.
+- Resolve blocking ambiguity before writing plan artifacts; stop with a clear missing-decision packet when product scope or UI direction is not locked enough for planning.
 - Write visible plan prose in Korean-first language; keep English for exact identifiers, paths, commands, schema keys, agent names, and canonical taxonomy IDs.
 - Follow the active review wiki plan artifact contract for the split between `plan.md` and linked phase detail files.
