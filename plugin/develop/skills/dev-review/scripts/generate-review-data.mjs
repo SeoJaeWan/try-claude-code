@@ -196,6 +196,7 @@ function run(args, logger) {
     base_branch: args.base,
     task_branch: args.taskBranch,
     task_head_sha: taskHeadSha,
+    worktree_path: worktreeAbs,
     review_iteration: args.iteration,
     generated_at: generatedAt,
     available_agents: availableAgents,

@@ -37,6 +37,14 @@ import { createReadStream } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { detectPreviewTarget } from "./lib/preview-detect.mjs";
+import {
+  acquirePreview,
+  getPreviewStatus,
+  shutdownAll as shutdownPreviewPool,
+  touchPreview,
+} from "./lib/preview-pool.mjs";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const htmlRoot = path.resolve(__dirname, "..", "assets");
 const argv = process.argv.slice(2);
@@ -257,9 +265,83 @@ function resolveStaticForReview(slug, tail) {
   return null;
 }
 
+// Per-slug detect cache. Invalidated when review-data's task_head_sha changes.
+const detectCache = new Map();
+
+function collectChangedFiles(model) {
+  const set = new Set();
+  for (const c of model?.commits || []) {
+    for (const f of c?.files_changed || []) {
+      if (f?.path) set.add(f.path);
+    }
+  }
+  return Array.from(set);
+}
+
+async function getOrDetectPreview(slug) {
+  const dataRoot = dataRootForSlug(slug);
+  if (!dataRoot) return null;
+  const model = await readJsonFile(path.join(dataRoot, "review-data.json"), null);
+  if (!model) return null;
+  const cached = detectCache.get(slug);
+  if (cached && cached.task_head_sha === model.task_head_sha) return cached;
+  // worktree_path is written by the helper as an absolute path; older
+  // review-data files may not have it, so fall back to the conventional
+  // worktrees/{task_branch} location relative to plansRoot's parent.
+  const worktreePath =
+    model.worktree_path && path.isAbsolute(model.worktree_path)
+      ? model.worktree_path
+      : path.resolve(plansRoot, "..", "worktrees", String(model.task_branch || ""));
+  const target = detectPreviewTarget(worktreePath, collectChangedFiles(model));
+  target.worktreePath = worktreePath;
+  const result = { task_head_sha: model.task_head_sha, target };
+  detectCache.set(slug, result);
+  return result;
+}
+
+async function handlePreviewStatus(res, slug) {
+  const detect = await getOrDetectPreview(slug);
+  if (!detect) {
+    return sendJson(res, 404, { supported: false, reason: "review-data not found" });
+  }
+  if (!detect.target.supported) {
+    return sendJson(res, 200, {
+      supported: false,
+      reason: detect.target.reason,
+      framework_hint: null,
+      status: "unsupported",
+    });
+  }
+  // Lazy spawn: only triggers when no entry exists yet. Subsequent polls
+  // hit the existing pool entry without re-spawning.
+  acquirePreview(slug, {
+    worktreePath: detect.target.worktreePath,
+    packagePath: detect.target.packagePath,
+    packageManager: detect.target.packageManager,
+    frameworkHint: detect.target.frameworkHint,
+  }).catch(() => {});
+  touchPreview(slug);
+  const poolStatus = getPreviewStatus(slug);
+  return sendJson(res, 200, {
+    supported: true,
+    framework_hint: detect.target.frameworkHint,
+    package_manager: detect.target.packageManager,
+    status: poolStatus.status,
+    error: poolStatus.error || null,
+    url:
+      poolStatus.status === "ready" && poolStatus.port
+        ? `http://localhost:${poolStatus.port}`
+        : null,
+  });
+}
+
 async function handleReviewApi(req, res, slug, endpoint) {
   const dataRoot = dataRootForSlug(slug);
   if (!dataRoot) return sendJson(res, 400, { error: "invalid slug" });
+
+  if (endpoint === "preview/status" && req.method === "GET") {
+    return handlePreviewStatus(res, slug);
+  }
 
   if (endpoint === "health") {
     const model = await readJsonFile(path.join(dataRoot, "review-data.json"), null);
@@ -353,3 +435,15 @@ server.listen(port, () => {
   console.log("Open a review at /review/{task-slug}");
   console.log("When a review is submitted, tell Claude: 리뷰 완료");
 });
+
+let shuttingDown = false;
+async function gracefulShutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`\n${signal} received, shutting down dev-review server...`);
+  try { await shutdownPreviewPool(); } catch {}
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 5000).unref?.();
+}
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));

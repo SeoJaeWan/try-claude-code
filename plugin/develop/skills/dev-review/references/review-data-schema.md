@@ -22,6 +22,12 @@ The schemas below show every field. Fields marked **deterministic** are filled b
   "base_branch": "main",                       // deterministic
   "task_branch": "task-auth-login",            // deterministic
   "task_head_sha": "def4569...",               // deterministic — full 40-char sha
+  "worktree_path": "/abs/path/worktrees/task-auth-login", // deterministic — absolute path to the
+                                                          // task worktree on the local machine. The
+                                                          // dev-review server reads this to spawn
+                                                          // a live preview dev server. Not portable
+                                                          // across machines, but review-data is
+                                                          // per-machine anyway.
   "review_iteration": 2,                       // deterministic — passed in by runner
   "generated_at": "2026-04-24T10:30:00Z",      // deterministic
 
