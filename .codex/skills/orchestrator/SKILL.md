@@ -35,3 +35,4 @@ Read these references when the corresponding stage is active:
 - Orchestrate role sub-agents through concise handoff packets; do not ask them to rediscover controller-owned paths or signatures.
 - Report precise failure classifications from `references/contracts.md`.
 - Keep user-facing orchestration updates short and present user-decision questions in Korean.
+- Write browser-visible developer-review history prose in Korean; keep schema keys, enum values, paths, globs, package names, and code identifiers in their original spelling.

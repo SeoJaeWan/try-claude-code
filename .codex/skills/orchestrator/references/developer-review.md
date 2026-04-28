@@ -44,6 +44,8 @@ When the user says `review complete`, read `feedback.json`:
 - Collect every non-approved step or card with its `status`, `comment`, affected IDs, and whether it conflicts with current locked request, scope, public contract, or UI direction.
 - Before resetting `feedback.json`, regenerating the package, or changing `plan_signature`, append or update a round in `review-history.json`.
 - Each history round must record submitted feedback per step/card, chosen triage route, controller or sub-agent action summary, and whether the result was same-signature re-review or a new plan signature.
+- For browser-visible history prose (`round.summary`, `items[].user_comment`, `items[].action_summary[]`, `items[].resolution_summary`), write Korean summaries even when the original browser feedback, prior chat, or sub-agent output is English. Do not copy English source prose verbatim into those fields.
+- Preserve paths, globs, package names, code identifiers, schema keys, enum values, branch names, and signatures in their original spelling inside Korean prose.
 - Preserve previous rounds when a new plan signature is produced.
 
 Classify each non-approved item into one of:

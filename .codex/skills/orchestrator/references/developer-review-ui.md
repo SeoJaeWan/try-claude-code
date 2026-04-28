@@ -192,20 +192,20 @@ Expected shape:
       "submitted_at": "2026-04-23T00:00:00.000Z",
       "source_plan_signature": "abc123",
       "resolution_state": "resolved",
-      "summary": "Summary of the review round and controller response.",
+      "summary": "사용자 리뷰와 컨트롤러 조치 요약입니다.",
       "resulting_plan_signature": "abc123",
       "items": [
         {
           "step_id": "P4",
           "step_label": "Phase 4",
           "user_status": "question",
-          "user_comment": "...",
+          "user_comment": "사용자가 packages/ui docs metadata 갱신 범위가 현재 계획과 맞는지 확인을 요청했습니다.",
           "triage_route": "answer_only",
           "action_summary": [
-            "Answered the user's question.",
-            "Reset feedback for same-signature re-review."
+            "packages/ui/src/docs/components/** 및 props meta 파일은 기존 packages/ui component API에 맞춰 갱신해도 되는 범위인지 확인했습니다.",
+            "packages/ui/src/components/**의 public component implementation/API 변경은 별도 승인 전까지 범위 밖으로 유지하기로 했습니다."
           ],
-          "resolution_summary": "Same signature re-review required.",
+          "resolution_summary": "동일 plan_signature로 재리뷰가 필요합니다.",
           "resulting_plan_signature": "abc123"
         }
       ]
@@ -220,6 +220,8 @@ Rules:
 - Append or update `review-history.json` before resetting same-signature feedback or regenerating the package after a revision.
 - Preserve prior rounds when `plan_signature` changes; update only `current_plan_signature` and add or complete the new resolution entry.
 - Record both the user's review and the controller's action summary so the next review pass can show what changed.
+- Browser-visible history prose fields (`round.summary`, `items[].user_comment`, `items[].action_summary[]`, `items[].resolution_summary`) must be Korean summaries, even when the submitted feedback, prior chat, or sub-agent result is English.
+- Do not copy English source prose verbatim into history prose fields. Preserve exact paths, globs, package names, code identifiers, schema keys, enum values, branch names, and signatures in their original spelling inside the Korean summaries.
 
 ## Routing after user says `review complete`
 
