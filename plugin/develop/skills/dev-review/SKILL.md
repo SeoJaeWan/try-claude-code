@@ -203,7 +203,51 @@ Agent(
 
 Treat any output that fails JSON.parse, modifies a generator-owned field, or references a file outside `files_changed` as interpretation failure. On failure, fall back to `_fallback_cards` for every affected commit and leave `overview.plan_vs_result` / `deviations_summary` / `open_risks` empty with a UI hint that automatic interpretation was skipped.
 
-### Step 3. Write final artifacts and clean intermediates
+### Step 3. Decide the live preview target
+
+The dev-review server hosts a per-task dev server next to the diff so the reviewer can see the rendered UI alongside each commit. Picking which package to spawn is a judgment call that the skill owns — **do not delegate this to a heuristic script**. A monorepo's "best preview package" depends on workspace topology (library vs app, who consumes whom), the spread of `change_map` across tracks, and which packages even have a `dev` script. A naive most-changed-files heuristic misroutes whenever changes concentrate in a build-only workspace library that has a sibling consumer app.
+
+Read the worktree directly:
+
+- `pnpm-workspace.yaml` (or root `package.json` `workspaces`) — list every package under the worktree
+- Each package's `package.json` — look at `scripts.dev` and `dependencies` / `devDependencies` for workspace links (`workspace:*`, `@repo/*`)
+- `review-data.partial.json` `overview.change_map` — track distribution of this round's changes
+- `review-data.partial.json` `commits[].files_changed[].path` — concrete paths if you need to break a tie
+
+Pick the package that satisfies, in order:
+
+1. Has a `scripts.dev` entry.
+2. Either contains the changed files directly, OR consumes (via `workspace:*` / internal package name) a package that contains the changed files.
+3. When multiple candidates qualify, prefer the smallest concrete consumer (a dedicated demo/storybook/playground app over a full product app); break ties by the number of changed files reachable through it.
+
+Write the decision into `review-data.partial.json` as a top-level `preview` block. The exact shape is in `references/review-data-schema.md`. Summary:
+
+```jsonc
+"preview": {
+  "supported": true,
+  "package_path": "/abs/path/worktrees/.../apps/design-system",  // absolute
+  "package_manager": "pnpm",                                     // pnpm | yarn | npm | bun
+  "framework_hint": "vite",                                      // vite | next-app | next-pages | cra | expo | unknown
+  "dev_command": "pnpm dev",                                     // informational; pool spawns via package_manager
+  "rationale": "packages/ui는 build-only 라이브러리(scripts.dev 없음). apps/design-system이 @repo/ui를 workspace:*로 소비하며 vite dev 보유 → 변경분의 실제 호스트."
+}
+```
+
+When no package qualifies (no workspace consumer with a `dev` script, or worktree is not a JS project at all), write:
+
+```jsonc
+"preview": {
+  "supported": false,
+  "reason": "no package with scripts.dev consumes packages/ui",  // shown verbatim in UI
+  "rationale": "..."                                             // optional, but helpful
+}
+```
+
+`reason` is what the reviewer sees in the disabled state — keep it concrete (which package was inspected, what was missing). `rationale` is your reasoning trace; both surfaces are Korean prose with English identifiers per the project convention.
+
+This step runs every round. If a later round shifts the change distribution (e.g., backend track grows, frontend shrinks), re-evaluate from scratch — do not carry over the previous round's decision.
+
+### Step 4. Write final artifacts and clean intermediates
 
 - Merge agent output with the partial JSON. For each commit: if `cards[]` is empty, substitute `_fallback_cards`. Strip `_fallback_cards` from the final JSON.
 - Enforce card `id` deterministically. After merge, walk every commit's final `cards[]` and overwrite each `cards[idx].id` to `${commit.short_sha}.C${idx+1}` (1-indexed) regardless of whether the interpretation agent provided one. The Step 2 prompt asks the agent to set this id, but treat that as a hint — interpretation occasionally drops the field, returns duplicates, or returns a typo'd shape, and any of those collapse the browser's per-card feedback into a single empty-key bucket. Resetting the id at merge time is cheap and makes the contract independent of agent reliability.
@@ -214,7 +258,7 @@ Treat any output that fails JSON.parse, modifies a generator-owned field, or ref
 - Delete legacy UI assets from the data folder if they exist from prior rounds of the older self-contained layout: `index.html`, the entire `assets/vendor/` directory. These are served from the plugin path now and any local copy will silently shadow newer UI fixes if the legacy single-root server mode is ever reused.
 - Delete any other files in `plans/{task_slug}/dev-review/` that are not in the artifact list (`review-data.json`, `feedback.json`, `review-history.json`, `assets/diffs/`). The interpretation agent occasionally drops helper scripts (`build_review.py`, scratch JSON, etc.) into the data folder; those are not part of the spec and must be removed before handoff.
 
-### Step 4. Initialize or merge feedback
+### Step 5. Initialize or merge feedback
 
 Read any existing `feedback.json`:
 
@@ -224,13 +268,13 @@ Read any existing `feedback.json`:
 
 Write `feedback.json` with `updated_at = now`.
 
-### Step 5. Append to review history
+### Step 6. Append to review history
 
 On each re-entry (`review_iteration > 1`), append a round entry to `review-history.json` summarizing what the previous round asked for and what the runner did in response. See `references/review-data-schema.md` for the exact shape.
 
 On the very first call (`review_iteration == 1`), create `review-history.json` with an empty `rounds[]` array.
 
-### Step 6. Auto-start the server and hand off to the user
+### Step 7. Auto-start the server and hand off to the user
 
 The skill is responsible for booting the review server itself — do NOT ask the user to run any `node` command. Use the `Bash` tool with `run_in_background: true` so the process keeps serving across the turn boundary while the reviewer works in the browser.
 
@@ -269,15 +313,9 @@ The plugin's dev-review server is **multi-review**: one server process hosts eve
 
 End your turn after this instruction. Do not poll `feedback.json`. Do not use `AskUserQuestion` — plain text lets the runtime's Stop hook behave normally. The background server stays alive across re-entries and across sessions; only restart it (re-run step 2) if the health-check on re-entry shows it's gone or returns a non-dev-review `kind`.
 
-### Step 6a. Live preview pool (server-managed, no skill action)
+The server hosts a per-task **dev server pool** so the live preview iframe is rendered alongside each commit's diff. The skill does nothing further here — the server reads `review-data.json.preview` (which Step 3 wrote), and on the first `GET /review/{slug}/api/preview/status` poll from the browser it lazily spawns the dev server using `package_path` + `package_manager`, runs `pnpm install` if `node_modules` is absent, allocates a free port, and recycles the dev server after 10 minutes of idle. SIGTERM/SIGINT on the server tears down every spawned child. When `preview.supported` is `false`, the browser shows "프리뷰 비활성화 — {reason}" and the reviewer continues with diff-only review. The reviewer's per-commit route override is saved into `feedback.json.preview_routes` (see `references/review-data-schema.md`); the skill ignores it for routing decisions.
 
-The dev-review server also hosts a per-task **dev server pool** so the reviewer can see the rendered UI alongside each commit's diff. The skill itself does nothing here — the server lazily spawns the dev server on the first `GET /review/{slug}/api/preview/status` poll from the browser, runs `pnpm install` if `node_modules` is absent, allocates a free port, and recycles the dev server after 10 minutes of idle. SIGTERM/SIGINT on the server tears down every spawned child.
-
-The preview is `supported: false` when the chosen package has no `scripts.dev` or no package matches the changed files. In that case the browser shows "프리뷰 비활성화" and the reviewer continues with diff-only review.
-
-The reviewer's per-commit route override is saved into `feedback.json.preview_routes` (see `references/review-data-schema.md`). It survives across rounds of the same `plan_signature` and is purely UI state — the skill ignores it for routing decisions.
-
-### Step 7. Interpret feedback on re-entry
+### Step 8. Interpret feedback on re-entry
 
 When the user replies `리뷰 완료`, re-enter this skill and read `feedback.json`:
 

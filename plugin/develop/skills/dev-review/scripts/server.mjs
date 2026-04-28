@@ -37,7 +37,6 @@ import { createReadStream } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { detectPreviewTarget } from "./lib/preview-detect.mjs";
 import {
   acquirePreview,
   getPreviewStatus,
@@ -265,79 +264,111 @@ function resolveStaticForReview(slug, tail) {
   return null;
 }
 
-// Per-slug detect cache. Invalidated when review-data's task_head_sha changes.
-const detectCache = new Map();
-
-function collectChangedFiles(model) {
-  const set = new Set();
-  for (const c of model?.commits || []) {
-    for (const f of c?.files_changed || []) {
-      if (f?.path) set.add(f.path);
-    }
-  }
-  return Array.from(set);
-}
-
-async function getOrDetectPreview(slug) {
+// Reads review-data.json's `preview` block, which the skill's Step 3 wrote.
+// The server itself does no workspace detection — picking the right preview
+// package requires judging library-vs-app and workspace dependencies, which
+// the skill does at generate time. See SKILL.md Step 3 and
+// references/review-data-schema.md.
+async function readPreviewDecision(slug) {
   const dataRoot = dataRootForSlug(slug);
   if (!dataRoot) return null;
   const model = await readJsonFile(path.join(dataRoot, "review-data.json"), null);
   if (!model) return null;
-  const cached = detectCache.get(slug);
-  // Cache must also be invalidated when the worktree disappeared on disk
-  // (runner cleanup, manual `git worktree remove`, etc). A stale cache
-  // would otherwise keep reporting supported=true and acquirePreview()
-  // would crash on spawn.
-  if (
-    cached &&
-    cached.task_head_sha === model.task_head_sha &&
-    cached.target.worktreePath &&
-    existsSync(cached.target.worktreePath)
-  ) {
-    return cached;
+  const preview = model.preview;
+  if (!preview || typeof preview !== "object") {
+    return {
+      task_head_sha: model.task_head_sha,
+      decision: {
+        supported: false,
+        reason: "review-data.json has no `preview` block — re-run dev-review to regenerate",
+      },
+    };
   }
-  if (cached) detectCache.delete(slug);
-  // worktree_path is written by the helper as an absolute path; older
-  // review-data files may not have it, so fall back to the conventional
-  // worktrees/{task_branch} location relative to plansRoot's parent.
+  if (preview.supported !== true) {
+    return {
+      task_head_sha: model.task_head_sha,
+      decision: {
+        supported: false,
+        reason: preview.reason || "preview not supported",
+        rationale: preview.rationale || null,
+      },
+    };
+  }
+  // Validate spawn-required fields. The skill is supposed to set these when
+  // supported=true, but a malformed entry should surface as unsupported with a
+  // diagnostic reason rather than crashing the spawn.
+  if (!preview.package_path || !preview.package_manager) {
+    return {
+      task_head_sha: model.task_head_sha,
+      decision: {
+        supported: false,
+        reason: "preview.supported=true but missing package_path/package_manager",
+        rationale: preview.rationale || null,
+      },
+    };
+  }
+  // worktree_path is informational only — the pool spawns with cwd = package_path,
+  // which is already absolute. We pass worktree_path through for the install-step
+  // log message in the pool when node_modules is missing.
   const worktreePath =
     model.worktree_path && path.isAbsolute(model.worktree_path)
       ? model.worktree_path
       : path.resolve(plansRoot, "..", "worktrees", String(model.task_branch || ""));
-  const target = detectPreviewTarget(worktreePath, collectChangedFiles(model));
-  target.worktreePath = worktreePath;
-  const result = { task_head_sha: model.task_head_sha, target };
-  detectCache.set(slug, result);
-  return result;
+  return {
+    task_head_sha: model.task_head_sha,
+    decision: {
+      supported: true,
+      worktreePath,
+      packagePath: preview.package_path,
+      packageManager: preview.package_manager,
+      frameworkHint: preview.framework_hint || "unknown",
+      rationale: preview.rationale || null,
+    },
+  };
 }
 
 async function handlePreviewStatus(res, slug) {
-  const detect = await getOrDetectPreview(slug);
-  if (!detect) {
+  const result = await readPreviewDecision(slug);
+  if (!result) {
     return sendJson(res, 404, { supported: false, reason: "review-data not found" });
   }
-  if (!detect.target.supported) {
+  const { decision } = result;
+  if (!decision.supported) {
     return sendJson(res, 200, {
       supported: false,
-      reason: detect.target.reason,
+      reason: decision.reason,
+      rationale: decision.rationale || null,
       framework_hint: null,
+      status: "unsupported",
+    });
+  }
+  // Defensive check: if the worktree was removed (manual `git worktree remove`,
+  // runner cleanup) the spawn would ENOENT. Surface it as unsupported instead
+  // of letting acquirePreview() crash and emit a confusing log.
+  if (!existsSync(decision.packagePath)) {
+    return sendJson(res, 200, {
+      supported: false,
+      reason: `package_path no longer exists on disk: ${decision.packagePath}`,
+      rationale: decision.rationale,
+      framework_hint: decision.frameworkHint,
       status: "unsupported",
     });
   }
   // Lazy spawn: only triggers when no entry exists yet. Subsequent polls
   // hit the existing pool entry without re-spawning.
   acquirePreview(slug, {
-    worktreePath: detect.target.worktreePath,
-    packagePath: detect.target.packagePath,
-    packageManager: detect.target.packageManager,
-    frameworkHint: detect.target.frameworkHint,
+    worktreePath: decision.worktreePath,
+    packagePath: decision.packagePath,
+    packageManager: decision.packageManager,
+    frameworkHint: decision.frameworkHint,
   }).catch(() => {});
   touchPreview(slug);
   const poolStatus = getPreviewStatus(slug);
   return sendJson(res, 200, {
     supported: true,
-    framework_hint: detect.target.frameworkHint,
-    package_manager: detect.target.packageManager,
+    framework_hint: decision.frameworkHint,
+    package_manager: decision.packageManager,
+    rationale: decision.rationale,
     status: poolStatus.status,
     error: poolStatus.error || null,
     last_log: poolStatus.last_log || [],

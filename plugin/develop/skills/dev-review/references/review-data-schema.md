@@ -46,6 +46,33 @@ The schemas below show every field. Fields marked **deterministic** are filled b
     }
   ],
 
+  "preview": {                                 // skill — written by Step 3
+                                                // The dev-review server reads this verbatim and
+                                                // does no detection of its own. Re-decided every
+                                                // round; never carried over.
+    "supported": true,
+    "package_path": "/abs/path/worktrees/task-x/apps/design-system",
+                                                // absolute. The pool spawns the dev server with
+                                                //   cwd = package_path
+                                                //   cmd = {package_manager} dev
+                                                //   env.PORT = <free port>
+    "package_manager": "pnpm",                 // "pnpm" | "yarn" | "npm" | "bun"
+    "framework_hint": "vite",                  // "next-app" | "next-pages" | "vite" | "cra" |
+                                                //   "expo" | "unknown" — used by the browser to
+                                                //   pick a route heuristic per commit
+    "dev_command": "pnpm dev",                 // informational; pool ignores and uses
+                                                //   `{package_manager} dev` directly
+    "rationale": "packages/ui는 build-only 라이브러리(scripts.dev 없음). apps/design-system이 @repo/ui를 workspace:*로 소비하며 vite dev 보유."
+                                                // why this package was chosen; surfaced in UI
+                                                // tooltip / status area
+  },
+  // When no package qualifies:
+  // "preview": {
+  //   "supported": false,
+  //   "reason": "no package with scripts.dev consumes packages/ui",  // shown verbatim in UI
+  //   "rationale": "..."                                              // optional
+  // }
+
   "overview": {
     "user_request": "로그인 기능 추가...",     // deterministic seed (string) | interpretation may
                                                 // replace with array<string> of locked-request bullets
@@ -354,6 +381,7 @@ On re-entry with `review_iteration > 1`:
 |---|---|---|
 | `task_slug`, `plan_path`, `plan_signature`, `base_branch`, `task_branch`, `task_head_sha`, `review_iteration`, `generated_at` | helper | fatal if missing |
 | `available_agents` | helper | empty array if no agent files found; UI shows fallback note |
+| `preview` | skill (Step 3) | `{ supported: false, reason: "..." }`; UI shows "프리뷰 비활성화" |
 | `overview.user_request`, `plan_summary` | helper | empty strings if plan.md minimal |
 | `overview.change_map`, `total_commits`, `total_files_changed` | helper | fatal if git parsing fails |
 | `overview.plan_vs_result`, `deviations_summary`, `open_risks` | agent | empty arrays + `interpretation_skipped: true` |
