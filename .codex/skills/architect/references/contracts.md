@@ -20,6 +20,7 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
    - optional locked request summary when the parent intentionally narrowed context
    - optional `authoritative_existing_inputs` containing controller-verified literal upstream artifact paths
    - optional `known_missing_inputs` containing referenced but missing literal paths as non-authoritative warnings
+   - optional controller-verified Figma inventory `manifest.json` and snapshot paths from `./.codex/artifacts/figma-inventory/{task_slug}/` when Figma inventory or classification is required
 3. Optional locked UI direction handoff from the latest conversation context or a directly referenced `./.codex/artifacts/ui-spec/{feature-name}.md`
 4. `./references/agents-lite.md` - canonical `owner_agent` catalog
 5. `../review-wiki-setup/references/staging-contract.md` - review wiki sync resolution and refresh rules
@@ -38,6 +39,9 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 16. Context7 MCP tools only as fallback when external library or API facts can still change the planning boundary after local inspection and any prior upstream decision handoff:
    - use Context7 only for version-sensitive library/framework/API behavior, migration constraints, deprecation status, or current recommended patterns
    - do not use Context7 for repo-local conventions, stable language basics, or facts already derivable from local context
+17. Figma inventory snapshot artifacts only when Figma hierarchy, component-set inventory, Resource/* coverage, platform markers, or Figma-based classification changes the planning boundary:
+   - use only controller-verified snapshot artifacts as full inventory evidence in orchestrated mode
+   - do not treat Code Connect, design context, old parity reports, or package registries as complete Figma inventory by themselves
 
 ## Output contract
 
@@ -50,5 +54,6 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 - In orchestrated mode, the terminal result must be exactly one of:
   - `result = wrote_plan` with `written_paths` listing every created or updated artifact path
   - `result = blocking_packet` with `task_slug`, `needs_user_input`, `next_action`, `why_it_matters`, `options`, `recommendation`, and `default`
+  - when `needs_user_input = false`, the blocking packet may instead include `blocker_type = tool_data_blocker`, `blocker`, `required_data`, and `next_action` if no user decision can resolve the missing tool/data input
 - Output language: Korean
 - Visible prose language: Korean-first, following `references/terminology-policy.md`

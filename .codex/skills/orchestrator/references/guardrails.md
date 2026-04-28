@@ -7,6 +7,9 @@
 - Do not ask planning sub-agents to rediscover `plan_path`, `plan_signature`, or `review_wiki_root` when the orchestrator already selected them.
 - Do not ask planning sub-agents to rediscover controller-owned authority or reinterpret missing paths into fresh authoritative inputs.
 - Do not pass open-ended discovery prompts in orchestrated handoff packets.
+- Do not ask `architect` to perform full-file Figma tree reads or to use Code Connect tools as Figma inventory evidence.
+- Do not let `orchestrator` classify Figma component families; it may only prepare and verify snapshot artifacts for `architect`.
+- Do not route missing Figma tool data as a user decision unless the user must choose the root nodes or inventory scope.
 - Do not trust stale review or materialize artifacts after `plan_signature` changes.
 - Do not skip submitted developer review approval.
 - Do not show raw `plan.md` or phase markdown as the primary developer review surface.

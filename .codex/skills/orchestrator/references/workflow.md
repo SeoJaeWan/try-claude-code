@@ -4,6 +4,7 @@
 
 - Step 0. Normalize target and verify prerequisites
 - Step 1. Build the current orchestration picture
+- Step 1A. Prepare Figma inventory snapshots
 - Step 2. Run architect draft or revision
 - Step 3. Run cold review
 - Step 4. Route review findings
@@ -22,6 +23,7 @@ Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output ru
 - Resolve the planning `review_wiki_root` to `./.codex/review-wiki/sync/current`.
 - If `./.codex/review-wiki/sync/current` is missing, stop and route to `review-wiki-setup` instead of attempting per-run staging inside this skill.
 - Confirm the linked local request-scope, UI-spec, `architect`, `plan-review`, and `plan-materialize` capabilities are present before routing to them.
+- If the current request, selected plan, review finding, or developer feedback requires Figma tree inventory, component-set inventory, Resource/* inventory, platform marker inventory, or Figma-based classification artifacts before planning, confirm `../figma-inventory-snapshot/SKILL.md` is present before routing to `architect`.
 - Confirm `./references/developer-review-ui.md`, `./assets/developer-review/index.html`, `../../tools/developer-review-server.mjs`, and `../../tools/start-developer-review-server.mjs` are present before entering the developer review gate.
 - Derive the default plan path as `./plans/{task-slug}/plan.md` unless the current run explicitly targets another existing executable plan.
 - Collect task-local plan or prerequisite paths referenced by the user request, current selected plan, latest fresh review/materialize artifact, or directly referenced upstream decision artifact when they affect the next role pass.
@@ -43,6 +45,20 @@ Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output ru
 - When feedback triage is pending, do not continue to materialization and do not route directly to `architect` from raw feedback labels.
 - Use Step 6 to decide whether the next safe route is chat clarification, request-scope locking, UI direction locking, or `architect`.
 
+## Step 1A. Prepare Figma Inventory Snapshots
+
+Run this step only when the next `architect` pass depends on Figma inventory rather than a simple Figma URL reference.
+
+- Determine the exact `fileKey`, required root nodes, required paths, and required markers from the latest user request, verified upstream artifacts, fresh review findings, or current plan context.
+- If the required root nodes or inventory scope are not derivable from verified inputs, route to request-scope locking or ask the user; do not send an open-ended Figma discovery prompt to `architect`.
+- If a matching `./.codex/artifacts/figma-inventory/{task-slug}/manifest.json` exists and is fresh under `contracts.md`, add the manifest and referenced snapshot paths to `authoritative_existing_inputs`.
+- If no fresh manifest exists, invoke a generic planning sub-agent with `figma-inventory-snapshot` attached.
+- Pass exact `task-slug`, `fileKey`, `root_nodes`, `required_paths`, `required_markers`, and output path `./.codex/artifacts/figma-inventory/{task-slug}/`.
+- Require exactly one result: `result = wrote_snapshot` with `manifest_path` and `written_paths`, or `result = blocking_packet`.
+- After `wrote_snapshot`, read `manifest.json`; if it is stale, missing, or has incomplete required coverage, classify the pass as `artifact_writeback_failure` or `tool_data_blocker` as appropriate.
+- Add the verified `manifest.json` and snapshot paths to the next `architect` handoff as authoritative inputs.
+- Do not classify Figma components, write `classification.md`, or infer missing families in this step.
+
 ## Step 2. Run Architect Draft or Revision
 
 Invoke `architect` when:
@@ -58,9 +74,11 @@ Controller requirements:
 
 - Reuse the live `architect` role agent for the same `task_slug` when compatible; otherwise start a new generic planning sub-agent and attach `architect`.
 - Pass a handoff packet with exact `task-slug`, `plan_path`, `review_wiki_root`, verified inputs, missing-input notes, latest review/developer feedback path when revising, locked request summary when available, and write scope under `./plans/{task-slug}/`.
+- When Figma inventory is required, include the controller-verified `figma-inventory` manifest and snapshot paths in `authoritative_existing_inputs`, and state: use these snapshots as the only authoritative Figma inventory source; do not use Code Connect to infer inventory completeness; do not attempt full-file Figma tree reads; return a `tool_data_blocker` with exact missing root/path if coverage is insufficient.
 - Require exactly one result: `result = wrote_plan` with `written_paths`, or `result = blocking_packet` with user-input fields.
 - After every architect pass, re-check `plan_path` and recompute `plan_signature`.
-- If the architect returned a blocking packet, ask the user directly in chat and route the answer back to the next architect pass.
+- If the architect returned a blocking packet with `needs_user_input = true`, ask the user directly in chat and route the answer back to the next architect pass.
+- If the architect returned `needs_user_input = false` for missing Figma inventory coverage, route once through Step 1A when the controller can materially add or refresh snapshot inputs; otherwise stop with `tool_data_blocker`.
 - Apply the wait policy and classify failures with `contracts.md`.
 - Allow one safe retry only when the controller materially changed the handoff. Do not retry unchanged handoffs or retry while a previous architect pass is still progressing.
 

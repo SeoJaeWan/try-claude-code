@@ -13,6 +13,7 @@ Before writing any plan artifact:
 - In orchestrated mode:
   - treat the provided `task_slug`, `plan_path`, and `review_wiki_root` as authoritative
   - if `authoritative_existing_inputs` is provided, treat only those literal paths as authoritative task-local upstream inputs
+  - if `authoritative_existing_inputs` includes `./.codex/artifacts/figma-inventory/{task-slug}/manifest.json`, treat it as the only authoritative Figma inventory source for Figma classification or inventory coverage
   - if `known_missing_inputs` is provided, treat them only as explicit missing-path warnings and not as prompts for substitute discovery
   - if this architect instance is being reused for the same `task-slug`, treat the current plan artifacts and latest review artifact as higher priority than stale chat memory
   - if `latest_review_path` is provided and exists, read it
@@ -67,6 +68,19 @@ Before writing any plan artifact:
   - ask the user to confirm the risky assumption only when it would change the plan boundary or phase contract
 - Do not dump raw documentation into the plan; compress the result into planning-relevant constraints and choices only
 
+### Step 2A. Consume Figma inventory snapshots when needed (conditional)
+
+Use this step when the request, review finding, or orchestrator handoff requires Figma tree inventory, component-set lists, Resource/* coverage, platform markers, or Figma-based classification artifacts.
+
+- In orchestrated mode, read the controller-verified `figma-inventory` `manifest.json` and snapshot paths from `authoritative_existing_inputs` before writing any classification or plan artifact.
+- Treat the snapshot manifest as authoritative only for the roots, paths, markers, and generated coverage it explicitly records.
+- Do not use Code Connect tools, Code Connect errors, code component lists, `get_design_context`, old parity reports, package/docs registries, or memory as proof of complete Figma inventory.
+- Do not attempt a full-file Figma tree read from `architect`; ask for or return a snapshot `tool_data_blocker` instead.
+- If the manifest is missing, stale, does not cover a required root/path/marker, or records incomplete coverage, stop before writing plan artifacts or classification artifacts.
+- For missing Figma inventory that no user decision can resolve, return an orchestrated blocking packet with `needs_user_input = false`, `blocker_type = tool_data_blocker`, the exact missing root/path/marker, and `next_action` that requests `figma-inventory-snapshot` refresh.
+- If snapshot coverage is sufficient and the task requires frozen classification artifacts, write those artifacts from the snapshot content only and include their paths in `written_paths`.
+- If previous parity reports, current package registries, or docs registries are relevant, use them only as comparison inputs against the snapshot, not as substitutes for missing snapshot entries.
+
 ### Step 3. Resolve blocking decisions before planning (required)
 
 - Do not write any plan artifact while `blocking` ambiguity remains
@@ -88,6 +102,7 @@ Before writing any plan artifact:
     - `default`
   - stop before creating or updating `./plans/**`
 - In orchestrated mode, if the provided authoritative inputs are insufficient, stale, or missing for safe planning, block with the decision packet instead of repairing authority through broader repo discovery
+- In orchestrated mode, if Figma inventory is required but no sufficient controller-verified snapshot is present, return a `tool_data_blocker` rather than asking the user to confirm invented classification.
 - If the blocking issue is missing UI direction, hierarchy, or state presentation, make the decision packet explicitly request `locked_ui_direction` or equivalent concrete UI decisions before planning continues
 - For user-visible scope, resolve behavior well enough to define stable boundaries and expected outcomes in the plan
 - For touched public boundaries such as components, hooks, APIs, routes, or services, resolve enough detail to name the public boundary that will change:

@@ -9,6 +9,9 @@
 - Do not bypass the resolved `review_wiki_root` with hardcoded external-path reads once the workspace sync path is available
 - In orchestrated mode, do not redo review wiki bootstrap or orchestration preflight that the orchestrator already completed
 - In orchestrated mode, do not rediscover controller-owned authority beyond provided `authoritative_existing_inputs`
+- In orchestrated mode, do not perform full-file Figma tree reads or substitute Code Connect results for controller-verified Figma inventory snapshots
+- Do not write Figma classification artifacts from partial inventory, old parity reports, package registries, or memory when full inventory coverage is part of the request
+- Do not convert Figma tool/data failures into user questions unless the user must choose the Figma root nodes or inventory scope
 - Do not generate or edit source-tree tests inside `architect`
 - `visual-comparator` execution happens later; architect only plans that phase
 - Do not produce a plan with unresolved blocking ambiguity

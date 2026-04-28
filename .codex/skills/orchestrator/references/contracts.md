@@ -23,16 +23,17 @@
 6. `../brainstorm/SKILL.md`
 7. `../ui-spec/SKILL.md` when UI-direction feedback triage may be needed
 8. `../architect/SKILL.md`
-9. `../plan-review/SKILL.md`
-10. Existing developer review artifacts under `./plans/{task-slug}/developer-review/` when present
-11. `../review-wiki-ingest/SKILL.md` when developer review learnings should be normalized into the review wiki
-12. `../plan-materialize/SKILL.md`
-13. `../review-wiki-setup/references/staging-contract.md`
-14. `./references/developer-review-ui.md`
+9. `../figma-inventory-snapshot/SKILL.md` when a Figma tree inventory, component-set list, Resource/* list, platform marker list, or Figma-based classification artifact is required before `architect`
+10. `../plan-review/SKILL.md`
+11. Existing developer review artifacts under `./plans/{task-slug}/developer-review/` when present
+12. `../review-wiki-ingest/SKILL.md` when developer review learnings should be normalized into the review wiki
+13. `../plan-materialize/SKILL.md`
+14. `../review-wiki-setup/references/staging-contract.md`
+15. `./references/developer-review-ui.md`
 
 ## Runtime Expectations
 
-- Assume the runtime can invoke generic planning sub-agents and attach the local request-scope, UI-spec, `architect`, `plan-review`, or `plan-materialize` skill for the active pass.
+- Assume the runtime can invoke generic planning sub-agents and attach the local request-scope, UI-spec, `figma-inventory-snapshot`, `architect`, `plan-review`, or `plan-materialize` skill for the active pass.
 - If a required local skill is missing, unreadable, or cannot be attached to a sub-agent, stop and report the blocker.
 - Optional legacy planning profiles may exist under `./.codex/agents/`, but do not require them for this workflow.
 - Do not silently inline request-scope, UI-spec, architect, reviewer, or materializer work when the sub-agent path is available.
@@ -51,6 +52,7 @@
 Treat only these artifacts as durable orchestration evidence:
 
 - executable plan artifacts under `./plans/{task-slug}/`
+- controller-verified upstream Figma inventory artifacts under `./.codex/artifacts/figma-inventory/{task-slug}/` when the current pass created or selected them and lists them in `authoritative_existing_inputs`
 - review artifact at `./plans/_orchestrator/review/{task-slug}/review.md`
 - developer review artifacts under `./plans/{task-slug}/developer-review/`
 - developer review history artifact at `./plans/{task-slug}/developer-review/review-history.json`
@@ -65,6 +67,7 @@ The orchestrator may keep only current-turn helper state such as:
 - `task_slug`
 - selected `plan_path`
 - current `plan_signature`
+- current Figma inventory `manifest_path` when Figma inventory is required before planning
 - `current_handoff_signature`
 - `active_role_agent_id` for the currently running role pass when available
 - `live_role_agents` keyed by role for reusable request-scope, UI-spec, `architect`, and `materializer` passes when available
@@ -91,13 +94,14 @@ This helper state must be safely discardable between turns.
 - Submitted developer review feedback with any required step or card not `approved` is fresh triage input, not approval.
 - `review-history.json` may contain prior signatures, but its `current_plan_signature` must match the current plan signature whenever the developer review package is refreshed.
 - A `materialize.md` artifact is fresh only when both `plan_path` and `plan_signature` match the current plan artifacts on disk.
+- A Figma inventory `manifest.json` is fresh only when its `fileKey`, required root nodes, required paths, required markers, and supported `schemaVersion` match the current handoff, and its coverage has no missing required paths.
 - Developer approval is valid only for the exact current `plan_signature` recorded in developer review feedback.
 - When `plan_signature` changes, treat previous cold review, developer review approval, and materialization state as stale and recompute from artifacts.
 
 ## Wait Policy
 
 - When a role pass is on the critical path, prefer a long wait over repeated short polling.
-- For request-scope, UI-spec, architect, reviewer, and materializer passes, the first bounded wait should normally be at least 3 minutes, and 5 minutes is preferred when the workflow is otherwise blocked on that pass.
+- For request-scope, UI-spec, Figma inventory, architect, reviewer, and materializer passes, the first bounded wait should normally be at least 3 minutes, and 5 minutes is preferred when the workflow is otherwise blocked on that pass.
 - If the sub-agent emits meaningful progress, or if the required artifact path or reviewed plan files change on disk during the wait window, refresh `last_meaningful_progress_at` and allow another bounded wait before intervening.
 - If the runtime supports a longer one-shot wait safely, prefer that over repeated short waits.
 - Do not treat slow analysis alone as `agent_protocol_failure` while there is fresh evidence of progress.
@@ -124,6 +128,7 @@ Include only the minimum fields needed for the role:
 - current `plan_signature` when freshness matters
 - latest user-request summary when the role cannot safely rely on full parent context
 - `authoritative_existing_inputs` containing only controller-verified literal paths
+- controller-verified Figma inventory `manifest.json` and snapshot paths when Figma inventory is required for the next role
 - `known_missing_inputs` containing referenced but missing literal paths only as non-authoritative context
 - latest review artifact path when the next `architect` pass is revising from review findings
 - latest developer review `feedback.json` path when the next request-scope, UI-spec, or `architect` pass is revising from browser feedback
@@ -136,6 +141,7 @@ Do not force planning sub-agents to rediscover orchestrator-owned metadata. Do n
 - `invocation_failure`: the runtime could not invoke or reuse the planning sub-agent
 - `agent_protocol_failure`: the agent replied or streamed progress, but did not provide a usable terminal result for the requested role before the bounded wait ended
 - `artifact_writeback_failure`: the agent claimed success but the required artifact is still missing or stale on disk
+- `tool_data_blocker`: the role pass completed with `needs_user_input = false` because required external tool data, permission, timeout-safe shard data, or source inventory coverage is unavailable
 - `controller_interruption`: the controller shut down a still-running planning sub-agent before explicit user cancellation or before the role-specific idle window was satisfied
 - `no_progress`: the same artifact signature or finding signature repeated against an unchanged plan after one safe retry
 
@@ -151,6 +157,7 @@ Report the exact classification when stopping.
 - When a new developer review package is shown after feedback triage, keep prior review comments and controller actions visible through the package history.
 - When developer review learning capture runs, say whether it produced reusable review wiki candidates, raw-only evidence, or no promotable learning.
 - When blocked, say which role blocked and what the next safe route would be.
+- When blocked by `tool_data_blocker`, report the exact missing tool/data root, path, or artifact instead of asking the user for a planning decision.
 - When stopping, report the exact failure classification.
 - When materialization completes but `gate_status = failed`, say that the planning workflow finished but the targeted test gate did not pass.
 
@@ -161,4 +168,5 @@ Report the exact classification when stopping.
 - Developer review package under `./plans/{task-slug}/developer-review/`
 - Developer review history artifact under `./plans/{task-slug}/developer-review/review-history.json`
 - Optional developer review learning evidence for `review-wiki-ingest`, with provenance to the source review round and current `plan_signature`
+- Optional upstream Figma inventory snapshot artifacts under `./.codex/artifacts/figma-inventory/{task-slug}/` when required by the plan handoff
 - Test materialization output under plan-local `materialize.md` with YAML frontmatter status fields
