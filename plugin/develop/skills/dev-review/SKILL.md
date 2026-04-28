@@ -45,6 +45,8 @@ The data folder under `plans/{task_slug}/dev-review/` is **data-only**. HTML and
 plans/{task_slug}/dev-review/        ← data-root (per-task)
 ├── review-data.json                # read by the browser, regenerated each round
 ├── feedback.json                   # written by the server as the reviewer clicks
+│                                   #   .cards[id]   = status/comment/target/dispatch_agent
+│                                   #   .preview_routes[short_sha] = live preview override (optional)
 ├── review-history.json             # append-only record of prior rounds
 └── assets/
     └── diffs/                      # raw-diff .diff files keyed by short_sha
@@ -266,6 +268,14 @@ The plugin's dev-review server is **multi-review**: one server process hosts eve
    ```
 
 End your turn after this instruction. Do not poll `feedback.json`. Do not use `AskUserQuestion` — plain text lets the runtime's Stop hook behave normally. The background server stays alive across re-entries and across sessions; only restart it (re-run step 2) if the health-check on re-entry shows it's gone or returns a non-dev-review `kind`.
+
+### Step 6a. Live preview pool (server-managed, no skill action)
+
+The dev-review server also hosts a per-task **dev server pool** so the reviewer can see the rendered UI alongside each commit's diff. The skill itself does nothing here — the server lazily spawns the dev server on the first `GET /review/{slug}/api/preview/status` poll from the browser, runs `pnpm install` if `node_modules` is absent, allocates a free port, and recycles the dev server after 10 minutes of idle. SIGTERM/SIGINT on the server tears down every spawned child.
+
+The preview is `supported: false` when the chosen package has no `scripts.dev` or no package matches the changed files. In that case the browser shows "프리뷰 비활성화" and the reviewer continues with diff-only review.
+
+The reviewer's per-commit route override is saved into `feedback.json.preview_routes` (see `references/review-data-schema.md`). It survives across rounds of the same `plan_signature` and is purely UI state — the skill ignores it for routing decisions.
 
 ### Step 7. Interpret feedback on re-entry
 

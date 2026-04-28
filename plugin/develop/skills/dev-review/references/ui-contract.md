@@ -48,6 +48,7 @@ GET  /review/{slug}/api/health                    # per-review diagnostic w/ pla
 GET  /review/{slug}/api/review-data               # JSON proxy
 GET  /review/{slug}/api/feedback                  # JSON proxy
 POST /review/{slug}/api/feedback                  # write w/ task_slug + plan_signature check
+GET  /review/{slug}/api/preview/status            # live preview pool state; lazy-spawns dev server
 ```
 
 The HTML uses purely relative URLs; the server injects `<base href="/review/{slug}/">` per request so every fetch (`review-data.json`, `vendor/highlight.min.js`, `assets/diffs/abc.diff`, `api/feedback`) resolves into the right slug's URL space without any per-task HTML mutation.
