@@ -17,8 +17,11 @@
 
 - Prefer one MCP `get_metadata` call per provided root node.
 - If a root is too large or times out, capture child sections/pages separately when their node ids are available.
-- If child ids are not available, return a `tool_data_blocker` naming the root that needs a smaller controller-provided shard list.
+- If child ids are not available, use read-only `use_figma` only to fetch a non-recursive, names-only direct-children index for that one root; then return to `get_metadata` for the child shards.
+- If child ids are still unavailable after the bounded direct-children attempt, return a `tool_data_blocker` naming the root that needs a smaller controller-provided shard list.
 - Do not retry the same oversized full-root call repeatedly.
+- Do not use `use_figma` for recursive descendant inventory, multi-root traversal, full-page traversal, or full component-tree traversal.
+- Keep tool responses well below the known 20 KB transport ceiling. If output is truncated, incomplete, or close to the transport limit, discard that result and retry with smaller names-only, direct-children-only, or explicit node-id shards.
 - Do not switch to Code Connect tools after a tree read fails.
 
 ## Step 4. Build Compact Snapshots
@@ -37,7 +40,8 @@ For each successful shard:
 ## Step 5. Write Manifest and Summary
 
 - Write or update each `snapshots/{safe-node-id}.json`.
-- Write `manifest.json` with root status, coverage, and incomplete reasons.
+- Write `manifest.json` with root status, coverage, fidelity, truncation state, shard provenance, and incomplete reasons.
+- Do not return success for any Figma result that was only observed in chat or tool output; every successful root or shard must be fixed as a snapshot file and referenced from `manifest.json`.
 - Write `summary.md` with:
   - source `fileKey`
   - root nodes read
@@ -48,5 +52,6 @@ For each successful shard:
 ## Step 6. Return Terminal Result
 
 - Return `result = wrote_snapshot` when the manifest satisfies current coverage.
+- Return `wrote_snapshot` only after `manifest.json`, `summary.md`, and every referenced snapshot file exist on disk.
 - Return `result = blocking_packet` with `needs_user_input = false` when the tool path, permission, timeout, or shard list is insufficient.
 - Return `needs_user_input = true` only when the user must choose or provide root nodes, required paths, or intended inventory scope.

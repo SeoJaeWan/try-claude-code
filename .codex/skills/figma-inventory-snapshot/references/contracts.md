@@ -54,6 +54,11 @@ Write all outputs under `output_dir`:
       "actualName": "2 Element",
       "snapshotPath": "snapshots/16222-137704.json",
       "status": "ok",
+      "fidelity": "full",
+      "truncated": false,
+      "coverageComplete": true,
+      "parentRootId": null,
+      "shards": [],
       "incompleteReasons": []
     }
   ],
@@ -63,10 +68,28 @@ Write all outputs under `output_dir`:
     "requiredPathsSeen": [],
     "requiredPathsMissing": [],
     "requiredMarkersSeen": [],
+    "truncated": false,
+    "coverageComplete": true,
     "incompleteReasons": []
   }
 }
 ```
+
+Allowed root `status` values:
+
+- `ok`: the root snapshot is complete for the current handoff
+- `ok_by_shards`: the parent root is covered by child snapshot files listed in `shards`
+- `partial_names_only`: only names/path coverage is available; reusable only when the current handoff explicitly accepts names-only coverage for that root or path
+- `blocked_timeout`: a required root or shard timed out
+- `blocked_truncated`: a required root or shard response was truncated or too large to trust
+- `blocked_needs_child_shards`: smaller controller-provided child node ids are required
+
+Allowed `fidelity` values:
+
+- `full`: hierarchy contains the required node fields for the handoff
+- `names_only`: hierarchy is intentionally limited to ids, names, types, and paths
+- `direct_children`: only the immediate children of the target node are represented
+- `sharded`: the parent root is represented by child snapshot files
 
 Each snapshot JSON should include compact nodes with:
 
@@ -78,6 +101,7 @@ Each snapshot JSON should include compact nodes with:
 - optional `markers`
 
 Keep raw large MCP responses out of the manifest. Store compact, downstream-usable data only unless a blocker requires a small error excerpt.
+Do not store or depend on truncated tool output. A truncated result must produce `blocked_truncated` or a smaller retry before success.
 
 ## Freshness
 
@@ -85,7 +109,10 @@ An existing manifest is reusable only when:
 
 - `schemaVersion` is supported
 - `fileKey` matches
-- every required root node is present with `status = "ok"`
+- every required root node is present with `status = "ok"` or `status = "ok_by_shards"`; `status = "partial_names_only"` is reusable only for roots or paths where the current handoff explicitly accepts names-only coverage
+- every sharded required root has all listed shard snapshot files on disk
+- no required root or coverage entry has `truncated = true`
+- required coverage has `coverageComplete = true`
 - `requiredPathsMissing` is empty for paths required by the current handoff
 - `requiredMarkersSeen` satisfies the current handoff
 - the controller accepts its age for the current planning run

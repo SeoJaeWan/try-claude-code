@@ -94,7 +94,7 @@ This helper state must be safely discardable between turns.
 - Submitted developer review feedback with any required step or card not `approved` is fresh triage input, not approval.
 - `review-history.json` may contain prior signatures, but its `current_plan_signature` must match the current plan signature whenever the developer review package is refreshed.
 - A `materialize.md` artifact is fresh only when both `plan_path` and `plan_signature` match the current plan artifacts on disk.
-- A Figma inventory `manifest.json` is fresh only when its `fileKey`, required root nodes, required paths, required markers, and supported `schemaVersion` match the current handoff, and its coverage has no missing required paths.
+- A Figma inventory `manifest.json` is fresh only when its `fileKey`, required root nodes, required paths, required markers, and supported `schemaVersion` match the current handoff; every required root is `ok` or `ok_by_shards`, with `partial_names_only` allowed only when the current handoff explicitly accepts names-only coverage for that root or path; every referenced snapshot path exists; `coverageComplete = true`; `truncated = false`; and its coverage has no missing required paths.
 - Developer approval is valid only for the exact current `plan_signature` recorded in developer review feedback.
 - When `plan_signature` changes, treat previous cold review, developer review approval, and materialization state as stale and recompute from artifacts.
 

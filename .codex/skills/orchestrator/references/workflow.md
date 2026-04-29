@@ -55,7 +55,7 @@ Run this step only when the next `architect` pass depends on Figma inventory rat
 - If no fresh manifest exists, invoke a generic planning sub-agent with `figma-inventory-snapshot` attached.
 - Pass exact `task-slug`, `fileKey`, `root_nodes`, `required_paths`, `required_markers`, and output path `./.codex/artifacts/figma-inventory/{task-slug}/`.
 - Require exactly one result: `result = wrote_snapshot` with `manifest_path` and `written_paths`, or `result = blocking_packet`.
-- After `wrote_snapshot`, read `manifest.json`; if it is stale, missing, or has incomplete required coverage, classify the pass as `artifact_writeback_failure` or `tool_data_blocker` as appropriate.
+- After `wrote_snapshot`, read `manifest.json`; verify every referenced snapshot path exists, every required root is `ok` or `ok_by_shards` unless the handoff explicitly accepts `partial_names_only`, `coverageComplete = true`, `truncated = false`, and no required path is missing. If any check fails, classify the pass as `artifact_writeback_failure` or `tool_data_blocker` as appropriate.
 - Add the verified `manifest.json` and snapshot paths to the next `architect` handoff as authoritative inputs.
 - Do not classify Figma components, write `classification.md`, or infer missing families in this step.
 
@@ -74,7 +74,7 @@ Controller requirements:
 
 - Reuse the live `architect` role agent for the same `task_slug` when compatible; otherwise start a new generic planning sub-agent and attach `architect`.
 - Pass a handoff packet with exact `task-slug`, `plan_path`, `review_wiki_root`, verified inputs, missing-input notes, latest review/developer feedback path when revising, locked request summary when available, and write scope under `./plans/{task-slug}/`.
-- When Figma inventory is required, include the controller-verified `figma-inventory` manifest and snapshot paths in `authoritative_existing_inputs`, and state: use these snapshots as the only authoritative Figma inventory source; do not use Code Connect to infer inventory completeness; do not attempt full-file Figma tree reads; return a `tool_data_blocker` with exact missing root/path if coverage is insufficient.
+- When Figma inventory is required, include the controller-verified `figma-inventory` manifest and snapshot paths in `authoritative_existing_inputs`, and state: use these snapshots as the only authoritative Figma inventory source; preserve their provenance in any Figma-derived contract artifact; do not use Code Connect to infer inventory completeness; do not attempt full-file Figma tree reads; return a `tool_data_blocker` with exact missing root/path if coverage is insufficient.
 - Require exactly one result: `result = wrote_plan` with `written_paths`, or `result = blocking_packet` with user-input fields.
 - After every architect pass, re-check `plan_path` and recompute `plan_signature`.
 - If the architect returned a blocking packet with `needs_user_input = true`, ask the user directly in chat and route the answer back to the next architect pass.

@@ -42,6 +42,7 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 17. Figma inventory snapshot artifacts only when Figma hierarchy, component-set inventory, Resource/* coverage, platform markers, or Figma-based classification changes the planning boundary:
    - use only controller-verified snapshot artifacts as full inventory evidence in orchestrated mode
    - do not treat Code Connect, design context, old parity reports, or package registries as complete Figma inventory by themselves
+   - when writing Figma-derived classification or `figma-contract` artifacts, include provenance to the source manifest path, snapshot paths, `fileKey`, root node ids, `generatedAt`, fidelity, and coverage completeness
 
 ## Output contract
 
@@ -50,6 +51,10 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
   - matching phase detail files: `./plans/{task-slug}/phases/{nn}-{phase-slug}.md`
   - multiple executable plan summaries when required: `./plans/{task-group}-{nn}-{slice-slug}/plan.md`
   - each multi-plan artifact also owns matching phase detail files under its own `phases/`
+- Optional Figma-derived plan-local artifacts, when required by the plan boundary:
+  - `./plans/{task-slug}/figma-contract/*.md`
+  - `./plans/{task-slug}/figma-contract/*.json`
+  - each artifact must cite the controller-verified Figma inventory `manifest.json`, referenced snapshot paths, `fileKey`, root node ids, `generatedAt`, fidelity, and `coverageComplete`
 - Optional orchestration blocking decision packet returned in chat when planning must stop before any executable plan is writable
 - In orchestrated mode, the terminal result must be exactly one of:
   - `result = wrote_plan` with `written_paths` listing every created or updated artifact path

@@ -79,6 +79,8 @@ Use this step when the request, review finding, or orchestrator handoff requires
 - If the manifest is missing, stale, does not cover a required root/path/marker, or records incomplete coverage, stop before writing plan artifacts or classification artifacts.
 - For missing Figma inventory that no user decision can resolve, return an orchestrated blocking packet with `needs_user_input = false`, `blocker_type = tool_data_blocker`, the exact missing root/path/marker, and `next_action` that requests `figma-inventory-snapshot` refresh.
 - If snapshot coverage is sufficient and the task requires frozen classification artifacts, write those artifacts from the snapshot content only and include their paths in `written_paths`.
+- When writing any Figma-derived classification artifact or plan-local `figma-contract/*.md` or `figma-contract/*.json`, include an explicit provenance block with source `manifest_path`, referenced `snapshot_paths`, `fileKey`, root node ids, `generatedAt`, fidelity, and `coverageComplete`.
+- Do not write Figma-derived contract or classification artifacts from tool output that has not been fixed in the manifest and snapshot files.
 - If previous parity reports, current package registries, or docs registries are relevant, use them only as comparison inputs against the snapshot, not as substitutes for missing snapshot entries.
 
 ### Step 3. Resolve blocking decisions before planning (required)

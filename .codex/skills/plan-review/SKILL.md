@@ -37,6 +37,7 @@ Review the finished plan artifact against the user's request and any upstream re
 16. `./references/review-policy.md`
 17. Repo-local execution contracts only when needed to verify routing, validation, or repo-fit claims in the plan
 18. Directly referenced local prerequisite plan files only when the reviewed phase detail names them in the local prerequisite field
+19. Controller-verified Figma inventory `manifest.json` and referenced snapshot paths when the reviewed plan or plan-local `figma-contract/*.md` or `figma-contract/*.json` depends on Figma inventory, hierarchy, component classification, Resource/* coverage, or platform markers
 
 ## Workflow
 
@@ -128,6 +129,7 @@ Judge the plan against:
 - whether `plan.md` duplicates phase-local file maps, scenario tables, validation matrices, or long per-phase field summaries that belong in the linked detail files instead
 - reference-based comparison planning when the active core docs or selected pattern guidance require it
 - visual parity contract alignment when the reviewed plan includes reference-based comparison acceptance
+- Figma inventory provenance when the plan includes Figma-derived classification or plan-local `figma-contract/*.md` or `figma-contract/*.json`: require source `manifest_path`, `snapshot_paths`, `fileKey`, root node ids, `generatedAt`, fidelity, and `coverageComplete`; block if the artifact relies on unfixed tool output, truncated output, or an incomplete manifest
 
 When UI scope exists, run a conditional design pass before the general engineering judgment:
 
@@ -225,6 +227,7 @@ Frontmatter rules:
 - Do not let summary/detail drift or unresolved contract wording force guesswork about the actual phase boundary
 - Do not let `plan.md` expand into a second implementation spec by repeating phase-local file maps, scenario contracts, validation tables, or long phase summaries that should live only in the linked detail files
 - Do not approve a plan that makes a reviewer reconstruct affected public boundaries or exclusions from prose alone
+- Do not approve Figma-derived plan-local contract or classification artifacts that lack snapshot manifest provenance, cite truncated or incomplete snapshot coverage, or rely on Figma tool output not written to manifest-backed snapshot files
 - Do not let planner shorthand replace user-request traceability
 - Do not approve visible plan prose that mixes English planner shorthand into Korean explanations when the terminology policy gives a natural Korean term
 - When reference-based comparison is in scope, apply the active review wiki guidance plus `architect/references/visual-parity-contract.md` instead of reinterpreting local UI nouns or inferred metrics.

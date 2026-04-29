@@ -53,6 +53,9 @@ Typical blocker cases:
 - a visual parity plan relies on whole-canvas mismatch as the only success metric while also claiming scoped or structural closure
 - the reviewed plan depends on a local prerequisite plan, but no specific upstream phase credibly provides the prerequisite contract in the detail file `output` and `검증`
 - the reviewed plan depends on a local prerequisite plan, but the supposed provider phase boundary or verification path cannot actually establish that contract
+- a Figma-derived classification artifact or plan-local `figma-contract/*.md` or `figma-contract/*.json` lacks provenance to the controller-verified inventory manifest and snapshot paths
+- a Figma-derived plan artifact relies on truncated, names-only, partial, or incomplete snapshot coverage without explicitly locking that reduced fidelity as sufficient for the requested planning boundary
+- a Figma-derived plan artifact relies on Figma tool output that has not been written to manifest-backed `snapshots/*.json`
 - selected pattern guidance reveals a direct contradiction that the plan leaves unresolved
 
 ### Major
@@ -114,6 +117,7 @@ Required focus areas:
 10. reference-comparison planning when relevant
 11. direct prerequisite contract parity when relevant
 12. visual parity contract alignment when relevant
+13. Figma inventory provenance and coverage fidelity when Figma-derived classification or `figma-contract` artifacts are present
 
 ### One-Hop Prerequisite Audit
 
