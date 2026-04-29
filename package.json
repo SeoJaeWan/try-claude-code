@@ -4,7 +4,7 @@
   "description": "Claude Code custom skills workspace",
   "type": "module",
   "scripts": {
-    "test": "node --test plugin/develop/scripts/__tests__/hook-contract.test.mjs",
+    "test": "node --test plugin/develop/scripts/__tests__/hook-contract.test.mjs .codex/skills/orchestrator/scripts/__tests__/generate-developer-review-package.test.mjs",
     "review-wiki:docs": "node .codex/tools/review-wiki-docs-server.mjs"
   }
 }
