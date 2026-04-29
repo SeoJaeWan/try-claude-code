@@ -9,8 +9,6 @@ const FLAGS = {
     "--task-branch",
     "--out",
     "--diffs-dir",
-    "--prior-feedback",
-    "--prior-history",
     "--log-level",
     "--now",
   ]),

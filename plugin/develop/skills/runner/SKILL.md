@@ -213,10 +213,15 @@ On user `리뷰 완료`, re-enter the skill; it reads `feedback.json` and return
   You are revising prior work based on reviewer feedback. The code already exists
   in this worktree; build on it, do not redo prior commits.
 
-  ## Feedback
-  - Card: {item.card_id}
-  - Target: {item.target.file}:{item.target.lines}
-  - Comment: "{item.comment}"
+  ## Target commit
+  - Commit: {item.short_sha} — {item.message_subject}
+  - This is the commit the reviewer flagged. The follow-up commit you create
+    should address every line comment listed below.
+
+  ## Feedback (line-anchored comments on this commit)
+  {for each c in item.comments}
+  - {c.file}:L{c.line_start}-L{c.line_end} (side: {c.side}): "{c.body}"
+  {/for}
 
   ## Instructions
   Apply the feedback. Do NOT touch unrelated files. Do NOT rebase or amend
@@ -229,9 +234,9 @@ On user `리뷰 완료`, re-enter the skill; it reads `feedback.json` and return
   - Full spec: `plugin/develop/references/commit-convention.md`.
   ```
 
-  Rework items may be dispatched sequentially (safe default) or in parallel when they touch disjoint files. After all rework agents have committed, re-invoke `dev-review` with `review_iteration += 1` and loop.
+  v2 rework is **per-commit**: one `rework_items[i]` covers one flagged commit and aggregates every `needs-change` line comment on it. Multiple rework items may be dispatched sequentially (safe default) or in parallel when they target different commits AND those commits' files are disjoint. After all rework agents have committed, re-invoke `dev-review` with `review_iteration += 1` and loop.
 
-- `result = "qa_required"` → answer the questions in chat, then re-invoke `dev-review` with the same `review_iteration` (the skill clears the relevant cards) and ask the user to re-review in the browser.
+- `result = "qa_required"` → answer the questions in chat, then re-invoke `dev-review` with the same `review_iteration` (the skill expects the reviewer to reset the relevant `question` comments in the browser) and ask the user to re-review.
 
 Do not advance past this gate on anything except `result = "approved"`. Do not remove the worktree, do not merge, do not ask about merge until approval.
 

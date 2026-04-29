@@ -1,37 +1,13 @@
 #!/usr/bin/env node
 
-// dev-review server — Claude-side, plugin-internal, multi-review.
+// dev-review server — Claude-side, plugin-internal, multi-review (schema v2).
 //
-// This is independent from the orchestrator's server at
-// `.codex/tools/developer-review-server.mjs`. The two share nothing.
-//
-// One server process can host many task reviews simultaneously, so
-// multiple Claude sessions launching this server collide cleanly:
-// the second session's health-check finds an existing dev-review
-// server and reuses it, just opening a different /review/{slug} URL.
-//
-// URL scheme:
-//   GET  /                                       → help
-//   GET  /api/health                             → server diagnostic
-//   GET  /review/{slug}                          → UI page (HTML w/ <base>)
-//   GET  /review/{slug}/                         → same as above
-//   GET  /review/{slug}/vendor/{...}             → plugin html-root
-//   GET  /review/{slug}/review-data.json         → plans/{slug}/dev-review/
-//   GET  /review/{slug}/feedback.json            → plans/{slug}/dev-review/
-//   GET  /review/{slug}/review-history.json      → plans/{slug}/dev-review/
-//   GET  /review/{slug}/assets/diffs/{...}       → plans/{slug}/dev-review/assets/diffs/
-//   GET  /review/{slug}/api/health               → per-review diagnostic
-//   GET  /review/{slug}/api/review-data          → JSON proxy
-//   GET  /review/{slug}/api/feedback             → JSON proxy
-//   POST /review/{slug}/api/feedback             → write w/ task_slug+plan_signature check
-//
-// The shared HTML lives in this plugin's assets/ directory and is
-// served verbatim with a `<base href="/review/{slug}/">` injected so
-// every relative URL inside it resolves to the correct task without
-// hard-coding the slug into the static file.
+// Hosts every task review under /review/{slug} simultaneously. Granular
+// endpoints replace the v1 whole-blob feedback POST: comments are CRUD'd
+// individually, commit_status is toggled, and submit is a separate call.
 
 import { createServer } from "node:http";
-import { readFile, rename, stat, writeFile, readdir } from "node:fs/promises";
+import { readFile, rename, stat, writeFile, readdir, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { createReadStream } from "node:fs";
 import path from "node:path";
@@ -71,6 +47,11 @@ const requestedPort = portArg !== null ? Number(portArg) : 9797;
 const port = Number.isFinite(requestedPort) ? requestedPort : 9797;
 
 const SLUG_RE = /^[A-Za-z0-9_-]+$/;
+const SHA_RE = /^[a-f0-9]{40}$/;
+const COMMENT_ID_RE = /^cm_\d+$/;
+const VALID_TYPES = new Set(["needs-change", "question", "out-of-scope"]);
+const VALID_SIDES = new Set(["new", "old"]);
+
 const isSafeSlug = (s) => typeof s === "string" && SLUG_RE.test(s);
 
 function dataRootForSlug(slug) {
@@ -148,7 +129,8 @@ async function readJsonFile(filePath, fallback) {
 }
 
 async function writeJsonAtomic(filePath, value) {
-  const tmp = `${filePath}.tmp`;
+  await mkdir(path.dirname(filePath), { recursive: true });
+  const tmp = `${filePath}.tmp-${process.pid}-${Date.now()}`;
   await writeFile(tmp, `${JSON.stringify(value, null, 2)}\n`, "utf8");
   await rename(tmp, filePath);
 }
@@ -189,6 +171,7 @@ async function handleServerHealth(res) {
   return sendJson(res, 200, {
     ok: true,
     kind: "dev-review",
+    schema_version: 2,
     plans_root: plansRoot,
     html_root: htmlRoot,
     available_reviews: reviews,
@@ -222,9 +205,6 @@ async function handleReviewPage(req, res, slug) {
   } catch {
     return sendText(res, 500, "index.html not readable");
   }
-  // Inject <base href="/review/{slug}/"> right after <head> so every
-  // relative URL the SPA fetches (review-data.json, vendor/*.js, assets/diffs/*)
-  // resolves into this slug's URL space without per-task HTML mutation.
   const baseTag = `<base href="/review/${slug}/">`;
   const injected = html.replace(/<head>/i, `<head>\n  ${baseTag}`);
   return sendHtml(res, 200, injected);
@@ -234,17 +214,14 @@ function resolveStaticForReview(slug, tail) {
   const dataRoot = dataRootForSlug(slug);
   if (!dataRoot) return null;
 
-  // Plugin-owned UI shell — same for every slug.
-  if (tail === "" || tail === "index.html") {
-    return null; // index handled by handleReviewPage with <base> injection
-  }
+  if (tail === "" || tail === "index.html") return null;
+
   if (tail.startsWith("vendor/")) {
     const resolved = path.resolve(htmlRoot, tail);
     if (!resolved.startsWith(`${htmlRoot}${path.sep}`)) return null;
     return resolved;
   }
 
-  // Per-task data — must live under the task's data-root.
   const dataPathStaticFiles = ["review-data.json", "feedback.json", "review-history.json"];
   if (dataPathStaticFiles.includes(tail)) {
     return path.join(dataRoot, tail);
@@ -257,17 +234,92 @@ function resolveStaticForReview(slug, tail) {
   return null;
 }
 
+// ---------- feedback.json helpers ----------
+
+async function loadFeedback(dataRoot) {
+  return readJsonFile(path.join(dataRoot, "feedback.json"), null);
+}
+
+async function saveFeedback(dataRoot, fb) {
+  fb.updated_at = new Date().toISOString();
+  await writeJsonAtomic(path.join(dataRoot, "feedback.json"), fb);
+}
+
+async function loadModel(dataRoot) {
+  return readJsonFile(path.join(dataRoot, "review-data.json"), null);
+}
+
+function ensureFeedbackShape(fb, model, slug) {
+  // Defensive: bring whatever's on disk up to v2 shape if a field is missing.
+  if (!fb) {
+    return {
+      schema_version: 2,
+      task_slug: slug,
+      plan_signature: model?.plan_signature ?? null,
+      task_head_sha: model?.task_head_sha ?? null,
+      review_status: "in_progress",
+      updated_at: new Date().toISOString(),
+      comments: [],
+      commit_status: {},
+    };
+  }
+  if (!Array.isArray(fb.comments)) fb.comments = [];
+  if (!fb.commit_status || typeof fb.commit_status !== "object") fb.commit_status = {};
+  if (typeof fb.review_status !== "string") fb.review_status = "in_progress";
+  return fb;
+}
+
+function nextCommentId(fb) {
+  let max = 0;
+  for (const c of fb.comments) {
+    const m = /^cm_(\d+)$/.exec(c.id || "");
+    if (m) max = Math.max(max, Number(m[1]));
+  }
+  return `cm_${String(max + 1).padStart(3, "0")}`;
+}
+
+function validateAgainstModel(fb, model, slug) {
+  if (fb.task_slug && fb.task_slug !== slug) {
+    return { error: "task_slug mismatch", status: 409 };
+  }
+  if (fb.plan_signature && model?.plan_signature && fb.plan_signature !== model.plan_signature) {
+    return { error: "plan_signature mismatch — please reload", status: 409 };
+  }
+  return null;
+}
+
+function commitShaSet(model) {
+  const set = new Set();
+  for (const c of model?.commits ?? []) set.add(c.sha);
+  return set;
+}
+
+function fileExistsInCommit(model, sha, file) {
+  for (const c of model?.commits ?? []) {
+    if (c.sha !== sha) continue;
+    return c.files_changed.some((f) => f.path === file);
+  }
+  return false;
+}
+
+function isAvailableAgent(model, name) {
+  return (model?.available_agents ?? []).some((a) => a.name === name);
+}
+
+// ---------- API ----------
+
 async function handleReviewApi(req, res, slug, endpoint) {
   const dataRoot = dataRootForSlug(slug);
   if (!dataRoot) return sendJson(res, 400, { error: "invalid slug" });
 
   if (endpoint === "health") {
-    const model = await readJsonFile(path.join(dataRoot, "review-data.json"), null);
+    const model = await loadModel(dataRoot);
     return sendJson(res, 200, {
       ok: true,
       slug,
       data_root: dataRoot,
-      plan_signature: model?.plan_signature || null,
+      schema_version: model?.schema_version ?? null,
+      plan_signature: model?.plan_signature ?? null,
       review_iteration: model?.review_iteration ?? null,
     });
   }
@@ -280,43 +332,212 @@ async function handleReviewApi(req, res, slug, endpoint) {
     return sendJson(res, 200, await readJsonFile(path.join(dataRoot, "feedback.json"), {}));
   }
 
-  if (endpoint === "feedback" && req.method === "POST") {
-    try {
-      const fb = JSON.parse(await readBody(req));
-      if (!fb || typeof fb !== "object") {
-        return sendJson(res, 400, { error: "feedback must be an object" });
-      }
-      const model = await readJsonFile(path.join(dataRoot, "review-data.json"), null);
-      if (!model) {
-        return sendJson(res, 404, { error: "review-data.json not found" });
-      }
-      // Reject cross-task or stale feedback so two simultaneous sessions
-      // can't write across each other. The browser always knows its slug
-      // (from <base href>) and its plan_signature (from review-data.json).
-      if (fb.task_slug && fb.task_slug !== slug) {
-        return sendJson(res, 409, { error: "task_slug mismatch" });
-      }
-      if (fb.plan_signature && model.plan_signature && fb.plan_signature !== model.plan_signature) {
-        return sendJson(res, 409, { error: "plan_signature mismatch" });
-      }
-      fb.updated_at = new Date().toISOString();
-      await writeJsonAtomic(path.join(dataRoot, "feedback.json"), fb);
-      return sendJson(res, 200, { ok: true });
-    } catch (error) {
-      return sendJson(res, 400, { error: error.message });
+  // POST /api/comment — create
+  if (endpoint === "comment" && req.method === "POST") {
+    return handleCommentCreate(req, res, slug, dataRoot);
+  }
+
+  // PATCH /api/comment/{id} or DELETE /api/comment/{id}
+  if (endpoint.startsWith("comment/")) {
+    const id = endpoint.slice("comment/".length);
+    if (!COMMENT_ID_RE.test(id)) {
+      return sendJson(res, 400, { error: "invalid comment id" });
     }
+    if (req.method === "PATCH") return handleCommentPatch(req, res, slug, dataRoot, id);
+    if (req.method === "DELETE") return handleCommentDelete(req, res, slug, dataRoot, id);
+    return sendJson(res, 405, { error: "method not allowed" });
+  }
+
+  // POST /api/commit-status — toggle viewed / out_of_scope
+  if (endpoint === "commit-status" && req.method === "POST") {
+    return handleCommitStatus(req, res, slug, dataRoot);
+  }
+
+  // POST /api/submit — finalize
+  if (endpoint === "submit" && req.method === "POST") {
+    return handleSubmit(req, res, slug, dataRoot);
   }
 
   return sendJson(res, 404, { error: "not found" });
+}
+
+async function handleCommentCreate(req, res, slug, dataRoot) {
+  try {
+    const body = JSON.parse(await readBody(req));
+    const model = await loadModel(dataRoot);
+    if (!model) return sendJson(res, 404, { error: "review-data.json not found" });
+
+    let fb = await loadFeedback(dataRoot);
+    fb = ensureFeedbackShape(fb, model, slug);
+    if (fb.review_status === "submitted") {
+      return sendJson(res, 409, { error: "review already submitted" });
+    }
+
+    const v = validateAgainstModel(fb, model, slug);
+    if (v) return sendJson(res, v.status, v);
+
+    const err = validateCommentInput(body, model);
+    if (err) return sendJson(res, 400, { error: err });
+
+    const now = new Date().toISOString();
+    const comment = {
+      id: nextCommentId(fb),
+      commit_sha: body.commit_sha,
+      file: body.file,
+      side: body.side,
+      line_start: body.line_start,
+      line_end: body.line_end,
+      type: body.type,
+      body: body.body ?? "",
+      dispatch_agent: body.type === "needs-change" ? body.dispatch_agent : null,
+      created_at: now,
+      updated_at: now,
+    };
+    fb.comments.push(comment);
+    await saveFeedback(dataRoot, fb);
+    return sendJson(res, 200, { ok: true, comment });
+  } catch (err) {
+    return sendJson(res, 400, { error: err.message });
+  }
+}
+
+async function handleCommentPatch(req, res, slug, dataRoot, id) {
+  try {
+    const body = JSON.parse(await readBody(req));
+    const model = await loadModel(dataRoot);
+    if (!model) return sendJson(res, 404, { error: "review-data.json not found" });
+
+    let fb = await loadFeedback(dataRoot);
+    fb = ensureFeedbackShape(fb, model, slug);
+    if (fb.review_status === "submitted") {
+      return sendJson(res, 409, { error: "review already submitted" });
+    }
+
+    const idx = fb.comments.findIndex((c) => c.id === id);
+    if (idx < 0) return sendJson(res, 404, { error: "comment not found" });
+
+    const current = fb.comments[idx];
+    const next = { ...current };
+    if (typeof body.body === "string") next.body = body.body;
+    if (typeof body.type === "string") {
+      if (!VALID_TYPES.has(body.type)) return sendJson(res, 400, { error: "invalid type" });
+      next.type = body.type;
+    }
+    if (Object.prototype.hasOwnProperty.call(body, "dispatch_agent")) {
+      next.dispatch_agent = body.dispatch_agent;
+    }
+
+    if (next.type === "needs-change") {
+      if (!next.dispatch_agent || !isAvailableAgent(model, next.dispatch_agent)) {
+        return sendJson(res, 400, { error: "needs-change requires a valid dispatch_agent" });
+      }
+    } else {
+      next.dispatch_agent = null;
+    }
+
+    next.updated_at = new Date().toISOString();
+    fb.comments[idx] = next;
+    await saveFeedback(dataRoot, fb);
+    return sendJson(res, 200, { ok: true, comment: next });
+  } catch (err) {
+    return sendJson(res, 400, { error: err.message });
+  }
+}
+
+async function handleCommentDelete(req, res, slug, dataRoot, id) {
+  const model = await loadModel(dataRoot);
+  if (!model) return sendJson(res, 404, { error: "review-data.json not found" });
+  let fb = await loadFeedback(dataRoot);
+  fb = ensureFeedbackShape(fb, model, slug);
+  if (fb.review_status === "submitted") {
+    return sendJson(res, 409, { error: "review already submitted" });
+  }
+  const before = fb.comments.length;
+  fb.comments = fb.comments.filter((c) => c.id !== id);
+  if (fb.comments.length === before) {
+    return sendJson(res, 404, { error: "comment not found" });
+  }
+  await saveFeedback(dataRoot, fb);
+  return sendJson(res, 200, { ok: true });
+}
+
+async function handleCommitStatus(req, res, slug, dataRoot) {
+  try {
+    const body = JSON.parse(await readBody(req));
+    const model = await loadModel(dataRoot);
+    if (!model) return sendJson(res, 404, { error: "review-data.json not found" });
+
+    let fb = await loadFeedback(dataRoot);
+    fb = ensureFeedbackShape(fb, model, slug);
+    if (fb.review_status === "submitted") {
+      return sendJson(res, 409, { error: "review already submitted" });
+    }
+
+    const sha = body.commit_sha;
+    if (!SHA_RE.test(sha)) return sendJson(res, 400, { error: "invalid commit_sha" });
+    if (!commitShaSet(model).has(sha)) {
+      return sendJson(res, 400, { error: "commit_sha not in this round" });
+    }
+    const current = fb.commit_status[sha] || { viewed: false, out_of_scope: false };
+    const next = { ...current };
+    if (typeof body.viewed === "boolean") next.viewed = body.viewed;
+    if (typeof body.out_of_scope === "boolean") next.out_of_scope = body.out_of_scope;
+    fb.commit_status[sha] = next;
+    await saveFeedback(dataRoot, fb);
+    return sendJson(res, 200, { ok: true, commit_status: next });
+  } catch (err) {
+    return sendJson(res, 400, { error: err.message });
+  }
+}
+
+async function handleSubmit(req, res, slug, dataRoot) {
+  const model = await loadModel(dataRoot);
+  if (!model) return sendJson(res, 404, { error: "review-data.json not found" });
+
+  let fb = await loadFeedback(dataRoot);
+  fb = ensureFeedbackShape(fb, model, slug);
+
+  // Server-side guardrail: every needs-change comment must carry a valid agent.
+  const offenders = fb.comments.filter(
+    (c) => c.type === "needs-change" && !isAvailableAgent(model, c.dispatch_agent),
+  );
+  if (offenders.length > 0) {
+    return sendJson(res, 400, {
+      error: "needs-change comments must have a valid dispatch_agent",
+      offending_comment_ids: offenders.map((c) => c.id),
+    });
+  }
+
+  fb.review_status = "submitted";
+  await saveFeedback(dataRoot, fb);
+  return sendJson(res, 200, { ok: true, review_status: "submitted" });
+}
+
+function validateCommentInput(body, model) {
+  if (!body || typeof body !== "object") return "body must be an object";
+  if (!SHA_RE.test(body.commit_sha)) return "invalid commit_sha";
+  if (!commitShaSet(model).has(body.commit_sha)) return "commit_sha not in this round";
+  if (typeof body.file !== "string" || !body.file) return "file required";
+  if (!fileExistsInCommit(model, body.commit_sha, body.file)) {
+    return "file not in this commit's files_changed";
+  }
+  if (!VALID_SIDES.has(body.side)) return "side must be 'new' or 'old'";
+  if (!Number.isInteger(body.line_start) || body.line_start < 1) return "invalid line_start";
+  if (!Number.isInteger(body.line_end) || body.line_end < body.line_start) return "invalid line_end";
+  if (!VALID_TYPES.has(body.type)) return "type must be needs-change | question | out-of-scope";
+  if (body.type === "needs-change") {
+    if (!body.dispatch_agent || !isAvailableAgent(model, body.dispatch_agent)) {
+      return "needs-change requires a valid dispatch_agent";
+    }
+  }
+  if (body.body !== undefined && typeof body.body !== "string") return "body must be a string";
+  return null;
 }
 
 const server = createServer(async (req, res) => {
   try {
     const { pathname } = new URL(req.url, "http://localhost");
 
-    // Server-level diagnostic. The launcher's health-check polls this to
-    // decide whether an existing process is a compatible dev-review server
-    // (and thus reusable across sessions) or a foreign collision.
     if (pathname === "/api/health") {
       return handleServerHealth(res);
     }
@@ -347,7 +568,7 @@ const server = createServer(async (req, res) => {
 server.listen(port, () => {
   const address = server.address();
   const actualPort = typeof address === "object" && address ? address.port : port;
-  console.log(`dev-review server (multi-review): http://localhost:${actualPort}`);
+  console.log(`dev-review server (multi-review, schema v2): http://localhost:${actualPort}`);
   console.log(`Plans root: ${plansRoot}`);
   console.log(`HTML root:  ${htmlRoot}`);
   console.log("Open a review at /review/{task-slug}");

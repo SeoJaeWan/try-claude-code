@@ -3,1260 +3,961 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Developer Review — Implementation</title>
+  <title>Developer Review</title>
+  <link rel="stylesheet" href="vendor/diff2html.min.css">
   <link rel="stylesheet" href="vendor/highlight-theme.css">
   <style>
     :root {
-      --ink: #17211f;
-      --muted: #66736f;
-      --paper: #f7f1e6;
-      --panel: #fffaf0;
-      --line: #dfd1bd;
-      --accent: #0f6f5c;
-      --accent-ink: #ffffff;
-      --warn: #b66b00;
-      --danger: #b34040;
-      --success: #35a36b;
-      --soft: #e9dfcf;
-      --diff-add: rgba(53, 163, 107, 0.14);
-      --diff-del: rgba(179, 64, 64, 0.14);
-      --diff-add-bar: #35a36b;
-      --diff-del-bar: #b34040;
-      --shadow: 0 18px 44px rgba(50, 37, 20, 0.14);
+      --ink: #1f2328;
+      --muted: #57606a;
+      --bg: #f6f8fa;
+      --panel: #ffffff;
+      --line: #d0d7de;
+      --line-soft: #eaeef2;
+      --accent: #0969da;
+      --accent-soft: #ddf4ff;
+      --success: #1a7f37;
+      --warn: #9a6700;
+      --danger: #cf222e;
+      --shadow: 0 1px 3px rgba(31, 35, 40, 0.04), 0 8px 24px rgba(31, 35, 40, 0.06);
     }
 
     * { box-sizing: border-box; }
-
+    html, body { margin: 0; padding: 0; }
     body {
-      margin: 0;
       color: var(--ink);
-      background:
-        radial-gradient(circle at 12% 10%, rgba(15, 111, 92, 0.12), transparent 30%),
-        linear-gradient(135deg, #faf4e8 0%, #efe3d0 48%, #f7f1e6 100%);
-      font-family: "Aptos", "Segoe UI", sans-serif;
+      background: var(--bg);
+      font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      font-size: 14px;
       min-height: 100vh;
     }
 
-    .shell { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 100vh; }
-    aside { border-right: 1px solid var(--line); background: rgba(255, 250, 240, 0.78); backdrop-filter: blur(14px); padding: 24px 18px; position: sticky; top: 0; height: 100vh; overflow: auto; min-width: 0; }
-    main { padding: 32px; max-width: 1200px; min-width: 0; }
+    .app { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 100vh; }
 
-    h1, h2, h3 { font-family: "Georgia", "Times New Roman", serif; letter-spacing: -0.03em; margin: 0; }
-    h1 { font-size: clamp(28px, 4vw, 48px); line-height: 1.05; }
-    h2 { font-size: clamp(22px, 3vw, 32px); margin-bottom: 10px; }
-    h3 { font-size: 18px; margin-bottom: 8px; }
-
-    .eyebrow { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 10px; }
-    .meta { color: var(--muted); font-size: 12px; line-height: 1.6; margin-top: 12px; overflow-wrap: anywhere; }
-
-    .steps { display: grid; gap: 6px; margin-top: 22px; }
-    .step-button { width: 100%; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 10px 12px; border-radius: 12px; text-align: left; cursor: pointer; font-size: 13px; transition: transform 160ms ease, border-color 160ms ease, background 160ms ease; display: flex; align-items: flex-start; gap: 9px; min-width: 0; }
-    .step-button:hover { transform: translateX(2px); border-color: var(--accent); }
-    .step-button.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-    .step-button.active .step-id .sha { color: rgba(255,255,255,0.78); }
-    .step-button.active .step-subject { color: rgba(255,255,255,0.92); }
-    .step-button.preview { font-style: italic; opacity: 0.9; }
-    .step-dot { width: 9px; height: 9px; border-radius: 999px; background: transparent; border: 1px solid var(--line); flex-shrink: 0; margin-top: 5px; }
-    .step-dot.approved { background: var(--success); border-color: var(--success); }
-    .step-dot.needs-change { background: var(--danger); border-color: var(--danger); }
-    .step-dot.question { background: var(--warn); border-color: var(--warn); }
-    .step-dot.out-of-scope { background: #68748a; border-color: #68748a; }
-    .step-label { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
-    .step-id { font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
-    .step-id .sha { font-family: "JetBrains Mono", "Fira Code", monospace; font-weight: 600; color: var(--muted); margin-left: 4px; text-transform: none; letter-spacing: 0; }
-    .step-subject { font-size: 12.5px; line-height: 1.4; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: keep-all; overflow-wrap: anywhere; }
-
-    .history { margin-top: 26px; border-top: 1px solid var(--line); padding-top: 16px; }
-    .history summary { cursor: pointer; font-size: 12px; color: var(--muted); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-    .history-list { margin-top: 10px; display: grid; gap: 10px; }
-    .history-round { border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: var(--panel); font-size: 12px; }
-    .history-round-meta { color: var(--muted); margin-bottom: 6px; font-size: 11px; }
-    .history-round .item { padding: 6px 0; border-top: 1px dashed var(--line); }
-    .history-round .item:first-of-type { border-top: none; }
-
-    .hero { background: rgba(255, 250, 240, 0.82); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); padding: clamp(22px, 4vw, 40px); margin-bottom: 20px; position: relative; overflow: hidden; }
-
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
-    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 18px; box-shadow: 0 6px 16px rgba(50, 37, 20, 0.06); }
-    .card.wide { grid-column: 1 / -1; }
-    .card h3 { margin-bottom: 10px; }
-
-    .list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
-    .list li { padding: 8px 10px; background: rgba(255, 255, 255, 0.5); border: 1px solid var(--line); border-radius: 10px; font-size: 13px; line-height: 1.5; }
-    .meta-line { color: var(--muted); font-size: 13px; line-height: 1.6; }
-
-    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.02em; border: 1px solid var(--line); background: var(--panel); color: var(--muted); }
-    .badge.pass, .badge.achieved, .badge.success { background: rgba(53, 163, 107, 0.12); color: #1d6e3c; border-color: rgba(53, 163, 107, 0.4); }
-    .badge.warn, .badge.partial { background: rgba(182, 107, 0, 0.12); color: #7d4a00; border-color: rgba(182, 107, 0, 0.4); }
-    .badge.fail, .badge.missed, .badge.danger { background: rgba(179, 64, 64, 0.12); color: #7d2323; border-color: rgba(179, 64, 64, 0.4); }
-    .badge.info { background: rgba(15, 111, 92, 0.1); color: var(--accent); border-color: rgba(15, 111, 92, 0.3); }
-    .badge.fallback { background: var(--soft); }
-    .badge.addressed { background: rgba(53, 163, 107, 0.12); color: #1d6e3c; border-color: rgba(53, 163, 107, 0.4); }
-    .badge.still-open { background: rgba(179, 64, 64, 0.12); color: #7d2323; border-color: rgba(179, 64, 64, 0.4); }
-
-    .commit-header { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
-    .commit-header .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-    .commit-header .short-sha { font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 12px; padding: 2px 8px; background: var(--soft); border-radius: 6px; color: var(--ink); }
-    .commit-subject { font-size: 22px; font-weight: 700; margin: 6px 0; }
-    .commit-body { white-space: pre-wrap; font-size: 13px; color: var(--muted); background: rgba(255,255,255,0.4); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
-
-    .review-card { border: 1px solid var(--line); border-radius: 16px; background: var(--panel); padding: 20px 22px; margin-top: 14px; }
-    .review-card.fallback { border-style: dashed; }
-    .review-card-title { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; margin-bottom: 10px; }
-    .review-card-title strong { font-size: 16px; line-height: 1.4; word-break: keep-all; overflow-wrap: anywhere; }
-    .review-card-desc { font-size: 14px; line-height: 1.8; color: var(--ink); margin: 0 0 14px; word-break: keep-all; overflow-wrap: anywhere; max-width: 78ch; }
-
-    /* Evidence = a focused inline quote that proves the card's claim.
-       Visually distinct from the standalone file-card diffs below: smaller
-       padding, left accent rail, "snippet" framing so reviewers don't
-       mistake it for a full per-file diff. */
-    .evidence { margin-top: 10px; border: 1px solid #d0d7de; border-left: 3px solid var(--accent); border-radius: 8px; overflow: hidden; background: #ffffff; }
-    .evidence-head { display: flex; align-items: center; gap: 10px; padding: 7px 12px; background: #f6f8fa; font-family: "JetBrains Mono", monospace; font-size: 11.5px; color: #1f2328; border-bottom: 1px solid #d0d7de; }
-    .evidence-head .ev-label { font-family: "Aptos","Segoe UI",sans-serif; font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); flex-shrink: 0; }
-    .evidence-head .ev-path { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .evidence-note { padding: 10px 14px; font-size: 13.5px; line-height: 1.7; color: var(--ink); background: rgba(255, 250, 240, 0.8); border-bottom: 1px solid #eaeef2; word-break: keep-all; overflow-wrap: anywhere; }
-    .evidence pre { margin: 0; padding: 10px 14px; overflow-x: auto; font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 12.5px; line-height: 1.55; background: #ffffff; color: #1f2328; }
-    .evidence pre code { display: block; }
-    .evidence pre.ev-pending { background: #f6f8fa; color: #57606a; font-style: italic; padding: 8px 14px; }
-    .evidence .diff-table { background: #ffffff; }
-    .evidence .diff-table .num-old, .evidence .diff-table .num-new { width: 42px; min-width: 42px; padding: 0 8px 0 10px; font-size: 10.5px; }
-    .evidence-empty { color: #57606a; font-style: italic; padding: 10px 14px; font-size: 13px; }
-    .evidence-overflow { display: block; width: 100%; padding: 8px 14px; font-size: 11.5px; color: #0969da; background: #f6f8fa; border: none; border-top: 1px solid #eaeef2; text-align: center; cursor: pointer; font-family: inherit; }
-    .evidence-overflow:hover { background: #ddf4ff; color: var(--accent); text-decoration: underline; }
-    .file-card.flash { animation: cardFlash 1.2s ease; }
-    @keyframes cardFlash { 0% { box-shadow: 0 0 0 3px rgba(15, 111, 92, 0.3); } 100% { box-shadow: 0 0 0 0 rgba(15, 111, 92, 0); } }
-
-    .controls { margin-top: 14px; display: grid; gap: 10px; }
-    .status-row { display: flex; flex-wrap: wrap; gap: 6px; }
-    .status-row button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 6px 12px; border-radius: 999px; cursor: pointer; font-size: 12.5px; transition: background 120ms ease, border-color 120ms ease; }
-    .status-row button.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-    .status-row button.active[data-status="needs-change"] { background: var(--danger); border-color: var(--danger); }
-    .status-row button.active[data-status="question"] { background: var(--warn); border-color: var(--warn); }
-    .status-row button.active[data-status="out-of-scope"] { background: #68748a; border-color: #68748a; }
-
-    .comment { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font: inherit; font-size: 13px; min-height: 40px; resize: vertical; background: rgba(255,255,255,0.6); }
-    .target-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .target-row input { padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 12.5px; background: rgba(255,255,255,0.6); }
-    .target-row input.file { flex: 1; min-width: 180px; }
-    .target-row input.lines { width: 100px; }
-
-    .dispatch-row { display: flex; gap: 8px; align-items: center; }
-    .dispatch-row select { padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,0.6); font-size: 12.5px; min-width: 220px; }
-    .dispatch-row.required label::after { content: " *"; color: var(--danger); }
-
-    /* GitHub-style file changes */
-    .file-cards { display: grid; gap: 10px; margin-top: 12px; }
-    .file-card { background: #ffffff; border: 1px solid #d0d7de; border-radius: 10px; overflow: hidden; }
-    .file-card-head { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #f6f8fa; border-bottom: 1px solid #d0d7de; cursor: pointer; }
-    .file-card-head:hover { background: #eaeef2; }
-    .file-card-head .chevron { width: 12px; color: #57606a; flex-shrink: 0; transition: transform 160ms ease; font-family: monospace; }
-    .file-card.open .file-card-head .chevron { transform: rotate(90deg); }
-    .file-kind-badge { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; letter-spacing: 0.04em; text-transform: uppercase; flex-shrink: 0; }
-    .file-kind-badge.added { background: #dafbe1; color: #1a7f37; }
-    .file-kind-badge.modified { background: #ddf4ff; color: #0969da; }
-    .file-kind-badge.deleted { background: #ffebe9; color: #cf222e; }
-    .file-kind-badge.renamed { background: #fff8c5; color: #9a6700; }
-    .file-card-head .path { font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 12.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1f2328; }
-    .file-card-head .path .old { color: #57606a; }
-    .file-stats { display: flex; align-items: center; gap: 8px; font-size: 12px; flex-shrink: 0; }
-    .file-stats .adds { color: #1a7f37; font-variant-numeric: tabular-nums; font-weight: 600; }
-    .file-stats .dels { color: #cf222e; font-variant-numeric: tabular-nums; font-weight: 600; }
-    .stats-bar { display: inline-flex; gap: 1px; align-items: center; }
-    .stats-bar i { width: 7px; height: 9px; background: #d0d7de; display: block; }
-    .stats-bar i.add { background: #2da44e; }
-    .stats-bar i.del { background: #cf222e; }
-    .file-diff-body { max-height: 540px; overflow: auto; background: #ffffff; }
-    .diff-table { width: 100%; border-collapse: collapse; font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 12.5px; line-height: 1.55; }
-    .diff-table td { padding: 0; }
-    .diff-table .num-old, .diff-table .num-new { width: 50px; min-width: 50px; padding: 0 10px 0 12px; text-align: right; color: #57606a; user-select: none; vertical-align: top; background: #f6f8fa; border-right: 1px solid #eaeef2; font-size: 11.5px; }
-    .diff-table .marker { width: 18px; padding: 0 4px; user-select: none; text-align: center; color: #57606a; vertical-align: top; }
-    .diff-table .code { padding: 1px 12px 1px 6px; white-space: pre; vertical-align: top; color: #1f2328; }
-    .diff-table tr.add .num-old, .diff-table tr.add .num-new { background: #ccffd8; color: #1a7f37; }
-    .diff-table tr.add .marker { background: #dafbe1; color: #1a7f37; }
-    .diff-table tr.add .code { background: #dafbe1; }
-    .diff-table tr.del .num-old, .diff-table tr.del .num-new { background: #ffd7d5; color: #82071e; }
-    .diff-table tr.del .marker { background: #ffebe9; color: #82071e; }
-    .diff-table tr.del .code { background: #ffebe9; }
-    .diff-table tr.hunk td { background: #ddf4ff; color: #0969da; padding: 5px 14px; font-size: 11.5px; border-top: 1px solid #d0d7de; border-bottom: 1px solid #d0d7de; }
-    .diff-empty { padding: 14px; color: #57606a; font-style: italic; font-size: 13px; text-align: center; }
-    .additions { color: #1a7f37; font-variant-numeric: tabular-nums; }
-    .deletions { color: #cf222e; font-variant-numeric: tabular-nums; }
-
-    .section { margin-top: 22px; }
-    .section h3 { color: var(--ink); }
-    .section .hint { color: var(--muted); font-size: 13px; font-style: italic; }
-    .collapsible summary { cursor: pointer; padding: 8px 0; font-weight: 700; color: var(--ink); }
-
-    .nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
-    .nav button { padding: 10px 20px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; font-size: 14px; }
-    .nav button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-    .nav button.primary[disabled] { opacity: 0.5; cursor: not-allowed; }
-    .nav button.submit { background: #1d6e3c; color: white; border-color: #1d6e3c; }
-    .nav button.submit[disabled] { opacity: 0.5; cursor: not-allowed; }
-    .nav .spacer { flex: 1; }
-
-    .toast { position: fixed; right: 20px; bottom: 20px; padding: 10px 14px; background: var(--ink); color: white; border-radius: 12px; opacity: 0; transform: translateY(8px); transition: opacity 160ms ease, transform 160ms ease; pointer-events: none; font-size: 13px; }
-    .toast.show { opacity: 1; transform: translateY(0); }
-
-    .banner { padding: 10px 14px; background: rgba(182, 107, 0, 0.1); border: 1px solid rgba(182, 107, 0, 0.35); color: #7d4a00; border-radius: 12px; margin-bottom: 14px; font-size: 13px; }
-    .banner.success { background: rgba(53, 163, 107, 0.1); border-color: rgba(53, 163, 107, 0.35); color: #1d6e3c; }
-    .banner.danger { background: rgba(179, 64, 64, 0.1); border-color: rgba(179, 64, 64, 0.35); color: #7d2323; }
-
-    @media (max-width: 860px) {
-      .shell { grid-template-columns: 1fr; }
-      aside { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
-      main { padding: 20px; }
-      .grid { grid-template-columns: 1fr; }
-      .diff-split { grid-template-columns: 1fr; }
+    /* Sidebar */
+    aside.sidebar {
+      border-right: 1px solid var(--line);
+      background: var(--panel);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
+    .sb-header { padding: 16px 16px 12px; border-bottom: 1px solid var(--line-soft); }
+    .sb-task { font-weight: 700; font-size: 15px; word-break: break-all; }
+    .sb-meta { color: var(--muted); font-size: 12px; margin-top: 4px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .sb-round-badge { background: var(--accent-soft); color: var(--accent); padding: 1px 8px; border-radius: 999px; font-weight: 600; font-size: 11px; }
 
+    .sb-section-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 14px 16px 6px; }
+
+    .sb-commits { flex: 1; overflow: auto; padding: 0 8px 8px; }
+    .sb-commit { padding: 8px 10px; border-radius: 6px; cursor: pointer; display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: start; border: 1px solid transparent; }
+    .sb-commit:hover { background: var(--line-soft); }
+    .sb-commit.active { background: var(--accent-soft); border-color: rgba(9, 105, 218, 0.3); }
+    .sb-commit-checkbox { margin-top: 3px; cursor: pointer; }
+    .sb-commit-body { min-width: 0; }
+    .sb-commit-sha { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11px; color: var(--muted); }
+    .sb-commit-subject { font-size: 13px; line-height: 1.35; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 1px; }
+    .sb-commit-badges { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; flex-shrink: 0; }
+    .sb-badge { font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 999px; line-height: 1.4; white-space: nowrap; }
+    .sb-badge.needs-change { background: rgba(207, 34, 46, 0.1); color: var(--danger); }
+    .sb-badge.question { background: rgba(154, 103, 0, 0.1); color: var(--warn); }
+    .sb-badge.out-of-scope { background: rgba(87, 96, 106, 0.1); color: var(--muted); }
+    .sb-badge.viewed { background: rgba(26, 127, 55, 0.1); color: var(--success); }
+
+    .sb-history { border-top: 1px solid var(--line-soft); padding: 10px 16px; }
+    .sb-history summary { cursor: pointer; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); list-style: none; }
+    .sb-history summary::-webkit-details-marker { display: none; }
+    .sb-history-list { margin-top: 8px; display: grid; gap: 8px; }
+    .sb-history-round { font-size: 12px; padding: 6px 8px; background: var(--bg); border: 1px solid var(--line-soft); border-radius: 6px; }
+    .sb-history-round-meta { color: var(--muted); font-size: 11px; }
+
+    .sb-submit-area { border-top: 1px solid var(--line-soft); padding: 12px 16px; display: grid; gap: 8px; }
+    .btn-submit { background: var(--success); color: #fff; border: none; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-submit:hover:not(:disabled) { filter: brightness(0.95); }
+    .btn-submit:disabled { background: #94a3b0; cursor: not-allowed; }
+    .submit-hint { font-size: 11px; color: var(--muted); }
+
+    /* Main panel */
+    main.main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 28px 80px;
+      width: 100%;
+      min-width: 0;
+    }
+    .empty-main { color: var(--muted); padding: 40px 20px; text-align: center; }
+
+    .commit-header { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px; margin-bottom: 18px; }
+    .commit-meta-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; color: var(--muted); font-size: 12px; }
+    .commit-sha-pill { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; background: var(--bg); border: 1px solid var(--line); padding: 2px 8px; border-radius: 4px; font-size: 12px; color: var(--ink); }
+    .commit-subject { font-size: 18px; font-weight: 600; margin: 8px 0 6px; line-height: 1.35; }
+    .commit-body { white-space: pre-wrap; font-size: 13px; line-height: 1.6; color: var(--ink); background: var(--bg); border: 1px solid var(--line-soft); border-radius: 6px; padding: 10px 12px; margin-top: 10px; max-height: 6.5em; overflow: hidden; position: relative; }
+    .commit-body.expanded { max-height: none; }
+    .commit-body-toggle { display: inline-block; margin-top: 6px; font-size: 12px; color: var(--accent); cursor: pointer; background: none; border: none; padding: 0; }
+
+    .verdict-toolbar { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; padding: 10px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 16px; position: sticky; top: 8px; z-index: 5; }
+    .verdict-toolbar label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; }
+    .verdict-toolbar input[type="checkbox"] { cursor: pointer; }
+    .toolbar-spacer { flex: 1; }
+    .out-of-scope-banner { color: var(--muted); font-size: 12px; }
+
+    .files-list { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 16px; }
+    .files-list-header { padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--line-soft); display: flex; justify-content: space-between; align-items: center; }
+    .files-list-toggle { display: flex; gap: 4px; }
+    .toggle-btn { background: var(--bg); border: 1px solid var(--line); padding: 3px 9px; border-radius: 4px; font-size: 11px; cursor: pointer; color: var(--muted); }
+    .toggle-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .files-list ul { margin: 0; padding: 0; list-style: none; }
+    .files-list li { padding: 7px 14px; border-top: 1px solid var(--line-soft); font-size: 12.5px; cursor: pointer; display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; }
+    .files-list li:first-child { border-top: none; }
+    .files-list li:hover { background: var(--line-soft); }
+    .file-path { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; word-break: break-all; }
+    .file-kind { font-size: 11px; padding: 1px 6px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); color: var(--muted); }
+    .file-kind.added { color: var(--success); border-color: rgba(26, 127, 55, 0.4); background: rgba(26, 127, 55, 0.06); }
+    .file-kind.deleted { color: var(--danger); border-color: rgba(207, 34, 46, 0.4); background: rgba(207, 34, 46, 0.06); }
+    .file-kind.renamed { color: var(--accent); border-color: rgba(9, 105, 218, 0.4); background: rgba(9, 105, 218, 0.06); }
+    .file-stats { color: var(--muted); font-size: 11px; font-family: ui-monospace, monospace; }
+    .file-stats .add { color: var(--success); }
+    .file-stats .del { color: var(--danger); }
+
+    .diff-area { display: grid; gap: 18px; }
+    .diff-area.dimmed { opacity: 0.55; }
+
+    /* Inline comment widget — injected as a <tr> inside the diff table */
+    .comment-thread { background: var(--panel); }
+    .comment-thread > td { padding: 0 !important; }
+    .comment-thread-inner { margin: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fdfdfd; }
+    .comment-thread-inner .comment { padding: 10px 12px; border-bottom: 1px solid var(--line-soft); }
+    .comment-thread-inner .comment:last-child { border-bottom: none; }
+    .comment-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; margin-bottom: 4px; }
+    .comment-type-badge { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .comment-type-badge.needs-change { background: rgba(207, 34, 46, 0.1); color: var(--danger); }
+    .comment-type-badge.question { background: rgba(154, 103, 0, 0.1); color: var(--warn); }
+    .comment-type-badge.out-of-scope { background: rgba(87, 96, 106, 0.1); color: var(--muted); }
+    .comment-anchor { font-family: ui-monospace, "SF Mono", monospace; font-size: 11px; color: var(--muted); }
+    .comment-actions { margin-left: auto; display: flex; gap: 4px; }
+    .comment-actions button { background: none; border: 1px solid var(--line); border-radius: 4px; font-size: 11px; padding: 2px 7px; cursor: pointer; color: var(--muted); }
+    .comment-actions button:hover { color: var(--ink); border-color: var(--muted); }
+    .comment-body { white-space: pre-wrap; font-size: 13px; line-height: 1.55; color: var(--ink); }
+    .comment-agent { font-size: 11px; color: var(--accent); margin-top: 4px; }
+    .comment-stale-warning { font-size: 11px; color: var(--danger); margin-top: 4px; }
+
+    /* Add-comment hover button on diff gutter */
+    .d2h-code-side-linenumber, .d2h-code-linenumber { position: relative; user-select: none; }
+    .add-comment-btn { position: absolute; right: -6px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; border-radius: 4px; background: var(--accent); color: #fff; font-size: 12px; line-height: 18px; text-align: center; cursor: pointer; opacity: 0; transition: opacity 100ms ease; z-index: 4; border: none; padding: 0; font-weight: 700; }
+    tr:hover .add-comment-btn { opacity: 1; }
+    tr.range-selected .d2h-code-side-linenumber, tr.range-selected .d2h-code-linenumber { background: rgba(9, 105, 218, 0.2) !important; }
+
+    /* Comment popup overlay */
+    .popup-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.2); z-index: 100; display: flex; align-items: center; justify-content: center; }
+    .popup { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; min-width: 480px; max-width: 90vw; box-shadow: var(--shadow); }
+    .popup h3 { margin: 0 0 6px; font-size: 14px; }
+    .popup-anchor { font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--muted); margin-bottom: 12px; word-break: break-all; }
+    .popup-types { display: flex; gap: 10px; margin-bottom: 12px; }
+    .popup-types label { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; cursor: pointer; padding: 4px 8px; border: 1px solid var(--line); border-radius: 4px; }
+    .popup-types label.checked { background: var(--accent-soft); border-color: var(--accent); }
+    .popup textarea { width: 100%; min-height: 80px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; font: inherit; resize: vertical; font-size: 13px; }
+    .popup-agent { margin-top: 12px; }
+    .popup-agent label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+    .popup-agent select { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; font: inherit; font-size: 13px; }
+    .popup-actions { margin-top: 14px; display: flex; gap: 8px; justify-content: flex-end; }
+    .popup-actions button { padding: 6px 14px; border: 1px solid var(--line); border-radius: 4px; cursor: pointer; font-size: 13px; }
+    .popup-actions .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .popup-actions .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .popup-error { color: var(--danger); font-size: 12px; margin-top: 8px; }
+
+    /* Submitted banner */
+    .submitted-banner { background: var(--accent-soft); border: 1px solid var(--accent); color: var(--accent); padding: 10px 14px; border-radius: 6px; margin-bottom: 14px; font-size: 13px; }
+    .read-only-badge { font-size: 11px; color: var(--muted); margin-left: 6px; }
+
+    /* Diff overrides — keep diff2html readable on light bg */
+    .d2h-file-wrapper { border: 1px solid var(--line); border-radius: 6px; margin: 0; }
+    .d2h-file-header { background: var(--bg); border-bottom: 1px solid var(--line); }
+    .d2h-files-diff .d2h-file-side-diff:first-child { border-right: 1px solid var(--line); }
   </style>
 </head>
 <body>
-  <div class="shell">
-    <aside>
-      <div class="eyebrow">Developer Review</div>
-      <h3 id="navTitle">Implementation Review</h3>
-      <div class="meta" id="navMeta"></div>
-      <div class="steps" id="steps"></div>
-      <details class="history" id="historyPanel" hidden>
-        <summary>리뷰 이력</summary>
-        <div class="history-list" id="historyList"></div>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sb-header">
+        <div class="sb-task" id="sb-task">…</div>
+        <div class="sb-meta" id="sb-meta"></div>
+      </div>
+      <div class="sb-section-label">Commits</div>
+      <div class="sb-commits" id="sb-commits"></div>
+      <details class="sb-history" id="sb-history" style="display:none">
+        <summary>History</summary>
+        <div class="sb-history-list" id="sb-history-list"></div>
       </details>
+      <div class="sb-submit-area">
+        <div class="submit-hint" id="submit-hint"></div>
+        <button class="btn-submit" id="btn-submit" disabled>Submit review</button>
+      </div>
     </aside>
-    <main>
-      <section id="content"></section>
-      <nav class="nav">
-        <button id="prevBtn">◀ 이전</button>
-        <div class="spacer"></div>
-        <button id="nextBtn" class="primary">다음 ▶</button>
-        <button id="submitBtn" class="submit" hidden>리뷰 제출</button>
-      </nav>
+    <main class="main" id="main">
+      <div class="empty-main">Loading…</div>
     </main>
   </div>
-  <div class="toast" id="toast">저장됨</div>
 
   <script src="vendor/highlight.min.js"></script>
+  <script src="vendor/diff2html-ui.min.js"></script>
   <script>
-    const STATUSES = [
-      ["approved", "승인"],
-      ["needs-change", "수정 필요"],
-      ["question", "질문"],
-      ["out-of-scope", "범위 외"]
-    ];
+  (function () {
+    "use strict";
 
-    const $ = (id) => document.getElementById(id);
-    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#039;" }[ch]));
-    const asArray = (v) => (Array.isArray(v) ? v : (v == null ? [] : [v]));
-
-    let model = null;
-    let feedback = null;
-    let history = null;
-    let steps = [];
-    let current = 0;
-    let saveTimer = null;
-    const diffCache = new Map(); // short_sha -> Promise<{ files: ParsedFile[], byPath: Map }>
-
-    function loadParsedDiff(commit) {
-      // The server-side generator no longer inlines diff_hunks into review-data.json.
-      // We lazy-fetch the per-commit raw .diff once and parse it in the browser.
-      const key = commit.short_sha;
-      if (diffCache.has(key)) return diffCache.get(key);
-      const promise = (async () => {
-        try {
-          const res = await fetch(commit.raw_diff_path, { cache: "no-store" });
-          if (!res.ok) return { files: [], byPath: new Map() };
-          const text = await res.text();
-          const files = parseUnifiedDiffJs(text);
-          const byPath = new Map();
-          for (const f of files) {
-            byPath.set(f.path, f);
-            if (f.oldPath) byPath.set(f.oldPath, f);
-          }
-          return { files, byPath, raw: text };
-        } catch {
-          return { files: [], byPath: new Map(), raw: "" };
-        }
-      })();
-      diffCache.set(key, promise);
-      return promise;
+    // ---------- API helpers ----------
+    async function apiGet(path) {
+      const r = await fetch(path, { cache: "no-store" });
+      if (!r.ok) throw new Error(`GET ${path} → ${r.status}`);
+      return r.json();
+    }
+    async function apiSend(method, path, body) {
+      const r = await fetch(path, {
+        method,
+        headers: body ? { "content-type": "application/json" } : {},
+        body: body ? JSON.stringify(body) : undefined,
+        cache: "no-store",
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || `${method} ${path} → ${r.status}`);
+      return data;
     }
 
-    // Mirror of plugin/develop/skills/dev-review/scripts/lib/diff.mjs:parseUnifiedDiff.
-    // Kept identical in behavior so server and browser agree on the structure.
-    function parseUnifiedDiffJs(diffText) {
-      const FILE_HEADER = /^diff --git a\/(.+?) b\/(.+)$/;
-      const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
-      const lines = String(diffText || "").split(/\r?\n/);
-      const files = [];
-      let currentFile = null;
-      let currentHunk = null;
-      let beforeLineNo = 0;
-      let afterLineNo = 0;
-      const finishHunk = () => { if (currentHunk) { currentFile.diff_hunks.push(currentHunk); currentHunk = null; } };
-      const finishFile = () => { finishHunk(); if (currentFile) { files.push(currentFile); currentFile = null; } };
-      for (const raw of lines) {
-        if (raw.startsWith("diff --git")) {
-          finishFile();
-          const m = raw.match(FILE_HEADER);
-          if (m) currentFile = { path: m[2], oldPath: m[1] !== m[2] ? m[1] : null, diff_hunks: [] };
-          continue;
-        }
-        if (!currentFile) continue;
-        if (raw.startsWith("--- ") || raw.startsWith("+++ ")) continue;
-        if (raw.startsWith("index ") || raw.startsWith("new file mode") ||
-            raw.startsWith("deleted file mode") || raw.startsWith("similarity index") ||
-            raw.startsWith("rename from") || raw.startsWith("rename to") ||
-            raw.startsWith("Binary files ")) continue;
-        const hm = raw.match(HUNK_HEADER);
-        if (hm) {
-          finishHunk();
-          beforeLineNo = parseInt(hm[1], 10);
-          afterLineNo = parseInt(hm[3], 10);
-          currentHunk = { header: raw, before: [], after: [] };
-          continue;
-        }
-        if (!currentHunk) continue;
-        if (raw.startsWith("+")) { currentHunk.after.push({ line_no: afterLineNo++, text: raw.slice(1) }); }
-        else if (raw.startsWith("-")) { currentHunk.before.push({ line_no: beforeLineNo++, text: raw.slice(1) }); }
-        else if (raw.startsWith(" ")) {
-          const text = raw.slice(1);
-          currentHunk.before.push({ line_no: beforeLineNo++, text });
-          currentHunk.after.push({ line_no: afterLineNo++, text });
-        }
-      }
-      finishFile();
-      return files;
-    }
+    // ---------- State ----------
+    const state = {
+      model: null,
+      feedback: null,
+      history: null,
+      activeSha: null,
+      diffMode: localStorage.getItem("devreview.diffMode") || "unified",
+      diffCache: new Map(),
+    };
 
-
-    function highlight(el) {
-      if (window.hljs && el) {
-        try { window.hljs.highlightElement(el); } catch { /* ignore */ }
-      }
-    }
-
-    async function loadJson(path, fallback) {
+    // ---------- Initial load ----------
+    async function load() {
       try {
-        const res = await fetch(path, { cache: "no-store" });
-        if (!res.ok) return fallback;
-        return await res.json();
-      } catch {
-        return fallback;
-      }
-    }
-
-    function createFeedback() {
-      return {
-        schema_version: 1,
-        task_slug: model?.task_slug || "",
-        plan_signature: model?.plan_signature || "",
-        task_head_sha: model?.task_head_sha || "",
-        review_status: "in_progress",
-        updated_at: new Date().toISOString(),
-        cards: {}
-      };
-    }
-
-    function cardIds() {
-      const ids = [];
-      for (const c of asArray(model?.commits)) {
-        for (const card of asArray(c.cards)) {
-          ids.push(card.id);
-        }
-      }
-      return ids;
-    }
-
-    function cardStatus(id) {
-      return feedback?.cards?.[id]?.status ?? null;
-    }
-
-    function stepStatus(step) {
-      if (step.kind !== "commit") return null;
-      const ids = asArray(step.commit.cards).map((c) => c.id);
-      if (ids.length === 0) return null;
-      const statuses = ids.map((id) => cardStatus(id));
-      if (statuses.some((s) => s === "needs-change")) return "needs-change";
-      if (statuses.some((s) => s === "question")) return "question";
-      if (statuses.every((s) => s === "approved" || s === "out-of-scope")) return "approved";
-      if (statuses.some((s) => s === "out-of-scope")) return "out-of-scope";
-      return null;
-    }
-
-    function saveFeedback(immediate = false) {
-      clearTimeout(saveTimer);
-      const run = async () => {
-        try {
-          await fetch("api/feedback", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify(feedback)
-          });
-          showToast("저장됨");
-        } catch {
-          showToast("저장 실패");
-        }
-      };
-      if (immediate) run();
-      else saveTimer = setTimeout(run, 400);
-    }
-
-    function showToast(msg) {
-      const el = $("toast");
-      el.textContent = msg;
-      el.classList.add("show");
-      setTimeout(() => el.classList.remove("show"), 1200);
-    }
-
-    function renderSidebar() {
-      $("navMeta").innerHTML = `
-        task: ${esc(model.task_slug)}<br>
-        base: ${esc(model.base_branch)} → ${esc(model.task_branch)}<br>
-        head: <span style="font-family: monospace">${esc((model.task_head_sha || "").slice(0, 12))}</span><br>
-        iteration: ${esc(model.review_iteration)}
-      `;
-
-      const container = $("steps");
-      container.innerHTML = steps.map((step, idx) => {
-        const isActive = idx === current;
-        const previewClass = step.kind !== "commit" ? " preview" : "";
-        const status = stepStatus(step);
-        const dotClass = status ? `step-dot ${status}` : "step-dot";
-        const dot = step.kind === "commit"
-          ? `<span class="${dotClass}"></span>`
-          : `<span class="step-dot" style="opacity:0.35"></span>`;
-
-        // Two-line layout for commit steps: an `id · sha` line plus a
-        // line-clamped subject. Korean commit subjects ellipsis-truncated
-        // on a single line lose their identifying short_sha; splitting
-        // identity from prose keeps both readable inside a 320px sidebar.
-        let labelHtml;
-        if (step.kind === "commit") {
-          labelHtml = `
-            <span class="step-id">C${step.index + 1}<span class="sha">${esc(step.commit.short_sha)}</span></span>
-            <span class="step-subject">${esc(step.commit.message_subject)}</span>
-          `;
-        } else {
-          labelHtml = `<span class="step-id">${esc(step.label)}</span>`;
-        }
-        return `<button class="step-button${previewClass}${isActive ? " active" : ""}" data-idx="${idx}">${dot}<span class="step-label">${labelHtml}</span></button>`;
-      }).join("");
-
-      for (const btn of container.querySelectorAll(".step-button")) {
-        btn.addEventListener("click", () => goTo(Number(btn.dataset.idx)));
-      }
-
-      const rounds = asArray(history?.rounds);
-      if (rounds.length > 0) {
-        $("historyPanel").hidden = false;
-        $("historyList").innerHTML = rounds.map((r, i) => renderHistoryRound(r, i + 1)).join("");
-      }
-
-      updateSubmitState();
-    }
-
-    function renderHistoryRound(round, n) {
-      const items = asArray(round.items).map((it) => `
-        <div class="item">
-          <div style="font-weight:700">${esc(it.step_label || it.step_id || "")} · ${esc(it.user_status || "")}</div>
-          <div class="meta-line">${esc(it.user_comment || "")}</div>
-          ${it.dispatch_agent ? `<div class="meta-line">→ ${esc(it.dispatch_agent)}</div>` : ""}
-          ${it.resulting_commit_sha ? `<div class="meta-line">resulting: <span style="font-family:monospace">${esc(it.resulting_commit_sha.slice(0,7))}</span></div>` : ""}
-        </div>
-      `).join("");
-      return `
-        <div class="history-round">
-          <div class="history-round-meta">R${n} · ${esc(round.submitted_at || "")} · ${esc(round.resolution_state || "")}</div>
-          ${items}
-        </div>
-      `;
-    }
-
-    function renderOverview() {
-      const o = model.overview || {};
-      const parts = [];
-
-      parts.push(`
-        <div class="hero">
-          <div class="eyebrow">Overview (preview)</div>
-          <h1>구현 리뷰</h1>
-          ${renderRequestBlock(o.user_request)}
-        </div>
-      `);
-
-      if (o.interpretation_skipped) {
-        parts.push(`<div class="banner">자동 해석이 실패하여 fallback 카드로 진행됩니다. 카드별 변경 내용을 직접 확인해주세요.</div>`);
-      }
-
-      parts.push(`<div class="grid">`);
-
-      parts.push(`
-        <div class="card wide">
-          <h3>계획 요약</h3>
-          ${renderRichText(o.plan_summary, "없음")}
-        </div>
-      `);
-
-      parts.push(`
-        <div class="card">
-          <h3>변경 지도</h3>
-          ${renderChangeMap(o.change_map)}
-        </div>
-        <div class="card">
-          <h3>총계</h3>
-          <div class="meta-line">커밋 ${esc(o.total_commits || 0)}개 · 파일 ${esc(o.total_files_changed || 0)}개</div>
-        </div>
-      `);
-
-      parts.push(`
-        <div class="card wide">
-          <h3>계획 vs 결과</h3>
-          ${renderPlanVsResult(o.plan_vs_result)}
-        </div>
-      `);
-
-      parts.push(`
-        <div class="card wide">
-          <h3>Deviations</h3>
-          ${renderBullets(o.deviations_summary, "없음")}
-        </div>
-        <div class="card wide">
-          <h3>Open risks</h3>
-          ${renderBullets(o.open_risks, "없음")}
-        </div>
-      `);
-
-      parts.push(`</div>`);
-      return parts.join("\n");
-    }
-
-    function renderChangeMap(entries) {
-      const rows = asArray(entries);
-      if (rows.length === 0) return `<p class="meta-line">변경 없음</p>`;
-      return `
-        <table class="files-table">
-          <thead><tr><th>Track</th><th>파일</th><th>추가</th><th>삭제</th></tr></thead>
-          <tbody>
-            ${rows.map((r) => `
-              <tr>
-                <td>${esc(r.track)}</td>
-                <td>${esc(r.files)}</td>
-                <td class="additions">+${esc(r.additions)}</td>
-                <td class="deletions">-${esc(r.deletions)}</td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      `;
-    }
-
-    function renderPlanVsResult(items) {
-      const rows = asArray(items);
-      if (rows.length === 0) return `<p class="meta-line">자동 판정 없음 — 각 commit을 확인해주세요.</p>`;
-      return `
-        <ul class="list">
-          ${rows.map((r) => `
-            <li style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap">
-              <span class="badge ${esc(r.status)}">${esc(r.status)}</span>
-              <span style="flex:1">${esc(r.plan_item)}</span>
-              ${r.evidence_short_sha ? `<span style="font-family:monospace; font-size:12px">${esc(r.evidence_short_sha)}</span>` : ""}
-            </li>
-          `).join("")}
-        </ul>
-      `;
-    }
-
-    function renderBullets(items, emptyText) {
-      const rows = asArray(items);
-      if (rows.length === 0) return `<p class="meta-line">${esc(emptyText)}</p>`;
-      return `<ul class="list">${rows.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>`;
-    }
-
-    // Renders user_request whether the generator produced a string, an array
-    // of locked-request bullets (matches the orchestrator's planning-review
-    // shape), or nothing at all. The hero is the first thing the reviewer
-    // sees, so we want it to read like a brief — not a "**Branch:** ..."
-    // string.
-    function renderRequestBlock(value) {
-      if (Array.isArray(value) && value.length > 0) {
-        return `<ul class="list" style="margin-top:14px">${value.map((v) => `<li>${esc(v)}</li>`).join("")}</ul>`;
-      }
-      const text = String(value ?? "").trim();
-      if (!text) return `<p class="meta-line" style="margin-top:10px">요청 요약 없음</p>`;
-      return `<p class="meta-line" style="margin-top:10px">${esc(text)}</p>`;
-    }
-
-    // Same idea as renderRequestBlock but used inside cards where we want
-    // either a paragraph (string) or a bullet list (array). plan_summary is
-    // the typical caller.
-    function renderRichText(value, emptyText) {
-      if (Array.isArray(value) && value.length > 0) {
-        return `<ul class="list">${value.map((v) => `<li>${esc(v)}</li>`).join("")}</ul>`;
-      }
-      const text = String(value ?? "").trim();
-      if (!text) return `<p class="meta-line">${esc(emptyText)}</p>`;
-      return `<p class="meta-line">${esc(text)}</p>`;
-    }
-
-    function renderCommit(step) {
-      const c = step.commit;
-      const parts = [];
-
-      parts.push(`
-        <div class="commit-header">
-          <div class="row">
-            <span class="short-sha">${esc(c.short_sha)}</span>
-            <span class="meta-line">${esc(c.author)} · ${esc(c.timestamp)}</span>
-            <span class="meta-line"><span class="additions">+${esc(c.additions || 0)}</span> / <span class="deletions">-${esc(c.deletions || 0)}</span> · ${esc(asArray(c.files_changed).length)}개 파일</span>
-          </div>
-          <h2 class="commit-subject">${esc(c.message_subject)}</h2>
-          ${c.message_body ? `<details class="collapsible"><summary>커밋 본문</summary><pre class="commit-body">${esc(c.message_body)}</pre></details>` : ""}
-        </div>
-      `);
-
-      const addressed = asArray(c.addressed_by_this_commit);
-      if (addressed.length > 0) {
-        parts.push(`
-          <div class="section">
-            <details class="collapsible" open>
-              <summary>이전 라운드에서 해결된 피드백 (${addressed.length}건)</summary>
-              ${addressed.map((a) => `
-                <div class="card" style="margin-top:10px">
-                  <div class="meta-line">이전 카드: <span style="font-family:monospace">${esc(a.prior_card_id)}</span></div>
-                  <div class="review-card-desc">${esc(a.prior_comment || "코멘트 없음")}</div>
-                  ${a.resolution_evidence ? renderEvidence(a.resolution_evidence) : ""}
-                </div>
-              `).join("")}
-            </details>
-          </div>
-        `);
-      }
-
-      parts.push(`<div class="section"><h3>변경 내용</h3>`);
-      const cards = asArray(c.cards);
-      if (cards.length === 0) {
-        parts.push(`<p class="meta-line">자동 생성된 카드가 없습니다. 아래 변경 파일과 전체 diff를 직접 확인해주세요.</p>`);
-      } else {
-        for (const card of cards) {
-          parts.push(renderCard(card, c));
-        }
-      }
-      parts.push(`</div>`);
-
-      parts.push(`
-        <div class="section">
-          <h3>변경 파일</h3>
-          ${renderFilesTable(c)}
-        </div>
-      `);
-
-      const tests = asArray(c.tests_added);
-      if (tests.length > 0) {
-        parts.push(`
-          <div class="section">
-            <h3>추가된 테스트</h3>
-            ${tests.map((t) => `
-              <div class="card" style="margin-top:10px">
-                <strong style="font-family:monospace">${esc(t.file)}</strong>
-                <ul class="list" style="margin-top:8px">
-                  ${asArray(t.asserts).map((a) => `<li>${esc(a)}</li>`).join("")}
-                </ul>
-              </div>
-            `).join("")}
-          </div>
-        `);
-      }
-
-      const dev = asArray(c.deviations);
-      if (dev.length > 0) {
-        parts.push(`
-          <div class="section">
-            <h3>Deviations</h3>
-            <ul class="list">${dev.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>
-          </div>
-        `);
-      }
-
-      parts.push(`
-        <details class="section collapsible">
-          <summary>전체 diff 보기</summary>
-          <div id="fullDiff_${esc(c.short_sha)}"></div>
-        </details>
-      `);
-
-      return parts.join("\n");
-    }
-
-    function renderCard(card, commit) {
-      const fb = feedback.cards[card.id] || {};
-      const status = fb.status || "";
-      const fallbackTag = card.fallback ? ` <span class="badge fallback">자동 생성</span>` : "";
-
-      const evidenceHtml = asArray(card.evidence).map((ev) => renderEvidence(ev, commit)).join("");
-      const targetDefault = card.evidence && card.evidence[0] ? { file: card.evidence[0].file, lines: card.evidence[0].lines } : { file: "", lines: "" };
-      const target = fb.target || targetDefault;
-
-      const needsDispatch = status === "needs-change";
-      const dispatchValue = fb.dispatch_agent || "";
-
-      return `
-        <div class="review-card ${card.fallback ? "fallback" : ""}" data-card-id="${esc(card.id)}">
-          <div class="review-card-title">
-            <strong>${esc(card.title)}</strong>${fallbackTag}
-            <span class="meta-line" style="margin-left:auto; font-family:monospace">${esc(card.id)}</span>
-          </div>
-          ${card.description ? `<p class="review-card-desc">${esc(card.description)}</p>` : ""}
-          ${evidenceHtml}
-          <div class="controls">
-            <div class="status-row">
-              ${STATUSES.map(([v, label]) => `<button type="button" data-status="${v}" class="${status === v ? "active" : ""}">${label}</button>`).join("")}
-            </div>
-            <textarea class="comment" placeholder="코멘트 (선택)">${esc(fb.comment || "")}</textarea>
-            <div class="target-row">
-              <span class="meta-line">대상</span>
-              <input class="file" type="text" value="${esc(target.file || "")}" placeholder="파일 경로">
-              <input class="lines" type="text" value="${esc(target.lines || "")}" placeholder="라인 범위">
-            </div>
-            <div class="dispatch-row ${needsDispatch ? "required" : ""}" ${needsDispatch ? "" : "hidden"}>
-              <label>에이전트</label>
-              <select>
-                <option value="">선택하세요</option>
-                ${asArray(model.available_agents).map((a) => `<option value="${esc(a.name)}" ${dispatchValue === a.name ? "selected" : ""}>${esc(a.name)}${a.description ? ` — ${esc(a.description)}` : ""}</option>`).join("")}
-              </select>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    // Evidence = a focused inline quote ("the card claims a change at file:lines").
-    // It is intentionally clipped to ~10–14 lines so reviewers don't confuse it
-    // with the standalone per-file diff cards lower on the page. The hunk lookup
-    // never returns a 166-line wall for a brand-new file because we slice down
-    // to [start - context, end + context] explicitly here.
-    const EVIDENCE_MAX_ROWS = 14;
-    const EVIDENCE_CONTEXT_LINES = 2;
-
-    function renderEvidence(ev, commit) {
-      const fileMeta = (commit?.files_changed || []).find((f) => f.path === ev.file || f.old_path === ev.file);
-      const kind = fileMeta?.kind || "";
-      const kindBadge = kind
-        ? `<span class="file-kind-badge ${esc(kind)}">${esc(kind)}</span>`
-        : "";
-      const pathDisplay = `${esc(ev.file || "")}${ev.lines ? `:${esc(ev.lines)}` : ""}`;
-      const head = `
-        <div class="evidence-head">
-          <span class="ev-label">근거</span>
-          ${kindBadge}
-          <span class="ev-path">${pathDisplay}</span>
-        </div>
-      `;
-      const noteLine = ev.note ? `<div class="evidence-note">${esc(ev.note)}</div>` : "";
-
-      if (ev.snippet) {
-        const cls = ev.language ? `language-${esc(ev.language)}` : "";
-        return `<div class="evidence">${head}${noteLine}<pre><code class="${cls}">${esc(ev.snippet)}</code></pre></div>`;
-      }
-
-      // Lazy slot — filled by hydrateEvidence with a clipped diff-table once
-      // the per-commit raw .diff is parsed.
-      return `
-        <div class="evidence" data-evidence-slot="1" data-commit-sha="${esc(commit?.short_sha || "")}" data-evidence-file="${esc(ev.file || "")}" data-evidence-lines="${esc(ev.lines || "")}" data-evidence-kind="${esc(kind)}">
-          ${head}
-          ${noteLine}
-          <pre class="ev-pending"><code>로딩 중…</code></pre>
-        </div>
-      `;
-    }
-
-    async function hydrateEvidence(commit) {
-      if (!commit) return;
-      const slots = document.querySelectorAll(`.evidence[data-commit-sha="${commit.short_sha}"][data-evidence-slot]`);
-      if (slots.length === 0) return;
-      const parsed = await loadParsedDiff(commit);
-      for (const slot of slots) {
-        const file = slot.dataset.evidenceFile;
-        const lines = slot.dataset.evidenceLines;
-        const pre = slot.querySelector("pre.ev-pending");
-        if (!pre) continue;
-        const parsedFile = parsed.byPath.get(file);
-        if (!parsedFile) {
-          pre.outerHTML = `<div class="evidence-empty">diff에서 ${esc(file)}을 찾지 못했습니다 — 변경 파일 섹션에서 전체 diff를 펼쳐 확인하세요.</div>`;
-          continue;
-        }
-        const rows = clipDiffRowsForRange(parsedFile, lines);
-        if (rows.length === 0) {
-          pre.outerHTML = `<div class="evidence-empty">${esc(file)}${lines ? `:${esc(lines)}` : ""}에서 변경을 찾지 못했습니다.</div>`;
-          continue;
-        }
-        const visible = rows.slice(0, EVIDENCE_MAX_ROWS);
-        const overflow = rows.length - visible.length;
-        const tableHtml = `<table class="diff-table">${visible.map((r) => diffRow(r.kind === "ctx" ? "ctx" : r.kind, r.oldNo, r.newNo, r.kind === "add" ? "+" : r.kind === "del" ? "−" : " ", r.text)).join("")}</table>`;
-        const overflowHtml = overflow > 0
-          ? `<button type="button" class="evidence-overflow" data-jump-to-file="${esc(file)}">+${overflow}줄 더 — 변경 파일에서 전체 diff 펼쳐 확인 →</button>`
-          : "";
-        pre.outerHTML = tableHtml + overflowHtml;
-
-        // outerHTML replacement creates a new sibling button. Wire its click
-        // to scroll + auto-expand the matching file-card so the reviewer
-        // doesn't have to scroll-find-click manually.
-        const overflowBtn = slot.querySelector(".evidence-overflow");
-        if (overflowBtn) {
-          overflowBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            jumpToFileCard(overflowBtn.dataset.jumpToFile);
-          });
-        }
-      }
-    }
-
-    function jumpToFileCard(filePath) {
-      // Find the file-card whose data-file-path matches. We use querySelectorAll
-      // + manual filter instead of an attribute selector because file paths can
-      // contain characters (e.g. "@", "[") that need CSS.escape, and we already
-      // have all cards in the DOM.
-      const cards = document.querySelectorAll(".file-card");
-      let target = null;
-      for (const c of cards) {
-        if (c.dataset.filePath === filePath) {
-          target = c;
-          break;
-        }
-      }
-      if (!target) {
-        // Fallback: scroll to the "변경 파일" section header so the reviewer
-        // at least lands in the right neighborhood.
-        const headers = document.querySelectorAll(".section h3");
-        for (const h of headers) {
-          if (h.textContent && h.textContent.includes("변경 파일")) {
-            h.scrollIntoView({ behavior: "smooth", block: "start" });
-            return;
-          }
-        }
+        state.model = await apiGet("review-data.json");
+        state.feedback = await apiGet("feedback.json");
+        try { state.history = await apiGet("review-history.json"); } catch { state.history = null; }
+      } catch (err) {
+        document.querySelector("#main").innerHTML =
+          `<div class="empty-main"><strong>로드 실패:</strong> ${escapeHtml(err.message)}</div>`;
         return;
       }
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-
-      // Auto-expand if collapsed. The file-card-head's existing click handler
-      // (attached in attachFileToggles) does the lazy diff render, so simulate
-      // a click on it rather than reproducing that logic here.
-      const body = target.querySelector(".file-diff-body");
-      if (body && body.hidden) {
-        const head = target.querySelector(".file-card-head");
-        if (head) head.click();
+      if (state.feedback && state.feedback.plan_signature && state.model.plan_signature &&
+          state.feedback.plan_signature !== state.model.plan_signature) {
+        document.querySelector("#main").innerHTML =
+          `<div class="empty-main"><strong>plan_signature 불일치:</strong> 서버가 새 라운드를 생성했습니다. 페이지를 새로고침하세요.</div>`;
+        return;
+      }
+      if (!state.feedback || !state.feedback.schema_version) {
+        // Defensive: render empty state if feedback missing
+        state.feedback = { comments: [], commit_status: {}, review_status: "in_progress" };
+      }
+      if (!Array.isArray(state.feedback.comments)) state.feedback.comments = [];
+      if (!state.feedback.commit_status || typeof state.feedback.commit_status !== "object") {
+        state.feedback.commit_status = {};
       }
 
-      // Brief flash so the reviewer can locate the card after the scroll
-      // settles. The CSS animation auto-cleans the class after one cycle, but
-      // we still toggle it off in case the same card is jumped to twice.
-      target.classList.remove("flash");
-      // Force reflow so the animation restarts on repeat clicks.
-      void target.offsetWidth;
-      target.classList.add("flash");
+      if (state.model.commits.length > 0) {
+        state.activeSha = state.model.commits[0].sha;
+      }
+      renderAll();
     }
 
-    // Returns a clipped list of {kind, oldNo, newNo, text} rows from the
-    // hunks whose line numbers fall within [start - context, end + context].
-    // For brand-new files where the only hunk is the entire file, this
-    // shrinks the displayed snippet from the whole file to just the relevant
-    // window plus a couple of context lines.
-    function clipDiffRowsForRange(parsedFile, linesStr) {
-      const hunks = parsedFile.diff_hunks || [];
-      if (hunks.length === 0) return [];
-      const [a, b] = String(linesStr || "").split("-");
-      const start = parseInt(a, 10);
-      const end = parseInt(b ?? a, 10);
-      const hasRange = Number.isFinite(start);
-      const tip = Number.isFinite(end) ? end : start;
-      const lo = hasRange ? start - EVIDENCE_CONTEXT_LINES : -Infinity;
-      const hi = hasRange ? tip + EVIDENCE_CONTEXT_LINES : Infinity;
+    function renderAll() {
+      renderSidebar();
+      renderMain();
+      renderSubmit();
+    }
 
-      const rows = [];
-      for (const h of hunks) {
-        const beforeKey = (l) => `${l.line_no}:${l.text}`;
-        const beforeSet = new Set(h.before.map(beforeKey));
-        const afterSet = new Set(h.after.map(beforeKey));
+    // ---------- Sidebar ----------
+    function renderSidebar() {
+      document.querySelector("#sb-task").textContent = state.model.task_slug;
+      const meta = document.querySelector("#sb-meta");
+      meta.innerHTML = "";
+      const round = document.createElement("span");
+      round.className = "sb-round-badge";
+      round.textContent = `Round ${state.model.review_iteration}`;
+      meta.appendChild(round);
+      const totals = document.createElement("span");
+      const t = state.model.totals || {};
+      totals.textContent = `${t.total_commits ?? 0} commits · ${t.total_files_changed ?? 0} files · +${t.additions ?? 0}/-${t.deletions ?? 0}`;
+      meta.appendChild(totals);
 
-        const beforeIn = h.before.filter((l) => l.line_no >= lo && l.line_no <= hi);
-        const afterIn = h.after.filter((l) => l.line_no >= lo && l.line_no <= hi);
-        if (beforeIn.length === 0 && afterIn.length === 0) continue;
+      const list = document.querySelector("#sb-commits");
+      list.innerHTML = "";
+      for (const c of state.model.commits) {
+        const stat = state.feedback.commit_status[c.sha] || { viewed: false, out_of_scope: false };
+        const verdict = computeVerdict(c.sha);
+        const row = document.createElement("div");
+        row.className = "sb-commit" + (state.activeSha === c.sha ? " active" : "");
+        row.dataset.sha = c.sha;
 
-        for (const l of beforeIn) {
-          if (afterSet.has(beforeKey(l))) continue;
-          rows.push({ kind: "del", oldNo: l.line_no, newNo: "", text: l.text });
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.className = "sb-commit-checkbox";
+        cb.checked = !!stat.viewed;
+        cb.title = "Mark viewed";
+        cb.addEventListener("click", (e) => e.stopPropagation());
+        cb.addEventListener("change", () => toggleViewed(c.sha, cb.checked));
+
+        const body = document.createElement("div");
+        body.className = "sb-commit-body";
+        body.innerHTML =
+          `<div class="sb-commit-sha">${escapeHtml(c.short_sha)}</div>` +
+          `<div class="sb-commit-subject">${escapeHtml(c.message_subject)}</div>`;
+
+        const badges = document.createElement("div");
+        badges.className = "sb-commit-badges";
+        const counts = countComments(c.sha);
+        if (verdict === "out-of-scope") {
+          badges.appendChild(makeBadge("out-of-scope", "out-of-scope"));
+        } else if (counts.needsChange > 0) {
+          badges.appendChild(makeBadge(`needs-change (${counts.needsChange})`, "needs-change"));
+        } else if (counts.question > 0) {
+          badges.appendChild(makeBadge(`question (${counts.question})`, "question"));
+        } else if (stat.viewed) {
+          badges.appendChild(makeBadge("✓ viewed", "viewed"));
         }
-        for (const l of afterIn) {
-          if (beforeSet.has(beforeKey(l))) continue;
-          rows.push({ kind: "add", oldNo: "", newNo: l.line_no, text: l.text });
-        }
-        for (const l of afterIn) {
-          if (!beforeSet.has(beforeKey(l))) continue;
-          const matchOld = h.before.find((b2) => b2.text === l.text);
-          rows.push({ kind: "ctx", oldNo: matchOld ? matchOld.line_no : "", newNo: l.line_no, text: l.text });
-        }
+
+        row.appendChild(cb);
+        row.appendChild(body);
+        row.appendChild(badges);
+        row.addEventListener("click", () => {
+          state.activeSha = c.sha;
+          renderAll();
+        });
+        list.appendChild(row);
       }
 
-      // For a fresh file with no range info, fall back to the first ~14 add
-      // lines so the evidence still has something to show.
-      if (rows.length === 0 && !hasRange) {
-        const h = hunks[0];
-        for (const l of h.after.slice(0, EVIDENCE_MAX_ROWS)) {
-          rows.push({ kind: "add", oldNo: "", newNo: l.line_no, text: l.text });
+      // History
+      const hist = document.querySelector("#sb-history");
+      const histList = document.querySelector("#sb-history-list");
+      if (state.history && Array.isArray(state.history.rounds) && state.history.rounds.length > 0) {
+        hist.style.display = "";
+        histList.innerHTML = "";
+        for (const r of state.history.rounds) {
+          const div = document.createElement("div");
+          div.className = "sb-history-round";
+          const tally = (r.comments_snapshot || []).reduce((acc, c) => {
+            acc[c.type] = (acc[c.type] || 0) + 1; return acc;
+          }, {});
+          const tallyText = Object.entries(tally).map(([k, v]) => `${k}:${v}`).join(" · ") || "no comments";
+          div.innerHTML =
+            `<div><strong>${escapeHtml(r.id)}</strong> · ${escapeHtml(r.resolution_state || "")}</div>` +
+            `<div class="sb-history-round-meta">${escapeHtml(r.submitted_at || "")} · ${escapeHtml(tallyText)}</div>`;
+          histList.appendChild(div);
         }
+      } else {
+        hist.style.display = "none";
       }
-      return rows;
     }
 
-    function renderFilesTable(commit) {
-      const files = asArray(commit.files_changed);
-      if (files.length === 0) return `<p class="meta-line">변경 없음</p>`;
+    function makeBadge(text, kind) {
+      const s = document.createElement("span");
+      s.className = `sb-badge ${kind}`;
+      s.textContent = text;
+      return s;
+    }
 
-      // Pre-compute a max for the per-file stats bar so each file's
-      // visual ratio is comparable.
-      const maxChange = Math.max(1, ...files.map((f) => (f.additions || 0) + (f.deletions || 0)));
+    function countComments(sha) {
+      let nc = 0, q = 0, oos = 0;
+      for (const c of state.feedback.comments) {
+        if (c.commit_sha !== sha) continue;
+        if (c.type === "needs-change") nc++;
+        else if (c.type === "question") q++;
+        else if (c.type === "out-of-scope") oos++;
+      }
+      return { needsChange: nc, question: q, outOfScope: oos };
+    }
 
-      return `
-        <div class="file-cards">
-          ${files.map((f, i) => {
-            const adds = f.additions || 0;
-            const dels = f.deletions || 0;
-            const total = adds + dels;
-            const slots = 5;
-            const addSlots = total === 0 ? 0 : Math.round((adds / maxChange) * slots);
-            const delSlots = total === 0 ? 0 : Math.round((dels / maxChange) * slots);
-            const blank = Math.max(0, slots - addSlots - delSlots);
-            const bar = `${"<i class=\"add\"></i>".repeat(addSlots)}${"<i class=\"del\"></i>".repeat(delSlots)}${"<i></i>".repeat(blank)}`;
-            const renameHint = f.old_path ? `<span class="old">← ${esc(f.old_path)}</span>` : "";
-            return `
-              <div class="file-card" data-commit-sha="${esc(commit.short_sha)}" data-file-index="${i}" data-file-path="${esc(f.path)}">
-                <div class="file-card-head">
-                  <span class="chevron">▶</span>
-                  <span class="file-kind-badge ${esc(f.kind)}">${esc(f.kind)}</span>
-                  <span class="path">${esc(f.path)} ${renameHint}</span>
-                  <span class="file-stats">
-                    <span class="adds">+${adds}</span>
-                    <span class="dels">−${dels}</span>
-                    <span class="stats-bar">${bar}</span>
-                  </span>
-                </div>
-                <div class="file-diff-body" hidden></div>
-              </div>
-            `;
-          }).join("")}
+    function computeVerdict(sha) {
+      const stat = state.feedback.commit_status[sha];
+      if (stat?.out_of_scope) return "out-of-scope";
+      const counts = countComments(sha);
+      if (counts.needsChange > 0) return "needs-change";
+      if (counts.question > 0) return "question";
+      return "approved";
+    }
+
+    // ---------- Main panel ----------
+    async function renderMain() {
+      const main = document.querySelector("#main");
+      if (!state.activeSha) {
+        main.innerHTML = `<div class="empty-main">No commits in this review.</div>`;
+        return;
+      }
+      const commit = state.model.commits.find((c) => c.sha === state.activeSha);
+      if (!commit) {
+        main.innerHTML = `<div class="empty-main">Commit not found.</div>`;
+        return;
+      }
+
+      main.innerHTML = "";
+
+      if (state.feedback.review_status === "submitted") {
+        const banner = document.createElement("div");
+        banner.className = "submitted-banner";
+        banner.innerHTML = `리뷰가 제출되었습니다. 채팅에 <strong>리뷰 완료</strong>를 입력해주세요. <span class="read-only-badge">(read-only)</span>`;
+        main.appendChild(banner);
+      }
+
+      // Header
+      const header = document.createElement("div");
+      header.className = "commit-header";
+      const metaRow = `
+        <div class="commit-meta-row">
+          <span class="commit-sha-pill">${escapeHtml(commit.short_sha)}</span>
+          <span>${escapeHtml(commit.author)}</span>
+          <span>${escapeHtml(commit.timestamp)}</span>
+          <span>+${commit.additions}/-${commit.deletions}</span>
+          <span>${commit.files_changed.length} files</span>
         </div>
+        <div class="commit-subject">${escapeHtml(commit.message_subject)}</div>
       `;
-    }
-
-    function renderFinal() {
-      const f = model.final || {};
-      const total = cardIds().length;
-      const approvedCount = cardIds().filter((id) => {
-        const s = cardStatus(id);
-        return s === "approved" || s === "out-of-scope";
-      }).length;
-      const allApproved = total > 0 && approvedCount === total;
-
-      return `
-        <div class="hero">
-          <div class="eyebrow">Final (preview)</div>
-          <h1>최종 확인</h1>
-          <div class="banner ${allApproved ? "success" : ""}">
-            ${allApproved
-              ? "모든 카드가 승인되었습니다. 리뷰 제출 후 Step 5 (merge) 로 진행됩니다."
-              : `아직 승인되지 않은 카드 ${total - approvedCount}개가 있습니다. Commit step 들을 확인해주세요.`}
-          </div>
-        </div>
-        <div class="grid">
-          <div class="card wide">
-            <h3>커밋 로그</h3>
-            <ul class="list">
-              ${asArray(f.commit_log).map((c) => `
-                <li style="display:flex; gap:10px; align-items:baseline">
-                  <span style="font-family:monospace; font-size:12px">${esc(c.short_sha)}</span>
-                  <span style="flex:1">${esc(c.subject)}</span>
-                  <span class="meta-line">${esc(c.author)} · ${esc(c.timestamp)}</span>
-                </li>
-              `).join("")}
-            </ul>
-          </div>
-          <div class="card wide">
-            <h3>Merge 영향</h3>
-            ${renderMergeImpact(f.merge_impact)}
-          </div>
-        </div>
-      `;
-    }
-
-    function renderMergeImpact(entries) {
-      const rows = asArray(entries);
-      if (rows.length === 0) return `<p class="meta-line">변경 없음</p>`;
-      return `
-        <table class="files-table">
-          <thead><tr><th>파일</th><th>종류</th></tr></thead>
-          <tbody>
-            ${rows.map((e) => `
-              <tr>
-                <td style="font-family:monospace">${esc(e.path)}</td>
-                <td><span class="badge ${fileKindBadge(e.kind)}">${esc(e.kind)}</span></td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      `;
-    }
-
-    function renderCurrent() {
-      const step = steps[current];
-      $("navTitle").textContent = step.kind === "commit" ? `C${step.index + 1} · ${step.commit.short_sha}` : step.label;
-
-      const main = $("content");
-      if (step.kind === "overview") main.innerHTML = renderOverview();
-      else if (step.kind === "commit") main.innerHTML = renderCommit(step);
-      else if (step.kind === "final") main.innerHTML = renderFinal();
-
-      main.scrollTop = 0;
-      window.scrollTo({ top: 0, behavior: "instant" });
-
-      wireControls(step);
-      highlightAll();
-      attachFileToggles(step);
-      attachFullDiffLazy(step);
-      if (step.kind === "commit") hydrateEvidence(step.commit);
-
-      $("submitBtn").hidden = step.kind !== "final";
-      $("nextBtn").hidden = step.kind === "final";
-    }
-
-    function highlightAll() {
-      if (!window.hljs) return;
-      for (const el of document.querySelectorAll("pre code")) highlight(el);
-    }
-
-    function wireControls(step) {
-      if (step.kind !== "commit") return;
-      const container = $("content");
-
-      for (const cardEl of container.querySelectorAll(".review-card")) {
-        const cardId = cardEl.dataset.cardId;
-        const commentEl = cardEl.querySelector(".comment");
-        const fileEl = cardEl.querySelector(".target-row .file");
-        const linesEl = cardEl.querySelector(".target-row .lines");
-        const selectEl = cardEl.querySelector(".dispatch-row select");
-
-        for (const btn of cardEl.querySelectorAll(".status-row button")) {
-          btn.addEventListener("click", () => {
-            const status = btn.dataset.status;
-            updateCard(cardId, { status }, cardEl);
+      header.innerHTML = metaRow;
+      if (commit.message_body && commit.message_body.trim()) {
+        const body = document.createElement("div");
+        body.className = "commit-body";
+        body.textContent = commit.message_body;
+        const bodyLines = commit.message_body.split(/\r?\n/).length;
+        header.appendChild(body);
+        if (bodyLines >= 3) {
+          const toggle = document.createElement("button");
+          toggle.className = "commit-body-toggle";
+          toggle.textContent = "전체 보기";
+          toggle.addEventListener("click", () => {
+            body.classList.toggle("expanded");
+            toggle.textContent = body.classList.contains("expanded") ? "접기" : "전체 보기";
           });
-        }
-
-        if (commentEl) {
-          commentEl.addEventListener("input", () => updateCard(cardId, { comment: commentEl.value }, cardEl, true));
-        }
-        if (fileEl) {
-          fileEl.addEventListener("input", () => updateTarget(cardId, fileEl.value, linesEl.value));
-        }
-        if (linesEl) {
-          linesEl.addEventListener("input", () => updateTarget(cardId, fileEl.value, linesEl.value));
-        }
-        if (selectEl) {
-          selectEl.addEventListener("change", () => updateCard(cardId, { dispatch_agent: selectEl.value || "" }, cardEl));
+          header.appendChild(toggle);
+        } else {
+          body.classList.add("expanded");
         }
       }
+      main.appendChild(header);
+
+      // Verdict toolbar
+      const stat = state.feedback.commit_status[commit.sha] || { viewed: false, out_of_scope: false };
+      const tb = document.createElement("div");
+      tb.className = "verdict-toolbar";
+      tb.innerHTML = `
+        <label><input type="checkbox" id="tb-viewed" ${stat.viewed ? "checked" : ""}> Viewed</label>
+        <label><input type="checkbox" id="tb-oos" ${stat.out_of_scope ? "checked" : ""}> Out of scope</label>
+        <span class="toolbar-spacer"></span>
+        <span class="out-of-scope-banner" id="oos-banner">${stat.out_of_scope ? "이 커밋은 리뷰 범위 외로 표시됨" : ""}</span>
+      `;
+      main.appendChild(tb);
+      const submitted = state.feedback.review_status === "submitted";
+      const tbViewed = tb.querySelector("#tb-viewed");
+      const tbOos = tb.querySelector("#tb-oos");
+      tbViewed.disabled = submitted;
+      tbOos.disabled = submitted;
+      tbViewed.addEventListener("change", () => toggleViewed(commit.sha, tbViewed.checked));
+      tbOos.addEventListener("change", () => toggleOutOfScope(commit.sha, tbOos.checked));
+
+      // Files list
+      const filesBox = document.createElement("div");
+      filesBox.className = "files-list";
+      const modeUnified = state.diffMode === "unified";
+      filesBox.innerHTML = `
+        <div class="files-list-header">
+          <span>Files changed (${commit.files_changed.length})</span>
+          <span class="files-list-toggle">
+            <button class="toggle-btn ${modeUnified ? "active" : ""}" data-mode="unified">Unified</button>
+            <button class="toggle-btn ${modeUnified ? "" : "active"}" data-mode="side-by-side">Split</button>
+          </span>
+        </div>
+        <ul></ul>
+      `;
+      const ul = filesBox.querySelector("ul");
+      for (const f of commit.files_changed) {
+        const li = document.createElement("li");
+        li.innerHTML =
+          `<span class="file-path">${escapeHtml(f.path)}</span>` +
+          `<span class="file-kind ${f.kind}">${f.kind}${f.binary ? " · binary" : ""}</span>` +
+          `<span class="file-stats"><span class="add">+${f.additions}</span> <span class="del">-${f.deletions}</span></span>`;
+        li.addEventListener("click", () => {
+          const target = document.querySelector(`[data-file-anchor="${cssEscape(f.path)}"]`);
+          if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+        ul.appendChild(li);
+      }
+      filesBox.querySelectorAll(".toggle-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          state.diffMode = btn.dataset.mode;
+          localStorage.setItem("devreview.diffMode", state.diffMode);
+          renderMain();
+        });
+      });
+      main.appendChild(filesBox);
+
+      // Diff area
+      const diffArea = document.createElement("div");
+      diffArea.className = "diff-area" + (stat.out_of_scope ? " dimmed" : "");
+      diffArea.id = "diff-area";
+      main.appendChild(diffArea);
+
+      let rawDiff;
+      try {
+        rawDiff = await loadRawDiff(commit);
+      } catch (err) {
+        diffArea.innerHTML = `<div class="empty-main">diff 로드 실패: ${escapeHtml(err.message)}</div>`;
+        return;
+      }
+
+      const ui = new Diff2HtmlUI(diffArea, rawDiff, {
+        outputFormat: state.diffMode === "side-by-side" ? "side-by-side" : "line-by-line",
+        drawFileList: false,
+        matching: "lines",
+        highlight: true,
+      }, window.hljs);
+      ui.draw();
+      try { ui.highlightCode(); } catch { /* hljs optional */ }
+
+      // Decorate file wrappers with anchors and attach drag handlers
+      decorateDiffArea(diffArea, commit);
+      renderInlineComments(diffArea, commit);
     }
 
-    function updateCard(cardId, patch, cardEl, debounce = false) {
-      const prev = feedback.cards[cardId] || {};
-      const next = { ...prev, ...patch };
-      if (!next.status) delete next.status;
-      if (next.comment === undefined) next.comment = prev.comment || "";
-      feedback.cards[cardId] = next;
-      feedback.updated_at = new Date().toISOString();
+    async function loadRawDiff(commit) {
+      if (state.diffCache.has(commit.sha)) return state.diffCache.get(commit.sha);
+      const res = await fetch(commit.raw_diff_path, { cache: "no-store" });
+      if (!res.ok) throw new Error(`raw diff fetch ${commit.raw_diff_path} → ${res.status}`);
+      const txt = await res.text();
+      state.diffCache.set(commit.sha, txt);
+      return txt;
+    }
 
-      if (patch.status) {
-        for (const btn of cardEl.querySelectorAll(".status-row button")) {
-          btn.classList.toggle("active", btn.dataset.status === patch.status);
+    // ---------- Diff decoration & drag-to-comment ----------
+    function decorateDiffArea(root, commit) {
+      const wrappers = root.querySelectorAll(".d2h-file-wrapper");
+      for (const w of wrappers) {
+        const fileNameEl = w.querySelector(".d2h-file-name");
+        const fileName = fileNameEl ? fileNameEl.textContent.trim() : "";
+        // Resolve to actual files_changed entry by best match (handles renames where d2h shows "old → new")
+        const f = commit.files_changed.find((x) => fileName.endsWith(x.path) || fileName === x.path)
+                || commit.files_changed.find((x) => x.path.endsWith(fileName));
+        const path = f ? f.path : fileName;
+        w.dataset.fileAnchor = path;
+        w.setAttribute("data-file-anchor", path);
+
+        if (f && f.binary) {
+          // No anchoring or comment widgets for binary files.
+          continue;
         }
-        const disp = cardEl.querySelector(".dispatch-row");
-        if (disp) disp.hidden = patch.status !== "needs-change";
-      }
 
-      renderSidebarDots();
-      saveFeedback(debounce);
-      updateSubmitState();
-    }
-
-    function updateTarget(cardId, file, lines) {
-      const prev = feedback.cards[cardId] || {};
-      const target = { file: file || "", lines: lines || "" };
-      feedback.cards[cardId] = { ...prev, target };
-      feedback.updated_at = new Date().toISOString();
-      saveFeedback(true);
-    }
-
-    function renderSidebarDots() {
-      for (const btn of document.querySelectorAll(".step-button")) {
-        const step = steps[Number(btn.dataset.idx)];
-        if (!step || step.kind !== "commit") continue;
-        const dot = btn.querySelector(".step-dot");
-        if (!dot) continue;
-        dot.className = "step-dot";
-        const s = stepStatus(step);
-        if (s) dot.classList.add(s);
-      }
-    }
-
-    function attachFileToggles(step) {
-      if (step.kind !== "commit") return;
-      for (const card of document.querySelectorAll(".file-card")) {
-        const head = card.querySelector(".file-card-head");
-        const body = card.querySelector(".file-diff-body");
-        if (!head || !body) continue;
-        head.addEventListener("click", async () => {
-          const open = !body.hidden;
-          body.hidden = open;
-          card.classList.toggle("open", !open);
-          if (!body.hidden && !body.dataset.rendered) {
-            const idx = Number(card.dataset.fileIndex);
-            const fileMeta = step.commit.files_changed[idx];
-            body.innerHTML = `<div class="diff-empty">로딩 중…</div>`;
-            const parsed = await loadParsedDiff(step.commit);
-            const parsedFile = parsed.byPath.get(fileMeta.path) || (fileMeta.old_path ? parsed.byPath.get(fileMeta.old_path) : null);
-            body.innerHTML = renderUnifiedDiffTable(parsedFile);
-            body.dataset.rendered = "1";
+        const rows = w.querySelectorAll("table tr");
+        for (const tr of rows) {
+          // diff2html line cells:
+          //   line-by-line: td.d2h-code-linenumber (single side per row)
+          //   side-by-side: two halves, each with td.d2h-code-side-linenumber
+          const sideCells = tr.querySelectorAll(".d2h-code-side-linenumber, .d2h-code-linenumber");
+          if (sideCells.length === 0) continue;
+          for (const cell of sideCells) {
+            // Each cell carries the line number text in either the cell or a child .line-num1/.line-num2.
+            const text = cell.textContent.trim();
+            const num = parseInt(text, 10);
+            if (!Number.isFinite(num)) continue;
+            // Determine side: in line-by-line, distinguish by which span exists.
+            // The cell may contain .line-num1 (old) and .line-num2 (new). Use whichever has a number.
+            let side = "new";
+            const num1 = cell.querySelector(".line-num1");
+            const num2 = cell.querySelector(".line-num2");
+            if (num1 && num2) {
+              const n1 = parseInt(num1.textContent.trim(), 10);
+              const n2 = parseInt(num2.textContent.trim(), 10);
+              if (Number.isFinite(n2)) { side = "new"; }
+              else if (Number.isFinite(n1)) { side = "old"; }
+            } else if (cell.classList.contains("d2h-code-side-linenumber")) {
+              // Side-by-side: figure out from parent cell index — left half = old, right half = new.
+              const tdIdx = Array.from(tr.children).indexOf(cell);
+              side = tdIdx <= 1 ? "old" : "new";
+            }
+            cell.dataset.line = num;
+            cell.dataset.side = side;
+            cell.dataset.file = path;
+            // Attach + button
+            if (state.feedback.review_status !== "submitted") {
+              const btn = document.createElement("button");
+              btn.className = "add-comment-btn";
+              btn.textContent = "+";
+              btn.title = "Add comment";
+              btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openCommentPopup({
+                  commit_sha: commit.sha,
+                  file: path,
+                  side,
+                  line_start: num,
+                  line_end: num,
+                });
+              });
+              cell.appendChild(btn);
+            }
           }
+        }
+
+        attachDragHandlers(w, commit, path);
+      }
+    }
+
+    function attachDragHandlers(wrapper, commit, file) {
+      if (state.feedback.review_status === "submitted") return;
+      let dragStart = null;
+      const onMouseDown = (e) => {
+        const cell = e.target.closest(".d2h-code-side-linenumber, .d2h-code-linenumber");
+        if (!cell || !cell.dataset.line) return;
+        if (e.target.classList.contains("add-comment-btn")) return;
+        dragStart = {
+          line: parseInt(cell.dataset.line, 10),
+          side: cell.dataset.side,
+          file: cell.dataset.file,
+          tr: cell.closest("tr"),
+        };
+        e.preventDefault();
+      };
+      const onMouseMove = (e) => {
+        if (!dragStart) return;
+        const cell = e.target.closest(".d2h-code-side-linenumber, .d2h-code-linenumber");
+        if (!cell || cell.dataset.side !== dragStart.side || cell.dataset.file !== dragStart.file) return;
+        clearRangeHighlight(wrapper);
+        const endLine = parseInt(cell.dataset.line, 10);
+        highlightRange(wrapper, dragStart.side, dragStart.file, Math.min(dragStart.line, endLine), Math.max(dragStart.line, endLine));
+      };
+      const onMouseUp = (e) => {
+        if (!dragStart) return;
+        const cell = e.target.closest(".d2h-code-side-linenumber, .d2h-code-linenumber");
+        const start = dragStart;
+        dragStart = null;
+        clearRangeHighlight(wrapper);
+        if (!cell) return;
+        if (cell.dataset.side !== start.side || cell.dataset.file !== start.file) return;
+        const endLine = parseInt(cell.dataset.line, 10);
+        const lineStart = Math.min(start.line, endLine);
+        const lineEnd = Math.max(start.line, endLine);
+        if (lineStart === lineEnd) return; // simple click is handled by + button
+        openCommentPopup({
+          commit_sha: commit.sha,
+          file: start.file,
+          side: start.side,
+          line_start: lineStart,
+          line_end: lineEnd,
+        });
+      };
+      wrapper.addEventListener("mousedown", onMouseDown);
+      wrapper.addEventListener("mousemove", onMouseMove);
+      wrapper.addEventListener("mouseup", onMouseUp);
+      wrapper.addEventListener("mouseleave", () => { dragStart = null; clearRangeHighlight(wrapper); });
+    }
+
+    function highlightRange(wrapper, side, file, start, end) {
+      const cells = wrapper.querySelectorAll(".d2h-code-side-linenumber, .d2h-code-linenumber");
+      for (const cell of cells) {
+        if (cell.dataset.side !== side) continue;
+        if (cell.dataset.file !== file) continue;
+        const n = parseInt(cell.dataset.line, 10);
+        if (n >= start && n <= end) {
+          cell.closest("tr").classList.add("range-selected");
+        }
+      }
+    }
+    function clearRangeHighlight(wrapper) {
+      wrapper.querySelectorAll("tr.range-selected").forEach((r) => r.classList.remove("range-selected"));
+    }
+
+    // ---------- Inline comment rendering ----------
+    function renderInlineComments(root, commit) {
+      const byAnchor = new Map(); // key = file|side|line_end → [comments]
+      for (const c of state.feedback.comments) {
+        if (c.commit_sha !== commit.sha) continue;
+        const key = `${c.file}|${c.side}|${c.line_end}`;
+        const arr = byAnchor.get(key) || [];
+        arr.push(c);
+        byAnchor.set(key, arr);
+      }
+
+      const wrappers = root.querySelectorAll(".d2h-file-wrapper");
+      for (const w of wrappers) {
+        const path = w.dataset.fileAnchor;
+        const cells = w.querySelectorAll(".d2h-code-side-linenumber, .d2h-code-linenumber");
+        const seenKeys = new Set();
+        for (const cell of cells) {
+          if (cell.dataset.file !== path) continue;
+          const key = `${cell.dataset.file}|${cell.dataset.side}|${cell.dataset.line}`;
+          if (seenKeys.has(key)) continue;
+          const arr = byAnchor.get(key);
+          if (!arr) continue;
+          seenKeys.add(key);
+          const tr = cell.closest("tr");
+          const widgetTr = buildCommentThreadRow(arr, commit);
+          tr.parentNode.insertBefore(widgetTr, tr.nextSibling);
+        }
+      }
+    }
+
+    function buildCommentThreadRow(comments, commit) {
+      const tr = document.createElement("tr");
+      tr.className = "comment-thread";
+      const td = document.createElement("td");
+      td.colSpan = 8;
+      const inner = document.createElement("div");
+      inner.className = "comment-thread-inner";
+      for (const c of comments) {
+        inner.appendChild(buildCommentEl(c, commit));
+      }
+      td.appendChild(inner);
+      tr.appendChild(td);
+      return tr;
+    }
+
+    function buildCommentEl(c, commit) {
+      const el = document.createElement("div");
+      el.className = "comment";
+      const lineLabel = c.line_start === c.line_end ? `L${c.line_start}` : `L${c.line_start}–L${c.line_end}`;
+      const head = document.createElement("div");
+      head.className = "comment-head";
+      head.innerHTML =
+        `<span class="comment-type-badge ${c.type}">${escapeHtml(c.type)}</span>` +
+        `<span class="comment-anchor">${escapeHtml(c.file)}:${escapeHtml(lineLabel)} (${escapeHtml(c.side)})</span>`;
+      const actions = document.createElement("div");
+      actions.className = "comment-actions";
+      if (state.feedback.review_status !== "submitted") {
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "Edit";
+        editBtn.addEventListener("click", () => openCommentPopup({ ...c, isEdit: true }));
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Delete";
+        delBtn.addEventListener("click", () => deleteComment(c.id));
+        actions.appendChild(editBtn);
+        actions.appendChild(delBtn);
+      }
+      head.appendChild(actions);
+      el.appendChild(head);
+      const body = document.createElement("div");
+      body.className = "comment-body";
+      body.textContent = c.body || "(빈 코멘트)";
+      el.appendChild(body);
+      if (c.type === "needs-change") {
+        const agent = document.createElement("div");
+        agent.className = "comment-agent";
+        const isAvailable = (state.model.available_agents || []).some((a) => a.name === c.dispatch_agent);
+        agent.textContent = `→ ${c.dispatch_agent || "(no agent)"}`;
+        el.appendChild(agent);
+        if (!isAvailable) {
+          const warn = document.createElement("div");
+          warn.className = "comment-stale-warning";
+          warn.textContent = "⚠ 이 dispatch_agent는 현재 라운드에서 사용할 수 없습니다. 코멘트를 수정해주세요.";
+          el.appendChild(warn);
+        }
+      }
+      return el;
+    }
+
+    // ---------- Comment popup ----------
+    function openCommentPopup(opts) {
+      // opts: { commit_sha, file, side, line_start, line_end, [id, type, body, dispatch_agent, isEdit] }
+      const isEdit = opts.isEdit === true;
+      const lineLabel = opts.line_start === opts.line_end ? `L${opts.line_start}` : `L${opts.line_start}–L${opts.line_end}`;
+
+      const backdrop = document.createElement("div");
+      backdrop.className = "popup-backdrop";
+      const popup = document.createElement("div");
+      popup.className = "popup";
+      popup.innerHTML = `
+        <h3>${isEdit ? "Edit comment" : "New comment"}</h3>
+        <div class="popup-anchor">${escapeHtml(opts.file)} · ${escapeHtml(lineLabel)} (${escapeHtml(opts.side)})</div>
+        <div class="popup-types">
+          <label data-type="needs-change"><input type="radio" name="ctype" value="needs-change"> needs-change</label>
+          <label data-type="question"><input type="radio" name="ctype" value="question"> question</label>
+          <label data-type="out-of-scope"><input type="radio" name="ctype" value="out-of-scope"> out-of-scope</label>
+        </div>
+        <textarea placeholder="코멘트 내용 (선택)"></textarea>
+        <div class="popup-agent" style="display:none">
+          <label>Dispatch agent <span style="color:var(--danger)">*</span></label>
+          <select>
+            <option value="">— select —</option>
+            ${(state.model.available_agents || []).map((a) =>
+              `<option value="${escapeAttr(a.name)}">${escapeHtml(a.name)} — ${escapeHtml(a.description || "")}</option>`
+            ).join("")}
+          </select>
+        </div>
+        <div class="popup-error" style="display:none"></div>
+        <div class="popup-actions">
+          <button class="btn-cancel">Cancel</button>
+          ${isEdit ? '<button class="btn-delete" style="margin-right:auto;color:var(--danger);border-color:var(--danger)">Delete</button>' : ""}
+          <button class="btn-primary" disabled>Save</button>
+        </div>
+      `;
+      backdrop.appendChild(popup);
+      document.body.appendChild(backdrop);
+
+      const ta = popup.querySelector("textarea");
+      const agentBox = popup.querySelector(".popup-agent");
+      const agentSelect = popup.querySelector(".popup-agent select");
+      const saveBtn = popup.querySelector(".btn-primary");
+      const errorBox = popup.querySelector(".popup-error");
+      const typeLabels = popup.querySelectorAll(".popup-types label");
+      const typeRadios = popup.querySelectorAll('input[name="ctype"]');
+
+      function selectedType() {
+        for (const r of typeRadios) if (r.checked) return r.value;
+        return null;
+      }
+      function refresh() {
+        const t = selectedType();
+        typeLabels.forEach((l) => l.classList.toggle("checked", l.dataset.type === t));
+        agentBox.style.display = t === "needs-change" ? "" : "none";
+        const agentOk = t !== "needs-change" || (agentSelect.value && (state.model.available_agents || []).some((a) => a.name === agentSelect.value));
+        saveBtn.disabled = !t || !agentOk;
+      }
+      typeRadios.forEach((r) => r.addEventListener("change", refresh));
+      agentSelect.addEventListener("change", refresh);
+
+      // Pre-fill on edit
+      if (isEdit) {
+        ta.value = opts.body || "";
+        for (const r of typeRadios) if (r.value === opts.type) r.checked = true;
+        if (opts.dispatch_agent) agentSelect.value = opts.dispatch_agent;
+        refresh();
+      }
+
+      popup.querySelector(".btn-cancel").addEventListener("click", () => backdrop.remove());
+      backdrop.addEventListener("click", (e) => { if (e.target === backdrop) backdrop.remove(); });
+      if (isEdit) {
+        popup.querySelector(".btn-delete").addEventListener("click", async () => {
+          await deleteComment(opts.id);
+          backdrop.remove();
         });
       }
-    }
-
-    // GitHub-style unified diff table: line numbers in two narrow columns
-    // (old / new), a one-char marker column ("+", "-", " "), and the code.
-    // Light theme to match the file-card background; reads cleanly next to
-    // long Korean prose in card descriptions.
-    function renderUnifiedDiffTable(parsedFile) {
-      if (!parsedFile || !parsedFile.diff_hunks || parsedFile.diff_hunks.length === 0) {
-        return `<div class="diff-empty">diff 정보를 불러오지 못했습니다. (binary, rename without changes, 또는 raw diff 누락)</div>`;
-      }
-      const rows = [];
-      for (const h of parsedFile.diff_hunks) {
-        rows.push(`<tr class="hunk"><td colspan="4">${esc(h.header)}</td></tr>`);
-        // Build a per-hunk linear sequence: del lines, add lines, then
-        // shared context. Same shape used in evidence rendering — keeps
-        // the algorithm simple and avoids the buggy "common detection"
-        // the previous renderer used.
-        const beforeKey = (l) => `${l.line_no}:${l.text}`;
-        const beforeSet = new Set(h.before.map(beforeKey));
-        const afterSet = new Set(h.after.map(beforeKey));
-        for (const l of h.before) {
-          if (afterSet.has(beforeKey(l))) continue;
-          rows.push(diffRow("del", l.line_no, "", "−", l.text));
+      saveBtn.addEventListener("click", async () => {
+        const t = selectedType();
+        const payload = {
+          commit_sha: opts.commit_sha,
+          file: opts.file,
+          side: opts.side,
+          line_start: opts.line_start,
+          line_end: opts.line_end,
+          type: t,
+          body: ta.value,
+          dispatch_agent: t === "needs-change" ? agentSelect.value : null,
+        };
+        try {
+          if (isEdit) {
+            await apiSend("PATCH", `api/comment/${opts.id}`, {
+              type: t, body: ta.value, dispatch_agent: payload.dispatch_agent,
+            });
+          } else {
+            await apiSend("POST", "api/comment", payload);
+          }
+          backdrop.remove();
+          await refreshFeedback();
+        } catch (err) {
+          errorBox.textContent = err.message;
+          errorBox.style.display = "";
         }
-        for (const l of h.after) {
-          if (beforeSet.has(beforeKey(l))) continue;
-          rows.push(diffRow("add", "", l.line_no, "+", l.text));
-        }
-        for (const l of h.after) {
-          if (!beforeSet.has(beforeKey(l))) continue;
-          // Approximate the matching old line_no by scanning before for
-          // the same text. Good enough for context display.
-          const matchOld = h.before.find((b) => b.text === l.text);
-          rows.push(diffRow("ctx", matchOld ? matchOld.line_no : "", l.line_no, " ", l.text));
-        }
-      }
-      return `<table class="diff-table">${rows.join("")}</table>`;
-    }
-
-    function diffRow(kind, oldNo, newNo, marker, text) {
-      const cls = kind === "ctx" ? "" : kind;
-      return `<tr class="${cls}"><td class="num-old">${esc(oldNo)}</td><td class="num-new">${esc(newNo)}</td><td class="marker">${esc(marker)}</td><td class="code">${esc(text)}</td></tr>`;
-    }
-
-    function fileKindBadge(kind) {
-      // Used by renderMergeImpact to color file-status badges in the Final step.
-      return { added: "achieved", modified: "info", deleted: "danger", renamed: "warn" }[kind] || "info";
-    }
-
-    function attachFullDiffLazy(step) {
-      if (step.kind !== "commit") return;
-      const details = $("content").querySelector(`details.collapsible`);
-      // multiple details exist; we target the one holding full diff by id
-      const slot = $(`fullDiff_${step.commit.short_sha}`);
-      if (!slot) return;
-      const container = slot.closest("details");
-      if (!container) return;
-      container.addEventListener("toggle", async () => {
-        if (!container.open || slot.dataset.loaded) return;
-        const res = await fetch(step.commit.raw_diff_path, { cache: "no-store" });
-        const text = await res.text();
-        slot.innerHTML = `<div class="diff-container"><div class="diff-header"><span class="path">raw diff</span></div><div class="diff-body expanded"><pre style="margin:0; padding:12px"><code>${esc(text)}</code></pre></div></div>`;
-        slot.dataset.loaded = "1";
-        for (const el of slot.querySelectorAll("pre code")) highlight(el);
-      }, { once: false });
-    }
-
-    function canSubmit() {
-      const ids = cardIds();
-      if (ids.length === 0) return false;
-      for (const id of ids) {
-        const card = feedback.cards[id];
-        if (!card || !card.status) return false;
-        if (card.status === "needs-change" && !card.dispatch_agent) return false;
-      }
-      return true;
-    }
-
-    function updateSubmitState() {
-      const submit = $("submitBtn");
-      if (!submit) return;
-      submit.disabled = !canSubmit();
-    }
-
-    function goTo(idx) {
-      if (idx < 0 || idx >= steps.length) return;
-      current = idx;
-      renderSidebar();
-      renderCurrent();
-    }
-
-    async function submit() {
-      feedback.review_status = "submitted";
-      feedback.updated_at = new Date().toISOString();
-      await fetch("api/feedback", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(feedback)
       });
-      showToast("리뷰가 제출되었습니다. 채팅에 '리뷰 완료'를 입력해주세요.");
-      $("submitBtn").textContent = "제출됨 · 채팅에 '리뷰 완료'를 입력하세요";
-      $("submitBtn").disabled = true;
     }
 
-    async function init() {
-      model = await loadJson("review-data.json", null);
-      if (!model) {
-        $("content").innerHTML = `<div class="banner danger">review-data.json을 찾을 수 없습니다.</div>`;
+    async function deleteComment(id) {
+      if (!confirm("이 코멘트를 삭제할까요?")) return;
+      try {
+        await apiSend("DELETE", `api/comment/${id}`);
+        await refreshFeedback();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function toggleViewed(sha, viewed) {
+      try {
+        await apiSend("POST", "api/commit-status", { commit_sha: sha, viewed });
+        await refreshFeedback();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+    async function toggleOutOfScope(sha, oos) {
+      try {
+        await apiSend("POST", "api/commit-status", { commit_sha: sha, out_of_scope: oos });
+        await refreshFeedback();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function refreshFeedback() {
+      state.feedback = await apiGet("feedback.json");
+      if (!Array.isArray(state.feedback.comments)) state.feedback.comments = [];
+      if (!state.feedback.commit_status) state.feedback.commit_status = {};
+      renderAll();
+    }
+
+    // ---------- Submit ----------
+    function renderSubmit() {
+      const btn = document.querySelector("#btn-submit");
+      const hint = document.querySelector("#submit-hint");
+      const submitted = state.feedback.review_status === "submitted";
+
+      // Block: any needs-change without valid dispatch_agent
+      const orphanNeeds = state.feedback.comments.filter(
+        (c) => c.type === "needs-change" && !(state.model.available_agents || []).some((a) => a.name === c.dispatch_agent)
+      );
+      const blocked = orphanNeeds.length > 0;
+
+      // Warn: any unviewed commit not marked out-of-scope
+      const unviewed = state.model.commits.filter((c) => {
+        const s = state.feedback.commit_status[c.sha] || {};
+        return !s.viewed && !s.out_of_scope;
+      });
+
+      if (submitted) {
+        btn.disabled = true;
+        btn.textContent = "Submitted";
+        hint.textContent = `채팅에 '리뷰 완료'를 입력해주세요.`;
         return;
       }
-      history = await loadJson("review-history.json", { rounds: [] });
-      const existing = await loadJson("api/feedback", null);
-      feedback = (existing && existing.plan_signature === model.plan_signature) ? existing : createFeedback();
+      btn.disabled = blocked;
+      btn.textContent = "Submit review";
+      if (blocked) {
+        hint.textContent = `dispatch_agent가 누락된 needs-change 코멘트 ${orphanNeeds.length}개`;
+      } else if (unviewed.length > 0) {
+        hint.textContent = `${unviewed.length}개의 커밋을 아직 보지 않았습니다 (제출 시 확인됨)`;
+      } else {
+        hint.textContent = "";
+      }
 
-      steps = [{ kind: "overview", label: "Overview" }];
-      asArray(model.commits).forEach((commit, index) => {
-        steps.push({ kind: "commit", index, commit, label: `C${index + 1} · ${commit.message_subject}` });
-      });
-      steps.push({ kind: "final", label: "Final" });
-
-      $("prevBtn").addEventListener("click", () => goTo(current - 1));
-      $("nextBtn").addEventListener("click", () => goTo(current + 1));
-      $("submitBtn").addEventListener("click", submit);
-
-      renderSidebar();
-      renderCurrent();
+      btn.onclick = async () => {
+        if (unviewed.length > 0) {
+          if (!confirm(`커밋 ${unviewed.length}개를 보지 않았습니다. 그래도 제출하시겠습니까?`)) return;
+        }
+        try {
+          await apiSend("POST", "api/submit");
+          await refreshFeedback();
+        } catch (err) {
+          alert(err.message);
+        }
+      };
     }
 
-    init();
+    // ---------- Utilities ----------
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+    function escapeAttr(s) { return escapeHtml(s); }
+    function cssEscape(s) {
+      if (window.CSS && window.CSS.escape) return CSS.escape(s);
+      return String(s).replace(/(["\\])/g, "\\$1");
+    }
+
+    load();
+  })();
   </script>
 </body>
 </html>

@@ -76,7 +76,13 @@ export function commitNumstat(cwd, sha) {
     const [addRaw, delRaw, pathRaw] = parts;
     const additions = addRaw === "-" ? 0 : Number.parseInt(addRaw, 10) || 0;
     const deletions = delRaw === "-" ? 0 : Number.parseInt(delRaw, 10) || 0;
-    entries.push({ additions, deletions, rawPath: pathRaw });
+    entries.push({
+      additions,
+      deletions,
+      rawPath: pathRaw,
+      rawAdditions: addRaw,
+      rawDeletions: delRaw,
+    });
   }
   return entries;
 }

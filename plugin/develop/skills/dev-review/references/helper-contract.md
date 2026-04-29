@@ -1,139 +1,111 @@
-# Helper Script Contract
+# Helper Script Contract (v2)
 
-The deterministic generator is `plugin/develop/skills/dev-review/scripts/generate-review-data.mjs`. The skill invokes it once per round and must be able to rely on the output without re-validating git state.
+The deterministic generator is `plugin/develop/skills/dev-review/scripts/generate-review-data.mjs`. The skill invokes it once per round and relies on its output without re-validating git state.
 
-This contract defines the CLI, what the script reads, what it writes, and what it guarantees. Any change to the contract is a breaking change — update the consumers in this skill's SKILL.md and runner Step 4 together.
+In v2 the helper produces the **final** `review-data.json` directly — no `.partial.json`, no interpretation step, no agent. Every field is deterministic.
 
 ## CLI
 
 ```bash
 node {CLAUDE_PLUGIN_ROOT}/develop/skills/dev-review/scripts/generate-review-data.mjs \
   --task-slug       <string>         # required
-  --plan-path       <path>           # required, must exist
-  --worktree        <path>           # required, must exist and contain task_branch checked out
+  --plan-path       <path>           # required, must exist (used for plan_signature only)
+  --worktree        <path>           # required, must exist with task_branch checked out
   --base            <branch>         # required, base branch name
   --task-branch     <branch>         # required, task branch name
   --iteration       <integer>        # required, 1 for first round, N+1 after rework
-  --out             <path>           # required, where to write review-data.partial.json
+  --out             <path>           # required, where to write review-data.json
   --diffs-dir       <path>           # optional, defaults to {out-dir}/assets/diffs/
-  --available-agents-dir <path>      # optional, can be repeated; defaults to searching
-                                     #   plugin/develop/agents/ and .claude/agents/
-  --prior-feedback  <path-or-empty>  # optional; previous round's feedback.json
-  --prior-history   <path-or-empty>  # optional; previous round's review-history.json
+  --available-agents-dir <path>      # optional, repeatable; defaults to plugin + .claude
   --log-level       <error|warn|info|debug>  # optional, default "warn"
+  --now             <iso8601>        # optional, for test reproducibility
 ```
 
-All paths may be absolute or relative to `process.cwd()`. The script resolves them to absolute internally and prints the resolved paths to stderr at `info` level.
+All paths may be absolute or relative to `process.cwd()`. The script resolves them internally and prints the resolved paths to stderr at `info` level.
 
 Exit codes:
 
-- `0` — `review-data.partial.json` written, deterministic fields populated, fallback cards present
-- `2` — invalid arguments (missing required, malformed iteration, etc.)
+- `0` — `review-data.json` written, all deterministic fields populated
+- `2` — invalid arguments (missing required, malformed iteration)
 - `3` — git invocation failed (worktree missing, branch missing, no commits in range)
-- `4` — plan parsing failed (file missing, malformed)
+- `4` — plan parsing failed (file missing — only used for signature)
 - `5` — I/O failure (cannot write output, cannot read asset)
 - `10` — unexpected internal error
 
-Exit code `0` is the only success. Any non-zero exit must stop the runner; partial output is never trustworthy.
+Exit code `0` is the only success. Any non-zero exit must stop the runner.
 
 ## What the helper reads
 
 1. **Plan** (`--plan-path`)
-   - `plan.md` top-level text for `overview.user_request` and `overview.plan_summary`
-   - `plan.md` `**Branch:**` header to cross-check `--task-branch`
-   - Phase index table (`| # | Phase | Agent |`) for agent-track inference (used in `change_map` track assignment heuristic)
-   - Linked phase files (`phases/NN-slug.md`) for `owner_agent` and `file_impacts` extraction
-   - Every included file contributes to `plan_signature` (short SHA-256 of concatenated contents)
+   - Parsed only to compute `plan_signature` (short SHA-256 of plan.md + linked phase files).
+   - The helper does NOT extract `user_request` / `plan_summary` / `major_changes` anymore — v2 has no overview section.
 
 2. **Worktree** (`--worktree`)
    - `git -C {worktree} rev-parse HEAD` → `task_head_sha`
    - `git -C {worktree} rev-parse --abbrev-ref HEAD` cross-checked against `--task-branch`
    - `git -C {worktree} log --format="%H%x00%s%x00%b%x00%an%x00%ae%x00%aI" {base}..HEAD` → commits in order
-   - `git -C {worktree} diff --numstat {base}..HEAD` → total_files_changed / change_map totals
    - Per commit: `git -C {worktree} show --format= --numstat {sha}` → files_changed additions/deletions
    - Per commit: `git -C {worktree} show --format= --name-status {sha}` → files_changed kinds (A/M/D/R)
-   - Per commit: `git -C {worktree} diff {parent}..{sha}` → written as raw `.diff` to `--diffs-dir`. Parsed hunks are NOT inlined into review-data.json; the browser fetches the raw .diff and parses it client-side on demand. This keeps review-data.json roughly two orders of magnitude smaller for typical task branches.
-   - `git -C {worktree} diff --name-status {base}..HEAD` → `final.merge_impact`
+   - Per commit: `git -C {worktree} diff {parent}..{sha}` → written as raw `.diff` to `--diffs-dir`. The browser parses these via `diff2html` on demand.
+   - Per commit binary detection: `git -C {worktree} diff --numstat {parent}..{sha}` returns `-\t-\tpath` for binaries → `binary: true`.
 
 3. **Available agents** (`--available-agents-dir`, repeatable)
-   - Defaults (in order): `${workspaceRoot}/plugin/develop/agents/*.md`, `${workspaceRoot}/.claude/agents/*.md`, `${CLAUDE_PLUGIN_ROOT}/develop/agents/*.md`, `${CLAUDE_PLUGIN_ROOT}/agents/*.md`
-   - The `CLAUDE_PLUGIN_ROOT` paths are critical when the dev-review skill is loaded from an installed plugin into a consumer repo (e.g., `try-claude-code` → `figma-test`). Without that fallback, `available_agents` resolves to `[]` and the "needs-change" dispatch dropdown is empty, blocking review submission.
-   - Each `*.md` with YAML frontmatter containing `name` and `description` becomes an entry in `available_agents[]`
-   - Files without valid frontmatter are skipped with a `warn` log
+   - Defaults (in order): `${workspaceRoot}/plugin/develop/agents/*.md`, `${workspaceRoot}/.claude/agents/*.md`, `${CLAUDE_PLUGIN_ROOT}/develop/agents/*.md`, `${CLAUDE_PLUGIN_ROOT}/agents/*.md`.
+   - Each `*.md` with YAML frontmatter containing `name` and `description` becomes an entry in `available_agents[]`, sorted by name.
+   - Files without valid frontmatter are skipped with a `warn` log.
 
-4. **Prior round artifacts** (`--prior-feedback`, `--prior-history`, optional)
-   - When `--iteration > 1`, these should be the paths to the previous round's artifacts (typically the live `feedback.json` / `review-history.json` under the same `plans/{task_slug}/dev-review/`)
-   - Used to compute `commits[].addressed_by_this_commit[]` and to emit the upcoming round's entry skeleton into history (the skill finalizes the round summary in Step 5)
+The helper does NOT read prior `feedback.json` / `review-history.json`. v2 has no `addressed_by_this_commit` or cross-round linking; the skill handles round boundaries directly when it merges feedback from the previous round.
 
 ## What the helper writes
 
-1. `--out` (`review-data.partial.json`)
-   - Every deterministic field from the schema, populated
-   - `commits[].cards` is **empty** (the interpretation agent fills it)
-   - `commits[].tests_added` is **empty**
-   - `commits[].deviations` is **empty**
-   - `overview.plan_vs_result`, `deviations_summary`, `open_risks` are **empty**
-   - `overview.interpretation_skipped` is `false` (the skill flips it to `true` if the agent fails)
-   - Every commit has a non-empty `_fallback_cards` array, at minimum one card per commit
+1. `--out` (`review-data.json`) — final, deterministic output
+   - All schema-v2 fields populated.
+   - No `.partial` suffix; the file is consumed directly by browser and skill.
 
 2. `{diffs-dir}/{short_sha}.diff` (one per commit)
-   - Full unified diff for that commit vs its parent in the task branch
-   - No git header stripping; the UI hides what it doesn't need
+   - Full unified diff for that commit vs its parent.
+   - For root commits (no parent), `git show --format= {sha}` is used.
+   - No git header stripping; diff2html handles it.
 
 3. `{diffs-dir}/_index.json` (single file)
-   - Simple map `{ "short_sha": "relative_path_to_diff" }` — convenient for the UI and future tooling
+   - Map `{ "short_sha": "relative_path_to_diff" }` — convenience.
 
-The helper does not touch `feedback.json`, `review-history.json`, or the HTML assets. The skill owns those.
+The helper does NOT touch `feedback.json` or `review-history.json`. The skill owns those.
+
+## Stale schema cleanup
+
+Before writing, the helper checks `--out`'s parent folder. If `review-data.json` already exists with `schema_version < 2`, the helper:
+
+1. Logs `warn: stale schema_version detected, wiping data folder`
+2. Deletes `review-data.json`, `feedback.json`, `review-history.json`, and `assets/diffs/` recursively (within the data folder; never escapes).
+3. Recreates `assets/diffs/` and proceeds.
+
+This is the one-time migration path. v2-or-newer schemas pass through untouched.
 
 ## Determinism and idempotency
 
-- Given the same inputs, the helper produces byte-identical output. This is critical because the skill diffs outputs between rounds to decide whether the package actually changed.
-- The helper sorts arrays deterministically where order is not semantically meaningful: `change_map` by track name, `available_agents` by agent name, `files_changed` by path.
-- Timestamps in the output (`generated_at`) break determinism. The helper accepts `--now <iso8601>` for test reproducibility; production runs use `new Date().toISOString()`.
-
-## Fallback card rules
-
-Every commit MUST end up with at least one card in the final `review-data.json`. The helper ensures this by producing `_fallback_cards`:
-
-- **Minimum card** (always emitted): title = "이 commit은 N개 파일을 수정했습니다 (+X/-Y)" where N, X, Y come from `files_changed`. Description = "자동 생성된 요약. 파일 변경 목록과 전체 diff를 참고하세요." Evidence = empty. `fallback: true`.
-
-- **Supplementary cards** (emitted when obviously derivable):
-  - One card per changed test file: title = "테스트 변경: {path}", evidence = first 20 lines of the file's post-change content
-  - One card per added file with size ≥ 50 lines: title = "새 파일: {path}", evidence = first 30 lines of the file
-  - Capped at 3 supplementary cards to avoid fallback noise
-
-The skill only uses `_fallback_cards` when the interpretation agent produces no cards for that commit. Partial interpretation (e.g., 2 agent cards + fallback supplementaries) is not mixed; it's agent-or-fallback per commit.
-
-## Addressed-by-this-commit computation
-
-When `--prior-history` points to a populated file and the latest round has at least one `needs-change` item, for each new commit (commits whose `sha` is not in the prior round's `resulting_task_head_sha` chain):
-
-- For each prior `items[]` with `user_status == "needs-change"` and `target.file`:
-  - If this commit's `files_changed[].path === prior.target.file`: add an `addressed_by_this_commit` entry with `resolution_evidence` drawn from the first hunk touching the target line range, falling back to the first hunk of that file.
-
-- For prior cards with `target === null`, no automatic addressing. The reviewer must manually mark the prior card approved.
-
-The helper emits `addressed_by_this_commit` on the commit side only. The corresponding "still-open vs addressed" badge on the prior card side is computed by the UI from the union of all commits' `addressed_by_this_commit`.
+- Given the same inputs, byte-identical output. The skill diffs outputs between rounds to decide whether the package actually changed.
+- Arrays sorted deterministically: `available_agents` by name, `files_changed` by path. `commits[]` ordered chronologically (matches `git log --reverse`, oldest first).
+- Timestamps: `generated_at` accepts `--now <iso8601>` for tests; production uses `new Date().toISOString()`.
 
 ## Logging and diagnostics
 
-The helper writes structured lines to stderr at `info` and above:
+Structured stderr lines at `info` and above:
 
 ```
-[dev-review-gen] info worktree=abs path=/..., task_head_sha=abc123...
-[dev-review-gen] info commits_in_range=4, plan_signature=a3f1c...
-[dev-review-gen] warn phase file missing: plans/.../phases/03-cleanup.md — skipping
-[dev-review-gen] info wrote review-data.partial.json (23 KB) and 4 diffs
+[dev-review-gen] info worktree=/abs/... task_head_sha=abc123...
+[dev-review-gen] info commits_in_range=4 plan_signature=a3f1c...
+[dev-review-gen] warn stale schema_version=1 detected, wiping data folder
+[dev-review-gen] info wrote review-data.json (12 KB) and 4 diffs
 ```
 
-stdout is reserved for future machine-readable output and MUST stay empty in the current version. The skill ignores stdout.
+stdout is reserved for future machine-readable output and MUST stay empty.
 
 ## Guardrails
 
-- Do NOT write anywhere other than `--out` and `--diffs-dir`.
-- Do NOT shell out to anything except `git` (ideally via an allowlist of args).
-- Do NOT embed the interpretation agent's output; this script is the deterministic half.
+- Do NOT write anywhere other than `--out`, `--diffs-dir`, and (for stale-schema cleanup) within the data folder.
+- Do NOT shell out to anything except `git`.
 - Do NOT partially write `--out` on error. Write to a temp file and rename on success.
-- Do NOT let a parse failure on one commit block the whole output — log a `warn`, emit `_fallback_cards` for that commit with an extra "diff parse failed" hint, and continue.
-- Do NOT populate `cards[]`, `tests_added[]`, `deviations[]`, or any of the three interpretation overview fields. Those belong to the agent.
-- Do NOT mutate `prior_feedback` or `prior_history`. Treat them strictly as read-only inputs.
+- Do NOT let a parse failure on one commit block the whole output — log a `warn`, mark the file as `binary: true` if applicable, and continue.
+- Do NOT populate any v1-only fields (`overview`, `cards`, `_fallback_cards`, `tests_added`, `deviations`, `addressed_by_this_commit`, `final`). Schema is v2.
+- Do NOT read or mutate `feedback.json` / `review-history.json`. The skill owns those files.

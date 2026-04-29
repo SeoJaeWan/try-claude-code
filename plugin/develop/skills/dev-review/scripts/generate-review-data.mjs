@@ -1,17 +1,15 @@
 #!/usr/bin/env node
 
-// Deterministic generator for dev-review/review-data.partial.json.
+// Deterministic generator for dev-review/review-data.json (schema v2).
 //
-// This script owns every field that can be derived from git, the plan file,
-// the QA report, and prior review artifacts. It never produces interpretive
-// content (card titles, descriptions, plan-vs-result judgments, deviations,
-// natural-language test assertions). Those belong to the interpretation
-// agent invoked by the dev-review skill.
+// In v2 this script writes the FINAL review-data.json directly. There is no
+// interpretation agent and no .partial.json intermediate. Every field is
+// derived from git, the plan file (signature only), and discovered agent
+// frontmatter.
 
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
 
 import { parseArgs, createLogger } from "./lib/args.mjs";
 import {
@@ -23,18 +21,12 @@ import {
   commitNumstat,
   commitNameStatus,
   commitDiff,
-  rangeNameStatus,
-  rangeNumstat,
 } from "./lib/git.mjs";
-import { parseUnifiedDiff } from "./lib/diff.mjs";
 import { readPlan } from "./lib/plan.mjs";
 import { discoverAvailableAgents, defaultAgentsDirs } from "./lib/agents.mjs";
-import { buildFallbackCards } from "./lib/fallback.mjs";
-import { classifyTrack, emptyChangeMap, mergeChangeMap, compactChangeMap } from "./lib/track.mjs";
-import { readPriorHistory, computeAddressed } from "./lib/history.mjs";
 import { writeJsonAtomic, writeTextAtomic, ensureDir } from "./lib/output.mjs";
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 const SHORT_SHA_LEN = 7;
 
 function main() {
@@ -62,12 +54,17 @@ function run(args, logger) {
   const planAbs = path.resolve(args.planPath);
   const worktreeAbs = path.resolve(args.worktree);
   const outAbs = path.resolve(args.out);
+  const dataRootAbs = path.dirname(outAbs);
   const diffsDirAbs = path.resolve(
-    args.diffsDir ?? path.join(path.dirname(outAbs), "assets", "diffs"),
+    args.diffsDir ?? path.join(dataRootAbs, "assets", "diffs"),
   );
 
   ensurePathExists(planAbs, "--plan-path", 4);
   ensurePathExists(worktreeAbs, "--worktree", 3);
+
+  // One-time stale-schema cleanup: if a v1 (or older) review-data.json exists,
+  // wipe the data folder before regenerating. v2-or-newer passes through.
+  cleanupStaleSchema(dataRootAbs, logger);
 
   const plan = readPlan(planAbs);
   logger.info(`plan_signature=${plan.planSignature} branch_from_plan=${plan.branch ?? "(none)"}`);
@@ -100,6 +97,9 @@ function run(args, logger) {
 
   const commitObjects = [];
   const diffIndex = {};
+  let totalAdditions = 0;
+  let totalDeletions = 0;
+  const allChangedPaths = new Set();
 
   for (let i = 0; i < commits.length; i += 1) {
     const meta = commits[i];
@@ -116,32 +116,24 @@ function run(args, logger) {
     const diffFile = `${short}.diff`;
     const diffAbs = path.join(diffsDirAbs, diffFile);
     writeTextAtomic(diffAbs, rawDiff);
-    diffIndex[short] = path.relative(path.dirname(outAbs), diffAbs).split(path.sep).join("/");
+    diffIndex[short] = path.relative(dataRootAbs, diffAbs).split(path.sep).join("/");
 
-    const parsedFiles = safeParse(rawDiff, logger, short);
     const nameStatus = commitNameStatus(worktreeAbs, meta.sha);
     const numstat = commitNumstat(worktreeAbs, meta.sha);
 
-    // diff_hunks is intentionally dropped from review-data.json — the browser
-    // parses the per-commit raw .diff on demand. Inlining hunks bloats the
-    // JSON to hundreds of KB and the UI already lazy-fetches raw_diff_path
-    // for the full-diff view; this collapses the storage onto one source.
-    const files_changed = assembleFiles(parsedFiles, nameStatus, numstat).map((f) => ({
-      path: f.path,
-      kind: f.kind,
-      old_path: f.old_path,
-      additions: f.additions,
-      deletions: f.deletions,
-    }));
-    const totals = files_changed.reduce(
-      (acc, f) => ({
-        additions: acc.additions + (f.additions || 0),
-        deletions: acc.deletions + (f.deletions || 0),
-      }),
-      { additions: 0, deletions: 0 },
-    );
+    const filesChanged = assembleFiles(nameStatus, numstat);
 
-    const commitObj = {
+    let commitAdd = 0;
+    let commitDel = 0;
+    for (const f of filesChanged) {
+      commitAdd += f.additions;
+      commitDel += f.deletions;
+      allChangedPaths.add(f.path);
+    }
+    totalAdditions += commitAdd;
+    totalDeletions += commitDel;
+
+    commitObjects.push({
       id: `C${i + 1}`,
       sha: meta.sha,
       short_sha: short,
@@ -150,31 +142,14 @@ function run(args, logger) {
       author: meta.author,
       author_email: meta.authorEmail,
       timestamp: meta.timestamp,
-      additions: totals.additions,
-      deletions: totals.deletions,
-      files_changed,
-      cards: [],
-      tests_added: [],
-      deviations: [],
-      addressed_by_this_commit: [],
+      additions: commitAdd,
+      deletions: commitDel,
+      files_changed: filesChanged,
       raw_diff_path: diffIndex[short],
-    };
-
-    commitObj._fallback_cards = buildFallbackCards(commitObj, worktreeAbs);
-
-    commitObjects.push(commitObj);
+    });
   }
 
   writeJsonAtomic(path.join(diffsDirAbs, "_index.json"), diffIndex);
-
-  const rangeFiles = rangeNumstat(worktreeAbs, args.base, taskHeadSha);
-  const changeMap = emptyChangeMap();
-  for (const file of rangeFiles) mergeChangeMap(changeMap, file);
-
-  const totalFilesChanged = rangeFiles.length;
-  const mergeImpact = rangeNameStatus(worktreeAbs, args.base, taskHeadSha).map(
-    (entry) => ({ path: entry.path, kind: entry.kind }),
-  );
 
   const agentDirs = args.availableAgentsDirs.length > 0
     ? args.availableAgentsDirs.map((d) => path.resolve(d))
@@ -182,13 +157,8 @@ function run(args, logger) {
   const availableAgents = discoverAvailableAgents(agentDirs, logger);
   logger.info(`available_agents=${availableAgents.length}`);
 
-  const priorHistory = readPriorHistory(args.priorHistory || "");
-  if (priorHistory) {
-    computeAddressed(priorHistory, commitObjects);
-  }
-
   const generatedAt = args.now ?? new Date().toISOString();
-  const partial = {
+  const reviewData = {
     schema_version: SCHEMA_VERSION,
     task_slug: args.taskSlug,
     plan_path: toPosix(path.relative(workspaceRoot, planAbs)),
@@ -200,35 +170,55 @@ function run(args, logger) {
     review_iteration: args.iteration,
     generated_at: generatedAt,
     available_agents: availableAgents,
-    overview: {
-      user_request: plan.userRequest,
-      plan_summary: plan.planSummary,
-      change_map: compactChangeMap(changeMap),
+    totals: {
       total_commits: commitObjects.length,
-      total_files_changed: totalFilesChanged,
-      plan_vs_result: [],
-      deviations_summary: [],
-      open_risks: [],
-      interpretation_skipped: false,
+      total_files_changed: allChangedPaths.size,
+      additions: totalAdditions,
+      deletions: totalDeletions,
     },
     commits: commitObjects,
-    final: {
-      commit_log: commitObjects.map((c) => ({
-        short_sha: c.short_sha,
-        subject: c.message_subject,
-        author: c.author,
-        timestamp: c.timestamp,
-      })),
-      merge_impact: mergeImpact,
-    },
   };
 
-  writeJsonAtomic(outAbs, partial);
+  writeJsonAtomic(outAbs, reviewData);
 
   const sizeKb = Math.round(fs.statSync(outAbs).size / 1024);
   logger.info(
     `wrote ${toPosix(path.relative(workspaceRoot, outAbs))} (${sizeKb} KB) and ${commitObjects.length} diffs`,
   );
+}
+
+function cleanupStaleSchema(dataRootAbs, logger) {
+  const reviewDataPath = path.join(dataRootAbs, "review-data.json");
+  if (!fs.existsSync(reviewDataPath)) return;
+
+  let existing;
+  try {
+    existing = JSON.parse(fs.readFileSync(reviewDataPath, "utf8"));
+  } catch {
+    // Unparsable JSON — treat as stale and wipe.
+    logger.warn(`existing review-data.json unparsable, wiping data folder`);
+    wipeDataFolder(dataRootAbs);
+    return;
+  }
+
+  const existingVersion = existing?.schema_version ?? 1;
+  if (existingVersion < SCHEMA_VERSION) {
+    logger.warn(`stale schema_version=${existingVersion} detected, wiping data folder`);
+    wipeDataFolder(dataRootAbs);
+  }
+}
+
+function wipeDataFolder(dataRootAbs) {
+  // Only delete files we know belong to dev-review. Never recurse into
+  // unexpected siblings.
+  for (const name of ["review-data.json", "feedback.json", "review-history.json"]) {
+    const p = path.join(dataRootAbs, name);
+    if (fs.existsSync(p)) fs.rmSync(p);
+  }
+  const assetsDir = path.join(dataRootAbs, "assets");
+  if (fs.existsSync(assetsDir)) {
+    fs.rmSync(assetsDir, { recursive: true, force: true });
+  }
 }
 
 function ensurePathExists(target, flag, exitCode) {
@@ -239,16 +229,7 @@ function ensurePathExists(target, flag, exitCode) {
   }
 }
 
-function safeParse(rawDiff, logger, short) {
-  try {
-    return parseUnifiedDiff(rawDiff);
-  } catch (err) {
-    logger.warn(`diff parse failed for ${short}: ${err.message}`);
-    return [];
-  }
-}
-
-function assembleFiles(parsedFiles, nameStatus, numstat) {
+function assembleFiles(nameStatus, numstat) {
   const byPath = new Map();
   for (const entry of nameStatus) {
     byPath.set(entry.path, {
@@ -257,37 +238,25 @@ function assembleFiles(parsedFiles, nameStatus, numstat) {
       old_path: entry.oldPath ?? null,
       additions: 0,
       deletions: 0,
-      diff_hunks: [],
+      binary: false,
     });
   }
 
   for (const entry of numstat) {
-    const path = normalizeNumstatPath(entry.rawPath);
-    const row = byPath.get(path) || {
-      path,
+    const filePath = normalizeNumstatPath(entry.rawPath);
+    const isBinary = entry.rawAdditions === "-" && entry.rawDeletions === "-";
+    const row = byPath.get(filePath) || {
+      path: filePath,
       kind: "modified",
       old_path: null,
       additions: 0,
       deletions: 0,
-      diff_hunks: [],
+      binary: false,
     };
     row.additions = entry.additions;
     row.deletions = entry.deletions;
-    byPath.set(path, row);
-  }
-
-  for (const parsed of parsedFiles) {
-    const row = byPath.get(parsed.path) || {
-      path: parsed.path,
-      kind: "modified",
-      old_path: parsed.oldPath ?? null,
-      additions: 0,
-      deletions: 0,
-      diff_hunks: [],
-    };
-    row.diff_hunks = parsed.diff_hunks;
-    if (!row.old_path && parsed.oldPath) row.old_path = parsed.oldPath;
-    byPath.set(parsed.path, row);
+    row.binary = isBinary;
+    byPath.set(filePath, row);
   }
 
   return Array.from(byPath.values()).sort((a, b) => a.path.localeCompare(b.path));
