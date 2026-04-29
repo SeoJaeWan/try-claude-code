@@ -2,11 +2,11 @@
 
 ## Purpose
 
-Clarify ambiguous requests by locking the user's requested outcome, affected work bundles, public boundaries, ownership rules, exclusions, and pre-planning risk areas in the user's own language before planning starts.
+Clarify ambiguous requests or establish bounded diagnostic baselines by locking the user's requested outcome, affected work bundles, public boundaries, ownership rules, exclusions, current-state evidence, and pre-planning risk areas in the user's own language before planning starts.
 
 ## Entry Notes
 
-Use this as the entrypoint when ambiguity can change architecture, scope, tooling, API contracts, product policy, UX, or delivery strategy.
+Use this as the entrypoint when ambiguity or unknown current-system state can change architecture, scope, tooling, API contracts, product policy, UX, or delivery strategy.
 
 ## When to use
 
@@ -18,8 +18,13 @@ Use this as the entrypoint when ambiguity can change architecture, scope, toolin
 - Public props, callback names, state ownership, or exclusions are still unclear.
 - User-visible screens, layout, hierarchy, or state presentation are changing and the UI direction is still fuzzy.
 - The user wants clarification questions before committing to a plan.
+- Existing implementation, design-system, docs, runtime, preview, API, or visual parity problems must be diagnosed before the planning scope can be locked.
+- The user asks for a fix, cleanup, realignment, parity recovery, consistency review, or problem investigation, but the exact affected items are not yet known.
+- A bounded full-surface inventory is needed to separate confirmed facts, intended differences, missing evidence, and later planning decisions.
 
 ## When not to use
 
 - Request is already decision-complete with clear scope, acceptance criteria, and touched public contracts.
 - Task is straightforward with no meaningful tradeoff.
+- A focused bug has a known file, known failing behavior, and clear acceptance criteria that can be executed directly.
+- The user explicitly asks for immediate implementation and the affected boundary is already narrow and decision-complete.

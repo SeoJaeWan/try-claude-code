@@ -20,6 +20,22 @@ Rules:
 - If the user's wording is ambiguous, ask a concrete question instead of inventing a compressed label.
 - Prefer itemized request decomposition over abstract summarization.
 
+### 1a. Classify brainstorm path
+
+Choose one path before asking questions:
+
+| Path | Use when |
+| --- | --- |
+| Scope-lock path | User intent, UX, policy, public boundary, or acceptance is ambiguous. |
+| Diagnostic-lock path | User intent is mostly clear, but the existing system state must be inventoried before scope, acceptance, or planning risk can be locked. |
+
+Rules:
+
+- For scope-lock path, ask only unresolved high-impact questions after deriving what local context can answer.
+- For diagnostic-lock path, gather bounded evidence before asking questions unless the missing answer controls the investigation boundary itself.
+- Treat "full inventory" as full coverage inside the user's stated boundary, not as an unbounded repository-wide audit.
+- If both paths apply, lock the investigation boundary first, then run diagnostic inventory, then ask remaining confirmation questions.
+
 ### 2. Gather local context
 
 Read only what is needed:
@@ -34,6 +50,15 @@ Read only what is needed:
 
 Do not assume or depend on `./.ai/` or any other external AI metadata directory.
 Prefer related-artifact lookup before asking the user to restate a prior decision.
+
+For diagnostic-lock path:
+
+- Define the bounded investigation area from the user's wording before collecting evidence.
+- Inventory every relevant public item inside that boundary, not only the first broken example.
+- Compare authoritative references, current implementation, docs or controls, runtime behavior, tests, and available visual evidence when relevant.
+- Record evidence gaps separately from confirmed differences.
+- Do not turn findings into fixes during brainstorm; preserve them as facts, risks, open decisions, or planning inputs.
+- Do not treat a tool-specific output as complete evidence when the request depends on broader current-system state.
 
 ### 3. Run review wiki preflight when available
 
@@ -78,7 +103,6 @@ Before comparing implementation approaches, test the current framing:
 - What happens if nothing changes right now?
 - What existing code, flow, or policy already partially solves the request?
 - If the request introduces a new user-visible artifact or delivery boundary, does rollout or delivery need to be made explicit now?
-- If the request introduces a new user-visible artifact or delivery boundary, does rollout or delivery need to be made explicit now?
 
 Rules:
 
@@ -116,6 +140,7 @@ Rules:
 - Do not ask what can be derived from local context
 - Questions should help the user confirm scope and direction quickly
 - Prioritize blocking ambiguity that would change the implementation plan, tests, user-visible behavior, or public boundary
+- For diagnostic-lock path, ask before inventory only when the missing answer controls the investigation boundary; otherwise gather evidence first
 - If review wiki preflight ran, prioritize questions that close preflight-identified `blocking` ambiguity first
 - Prefer asking about concrete items, not planner taxonomies
 - If more than 4 blocking questions exist, ask them in rounds
@@ -172,10 +197,26 @@ Optional table when review wiki preflight matters:
    - `architect에 넘길 메모`
    - `남은 위험`
 
+Optional tables for diagnostic-lock path:
+
+7. `진단 기준선 표`
+   - `조사 경계`
+   - `권위 기준`
+   - `현재 확인 대상`
+   - `확인한 증거`
+   - `남은 공백`
+
+8. `차이 후보 표`
+   - `대상`
+   - `확인된 차이`
+   - `근거`
+   - `수정 판단 여부`
+   - `planning 전달 메모`
+
 Then include:
 
 - `남은 질문` if blocking ambiguity remains
-- `추천 다음 상태` such as `needs_review_wiki_setup`, `needs_locked_ui_direction`, `ready_for_planning`, or `ready_for_direct_execution`
+- `추천 다음 상태` such as `needs_review_wiki_setup`, `needs_locked_ui_direction`, `needs_diagnostic_inventory`, `needs_diagnostic_review`, `ready_for_planning`, or `ready_for_direct_execution`
 
 Response formatting rules:
 
@@ -200,6 +241,7 @@ Include:
 - `상태 소유권 표` when relevant
 - `제외 항목 표` when relevant
 - `review wiki preflight 메모` when relevant
+- `진단 기준선 표` and `차이 후보 표` when diagnostic-lock path is used
 - `남은 질문 / 가정`
 - `추천 다음 상태`
 
@@ -212,6 +254,7 @@ Before handoff, confirm:
 - No touched public boundary remains vague enough that implementation would have to guess
 - No user-visible UI direction remains vague enough that planning would force later design guessing
 - No exclusion was introduced without being made explicit
+- If diagnostic-lock path was used, the investigated boundary, evidence gaps, and confirmed differences are separated from proposed fixes
 - The user's requested items are still traceable in the request-lock tables
 - If review wiki preflight ran, its `blocking` findings are either locked or called out explicitly
 - If review wiki preflight could not run, the missing dependency is explicit before recommending planning
@@ -233,8 +276,9 @@ When planning is needed and scope is decision-complete enough for planning, prov
 3. The locked `공개 경계 표`
 4. Any `상태 소유권 표` or `제외 항목 표` that matters to planning
 5. Explicit defaults or deferred low-risk choices
-6. Review wiki preflight findings that `architect` should treat as already surfaced, or an explicit note that the preflight could not run because the review wiki root was missing
-7. Context7-confirmed external facts that `architect` should treat as already resolved, plus any still-risky assumptions that may require fallback verification
+6. Diagnostic baseline findings that `architect` should treat as already surfaced, including evidence gaps and confirmed differences when diagnostic-lock path was used
+7. Review wiki preflight findings that `architect` should treat as already surfaced, or an explicit note that the preflight could not run because the review wiki root was missing
+8. Context7-confirmed external facts that `architect` should treat as already resolved, plus any still-risky assumptions that may require fallback verification
 
 If planning is needed but `./.codex/review-wiki/sync/current` is missing or unreadable, state that review wiki setup is required before planning.
 
