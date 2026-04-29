@@ -87,7 +87,9 @@
       padding: 24px 28px 80px;
       width: 100%;
       min-width: 0;
+      /* min-width: 0 on the grid item itself — sidebar uses grid auto sizing */
     }
+    .app > main.main { min-width: 0; }
     .empty-main { color: var(--muted); padding: 40px 20px; text-align: center; }
 
     .commit-header { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px; margin-bottom: 18px; }
@@ -122,8 +124,15 @@
     .file-stats .add { color: var(--success); }
     .file-stats .del { color: var(--danger); }
 
-    .diff-area { display: grid; gap: 18px; }
+    .diff-area { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); min-width: 0; }
     .diff-area.dimmed { opacity: 0.55; }
+    /* Width containment for diff tables — vendor CSS ships no overflow-x on
+       .d2h-file-diff and long pre-formatted lines otherwise blow past the
+       1200px main column. Wrap each file box and let it scroll horizontally. */
+    .diff-area .d2h-file-wrapper { overflow: hidden; max-width: 100%; min-width: 0; }
+    .diff-area .d2h-file-diff { overflow-x: auto; }
+    .diff-area .d2h-files-diff { max-width: 100%; }
+    .diff-area .d2h-file-side-diff { min-width: 0; }
 
     /* Inline comment widget — injected as a <tr> inside the diff table */
     .comment-thread { background: var(--panel); }
@@ -144,10 +153,24 @@
     .comment-agent { font-size: 11px; color: var(--accent); margin-top: 4px; }
     .comment-stale-warning { font-size: 11px; color: var(--danger); margin-top: 4px; }
 
-    /* Add-comment hover button on diff gutter */
+    /* Add-comment hover indicator on diff gutter — CSS-only, no per-row DOM nodes */
     .d2h-code-side-linenumber, .d2h-code-linenumber { position: relative; user-select: none; }
-    .add-comment-btn { position: absolute; right: -6px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; border-radius: 4px; background: var(--accent); color: #fff; font-size: 12px; line-height: 18px; text-align: center; cursor: pointer; opacity: 0; transition: opacity 100ms ease; z-index: 4; border: none; padding: 0; font-weight: 700; }
-    tr:hover .add-comment-btn { opacity: 1; }
+    .diff-area:not(.submitted) tr:hover .d2h-code-linenumber[data-line]::before,
+    .diff-area:not(.submitted) tr:hover .d2h-code-side-linenumber[data-line]::before {
+      content: "+";
+      position: absolute;
+      right: -6px; top: 50%;
+      transform: translateY(-50%);
+      width: 18px; height: 18px;
+      border-radius: 4px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 12px; line-height: 18px;
+      text-align: center;
+      font-weight: 700;
+      z-index: 4;
+      pointer-events: none;
+    }
     tr.range-selected .d2h-code-side-linenumber, tr.range-selected .d2h-code-linenumber { background: rgba(9, 105, 218, 0.2) !important; }
 
     /* Comment popup overlay */
@@ -233,6 +256,9 @@
       activeSha: null,
       diffMode: localStorage.getItem("devreview.diffMode") || "unified",
       diffCache: new Map(),
+      // Tracks what the main panel currently has drawn so feedback-only
+      // changes (comments, viewed/oos toggles) skip the diff re-render.
+      rendered: { sha: null, mode: null, status: null },
     };
 
     // ---------- Initial load ----------
@@ -387,16 +413,38 @@
     async function renderMain() {
       const main = document.querySelector("#main");
       if (!state.activeSha) {
+        state.rendered = { sha: null, mode: null, status: null };
         main.innerHTML = `<div class="empty-main">No commits in this review.</div>`;
         return;
       }
       const commit = state.model.commits.find((c) => c.sha === state.activeSha);
       if (!commit) {
+        state.rendered = { sha: null, mode: null, status: null };
         main.innerHTML = `<div class="empty-main">Commit not found.</div>`;
         return;
       }
 
+      // Incremental path: same commit, same mode, same submit-state →
+      // only refresh the bits that depend on feedback (toolbar checkboxes,
+      // OOS dim/banner, inline comment threads, sidebar). Diff DOM is
+      // preserved so scroll position and Diff2Html/hljs work isn't redone.
+      if (
+        state.rendered.sha === commit.sha &&
+        state.rendered.mode === state.diffMode &&
+        state.rendered.status === state.feedback.review_status &&
+        main.querySelector("#diff-area")
+      ) {
+        updateVerdictToolbar(commit);
+        refreshInlineComments(commit);
+        return;
+      }
+
       main.innerHTML = "";
+      state.rendered = {
+        sha: commit.sha,
+        mode: state.diffMode,
+        status: state.feedback.review_status,
+      };
 
       if (state.feedback.review_status === "submitted") {
         const banner = document.createElement("div");
@@ -497,7 +545,10 @@
 
       // Diff area
       const diffArea = document.createElement("div");
-      diffArea.className = "diff-area" + (stat.out_of_scope ? " dimmed" : "");
+      const submittedNow = state.feedback.review_status === "submitted";
+      diffArea.className = "diff-area"
+        + (stat.out_of_scope ? " dimmed" : "")
+        + (submittedNow ? " submitted" : "");
       diffArea.id = "diff-area";
       main.appendChild(diffArea);
 
@@ -520,6 +571,30 @@
 
       // Decorate file wrappers with anchors and attach drag handlers
       decorateDiffArea(diffArea, commit);
+      renderInlineComments(diffArea, commit);
+    }
+
+    // Update only the verdict toolbar's checkbox states + dim banner —
+    // does not rebuild DOM, so event handlers and focus survive.
+    function updateVerdictToolbar(commit) {
+      const stat = state.feedback.commit_status[commit.sha] || { viewed: false, out_of_scope: false };
+      const tbViewed = document.querySelector("#tb-viewed");
+      const tbOos = document.querySelector("#tb-oos");
+      if (tbViewed) tbViewed.checked = !!stat.viewed;
+      if (tbOos) tbOos.checked = !!stat.out_of_scope;
+      const banner = document.querySelector("#oos-banner");
+      if (banner) banner.textContent = stat.out_of_scope ? "이 커밋은 리뷰 범위 외로 표시됨" : "";
+      const diffArea = document.querySelector("#diff-area");
+      if (diffArea) diffArea.classList.toggle("dimmed", !!stat.out_of_scope);
+    }
+
+    // Re-render only the inline comment threads. Existing diff DOM is left
+    // alone — we tear out previous .comment-thread rows and insert fresh
+    // ones from current feedback. Cheap relative to a full Diff2Html redraw.
+    function refreshInlineComments(commit) {
+      const diffArea = document.querySelector("#diff-area");
+      if (!diffArea) return;
+      diffArea.querySelectorAll("tr.comment-thread").forEach((tr) => tr.remove());
       renderInlineComments(diffArea, commit);
     }
 
@@ -580,25 +655,6 @@
             cell.dataset.line = num;
             cell.dataset.side = side;
             cell.dataset.file = path;
-            // Attach + button
-            if (state.feedback.review_status !== "submitted") {
-              const btn = document.createElement("button");
-              btn.className = "add-comment-btn";
-              btn.textContent = "+";
-              btn.title = "Add comment";
-              btn.addEventListener("click", (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                openCommentPopup({
-                  commit_sha: commit.sha,
-                  file: path,
-                  side,
-                  line_start: num,
-                  line_end: num,
-                });
-              });
-              cell.appendChild(btn);
-            }
           }
         }
 
@@ -612,7 +668,6 @@
       const onMouseDown = (e) => {
         const cell = e.target.closest(".d2h-code-side-linenumber, .d2h-code-linenumber");
         if (!cell || !cell.dataset.line) return;
-        if (e.target.classList.contains("add-comment-btn")) return;
         dragStart = {
           line: parseInt(cell.dataset.line, 10),
           side: cell.dataset.side,
@@ -640,7 +695,6 @@
         const endLine = parseInt(cell.dataset.line, 10);
         const lineStart = Math.min(start.line, endLine);
         const lineEnd = Math.max(start.line, endLine);
-        if (lineStart === lineEnd) return; // simple click is handled by + button
         openCommentPopup({
           commit_sha: commit.sha,
           file: start.file,
