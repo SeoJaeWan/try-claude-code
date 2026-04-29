@@ -109,6 +109,7 @@ Phase objects:
 {
   "id": "P1",
   "title": "Phase title",
+  "review_item_signature": "rvw-1234abcd",
   "owner_agent": "frontend-developer",
   "goal": "",
   "changes": [],
@@ -119,6 +120,14 @@ Phase objects:
   "ui_previews": []
 }
 ```
+
+Overview and every phase/card that can participate in approval must have a stable `review_item_signature`.
+
+- Prefer generating `review_item_signature` from a deterministic canonical JSON hash of only the user-visible review item content plus the global scope/contract context that changes the meaning of that item.
+- Include current Overview scope/contract fields in phase signatures so a scope change invalidates phase approvals even when the phase prose did not change.
+- Do not include volatile fields such as timestamps, history, current feedback, or `review_item_signature` itself.
+- If a legacy package lacks `review_item_signature`, the browser/server may derive a fallback signature from `review-data.json`, but newly generated packages should write the field explicitly.
+- Treat step IDs as display/routing IDs only. Do not use `P2` alone to carry approval across plan revisions because phase insertion or reordering can change its meaning.
 
 When phase detail files define `owner_agent`, preserve that field in `review-data.json` and surface it inside each phase body. Do not require a separate sidebar summary for agent routing.
 
@@ -162,7 +171,13 @@ Expected shape:
   "steps": {
     "overview": {
       "status": "approved",
-      "comment": ""
+      "comment": "",
+      "approved_against": {
+        "plan_signature": "abc123",
+        "review_item_signature": "rvw-overview-1234",
+        "approved_at": "2026-04-23T00:00:00.000Z",
+        "carried_from_plan_signature": null
+      }
     },
     "P1": {
       "status": "needs-change",
@@ -174,6 +189,15 @@ Expected shape:
 ```
 
 When the final step is submitted, set `review_status` to `submitted`.
+
+Approval evidence rules:
+
+- Store `approved_against` only for `status = approved`.
+- `approved_against.plan_signature` must match the current `review-data.json.plan_signature`.
+- `approved_against.review_item_signature` must match the current item `review_item_signature`.
+- When carrying approval forward from a previous plan signature, rewrite `approved_against.plan_signature` to the current plan signature and set `carried_from_plan_signature` to the prior signature.
+- When a user changes any status/comment after submit, set `review_status` back to `in_progress` until the final step is submitted again.
+- Non-approved statuses (`needs-change`, `question`, `out-of-scope`) do not carry forward across regenerated packages; preserve their submitted round in `review-history.json` instead.
 
 ## Review history model
 
@@ -228,20 +252,20 @@ Rules:
 Read `feedback.json`.
 
 - If `plan_signature` differs from the current plan signature, discard the feedback and regenerate the review data package.
-- If every required step is `approved` and `review_status = submitted`, treat the current `plan_signature` as explicitly approved and continue to `plan-materialize`.
+- If every required step is `approved`, every approval has matching `approved_against` evidence, and `review_status = submitted`, treat the current `plan_signature` as explicitly approved and continue to `plan-materialize`.
 - If any required step or card is not `approved`, developer approval is absent and feedback triage is required:
   - append or update a review-history round before resetting `feedback.json`, regenerating the package, or changing `plan_signature`
   - do not route directly from the raw status label alone
   - classify non-approved feedback as `answer_only`, `request_lock`, `scope_decision`, `ui_direction`, or `plan_revision`
-  - if every non-approved item is `answer_only`, answer in chat, reset `feedback.json` to a fresh in-progress review for the same `plan_signature`, and require fresh browser review
+  - if every non-approved item is `answer_only`, answer in chat, refresh `feedback.json` for the same `plan_signature` by preserving unchanged approved items and clearing non-approved live statuses, then require browser re-submit
   - if any item is `request_lock` or `scope_decision`, lock request scope first and only hand off to `architect` after the request is locked again
   - if any item is `ui_direction`, lock UI direction first unless the real blocker is still product framing, in which case return to request-scope clarification
-  - if the remaining items are `plan_revision`, route the exact feedback path and affected IDs to `architect`, then rerun `plan-review` and regenerate the review data package
+  - if the remaining items are `plan_revision`, route the exact feedback path and affected IDs to `architect`, then rerun `plan-review` and regenerate the review data package with only still-matching approvals carried forward
 - If feedback is missing, incomplete, or still `in_progress`, ask the user to finish the browser review and press submit.
 
 ## Invalidations
 
-Any change to `plan_signature` invalidates all prior developer review approvals. Regenerate the review data package and require review again.
+Any change to `plan_signature` invalidates package-level approval, but not every item-level approval. Regenerate the review data package, carry forward only prior `approved` items whose current `review_item_signature` is identical, and require browser re-submit. If an item's signature is missing, changed, or unverifiable, clear that item's status and require fresh review.
 
 ## Guardrails
 
@@ -255,3 +279,4 @@ Any change to `plan_signature` invalidates all prior developer review approvals.
 - Do not leave same-signature answer-only feedback in the submitted non-approved state after the controller answered it.
 - Do not drop previous review rounds when resetting `feedback.json` or regenerating the package.
 - Do not mix editable current feedback controls with historical review/action evidence.
+- Do not carry forward approval by step ID alone; require matching item approval evidence.

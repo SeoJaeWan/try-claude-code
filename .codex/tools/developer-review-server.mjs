@@ -107,6 +107,177 @@ async function readJsonFile(filePath, fallback) {
   }
 }
 
+const VALID_FEEDBACK_STATUSES = new Set(["", "approved", "needs-change", "question", "out-of-scope"]);
+
+function asArray(value) {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+function canonicalize(value) {
+  if (Array.isArray(value)) {
+    return value.map(canonicalize);
+  }
+  if (value && typeof value === "object") {
+    const ignored = new Set(["review_item_signature", "signature"]);
+    return Object.keys(value)
+      .filter((key) => !ignored.has(key) && value[key] !== undefined)
+      .sort()
+      .reduce((result, key) => {
+        result[key] = canonicalize(value[key]);
+        return result;
+      }, {});
+  }
+  return value ?? null;
+}
+
+function hashString(value) {
+  let h1 = 0xdeadbeef ^ value.length;
+  let h2 = 0x41c6ce57 ^ value.length;
+  for (let i = 0; i < value.length; i += 1) {
+    const ch = value.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return `rvw-${(h2 >>> 0).toString(16).padStart(8, "0")}${(h1 >>> 0).toString(16).padStart(8, "0")}`;
+}
+
+function reviewItemSignatureFromPayload(payload) {
+  return hashString(JSON.stringify(canonicalize(payload)));
+}
+
+function reviewGlobalContext(model) {
+  const overview = model?.overview || {};
+  return {
+    task_slug: model?.task_slug || "",
+    title: model?.title || "",
+    review_outcome: model?.review_outcome || "",
+    review_findings: asArray(model?.review_findings),
+    overview_scope: {
+      user_request: asArray(overview.user_request),
+      included_scope: asArray(overview.included_scope),
+      excluded_scope: asArray(overview.excluded_scope),
+      change_shape: overview.change_shape || "",
+      change_flow: asArray(overview.change_flow),
+      major_changes: asArray(overview.major_changes)
+    }
+  };
+}
+
+function overviewSignaturePayload(model) {
+  const overview = model?.overview || {};
+  return {
+    kind: "overview",
+    id: "overview",
+    title: model?.title || "",
+    review_outcome: model?.review_outcome || "",
+    review_findings: asArray(model?.review_findings),
+    overview: {
+      user_request: asArray(overview.user_request),
+      understanding: overview.understanding || "",
+      included_scope: asArray(overview.included_scope),
+      excluded_scope: asArray(overview.excluded_scope),
+      change_shape: overview.change_shape || "",
+      change_flow: asArray(overview.change_flow),
+      major_changes: asArray(overview.major_changes),
+      risks: asArray(overview.risks),
+      ui_previews: asArray(overview.ui_previews)
+    }
+  };
+}
+
+function phaseSignaturePayload(model, phase, index) {
+  return {
+    kind: "phase",
+    id: phase?.id || `P${index + 1}`,
+    global_context: reviewGlobalContext(model),
+    phase: {
+      id: phase?.id || `P${index + 1}`,
+      title: phase?.title || "",
+      owner_agent: phase?.owner_agent || "",
+      goal: phase?.goal || "",
+      changes: asArray(phase?.changes),
+      contracts: asArray(phase?.contracts),
+      file_impacts: asArray(phase?.file_impacts),
+      validation: asArray(phase?.validation),
+      risks: asArray(phase?.risks),
+      ui_previews: asArray(phase?.ui_previews)
+    }
+  };
+}
+
+function cardSignaturePayload(model, card, index) {
+  return {
+    kind: "card",
+    id: card?.id || `C${index + 1}`,
+    global_context: reviewGlobalContext(model),
+    card
+  };
+}
+
+function itemSignature(item, fallbackPayload) {
+  return item?.review_item_signature || item?.signature || reviewItemSignatureFromPayload(fallbackPayload);
+}
+
+function currentReviewItemSignatures(model) {
+  const result = new Map();
+  result.set("overview", itemSignature(model?.overview || {}, overviewSignaturePayload(model)));
+  asArray(model?.phases).forEach((phase, index) => {
+    if (!phase || typeof phase !== "object") return;
+    const id = phase.id || `P${index + 1}`;
+    result.set(id, itemSignature(phase, phaseSignaturePayload(model, phase, index)));
+  });
+  asArray(model?.cards).forEach((card, index) => {
+    if (!card || typeof card !== "object") return;
+    const id = card.id || `C${index + 1}`;
+    result.set(id, itemSignature(card, cardSignaturePayload(model, card, index)));
+  });
+  result.set("final", `final-${model?.plan_signature || ""}`);
+  return result;
+}
+
+function validateFeedbackCollection(collection, itemSignatures, label, planSignature) {
+  if (!collection || typeof collection !== "object") return null;
+  for (const [itemId, item] of Object.entries(collection)) {
+    if (!item || typeof item !== "object") {
+      return `${label}.${itemId} must be an object`;
+    }
+    const status = typeof item.status === "string" ? item.status : "";
+    if (!VALID_FEEDBACK_STATUSES.has(status)) {
+      return `${label}.${itemId}.status is invalid`;
+    }
+    if (status !== "approved") {
+      continue;
+    }
+    const expectedSignature = itemSignatures.get(itemId);
+    if (!expectedSignature) {
+      return `${label}.${itemId} is not present in current review-data`;
+    }
+    const approvedAgainst = item.approved_against;
+    if (!approvedAgainst || typeof approvedAgainst !== "object") {
+      return `${label}.${itemId}.approved_against is required for approved status`;
+    }
+    if (approvedAgainst.plan_signature !== planSignature) {
+      return `${label}.${itemId}.approved_against.plan_signature is stale`;
+    }
+    if (approvedAgainst.review_item_signature !== expectedSignature) {
+      return `${label}.${itemId}.approved_against.review_item_signature is stale`;
+    }
+  }
+  return null;
+}
+
+function validateFeedbackForModel(feedback, model) {
+  if (!feedback.steps || typeof feedback.steps !== "object") {
+    return "feedback.steps must be an object";
+  }
+  const itemSignatures = currentReviewItemSignatures(model);
+  return validateFeedbackCollection(feedback.steps, itemSignatures, "steps", model.plan_signature) ||
+    validateFeedbackCollection(feedback.cards, itemSignatures, "cards", model.plan_signature);
+}
+
 async function writeJsonAtomic(filePath, value) {
   const tmp = `${filePath}.tmp`;
   await writeFile(tmp, `${JSON.stringify(value, null, 2)}\n`, "utf8");
@@ -238,6 +409,11 @@ async function handleApi(req, res, pathname) {
       }
       if (feedback.plan_signature !== model.plan_signature) {
         return sendJson(res, 409, { error: "plan_signature mismatch" });
+      }
+
+      const validationError = validateFeedbackForModel(feedback, model);
+      if (validationError) {
+        return sendJson(res, 400, { error: validationError });
       }
 
       feedback.updated_at = new Date().toISOString();

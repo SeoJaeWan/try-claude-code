@@ -19,7 +19,7 @@
 - Do not abandon a still-progressing role pass just because an initial short wait expired.
 - Do not respawn duplicate planning sub-agents for the same unchanged handoff when the earlier pass is still running and making recent progress.
 - Do not bypass review after architect revisions.
-- Do not reuse approval after the plan changes.
+- Do not reuse approval after the plan changes unless the current review item signature still matches and the browser review is submitted again.
 - Do not route non-approved developer review feedback directly to `architect` from status labels alone.
 - Do not treat `question` as automatically meaning `architect`.
 - Do not continue to materialization while any required developer review step or card is not `approved`.

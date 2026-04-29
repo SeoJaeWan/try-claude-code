@@ -89,14 +89,14 @@ This helper state must be safely discardable between turns.
 
 - The current plan fingerprint is `plan_signature`: a stable short fingerprint of the current `plan.md` plus every linked phase detail file.
 - A `review.md` artifact is fresh only when both `plan_path` and `plan_signature` match the current plan artifacts on disk.
-- A developer review package is fresh only when `review-data.json`, `feedback.json`, and `review-history.json` are all present, and the current developer-review model files reference the current `plan_signature` appropriately.
-- Developer review approval is valid only when `feedback.json` has `review_status = submitted`, every required step is `approved`, and its `plan_signature` matches the current plan signature.
+- A developer review package is fresh only when `review-data.json`, `feedback.json`, and `review-history.json` are all present, the current developer-review model files reference the current `plan_signature` appropriately, and required review items have stable `review_item_signature` values or deterministic fallback signatures.
+- Developer review approval is valid only when `feedback.json` has `review_status = submitted`, every required step is `approved`, each approval has current `approved_against.review_item_signature` evidence, and its `plan_signature` matches the current plan signature.
 - Submitted developer review feedback with any required step or card not `approved` is fresh triage input, not approval.
 - `review-history.json` may contain prior signatures, but its `current_plan_signature` must match the current plan signature whenever the developer review package is refreshed.
 - A `materialize.md` artifact is fresh only when both `plan_path` and `plan_signature` match the current plan artifacts on disk.
 - A Figma inventory `manifest.json` is fresh only when its `fileKey`, required root nodes, required paths, required markers, and supported `schemaVersion` match the current handoff; every required root is `ok` or `ok_by_shards`, with `partial_names_only` allowed only when the current handoff explicitly accepts names-only coverage for that root or path; every referenced snapshot path exists; `coverageComplete = true`; `truncated = false`; and its coverage has no missing required paths.
-- Developer approval is valid only for the exact current `plan_signature` recorded in developer review feedback.
-- When `plan_signature` changes, treat previous cold review, developer review approval, and materialization state as stale and recompute from artifacts.
+- Developer approval is valid only for the exact current `plan_signature` recorded in developer review feedback, but unchanged item-level approvals may be carried into the current feedback when their `review_item_signature` still matches.
+- When `plan_signature` changes, treat previous cold review, package-level developer review approval, and materialization state as stale and recompute from artifacts; carry forward only matching item-level approvals into the next browser re-submit.
 
 ## Wait Policy
 

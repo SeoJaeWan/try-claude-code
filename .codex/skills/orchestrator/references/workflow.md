@@ -39,8 +39,8 @@ Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output ru
 - If no executable `plan.md` exists for the selected `task-slug`, route first to an `architect` pass.
 - If `plan.md` exists, compute current `plan_signature` and determine whether `review.md`, developer review package/feedback, and `materialize.md` are fresh.
 - Do not reconstruct hidden stage from old chat text when artifacts disagree.
-- If current developer review approval cannot be tied to current `plan_signature`, treat approval as absent and require browser review again later.
-- Developer review approval is binary: every required Overview and Phase step must be `approved`.
+- If current developer review approval cannot be tied to current `plan_signature` and matching per-item approval evidence, treat approval as absent and require browser review again later.
+- Developer review approval is binary at the gate: every required Overview and Phase step must be `approved` with current `approved_against.review_item_signature` evidence.
 - If `feedback.json` is submitted and any required step or card is not `approved`, treat the state as `feedback_triage_pending`.
 - When feedback triage is pending, do not continue to materialization and do not route directly to `architect` from raw feedback labels.
 - Use Step 6 to decide whether the next safe route is chat clarification, request-scope locking, UI direction locking, or `architect`.

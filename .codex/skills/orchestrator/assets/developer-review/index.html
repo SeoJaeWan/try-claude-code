@@ -498,6 +498,141 @@
       }[ch]));
     }
 
+    function canonicalize(value) {
+      if (Array.isArray(value)) {
+        return value.map(canonicalize);
+      }
+      if (value && typeof value === "object") {
+        const ignored = new Set(["review_item_signature", "signature"]);
+        return Object.keys(value)
+          .filter((key) => !ignored.has(key) && value[key] !== undefined)
+          .sort()
+          .reduce((result, key) => {
+            result[key] = canonicalize(value[key]);
+            return result;
+          }, {});
+      }
+      return value ?? null;
+    }
+
+    function hashString(value) {
+      let h1 = 0xdeadbeef ^ value.length;
+      let h2 = 0x41c6ce57 ^ value.length;
+      for (let i = 0; i < value.length; i += 1) {
+        const ch = value.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+      }
+      h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+      h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+      return `rvw-${(h2 >>> 0).toString(16).padStart(8, "0")}${(h1 >>> 0).toString(16).padStart(8, "0")}`;
+    }
+
+    function reviewGlobalContext(value) {
+      const overview = value?.overview || {};
+      return {
+        task_slug: value?.task_slug || "",
+        title: value?.title || "",
+        review_outcome: value?.review_outcome || "",
+        review_findings: asArray(value?.review_findings),
+        overview_scope: {
+          user_request: asArray(overview.user_request),
+          included_scope: asArray(overview.included_scope),
+          excluded_scope: asArray(overview.excluded_scope),
+          change_shape: overview.change_shape || "",
+          change_flow: asArray(overview.change_flow),
+          major_changes: asArray(overview.major_changes)
+        }
+      };
+    }
+
+    function overviewSignaturePayload(value) {
+      const overview = value?.overview || {};
+      return {
+        kind: "overview",
+        id: "overview",
+        title: value?.title || "",
+        review_outcome: value?.review_outcome || "",
+        review_findings: asArray(value?.review_findings),
+        overview: {
+          user_request: asArray(overview.user_request),
+          understanding: overview.understanding || "",
+          included_scope: asArray(overview.included_scope),
+          excluded_scope: asArray(overview.excluded_scope),
+          change_shape: overview.change_shape || "",
+          change_flow: asArray(overview.change_flow),
+          major_changes: asArray(overview.major_changes),
+          risks: asArray(overview.risks),
+          ui_previews: asArray(overview.ui_previews)
+        }
+      };
+    }
+
+    function phaseSignaturePayload(value, phase, index) {
+      return {
+        kind: "phase",
+        id: phase?.id || `P${index + 1}`,
+        global_context: reviewGlobalContext(value),
+        phase: {
+          id: phase?.id || `P${index + 1}`,
+          title: phase?.title || "",
+          owner_agent: phase?.owner_agent || "",
+          goal: phase?.goal || "",
+          changes: asArray(phase?.changes),
+          contracts: asArray(phase?.contracts),
+          file_impacts: asArray(phase?.file_impacts),
+          validation: asArray(phase?.validation),
+          risks: asArray(phase?.risks),
+          ui_previews: asArray(phase?.ui_previews)
+        }
+      };
+    }
+
+    function reviewItemSignatureFromPayload(payload) {
+      return hashString(JSON.stringify(canonicalize(payload)));
+    }
+
+    function attachReviewItemSignatures(value) {
+      if (!value || typeof value !== "object") return value;
+      if (value.overview && typeof value.overview === "object" && !value.overview.review_item_signature) {
+        value.overview.review_item_signature = reviewItemSignatureFromPayload(overviewSignaturePayload(value));
+      }
+      asArray(value.phases).forEach((phase, index) => {
+        if (phase && typeof phase === "object" && !phase.review_item_signature) {
+          phase.review_item_signature = reviewItemSignatureFromPayload(phaseSignaturePayload(value, phase, index));
+        }
+      });
+      return value;
+    }
+
+    function reviewItemSignature(step) {
+      return step?.review_item_signature || "";
+    }
+
+    function approvalEvidence(step, approvedAt = null, carriedFromPlanSignature = null) {
+      const carriedFrom = carriedFromPlanSignature && carriedFromPlanSignature !== model.plan_signature
+        ? carriedFromPlanSignature
+        : null;
+      return {
+        plan_signature: model.plan_signature,
+        review_item_signature: reviewItemSignature(step),
+        approved_at: approvedAt || new Date().toISOString(),
+        carried_from_plan_signature: carriedFrom
+      };
+    }
+
+    function isFreshApproval(item, step) {
+      return item?.status === "approved" &&
+        Boolean(reviewItemSignature(step)) &&
+        item?.approved_against?.review_item_signature === reviewItemSignature(step);
+    }
+
+    function markEdited() {
+      if (feedback.review_status === "submitted") {
+        feedback.review_status = "in_progress";
+      }
+    }
+
     function list(items) {
       const normalized = asArray(items).filter(Boolean);
       if (!normalized.length) return "<p class=\"meta\">없음</p>";
@@ -678,29 +813,41 @@
         return;
       }
 
-      model = normalizePreviewAssets(await loadJson(reviewDataPath, null));
+      model = await loadJson(reviewDataPath, null);
       if (!model) {
         $("content").innerHTML = "<h1>review-data.json을 찾을 수 없습니다.</h1>";
         return;
       }
+      attachReviewItemSignatures(model);
+      model = normalizePreviewAssets(model);
 
       reviewHistory = await loadJson(apiPath("review-history"), createHistoryFallback());
       const existing = await loadJson(apiPath("feedback"), null);
-      feedback = existing && existing.plan_signature === model.plan_signature
-        ? existing
-        : createFeedback();
 
       steps = [
-        { id: "overview", label: "Overview", kind: "overview" },
+        {
+          id: "overview",
+          label: "Overview",
+          kind: "overview",
+          review_item_signature: model.overview?.review_item_signature || ""
+        },
         ...asArray(model.phases).map((phase, index) => ({
           id: phase.id || `P${index + 1}`,
           label: phase.title || `Phase ${index + 1}`,
           kind: "phase",
+          review_item_signature: phase.review_item_signature || "",
           phase
         })),
-        { id: "final", label: "Final", kind: "final" }
+        {
+          id: "final",
+          label: "Final",
+          kind: "final",
+          review_item_signature: `final-${model.plan_signature || ""}`
+        }
       ];
 
+      feedback = createFeedback();
+      mergeExistingFeedback(existing);
       ensureStepFeedback();
       render();
     }
@@ -717,7 +864,59 @@
       };
     }
 
+    function mergeExistingFeedback(existing) {
+      if (!existing || typeof existing !== "object") return;
+      if (existing.task_slug && existing.task_slug !== model.task_slug) return;
+
+      const samePlan = existing.plan_signature === model.plan_signature;
+      if (samePlan && existing.review_status === "submitted") {
+        feedback.review_status = "submitted";
+      }
+
+      steps.forEach((step) => {
+        const prior = existing.steps?.[step.id];
+        if (!prior || typeof prior !== "object") return;
+
+        const next = {
+          status: typeof prior.status === "string" ? prior.status : "",
+          comment: typeof prior.comment === "string" ? prior.comment : ""
+        };
+
+        if (samePlan) {
+          if (next.status === "approved") {
+            if (isFreshApproval(prior, step) || !prior.approved_against) {
+              next.approved_against = approvalEvidence(
+                step,
+                prior.approved_against?.approved_at,
+                prior.approved_against?.carried_from_plan_signature
+              );
+            } else {
+              next.status = "";
+              next.comment = "";
+            }
+          }
+          feedback.steps[step.id] = next;
+          return;
+        }
+
+        if (isFreshApproval(prior, step)) {
+          const carriedFrom = prior.approved_against?.carried_from_plan_signature ||
+            prior.approved_against?.plan_signature ||
+            existing.plan_signature ||
+            null;
+          feedback.steps[step.id] = {
+            status: "approved",
+            comment: next.comment,
+            approved_against: approvalEvidence(step, prior.approved_against?.approved_at, carriedFrom)
+          };
+        }
+      });
+    }
+
     function ensureStepFeedback() {
+      if (!feedback.steps || typeof feedback.steps !== "object") {
+        feedback.steps = {};
+      }
       steps.forEach((step) => {
         if (!feedback.steps[step.id]) {
           feedback.steps[step.id] = { status: "", comment: "" };
@@ -833,6 +1032,7 @@
         <textarea id="comment" placeholder="수정 요청이나 질문을 적어주세요.">${esc(item.comment || "")}</textarea>
       `;
       $("comment").addEventListener("input", (event) => {
+        markEdited();
         feedback.steps[step.id].comment = event.target.value;
         saveDebounced();
       });
@@ -840,7 +1040,17 @@
 
     function setStatus(status) {
       const step = steps[current];
+      markEdited();
       feedback.steps[step.id].status = status;
+      if (status === "approved") {
+        feedback.steps[step.id].approved_against = approvalEvidence(
+          step,
+          feedback.steps[step.id].approved_against?.approved_at,
+          feedback.steps[step.id].approved_against?.carried_from_plan_signature
+        );
+      } else {
+        delete feedback.steps[step.id].approved_against;
+      }
       saveDebounced();
       render();
     }
@@ -861,7 +1071,22 @@
     }
 
     async function save(submitted = false) {
-      if (submitted) feedback.review_status = "submitted";
+      if (submitted) {
+        steps.forEach((step) => {
+          const item = feedback.steps[step.id];
+          if (!item) return;
+          if (item.status === "approved") {
+            item.approved_against = approvalEvidence(
+              step,
+              item.approved_against?.approved_at,
+              item.approved_against?.carried_from_plan_signature
+            );
+          } else {
+            delete item.approved_against;
+          }
+        });
+        feedback.review_status = "submitted";
+      }
       feedback.updated_at = new Date().toISOString();
       const res = await fetch(apiPath("feedback"), {
         method: "POST",

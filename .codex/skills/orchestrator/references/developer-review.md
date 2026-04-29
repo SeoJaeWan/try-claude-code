@@ -16,6 +16,7 @@ At the gate:
 - Do not copy `./assets/developer-review/index.html` into the plan folder; the shared server serves the fixed HTML app from `.codex`.
 - Generate `review-data.json` from current `plan.md`, linked phase detail files, and fresh `review.md`.
 - Create or refresh `review-history.json` for current `task-slug` and `plan_signature`.
+- Ensure Overview and every required Phase/card in `review-data.json` has a stable `review_item_signature`; include global scope/contract context in phase signatures so scope changes invalidate affected approvals.
 - Ensure `review-data.json` is user-readable and not a raw markdown dump:
   - Overview shows the user's request, planner understanding, included scope, excluded scope, change shape, major changes, risks, and review findings.
   - Each phase step shows only that phase's goal, changes, contracts, file impact, validation, risks, UI plan preview when applicable, and phase `owner_agent` when known.
@@ -23,7 +24,11 @@ At the gate:
   - UI preview is plan-level visual explanation only; do not imply functional implementation exists.
   - `Previous`, `Next`, and direct step navigation reset visible review content to the top of the current step.
 - Ensure the developer review package exposes historical rounds and controller action summaries from `review-history.json`.
-- Initialize or reset `feedback.json` for current `plan_signature` with `review_status = in_progress`.
+- Initialize or refresh `feedback.json` for current `plan_signature` with `review_status = in_progress`:
+  - on the first review, leave all statuses empty
+  - on later reviews, preserve only prior `approved` items whose `approved_against.review_item_signature` matches the current `review_item_signature`
+  - clear prior `needs-change`, `question`, and `out-of-scope` live statuses after preserving the submitted round in `review-history.json`
+  - do not carry approval forward when item signature evidence is missing or mismatched
 - Auto-start the shared server through the platform-neutral Node launcher; do not ask the user to run a `node` command:
   1. Run `node .codex/tools/start-developer-review-server.mjs --task-slug {task-slug} --plan-signature {plan_signature}` from the repository root.
   2. The launcher must health-check existing compatible servers, start `.codex/tools/developer-review-server.mjs` as a detached background process when needed, skip foreign processes on occupied ports, choose an alternate port when needed, and print `developer_review_url=...`.
@@ -35,7 +40,7 @@ When the user says `review complete`, read `feedback.json`:
 
 - if `task_slug` or `plan_signature` differs from current plan state, regenerate the package and require review again
 - if `review_status` is not `submitted`, ask the user to submit the browser review first
-- if every required Overview and Phase step is `approved`, treat current `plan_signature` as explicitly approved and continue to Step 7 before materialization
+- if every required Overview and Phase step is `approved` and each approval has current `approved_against` evidence, treat current `plan_signature` as explicitly approved and continue to Step 7 before materialization
 - if any required Overview or Phase step or card is not `approved`, run Step 6 before choosing the next role pass
 
 ## Step 6. Triage Developer Review Feedback
@@ -69,10 +74,10 @@ After the triage route is selected and the active history round is updated, run 
 
 Route by triage result:
 
-- `answer_only`: answer in chat from current plan/review/package, update active history round with answer summary and same-signature re-review outcome, refresh `feedback.json` for the same signature, require fresh browser review, and do not invoke `architect`.
+- `answer_only`: answer in chat from current plan/review/package, update active history round with answer summary and same-signature re-review outcome, refresh `feedback.json` for the same signature while preserving only unchanged approved items, require browser re-submit, and do not invoke `architect`.
 - `scope_decision` or `request_lock`: ask direct questions first when underspecified, then run or reuse the request-scope locking capability with exact task, plan, `review_wiki_root`, current `plan_signature`, latest `feedback.json`, locked request summary when available, verified inputs, and chat-only output contract unless the user asked for an artifact.
 - `ui_direction`: ask for request-scope clarification first if product framing or scope is unstable; otherwise run or reuse the UI-spec capability with exact task, plan, current signature, latest `feedback.json`, locked request summary when available, verified inputs, and chat-only output contract unless the user asked for an artifact.
-- `plan_revision`: record the revision route in `review-history.json`, run Step 7, route exact feedback path and affected IDs to `architect`, rerun `plan-review`, regenerate the review data package, and require fresh browser review.
+- `plan_revision`: record the revision route in `review-history.json`, run Step 7, route exact feedback path and affected IDs to `architect`, rerun `plan-review`, regenerate the review data package, carry forward only approvals whose item signatures still match, and require browser re-submit.
 
 Required sub-agent terminal results:
 
