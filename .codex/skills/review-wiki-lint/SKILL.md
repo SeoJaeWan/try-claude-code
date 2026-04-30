@@ -51,6 +51,8 @@ Use this skill to inspect the review wiki without silently rewriting it. Resolve
 - Ensure duplicate or conflicting rules are identified across exact domain tags and registry-declared adjacent domain tags.
 - Ensure stale guidance is marked or rewritten only when the raw evidence and current core contract justify it.
 - Ensure promoted pattern frontmatter includes Korean `title` and `summary`.
+- Ensure promoted pattern frontmatter uses Obsidian-compatible `tags` as a list, not a nested routing object.
+- Ensure `domains`, `domain_tags`, `stages`, and `risks` mirror the derived `review-wiki/...` values in `tags`.
 - Ensure promoted pattern bodies use the docs-first Korean headings `개요`, `문제`, `적용 조건`, `해야 할 것`, `피해야 할 것`, `적용 예시`, `판단 근거`, and `관련 문서`.
 - Ensure human-readable prose is Korean-first and does not contain avoidable mixed phrases like `user action`, `surface`, `boundary`, `contract`, `validation`, `state`, `phase`, or `owner` unless the term is a code/API/schema/path/tag token.
 - Ensure tag pages avoid long comma-separated link lines and use readable bullet lists for related tags or patterns.

@@ -51,6 +51,7 @@ Use this skill to process feedback captured from the review wiki docs UI. Resolv
    - Check `wiki/registry.json` remains valid JSON.
    - Check Obsidian wikilinks still resolve.
    - Check affected domain pages link only to tag pages, affected tag pages link only to matching patterns, and patterns remain the owner of raw evidence links.
+   - Check pattern frontmatter keeps `tags` as an Obsidian-compatible list and stores routing metadata in `domains`, `domain_tags`, `stages`, and `risks`.
    - Check `wiki/index.md` and `wiki/docs/**` were not introduced.
    - Run the configured docs build when a docs project exists and the user asked for docs verification.
 

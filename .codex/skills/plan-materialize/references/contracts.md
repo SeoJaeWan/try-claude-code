@@ -37,10 +37,11 @@ Materialize tests after planning, not during implementation.
     - Component Test signals: Testing Library/jsdom setup, Playwright component setup, Storybook interaction tests, existing rendered component specs, and repo-local component harness conventions
     - E2E signals: `playwright.config.*`, `.maestro/`, existing browser/mobile E2E files
     - first-work signals from the selected plan: planned package script names, planned runner, planned config paths, planned spec roots, and planned browser/mobile bootstrap commands
-6. `./references/unit-test-conventions.md` when logic boundaries are in scope
-7. `./references/component-test-conventions.md` when component rendering or same-screen interaction boundaries are in scope
-8. `./references/e2e-test-conventions.md` when frontend browser journeys are in scope
-9. `../architect/references/terminology-policy.md` before writing report prose or test intent text
+6. `./references/test-authoring-conventions.md` before writing source-tree tests
+7. `./references/unit-test-conventions.md` when logic boundaries are in scope
+8. `./references/component-test-conventions.md` when component rendering or same-screen interaction boundaries are in scope
+9. `./references/e2e-test-conventions.md` when frontend browser journeys are in scope
+10. `../architect/references/terminology-policy.md` before writing report prose or test intent text
 
 ## Output contract
 

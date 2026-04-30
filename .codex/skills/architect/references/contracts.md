@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Create decision-complete implementation plans as one or more sequential executable plans that follow the active review wiki core contracts, preserve the user's wording, expose concrete work bundles, carry forward locked test-strategy decisions, and keep later execution from guessing.
+Create decision-complete implementation plans as one or more sequential executable plans. Use the active review wiki as the policy source for plan artifact meaning, quality gates, test/review handoff, execution routing, and learned pattern guidance; use this skill's references for execution procedure, local templates, and artifact paths.
 
 ## Entry Notes
 
@@ -26,9 +26,8 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
 5. `./references/agents-lite.md` - canonical `owner_agent` catalog
 6. `../review-wiki-setup/references/staging-contract.md` - review wiki sync resolution and refresh rules
 7. `../review-wiki-setup/references/platform-commands.md` - platform-specific link and planning-root commands
-8. Resolved planning `review_wiki_root` containing `registry.json`, `core/`, `patterns/`, `tags/`, and domain-first selection policy. Use `./.codex/review-wiki/sync/current` as the planning root.
-9. Every core document listed in `stage_core.architect`, or the registry `core` array when no architect-specific override exists, in listed order
-10. Candidate pattern files selected from the registry `patterns` list using the `architect` selection mode plus matching `적용 조건`; always include `common`, then add only the touched top-level domains and their local tags from `domain_taxonomy.tags`
+8. Resolved planning `review_wiki_root` containing `registry.json`, `core/`, `patterns/`, `tags/`, and domain-first selection policy. Use `./.codex/review-wiki/sync/current` as the planning root in direct mode.
+9. Stage core documents and matching pattern files selected by the registry for `architect`.
 11. `./references/git.md` - commit message, branch naming, and worktree naming rules
 12. `./references/plan-template-sequential.md` - sequential plan template
 13. `./references/phase-template-detail.md` - per-phase technical detail template

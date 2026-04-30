@@ -10,7 +10,7 @@ Identify what is clear vs unclear:
 - Missing decisions
 - Plausible architecture/library branches
 - Missing product-policy decisions across data model, business rules, UX behavior, permissions, validation, state/error handling, and accessibility expectations
-- Missing test-strategy decisions that would change planning, such as whether a goal is locked by `unit`, `Component Test`, or `E2E`, which observable result proves it, which stable UI identifier policy is required, and which test scope is excluded
+- Missing test-strategy decisions that would change planning under the active review wiki decision policy
 - Touched work bundles such as components, hooks, routes, screens, or services
 - Touched public boundaries such as props, callbacks, inputs, outputs, observable behavior, state ownership, and explicit exclusions
 
@@ -80,7 +80,7 @@ Use the preflight only to:
 
 - classify missing information as `blocking`, `derivable`, or `deferrable`
 - public boundary contract, state, ownership, exclusion, and no-op questions that would later block planning
-- verification-unit, observable-result, stable-identifier, and excluded-test-scope questions that would later make `architect` or `plan-materialize` guess
+- test-strategy questions that would later make `architect` or `plan-materialize` guess
 - capture applicable pattern guidance that narrows the confirmation questions or request-lock tables
 
 Do not use the preflight to:
@@ -142,7 +142,7 @@ Rules:
 - Do not ask what can be derived from local context
 - Questions should help the user confirm scope and direction quickly
 - Prioritize blocking ambiguity that would change the implementation plan, tests, user-visible behavior, or public boundary
-- Ask about test strategy only when it changes the plan or acceptance gate; do not ask the user to name spec files, helper names, or assertion mechanics.
+- Ask about test strategy only when it changes the plan or acceptance gate under the review wiki decision policy; do not ask the user to name spec files, helper names, or assertion mechanics.
 - For diagnostic-lock path, ask before inventory only when the missing answer controls the investigation boundary; otherwise gather evidence first
 - If review wiki preflight ran, prioritize questions that close preflight-identified `blocking` ambiguity first
 - Prefer asking about concrete items, not planner taxonomies
@@ -266,7 +266,7 @@ Before handoff, confirm:
 - No hidden assumptions remain
 - No blocking policy ambiguity remains for the chosen planning scope
 - No touched public boundary remains vague enough that implementation would have to guess
-- No verification unit, observable result, stable identifier policy, or excluded test scope remains vague enough that planning or test materialization would have to guess when it changes the plan
+- No test-strategy decision remains vague enough that planning or test materialization would have to guess when it changes the plan
 - No user-visible UI direction remains vague enough that planning would force later design guessing
 - No exclusion was introduced without being made explicit
 - If diagnostic-lock path was used, the investigated boundary, evidence gaps, and confirmed differences are separated from proposed fixes

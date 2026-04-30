@@ -10,7 +10,7 @@
 - Stop when `plan.md` and its linked phase detail files drift enough that the technical source of truth is unclear
 - Stop when a selected clause from `output`, `constraint`, `failure-validation`, or `validation` cannot be traced to a stable owner test or execution command
 - Stop when canonical outputs, recipients, or negative outputs are missing for a behavior-changing scenario
-- Stop when the plan leaves the verification unit, observable result, stable identifier policy, or selected E2E reason ambiguous enough that `plan-materialize` would choose between `unit`, `Component Test`, and `E2E`
+- Stop when the plan leaves test-strategy decisions ambiguous enough that `plan-materialize` would choose the gate instead of applying a locked plan decision
 - Stop when multiple plausible sibling contracts exist and the plan did not resolve the winner
 - Stop when the plan introduces a new rendered, mapped, serialized, or interpreted final output but does not identify the boundary that finalizes that output
 - Stop when the plan implies competing completion paths, deferred execution, terminal-state policy, or side-effect coupling but does not define the relevant invariant
@@ -31,5 +31,4 @@
 - Do not use `./plans` as the durable source of truth for E2E ownership; use source-tree metadata comments and split registries
 - In orchestrated mode, do not invent alternate `plan_path` or `plan_signature` metadata that conflicts with the current orchestrator handoff
 - Do not leave English planner shorthand in `materialize.md` explanations or test intent strings unless it is an exact identifier, schema key, command, runner term, or quoted plan text
-- Do not name source-tree tests after materialization mechanics such as coverage matrix, exact slug set, owner, boundary, final recipient, or contract unless those words are exact product/domain terms
-- Do not let `materialize.md` be the only place where a test's intent can be understood; each new or updated source-tree test name must read as a concrete condition/action/result behavior example
+- Apply `references/test-authoring-conventions.md` so source-tree test intent is readable without opening `materialize.md`.

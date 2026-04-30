@@ -166,10 +166,20 @@ Every promoted pattern file should include YAML frontmatter with:
 - `rule_id`
 - `title`
 - `summary`
-- `tags.domain`
-- one domain-local `tags.{domain}` list for each selected domain
-- optional `tags.stage` and `tags.risk` lists when they are useful for routing or review
+- `tags` as an Obsidian-compatible list, not a nested object
+- `domains`
+- `domain_tags`
+- optional `stages` and `risks` lists when they are useful for routing or review
 - `raw_sources`
+
+Use `tags` only for Obsidian tag values derived from the routing fields:
+
+- `review-wiki/domain/{domain}` for each `domains` value
+- `review-wiki/{domain}/{tag}` for each `domain_tags` value
+- `review-wiki/stage/{stage}` for each `stages` value
+- `review-wiki/risk/{risk}` for each `risks` value
+
+Do not store review wiki routing metadata as a nested object under `tags`; Obsidian treats `tags` as a reserved tag-list property.
 
 Write `title`, `summary`, all human-readable body content, and pattern rule document filenames in Korean. Technical terms, API names, code tokens, and stable English route keys may remain English. Keep `rule_id`, `raw_id`, frontmatter keys, domain/tag keys, branch names, commits, and code/API tokens stable.
 
@@ -188,7 +198,7 @@ Use imperative language in `해야 할 것` and `피해야 할 것`. Keep the fi
 
 In `## 관련 문서`, include:
 
-- one wikilink for each domain tag note in the pattern frontmatter
+- one wikilink for each `domain_tags` value
 - one wikilink for each `raw_sources` entry
 
 Pattern filenames should use:

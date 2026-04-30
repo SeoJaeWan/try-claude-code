@@ -6,7 +6,7 @@ Use this when `plan-materialize` handles selected frontend browser journeys.
 
 - Materialize only the selected UI area (`surface_id`) or journey E2E owned by the plan
 - Materialize cross-route journeys, auth/session transitions, redirect chains, persisted browser state, or other full-flow coverage only when those journeys are explicitly selected by the plan
-- E2E is not the default for every frontend user-visible clause. Use E2E only when the plan locks a browser-owned reason such as a core user journey, cross-route behavior, auth/session, redirect, persisted browser state, browser-only focus/pointer/layout/timing behavior, or release-critical flow.
+- E2E is not the default for every frontend user-visible clause. Use E2E only when the plan locks a browser-owned reason under the active review wiki decision policy.
 - Presentation-only changes skip E2E unless the plan explicitly makes browser-rendered presentation the durable acceptance gate
 - Do not add plan-external user journeys, generic state sweeps, or extra regression paths
 
@@ -71,14 +71,9 @@ Registry is an exception path, not the default.
 
 ## Authoring rules
 
-- Write human-readable scenario names, comments, and report reasons in Korean-first prose unless the repository has an established English-only test style
-- Keep English for metadata keys, test IDs, routes, file names, selectors, runner APIs, and exact product copy
-- Write each E2E `test` name as a concrete user-visible behavior example: `{condition or page}에서 {user action}하면 {visible/output result}가 나온다`
+- Apply `references/test-authoring-conventions.md` for common naming, language, assertion, and ownership rules
+- Keep English for E2E metadata keys, test IDs, routes, file names, selectors, runner APIs, and exact product copy
 - Use `test.describe` for the journey or UI area only; keep the condition/action/result in each `test` or table row case name
-- Do not expose materialization mechanics in test names. Avoid terms such as `coverage`, `matrix`, `boundary`, `contract`, `owner`, `final recipient`, and `surface` unless they are exact product/domain words in the repository.
-- For table-driven or registry-driven E2E tests, each row must carry a human-readable `caseName` that names the user action and expected result, not only the slug or registry key
-- The assertions in each case must directly prove the result named by the `test` or `caseName`
-- Use Korean terms such as `사용자 행동`, `완료 조건`, `변경 경계`, and `공개 경계` instead of planner shorthand such as `user action`, `completion condition`, `boundary`, or `surface`
 
 ### Playwright
 

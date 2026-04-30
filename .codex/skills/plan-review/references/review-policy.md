@@ -1,151 +1,90 @@
 # Plan Review Policy
 
-Canonical review rules for `plan-review`.
-
-Use this file for:
-
-- severity classification
-- review scope
-- outcome rules
-- artifact contract
-
----
+Use this file for severity mapping, outcome states, and review artifact shape. Use the active review wiki core docs and selected patterns as the source of truth for plan artifact meaning, quality gates, test-strategy expectations, execution handoff, visual comparison policy, and learned domain rules.
 
 ## Outcome States
 
-- `blocked`: one or more `blocker` findings exist; do not treat the plan as execution-ready
-- `ready-with-findings`: no blocker exists; `major` or `minor` findings remain as advisory review input
-- `ready`: no findings remain
+- `blocked`: one or more `blocker` findings exist; do not treat the plan as execution-ready.
+- `ready-with-findings`: no blocker exists, but `major` or `minor` findings remain.
+- `ready`: no findings remain.
 
-`plan-review` is read-only.
-If the review is `blocked`, return the plan to `architect` for revision instead of rewriting it inside the review skill.
-
----
+`plan-review` is read-only. If the review is `blocked`, return the plan to `architect` for revision instead of rewriting it inside this skill.
 
 ## Severity Model
 
 ### Blocker
 
-Use `blocker` when the plan is not safely executable or would force later skills to guess a canonical contract.
+Use `blocker` when the plan is not safely executable, violates an active review wiki mandatory contract, or would force later skills to guess a canonical decision.
 
-Typical blocker cases:
+Typical blocker signals:
 
-- invalid or missing `Branch` header
-- slug mismatch between plan path and branch summary
-- missing required `plan.md` sections or missing linked phase detail files from the active core plan artifact contract
-- a `plan.md` phase summary and its linked phase detail file describe different change boundaries or incompatible outcomes
-- unresolved blocking ambiguity
-- invalid or missing `owner_agent`
-- no believable verification path
-- missing canonical `must happen` output for a behavior-changing phase
-- missing important `must not happen` output when absence is part of product policy
-- missing recipient, delivery target, or final interpretation boundary when relevant
-- missing winner rule, loser no-op rule, terminal-state rule, or side-effect coupling for risky scenarios
-- missing verification unit, observable result, stable identifier policy, or selected E2E reason when later `plan-materialize` would have to choose between `unit`, `Component Test`, and `E2E`
-- a selected E2E journey is required for cross-route, auth/session, redirect, persisted browser state, browser-only behavior, or release-critical flow, but the phase detail file does not lock the journey trigger, checkpoints, and expected outputs
-- the plan cannot be traced back to the user's requested items without guesswork
-- an affected public boundary exists, but the plan leaves props, callbacks, outputs, or ownership vague enough that implementation would have to guess
-- English planner shorthand in visible prose hides user-visible behavior, public contracts, ownership, completion criteria, or verification meaning enough that a reviewer must reinterpret the plan
-- a user-visible exclusion is introduced without explicit reason and approval status
-- the plan requires a reviewer to read every phase detail file just to understand what concrete boundaries will change
-- plan count or topology that is clearly over-split, under-justified, or not independently mergeable under the active core contract
-- missing reference-comparison phase when the active core docs or selected pattern guidance require it
-- a visual parity plan claims scoped, structural, or non-blocking comparison closure without an explicit `comparison mode`, `gating metric`, and separate `non-gating metric` decision
-- a visual parity plan uses task-local UI nouns as if they were the canonical reusable surface taxonomy
-- a visual parity plan relies on whole-canvas mismatch as the only success metric while also claiming scoped or structural closure
-- the reviewed plan depends on a local prerequisite plan, but no specific upstream phase credibly provides the prerequisite contract in the detail file `output` and `검증`
-- the reviewed plan depends on a local prerequisite plan, but the supposed provider phase boundary or verification path cannot actually establish that contract
-- a Figma-derived classification artifact or plan-local `figma-contract/*.md` or `figma-contract/*.json` lacks provenance to the controller-verified inventory manifest and snapshot paths
-- a Figma-derived plan artifact relies on truncated, names-only, partial, or incomplete snapshot coverage without explicitly locking that reduced fidelity as sufficient for the requested planning boundary
-- a Figma-derived plan artifact relies on Figma tool output that has not been written to manifest-backed `snapshots/*.json`
-- selected pattern guidance reveals a direct contradiction that the plan leaves unresolved
+- missing or invalid required plan artifacts, linked phase detail files, `Branch` header, or phase routing metadata.
+- `plan.md` and linked phase detail files disagree on phase boundary, outcome, owner, or completion signal.
+- unresolved `blocking` ambiguity under the active review wiki decision policy.
+- missing user-request traceability, inclusion/exclusion boundary, or user-visible completion criteria.
+- missing affected public boundary, canonical output, important negative/no-op output, recipient, final interpretation boundary, or risky scenario invariant.
+- missing test-strategy decisions required by the active review wiki decision policy when `plan-materialize` would otherwise choose the gate.
+- plan count, local prerequisite relationship, authority artifact, reference-comparison, Figma parity, or Figma inventory provenance contradicts the active review wiki contract.
+- selected pattern guidance reveals a direct contradiction that the plan leaves unresolved.
 
 ### Major
 
-Use `major` when the plan is probably executable but has a material weakness that raises rework risk or confidence gaps.
+Use `major` when the plan is probably executable but materially raises rework risk or review confidence gaps.
 
-Typical major cases:
+Typical major signals:
 
-- validation is real but too weak for the claimed boundary
-- verification unit selection is plausible but thin, such as using E2E where `Component Test` appears sufficient or omitting why `unit` coverage is not the primary owner for deterministic logic
-- UI-facing tests are planned without a clear observable result or stable identifier policy, but the missing detail is likely derivable from local conventions
-- topology is defensible but likely suboptimal
-- phase boundaries are technically valid but hide important sequencing or ownership assumptions
-- the `plan.md` summary and technical detail file are individually plausible but drift in wording enough to raise rework risk
-- a required file-level change map or completion criterion is present but too thin to support the claimed boundary confidently
-- repo-fit claims exist but rely on thin local evidence
-- `plan-materialize` can probably proceed, but the phase contract is thinner than it should be for later test derivation
-- a local prerequisite relationship probably works, but the downstream detail-file `선행조건` and upstream `output` or `검증` use thinner or drifted wording that raises rework risk
-- user-request traceability exists but is thinner than it should be, such as vague request rows or weak exclusion reasoning
-- work bundles are named, but the concrete public contract is still harder to scan than it should be
-- visible prose repeatedly uses English planner shorthand where `architect/references/terminology-policy.md` defines a Korean-first term, and the mixing reduces scanability or confidence
-- a visual parity contract exists, but its surface-role mapping, comparison policy, or metric-treatment detail is too thin to support confident review
+- validation exists but is too weak for the claimed boundary.
+- verification unit choice is plausible but thin or poorly justified.
+- UI-facing observability or identifier detail is likely derivable but not clearly locked.
+- topology or phase boundary is defensible but hides important sequencing or ownership assumptions.
+- user-request traceability, public contract scanability, local prerequisite parity, or repo-fit evidence is thinner than it should be.
+- visible prose terminology drift reduces scanability without making the contract ambiguous enough for a blocker.
 
 ### Minor
 
-Use `minor` for non-blocking contract polish issues that do not change execution readiness.
+Use `minor` for non-blocking polish that does not change execution readiness.
 
-Typical minor cases:
+Typical minor signals:
 
-- optional contract notes are slightly uneven but still unambiguous
-- low-risk repetition or labeling drift exists in explanatory prose without changing the boundary
-- isolated terminology drift exists in visible prose, but the contract remains clear and no reviewer would have to guess behavior or ownership
+- optional contract notes are uneven but unambiguous.
+- isolated terminology drift exists, but no reviewer has to guess behavior or ownership.
+- low-risk repetition or labeling drift exists in explanatory prose.
 
 Prefer no finding over a low-value minor note.
 
----
-
-## Review Scope
+## Required Review Focus
 
 Check the plan against:
 
-1. the resolved `review_wiki_root/registry.json` plus the listed core docs; use `./.codex/review-wiki/sync/current` as the planning root
-2. selected pattern files that match the reviewed plan under the registry `selection.review` policy, with `common` always selected before adding touched domain-local tags from `domain_taxonomy`
-3. `architect/references/plan-template-sequential.md`
-4. `architect/references/phase-template-detail.md`
-5. `architect/references/terminology-policy.md`
-6. repo-local execution contracts only when the plan makes a concrete claim that depends on them
-7. directly referenced local prerequisite plan files only for one-hop contract parity when the reviewed phase detail names them in `선행조건`
+1. resolved `review_wiki_root/registry.json`, listed stage core docs, and selected matching patterns.
+2. architect plan and phase templates.
+3. terminology policy for visible prose.
+4. repo-local execution contracts only when the plan makes concrete claims that depend on them.
+5. directly referenced local prerequisite plans only for one-hop parity.
 
-Required focus areas:
+## Review Artifact
 
-1. template compliance
-2. summary/detail parity
-3. request traceability from user wording to plan scope
-4. blocking ambiguity and scenario completeness
-5. plan count and topology quality
-6. Korean-first visible prose terminology
-7. routing and ownership fit
-8. verification realism
-9. `plan-materialize` derivation readiness, including locked verification units, observable results, identifier policy, and selected E2E reasons
-10. reference-comparison planning when relevant
-11. direct prerequisite contract parity when relevant
-12. visual parity contract alignment when relevant
-13. Figma inventory provenance and coverage fidelity when Figma-derived classification or `figma-contract` artifacts are present
-
-### One-Hop Prerequisite Audit
-
-When the reviewed phase detail names a local prerequisite plan in `선행조건`:
-
-- inspect only the directly referenced upstream plan file, not the whole plan graph
-- find the specific upstream phase that should satisfy the prerequisite
-- compare the downstream detail-file `선행조건` contract with the upstream detail-file `output` and `검증`
-- treat the review as `blocker` when the prerequisite requires guesswork, broad foundation wording, or an upstream phase whose boundary cannot credibly establish the contract
-- treat the review as `major` when the relationship is plausible but the wording or verification parity is thin enough to invite stop-time reinterpretation
-
----
-
-## Artifact Contract
-
-Write the review artifact to:
+Write:
 
 ```text
 ./plans/_orchestrator/review/{task-slug}/review.md
 ```
 
-Recommended artifact structure:
+Recommended structure:
 
 ```text
+---
+plan_path: ./plans/.../plan.md
+task_slug: ...
+plan_signature: ...
+outcome: blocked | ready-with-findings | ready
+next_action: architect | developer_review
+finding_signature: ...
+requires_user_decision: true | false
+issue_codes: []
+affected_phase_paths: []
+---
+
 # plan-review
 
 - plan: `./plans/.../plan.md`

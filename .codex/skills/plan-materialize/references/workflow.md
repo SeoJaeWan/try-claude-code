@@ -201,9 +201,9 @@ Before finalizing `create`, `update`, or `delete`, reconcile the affected-owner 
 ### Step 6. Materialize unit tests
 
 - Follow `references/unit-test-conventions.md`
+- Follow `references/test-authoring-conventions.md`
 - Write tests directly into the source tree using the repo's current test layout
 - Keep tests boundary-first, scenario-anchored, and deterministic
-- Name each new or updated test from the scenario's behavior-example sentence so the source-tree test reads as "what happens in this case" rather than "what coverage exists"
 - Prefer direct unit tests for deterministic logic, mapper, codegen, serializer, selector, state reducer, permission, validation, and final interpretation boundaries
 - Derive every new assertion from an explicit selected plan clause or a risk-pattern invariant already implied by that clause
 - Update existing unit tests when the boundary already exists
@@ -227,6 +227,7 @@ Before finalizing `create`, `update`, or `delete`, reconcile the affected-owner 
 ### Step 7. Materialize Component Tests
 
 - Follow `references/component-test-conventions.md`
+- Follow `references/test-authoring-conventions.md`
 - Follow the repo's existing rendered-harness and component-owner patterns before inventing a new style
 - Keep Component Tests focused on observable input -> output contracts:
   - DOM presence or absence
@@ -243,11 +244,11 @@ Before finalizing `create`, `update`, or `delete`, reconcile the affected-owner 
 ### Step 8. Materialize E2E tests
 
 - Follow `references/e2e-test-conventions.md`
+- Follow `references/test-authoring-conventions.md`
 - Use only the runner already configured in the project
 - In `TDD contract mode`, use the runner and spec root explicitly locked by the plan even if the config file is not implemented yet; record the command as not run/failed until the harness exists
 - Materialize only the selected browser journey tests; do not add plan-external regression sweeps
 - Derive every scenario and assertion from explicit selected plan clauses only
-- Name each E2E scenario as a user-visible behavior example: condition, user action, and visible/output result
 - For E2E synchronization clauses, drive the actual user controls and assert every selected browser-owned visible/output recipient that must share state, such as copied text, URL, active navigation, persisted state, cross-route result, or submitted payload
 - Do not count "route loads", "section headings are visible", "no console errors", or "copy result is non-empty" as sufficient unless the selected clause is exactly a smoke/reachability contract
 - Update the existing owner test when the same UI area or journey already exists

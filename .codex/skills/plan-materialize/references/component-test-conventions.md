@@ -19,9 +19,7 @@ Use this when `plan-materialize` handles component rendering, props/callback beh
 
 ## Authoring rules
 
-- Write human-readable `describe`, `it`, `test`, and row names in Korean-first prose unless the repository has an established English-only test style.
-- Keep English for component names, props, callbacks, test IDs, runner APIs, routes, and exact product copy.
-- Name each test as a concrete behavior example: `{condition}에서 {user action 또는 prop/state change}하면 {observable result}가 나온다`.
+- Apply `references/test-authoring-conventions.md` for common naming, language, assertion, and ownership rules.
 - Use user-level interactions through the local test library when possible; call callbacks or handlers directly only when the plan's selected boundary is the callback contract itself.
 - Assert the final rendered output, emitted callback, submitted payload, focus state, accessible state, or owner-managed DOM outcome named by the scenario.
 - Prefer role/label/accessible state for user-recognizable controls when stable; use `data-testid`/`testID` when the plan locks it as the stable identifier or the local convention already uses it.

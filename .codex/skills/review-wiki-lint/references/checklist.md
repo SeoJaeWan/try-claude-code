@@ -28,9 +28,12 @@ Lint the review wiki for routing integrity, evidence integrity, Korean docs-firs
 - every promoted pattern has at least one valid `raw_sources` backlink
 - `raw_sources` targets actually exist
 - every promoted pattern has `title` and `summary` frontmatter values written in Korean
+- every promoted pattern uses `tags` as an Obsidian-compatible list, not a nested object
+- every promoted pattern includes routing fields `domains` and `domain_tags`, with optional `stages` and `risks`
+- every promoted pattern's `tags` list mirrors its routing fields with `review-wiki/domain/{domain}`, `review-wiki/{domain}/{tag}`, `review-wiki/stage/{stage}`, and `review-wiki/risk/{risk}`
 - every promoted pattern body includes `개요`, `문제`, `적용 조건`, `해야 할 것`, `피해야 할 것`, `적용 예시`, `판단 근거`, and `관련 문서`
 - human-readable prose is Korean-first; avoidable mixed phrases such as `user action`, `surface`, `boundary`, `contract`, `validation`, `state`, `phase`, and `owner` are translated unless they are code/API/schema/path/tag tokens
-- every promoted pattern `## 관련 문서` section links to all frontmatter tag pages and all `raw_sources`
+- every promoted pattern `## 관련 문서` section links to all `domain_tags` graph pages and all `raw_sources`
 - every raw document has a `## 관련 문서` section with a plain status value
 - every promoted or pattern-referenced raw document `## 관련 문서` section links back to every matching pattern and does not link directly to domain or tag pages
 - every core document has docs-first frontmatter with `doc_type: core`, Korean `title`, and Korean `summary`

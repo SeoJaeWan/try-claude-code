@@ -14,7 +14,8 @@ Read these references in order whenever this skill runs:
 1. [references/contracts.md](references/contracts.md) for purpose, inputs, blocker taxonomy, report fields, output contract, and language rules.
 2. [references/workflow.md](references/workflow.md) for test convention detection, clause extraction, classification, materialization, validation, reporting, and completion checks.
 3. [references/guardrails.md](references/guardrails.md) for non-negotiable test-materialization constraints.
-4. [../architect/references/terminology-policy.md](../architect/references/terminology-policy.md) before writing report prose or test intent text.
+4. [references/test-authoring-conventions.md](references/test-authoring-conventions.md) before creating or updating source-tree tests.
+5. [../architect/references/terminology-policy.md](../architect/references/terminology-policy.md) before writing report prose or test intent text.
 
 Read these references only when the corresponding scope is active:
 
