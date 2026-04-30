@@ -113,7 +113,8 @@ async function pathExists(filePath) {
 
 async function readJson(filePath, fallback = null) {
   try {
-    return JSON.parse(await readFile(filePath, "utf8"));
+    const raw = await readFile(filePath, "utf8");
+    return JSON.parse(raw.replace(/^\uFEFF/, ""));
   } catch {
     return fallback;
   }
