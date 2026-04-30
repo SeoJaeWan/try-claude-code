@@ -10,6 +10,7 @@ Identify what is clear vs unclear:
 - Missing decisions
 - Plausible architecture/library branches
 - Missing product-policy decisions across data model, business rules, UX behavior, permissions, validation, state/error handling, and accessibility expectations
+- Missing test-strategy decisions that would change planning, such as whether a goal is locked by `unit`, `Component Test`, or `E2E`, which observable result proves it, which stable UI identifier policy is required, and which test scope is excluded
 - Touched work bundles such as components, hooks, routes, screens, or services
 - Touched public boundaries such as props, callbacks, inputs, outputs, observable behavior, state ownership, and explicit exclusions
 
@@ -68,7 +69,7 @@ If planning handoff is plausible, inspect the staged review wiki before asking t
 - if the planning root exists:
   - read `{review_wiki_root}/registry.json`
   - read every path in `stage_core.brainstorm` when present; otherwise fall back to the registry `core` array and state that the wiki does not yet expose a brainstorm-specific core list
-  - use `selection.brainstorm` when present to select candidate pattern files
+  - use `selection.brainstorm` when present to select candidate pattern files by domain first: always include `common`, add `frontend`, `backend`, or `infra` only when the user's request or local evidence touches that domain, then narrow by `domain_taxonomy.tags`
   - read only the selected pattern files whose `적용 조건` clauses materially help classify the current ambiguity
 - if the planning root is missing or unreadable and planning handoff is likely:
   - state that the review wiki dependency is missing
@@ -79,6 +80,7 @@ Use the preflight only to:
 
 - classify missing information as `blocking`, `derivable`, or `deferrable`
 - public boundary contract, state, ownership, exclusion, and no-op questions that would later block planning
+- verification-unit, observable-result, stable-identifier, and excluded-test-scope questions that would later make `architect` or `plan-materialize` guess
 - capture applicable pattern guidance that narrows the confirmation questions or request-lock tables
 
 Do not use the preflight to:
@@ -86,7 +88,7 @@ Do not use the preflight to:
 - choose phase topology
 - assign `owner_agent`
 - enforce `plan.md` formatting
-- decide execution routing, test materialization scope, or review outcomes
+- decide concrete source-tree test files, runner placement, execution routing, or review outcomes
 
 ### 4. Research latest information when needed
 
@@ -140,6 +142,7 @@ Rules:
 - Do not ask what can be derived from local context
 - Questions should help the user confirm scope and direction quickly
 - Prioritize blocking ambiguity that would change the implementation plan, tests, user-visible behavior, or public boundary
+- Ask about test strategy only when it changes the plan or acceptance gate; do not ask the user to name spec files, helper names, or assertion mechanics.
 - For diagnostic-lock path, ask before inventory only when the missing answer controls the investigation boundary; otherwise gather evidence first
 - If review wiki preflight ran, prioritize questions that close preflight-identified `blocking` ambiguity first
 - Prefer asking about concrete items, not planner taxonomies
@@ -189,9 +192,19 @@ Optional table when state rules matter:
    - `규칙`
    - `비고`
 
+Optional table when test strategy changes planning or acceptance:
+
+6. `테스트 전략 잠금 표`
+   - `목표 또는 위험`
+   - `잠글 검증`
+   - `검증 단위` (`unit`, `Component Test`, `E2E`, `command`, `manual/visual`)
+   - `관찰 지점`
+   - `식별자 정책`
+   - `제외 범위`
+
 Optional table when review wiki preflight matters:
 
-6. `review wiki preflight 메모`
+7. `review wiki preflight 메모`
    - `검토 기준`
    - `이번에 잠근 내용`
    - `architect에 넘길 메모`
@@ -199,14 +212,14 @@ Optional table when review wiki preflight matters:
 
 Optional tables for diagnostic-lock path:
 
-7. `진단 기준선 표`
+8. `진단 기준선 표`
    - `조사 경계`
    - `권위 기준`
    - `현재 확인 대상`
    - `확인한 증거`
    - `남은 공백`
 
-8. `차이 후보 표`
+9. `차이 후보 표`
    - `대상`
    - `확인된 차이`
    - `근거`
@@ -239,6 +252,7 @@ Include:
 - `작업 묶음 표`
 - `공개 경계 표`
 - `상태 소유권 표` when relevant
+- `테스트 전략 잠금 표` when test strategy changes planning or acceptance
 - `제외 항목 표` when relevant
 - `review wiki preflight 메모` when relevant
 - `진단 기준선 표` and `차이 후보 표` when diagnostic-lock path is used
@@ -252,6 +266,7 @@ Before handoff, confirm:
 - No hidden assumptions remain
 - No blocking policy ambiguity remains for the chosen planning scope
 - No touched public boundary remains vague enough that implementation would have to guess
+- No verification unit, observable result, stable identifier policy, or excluded test scope remains vague enough that planning or test materialization would have to guess when it changes the plan
 - No user-visible UI direction remains vague enough that planning would force later design guessing
 - No exclusion was introduced without being made explicit
 - If diagnostic-lock path was used, the investigated boundary, evidence gaps, and confirmed differences are separated from proposed fixes
@@ -274,7 +289,7 @@ When planning is needed and scope is decision-complete enough for planning, prov
 1. The locked `요청 대응표`
 2. The locked `작업 묶음 표`
 3. The locked `공개 경계 표`
-4. Any `상태 소유권 표` or `제외 항목 표` that matters to planning
+4. Any `상태 소유권 표`, `테스트 전략 잠금 표`, or `제외 항목 표` that matters to planning
 5. Explicit defaults or deferred low-risk choices
 6. Diagnostic baseline findings that `architect` should treat as already surfaced, including evidence gaps and confirmed differences when diagnostic-lock path was used
 7. Review wiki preflight findings that `architect` should treat as already surfaced, or an explicit note that the preflight could not run because the review wiki root was missing

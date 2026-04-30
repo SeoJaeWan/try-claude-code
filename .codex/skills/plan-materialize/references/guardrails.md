@@ -10,6 +10,7 @@
 - Stop when `plan.md` and its linked phase detail files drift enough that the technical source of truth is unclear
 - Stop when a selected clause from `output`, `constraint`, `failure-validation`, or `validation` cannot be traced to a stable owner test or execution command
 - Stop when canonical outputs, recipients, or negative outputs are missing for a behavior-changing scenario
+- Stop when the plan leaves the verification unit, observable result, stable identifier policy, or selected E2E reason ambiguous enough that `plan-materialize` would choose between `unit`, `Component Test`, and `E2E`
 - Stop when multiple plausible sibling contracts exist and the plan did not resolve the winner
 - Stop when the plan introduces a new rendered, mapped, serialized, or interpreted final output but does not identify the boundary that finalizes that output
 - Stop when the plan implies competing completion paths, deferred execution, terminal-state policy, or side-effect coupling but does not define the relevant invariant
@@ -23,7 +24,8 @@
 - Do not freeze volatile metadata snapshots such as exact registry counts, temporary source splits, deprecated sibling names, or excluded names unless the plan explicitly makes that exact snapshot the durable user-visible contract
 - Do not create package-root export tests that only prove re-export identity, legacy alias absence, or private symbol absence unless the external import behavior itself is the selected durable feature contract
 - Do not rely on negative/no-op assertions alone when the plan also defines a valid output; materialize the positive path first
-- Do not silently shrink a selected full-flow journey into a UI-area-only test just because a narrower owner already exists
+- Do not silently shrink a selected browser journey into a component-only or UI-area-only test just because a narrower owner already exists
+- Do not silently widen component-local behavior into E2E just because a browser runner exists
 - Do not silently defer selected plan coverage to a later pass
 - Do not widen targeted validation commands into full-suite regression unless the plan explicitly requires it
 - Do not use `./plans` as the durable source of truth for E2E ownership; use source-tree metadata comments and split registries

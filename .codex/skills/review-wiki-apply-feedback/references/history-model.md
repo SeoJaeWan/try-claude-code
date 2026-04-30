@@ -49,7 +49,7 @@ Supported `type` values:
   "changes": {
     "created": [],
     "updated": [
-      "wiki/core/plan-artifact-contract.md"
+      "wiki/core/common/계획-산출물-계약.md"
     ],
     "deleted": [],
     "moved": [

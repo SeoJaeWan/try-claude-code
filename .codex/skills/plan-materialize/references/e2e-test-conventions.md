@@ -1,13 +1,13 @@
 # E2E Conventions Reference
 
-Use this when `plan-materialize` handles frontend user-visible boundaries.
+Use this when `plan-materialize` handles selected frontend browser journeys.
 
 ## Scope rules
 
 - Materialize only the selected UI area (`surface_id`) or journey E2E owned by the plan
 - Materialize cross-route journeys, auth/session transitions, redirect chains, persisted browser state, or other full-flow coverage only when those journeys are explicitly selected by the plan
-- E2E is the default only for frontend user-visible clauses explicitly selected by the plan
-- Presentation-only changes may skip E2E only with an explicit skip reason
+- E2E is not the default for every frontend user-visible clause. Use E2E only when the plan locks a browser-owned reason such as a core user journey, cross-route behavior, auth/session, redirect, persisted browser state, browser-only focus/pointer/layout/timing behavior, or release-critical flow.
+- Presentation-only changes skip E2E unless the plan explicitly makes browser-rendered presentation the durable acceptance gate
 - Do not add plan-external user journeys, generic state sweeps, or extra regression paths
 
 ## Runner rules
@@ -82,8 +82,10 @@ Registry is an exception path, not the default.
 
 ### Playwright
 
-- Prefer `data-testid`
-- Then role, label, placeholder, text as a last resort
+- Follow the identifier policy locked by the plan.
+- Prefer role, label, placeholder, or other user-facing locators when they are stable and express the behavior contract.
+- Use `data-testid` when the plan locks it as the stable selector, the UI copy is volatile, or the existing local convention already uses test IDs for that area.
+- Avoid CSS/XPath selectors when stable user-facing locators or test IDs exist.
 - Use deterministic assertions only
 - No hardcoded waits
 
@@ -98,6 +100,7 @@ Registry is an exception path, not the default.
 - Cover only the interaction paths, validation/error paths, and boundary states explicitly selected by the plan or implied by its declared risk patterns
 - When one spec can close multiple selected clauses on the same UI area, prefer updating that owner spec instead of scattering coverage
 - Do not promote manual QA ideas into E2E assertions unless the plan names them as contract
+- Do not move component-local rendering, props/callback, form interaction, or same-screen state checks into E2E when `unit` or `Component Test` can close the selected contract.
 - For synchronization clauses, assert the positive user-visible update first, then assert stale/forbidden output is absent when the plan requires it
 - Do not duplicate volatile registry contents such as exact counts or full item lists in E2E unless that full list is the selected user-visible contract; prefer representative required entries plus separate behavior tests for lookup/selection rules
 - When the full registry or inventory is the selected contract, keep the inventory completeness assertion separate from behavior examples, and still give each behavior row a readable `caseName`

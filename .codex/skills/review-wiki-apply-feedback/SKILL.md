@@ -35,22 +35,22 @@ Use this skill to process feedback captured from the review wiki docs UI. Resolv
    - Apply directly when the change is a typo, wording cleanup, Korean terminology cleanup, broken link alias, or local clarification that does not change rule meaning.
    - Apply directly when the feedback asks for a missing example or condition and the existing raw evidence already supports it.
    - Require user approval when the feedback would create, delete, rename, split, merge, or semantically weaken/strengthen a pattern rule.
-   - Require user approval when the feedback would change `wiki/registry.json`, tag taxonomy, rule ids, raw ids, or source precedence policy.
+   - Require user approval when the feedback would change `wiki/registry.json`, `domain_taxonomy`, rule ids, raw ids, or source precedence policy.
    - Reject only when the requested change contradicts raw evidence, repo-local truth, or the review wiki source model.
 
 5. Edit the source documents.
    - Edit the canonical source file, not a rendered docs copy.
-   - Keep filenames, rule ids, raw ids, tag keys and values, paths, branch names, commits, and code spans stable unless a user-approved semantic change requires otherwise.
+   - Keep pattern rule filenames, route filenames, rule ids, raw ids, tag keys and values, paths, branch names, commits, and code spans stable unless a user-approved semantic change requires otherwise. Pattern rule filenames are Korean title slugs; domain/tag route filenames and raw filenames may use English or technical terms.
    - Keep human-readable prose Korean-first.
    - Preserve raw evidence integrity; do not invent evidence to satisfy feedback.
    - If a pattern changes, refresh its related raw backlinks and affected tag pages.
    - If raw evidence changes, refresh any linked pattern and affected tag pages.
-   - If tag pages change, derive them from current core, pattern, raw, and registry state rather than hand-editing stale summaries.
+   - If tag pages change, derive them from current pattern and registry state rather than hand-editing stale summaries.
 
 6. Validate the result.
    - Check `wiki/registry.json` remains valid JSON.
    - Check Obsidian wikilinks still resolve.
-   - Check affected tag pages still link to matching pattern and raw records.
+   - Check affected domain pages link only to tag pages, affected tag pages link only to matching patterns, and patterns remain the owner of raw evidence links.
    - Check `wiki/index.md` and `wiki/docs/**` were not introduced.
    - Run the configured docs build when a docs project exists and the user asked for docs verification.
 
@@ -72,7 +72,7 @@ Use this skill to process feedback captured from the review wiki docs UI. Resolv
 
 - Do not route docs feedback through `review-wiki-ingest`; feedback is not review evidence.
 - Do not edit generated docs output as the canonical fix.
-- Do not silently change registry, taxonomy, rule ids, raw ids, or filenames.
+- Do not silently change registry, domain taxonomy, rule ids, raw ids, pattern rule filenames, or route filenames.
 - Do not apply stale selections by guessing from topic similarity.
 - Do not turn tag-page feedback into tag-page-only edits when the underlying pattern, raw, or core source needs the fix.
 - Do not delete feedback records; move them to an outcome folder with status and history.

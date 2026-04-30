@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Turn an `architect` plan into source-tree TDD contract tests and a trustworthy gate report that close the full selected plan contract without touching production code, using plan-clause traceability, owner-test impact scanning, and local or planned test conventions before selecting test layers or boundaries. Missing first-time app/test harness setup does not by itself excuse weak tests: materialize completion-blocking tests from the plan's locked runner and command contract when possible, mark validation as not run/failed until the harness exists, and block only when the plan does not define enough test environment or scenario contract to author executable tests.
+Turn an `architect` plan into source-tree TDD contract tests and a trustworthy gate report that close the full selected plan contract without touching production code, using plan-clause traceability, owner-test impact scanning, the plan's locked verification units, and local or planned test conventions before selecting concrete owners. Missing first-time app/test harness setup does not by itself excuse weak tests: materialize completion-blocking tests from the plan's locked runner and command contract when possible, mark validation as not run/failed until the harness exists, and block only when the plan does not define enough test environment or scenario contract to author executable tests.
 
 ## Entry Notes
 
@@ -34,11 +34,13 @@ Materialize tests after planning, not during implementation.
     - `materialize.md` adjacent to the selected executable plan
 5. Local or planned test config and existing tests:
     - unit signals: `package.json`, `vitest.config.*`, `jest.config.*`, `pom.xml`, `build.gradle*`, `mvnw`, `gradlew`, existing `*.test.*` / `*.spec.*`
+    - Component Test signals: Testing Library/jsdom setup, Playwright component setup, Storybook interaction tests, existing rendered component specs, and repo-local component harness conventions
     - E2E signals: `playwright.config.*`, `.maestro/`, existing browser/mobile E2E files
     - first-work signals from the selected plan: planned package script names, planned runner, planned config paths, planned spec roots, and planned browser/mobile bootstrap commands
 6. `./references/unit-test-conventions.md` when logic boundaries are in scope
-7. `./references/e2e-test-conventions.md` when frontend UI boundaries are in scope
-8. `../architect/references/terminology-policy.md` before writing report prose or test intent text
+7. `./references/component-test-conventions.md` when component rendering or same-screen interaction boundaries are in scope
+8. `./references/e2e-test-conventions.md` when frontend browser journeys are in scope
+9. `../architect/references/terminology-policy.md` before writing report prose or test intent text
 
 ## Output contract
 

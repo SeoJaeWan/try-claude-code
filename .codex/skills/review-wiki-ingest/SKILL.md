@@ -47,14 +47,14 @@ Use this skill to process review inbox files into the review wiki. Resolve the r
 
 6. Choose create-vs-update targets before writing pattern files.
    - Start from `wiki/registry.json`.
-   - Search existing pattern files by exact tag match first, then adjacent tag groups defined by the registry.
+   - Search existing pattern files by exact domain/tag match first, then adjacent domain tags defined by the registry.
    - If the new evidence is a semantic duplicate, update the existing rule file instead of creating another.
    - If the new evidence describes a compatible but distinct failure pattern, create a new rule file.
    - If the new evidence conflicts with an older rule, do not auto-replace it. Draft the exact replacement proposal, including file and registry edits, and ask the user to approve replacing the older rule with the newer one.
 
 7. Write or update the affected docs-first source files.
    - Treat existing wiki files as the human-readable documentation surface; do not create a separate generated docs copy.
-   - Use one markdown file per promoted rule under `wiki/patterns/`.
+   - Use one markdown file per promoted rule under `wiki/patterns/{domain}/{primary-domain-tag}/`.
    - Use the docs-first pattern-file schema from the reference file.
    - Add `raw_sources` backlinks.
    - Favor concise, imperative planning guidance over long summaries.

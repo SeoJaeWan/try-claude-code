@@ -42,12 +42,12 @@ Supported `type` values:
   ],
   "changes": {
     "created": [
-      "raw/20260427-example-boundary-drift.md",
-      "wiki/patterns/contracts-example-rule.md"
+      "raw/20260427-계획-경계-흔들림.md",
+      "wiki/patterns/common/contract/계획-경계는-하나로-고정하기.md"
     ],
     "updated": [
       "wiki/registry.json",
-      "wiki/tags/stage/review.md"
+      "wiki/tags/common/contract.md"
     ],
     "deleted": [
       ".codex/reviews/feat-example/abcdef.md"

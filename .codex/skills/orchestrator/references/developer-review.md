@@ -14,11 +14,7 @@ At the gate:
 - Read `./references/developer-review-ui.md`.
 - Create or refresh `./plans/{task-slug}/developer-review/` for current `plan_signature`.
 - Do not copy `./assets/developer-review/index.html` into the plan folder; the shared server serves the fixed HTML app from `.codex`.
-- Generate `review-data.json` from current `plan.md`, linked phase detail files, and fresh `review.md` only through the UTF-8-safe Node helper:
-  ```text
-  node .codex/skills/orchestrator/scripts/generate-developer-review-package.mjs --task-slug {task-slug} --plan-signature {plan_signature}
-  ```
-- The helper must read source artifacts with `utf8`, write `review-data.json`, `feedback.json`, and `review-history.json` with `utf8`, and fail if the source text already appears encoding-damaged (`�` or prose `??`). If it fails for source damage, rewrite/regenerate the damaged `plan.md`, phase detail, or `review.md` artifact first; do not hand-edit `review-data.json` to mask the issue.
+- Generate `review-data.json` from current `plan.md`, linked phase detail files, and fresh `review.md`.
 - Create or refresh `review-history.json` for current `task-slug` and `plan_signature`.
 - Ensure Overview and every required Phase/card in `review-data.json` has a stable `review_item_signature`; include global scope/contract context in phase signatures so scope changes invalidate affected approvals.
 - Ensure `review-data.json` is user-readable and not a raw markdown dump:
@@ -33,7 +29,6 @@ At the gate:
   - on later reviews, preserve only prior `approved` items whose `approved_against.review_item_signature` matches the current `review_item_signature`
   - clear prior `needs-change`, `question`, and `out-of-scope` live statuses after preserving the submitted round in `review-history.json`
   - do not carry approval forward when item signature evidence is missing or mismatched
-- Do not create or update developer-review JSON with shell redirection, `Set-Content`, `Out-File`, here-doc commands, or ad hoc console output. On Windows these paths can silently replace Korean text with `?` before the server ever reads the package.
 - Auto-start the shared server through the platform-neutral Node launcher; do not ask the user to run a `node` command:
   1. Run `node .codex/tools/start-developer-review-server.mjs --task-slug {task-slug} --plan-signature {plan_signature}` from the repository root.
   2. The launcher must health-check existing compatible servers, start `.codex/tools/developer-review-server.mjs` as a detached background process when needed, skip foreign processes on occupied ports, choose an alternate port when needed, and print `developer_review_url=...`.

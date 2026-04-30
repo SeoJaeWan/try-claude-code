@@ -25,8 +25,8 @@ Each feedback record should use this shape:
 {
   "id": "20260427-153012-plan-artifact-contract",
   "status": "inbox",
-  "source_path": "wiki/core/plan-artifact-contract.md",
-  "doc_url": "/core/plan-artifact-contract",
+  "source_path": "wiki/core/common/계획-산출물-계약.md",
+  "doc_url": "/core/common/plan-artifact-contract",
   "title": "Plan artifact contract",
   "selection": {
     "quote": "short selected text",
@@ -112,13 +112,13 @@ Directly apply feedback when all are true:
 - The requested change is local wording, typo, terminology, missing explanation, missing example, or link alias cleanup.
 - The change does not alter a rule's planning meaning.
 - Existing raw evidence supports the new wording.
-- Registry, taxonomy, filenames, rule ids, and raw ids do not change.
+- Registry, taxonomy, pattern rule filenames, route filenames, rule ids, and raw ids do not change.
 
 Use `needs-decision` when any of these are true:
 
 - A pattern rule would be created, deleted, split, merged, renamed, or semantically changed.
 - A raw evidence record would be promoted or demoted.
-- `wiki/registry.json` or tag taxonomy would change.
+- `wiki/registry.json` or `domain_taxonomy` would change.
 - The feedback asks to remove or reinterpret evidence.
 
 Use `rejected` only when the feedback contradicts raw evidence, asks to corrupt machine-readable identifiers, or is not actionable.
@@ -135,8 +135,8 @@ When moving a feedback file out of `inbox`, add:
     "status": "applied",
     "summary": "Updated wording in the source pattern page.",
     "changed_files": [
-      "wiki/patterns/example-rule.md",
-      "wiki/tags/stage/review.md"
+      "wiki/patterns/common/contract/계획-경계는-하나로-고정하기.md",
+      "wiki/tags/common/contract.md"
     ],
     "history_id": "20260427-161845-feedback"
   }

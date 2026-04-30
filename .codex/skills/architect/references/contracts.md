@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Create decision-complete implementation plans as one or more sequential executable plans that follow the active review wiki core contracts, preserve the user's wording, expose concrete work bundles, and keep later execution from guessing.
+Create decision-complete implementation plans as one or more sequential executable plans that follow the active review wiki core contracts, preserve the user's wording, expose concrete work bundles, carry forward locked test-strategy decisions, and keep later execution from guessing.
 
 ## Entry Notes
 
@@ -22,24 +22,25 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
    - optional `known_missing_inputs` containing referenced but missing literal paths as non-authoritative warnings
    - optional controller-verified Figma inventory `manifest.json` and snapshot paths from `./.codex/artifacts/figma-inventory/{task_slug}/` when Figma inventory or classification is required
 3. Optional locked UI direction handoff from the latest conversation context or a directly referenced `./.codex/artifacts/ui-spec/{feature-name}.md`
-4. `./references/agents-lite.md` - canonical `owner_agent` catalog
-5. `../review-wiki-setup/references/staging-contract.md` - review wiki sync resolution and refresh rules
-6. `../review-wiki-setup/references/platform-commands.md` - platform-specific link and planning-root commands
-7. Resolved planning `review_wiki_root` containing `registry.json`, `core/`, `patterns/`, and selection policy. Use `./.codex/review-wiki/sync/current` as the planning root.
-8. Every core document listed in `stage_core.architect`, or the registry `core` array when no architect-specific override exists, in listed order
-9. Candidate pattern files selected from the registry `patterns` list using the `architect` selection mode plus matching `적용 조건`
-10. `./references/git.md` - commit message, branch naming, and worktree naming rules
-11. `./references/plan-template-sequential.md` - sequential plan template
-12. `./references/phase-template-detail.md` - per-phase technical detail template
-13. `./references/terminology-policy.md` - Korean-first visible prose and allowed English identifier rules
-14. `./references/visual-parity-contract.md` - canonical comparison-mode, surface-role, and metric-contract rules for visual parity tasks
-15. Relevant execution contracts only when routing or mode-sensitive conventions matter:
+4. Optional locked request-scope or test-strategy handoff from `brainstorm`, including verification unit, observable result, identifier policy, and excluded test scope when those choices affect the plan
+5. `./references/agents-lite.md` - canonical `owner_agent` catalog
+6. `../review-wiki-setup/references/staging-contract.md` - review wiki sync resolution and refresh rules
+7. `../review-wiki-setup/references/platform-commands.md` - platform-specific link and planning-root commands
+8. Resolved planning `review_wiki_root` containing `registry.json`, `core/`, `patterns/`, `tags/`, and domain-first selection policy. Use `./.codex/review-wiki/sync/current` as the planning root.
+9. Every core document listed in `stage_core.architect`, or the registry `core` array when no architect-specific override exists, in listed order
+10. Candidate pattern files selected from the registry `patterns` list using the `architect` selection mode plus matching `적용 조건`; always include `common`, then add only the touched top-level domains and their local tags from `domain_taxonomy.tags`
+11. `./references/git.md` - commit message, branch naming, and worktree naming rules
+12. `./references/plan-template-sequential.md` - sequential plan template
+13. `./references/phase-template-detail.md` - per-phase technical detail template
+14. `./references/terminology-policy.md` - Korean-first visible prose and allowed English identifier rules
+15. `./references/visual-parity-contract.md` - canonical comparison-mode, surface-role, and metric-contract rules for visual parity tasks
+16. Relevant execution contracts only when routing or mode-sensitive conventions matter:
    - inspect only the minimum repo-local tool/validation/runtime contract that governs the work
    - examples: `package.json` scripts, framework config, test config, CI config schema, deploy script entrypoints, or existing source-tree placement conventions
-16. Context7 MCP tools only as fallback when external library or API facts can still change the planning boundary after local inspection and any prior upstream decision handoff:
+17. Context7 MCP tools only as fallback when external library or API facts can still change the planning boundary after local inspection and any prior upstream decision handoff:
    - use Context7 only for version-sensitive library/framework/API behavior, migration constraints, deprecation status, or current recommended patterns
    - do not use Context7 for repo-local conventions, stable language basics, or facts already derivable from local context
-17. Figma inventory snapshot artifacts only when Figma hierarchy, component-set inventory, Resource/* coverage, platform markers, or Figma-based classification changes the planning boundary:
+18. Figma inventory snapshot artifacts only when Figma hierarchy, component-set inventory, Resource/* coverage, platform markers, or Figma-based classification changes the planning boundary:
    - use only controller-verified snapshot artifacts as full inventory evidence in orchestrated mode
    - do not treat Code Connect, design context, old parity reports, or package registries as complete Figma inventory by themselves
    - when writing Figma-derived classification or `figma-contract` artifacts, include provenance to the source manifest path, snapshot paths, `fileKey`, root node ids, `generatedAt`, fidelity, and coverage completeness

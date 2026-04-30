@@ -13,11 +13,17 @@ Lint the review wiki for routing integrity, evidence integrity, Korean docs-firs
 - `wiki/docs/` does not exist
 - registry `document_model` is `docs-first-source`
 - registry `graph_notes_root` exists and resolves to `wiki/tags`
-- registry `tag_taxonomy.status` contains `promoted` and `raw-only`
+- registry `domain_taxonomy.domain` contains only the approved top-level domains and `domain_taxonomy.tags` contains each domain's local tag vocabulary
+- registry `graph_notes.domains` and `graph_notes.tags` declare the concrete domain/tag page paths
 - every registered pattern file exists
 - every pattern file under `wiki/patterns/` is registered in the registry
-- every tag value in `tag_taxonomy` has a note at `wiki/tags/{tag_group}/{tag_value}.md`
-- every tag page links to the patterns and raw records that carry that tag
+- every top-level domain has a note at `registry.graph_notes.domains[domain]`
+- every tag value in `domain_taxonomy.tags` has a note at `registry.graph_notes.tags[domain][tag]`
+- pattern rule document basenames under `wiki/patterns/**` use Korean title slugs, with English technical terms allowed inside the slug
+- domain and tag route pages declared in `registry.graph_notes` may use stable English taxonomy-key filenames
+- raw evidence filenames may use Korean, English, or stable technical terms
+- every domain landing page links only to domain-local tag pages
+- every domain-local tag page links only to matching pattern rules, not raw records
 - every tag page uses readable bullet lists instead of long comma-separated link lines
 - every promoted pattern has at least one valid `raw_sources` backlink
 - `raw_sources` targets actually exist
@@ -25,11 +31,11 @@ Lint the review wiki for routing integrity, evidence integrity, Korean docs-firs
 - every promoted pattern body includes `개요`, `문제`, `적용 조건`, `해야 할 것`, `피해야 할 것`, `적용 예시`, `판단 근거`, and `관련 문서`
 - human-readable prose is Korean-first; avoidable mixed phrases such as `user action`, `surface`, `boundary`, `contract`, `validation`, `state`, `phase`, and `owner` are translated unless they are code/API/schema/path/tag tokens
 - every promoted pattern `## 관련 문서` section links to all frontmatter tag pages and all `raw_sources`
-- every raw document has a `## 관련 문서` section with a status tag note
-- every promoted or pattern-referenced raw document `## 관련 문서` section links back to every matching pattern
+- every raw document has a `## 관련 문서` section with a plain status value
+- every promoted or pattern-referenced raw document `## 관련 문서` section links back to every matching pattern and does not link directly to domain or tag pages
 - every core document has docs-first frontmatter with `doc_type: core`, Korean `title`, and Korean `summary`
 - duplicate rules are merged or clearly separated by scope
-- conflicting rules are flagged across exact and adjacent tag groups
+- conflicting rules are flagged across exact domain tags and registry-declared adjacent domain tags
 - stale guidance is identified when raw evidence or current core contract no longer supports it
 - tag vocabulary matches the registry taxonomy
 - overbroad tags or weak `적용 조건` clauses are identified
@@ -45,7 +51,7 @@ Lint the review wiki for routing integrity, evidence integrity, Korean docs-firs
 
 Write the proposed cleanup to:
 
-`wiki/_meta/lint-report.md`
+`wiki/_meta/점검-보고서.md`
 
 ## Report Structure
 

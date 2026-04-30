@@ -42,13 +42,13 @@ Read `references/history-model.md` before writing history records.
 
 Write one raw file per normalized evidence group using:
 
-`YYYYMMDD-{repo}-{review_id}.md`
+`YYYYMMDD-{evidence-summary-slug}.md`
 
 Rules:
 
 - `YYYYMMDD` is the ingest date in local time.
-- `{repo}` is a short ASCII slug for the current repository.
-- `{review_id}` is a deterministic identifier derived from the grouped issue and its matched plan boundary.
+- `{evidence-summary-slug}` is derived from the planning implication or another evidence summary.
+- Raw filenames may use Korean, English, or stable technical terms. Keep `raw_id` as the stable machine-readable identifier inside the file.
 
 ## Raw Document Schema
 
@@ -67,19 +67,18 @@ Store these fields before the docs-first evidence body:
 - `normalized_findings`
 - `planning_implication`
 
-Write the values of `normalized_findings`, `planning_implication`, and the evidence body in Korean. Keep metadata keys, paths, branches, commits, rule ids, and status values in their existing machine-readable form.
+Write the values of `normalized_findings`, `planning_implication`, and the evidence body in Korean. Keep metadata keys, branches, commits, rule ids, raw ids, and status values in their existing machine-readable form. Pattern rule document filenames must use Korean title slugs, while route/index pages such as domain and tag graph notes may use stable English taxonomy keys. Raw filenames may use Korean, English, or technical terms.
 
 After the metadata block, write a readable evidence page with a top-level `#` heading and the raw evidence page schema below.
 
 In raw `## 관련 문서`, include:
 
-- one status wikilink, usually `[[wiki/tags/status/promoted|status: promoted]]` or `[[wiki/tags/status/raw-only|status: raw-only]]`
-- inherited tag wikilinks when the raw record is linked to promoted patterns
+- one plain status value such as `promoted`, `raw-only`, or `partial-failure`
 - one promoted-rule wikilink for each promoted or referenced pattern, when applicable
 
 Promoted-rule links should use an Obsidian wikilink such as:
 
-`[[wiki/patterns/contracts-bind-accessibility-ids-to-rendered-slots|접근성 ID를 실제 렌더링 슬롯에 묶기]]`
+`[[wiki/patterns/frontend/accessibility/접근성-id를-실제-렌더링-슬롯에-묶기|접근성 ID를 실제 렌더링 슬롯에 묶기]]`
 
 Suggested `status` values:
 
@@ -109,15 +108,19 @@ Every promoted pattern file must be registered in the registry `patterns` array 
 
 - `rule_id`
 - `path`
+- `title`
+- `domain`
+- `tags`
 
 Tag pages use:
 
 - `graph_notes_root`: `tags`
-- `wiki/tags/{tag_group}/{tag_value}.md`
+- explicit `registry.graph_notes.domains[domain]` paths for domain landing pages
+- explicit `registry.graph_notes.tags[domain][tag]` paths for domain-local tag pages
 
-The tag taxonomy should include `status: [promoted, raw-only]` so raw-only evidence has a graph anchor even when it has not been promoted into a reusable pattern.
+The registry uses `domain_taxonomy` rather than a global tag taxonomy. The approved top-level domains are `common`, `frontend`, `backend`, and `infra`; each domain owns its own local tag vocabulary. Use plain raw `status` values instead of status tag pages.
 
-Tag pages are readable category pages and navigation hubs for Obsidian graph view. They should link to matching patterns, matching raw records, and stage core documents when the tag is stage-related. They are not pattern-selection candidates and are not registered in the `patterns` array.
+Tag pages are readable category pages and navigation hubs for Obsidian graph view. Domain landing pages should link only to domain-local tag pages, and domain-local tag pages should link only to matching patterns. They should not link directly to raw records. They are not pattern-selection candidates and are not registered in the `patterns` array.
 
 ## Docs-First Source Model
 
@@ -163,10 +166,12 @@ Every promoted pattern file should include YAML frontmatter with:
 - `rule_id`
 - `title`
 - `summary`
-- `tags`
+- `tags.domain`
+- one domain-local `tags.{domain}` list for each selected domain
+- optional `tags.stage` and `tags.risk` lists when they are useful for routing or review
 - `raw_sources`
 
-Write `title`, `summary`, and all human-readable body content in Korean. Keep `rule_id`, filenames, tag keys and values, paths, and raw-source paths in English.
+Write `title`, `summary`, all human-readable body content, and pattern rule document filenames in Korean. Technical terms, API names, code tokens, and stable English route keys may remain English. Keep `rule_id`, `raw_id`, frontmatter keys, domain/tag keys, branch names, commits, and code/API tokens stable.
 
 Every promoted pattern file body should use this docs-first heading order:
 
@@ -183,12 +188,12 @@ Use imperative language in `해야 할 것` and `피해야 할 것`. Keep the fi
 
 In `## 관련 문서`, include:
 
-- one wikilink for each tag note in the pattern frontmatter
+- one wikilink for each domain tag note in the pattern frontmatter
 - one wikilink for each `raw_sources` entry
 
 Pattern filenames should use:
 
-- `wiki/patterns/{rule_id}.md`
+- `wiki/patterns/{domain}/{primary-domain-tag}/{korean-title-slug}.md`
 
 Do not create a default `wiki/index.md`. Obsidian graph navigation should come from `wiki/tags/**` tag pages and explicit pattern/raw/core wikilinks.
 
@@ -203,20 +208,17 @@ Raw evidence files under `raw/**` should keep the machine-readable metadata keys
 - `출처`
 - `관련 문서`
 
-In `## 관련 문서`, include the status tag, inherited tags when available, and promoted or referenced pattern links. Raw-only evidence must still link to `status: raw-only` so it is reachable from the graph and readable tag pages.
+In `## 관련 문서`, include the plain status value and promoted or referenced pattern links. Do not link raw records directly to domain or tag pages; the graph path should be domain page -> tag page -> pattern rule -> raw evidence. Raw-only evidence should keep the plain status value; do not recreate `status` tag pages.
 
 ## Tag Page Schema
 
-Tag pages under `wiki/tags/{tag_group}/{tag_value}.md` are category reference pages. They should use this docs-first heading order:
+Tag pages at the paths declared in `registry.graph_notes` are domain and category reference pages. They should use this docs-first heading order:
 
 - `개요`
-- `같은 분류`
-- `관련 패턴`
-- `관련 원문 근거`
-- `관련 코어 문서` when applicable
+- `하위 태그` for domain landing pages, or `관련 패턴` for domain-local tag pages
 - `설명`
 
-Use one bullet per linked page. Avoid long comma-separated link lines.
+Domain landing pages must not link directly to pattern rules or raw evidence. Domain-local tag pages must not link directly to raw evidence. Use one bullet per linked page. Avoid long comma-separated link lines.
 
 ## Core Page Schema
 
@@ -277,7 +279,7 @@ Create a new pattern file when:
 
 - the concern is planning-relevant
 - the concern is independent rather than a semantic duplicate
-- the same tag combination can coexist without conflicting intent
+- the same domain/tag combination can coexist without conflicting intent
 
 When the new evidence conflicts with an older rule:
 
@@ -287,9 +289,9 @@ When the new evidence conflicts with an older rule:
 
 Whenever a pattern file is created, removed, or renamed, update `wiki/registry.json` in the same operation.
 
-Whenever a pattern's tags or raw sources change, refresh its `## 관련 문서` section, the affected raw `## 관련 문서` sections, and the affected `wiki/tags/**` tag pages in the same batch.
+Whenever a pattern's tags or raw sources change, refresh its `## 관련 문서` section, the affected raw `## 관련 문서` sections, and the affected `wiki/tags/**` tag pages in the same batch while preserving the domain -> tag -> pattern -> raw graph path.
 
-When a new tag value outside `tag_taxonomy` appears necessary, do not silently add it during promotion. Draft the registry and affected tag-page changes in `wiki/_meta/ingest-report.md` and ask the user to approve the taxonomy expansion before applying it.
+When a new domain or domain-local tag value outside `domain_taxonomy` appears necessary, do not silently add it during promotion. Draft the registry and affected tag-page changes in `wiki/_meta/ingest-report.md` and ask the user to approve the taxonomy expansion before applying it.
 
 ## Failure Policy
 

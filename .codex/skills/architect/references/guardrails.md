@@ -31,6 +31,7 @@
 - Do not let the plan folder name, branch summary, and worktree directory diverge
 - Do not leave a local prerequisite contract only in handoff prose
 - Do not leave canonical outputs, negative outputs, or recipients implicit when later test materialization would have to guess
+- Do not leave verification unit, observable result, stable identifier policy, or E2E selection reason implicit when that choice changes later test materialization.
 - Do not hide the real phase role behind unexplained jargon in `plan.md`
 - Do not leave English planner shorthand such as `surface`, `user action`, `completion condition`, general `routing`, or `metadata` in visible prose unless it is an exact identifier or schema key
 - Do not make the controller open every phase detail file just to understand the whole plan flow

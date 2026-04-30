@@ -1,6 +1,6 @@
 ---
 name: plan-materialize
-description: Create or update source-tree TDD contract tests, runtime integration tests, and selected E2E tests from an architect plan whose `plan.md` and linked phase detail files follow the active review wiki plan artifact contract, including first-work situations where the target app or test harness may not exist yet but Codex must still materialize failing/blocked tests that gate plan completion, plus owner-test migration, bounded UI-area coverage, explicitly selected full-flow journeys such as auth/session, redirect, and cross-route behavior, and Korean-first materialization reports/test descriptions that keep English only for code, runner, schema, and exact identifier terms.
+description: Create or update source-tree TDD contract tests across unit, Component Test, and selected E2E verification units from an architect plan whose `plan.md` and linked phase detail files follow the active review wiki plan artifact contract, including first-work situations where the target app or test harness may not exist yet but Codex must still materialize failing/blocked tests that gate plan completion, plus owner-test migration, selected browser journeys such as auth/session, redirect, cross-route, persisted browser state, and Korean-first materialization reports/test descriptions that keep English only for code, runner, schema, and exact identifier terms.
 ---
 
 # Plan Materialize
@@ -19,7 +19,8 @@ Read these references in order whenever this skill runs:
 Read these references only when the corresponding scope is active:
 
 - [references/unit-test-conventions.md](references/unit-test-conventions.md) when logic boundaries are in scope.
-- [references/e2e-test-conventions.md](references/e2e-test-conventions.md) when frontend UI areas or full-flow journeys are in scope.
+- [references/component-test-conventions.md](references/component-test-conventions.md) when component rendering, props/callbacks, form interaction, conditional UI, or same-screen UI synchronization is in scope.
+- [references/e2e-test-conventions.md](references/e2e-test-conventions.md) when selected browser journeys or browser-only UI behavior are in scope.
 
 ## Controller Rules
 

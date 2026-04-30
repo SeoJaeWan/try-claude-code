@@ -32,14 +32,15 @@ Before writing any plan artifact:
 - Read `{review_wiki_root}/registry.json`
 - Read every path listed in `stage_core.architect` when present, otherwise every path listed in the registry `core` array, resolving relative paths from `review_wiki_root`
 - Read `./references/terminology-policy.md` before drafting visible plan or phase detail prose
-- Derive initial tags from the user request and repo-local context
-- Select candidate pattern files from the registry `patterns` list using the registry `selection.architect` mode and `adjacency_rules`
+- Derive initial top-level domains and domain-local tags from the user request and repo-local context
+- Select candidate pattern files from the registry `patterns` list using the registry `selection.architect` mode and `adjacency_rules`; always include `common`, then add `frontend`, `backend`, or `infra` only when the request, repo-local evidence, or authoritative upstream input touches that domain
 - Read only the selected pattern files whose `적용 조건` clauses actually match the request or repo-local context
 - Do not skip the registry because the request looks familiar; it is the mandatory routing contract
 
 ### Step 1. Analyze request
 
 - First consume any locked UI direction handoff and treat its approved hierarchy, state-presentation expectations, responsive constraints, reuse rules, and referenced visuals as the default planning input for UI work
+- First consume any locked request-scope or test-strategy handoff and treat its verification unit, observable result, stable identifier policy, and excluded test scope as planning input when present
 - Clarify goals, boundaries, constraints, acceptance criteria, and feature policy
 - Treat the user's wording as canonical and keep it traceable through the plan
 - Decompose the request into concrete items and touched work bundles before naming phases
@@ -123,9 +124,13 @@ Use this step when the request, review finding, or orchestrator handoff requires
   - canonical output that must happen
   - negative output that must not happen
   - observable state or output markers for interactive behavior when execution or later tests would otherwise have to guess
+  - verification unit (`unit`, `Component Test`, `E2E`, `command`, or `manual/visual`) when multiple levels could plausibly own the same behavior
+  - stable identifier policy for UI checks, such as role/label, existing test id, planned `data-testid`/`testID`, route marker, or explicit no-new-id decision
+  - E2E selection reason when a scenario requires a browser-owned journey rather than `unit` or `Component Test`
   - recipient, delivery target, or final interpretation boundary when delivery or interpretation matters
   - sibling output candidates that are explicitly rejected when multiple identifiers, data shapes, or interpretation paths are plausible
-- Do not force detailed E2E ownership details into the plan when `plan-materialize` can derive them later
+- Do not force concrete source-tree test files, helper names, or exhaustive locator lists into the plan when local conventions can derive them later.
+- Do lock the verification unit, observable result, identifier policy, and selected E2E journey reason whenever leaving them open would let `plan-materialize` choose a different gate from the same plan.
 - Do not hide unresolved blocking decisions outside the relevant phase or plan file
 - Carry forward `deferrable` items only as inline phase defaults or short constraint notes when they matter to execution
 
@@ -228,6 +233,7 @@ Do not deep-dive into implementation details.
   - `## 리스크 / 주의점`
 - Do not force arbitrary labeled subsections; add only the rows needed for the actual phase
 - In `## 시나리오 / 계약`, expose `scenario`, `input`, `output`, `negative/no-op`, and `owner` for every behavior-changing boundary
+- In `## 시나리오 / 계약`, expose the verification unit, observable result, identifier policy, and E2E reason when those decisions affect later `plan-materialize`; use `none` or `not applicable` only when the scenario is not UI-facing or the local convention is already unambiguous.
 - Keep `output`, `제약`, `failure/validation`, and `검증` wording visible in phase detail files when they matter so later `plan-materialize` can derive tests without guessing
 - Keep `plan.md` and each linked phase detail file in parity
 - Do not restate a conclusion already fixed in a top-level contract table unless a later skill would otherwise have to guess the contract
@@ -265,21 +271,22 @@ Do not deep-dive into implementation details.
 If a plan file includes implementation scope beyond documentation-only or structural-only work:
 
 1. Read `../plan-materialize/SKILL.md`
-2. Make the phase detail contracts explicit enough that `plan-materialize` can derive tests later without guessing
+2. Make the phase detail contracts explicit enough that `plan-materialize` can create `unit`, `Component Test`, selected `E2E`, `skip`, or `block` outcomes without guessing
 3. Let execution handoff treat a later `plan-materialize` sub-agent pass as an automatic prerequisite for implementation plans
-4. When the plan includes behavior, state, routing, or contract-selection changes, make the phase detail contract explicit enough for later materialization
+4. When the plan includes behavior, state, routing, UI interaction, or contract-selection changes, make the phase detail contract name the chosen verification unit, observable result, identifier policy, and any selected E2E journey reason
 
 `architect` does not generate tests directly.
-`plan-materialize` later decides `unit`, `runtime`, selected `e2e`, `skip`, or `block` from the plan summary, the phase detail files, and local project conventions.
-`architect` does not enumerate owner-test inventories or choose concrete test files.
+`plan-materialize` later maps the plan's locked verification units to source-tree tests or blockers using local project conventions.
+`architect` does not enumerate owner-test inventories, choose concrete test files, or write source-tree tests.
 
-### Step 9. Plan journey and full-flow E2E ownership in `plan-materialize` (conditional)
+### Step 9. Lock selected E2E journey contracts for `plan-materialize` (conditional)
 
 If a plan file changes cross-route journeys, auth/session transitions, redirect chains, persisted browser state, or any release-critical flow that needs regression hardening:
 
 - Do not add a dedicated `playwright-guard` phase just for that coverage
-- Make the changed journey contract explicit enough that `plan-materialize` can materialize the selected full-flow E2E directly
+- Make the changed journey contract explicit enough that `plan-materialize` can materialize the selected E2E directly
 - Define trigger, scope, state checkpoints, and expected outputs in the relevant phase detail file using the active review wiki core docs
+- State why `unit` or `Component Test` is insufficient for the selected journey, such as cross-route behavior, auth/session state, redirect chain, persisted browser state, browser-only focus/pointer behavior, or release-critical flow.
 
 ### Step 10. Plan reference-based visual comparison phase (conditional)
 
@@ -291,12 +298,12 @@ If a plan implements UI against a reference and acceptance depends on comparing 
 
 ### Step 11. Quality gates (required)
 
-- Run the quality-gate checklist in `{review_wiki_root}/core/quality-gates.md` before finalizing
+- Run the quality-gate checklist from the core path listed for `quality-gates.md` in `stage_core.architect` or the registry `core` array before finalizing
 - Treat missing review wiki routing or skipped applicable wiki guidance as a failed quality gate
 
 ### Step 12. Self-review gate (required)
 
-- Re-run the same checklist in `{review_wiki_root}/core/quality-gates.md`
+- Re-run the same checklist from the registry-listed `quality-gates.md` core path
 - Incorporate critical findings before handoff
 - When multiple local plans exist and selected review wiki guidance requires prerequisite parity, verify it before handoff:
   - each downstream detail-file `선행조건` maps to a specific upstream phase
@@ -318,4 +325,4 @@ If a plan implements UI against a reference and acceptance depends on comparing 
 
 Architect does not execute implementation or source-tree test generation directly.
 If the user asks for an independent cold review before execution, route the finished executable plan to an independent `plan-review` pass after writing it. The workflow source of truth remains the `plan-review` skill.
-Provide a concise execution handoff summary using the handoff requirements in `{review_wiki_root}/core/execution-handoff.md`.
+Provide a concise execution handoff summary using the handoff requirements from the registry-listed `execution-handoff.md` core path.

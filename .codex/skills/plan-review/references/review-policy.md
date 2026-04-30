@@ -41,6 +41,8 @@ Typical blocker cases:
 - missing important `must not happen` output when absence is part of product policy
 - missing recipient, delivery target, or final interpretation boundary when relevant
 - missing winner rule, loser no-op rule, terminal-state rule, or side-effect coupling for risky scenarios
+- missing verification unit, observable result, stable identifier policy, or selected E2E reason when later `plan-materialize` would have to choose between `unit`, `Component Test`, and `E2E`
+- a selected E2E journey is required for cross-route, auth/session, redirect, persisted browser state, browser-only behavior, or release-critical flow, but the phase detail file does not lock the journey trigger, checkpoints, and expected outputs
 - the plan cannot be traced back to the user's requested items without guesswork
 - an affected public boundary exists, but the plan leaves props, callbacks, outputs, or ownership vague enough that implementation would have to guess
 - English planner shorthand in visible prose hides user-visible behavior, public contracts, ownership, completion criteria, or verification meaning enough that a reviewer must reinterpret the plan
@@ -65,6 +67,8 @@ Use `major` when the plan is probably executable but has a material weakness tha
 Typical major cases:
 
 - validation is real but too weak for the claimed boundary
+- verification unit selection is plausible but thin, such as using E2E where `Component Test` appears sufficient or omitting why `unit` coverage is not the primary owner for deterministic logic
+- UI-facing tests are planned without a clear observable result or stable identifier policy, but the missing detail is likely derivable from local conventions
 - topology is defensible but likely suboptimal
 - phase boundaries are technically valid but hide important sequencing or ownership assumptions
 - the `plan.md` summary and technical detail file are individually plausible but drift in wording enough to raise rework risk
@@ -96,7 +100,7 @@ Prefer no finding over a low-value minor note.
 Check the plan against:
 
 1. the resolved `review_wiki_root/registry.json` plus the listed core docs; use `./.codex/review-wiki/sync/current` as the planning root
-2. selected pattern files that match the reviewed plan under the registry `selection.review` policy
+2. selected pattern files that match the reviewed plan under the registry `selection.review` policy, with `common` always selected before adding touched domain-local tags from `domain_taxonomy`
 3. `architect/references/plan-template-sequential.md`
 4. `architect/references/phase-template-detail.md`
 5. `architect/references/terminology-policy.md`
@@ -113,7 +117,7 @@ Required focus areas:
 6. Korean-first visible prose terminology
 7. routing and ownership fit
 8. verification realism
-9. `plan-materialize` derivation readiness
+9. `plan-materialize` derivation readiness, including locked verification units, observable results, identifier policy, and selected E2E reasons
 10. reference-comparison planning when relevant
 11. direct prerequisite contract parity when relevant
 12. visual parity contract alignment when relevant

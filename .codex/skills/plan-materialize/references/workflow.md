@@ -6,7 +6,7 @@
 
 - Inspect the repository before generating anything
 - Detect existing runners, assertion style, mocking style, naming, and file layout
-- Reuse the current stack; do not introduce a new unit or E2E framework unless the selected plan explicitly locks that first-time test stack
+- Reuse the current stack; do not introduce a new unit, Component Test, or E2E framework unless the selected plan explicitly locks that first-time test stack
 - Before creating tests under a planned new source tree, confirm the plan locks the production topology and test-owner placement as contracts rather than examples
 - If the plan's concrete paths could be interpreted as tentative candidates, or if writing tests would force a hook/model/utility/runtime folder decision the plan did not justify, stop with `blocker_type = plan_ambiguity`
 - If the target app/module implementation tree or runner config is missing but the selected plan explicitly locks the planned runner and command path, enter `TDD contract mode`
@@ -88,10 +88,12 @@ Also inspect whether the scenario carries any high-risk execution pattern:
 
 If a clause is not directly test-expressible, do not pretend adjacent tests cover it.
 Map it to the narrowest execution command already selected by the plan, or return a blocker.
-For UI and flow clauses, derive the user interaction sequence and observable outcome before choosing E2E or runtime coverage. A test that only asserts page load, panel title visibility, copy-button existence, or absence of console errors does not close a clause about synchronized state, canonical output, route interpretation, validation, or workflow completion.
-For function, mapper, codegen, state, permission, selection, or serialization clauses, derive the input object/state and exact output or negative output before choosing unit/runtime coverage.
+For UI and flow clauses, derive the user interaction sequence and observable outcome before mapping the plan's locked verification unit to Component Test or E2E. A test that only asserts page load, panel title visibility, copy-button existence, or absence of console errors does not close a clause about synchronized state, canonical output, route interpretation, validation, or workflow completion.
+For function, mapper, codegen, state, permission, selection, or serialization clauses, derive the input object/state and exact output or negative output before mapping to unit or Component Test coverage.
 When a selected scenario has both a valid output and a prohibited output, materialize the valid output first, then add the prohibited/no-op assertion. Negative-only coverage is insufficient when the plan also defines what must happen.
 If the phase detail files do not expose enough information to derive this `input -> output` contract, stop and return the missing contract to `architect`.
+If a scenario could plausibly be owned by more than one verification unit and the phase detail file does not lock `unit`, `Component Test`, `E2E`, a command, or an explicit skip/block reason, stop and return the missing test-strategy contract to `architect`.
+If a UI-facing scenario lacks the observable result or stable identifier policy needed to author a deterministic Component Test or E2E test, stop and return the missing observability contract to `architect`.
 If `plan.md` and a linked phase detail file disagree on what changes in that phase, stop and return a blocker instead of picking one.
 If source topology affects owner-test placement and the plan does not clearly distinguish committed paths from examples or candidates, stop and return a blocker instead of letting tests establish the structure.
 If 2 or more plausible sibling outputs, identifiers, data shapes, transformation paths, or interpretation boundaries could satisfy the same scenario, stop and return a blocker instead of choosing one.
@@ -108,7 +110,7 @@ Blocker typing rules:
 ### Step 3. Scan affected existing owner tests before choosing layers
 
 - Before classifying test layers, search for existing owner tests that already freeze the selected clause's boundary or observable contract
-- Build an affected-owner set across local unit, runtime, compare, and E2E owners:
+- Build an affected-owner set across local unit, Component Test, compare, and E2E owners:
   - `keep` when the existing owner still expresses the same canonical contract
   - `update` when the owner boundary survives but its assertions or helpers freeze obsolete truth
   - `delete` when the selected plan retires that owner boundary or makes the old owner actively misleading
@@ -116,7 +118,7 @@ Blocker typing rules:
 - Do not widen this into unrelated regression gardening; include only tests whose assertions, helper contracts, or owner role would become misleading after the selected clause changes
 - If you cannot tell whether a nearby owner test still expresses the same canonical contract, inspect it and decide `keep`, `update`, or `delete` before continuing
 
-### Step 4. Classify scenario boundaries into test ownership areas
+### Step 4. Map scenario boundaries to locked verification units
 
 Classification rules:
 
@@ -131,13 +133,12 @@ Classification rules:
     - covers template rendering, UI state interpretation, message mapping, serializer output, and any feature-specific transformation that defines the final user-visible or externally consumed output when the plan selects that interpretation as part of its contract
 - Logic boundary: unit test is mandatory
     - applies to frontend and backend logic such as hooks, services, validators, mappers, utilities, use cases, controllers, and domain policies when the plan changes or validates that logic boundary
-- Runtime interaction boundary: runtime test is mandatory
-  - covers repo-local jsdom or rendered harness owners for hook-to-DOM wiring, mount/unmount lifetime, event choreography, host-owned coordination, mutual exclusion, and other observable DOM or phase outputs that do not require a real browser engine
-- Browser-dependent rendered-area boundary: bounded UI-area E2E is the default
-  - use when the selected clause depends on actual browser rendering, CSS animation timing, layout engine output, pointer semantics, focus navigation, or other browser-only behavior that a stable repo-local runtime owner cannot close from input to observable output
-- User flow or UI synchronization boundary: E2E is mandatory when the selected clause says a user interaction must change multiple visible outputs, cross panels, copied text, URL, active navigation, persisted state, focus, or route interpretation. Runtime coverage may supplement it, but it cannot replace browser coverage unless the plan explicitly limits the clause to a jsdom-owned runtime area.
-- Do not escalate a stable logic or runtime contract to E2E when an existing unit or runtime owner can close the selected clause at the correct boundary
-- Presentation-only change: E2E may be skipped only when the plan or user request makes that explicit enough to justify the skip
+- Component interaction boundary: Component Test is mandatory when the selected clause covers component rendering, props/callback handoff, form interaction, conditional UI, accessibility wiring, hook-to-DOM wiring, mount/unmount lifetime, event choreography, host-owned coordination, mutual exclusion, or same-screen UI synchronization that does not require a real browser engine.
+- Browser-dependent rendered-area boundary: E2E is selected only when the plan locks a browser-owned reason.
+  - use when the selected clause depends on actual browser rendering, CSS animation timing, layout engine output, pointer semantics, focus navigation, cross-route behavior, auth/session, redirect chain, persisted browser state, or other browser-only behavior that a stable unit or Component Test owner cannot close from input to observable output
+- User flow or UI synchronization boundary: E2E is mandatory only when the selected clause says a user interaction must change cross-route outputs, copied browser text, URL, active navigation, persisted browser state, focus behavior requiring a browser, route interpretation, or a release-critical journey. Component Test may own same-screen synchronization when the plan limits the clause to a component or screen harness.
+- Do not escalate a stable logic or component contract to E2E when an existing unit or Component Test owner can close the selected clause at the correct boundary
+- Presentation-only change: E2E is skipped unless the plan explicitly locks browser-rendered presentation as the durable acceptance gate
 - Cross-route journey, auth/session transition, redirect chain, persisted browser state, or release-critical flow explicitly selected by the plan: full-flow E2E is mandatory when the existing configured runner can own the journey
 - Export or import inventory is not a test boundary by default
     - materialize it only when the plan explicitly selects a stable public API contract whose presence or absence is itself the feature behavior
@@ -171,13 +172,13 @@ Before finalizing `create`, `update`, or `delete`, reconcile the affected-owner 
 - Allow `skip` only when the existing source-tree test already closes the exact selected clause with no wording or assertion drift
 - Do not edit unrelated passing tests just for suite cleanup when they are outside the selected plan clauses and outside the affected-owner set
 
-#### Runtime integration tests
+#### Component Tests
 
-- Reuse existing repo-local runtime owner patterns such as `*.runtime.test.*` when they exist
-- Prefer the stable runtime owner for rendered hook behavior, DOM lifetime, event choreography, host-owned coordination, and observable state markers that do not require a real browser engine
-- If an existing runtime owner freezes obsolete truth, update or delete that owner before creating a parallel replacement
-- Do not treat compare or static visual baseline owners as runtime owners unless the plan explicitly selects that frozen visual contract as the durable feature behavior
-- Allow `skip` only when an existing runtime owner already closes the exact selected clause with no wording or assertion drift
+- Reuse existing repo-local Component Test or rendered-harness owner patterns such as component `*.test.*`, `*.spec.*`, `*.runtime.test.*`, Storybook interaction tests, or Playwright component specs when they exist
+- Prefer the stable Component Test owner for rendered hook behavior, DOM lifetime, event choreography, host-owned coordination, same-screen synchronization, and observable state markers that do not require a real browser engine
+- If an existing Component Test owner freezes obsolete truth, update or delete that owner before creating a parallel replacement
+- Do not treat compare or static visual baseline owners as Component Test owners unless the plan explicitly selects that frozen visual contract as the durable feature behavior
+- Allow `skip` only when an existing Component Test owner already closes the exact selected clause with no wording or assertion drift
 
 #### E2E tests
 
@@ -223,28 +224,31 @@ Before finalizing `create`, `update`, or `delete`, reconcile the affected-owner 
 - Do not edit production code, fixtures outside the test tree, or test config during this skill
 - If the unit test imports a planned module that does not exist yet, keep the import to the planned path when that path is locked by the plan and report the test as a completion-blocking red contract. Do not replace it with filesystem/string inspection just to make the suite pass.
 
-### Step 7. Materialize runtime integration tests
+### Step 7. Materialize Component Tests
 
-- Follow the repo's existing rendered-harness and runtime-owner patterns before inventing a new style
-- Keep runtime tests focused on observable input -> output contracts:
+- Follow `references/component-test-conventions.md`
+- Follow the repo's existing rendered-harness and component-owner patterns before inventing a new style
+- Keep Component Tests focused on observable input -> output contracts:
   - DOM presence or absence
   - phase or state markers
   - mount/unmount timing owned by the boundary
   - event choreography and host-owned coordination
+  - props/callback handoff and submitted payloads
+  - same-screen visible state synchronization
   - important no-op and stale-path behavior
 - Prefer observable state markers, callbacks, and owner-managed DOM outcomes over presentation-only styling assertions
 - Do not freeze decorative layout, exact color, or other high-churn presentation details unless the selected clause makes that visual contract durable
-- Do not shrink a browser-dependent clause into runtime coverage when the selected contract requires a real browser engine
+- Do not shrink a browser-dependent clause into Component Test coverage when the selected contract requires a real browser engine
 
 ### Step 8. Materialize E2E tests
 
 - Follow `references/e2e-test-conventions.md`
 - Use only the runner already configured in the project
 - In `TDD contract mode`, use the runner and spec root explicitly locked by the plan even if the config file is not implemented yet; record the command as not run/failed until the harness exists
-- Materialize only the selected bounded UI-area or full-flow journey tests; do not add plan-external regression sweeps
+- Materialize only the selected browser journey tests; do not add plan-external regression sweeps
 - Derive every scenario and assertion from explicit selected plan clauses only
 - Name each E2E scenario as a user-visible behavior example: condition, user action, and visible/output result
-- For UI synchronization clauses, drive the actual user controls and assert every selected visible/output recipient that must share state, such as preview, generated code, copied text, URL, active navigation, persisted state, or submitted payload
+- For E2E synchronization clauses, drive the actual user controls and assert every selected browser-owned visible/output recipient that must share state, such as copied text, URL, active navigation, persisted state, cross-route result, or submitted payload
 - Do not count "route loads", "section headings are visible", "no console errors", or "copy result is non-empty" as sufficient unless the selected clause is exactly a smoke/reachability contract
 - Update the existing owner test when the same UI area or journey already exists
 - If the plan retires the selected UI area or journey entirely, delete the obsolete owner test instead of inventing a replacement smoke path
@@ -297,7 +301,7 @@ Include:
 - boundary
 - scenario contract summary
 - risk pattern summary when applicable
-- test type: `unit` | `runtime` | `e2e` | `skip` | `block`
+- test type: `unit` | `component` | `e2e` | `skip` | `block`
 - action: `create` | `update` | `delete` | `split` | `skip` | `block` | `run`
 - target file
 - targeted run command when applicable
@@ -335,6 +339,7 @@ Frontmatter rules:
 - Every behavior-changing selected scenario with competing completion paths has explicit winner/loser-path coverage or an explicit blocker
 - Every behavior-changing selected scenario with deferred execution or terminal-state policy has explicit terminal-state coverage or an explicit blocker
 - Every behavior-changing selected scenario that introduces a feature-specific final interpretation path has final-interpretation coverage or an explicit blocker
+- Every selected frontend clause that is locked to Component Test has a component action, an exact existing owner-test skip, or an explicit blocker
 - Every selected frontend clause that truly requires a browser-dependent owner has an E2E action, an exact existing owner-spec skip, or an explicit blocker
 - Every affected owner test in scope was reviewed as `keep`, `update`, or `delete`
 - No stale owner test that freezes obsolete truth survives without an explicit keep rationale

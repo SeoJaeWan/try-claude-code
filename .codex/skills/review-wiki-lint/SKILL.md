@@ -1,6 +1,6 @@
 ---
 name: review-wiki-lint
-description: Audit the review wiki for registry drift, broken raw backlinks, duplicate or conflicting pattern rules, orphan registrations, taxonomy drift, Obsidian graph-link drift, docs-first source formatting, feedback/history record consistency, and document consistency problems. Use when Codex needs to prepare a proposed cleanup report in `wiki/_meta/lint-report.md` and wait for explicit user approval before applying any wiki cleanup.
+description: Audit the review wiki for registry drift, broken raw backlinks, duplicate or conflicting pattern rules, orphan registrations, taxonomy drift, Obsidian graph-link drift, docs-first source formatting, feedback/history record consistency, and document consistency problems. Use when Codex needs to prepare a proposed cleanup report in `wiki/_meta/점검-보고서.md` and wait for explicit user approval before applying any wiki cleanup.
 ---
 
 # Review Wiki Lint
@@ -11,7 +11,7 @@ Use this skill to inspect the review wiki without silently rewriting it. Resolve
 
 1. Verify the target.
    - Review wiki root: `~/.codex/reviewWiki`
-   - Required working files: `wiki/registry.json` and `wiki/_meta/lint-report.md`
+   - Required working files: `wiki/registry.json` and `wiki/_meta/점검-보고서.md`
    - If the link is missing or broken, stop and use `review-wiki-setup`.
 
 2. Read the current routing and graph surface first.
@@ -25,14 +25,14 @@ Use this skill to inspect the review wiki without silently rewriting it. Resolve
    - Look for registry drift, broken `raw_sources`, broken Obsidian wikilinks, duplicate or conflicting rules, orphan registrations, unregistered files, taxonomy drift, overbroad tags, stale guidance, Korean-schema drift, Korean terminology drift, docs-first source drift, tag-page drift, malformed feedback records, and malformed history records.
    - Treat lint as a review pass, not an excuse to rewrite the whole wiki.
 
-4. Write the proposed cleanup plan to `wiki/_meta/lint-report.md`.
+4. Write the proposed cleanup plan to `wiki/_meta/점검-보고서.md`.
    - Summarize findings and the exact cleanup you plan to apply.
    - Separate blocking issues from optional tidy-ups.
    - Do not apply fixes yet.
 
 5. Stop and wait for explicit user approval.
    - If the user approves, apply only the approved subset of changes.
-   - Refresh `wiki/_meta/lint-report.md` to reflect what was actually changed and what remains deferred.
+   - Refresh `wiki/_meta/점검-보고서.md` to reflect what was actually changed and what remains deferred.
    - If approval is partial, keep the rest as pending or deferred.
 
 ## Lint Focus
@@ -42,17 +42,18 @@ Use this skill to inspect the review wiki without silently rewriting it. Resolve
 - Ensure `wiki/index.md` is absent and registry `indexes` is absent.
 - Ensure no separate `wiki/docs/**` tree exists; the existing wiki files must remain the docs-first source.
 - Ensure registry `document_model` is `docs-first-source`.
-- Ensure `graph_notes_root` exists and every taxonomy value has a graph note under `wiki/tags/{tag_group}/{tag_value}.md`.
+- Ensure `graph_notes_root` exists, every top-level domain has a `registry.graph_notes.domains[domain]` page, and every `domain_taxonomy.tags` value has a `registry.graph_notes.tags[domain][tag]` page.
 - Ensure every promoted pattern has at least one valid raw backlink.
+- Ensure domain landing pages link only to domain-local tag pages.
+- Ensure domain-local tag pages link only to matching pattern rules, not raw records.
 - Ensure pattern `## 관련 문서` sections link to all tag pages and all `raw_sources`.
-- Ensure every raw document has a `## 관련 문서` section with a status tag note, and promoted or referenced raw records link back to every matching pattern.
-- Ensure tag pages link to every pattern and raw record carrying that tag.
-- Ensure duplicate or conflicting rules are identified across exact and adjacent tag groups.
+- Ensure every raw document has a `## 관련 문서` section with a plain status value and promoted or referenced pattern links, without direct domain/tag links.
+- Ensure duplicate or conflicting rules are identified across exact domain tags and registry-declared adjacent domain tags.
 - Ensure stale guidance is marked or rewritten only when the raw evidence and current core contract justify it.
 - Ensure promoted pattern frontmatter includes Korean `title` and `summary`.
 - Ensure promoted pattern bodies use the docs-first Korean headings `개요`, `문제`, `적용 조건`, `해야 할 것`, `피해야 할 것`, `적용 예시`, `판단 근거`, and `관련 문서`.
 - Ensure human-readable prose is Korean-first and does not contain avoidable mixed phrases like `user action`, `surface`, `boundary`, `contract`, `validation`, `state`, `phase`, or `owner` unless the term is a code/API/schema/path/tag token.
-- Ensure tag pages avoid long comma-separated link lines and use readable bullet lists for related patterns and raw evidence.
+- Ensure tag pages avoid long comma-separated link lines and use readable bullet lists for related tags or patterns.
 - Ensure new pattern files still match the one-file-per-rule registry model rather than turning into freeform note sprawl.
 - Ensure feedback outcome folders and history root exist when docs feedback is enabled.
 - Ensure feedback and history JSON records are valid and do not claim changed files that are missing.
@@ -67,4 +68,4 @@ Use this skill to inspect the review wiki without silently rewriting it. Resolve
 
 ## Reference
 
-- Read [references/checklist.md](references/checklist.md) for the exact checks and the expected `lint-report.md` structure.
+- Read [references/checklist.md](references/checklist.md) for the exact checks and the expected `점검-보고서.md` structure.

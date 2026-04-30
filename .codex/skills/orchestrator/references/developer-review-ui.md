@@ -74,14 +74,7 @@ When the visible step changes through `Previous`, `Next`, or direct step selecti
 
 ## Review model
 
-`review-data.json` is generated from `plan.md`, linked phase files, and `review.md` by the UTF-8-safe helper:
-
-```text
-node .codex/skills/orchestrator/scripts/generate-developer-review-package.mjs --task-slug {task-slug} --plan-signature {plan_signature}
-```
-
-The helper also refreshes `feedback.json` and `review-history.json` with explicit UTF-8 writes. Do not create these JSON files with shell redirection, `Set-Content`, `Out-File`, or copied console output, because Windows default encodings can damage Korean text before the browser/server layer sees it.
-
+`review-data.json` is generated from `plan.md`, linked phase files, and `review.md`.
 `review-history.json` preserves prior submitted developer-review rounds plus the controller's resulting action summary so the browser UI can show what the user asked to change and how the planning loop responded.
 
 Required top-level fields:
