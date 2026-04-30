@@ -19,7 +19,7 @@
 - Read every core document listed in `stage_core.review`; if absent, read the registry `core` array.
 - Select candidate patterns using registry `selection.review`, `domain_taxonomy`, and `adjacency_rules`; always include `common`, then add touched domains only.
 - Read only selected pattern files whose `적용 조건` actually match the reviewed plan or phase detail files.
-- Read `../architect/references/terminology-policy.md` before drafting findings.
+- Read the active review wiki `core/common/용어-정책.md` before drafting findings.
 
 ### Step 1. Load the plan
 
@@ -46,7 +46,7 @@ Treat scope-challenge findings as normal review evidence.
 Judge the plan against:
 
 - active review wiki core docs and selected patterns.
-- `architect` plan and phase templates.
+- active review wiki plan artifact contract.
 - user-request traceability.
 - summary/detail parity.
 - blocking ambiguity.
@@ -54,7 +54,7 @@ Judge the plan against:
 - `owner_agent` routing.
 - scenario-level `input -> output` contract completeness.
 - affected public boundaries, exclusions, no-op rules, recipients, and final interpretation boundaries.
-- verification realism and `plan-materialize` derivation readiness.
+- verification realism and materialization readiness.
 - UI direction completeness when UI scope exists.
 - reference-based visual comparison, Figma parity, or Figma inventory provenance when in scope.
 
@@ -96,10 +96,10 @@ Rules:
 - preserve an orchestrator-provided current `plan_signature`.
 - compute signatures from the current plan and finding set when not provided.
 - set `requires_user_decision: true` only when a fresh user decision is required.
-- set `next_action: architect` for `blocked`; otherwise `developer_review`.
+- set `next_action: plan_revision` for `blocked`; otherwise `developer_review`.
 
 ### Step 7. Respond in chat
 
 - Present findings first, ordered by severity.
 - Reference the reviewed `plan.md`, relevant phase detail files, and the written `review.md`.
-- State clearly whether execution should proceed, return to `architect`, or continue to developer review with findings.
+- State clearly whether execution should proceed, requires plan revision, or can continue to developer review with findings.

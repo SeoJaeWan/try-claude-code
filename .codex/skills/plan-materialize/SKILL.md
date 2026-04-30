@@ -1,11 +1,11 @@
 ---
 name: plan-materialize
-description: Create or update source-tree TDD contract tests across unit, Component Test, and selected E2E verification units from an architect plan whose `plan.md` and linked phase detail files follow the active review wiki plan artifact contract, including first-work situations where the target app or test harness may not exist yet but Codex must still materialize failing/blocked tests that gate plan completion, plus owner-test migration, selected browser journeys such as auth/session, redirect, cross-route, persisted browser state, and Korean-first materialization reports/test descriptions that keep English only for code, runner, schema, and exact identifier terms.
+description: Create or update source-tree TDD contract tests across unit, Component Test, and selected E2E verification units from an executable plan artifact whose `plan.md` and linked phase detail files follow the active review wiki plan artifact contract, including first-work situations where the target app or test harness may not exist yet but Codex must still materialize failing/blocked tests that gate plan completion, plus owner-test migration, selected browser journeys such as auth/session, redirect, cross-route, persisted browser state, and Korean-first materialization reports/test descriptions that keep English only for code, runner, schema, and exact identifier terms.
 ---
 
 # Plan Materialize
 
-Turn an `architect` plan into source-tree tests and a plan-local materialization report without touching production code.
+Turn an executable plan artifact into source-tree tests and a plan-local materialization report without touching production code.
 
 ## Required Reading
 
@@ -15,7 +15,7 @@ Read these references in order whenever this skill runs:
 2. [references/workflow.md](references/workflow.md) for test convention detection, clause extraction, classification, materialization, validation, reporting, and completion checks.
 3. [references/guardrails.md](references/guardrails.md) for non-negotiable test-materialization constraints.
 4. [references/test-authoring-conventions.md](references/test-authoring-conventions.md) before creating or updating source-tree tests.
-5. [../architect/references/terminology-policy.md](../architect/references/terminology-policy.md) before writing report prose or test intent text.
+5. [../../review-wiki/sync/current/core/common/용어-정책.md](../../review-wiki/sync/current/core/common/용어-정책.md) before writing report prose or test intent text.
 
 Read these references only when the corresponding scope is active:
 

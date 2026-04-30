@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Capture Figma node hierarchy evidence as bounded local artifacts so `orchestrator` and `architect` can avoid large direct Figma reads, Code Connect permission traps, and invented classifications.
+Capture Figma node hierarchy evidence as bounded local artifacts with explicit provenance, coverage, freshness, and blocker state.
 
 ## Inputs
 
@@ -100,7 +100,7 @@ Each snapshot JSON should include compact nodes with:
 - `children`
 - optional `markers`
 
-Keep raw large MCP responses out of the manifest. Store compact, downstream-usable data only unless a blocker requires a small error excerpt.
+Keep raw large MCP responses out of the manifest. Store compact, reusable data only unless a blocker requires a small error excerpt.
 Do not store or depend on truncated tool output. A truncated result must produce `blocked_truncated` or a smaller retry before success.
 
 ## Freshness

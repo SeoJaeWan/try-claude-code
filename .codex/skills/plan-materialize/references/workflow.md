@@ -8,7 +8,7 @@
 - Detect existing runners, assertion style, mocking style, naming, and file layout
 - Reuse the current stack; do not introduce a new unit, Component Test, or E2E framework unless the selected plan explicitly locks that first-time test stack
 - Before creating tests under a planned new source tree, confirm the plan locks the production topology and test-owner placement as contracts rather than examples
-- If the plan's concrete paths could be interpreted as tentative candidates, or if writing tests would force a hook/model/utility/runtime folder decision the plan did not justify, stop with `blocker_type = plan_ambiguity`
+- If the plan's concrete paths could be interpreted as tentative candidates, or if writing tests would force a hook/model/utility/runtime folder decision the plan did not justify, stop with `blocker_type = plan_contract`
 - If the target app/module implementation tree or runner config is missing but the selected plan explicitly locks the planned runner and command path, enter `TDD contract mode`
 - In `TDD contract mode`, you may create missing source-tree test directories and owner test files even when the target app/module implementation tree is missing
 - In `TDD contract mode`, missing runner/config/package ownership does not block writing tests by itself as long as:
@@ -91,9 +91,9 @@ Map it to the narrowest execution command already selected by the plan, or retur
 For UI and flow clauses, derive the user interaction sequence and observable outcome before mapping the plan's locked verification unit to Component Test or E2E. A test that only asserts page load, panel title visibility, copy-button existence, or absence of console errors does not close a clause about synchronized state, canonical output, route interpretation, validation, or workflow completion.
 For function, mapper, codegen, state, permission, selection, or serialization clauses, derive the input object/state and exact output or negative output before mapping to unit or Component Test coverage.
 When a selected scenario has both a valid output and a prohibited output, materialize the valid output first, then add the prohibited/no-op assertion. Negative-only coverage is insufficient when the plan also defines what must happen.
-If the phase detail files do not expose enough information to derive this `input -> output` contract, stop and return the missing contract to `architect`.
-If a scenario could plausibly be owned by more than one verification unit and the phase detail file does not lock `unit`, `Component Test`, `E2E`, a command, or an explicit skip/block reason, stop and return the missing test-strategy contract to `architect`.
-If a UI-facing scenario lacks the observable result or stable identifier policy needed to author a deterministic Component Test or E2E test, stop and return the missing observability contract to `architect`.
+If the phase detail files do not expose enough information to derive this `input -> output` contract, stop with a `plan_contract` blocker.
+If a scenario could plausibly be owned by more than one verification unit and the phase detail file does not lock `unit`, `Component Test`, `E2E`, a command, or an explicit skip/block reason, stop with a `plan_contract` blocker.
+If a UI-facing scenario lacks the observable result or stable identifier policy needed to author a deterministic Component Test or E2E test, stop with a `plan_contract` blocker.
 If `plan.md` and a linked phase detail file disagree on what changes in that phase, stop and return a blocker instead of picking one.
 If source topology affects owner-test placement and the plan does not clearly distinguish committed paths from examples or candidates, stop and return a blocker instead of letting tests establish the structure.
 If 2 or more plausible sibling outputs, identifiers, data shapes, transformation paths, or interpretation boundaries could satisfy the same scenario, stop and return a blocker instead of choosing one.
@@ -102,8 +102,8 @@ If a selected plan clause cannot be mapped to an owner test or a narrow executio
 
 Blocker typing rules:
 
-- use `blocker_type = plan_ambiguity` when the plan contract is incomplete, contradictory, or under-specified
-- use `blocker_type = plan_ambiguity` when plan-materialize would otherwise have to choose production or test topology that architect did not lock
+- use `blocker_type = plan_contract` when the plan contract is incomplete, contradictory, or under-specified
+- use `blocker_type = plan_contract` when this skill would otherwise have to choose production or test topology that the plan artifact did not lock
 - use `blocker_type = user_policy` only when the blocker truly depends on a fresh user decision rather than a missing technical contract
 - use `blocker_type = external_setup` only when the source tree or test environment is missing a prerequisite that the current plan revision cannot supply
 
@@ -273,7 +273,7 @@ Write `materialize.md` adjacent to the selected executable `plan.md`.
 
 This report is a helper artifact, not the source of truth.
 The source of truth is the actual test files in the source tree.
-Apply `../architect/references/terminology-policy.md` to human-readable report prose and test intent text:
+Apply the active review wiki `core/common/용어-정책.md` to human-readable report prose and test intent text:
 
 - keep YAML frontmatter keys, blocker codes, test types, commands, file paths, metadata comments, API names, and code identifiers in English when they must match literally
 - write clause summaries, reasons, blocker explanations, validation notes, and test descriptions in Korean-first prose
@@ -316,11 +316,11 @@ Frontmatter rules:
 - `outcome`: `completed` | `blocked`
 - `plan_signature`: a stable short fingerprint of the normalized current `plan.md` plus the linked phase detail files; if the orchestrator provided `plan_signature`, preserve it exactly
 - `gate_status`: `passed` | `failed` | `blocked`
-- `blocker_type`: `none` | `plan_ambiguity` | `user_policy` | `external_setup`
+- `blocker_type`: `none` | `plan_contract` | `user_policy` | `external_setup`
 - `blocker_code`: use a specific code such as `setup_missing`, `local_convention_missing`, or `owner_spec_missing` when blocked; otherwise `none`
 - `next_action`:
   - `done` when `outcome = completed`
-  - `architect` when `blocker_type = plan_ambiguity`
+  - `plan_revision` when `blocker_type = plan_contract`
   - `user_gate` when `blocker_type = user_policy`
   - `stop` when `blocker_type = external_setup`
 - `resume_from`: `none` by default, `materialize` for `external_setup` blockers

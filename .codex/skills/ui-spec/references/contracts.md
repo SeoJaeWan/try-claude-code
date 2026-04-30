@@ -2,11 +2,11 @@
 
 ## Purpose
 
-Lock user-visible UI direction so planning does not guess hierarchy, state presentation, responsive behavior, or design-system alignment.
+Lock user-visible UI direction so artifact consumers do not guess hierarchy, state presentation, responsive behavior, or design-system alignment.
 
 ## Entry Notes
 
-Use this skill only when UI direction needs to be made concrete before planning.
+Use this skill only when UI direction needs to be made concrete as a standalone upstream artifact.
 This skill is intended for explicit manual invocation, not as a default planning step for every request.
 
 ## When to use
@@ -20,6 +20,6 @@ This skill is intended for explicit manual invocation, not as a default planning
 ## When not to use
 
 - The request is backend-only, API-only, data-only, or infrastructure-only.
-- The existing design direction is already fixed enough for safe planning.
+- The existing design direction is already fixed enough for safe artifact consumption.
 - The task is a post-implementation live-site audit or fix loop.
 - The real blocker is product scope or policy ambiguity rather than UI direction.

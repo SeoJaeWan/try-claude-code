@@ -47,7 +47,7 @@ Read only what is needed:
 - Existing `./plans/**`, `./.codex/artifacts/brainstorm/**`, and `./.codex/artifacts/ui-spec/**` artifacts when nearby prior work may answer the same question or reduce repeated clarification
 - Legacy `./.codex/artifacts/design-discovery/**` artifacts only as read-only compatibility input when directly relevant
 - `./.codex/` references only when they directly constrain this workflow
-- `../architect/references/terminology-policy.md` when producing request-lock or planning handoff text
+- `./.codex/review-wiki/sync/current/core/common/용어-정책.md` when producing request-lock or artifact handoff text
 
 Do not assume or depend on `./.ai/` or any other external AI metadata directory.
 Prefer related-artifact lookup before asking the user to restate a prior decision.
@@ -63,7 +63,7 @@ For diagnostic-lock path:
 
 ### 3. Run review wiki preflight when available
 
-If planning handoff is plausible, inspect the staged review wiki before asking the user to confirm scope:
+If artifact handoff is plausible, inspect the staged review wiki before asking the user to confirm scope:
 
 - resolve `review_wiki_root` to `./.codex/review-wiki/sync/current`
 - if the planning root exists:
@@ -71,7 +71,7 @@ If planning handoff is plausible, inspect the staged review wiki before asking t
   - read every path in `stage_core.brainstorm` when present; otherwise fall back to the registry `core` array and state that the wiki does not yet expose a brainstorm-specific core list
   - use `selection.brainstorm` when present to select candidate pattern files by domain first: always include `common`, add `frontend`, `backend`, or `infra` only when the user's request or local evidence touches that domain, then narrow by `domain_taxonomy.tags`
   - read only the selected pattern files whose `적용 조건` clauses materially help classify the current ambiguity
-- if the planning root is missing or unreadable and planning handoff is likely:
+- if the planning root is missing or unreadable and artifact handoff is likely:
   - state that the review wiki dependency is missing
   - continue in degraded brainstorm mode instead of pretending the preflight ran
   - state that review wiki setup is required before planning
@@ -80,7 +80,7 @@ Use the preflight only to:
 
 - classify missing information as `blocking`, `derivable`, or `deferrable`
 - public boundary contract, state, ownership, exclusion, and no-op questions that would later block planning
-- test-strategy questions that would later make `architect` or `plan-materialize` guess
+- test-strategy questions that would later make planning or verification materialization guess
 - capture applicable pattern guidance that narrows the confirmation questions or request-lock tables
 
 Do not use the preflight to:
@@ -155,7 +155,7 @@ Return a concise request-lock snapshot in the response using markdown tables.
 
 Required tables:
 
-Apply `../architect/references/terminology-policy.md` to all human-readable table names and cell prose. Keep English only for exact code identifiers, API names, field keys, paths, and quoted user text.
+Apply the active review wiki `core/common/용어-정책.md` to all human-readable table names and cell prose. Keep English only for exact code identifiers, API names, field keys, paths, and quoted user text.
 
 1. `요청 대응표`
    - `사용자 요청 항목`
@@ -207,7 +207,7 @@ Optional table when review wiki preflight matters:
 7. `review wiki preflight 메모`
    - `검토 기준`
    - `이번에 잠근 내용`
-   - `architect에 넘길 메모`
+   - `계획 입력 메모`
    - `남은 위험`
 
 Optional tables for diagnostic-lock path:
@@ -291,9 +291,9 @@ When planning is needed and scope is decision-complete enough for planning, prov
 3. The locked `공개 경계 표`
 4. Any `상태 소유권 표`, `테스트 전략 잠금 표`, or `제외 항목 표` that matters to planning
 5. Explicit defaults or deferred low-risk choices
-6. Diagnostic baseline findings that `architect` should treat as already surfaced, including evidence gaps and confirmed differences when diagnostic-lock path was used
-7. Review wiki preflight findings that `architect` should treat as already surfaced, or an explicit note that the preflight could not run because the review wiki root was missing
-8. Context7-confirmed external facts that `architect` should treat as already resolved, plus any still-risky assumptions that may require fallback verification
+6. Diagnostic baseline findings that subsequent planning input should treat as already surfaced, including evidence gaps and confirmed differences when diagnostic-lock path was used
+7. Review wiki preflight findings that subsequent planning input should treat as already surfaced, or an explicit note that the preflight could not run because the review wiki root was missing
+8. Context7-confirmed external facts that subsequent planning input should treat as already resolved, plus any still-risky assumptions that may require fallback verification
 
 If planning is needed but `./.codex/review-wiki/sync/current` is missing or unreadable, state that review wiki setup is required before planning.
 

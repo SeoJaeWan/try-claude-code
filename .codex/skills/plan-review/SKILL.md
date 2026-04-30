@@ -1,6 +1,6 @@
 ---
 name: plan-review
-description: Artifact-only critical review skill for executable `./plans/**/plan.md` artifacts and linked phase detail files created by `architect`. Use when Codex needs an independent cold review before execution, checking template compliance, Korean-first visible prose terminology, user-request traceability, blocking ambiguity, topology quality, owner routing, scenario-level technical input/output contracts, UI decision completeness when relevant, later `plan-materialize` derivation readiness, and registry-selected review wiki guidance without rewriting the plan.
+description: Artifact-only critical review skill for executable `./plans/**/plan.md` artifacts and linked phase detail files. Use when Codex needs an independent cold review before execution, checking active plan artifact contract compliance, Korean-first visible prose terminology, user-request traceability, blocking ambiguity, topology quality, owner routing, scenario-level technical input/output contracts, UI decision completeness when relevant, verification materialization readiness, and registry-selected review wiki guidance without rewriting the plan.
 ---
 
 # Plan Review
@@ -15,13 +15,9 @@ Read these references in order whenever this skill runs:
 2. [references/workflow.md](references/workflow.md) for review wiki routing, plan loading, finding classification, artifact writing, and response flow.
 3. [references/guardrails.md](references/guardrails.md) for non-negotiable review constraints.
 4. [references/review-policy.md](references/review-policy.md) for severity mapping, outcome states, and review artifact shape.
-5. [../architect/references/terminology-policy.md](../architect/references/terminology-policy.md) before writing human-readable findings.
+5. [../../review-wiki/sync/current/core/common/용어-정책.md](../../review-wiki/sync/current/core/common/용어-정책.md) before writing human-readable findings.
 
-Read these references only when the corresponding scope is active:
-
-- [../architect/references/plan-template-sequential.md](../architect/references/plan-template-sequential.md) and [../architect/references/phase-template-detail.md](../architect/references/phase-template-detail.md) when checking template compliance.
-- [../architect/references/visual-parity-contract.md](../architect/references/visual-parity-contract.md) when reference-based visual comparison is in scope.
-- [../architect/references/agents-lite.md](../architect/references/agents-lite.md) when checking `owner_agent` routing.
+Read repo-local execution contracts only when the reviewed plan makes concrete routing, validation, comparison, or placement claims that depend on them.
 
 ## Controller Rules
 

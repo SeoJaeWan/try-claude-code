@@ -10,7 +10,7 @@
 - Stop when `plan.md` and its linked phase detail files drift enough that the technical source of truth is unclear
 - Stop when a selected clause from `output`, `constraint`, `failure-validation`, or `validation` cannot be traced to a stable owner test or execution command
 - Stop when canonical outputs, recipients, or negative outputs are missing for a behavior-changing scenario
-- Stop when the plan leaves test-strategy decisions ambiguous enough that `plan-materialize` would choose the gate instead of applying a locked plan decision
+- Stop when the plan leaves test-strategy decisions ambiguous enough that this skill would choose the gate instead of applying a locked plan decision
 - Stop when multiple plausible sibling contracts exist and the plan did not resolve the winner
 - Stop when the plan introduces a new rendered, mapped, serialized, or interpreted final output but does not identify the boundary that finalizes that output
 - Stop when the plan implies competing completion paths, deferred execution, terminal-state policy, or side-effect coupling but does not define the relevant invariant

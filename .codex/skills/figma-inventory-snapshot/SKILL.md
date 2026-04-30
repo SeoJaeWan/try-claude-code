@@ -1,11 +1,11 @@
 ---
 name: figma-inventory-snapshot
-description: Capture bounded, controller-verified Figma node tree inventory snapshots before planning or classification consumes Figma inventory. Use when Codex needs a full or partial Figma hierarchy, component-set list, variant names, Resource/* entries, platform markers, or other Figma inventory evidence for architect planning, parity realignment, design-system registry classification, or downstream handoff artifacts; especially when full-file reads may timeout or Code Connect permissions are insufficient.
+description: Capture bounded, controller-verified Figma node tree inventory snapshots as local evidence artifacts. Use when Codex needs a full or partial Figma hierarchy, component-set list, variant names, Resource/* entries, platform markers, or other Figma inventory evidence for planning input, parity realignment, design-system registry classification, or artifact handoff; especially when full-file reads may timeout or Code Connect permissions are insufficient.
 ---
 
 # Figma Inventory Snapshot
 
-Create compact, manifest-backed Figma inventory artifacts that downstream planning skills can treat as authoritative input. This skill captures tree evidence only; it does not classify components, revise plans, or infer missing families.
+Create compact, manifest-backed Figma inventory artifacts. This skill captures tree evidence only; it does not classify components, revise plans, or infer missing families.
 
 ## Required Reading
 

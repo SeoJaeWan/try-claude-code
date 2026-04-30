@@ -9,7 +9,6 @@ Before writing any plan artifact:
 - Determine execution mode:
   - `orchestrated`: an orchestrator handoff provides `task_slug`, `plan_path`, and `review_wiki_root`.
   - `direct`: no orchestrator handoff exists.
-- Read `./references/agents-lite.md`.
 - In orchestrated mode:
   - treat provided `task_slug`, `plan_path`, and `review_wiki_root` as authoritative.
   - treat `authoritative_existing_inputs` as the only task-local upstream authority.
@@ -26,7 +25,7 @@ Before writing any plan artifact:
 - Read every core document listed in `stage_core.architect`; if absent, read the registry `core` array.
 - Select candidate patterns using registry `selection.architect` and `adjacency_rules`; always include `common`, then add touched domains only.
 - Read only selected pattern files whose `적용 조건` match the request, repo-local context, or authoritative upstream inputs.
-- Read `./references/terminology-policy.md` before drafting visible prose.
+- Read the active review wiki `core/common/용어-정책.md` before drafting visible prose.
 
 ### Step 1. Analyze the request and upstream decisions
 
@@ -87,7 +86,7 @@ Do not deep-dive into implementation details or write source-tree tests.
 - Keep `plan.md` overview-level and phase detail files execution-level.
 - Do not add extra top-level sections unless a core doc or the user explicitly requires them.
 - Treat concrete paths in phase detail `파일 영향` as committed topology; omit or block when still tentative.
-- Keep each phase detail precise enough that an owner agent and `plan-materialize` can act without guessing.
+- Keep each phase detail precise enough that an owner agent and verification materialization can act without guessing.
 
 ### Step 6. Choose plan count
 
@@ -99,14 +98,13 @@ Do not deep-dive into implementation details or write source-tree tests.
   - record local prerequisites in both downstream `선행 조건` and the specific upstream phase `output` plus `검증`.
 - Do not create extra navigation or graph artifacts outside the active review wiki plan artifact contract.
 
-### Step 7. Prepare later test materialization
+### Step 7. Prepare verification contracts
 
 If the plan includes implementation scope beyond documentation-only or structural-only work:
 
-- Read `../plan-materialize/SKILL.md`.
-- Make behavior, state, routing, UI interaction, and contract-selection phases explicit enough for `plan-materialize` to produce `unit`, `Component Test`, selected `E2E`, `skip`, or `block` outcomes.
+- Make behavior, state, routing, UI interaction, and contract-selection phases explicit enough for source-tree test or command materialization to produce `unit`, `Component Test`, selected `E2E`, `skip`, or `block` outcomes.
 - Lock the verification unit, observable result, stable identifier policy, and selected E2E journey reason when leaving them open would let the same plan produce different materialized tests.
-- Do not generate source-tree tests in `architect`.
+- Do not generate source-tree tests in this skill.
 - Do not add a dedicated E2E phase just for selected browser journey coverage; put the journey contract in the relevant phase detail file.
 
 ### Step 8. Plan comparison or audit phases when acceptance requires them
@@ -126,6 +124,5 @@ If the plan includes implementation scope beyond documentation-only or structura
 
 - Plan Artifact Interface v11 applies to newly created plans.
 - Existing plans are not automatically migrated; update legacy plans narrowly unless the user requests migration.
-- Architect does not execute implementation or source-tree test generation.
-- If the user asks for independent review, hand the completed plan to `plan-review`.
+- This skill does not execute implementation or source-tree test generation.
 - Provide the concise execution handoff required by the active review wiki execution-handoff core doc.

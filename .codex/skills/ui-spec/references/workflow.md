@@ -12,11 +12,11 @@ Read only what is needed:
 - Existing design-system or brand constraints when present
 - Existing screenshots, referenced mockups, or directly relevant prior `./.codex/artifacts/ui-spec/**` artifacts when they reduce repeated specification work
 - Legacy `./.codex/artifacts/design-discovery/**` artifacts only as read-only compatibility input when directly relevant
-- `../architect/references/terminology-policy.md` when producing UI direction snapshots or handoff text
+- `./.codex/review-wiki/sync/current/core/common/용어-정책.md` when producing UI direction snapshots or artifact handoff text
 
 Rules:
 
-- Stay focused on the user-visible scope that planning would otherwise guess.
+- Stay focused on the user-visible scope that later artifact consumers would otherwise guess.
 - If the problem definition itself is unstable, stop with a clear missing request-scope decision instead of producing UI direction.
 - Do not perform a full live-site audit in this skill.
 
@@ -30,13 +30,13 @@ Lock the direction in words before generating variants:
 - empty / loading / error / success state expectations
 - responsive and accessibility expectations that materially affect planning
 - reuse vs new-pattern expectations
-- design-system, tone, or visual constraints that downstream planning must preserve
+- design-system, tone, or visual constraints that artifact consumers must preserve
 
 Rules:
 
 - Ask only high-impact questions that materially change the plan.
 - Prefer concrete UI outcomes over abstract design jargon.
-- Keep the result tight enough that downstream planning can consume it without adding a recap section.
+- Keep the result tight enough that artifact consumers can use it without adding a recap section.
 
 ### 3. Decide whether shotgun mode is needed
 
@@ -45,7 +45,7 @@ Use shotgun mode only when:
 - materially different UI directions still remain after consultation mode
 - or the user explicitly wants concrete variants before planning
 
-Skip shotgun mode when one direction is already stable enough for planning.
+Skip shotgun mode when one direction is already stable enough for artifact consumption.
 
 ### 4. Run shotgun mode (conditional)
 
@@ -71,12 +71,12 @@ Return a concise snapshot using markdown tables.
 
 Required tables:
 
-Apply `../architect/references/terminology-policy.md` to all human-readable table names and cell prose. Keep English only for exact code identifiers, design-system tokens, API names, paths, field keys, and quoted product text.
+Apply the active review wiki `core/common/용어-정책.md` to all human-readable table names and cell prose. Keep English only for exact code identifiers, design-system tokens, API names, paths, field keys, and quoted product text.
 
 1. `UI 방향 요약 표`
    - `대상 영역`
    - `이번에 고정한 방향`
-   - `계획 반영 메모`
+   - `산출물 반영 메모`
    - `남은 미결정`
 
 2. `상태/표현 규칙 표`
@@ -103,7 +103,7 @@ Optional when shotgun mode ran:
 Then include:
 
 - `남은 질문` if blocking UI-direction ambiguity remains
-- `추천 다음 상태` (`locked_ui_direction` or `needs_request_scope_decision`)
+- `추천 상태` (`locked_ui_direction` or `needs_request_scope_decision`)
 
 ### 6. Optional artifact export (only on explicit user request)
 
@@ -121,9 +121,9 @@ Include:
 - `남은 질문 / 가정`
 - `추천 다음 상태`
 
-### 7. Handoff
+### 7. Artifact handoff
 
-When planning should continue, hand off a `locked_ui_direction` packet containing:
+When producing the final handoff, provide a `locked_ui_direction` packet containing:
 
 1. locked UI areas and journeys
 2. the approved hierarchy and emphasis rules

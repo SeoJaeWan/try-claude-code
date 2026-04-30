@@ -74,4 +74,4 @@ If a feature introduces a new final interpretation boundary, do not stop at a se
 - Keep the test inside the source tree, not under `plans/`
 - Keep the test in the app/module that owns the selected behavior; do not move it to an adjacent package only to reuse an existing runner
 - If the repository layout is ambiguous, stop and escalate
-- If a new production module path is only a candidate or example in the plan, do not create a sibling test that makes that topology real; return the ambiguity to `architect`
+- If a new production module path is only a candidate or example in the plan, do not create a sibling test that makes that topology real; block on the plan contract

@@ -14,7 +14,7 @@ Read these references in order whenever this skill runs:
 1. [references/contracts.md](references/contracts.md) for when to use this skill and what request or diagnostic state it must lock.
 2. [references/workflow.md](references/workflow.md) for analysis, diagnostic path selection, preflight, option comparison, request-lock snapshot, artifact export, and handoff rules.
 3. [references/guardrails.md](references/guardrails.md) for non-negotiable brainstorm constraints.
-4. [../architect/references/terminology-policy.md](../architect/references/terminology-policy.md) before producing request-lock or handoff text.
+4. [../../review-wiki/sync/current/core/common/용어-정책.md](../../review-wiki/sync/current/core/common/용어-정책.md) before producing request-lock or artifact handoff text.
 
 ## Controller Rules
 

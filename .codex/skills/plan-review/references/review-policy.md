@@ -8,7 +8,7 @@ Use this file for severity mapping, outcome states, and review artifact shape. U
 - `ready-with-findings`: no blocker exists, but `major` or `minor` findings remain.
 - `ready`: no findings remain.
 
-`plan-review` is read-only. If the review is `blocked`, return the plan to `architect` for revision instead of rewriting it inside this skill.
+`plan-review` is read-only. If the review is `blocked`, mark the artifact as requiring plan revision instead of rewriting it inside this skill.
 
 ## Severity Model
 
@@ -23,7 +23,7 @@ Typical blocker signals:
 - unresolved `blocking` ambiguity under the active review wiki decision policy.
 - missing user-request traceability, inclusion/exclusion boundary, or user-visible completion criteria.
 - missing affected public boundary, canonical output, important negative/no-op output, recipient, final interpretation boundary, or risky scenario invariant.
-- missing test-strategy decisions required by the active review wiki decision policy when `plan-materialize` would otherwise choose the gate.
+- missing test-strategy decisions required by the active review wiki decision policy when verification materialization would otherwise choose the gate.
 - plan count, local prerequisite relationship, authority artifact, reference-comparison, Figma parity, or Figma inventory provenance contradicts the active review wiki contract.
 - selected pattern guidance reveals a direct contradiction that the plan leaves unresolved.
 
@@ -57,7 +57,7 @@ Prefer no finding over a low-value minor note.
 Check the plan against:
 
 1. resolved `review_wiki_root/registry.json`, listed stage core docs, and selected matching patterns.
-2. architect plan and phase templates.
+2. active review wiki plan artifact contract.
 3. terminology policy for visible prose.
 4. repo-local execution contracts only when the plan makes concrete claims that depend on them.
 5. directly referenced local prerequisite plans only for one-hop parity.
@@ -78,7 +78,7 @@ plan_path: ./plans/.../plan.md
 task_slug: ...
 plan_signature: ...
 outcome: blocked | ready-with-findings | ready
-next_action: architect | developer_review
+next_action: plan_revision | developer_review
 finding_signature: ...
 requires_user_decision: true | false
 issue_codes: []

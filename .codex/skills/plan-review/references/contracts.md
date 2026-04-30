@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Provide an independent, read-only review of an executable `architect` plan before implementation. The review checks whether the plan can be executed without hidden decisions, whether it follows the active review wiki plan artifact contract, and whether later `plan-materialize` can derive tests without guessing.
+Provide an independent, read-only review of an executable plan artifact before implementation. The review checks whether the plan can be executed without hidden decisions, whether it follows the active review wiki plan artifact contract, and whether verification materialization can derive tests or commands without guessing.
 
 ## Inputs to inspect
 
