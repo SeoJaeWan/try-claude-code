@@ -27,10 +27,10 @@
 
 ## 시나리오 / 계약
 
-| scenario (시나리오) | input | output | negative/no-op | owner | 검증 단위 | 관찰 지점 | 식별자 정책 | E2E 선택 이유 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| {시나리오/트리거} | {입력, 사전 조건, 시작 상태} | {반드시 발생해야 하는 표준 출력} | {발생하면 안 되는 출력 또는 no-op 규칙} | {상태/API/component/test 소유자} | {`unit` / `Component Test` / `E2E` / `command` / `manual/visual`} | {테스트나 명령이 관찰할 최종 출력} | {role/label, existing test id, planned `data-testid`/`testID`, route marker, 또는 `none`} | {E2E가 아니면 `not applicable`. E2E면 핵심 여정, auth/session, cross-route, redirect, persisted browser state, browser-only behavior 등} |
-| {시나리오/트리거} | {입력, 사전 조건, 시작 상태} | {반드시 발생해야 하는 표준 출력} | {발생하면 안 되는 출력 또는 no-op 규칙} | {상태/API/component/test 소유자} | {`unit` / `Component Test` / `E2E` / `command` / `manual/visual`} | {테스트나 명령이 관찰할 최종 출력} | {role/label, existing test id, planned `data-testid`/`testID`, route marker, 또는 `none`} | {E2E가 아니면 `not applicable`. E2E면 핵심 여정, auth/session, cross-route, redirect, persisted browser state, browser-only behavior 등} |
+| scenario_id | scenario (시나리오) | input | output | negative/no-op | owner | 검증 단위 | 관찰 지점 | 식별자 정책 | E2E 선택 이유 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `{phase-slug}-s01` | {시나리오/트리거} | {입력, 사전 조건, 시작 상태} | {반드시 발생해야 하는 표준 출력} | {발생하면 안 되는 출력 또는 no-op 규칙} | {상태/API/component/test 소유자} | {`unit` / `Component Test` / `E2E` / `command` / `manual/visual`} | {테스트나 명령이 관찰할 최종 출력} | {role/label, existing test id, planned `data-testid`/`testID`, route marker, 또는 `none`} | {E2E가 아니면 `not applicable`. E2E면 핵심 여정, auth/session, cross-route, redirect, persisted browser state, browser-only behavior 등} |
+| `{phase-slug}-s02` | {시나리오/트리거} | {입력, 사전 조건, 시작 상태} | {반드시 발생해야 하는 표준 출력} | {발생하면 안 되는 출력 또는 no-op 규칙} | {상태/API/component/test 소유자} | {`unit` / `Component Test` / `E2E` / `command` / `manual/visual`} | {테스트나 명령이 관찰할 최종 출력} | {role/label, existing test id, planned `data-testid`/`testID`, route marker, 또는 `none`} | {E2E가 아니면 `not applicable`. E2E면 핵심 여정, auth/session, cross-route, redirect, persisted browser state, browser-only behavior 등} |
 
 > 시각 비교 인수가 이 단계의 일부라면 비교 모드, 차단 기준 지표, 참고 지표, 비교 정책, 지표 처리를 이 섹션의 별도 행이나 짧은 보조 표로 추가한다. 그대로 맞춰야 하는 표준 ID는 코드 표기로 남긴다.
 

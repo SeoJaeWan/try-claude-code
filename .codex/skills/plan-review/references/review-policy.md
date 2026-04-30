@@ -24,6 +24,8 @@ Typical blocker signals:
 - missing user-request traceability, inclusion/exclusion boundary, or user-visible completion criteria.
 - missing affected public boundary, canonical output, important negative/no-op output, recipient, final interpretation boundary, or risky scenario invariant.
 - missing test-strategy decisions required by the active plan wiki decision policy when TDD authoring would otherwise choose the gate.
+- missing stable `scenario_id` or TDD mapping fields for phase-local `시나리오 / 계약` rows that define behavior-changing work.
+- missing first-time test runner, command, spec root or test-owner placement, source/test topology, mock/API fixture policy, browser storage/auth state policy, or expected red reason when the plan expects TDD contract tests before the test environment exists.
 - plan count, local prerequisite relationship, authority artifact, reference-comparison, Figma parity, or Figma inventory provenance contradicts the active plan wiki contract.
 - selected pattern guidance reveals a direct contradiction that the plan leaves unresolved.
 
@@ -36,6 +38,7 @@ Typical major signals:
 - validation exists but is too weak for the claimed boundary.
 - verification unit choice is plausible but thin or poorly justified.
 - UI-facing observability or identifier detail is likely derivable but not clearly locked.
+- expected red reason is present but too thin to distinguish valid completion-blocking failure from malformed test/setup failure.
 - topology or phase boundary is defensible but hides important sequencing or ownership assumptions.
 - user-request traceability, public contract scanability, local prerequisite parity, or repo-fit evidence is thinner than it should be.
 - visible prose terminology drift reduces scanability without making the contract ambiguous enough for a blocker.

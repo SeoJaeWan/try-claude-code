@@ -19,5 +19,7 @@
 - Do not ask the user questions that a bounded diagnostic pass can answer from local context.
 - If touched public props, callbacks, or state ownership are part of the request, lock them before handoff unless the user explicitly defers them.
 - If test strategy choices would change the plan, lock the needed verification responsibility before handoff unless the user explicitly defers that choice.
+- If first-time TDD, future source/test topology, mock API, browser storage, or seeded state affects planning, lock those decisions before marking the request `ready_for_planning`.
+- Do not leave a `ready_for_planning` request-lock only in chat; write the durable brainstorm artifact or state the artifact-write blocker.
 - If user-visible UI direction is still materially under-specified, state that `locked_ui_direction` is required before planning.
 - If requirements are already clear, explicitly state why no request-scope lock is needed and mark the request `ready_for_planning` or `ready_for_direct_execution`.

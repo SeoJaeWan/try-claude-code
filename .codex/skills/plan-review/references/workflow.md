@@ -54,6 +54,8 @@ Judge the plan against:
 - `owner_agent` routing.
 - scenario-level `input -> output` contract completeness.
 - affected public boundaries, exclusions, no-op rules, recipients, and final interpretation boundaries.
+- stable `scenario_id` coverage for phase-local `시나리오 / 계약` rows.
+- first-time test runner, command, spec root, source/test topology, mock/API fixture policy, storage/auth state policy, and expected red reason when implementation-first setup does not already exist.
 - verification realism and TDD readiness.
 - UI direction completeness when UI scope exists.
 - reference-based visual comparison, Figma parity, or Figma inventory provenance when in scope.

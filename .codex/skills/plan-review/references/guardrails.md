@@ -13,6 +13,8 @@
 - In reused reviewer sessions, re-read the current plan files from disk and treat old findings as untrusted history.
 - Do not recursively review a full upstream plan graph; inspect only direct prerequisite parity when a phase detail names it.
 - Do not approve a plan that leaves canonical outputs, negative outputs, recipients, public boundaries, exclusions, or verification ownership for later agents to guess.
+- Do not approve a plan that expects first-time TDD but leaves runner, command, spec root, source/test topology, mock/API fixture policy, storage/auth state policy, or expected red reason for `plan-tdd` to invent.
+- Do not approve behavior-changing phase details whose `시나리오 / 계약` rows cannot be traced by stable `scenario_id`.
 - Do not approve a UI plan that leaves critical user-visible hierarchy, state coverage, responsive behavior, or accessibility implications unresolved.
 - Do not approve a plan that makes `plan.md` a second implementation spec by repeating phase-local file maps, scenario tables, validation matrices, or long phase summaries.
 - Do not approve Figma-derived plan artifacts that lack manifest-backed provenance when the plan depends on Figma inventory or classification.

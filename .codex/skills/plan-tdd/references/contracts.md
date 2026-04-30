@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Turn an executable plan artifact into source-tree TDD contract tests and a trustworthy gate report that close the full selected plan contract without touching production code, using plan-clause traceability, owner-test impact scanning, the plan's locked verification units, and local or planned test conventions before selecting concrete owners. Missing first-time app/test harness setup does not by itself excuse weak tests: author completion-blocking TDD contract tests from the plan's locked runner and command contract when possible, mark validation as not run/failed until the harness exists, and block only when the plan does not define enough test environment or scenario contract to author executable tests.
+Turn an executable plan artifact into source-tree TDD contract tests and a trustworthy gate report that close the full selected plan contract without touching production code, using plan-clause and `scenario_id` traceability, owner-test impact scanning, the plan's locked verification units, and local or planned test conventions before selecting concrete owners. Missing first-time app/test harness setup does not by itself excuse weak tests: author completion-blocking TDD contract tests from the plan's locked runner, command, spec-root, and topology contract when possible, mark validation as not run/failed until the harness exists, and block only when the plan does not define enough test environment or scenario contract to author executable tests.
 
 ## Entry Notes
 
@@ -18,7 +18,8 @@ Author TDD contract tests after planning, not during implementation.
 - Allow new assertions only when they trace back to an explicit plan clause or a risk pattern already implied by that clause
 - Update or delete stale owner tests when a selected clause changes the canonical truth they freeze
 - Distinguish TDD contract test authoring completion from gate pass/fail in the final report
-- When the target app/module or runner setup is not implemented yet but the plan locks the runner, command path, and behavior contract, still create source-tree TDD contract tests. Do not call them "covered" by scaffold alone; report validation as not run/failed and keep them as completion blockers.
+- When the target app/module or runner setup is not implemented yet but the plan locks the runner, command path, source/test topology, and behavior contract, still create source-tree TDD contract tests. Do not call them "covered" by scaffold alone; report validation as not run/failed and keep them as completion blockers.
+- Treat plan-locked future route files, source modules, spec roots, locator/test id policy, mock/API fixtures, and browser storage/auth state as intentional TDD contracts. Do not reinterpret them as speculative only because the implementation does not exist yet.
 - Use source-inspection tests only when the selected plan clause makes source topology itself the durable behavior, such as workspace membership, public export presence, route file topology, or required config ownership. Do not use source inspection as a substitute for user-visible behavior, state transitions, runtime wiring, code generation, route outcomes, or UI flow.
 
 ## Inputs to inspect
@@ -36,7 +37,7 @@ Author TDD contract tests after planning, not during implementation.
     - unit signals: `package.json`, `vitest.config.*`, `jest.config.*`, `pom.xml`, `build.gradle*`, `mvnw`, `gradlew`, existing `*.test.*` / `*.spec.*`
     - Component Test signals: Testing Library/jsdom setup, Playwright component setup, Storybook interaction tests, existing rendered component specs, and repo-local component harness conventions
     - E2E signals: `playwright.config.*`, `.maestro/`, existing browser/mobile E2E files
-    - first-work signals from the selected plan: planned package script names, planned runner, planned config paths, planned spec roots, and planned browser/mobile bootstrap commands
+    - first-work signals from the selected plan: planned package script names, planned runner, planned config paths, planned source/test topology, planned spec roots, mock/API fixture policy, storage/auth state policy, and planned browser/mobile bootstrap commands
 6. `./references/test-authoring-conventions.md` before writing source-tree tests
 7. `./references/unit-test-conventions.md` when logic boundaries are in scope
 8. `./references/component-test-conventions.md` when component rendering or same-screen interaction boundaries are in scope
@@ -49,5 +50,7 @@ Author TDD contract tests after planning, not during implementation.
     - `tdd.md` adjacent to the selected executable plan
 - Source-tree test changes:
     - updated or created `*.test.*`, `*.spec.*`, page objects, fixtures, and split UI-area registries when needed
+- Red contract status:
+    - expected red reason, actual red result, whether the red result matches the plan, and the completion gate that must become green after implementation
 - Output language: Korean where test descriptions are authored
 - Report and test intent language: Korean-first, following the active plan wiki terminology policy

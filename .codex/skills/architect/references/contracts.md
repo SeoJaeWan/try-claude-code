@@ -22,7 +22,7 @@ Direct agent execution is allowed for focused low-risk tasks when the user expli
    - optional `known_missing_inputs` containing referenced but missing literal paths as non-authoritative warnings
    - optional controller-verified Figma inventory `manifest.json` and snapshot paths from `./.codex/artifacts/figma-inventory/{task_slug}/` when Figma inventory or classification is required
 3. Optional locked UI direction artifact or packet from the latest conversation context or a directly referenced `./.codex/artifacts/ui-spec/{feature-name}.md`
-4. Optional locked request-scope, diagnostic, or test-strategy artifact or packet, including verification unit, observable result, identifier policy, and excluded test scope when those choices affect the plan
+4. Optional locked request-scope, diagnostic, or test-strategy artifact or packet, including verification unit, observable result, identifier policy, first-time test runner/command/spec-root decisions, mock/API fixture policy, and excluded test scope when those choices affect the plan
 5. Active plan wiki `core/common/실행-라우팅.md` - canonical `owner_agent` catalog and routing rules
 6. `../plan-wiki-setup/references/staging-contract.md` - plan wiki sync resolution and refresh rules
 7. `../plan-wiki-setup/references/platform-commands.md` - platform-specific link and planning-root commands

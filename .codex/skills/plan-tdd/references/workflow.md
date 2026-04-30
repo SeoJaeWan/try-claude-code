@@ -6,16 +6,18 @@
 
 - Inspect the repository before generating anything
 - Detect existing runners, assertion style, mocking style, naming, and file layout
-- Reuse the current stack; do not introduce a new unit, Component Test, or E2E framework unless the selected plan explicitly locks that first-time test stack
+- Reuse the current stack unless the selected plan explicitly locks a first-time test stack or intentionally overrides the existing convention as part of the TDD contract
 - Before creating tests under a planned new source tree, confirm the plan locks the production topology and test-owner placement as contracts rather than examples
 - If the plan's concrete paths could be interpreted as tentative candidates, or if writing tests would force a hook/model/utility/runtime folder decision the plan did not justify, stop with `blocker_type = plan_contract`
-- If the target app/module implementation tree or runner config is missing but the selected plan explicitly locks the planned runner and command path, enter `TDD contract mode`
+- If the target app/module implementation tree or runner config is missing but the selected plan explicitly locks the planned runner, command path, spec root or test placement, and source/test topology, enter `TDD contract mode`
 - In `TDD contract mode`, you may create missing source-tree test directories and owner test files even when the target app/module implementation tree is missing
 - In `TDD contract mode`, missing runner/config/package ownership does not block writing tests by itself as long as:
   - the planned runner is explicitly locked by the plan
   - the planned command path and spec root or test file placement are explicitly locked by the plan
+  - the planned source/test topology is explicitly locked by the plan when tests define future route, module, or package structure
   - the selected plan exposes enough behavior contract to author failing-capable tests
   - the repository already signals the same broad stack or adjacent convention strongly enough to author tests consistently, or the plan locks a first-time stack
+  - mock/API fixtures, storage state, auth state, seeded data, and locator/test id policy are locked when the test needs them before real integration exists
   - the report records which validation commands could not be run yet and states that plan completion remains blocked until they pass
 - Do not place tests in an adjacent package only because that package has an existing runner. The owner test must live in the target app/module that owns the selected behavior, unless the plan explicitly selects the adjacent package as the durable owner.
 - If a needed test type has no existing setup, stop immediately with:
@@ -24,7 +26,7 @@
   - `blocker_code = setup_missing`
   - `next_action = stop`
   - `resume_from = tdd`
-  only when the plan also fails to lock the runner, command path, and placement strongly enough to author a TDD contract test
+  only when the plan also fails to lock the runner, command path, spec root or placement, source/test topology, and scenario contract strongly enough to author a TDD contract test
 - If placement or stack is ambiguous because local conventions are missing or conflicting, stop with:
   - `outcome = blocked`
   - `blocker_type = external_setup`
@@ -42,6 +44,7 @@
 Read `plan.md` first to understand the human-facing phase order and intended change.
 Then read the linked phase detail files and enumerate every selected phase-local clause from:
 
+- `시나리오 / 계약` table rows, keyed by `scenario_id`
 - `output`
 - `제약`
 - `failure/validation`
@@ -58,11 +61,13 @@ Treat these as first-class coverage obligations.
 For each clause, record:
 
 - phase
-- clause source: `output` | `constraint` | `failure-validation` | `validation`
+- `scenario_id` when the obligation comes from a scenario row
+- clause source: `scenario` | `output` | `constraint` | `failure-validation` | `validation`
 - clause text
 - whether the clause is directly test-expressible or requires an execution command
 
 Then extract each phase-local boundary from the detail file `boundary`, `input`, `output`, and task description only to the extent needed to close those selected clauses.
+For each `시나리오 / 계약` row, treat the row's `input`, `output`, `negative/no-op`, `owner`, `검증 단위`, `관찰 지점`, `식별자 정책`, and `E2E 선택 이유` as the canonical test contract. Do not replace a scenario row with a looser summary from `검증`.
 
 For every behavior-changing boundary, derive a stable scenario contract first:
 
@@ -96,6 +101,7 @@ If a scenario could plausibly be owned by more than one verification unit and th
 If a UI-facing scenario lacks the observable result or stable identifier policy needed to author a deterministic Component Test or E2E test, stop with a `plan_contract` blocker.
 If `plan.md` and a linked phase detail file disagree on what changes in that phase, stop and return a blocker instead of picking one.
 If source topology affects owner-test placement and the plan does not clearly distinguish committed paths from examples or candidates, stop and return a blocker instead of letting tests establish the structure.
+If the plan intentionally locks future source/test topology, create tests at that topology even if the implementation files do not exist yet, and record the missing implementation or harness as the expected red reason.
 If 2 or more plausible sibling outputs, identifiers, data shapes, transformation paths, or interpretation boundaries could satisfy the same scenario, stop and return a blocker instead of choosing one.
 If the phase detail file implies one of the high-risk execution patterns above but does not define the relevant invariant, stop and return a blocker instead of inferring policy.
 If a selected plan clause cannot be mapped to an owner test or a narrow execution command, stop and return a blocker instead of soft-skipping it.
@@ -265,7 +271,8 @@ After editing tests, run the narrowest available validation commands for the cha
 - Do not widen targeted validation into a full suite unless the plan explicitly selects that suite as the validation target
 - For non-test execution clauses such as `tsc`, `build`, or manual inspection, record the required command or blocker explicitly; do not silently count targeted tests as equivalent
 - If any targeted validation for the affected owner-test set fails, record that as a gate failure; do not present TDD authoring completion as equivalent to a passed gate
-- In `TDD contract mode`, if the selected command path or runner/config ownership is not implemented yet, do not block after writing the tests. Record those commands as `not run`, set `gate_status = failed`, and explain that the TDD contract tests are completion-blocking red contracts until the planned harness exists and passes them.
+- In `TDD contract mode`, if the selected command path or runner/config ownership is not implemented yet, do not block after writing the tests. Record those commands as `not run`, set `gate_status = failed`, record the `expected_red_reason`, and explain that the TDD contract tests are completion-blocking red contracts until the planned harness exists and passes them.
+- When validation fails, classify whether the actual red result matches the plan's expected red reason. A locator typo, malformed test syntax, wrong import path not locked by the plan, or setup mismatch is not a valid red contract and must be fixed or reported as a blocker.
 
 ### Step 10. Write the TDD report
 
@@ -296,8 +303,9 @@ Include:
   - `blocked_clause_ids`
   - `affected_phase_paths`
 - phase
-- clause source: `output` | `constraint` | `failure-validation` | `validation`
+- clause source: `scenario` | `output` | `constraint` | `failure-validation` | `validation`
 - clause text
+- `scenario_id` when applicable
 - clause kind: `test` | `execution`
 - boundary
 - scenario contract summary
@@ -310,6 +318,10 @@ Include:
 - canonical contract when applicable
 - rejected sibling candidates when applicable
 - red/green expectation: whether the TDD contract test is expected to fail before implementation, cannot run until planned harness setup, or already passes against an existing implementation
+- expected red reason
+- actual red result
+- whether the actual red result matches the expected red reason
+- completion gate: the exact test, command, or execution check that must pass when the plan is complete
 
 Frontmatter rules:
 
@@ -332,6 +344,7 @@ Frontmatter rules:
 ### Step 11. Verify before completion
 
 - Every selected clause from `output`, `constraint`, `failure-validation`, and `validation` has an owner test, an execution command, or an explicit blocker
+- Every selected `시나리오 / 계약` row has an owner test, an execution command, or an explicit blocker, and the report preserves its `scenario_id`
 - Every selected test-expressible clause has explicit source-tree test coverage or an explicit blocker
 - Every new or updated source-tree test has a behavior-example name that exposes the condition/action/result without relying on `tdd.md`
 - Every selected execution clause has an explicit narrow command or an explicit blocker
@@ -345,6 +358,7 @@ Frontmatter rules:
 - Every affected owner test in scope was reviewed as `keep`, `update`, or `delete`
 - No stale owner test that freezes obsolete truth survives without an explicit keep rationale
 - Every changed test file participated in a targeted validation run, or the report explains the blocker
+- Every red contract records expected red reason, actual red result when validation was attempted, and whether that red result matches the plan
 - `gate_status = passed` only when every targeted validation command for the affected owner-test set passed
 - `gate_status = failed` is valid for newly TDD red contracts that fail or cannot run before implementation; do not soften failed/not-run gates into success
 - Every `skip` cites the exact existing source-tree owner test that already closes the selected clause

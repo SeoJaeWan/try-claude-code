@@ -12,11 +12,12 @@ Use this when `plan-tdd` handles selected frontend browser journeys.
 
 ## Runner rules
 
-- Reuse the existing project runner only
+- Reuse the existing project runner unless the selected plan explicitly locks a first-time E2E runner, command, spec root, and browser/mobile bootstrap contract
 - Typical signals:
     - `playwright.config.*` for browser/web
     - `.maestro/` for React Native / Expo mobile
-- If no E2E setup exists, stop immediately
+- If no E2E setup exists and the plan does not lock the first-time E2E runner, command, spec root, and bootstrap contract, stop immediately
+- If the plan locks first-time Playwright or mobile E2E topology, create the red contract spec in the planned source-tree location and report the missing harness or app route as the expected red reason
 
 ## Update strategy
 
@@ -81,8 +82,12 @@ Registry is an exception path, not the default.
 - Prefer role, label, placeholder, or other user-facing locators when they are stable and express the behavior contract.
 - Use `data-testid` when the plan locks it as the stable selector, the UI copy is volatile, or the existing local convention already uses test IDs for that area.
 - Avoid CSS/XPath selectors when stable user-facing locators or test IDs exist.
-- Use deterministic assertions only
-- No hardcoded waits
+- Keep tests independent; do not rely on another test's login, created data, cookies, localStorage, or sessionStorage.
+- Use `storageState`, fixtures, API seed, or mock server state only when the plan locks the state contract and what it proves.
+- Use Playwright web-first assertions such as `expect(locator).toBeVisible()` and `expect(page).toHaveURL()` instead of immediate boolean checks for async UI behavior.
+- Use deterministic assertions only.
+- Do not use `waitForTimeout`; wait through locators, navigation, events, or web-first assertions.
+- Make test data parallel-safe when the scenario writes data; use plan-locked unique identifiers or setup/cleanup policy.
 
 ### Maestro
 

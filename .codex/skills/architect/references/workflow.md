@@ -56,7 +56,8 @@ Use this step only when a planning boundary depends on facts not already locked 
 - Resolve enough detail for every touched public boundary that implementation or later TDD contract test authoring would otherwise guess:
   - inputs, outputs, props, callbacks, handoff meaning, state ownership, invalid/no-op rules, exclusions, recipients, and final interpretation boundaries.
   - verification unit, observable result, stable identifier policy, and selected E2E reason when the choice affects the completion gate.
-  - committed source topology when new paths or test-owner placement shape implementation.
+  - committed source topology and test-owner placement when new paths, route files, modules, or spec locations shape implementation.
+  - first-time test runner, command, spec root, config ownership, browser/mobile bootstrap command, mock/API fixture policy, and storage/auth state policy when the current repository does not already provide the needed test environment.
 - Do not force concrete test files, helper names, exhaustive locator lists, or runner mechanics into the plan when local conventions can derive them later.
 - Carry `deferrable` items only as short defaults or constraints when they matter to execution.
 
@@ -86,6 +87,7 @@ Do not deep-dive into implementation details or write source-tree tests.
 - Keep `plan.md` overview-level and phase detail files execution-level.
 - Do not add extra top-level sections unless a core doc or the user explicitly requires them.
 - Treat concrete paths in phase detail `파일 영향` as committed topology; omit or block when still tentative.
+- Treat concrete future source paths, route paths, test paths, and spec roots as committed topology only when the plan intentionally uses TDD to define that future structure.
 - Keep each phase detail precise enough that an owner agent and TDD authoring can act without guessing.
 
 ### Step 6. Choose plan count
@@ -104,6 +106,8 @@ If the plan includes implementation scope beyond documentation-only or structura
 
 - Make behavior, state, routing, UI interaction, and contract-selection phases explicit enough for source-tree test or command TDD to produce `unit`, `Component Test`, selected `E2E`, `skip`, or `block` outcomes.
 - Lock the verification unit, observable result, stable identifier policy, and selected E2E journey reason when leaving them open would let the same plan produce different TDD contract tests.
+- If the target test environment does not exist yet, lock the planned runner, command, config owner, spec root or test file placement, source/test topology, and expected red reason so `plan-tdd` can write completion-blocking red contract tests instead of treating setup absence as the decision point.
+- If mock API, fixture server, `storageState`, or seeded browser state is required before real integration exists, lock what the mock proves, what it does not prove, and the later integration gate that must turn the red contract green.
 - Do not generate source-tree tests in this skill.
 - Do not add a dedicated E2E phase just for selected browser journey coverage; put the journey contract in the relevant phase detail file.
 

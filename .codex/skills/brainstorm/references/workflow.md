@@ -200,6 +200,8 @@ Optional table when test strategy changes planning or acceptance:
    - `검증 단위` (`unit`, `Component Test`, `E2E`, `command`, `manual/visual`)
    - `관찰 지점`
    - `식별자 정책`
+   - `runner / command / spec root` when first-time test setup or future test topology must be locked before planning
+   - `mock / fixture 정책` when API, auth, browser storage, or seeded state must be simulated before real integration exists
    - `제외 범위`
 
 Optional table when plan wiki preflight matters:
@@ -240,9 +242,9 @@ Response formatting rules:
 - Do not let planner shorthand replace the user's wording in the tables.
 - If user-visible UI direction remains blocking, state that `locked_ui_direction` is required before planning can continue.
 
-### 9. Optional artifact export (only on explicit user request)
+### 9. Artifact export and durable handoff
 
-If and only if the user explicitly asks for a written artifact, export to:
+When the recommended next state is `ready_for_planning`, write a durable request-lock artifact by default:
 
 - `./.codex/artifacts/brainstorm/{feature-name}.md`
 
@@ -258,6 +260,15 @@ Include:
 - `진단 기준선 표` and `차이 후보 표` when diagnostic-lock path is used
 - `남은 질문 / 가정`
 - `추천 다음 상태`
+- `artifact_status: ready_for_planning`
+- `artifact_path`
+
+Rules:
+
+- Derive `{feature-name}` from the user's wording or the locked task slug when available.
+- If the request-lock is not planning-ready yet, do not write a misleading ready artifact; keep the unresolved questions in chat or update an existing draft artifact only when that avoids losing already-locked decisions.
+- If filesystem write fails, state that planning cannot treat the chat-only snapshot as the durable authority.
+- In the chat response, include the written artifact path and state that subsequent planning should consume it as a verified upstream input.
 
 ### 10. Quality gate before handoff
 
@@ -273,6 +284,7 @@ Before handoff, confirm:
 - The user's requested items are still traceable in the request-lock tables
 - If plan wiki preflight ran, its `blocking` findings are either locked or called out explicitly
 - If plan wiki preflight could not run, the missing dependency is explicit before recommending planning
+- If the request is `ready_for_planning`, the request-lock exists as a durable artifact or the missing artifact write is called out as a blocker
 - Blocking questions are explicit when another clarification round is still needed
 - Recommended next state is clear
 
@@ -290,10 +302,11 @@ When planning is needed and scope is decision-complete enough for planning, prov
 2. The locked `작업 묶음 표`
 3. The locked `공개 경계 표`
 4. Any `상태 소유권 표`, `테스트 전략 잠금 표`, or `제외 항목 표` that matters to planning
-5. Explicit defaults or deferred low-risk choices
-6. Diagnostic baseline findings that subsequent planning input should treat as already surfaced, including evidence gaps and confirmed differences when diagnostic-lock path was used
-7. Plan wiki preflight findings that subsequent planning input should treat as already surfaced, or an explicit note that the preflight could not run because the plan wiki root was missing
-8. Context7-confirmed external facts that subsequent planning input should treat as already resolved, plus any still-risky assumptions that may require fallback verification
+5. The durable request-lock artifact path
+6. Explicit defaults or deferred low-risk choices
+7. Diagnostic baseline findings that subsequent planning input should treat as already surfaced, including evidence gaps and confirmed differences when diagnostic-lock path was used
+8. Plan wiki preflight findings that subsequent planning input should treat as already surfaced, or an explicit note that the preflight could not run because the plan wiki root was missing
+9. Context7-confirmed external facts that subsequent planning input should treat as already resolved, plus any still-risky assumptions that may require fallback verification
 
 If planning is needed but `./.codex/plan-wiki/sync/current` is missing or unreadable, state that plan wiki setup is required before planning.
 

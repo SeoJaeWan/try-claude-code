@@ -5,9 +5,9 @@ Use this when `plan-tdd` handles logic boundaries.
 ## Core rules
 
 - Logic changes are unit-test mandatory for both frontend and backend
-- Reuse the repository's existing runner, assertion style, mocking style, and file layout
+- Reuse the repository's existing runner, assertion style, mocking style, and file layout unless the selected plan explicitly locks a first-time runner or an intentional topology override
 - Update an existing boundary test before creating a new file
-- Stop if unit-test setup is missing or placement is unclear
+- Stop if unit-test setup is missing or placement is unclear unless the selected plan locks the first-time runner, command, placement, and source/test topology strongly enough for `TDD contract mode`
 - Derive every new assertion from an explicit selected plan clause or a risk pattern already implied by that clause
 - Do not add plan-external regression coverage
 
@@ -75,3 +75,4 @@ If a feature introduces a new final interpretation boundary, do not stop at a se
 - Keep the test in the app/module that owns the selected behavior; do not move it to an adjacent package only to reuse an existing runner
 - If the repository layout is ambiguous, stop and escalate
 - If a new production module path is only a candidate or example in the plan, do not create a sibling test that makes that topology real; block on the plan contract
+- If the plan intentionally locks a future production module path and sibling test path as TDD topology, create the red contract test there even if the production module does not exist yet
