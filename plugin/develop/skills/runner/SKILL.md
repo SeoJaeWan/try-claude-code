@@ -158,7 +158,7 @@ Agent(
     - Format: `{type}(scope): {description}`. scope is optional; description uses imperative mood and stays within ~72 characters.
     - Allowed types: feat / fix / refactor / docs / chore / style / test.
     - Do NOT include phase identity anywhere in the commit — no "phase 2 — ...", no "[Phase 2] ...", no "2단계: ...". The hook system tracks phase from my Agent.description, never from your commit message. A phase prefix in the subject or body only duplicates what the UI already shows and confuses reviewers.
-    - Include a 1~2 line WHY body (not a diff summary). The body is surfaced verbatim in the developer-review UI at Step 4 and is read as the rationale for the change.
+    - Body is **required and written in Korean**, exactly 2 lines: Line 1 = 무엇 (이 커밋이 한 변경의 핵심), Line 2 = 왜 (동기·제약·맥락 — diff만으로 드러나지 않는 정보). Do NOT prefix labels like `작업:` / `이유:` — line position alone communicates the role. Subject stays English. The body is surfaced verbatim in the dev-review UI at Step 4. Self-evident changes (typo, formatting, dep bump) may use a single Korean WHAT line as an escape hatch — use sparingly.
     - Commit when done: `git add -A && git commit -m '...'` using a HEREDOC or `-m`+`-m` for the body.
     - Full spec (footer rules, examples, rationale): `plugin/develop/references/commit-convention.md`.
   ",
@@ -230,7 +230,7 @@ On user `리뷰 완료`, re-enter the skill; it reads `feedback.json` and return
   ## Commit rules (keep these exact — the dev-review UI reads them back)
   - Format: `{type}(scope): {description}`. Allowed types: feat / fix / refactor / docs / chore / style / test. Imperative mood, ~72 characters or less.
   - Do NOT include phase identity in the subject or body — no "phase N", no "[Phase N]", no rework-round prefix. Phase and round metadata are tracked outside the commit message.
-  - Include a 1~2 line WHY body describing what the reviewer feedback asked for and why this change addresses it. The body is surfaced verbatim in the dev-review UI.
+  - Body is **required and written in Korean**, exactly 2 lines: Line 1 = 리뷰 피드백이 요구한 변경, Line 2 = 그 변경이 피드백을 어떻게 해소하는지. Do NOT prefix labels (`작업:` / `이유:`). Subject stays English. The body is surfaced verbatim in the dev-review UI.
   - Full spec: `plugin/develop/references/commit-convention.md`.
   ```
 

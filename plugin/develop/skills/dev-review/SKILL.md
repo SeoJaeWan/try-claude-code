@@ -277,7 +277,7 @@ existing commits.
 ## Commit rules (keep these exact — the dev-review UI reads them back)
 - Format: `{type}(scope): {description}`. Allowed types: feat / fix / refactor / docs / chore / style / test. Imperative mood, ~72 characters or less.
 - Do NOT include phase identity or rework-round prefix in the subject or body. Metadata is tracked outside the commit message.
-- Include a 1~2 line WHY body explaining what the reviewer feedback asked for and why this change addresses it. The body is surfaced verbatim in the dev-review UI.
+- Body is **required and written in Korean**, exactly 2 lines: Line 1 = 리뷰 피드백이 요구한 변경, Line 2 = 그 변경이 피드백을 어떻게 해소하는지. Do NOT prefix labels (`작업:` / `이유:`). Subject stays English. The body is surfaced verbatim in the dev-review UI.
 - Full spec: `plugin/develop/references/commit-convention.md`.
 ```
 
