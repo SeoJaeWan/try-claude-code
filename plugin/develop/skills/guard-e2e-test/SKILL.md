@@ -1,13 +1,13 @@
 ---
 name: guard-e2e-test
-description: 여러 route/state를 관통하는 full-flow E2E Playwright 테스트를 생성하는 스킬. agent-browser를 통해 실제 브라우저에서 전체 사용자 여정을 탐색하고, route 전환/상태 유지/인증 흐름 등 cross-page 동작을 검증하는 .spec.ts를 생성하여 실제 테스트 디렉토리에 배치한다. `plan-materialize`가 만드는 기능/화면 단위 bounded-surface E2E와 달리, 여러 페이지를 관통하는 전체 사용자 여정의 회귀를 방어하는 용도이다. "회원가입부터 대시보드까지 플로우 테스트", "전체 사용자 여정 E2E", "로그인→결제→완료 플로우 회귀 테스트" 등의 요청 시 사용한다. Run inside the `playwright-guard` agent.
+description: 여러 route/state를 관통하는 full-flow E2E Playwright 테스트를 생성하는 스킬. agent-browser를 통해 실제 브라우저에서 전체 사용자 여정을 탐색하고, route 전환/상태 유지/인증 흐름 등 cross-page 동작을 검증하는 .spec.ts를 생성하여 실제 테스트 디렉토리에 배치한다. `plan-tdd`가 만드는 기능/화면 단위 bounded-surface E2E와 달리, 여러 페이지를 관통하는 전체 사용자 여정의 회귀를 방어하는 용도이다. "회원가입부터 대시보드까지 플로우 테스트", "전체 사용자 여정 E2E", "로그인→결제→완료 플로우 회귀 테스트" 등의 요청 시 사용한다. Run inside the `playwright-guard` agent.
 model: sonnet
 ---
 
 <Skill_Guide>
 <Purpose>
 Generate full-flow E2E Playwright tests that traverse multiple routes/states.
-Complementary to `plan-materialize` bounded-surface E2E.
+Complementary to `plan-tdd` bounded-surface E2E.
 </Purpose>
 
 <Instructions>
@@ -31,21 +31,21 @@ Full-flow E2E test workflow that traverses entire user journeys across routes.
 
 ---
 
-## Role Separation: plan-materialize vs guard-e2e-test
+## Role Separation: plan-tdd vs guard-e2e-test
 
-| Aspect             | plan-materialize                                  | guard-e2e-test                                           |
+| Aspect             | plan-tdd                                  | guard-e2e-test                                           |
 | ------------------ | ------------------------------------------------- | -------------------------------------------------------- |
 | **Scope**          | Per-feature/screen bounded surface                | Cross-route/state traversal (horizontal flow)            |
 | **Verifies**       | Component + state + API integration               | Route transitions, state persistence, auth flows         |
-| **Timing**         | Post-plan, pre-implementation materialization     | Post-implementation                                      |
+| **Timing**         | Post-plan, pre-implementation TDD authoring     | Post-implementation                                      |
 | **Browser**        | Not required (deterministic source-tree contract) | Live exploration via agent-browser CLI (npx)             |
 | **Output**         | Actual bounded-surface test files                 | Actual test directory                                    |
-| **Mutability**     | Frozen (modify only via re-materialization)       | Living test (can be improved)                            |
+| **Mutability**     | Frozen (modify only via TDD rewrite)       | Living test (can be improved)                            |
 | **Purpose**        | Lock feature contract for development             | Defend entire user journey against regressions           |
 
 **Example comparison:**
 
-- **plan-materialize**: On `/signup` screen — password rule errors, password confirmation mismatch, loading/error display after submit
+- **plan-tdd**: On `/signup` screen — password rule errors, password confirmation mismatch, loading/error display after submit
 - **guard-e2e-test**: `/signup` entry → signup success → `/dashboard` redirect → login state persists → logout
 
 ---
@@ -207,9 +207,9 @@ test.describe("[Guard] Dashboard → Todo → Stats journey", () => {
 ### Must follow
 
 - Never write tests speculatively without agent-browser exploration first
-- Never modify bounded-surface E2E files owned by `plan-materialize`
+- Never modify bounded-surface E2E files owned by `plan-tdd`
 - Never modify existing tests outside the `guard/` directory
-- Never write single-screen/feature-scoped tests (that is `plan-materialize`'s domain)
+- Never write single-screen/feature-scoped tests (that is `plan-tdd`'s domain)
 
 ### Must not use
 

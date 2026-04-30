@@ -10,8 +10,8 @@
 - Do not invent planner taxonomy as the primary way to describe the user's goal.
 - Do not depend on `./.ai/` or other external AI metadata directories.
 - Keep brainstorm-owned artifacts under `./.codex/`.
-- Do not let review wiki preflight expand `brainstorm` into phase topology, execution routing, or review-authoring work.
-- Do not turn test strategy locking into source-tree test design; lock only the decisions required by the active review wiki decision policy.
+- Do not let plan wiki preflight expand `brainstorm` into phase topology, execution routing, or review-authoring work.
+- Do not turn test strategy locking into source-tree test design; lock only the decisions required by the active plan wiki decision policy.
 - Do not treat a partial example scan as bounded full-surface inventory.
 - Do not jump from diagnostic findings to implementation fixes during brainstorm.
 - Do not call an investigation "full" unless the investigated boundary is explicitly stated.

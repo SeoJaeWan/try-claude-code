@@ -10,7 +10,7 @@ Identify what is clear vs unclear:
 - Missing decisions
 - Plausible architecture/library branches
 - Missing product-policy decisions across data model, business rules, UX behavior, permissions, validation, state/error handling, and accessibility expectations
-- Missing test-strategy decisions that would change planning under the active review wiki decision policy
+- Missing test-strategy decisions that would change planning under the active plan wiki decision policy
 - Touched work bundles such as components, hooks, routes, screens, or services
 - Touched public boundaries such as props, callbacks, inputs, outputs, observable behavior, state ownership, and explicit exclusions
 
@@ -47,7 +47,7 @@ Read only what is needed:
 - Existing `./plans/**`, `./.codex/artifacts/brainstorm/**`, and `./.codex/artifacts/ui-spec/**` artifacts when nearby prior work may answer the same question or reduce repeated clarification
 - Legacy `./.codex/artifacts/design-discovery/**` artifacts only as read-only compatibility input when directly relevant
 - `./.codex/` references only when they directly constrain this workflow
-- `./.codex/review-wiki/sync/current/core/common/용어-정책.md` when producing request-lock or artifact handoff text
+- `./.codex/plan-wiki/sync/current/core/common/용어-정책.md` when producing request-lock or artifact handoff text
 
 Do not assume or depend on `./.ai/` or any other external AI metadata directory.
 Prefer related-artifact lookup before asking the user to restate a prior decision.
@@ -61,26 +61,26 @@ For diagnostic-lock path:
 - Do not turn findings into fixes during brainstorm; preserve them as facts, risks, open decisions, or planning inputs.
 - Do not treat a tool-specific output as complete evidence when the request depends on broader current-system state.
 
-### 3. Run review wiki preflight when available
+### 3. Run plan wiki preflight when available
 
-If artifact handoff is plausible, inspect the staged review wiki before asking the user to confirm scope:
+If artifact handoff is plausible, inspect the staged plan wiki before asking the user to confirm scope:
 
-- resolve `review_wiki_root` to `./.codex/review-wiki/sync/current`
+- resolve `plan_wiki_root` to `./.codex/plan-wiki/sync/current`
 - if the planning root exists:
-  - read `{review_wiki_root}/registry.json`
+  - read `{plan_wiki_root}/registry.json`
   - read every path in `stage_core.brainstorm` when present; otherwise fall back to the registry `core` array and state that the wiki does not yet expose a brainstorm-specific core list
   - use `selection.brainstorm` when present to select candidate pattern files by domain first: always include `common`, add `frontend`, `backend`, or `infra` only when the user's request or local evidence touches that domain, then narrow by `domain_taxonomy.tags`
   - read only the selected pattern files whose `적용 조건` clauses materially help classify the current ambiguity
 - if the planning root is missing or unreadable and artifact handoff is likely:
-  - state that the review wiki dependency is missing
+  - state that the plan wiki dependency is missing
   - continue in degraded brainstorm mode instead of pretending the preflight ran
-  - state that review wiki setup is required before planning
+  - state that plan wiki setup is required before planning
 
 Use the preflight only to:
 
 - classify missing information as `blocking`, `derivable`, or `deferrable`
 - public boundary contract, state, ownership, exclusion, and no-op questions that would later block planning
-- test-strategy questions that would later make planning or verification materialization guess
+- test-strategy questions that would later make planning or TDD authoring guess
 - capture applicable pattern guidance that narrows the confirmation questions or request-lock tables
 
 Do not use the preflight to:
@@ -142,9 +142,9 @@ Rules:
 - Do not ask what can be derived from local context
 - Questions should help the user confirm scope and direction quickly
 - Prioritize blocking ambiguity that would change the implementation plan, tests, user-visible behavior, or public boundary
-- Ask about test strategy only when it changes the plan or acceptance gate under the review wiki decision policy; do not ask the user to name spec files, helper names, or assertion mechanics.
+- Ask about test strategy only when it changes the plan or acceptance gate under the plan wiki decision policy; do not ask the user to name spec files, helper names, or assertion mechanics.
 - For diagnostic-lock path, ask before inventory only when the missing answer controls the investigation boundary; otherwise gather evidence first
-- If review wiki preflight ran, prioritize questions that close preflight-identified `blocking` ambiguity first
+- If plan wiki preflight ran, prioritize questions that close preflight-identified `blocking` ambiguity first
 - Prefer asking about concrete items, not planner taxonomies
 - If more than 4 blocking questions exist, ask them in rounds
 - Prefer structured user-input tooling when available; otherwise ask concise plain-text questions
@@ -155,7 +155,7 @@ Return a concise request-lock snapshot in the response using markdown tables.
 
 Required tables:
 
-Apply the active review wiki `core/common/용어-정책.md` to all human-readable table names and cell prose. Keep English only for exact code identifiers, API names, field keys, paths, and quoted user text.
+Apply the active plan wiki `core/common/용어-정책.md` to all human-readable table names and cell prose. Keep English only for exact code identifiers, API names, field keys, paths, and quoted user text.
 
 1. `요청 대응표`
    - `사용자 요청 항목`
@@ -202,9 +202,9 @@ Optional table when test strategy changes planning or acceptance:
    - `식별자 정책`
    - `제외 범위`
 
-Optional table when review wiki preflight matters:
+Optional table when plan wiki preflight matters:
 
-7. `review wiki preflight 메모`
+7. `plan wiki preflight 메모`
    - `검토 기준`
    - `이번에 잠근 내용`
    - `계획 입력 메모`
@@ -229,7 +229,7 @@ Optional tables for diagnostic-lock path:
 Then include:
 
 - `남은 질문` if blocking ambiguity remains
-- `추천 다음 상태` such as `needs_review_wiki_setup`, `needs_locked_ui_direction`, `needs_diagnostic_inventory`, `needs_diagnostic_review`, `ready_for_planning`, or `ready_for_direct_execution`
+- `추천 다음 상태` such as `needs_plan_wiki_setup`, `needs_locked_ui_direction`, `needs_diagnostic_inventory`, `needs_diagnostic_review`, `ready_for_planning`, or `ready_for_direct_execution`
 
 Response formatting rules:
 
@@ -254,7 +254,7 @@ Include:
 - `상태 소유권 표` when relevant
 - `테스트 전략 잠금 표` when test strategy changes planning or acceptance
 - `제외 항목 표` when relevant
-- `review wiki preflight 메모` when relevant
+- `plan wiki preflight 메모` when relevant
 - `진단 기준선 표` and `차이 후보 표` when diagnostic-lock path is used
 - `남은 질문 / 가정`
 - `추천 다음 상태`
@@ -266,13 +266,13 @@ Before handoff, confirm:
 - No hidden assumptions remain
 - No blocking policy ambiguity remains for the chosen planning scope
 - No touched public boundary remains vague enough that implementation would have to guess
-- No test-strategy decision remains vague enough that planning or test materialization would have to guess when it changes the plan
+- No test-strategy decision remains vague enough that planning or TDD contract test authoring would have to guess when it changes the plan
 - No user-visible UI direction remains vague enough that planning would force later design guessing
 - No exclusion was introduced without being made explicit
 - If diagnostic-lock path was used, the investigated boundary, evidence gaps, and confirmed differences are separated from proposed fixes
 - The user's requested items are still traceable in the request-lock tables
-- If review wiki preflight ran, its `blocking` findings are either locked or called out explicitly
-- If review wiki preflight could not run, the missing dependency is explicit before recommending planning
+- If plan wiki preflight ran, its `blocking` findings are either locked or called out explicitly
+- If plan wiki preflight could not run, the missing dependency is explicit before recommending planning
 - Blocking questions are explicit when another clarification round is still needed
 - Recommended next state is clear
 
@@ -292,9 +292,9 @@ When planning is needed and scope is decision-complete enough for planning, prov
 4. Any `상태 소유권 표`, `테스트 전략 잠금 표`, or `제외 항목 표` that matters to planning
 5. Explicit defaults or deferred low-risk choices
 6. Diagnostic baseline findings that subsequent planning input should treat as already surfaced, including evidence gaps and confirmed differences when diagnostic-lock path was used
-7. Review wiki preflight findings that subsequent planning input should treat as already surfaced, or an explicit note that the preflight could not run because the review wiki root was missing
+7. Plan wiki preflight findings that subsequent planning input should treat as already surfaced, or an explicit note that the preflight could not run because the plan wiki root was missing
 8. Context7-confirmed external facts that subsequent planning input should treat as already resolved, plus any still-risky assumptions that may require fallback verification
 
-If planning is needed but `./.codex/review-wiki/sync/current` is missing or unreadable, state that review wiki setup is required before planning.
+If planning is needed but `./.codex/plan-wiki/sync/current` is missing or unreadable, state that plan wiki setup is required before planning.
 
 Do not present the request as planning-ready while blocking ambiguity remains for a touched public boundary, exclusion boundary, or user-visible UI direction that would force design guessing.

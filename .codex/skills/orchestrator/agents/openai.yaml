@@ -1,4 +1,4 @@
 interface:
   display_name: "Orchestrator"
   short_description: "Coordinate planning, review, approval, learning."
-  default_prompt: "Use $orchestrator to run the stateless artifact-driven planning workflow: upstream decision locking when needed, architect planning, fresh cold review, browser developer review with history, feedback triage, developer-review learning capture, and plan-materialize with explicit approval."
+  default_prompt: "Use $orchestrator to run the stateless artifact-driven planning workflow: upstream decision locking when needed, architect planning, fresh cold review, browser developer review with history, feedback triage, developer-review learning capture, and plan-tdd with explicit approval."

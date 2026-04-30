@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Step 7 converts submitted browser review rounds into reusable planning-quality evidence without making review wiki ingestion a blocking approval gate.
+Step 7 converts submitted browser review rounds into reusable planning-quality evidence without making plan wiki ingestion a blocking approval gate.
 
 ## When to Run
 
@@ -18,7 +18,7 @@ Inspect:
 - `plans/{task-slug}/developer-review/review-history.json`
 - current `plan.md`
 - fresh `plans/_orchestrator/review/{task-slug}/review.md`
-- `materialize.md` when present
+- `tdd.md` when present
 
 Preserve provenance back to:
 
@@ -37,7 +37,7 @@ Capture reusable planning guidance candidates from:
 - feedback that routed to `ui_direction`
 - feedback that exposed a repeatable `request_lock` or `scope_decision` planning gap
 - planning-quality issues the cold review did not catch
-- developer review feedback later connected to a materialization blocker
+- developer review feedback later connected to a TDD blocker
 
 Keep as raw-only or skip:
 
@@ -47,11 +47,11 @@ Keep as raw-only or skip:
 - already-covered plan content that only needed explanation
 - feedback too task-specific to generalize
 
-## Review Wiki Boundary
+## Plan Wiki Boundary
 
-- If invoking `review-wiki-ingest`, pass source type `developer-review`.
+- If invoking `plan-wiki-ingest`, pass source type `developer-review`.
 - Do not write pattern rules directly from untriaged browser feedback.
 - Do not store full raw user feedback in pattern rules.
 - Pattern rules must be generalized planning guidance with raw evidence backlinks.
-- If `review-wiki-ingest` is missing or does not yet support `developer-review` source evidence, report that learning capture was preserved as nonblocking evidence and continue orchestration.
-- If learning capture or review wiki ingest fails, report the failure but do not invalidate current developer review approval or block materialization unless the failure corrupted authoritative developer review artifacts.
+- If `plan-wiki-ingest` is missing or does not yet support `developer-review` source evidence, report that learning capture was preserved as nonblocking evidence and continue orchestration.
+- If learning capture or plan wiki ingest fails, report the failure but do not invalidate current developer review approval or block TDD unless the failure corrupted authoritative developer review artifacts.

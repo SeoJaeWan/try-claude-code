@@ -11,8 +11,8 @@
 - Step 5. Developer review gate
 - Step 6. Triage developer review feedback
 - Step 7. Capture developer review learnings
-- Step 8. Materialize tests
-- Step 9. Route materialize outcomes
+- Step 8. Author TDD contracts
+- Step 9. Route TDD outcomes
 - Step 10. Completion
 
 Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output rules. Follow `developer-review.md` for Steps 5 and 6. Follow `developer-review-learning.md` for Step 7.
@@ -20,29 +20,29 @@ Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output ru
 ## Step 0. Normalize Target and Verify Prerequisites
 
 - Derive one canonical `task-slug`.
-- Resolve the planning `review_wiki_root` to `./.codex/review-wiki/sync/current`.
-- If `./.codex/review-wiki/sync/current` is missing, stop and route to `review-wiki-setup` instead of attempting per-run staging inside this skill.
-- Confirm the linked local request-scope, UI-spec, `architect`, `plan-review`, and `plan-materialize` capabilities are present before routing to them.
+- Resolve the planning `plan_wiki_root` to `./.codex/plan-wiki/sync/current`.
+- If `./.codex/plan-wiki/sync/current` is missing, stop and route to `plan-wiki-setup` instead of attempting per-run staging inside this skill.
+- Confirm the linked local request-scope, UI-spec, `architect`, `plan-review`, and `plan-tdd` capabilities are present before routing to them.
 - If the current request, selected plan, review finding, or developer feedback requires Figma tree inventory, component-set inventory, Resource/* inventory, platform marker inventory, or Figma-based classification artifacts before planning, confirm `../figma-inventory-snapshot/SKILL.md` is present before routing to `architect`.
 - Confirm `./references/developer-review-ui.md`, `./assets/developer-review/index.html`, `../../tools/developer-review-server.mjs`, and `../../tools/start-developer-review-server.mjs` are present before entering the developer review gate.
 - Derive the default plan path as `./plans/{task-slug}/plan.md` unless the current run explicitly targets another existing executable plan.
-- Collect task-local plan or prerequisite paths referenced by the user request, current selected plan, latest fresh review/materialize artifact, or directly referenced upstream decision artifact when they affect the next role pass.
+- Collect task-local plan or prerequisite paths referenced by the user request, current selected plan, latest fresh review/TDD artifact, or directly referenced upstream decision artifact when they affect the next role pass.
 - Resolve each referenced path literally before spawning a planning sub-agent.
 - Build `authoritative_existing_inputs` from verified present paths only.
 - If a verified upstream decision artifact already locks ambiguity for the next architect pass, treat that artifact as authoritative upstream input.
 - Build `known_missing_inputs` from referenced but missing paths only as controller-owned notes.
 - If the next architect pass depends on local upstream plan artifacts and no authoritative input remains after verification, stop and report the blocker.
-- Inspect current `plan.md`, linked phase detail files, `review.md`, developer review files, and `materialize.md` when they exist.
+- Inspect current `plan.md`, linked phase detail files, `review.md`, developer review files, and `tdd.md` when they exist.
 
 ## Step 1. Build the Current Orchestration Picture
 
 - If no executable `plan.md` exists for the selected `task-slug`, route first to an `architect` pass.
-- If `plan.md` exists, compute current `plan_signature` and determine whether `review.md`, developer review package/feedback, and `materialize.md` are fresh.
+- If `plan.md` exists, compute current `plan_signature` and determine whether `review.md`, developer review package/feedback, and `tdd.md` are fresh.
 - Do not reconstruct hidden stage from old chat text when artifacts disagree.
 - If current developer review approval cannot be tied to current `plan_signature` and matching per-item approval evidence, treat approval as absent and require browser review again later.
 - Developer review approval is binary at the gate: every required Overview and Phase step must be `approved` with current `approved_against.review_item_signature` evidence.
 - If `feedback.json` is submitted and any required step or card is not `approved`, treat the state as `feedback_triage_pending`.
-- When feedback triage is pending, do not continue to materialization and do not route directly to `architect` from raw feedback labels.
+- When feedback triage is pending, do not continue to TDD and do not route directly to `architect` from raw feedback labels.
 - Use Step 6 to decide whether the next safe route is chat clarification, request-scope locking, UI direction locking, or `architect`.
 
 ## Step 1A. Prepare Figma Inventory Snapshots
@@ -65,7 +65,7 @@ Invoke `architect` when:
 
 - no executable `plan.md` exists
 - latest fresh `review.md` routes back to `architect`
-- latest fresh `materialize.md` routes back to `architect`
+- latest fresh `tdd.md` routes back to `architect`
 - developer review feedback triage resolved to `plan_revision`
 - completed upstream decision work locked missing decisions and next safe route is `architect`
 - user requested plan changes or answered a question that changes the plan contract
@@ -73,7 +73,7 @@ Invoke `architect` when:
 Controller requirements:
 
 - Reuse the live `architect` role agent for the same `task_slug` when compatible; otherwise start a new generic planning sub-agent and attach `architect`.
-- Pass a handoff packet with exact `task-slug`, `plan_path`, `review_wiki_root`, verified inputs, missing-input notes, latest review/developer feedback path when revising, locked request summary when available, and write scope under `./plans/{task-slug}/`.
+- Pass a handoff packet with exact `task-slug`, `plan_path`, `plan_wiki_root`, verified inputs, missing-input notes, latest review/developer feedback path when revising, locked request summary when available, and write scope under `./plans/{task-slug}/`.
 - When Figma inventory is required, include the controller-verified `figma-inventory` manifest and snapshot paths in `authoritative_existing_inputs`, and state: use these snapshots as the only authoritative Figma inventory source; preserve their provenance in any Figma-derived contract artifact; do not use Code Connect to infer inventory completeness; do not attempt full-file Figma tree reads; return a `tool_data_blocker` with exact missing root/path if coverage is insufficient.
 - Require exactly one result: `result = wrote_plan` with `written_paths`, or `result = blocking_packet` with user-input fields.
 - After every architect pass, re-check `plan_path` and recompute `plan_signature`.
@@ -86,7 +86,7 @@ Controller requirements:
 
 - Invoke a fresh `plan-review` reviewer only when executable `plan.md` exists and current `review.md` is missing or stale.
 - Do not reuse a prior reviewer agent by default.
-- Pass exact `task-slug`, `plan_path`, `review_wiki_root`, current `plan_signature`, and required output path `./plans/_orchestrator/review/{task-slug}/review.md`.
+- Pass exact `task-slug`, `plan_path`, `plan_wiki_root`, current `plan_signature`, and required output path `./plans/_orchestrator/review/{task-slug}/review.md`.
 - Limit reviewer write scope to the required review artifact.
 - Require `review.md` YAML frontmatter with at least `plan_path`, `task_slug`, `plan_signature`, `outcome`, `next_action`, `finding_signature`, `requires_user_decision`, `issue_codes`, and `affected_phase_paths`.
 - After the reviewer finishes, reread `review.md` from disk.
@@ -102,7 +102,7 @@ Controller requirements:
 
 ## Step 5. Developer Review Gate
 
-Follow [developer-review.md](developer-review.md). Always require explicit browser-based developer review before materialization.
+Follow [developer-review.md](developer-review.md). Always require explicit browser-based developer review before TDD.
 
 ## Step 6. Triage Developer Review Feedback
 
@@ -112,25 +112,25 @@ Follow [developer-review.md](developer-review.md). Triage submitted non-approved
 
 Follow [developer-review-learning.md](developer-review-learning.md). Capture reusable learning after the submitted round is preserved and either approved or triaged.
 
-## Step 8. Materialize Tests
+## Step 8. Author TDD Contracts
 
-- Invoke `plan-materialize` only after submitted developer review approval of current `plan_signature`.
-- Invoke it only when current `materialize.md` is missing or stale.
-- Reuse the live `materializer` role agent for the same `task_slug` when compatible; otherwise start a new generic planning sub-agent and attach `plan-materialize`.
+- Invoke `plan-tdd` only after submitted developer review approval of current `plan_signature`.
+- Invoke it only when current `tdd.md` is missing or stale.
+- Reuse the live `tdd` role agent for the same `task_slug` when compatible; otherwise start a new generic planning sub-agent and attach `plan-tdd`.
 - Pass exact `task-slug`, `plan_path`, and current `plan_signature`.
-- Let it create or update source-tree tests and plan-local `materialize.md`.
-- Require `materialize.md` YAML frontmatter with at least `plan_path`, `task_slug`, `plan_signature`, `outcome`, `gate_status`, `blocker_type`, `blocker_code`, `next_action`, `resume_from`, `materialize_signature`, `requires_user_decision`, `blocked_clause_ids`, and `affected_phase_paths`.
-- After the materializer finishes, reread `materialize.md` from disk.
+- Let it create or update source-tree tests and plan-local `tdd.md`.
+- Require `tdd.md` YAML frontmatter with at least `plan_path`, `task_slug`, `plan_signature`, `outcome`, `gate_status`, `blocker_type`, `blocker_code`, `next_action`, `resume_from`, `tdd_signature`, `requires_user_decision`, `blocked_clause_ids`, and `affected_phase_paths`.
+- After the tdd finishes, reread `tdd.md` from disk.
 - Apply the wait policy and classify failures with `contracts.md`.
 
-## Step 9. Route Materialize Outcomes
+## Step 9. Route TDD Outcomes
 
 - `outcome = completed` and `gate_status = passed`: orchestration can complete.
-- `outcome = completed` and `gate_status = failed`: stop and tell the user materialization finished but the targeted gate did not pass.
+- `outcome = completed` and `gate_status = failed`: stop and tell the user TDD finished but the targeted gate did not pass.
 - `outcome = blocked` and `blocker_type = external_setup`: stop and tell the user which prerequisite must be added first.
-- `outcome = blocked` and `blocker_type = plan_ambiguity`: route blocker back to `architect`, rerun review, regenerate the developer review data package, and require fresh approval before another materialize pass.
-- `outcome = blocked` and `blocker_type = user_policy`: ask the user directly in chat. If the answer changes the plan contract, route to `architect`; if it only chooses between already planned policy variants, rerun `plan-materialize` against the same signature.
-- If the same `materialize_signature` repeats against the same `plan_signature` after one architect or user intervention attempt, stop and report `no_progress`.
+- `outcome = blocked` and `blocker_type = plan_contract`: route blocker back to `architect`, rerun review, regenerate the developer review data package, and require fresh approval before another TDD pass.
+- `outcome = blocked` and `blocker_type = user_policy`: ask the user directly in chat. If the answer changes the plan contract, route to `architect`; if it only chooses between already planned policy variants, rerun `plan-tdd` against the same signature.
+- If the same `tdd_signature` repeats against the same `plan_signature` after one architect or user intervention attempt, stop and report `no_progress`.
 
 ## Step 10. Completion
 
@@ -140,5 +140,5 @@ The orchestration is `done` only when all of the following are true:
 - fresh `review.md` exists for current `plan_signature`
 - latest fresh review is ready enough to proceed
 - developer review feedback explicitly approved current `plan_signature`
-- fresh `materialize.md` exists for current `plan_signature`
-- latest fresh materialization result is `completed` with `gate_status = passed`
+- fresh `tdd.md` exists for current `plan_signature`
+- latest fresh TDD result is `completed` with `gate_status = passed`

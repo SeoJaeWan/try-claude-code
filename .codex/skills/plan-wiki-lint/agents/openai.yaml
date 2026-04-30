@@ -1,0 +1,4 @@
+interface:
+  display_name: "Plan Wiki Lint"
+  short_description: "Audit registry, core, and pattern consistency and propose approved cleanup."
+  default_prompt: "Use this skill when Codex needs to lint the plan wiki registry, core docs, pattern files, and raw backlinks, prepare a cleanup report, and wait for user approval before applying fixes."

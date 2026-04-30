@@ -1,4 +1,0 @@
-interface:
-  display_name: "Review Wiki Ingest"
-  short_description: "Ingest review files into raw evidence, pattern rules, registry, and history."
-  default_prompt: "Use this skill when Codex needs to ingest review files from the main repository root under .codex/reviews into the review wiki raw store, pattern files, registry, tag pages, and operation history."

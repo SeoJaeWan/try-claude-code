@@ -1,0 +1,4 @@
+interface:
+  display_name: "Plan Wiki Apply Feedback"
+  short_description: "Apply docs feedback JSON into plan wiki source documents with history."
+  default_prompt: "Use this skill when Codex needs to process plan wiki docs feedback JSON files, update the source wiki documents, refresh graph/tag links, validate the result, and write operation history."

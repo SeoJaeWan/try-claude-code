@@ -1,10 +1,10 @@
 # Developer Review UI Contract
 
-Use this reference when `orchestrator` has a reviewed plan and must collect explicit developer approval before `plan-materialize`.
+Use this reference when `orchestrator` has a reviewed plan and must collect explicit developer approval before `plan-tdd`.
 
 ## When to create
 
-Create or refresh the review data package after `plan-review` produces a fresh `ready` or `ready-with-findings` review for the current `plan_signature`, and before materialization.
+Create or refresh the review data package after `plan-review` produces a fresh `ready` or `ready-with-findings` review for the current `plan_signature`, and before TDD.
 
 Do not create it for `blocked` reviews. Route blockers back to `architect`.
 
@@ -252,7 +252,7 @@ Rules:
 Read `feedback.json`.
 
 - If `plan_signature` differs from the current plan signature, discard the feedback and regenerate the review data package.
-- If every required step is `approved`, every approval has matching `approved_against` evidence, and `review_status = submitted`, treat the current `plan_signature` as explicitly approved and continue to `plan-materialize`.
+- If every required step is `approved`, every approval has matching `approved_against` evidence, and `review_status = submitted`, treat the current `plan_signature` as explicitly approved and continue to `plan-tdd`.
 - If any required step or card is not `approved`, developer approval is absent and feedback triage is required:
   - append or update a review-history round before resetting `feedback.json`, regenerating the package, or changing `plan_signature`
   - do not route directly from the raw status label alone

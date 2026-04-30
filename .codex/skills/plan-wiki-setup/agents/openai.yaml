@@ -1,0 +1,4 @@
+interface:
+  display_name: "Plan Wiki Setup"
+  short_description: "Create the plan wiki link and prepare the workspace planning root."
+  default_prompt: "Use this skill when Codex needs to create or verify the ~/.codex/planWiki link, bootstrap the plan wiki registry/core/pattern layout, or prepare ./.codex/plan-wiki/sync/current as a live link to the external wiki root for planning agents."

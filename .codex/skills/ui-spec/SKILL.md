@@ -14,7 +14,7 @@ Read these references in order whenever this skill runs:
 1. [references/contracts.md](references/contracts.md) for when to use this skill and what UI direction must be locked.
 2. [references/workflow.md](references/workflow.md) for consultation-first specification, optional variant comparison, snapshots, artifact export, and handoff rules.
 3. [references/guardrails.md](references/guardrails.md) for non-negotiable UI specification constraints.
-4. [../../review-wiki/sync/current/core/common/용어-정책.md](../../review-wiki/sync/current/core/common/용어-정책.md) before producing snapshots or artifact handoff text.
+4. [../../plan-wiki/sync/current/core/common/용어-정책.md](../../plan-wiki/sync/current/core/common/용어-정책.md) before producing snapshots or artifact handoff text.
 
 ## Controller Rules
 

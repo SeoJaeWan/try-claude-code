@@ -1,4 +1,0 @@
-interface:
-  display_name: "Review Wiki Setup"
-  short_description: "Create the review wiki link and prepare the workspace planning root."
-  default_prompt: "Use this skill when Codex needs to create or verify the ~/.codex/reviewWiki link, bootstrap the review wiki registry/core/pattern layout, or prepare ./.codex/review-wiki/sync/current as a live link to the external wiki root for planning agents."

@@ -2,33 +2,33 @@
 
 ## Workflow
 
-### Step 0. Resolve mode and review wiki
+### Step 0. Resolve mode and plan wiki
 
 - Determine execution mode before judging the plan.
 - In orchestrated mode:
-  - require `task_slug`, `plan_path`, and `review_wiki_root`.
-  - use the provided `plan_path` and `review_wiki_root` exactly.
+  - require `task_slug`, `plan_path`, and `plan_wiki_root`.
+  - use the provided `plan_path` and `plan_wiki_root` exactly.
   - preserve a provided current `plan_signature`.
-  - do not run review wiki staging or setup.
+  - do not run plan wiki staging or setup.
 - In direct mode:
-  - read `../review-wiki-setup/references/staging-contract.md`.
-  - read `../review-wiki-setup/references/platform-commands.md`.
-  - resolve `review_wiki_root` to `./.codex/review-wiki/sync/current`.
+  - read `../plan-wiki-setup/references/staging-contract.md`.
+  - read `../plan-wiki-setup/references/platform-commands.md`.
+  - resolve `plan_wiki_root` to `./.codex/plan-wiki/sync/current`.
   - stop if the workspace sync path is missing.
-- Read `{review_wiki_root}/registry.json`.
+- Read `{plan_wiki_root}/registry.json`.
 - Read every core document listed in `stage_core.review`; if absent, read the registry `core` array.
 - Select candidate patterns using registry `selection.review`, `domain_taxonomy`, and `adjacency_rules`; always include `common`, then add touched domains only.
 - Read only selected pattern files whose `적용 조건` actually match the reviewed plan or phase detail files.
-- Read the active review wiki `core/common/용어-정책.md` before drafting findings.
+- Read the active plan wiki `core/common/용어-정책.md` before drafting findings.
 
 ### Step 1. Load the plan
 
 - Review one executable `plan.md` at a time.
 - Load every phase detail file linked from that `plan.md`.
 - Derive user-request items from the latest user request, upstream request-lock handoff, and the reviewed plan.
-- Treat the plan summary, linked phase details, active review wiki guidance, and user request as the source of truth.
+- Treat the plan summary, linked phase details, active plan wiki guidance, and user request as the source of truth.
 - If a phase detail names a local prerequisite plan in `선행 조건`, inspect only that direct prerequisite and the minimum upstream phase needed to verify parity.
-- When Figma-derived artifacts are in scope, require manifest-backed provenance as specified by the active review wiki authority guidance and the reviewed plan.
+- When Figma-derived artifacts are in scope, require manifest-backed provenance as specified by the active plan wiki authority guidance and the reviewed plan.
 
 ### Step 2. Challenge the plan shape
 
@@ -45,8 +45,8 @@ Treat scope-challenge findings as normal review evidence.
 
 Judge the plan against:
 
-- active review wiki core docs and selected patterns.
-- active review wiki plan artifact contract.
+- active plan wiki core docs and selected patterns.
+- active plan wiki plan artifact contract.
 - user-request traceability.
 - summary/detail parity.
 - blocking ambiguity.
@@ -54,11 +54,11 @@ Judge the plan against:
 - `owner_agent` routing.
 - scenario-level `input -> output` contract completeness.
 - affected public boundaries, exclusions, no-op rules, recipients, and final interpretation boundaries.
-- verification realism and materialization readiness.
+- verification realism and TDD readiness.
 - UI direction completeness when UI scope exists.
 - reference-based visual comparison, Figma parity, or Figma inventory provenance when in scope.
 
-Apply the review wiki as the policy source for plan artifact meaning, test strategy expectations, quality gates, and learned pattern rules. Use `references/review-policy.md` only to map issues to severity and artifact shape.
+Apply the plan wiki as the policy source for plan artifact meaning, test strategy expectations, quality gates, and learned pattern rules. Use `references/review-policy.md` only to map issues to severity and artifact shape.
 
 ### Step 4. Classify findings
 

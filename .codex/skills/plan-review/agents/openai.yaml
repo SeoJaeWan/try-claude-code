@@ -1,4 +1,4 @@
 interface:
   display_name: "Plan Review"
   short_description: "Critically review executable plans for blockers, drift, and top-level bloat."
-  default_prompt: "Use $plan-review to cold-review an executable ./plans/.../plan.md and its linked phase detail files for blockers, Korean-first terminology drift, topology mistakes, contract drift, plan.md/detail duplication, implementation readiness, and verification materialization risks before execution."
+  default_prompt: "Use $plan-review to cold-review an executable ./plans/.../plan.md and its linked phase detail files for blockers, Korean-first terminology drift, topology mistakes, contract drift, plan.md/detail duplication, implementation readiness, and TDD authoring risks before execution."

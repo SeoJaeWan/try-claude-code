@@ -7,7 +7,7 @@
 
 ## Step 5. Developer Review Gate
 
-Always require explicit browser-based developer review before materialization.
+Always require explicit browser-based developer review before TDD.
 
 At the gate:
 
@@ -40,7 +40,7 @@ When the user says `review complete`, read `feedback.json`:
 
 - if `task_slug` or `plan_signature` differs from current plan state, regenerate the package and require review again
 - if `review_status` is not `submitted`, ask the user to submit the browser review first
-- if every required Overview and Phase step is `approved` and each approval has current `approved_against` evidence, treat current `plan_signature` as explicitly approved and continue to Step 7 before materialization
+- if every required Overview and Phase step is `approved` and each approval has current `approved_against` evidence, treat current `plan_signature` as explicitly approved and continue to Step 7 before TDD
 - if any required Overview or Phase step or card is not `approved`, run Step 6 before choosing the next role pass
 
 ## Step 6. Triage Developer Review Feedback
@@ -75,7 +75,7 @@ After the triage route is selected and the active history round is updated, run 
 Route by triage result:
 
 - `answer_only`: answer in chat from current plan/review/package, update active history round with answer summary and same-signature re-review outcome, refresh `feedback.json` for the same signature while preserving only unchanged approved items, require browser re-submit, and do not invoke `architect`.
-- `scope_decision` or `request_lock`: ask direct questions first when underspecified, then run or reuse the request-scope locking capability with exact task, plan, `review_wiki_root`, current `plan_signature`, latest `feedback.json`, locked request summary when available, verified inputs, and chat-only output contract unless the user asked for an artifact.
+- `scope_decision` or `request_lock`: ask direct questions first when underspecified, then run or reuse the request-scope locking capability with exact task, plan, `plan_wiki_root`, current `plan_signature`, latest `feedback.json`, locked request summary when available, verified inputs, and chat-only output contract unless the user asked for an artifact.
 - `ui_direction`: ask for request-scope clarification first if product framing or scope is unstable; otherwise run or reuse the UI-spec capability with exact task, plan, current signature, latest `feedback.json`, locked request summary when available, verified inputs, and chat-only output contract unless the user asked for an artifact.
 - `plan_revision`: record the revision route in `review-history.json`, run Step 7, route exact feedback path and affected IDs to `architect`, rerun `plan-review`, regenerate the review data package, carry forward only approvals whose item signatures still match, and require browser re-submit.
 

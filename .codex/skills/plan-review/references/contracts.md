@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Provide an independent, read-only review of an executable plan artifact before implementation. The review checks whether the plan can be executed without hidden decisions, whether it follows the active review wiki plan artifact contract, and whether verification materialization can derive tests or commands without guessing.
+Provide an independent, read-only review of an executable plan artifact before implementation. The review checks whether the plan can be executed without hidden decisions, whether it follows the active plan wiki plan artifact contract, and whether TDD authoring can derive tests or commands without guessing.
 
 ## Inputs to inspect
 
@@ -10,9 +10,9 @@ Provide an independent, read-only review of an executable plan artifact before i
 2. Target executable plan file: `./plans/**/plan.md`.
 3. Every phase detail file linked from that `plan.md`.
 4. Optional locked request, UI direction, or orchestrator handoff from the latest conversation.
-5. Resolved planning review wiki root:
-   - orchestrated mode: use the provided `review_wiki_root`.
-   - direct mode: use `./.codex/review-wiki/sync/current`.
+5. Resolved planning plan wiki root:
+   - orchestrated mode: use the provided `plan_wiki_root`.
+   - direct mode: use `./.codex/plan-wiki/sync/current`.
 6. `registry.json`, stage core docs for `review`, and selected pattern files whose `적용 조건` match the reviewed plan.
 7. Architect templates and local references only as needed to verify the plan contract.
 8. Repo-local execution contracts only when the plan makes a concrete routing, command, validation, or placement claim.
@@ -21,10 +21,10 @@ Provide an independent, read-only review of an executable plan artifact before i
 
 ## Execution modes
 
-- `orchestrated`: an orchestrator handoff provides `task_slug`, `plan_path`, and `review_wiki_root`.
-- `direct`: no orchestrator handoff exists; resolve the review wiki root through the workspace sync path.
+- `orchestrated`: an orchestrator handoff provides `task_slug`, `plan_path`, and `plan_wiki_root`.
+- `direct`: no orchestrator handoff exists; resolve the plan wiki root through the workspace sync path.
 
-In orchestrated mode, treat provided `task_slug`, `plan_path`, `review_wiki_root`, and optional `plan_signature` as authoritative. If they are missing or contradictory, block instead of inventing replacements.
+In orchestrated mode, treat provided `task_slug`, `plan_path`, `plan_wiki_root`, and optional `plan_signature` as authoritative. If they are missing or contradictory, block instead of inventing replacements.
 
 ## Output contract
 

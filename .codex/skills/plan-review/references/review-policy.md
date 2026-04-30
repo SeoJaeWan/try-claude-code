@@ -1,6 +1,6 @@
 # Plan Review Policy
 
-Use this file for severity mapping, outcome states, and review artifact shape. Use the active review wiki core docs and selected patterns as the source of truth for plan artifact meaning, quality gates, test-strategy expectations, execution handoff, visual comparison policy, and learned domain rules.
+Use this file for severity mapping, outcome states, and review artifact shape. Use the active plan wiki core docs and selected patterns as the source of truth for plan artifact meaning, quality gates, test-strategy expectations, execution handoff, visual comparison policy, and learned domain rules.
 
 ## Outcome States
 
@@ -14,17 +14,17 @@ Use this file for severity mapping, outcome states, and review artifact shape. U
 
 ### Blocker
 
-Use `blocker` when the plan is not safely executable, violates an active review wiki mandatory contract, or would force later skills to guess a canonical decision.
+Use `blocker` when the plan is not safely executable, violates an active plan wiki mandatory contract, or would force later skills to guess a canonical decision.
 
 Typical blocker signals:
 
 - missing or invalid required plan artifacts, linked phase detail files, `Branch` header, or phase routing metadata.
 - `plan.md` and linked phase detail files disagree on phase boundary, outcome, owner, or completion signal.
-- unresolved `blocking` ambiguity under the active review wiki decision policy.
+- unresolved `blocking` ambiguity under the active plan wiki decision policy.
 - missing user-request traceability, inclusion/exclusion boundary, or user-visible completion criteria.
 - missing affected public boundary, canonical output, important negative/no-op output, recipient, final interpretation boundary, or risky scenario invariant.
-- missing test-strategy decisions required by the active review wiki decision policy when verification materialization would otherwise choose the gate.
-- plan count, local prerequisite relationship, authority artifact, reference-comparison, Figma parity, or Figma inventory provenance contradicts the active review wiki contract.
+- missing test-strategy decisions required by the active plan wiki decision policy when TDD authoring would otherwise choose the gate.
+- plan count, local prerequisite relationship, authority artifact, reference-comparison, Figma parity, or Figma inventory provenance contradicts the active plan wiki contract.
 - selected pattern guidance reveals a direct contradiction that the plan leaves unresolved.
 
 ### Major
@@ -56,8 +56,8 @@ Prefer no finding over a low-value minor note.
 
 Check the plan against:
 
-1. resolved `review_wiki_root/registry.json`, listed stage core docs, and selected matching patterns.
-2. active review wiki plan artifact contract.
+1. resolved `plan_wiki_root/registry.json`, listed stage core docs, and selected matching patterns.
+2. active plan wiki plan artifact contract.
 3. terminology policy for visible prose.
 4. repo-local execution contracts only when the plan makes concrete claims that depend on them.
 5. directly referenced local prerequisite plans only for one-hop parity.

@@ -12,7 +12,7 @@ Read only what is needed:
 - Existing design-system or brand constraints when present
 - Existing screenshots, referenced mockups, or directly relevant prior `./.codex/artifacts/ui-spec/**` artifacts when they reduce repeated specification work
 - Legacy `./.codex/artifacts/design-discovery/**` artifacts only as read-only compatibility input when directly relevant
-- `./.codex/review-wiki/sync/current/core/common/용어-정책.md` when producing UI direction snapshots or artifact handoff text
+- `./.codex/plan-wiki/sync/current/core/common/용어-정책.md` when producing UI direction snapshots or artifact handoff text
 
 Rules:
 
@@ -71,7 +71,7 @@ Return a concise snapshot using markdown tables.
 
 Required tables:
 
-Apply the active review wiki `core/common/용어-정책.md` to all human-readable table names and cell prose. Keep English only for exact code identifiers, design-system tokens, API names, paths, field keys, and quoted product text.
+Apply the active plan wiki `core/common/용어-정책.md` to all human-readable table names and cell prose. Keep English only for exact code identifiers, design-system tokens, API names, paths, field keys, and quoted product text.
 
 1. `UI 방향 요약 표`
    - `대상 영역`
