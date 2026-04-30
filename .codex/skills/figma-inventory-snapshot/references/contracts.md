@@ -14,6 +14,8 @@ The controller should provide:
 - optional `required_paths`: family paths or markers that must be represented
 - optional `required_markers`: examples include `Resource`, `iOS`, `Android`, `component-set`, `variant`
 - `output_dir`, defaulting to `./.codex/artifacts/figma-inventory/{task_slug}/`
+- optional `collectionHash` when resuming an existing checkpointed collection
+- optional batch limit when the controller wants bounded progress instead of a long-running attempt
 
 ## Authoritative Tools
 
@@ -38,6 +40,20 @@ Write all outputs under `output_dir`:
 - `manifest.json`: one controller-facing manifest for freshness and coverage
 - `summary.md`: human-readable source, coverage, and blocker summary
 - `snapshots/{safe-node-id}.json`: one compact snapshot per root or shard
+
+For large or resumable collection, write under `runs/{collectionHash}/` instead of the flat legacy layout:
+
+- `current.json`: pointer to the latest validated collection run
+- `runs/{collectionHash}/input.json`: canonical collection contract
+- `runs/{collectionHash}/queue.json`: resumable work queue
+- `runs/{collectionHash}/batches/{batchHash}/batch.json`: one batch lease
+- `runs/{collectionHash}/batches/{batchHash}/snapshots/{safe-node-id}.json`: batch-owned compact snapshots
+- `runs/{collectionHash}/batches/{batchHash}/result.json`: batch terminal result
+- `runs/{collectionHash}/snapshot-index.json`: index rebuilt from every batch snapshot
+- `runs/{collectionHash}/manifest.json`: manifest rebuilt from the index
+- `runs/{collectionHash}/summary.md`: human-readable rebuilt summary
+
+The flat layout remains valid for small bounded captures only. Do not mix flat snapshots and checkpointed run snapshots as one authority unless a rebuild step records the provenance explicitly.
 
 `manifest.json` must include:
 
@@ -103,6 +119,17 @@ Each snapshot JSON should include compact nodes with:
 Keep raw large MCP responses out of the manifest. Store compact, reusable data only unless a blocker requires a small error excerpt.
 Do not store or depend on truncated tool output. A truncated result must produce `blocked_truncated` or a smaller retry before success.
 
+## Checkpoint Freshness
+
+A checkpointed run is reusable only when:
+
+- `current.json` points to the selected `collectionHash`, or the controller explicitly selects that hash for resume
+- `input.json` matches the current `fileKey`, required roots, required paths, required markers, schema version, and collector rule version
+- `queue.json` has no stale `in_progress` leases, or the resume pass first returns expired leases to `pending`
+- every `done` queue entry has an existing parseable snapshot with matching `fileKey`, `collectionHash`, and `rootNodeId`
+- `snapshot-index.json` and `manifest.json` were rebuilt after the newest successful batch
+- no unindexed batch snapshot remains unless the run is still `paused_retryable`
+
 ## Freshness
 
 An existing manifest is reusable only when:
@@ -128,6 +155,19 @@ result = wrote_snapshot
 task_slug = {task_slug}
 manifest_path = ./.codex/artifacts/figma-inventory/{task_slug}/manifest.json
 written_paths = [...]
+```
+
+On resumable pause:
+
+```text
+result = paused_retryable
+task_slug = {task_slug}
+collection_hash = {collectionHash}
+queue_path = ./.codex/artifacts/figma-inventory/{task_slug}/runs/{collectionHash}/queue.json
+done = {count}
+pending = {count}
+retryable = {count}
+next_action = resume same collectionHash
 ```
 
 On missing tool/data:

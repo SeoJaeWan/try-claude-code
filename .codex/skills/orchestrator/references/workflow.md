@@ -51,12 +51,13 @@ Run this step only when the next `architect` pass depends on Figma inventory rat
 
 - Determine the exact `fileKey`, required root nodes, required paths, and required markers from the latest user request, verified upstream artifacts, fresh review findings, or current plan context.
 - If the required root nodes or inventory scope are not derivable from verified inputs, route to request-scope locking or ask the user; do not send an open-ended Figma discovery prompt to `architect`.
-- If a matching `./.codex/artifacts/figma-inventory/{task-slug}/manifest.json` exists and is fresh under `contracts.md`, add the manifest and referenced snapshot paths to `authoritative_existing_inputs`.
-- If no fresh manifest exists, invoke a generic planning sub-agent with `figma-inventory-snapshot` attached.
+- If a matching flat `./.codex/artifacts/figma-inventory/{task-slug}/manifest.json` or checkpointed `current.json` and `runs/{collectionHash}/manifest.json` exists and is fresh under `contracts.md`, add the manifest and referenced snapshot/index paths to `authoritative_existing_inputs`.
+- If no fresh manifest exists, invoke a generic planning sub-agent with `figma-inventory-snapshot` attached. Require checkpointed collection when the frontier is large, prior partial snapshots exist, or repeated quota/timeout pauses are likely.
 - Pass exact `task-slug`, `fileKey`, `root_nodes`, `required_paths`, `required_markers`, and output path `./.codex/artifacts/figma-inventory/{task-slug}/`.
-- Require exactly one result: `result = wrote_snapshot` with `manifest_path` and `written_paths`, or `result = blocking_packet`.
-- After `wrote_snapshot`, read `manifest.json`; verify every referenced snapshot path exists, every required root is `ok` or `ok_by_shards` unless the handoff explicitly accepts `partial_names_only`, `coverageComplete = true`, `truncated = false`, and no required path is missing. If any check fails, classify the pass as `artifact_writeback_failure` or `tool_data_blocker` as appropriate.
-- Add the verified `manifest.json` and snapshot paths to the next `architect` handoff as authoritative inputs.
+- Require exactly one result: `result = wrote_snapshot` with `manifest_path` and `written_paths`, `result = paused_retryable` with `collection_hash` and queue counts, or `result = blocking_packet`.
+- On `paused_retryable`, do not route to `architect`. Reinvoke Step 1A with the same `collectionHash` when the controller can continue, or report resumable progress if the current turn must stop. Do not restart with a new hash unless the collection contract changed.
+- After `wrote_snapshot`, read the manifest. For checkpointed runs, also read `snapshot-index.json` and `current.json`. Verify every referenced snapshot path exists, every required root is `ok` or `ok_by_shards` unless the handoff explicitly accepts `partial_names_only`, `coverageComplete = true`, `truncated = false`, no required path is missing, and no unindexed batch snapshot remains. If any check fails, classify the pass as `artifact_writeback_failure` or `tool_data_blocker` as appropriate.
+- Add the verified `manifest.json`, `snapshot-index.json` when present, and referenced snapshot paths to the next `architect` handoff as authoritative inputs.
 - Do not classify Figma components, write `classification.md`, or infer missing families in this step.
 
 ## Step 2. Run Architect Draft or Revision

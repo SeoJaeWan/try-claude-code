@@ -8,6 +8,13 @@
 - Do not use `use_figma` to recursively inventory multiple roots, pages, sections, or component trees.
 - Do not treat truncated or transport-limited tool output as a valid snapshot source.
 - Do not report `wrote_snapshot` until every successful root or shard is written to `snapshots/*.json` and referenced from `manifest.json`.
+- Do not report `wrote_snapshot` from a checkpointed run until `snapshot-index.json`, `manifest.json`, and `summary.md` have been rebuilt from all batch snapshots and validated.
+- Do not let a batch worker write outside its own `batches/{batchHash}/` directory except for controlled queue lease/status transitions.
+- Do not update `current.json` until the rebuilt run passes validation.
+- Do not use a random execution id as `collectionHash`; the collection hash must come from the canonical collection contract.
+- Do not split a node merely because it has children; split only on actual truncation, timeout, excessive response size, or transport limit.
+- Do not treat batch success as collection success.
+- Do not compute Web/excluded/readiness classification inside snapshot JSON files.
 - Do not fill required paths from previous parity reports, package registries, or memory.
 - Do not merge stale and fresh snapshots without recording root-level provenance.
 - Do not hide missing roots inside `summary.md`; record them in `manifest.json`.
