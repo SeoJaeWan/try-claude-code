@@ -1,53 +1,67 @@
 ---
 name: runner
-description: Deterministic plan orchestrator with per-task worktree isolation, sequential phase commits, and per-phase user approval. Use when executing a finalized single `plan.md` whose phases must run in order. Waits for user confirmation after each phase, and after all phases complete asks user whether to merge — HEAD always stays on the base branch.
+description: Deterministic plan-runner that executes a single self-contained plan in one worktree, dispatches one agent, and gates merge behind stop-review and dev-review. Use when executing a finalized `*.plan.md` file. Each session owns exactly one worktree and one plan; multiple plans run in independent terminals. HEAD always stays on the base branch.
 model: sonnet
 ---
 
 <Skill_Guide>
 <Purpose>
-Execute plan.md artifacts with task-level worktree isolation and sequential phase commits. Each task gets one worktree for its entire lifecycle — phases commit sequentially within it, and after completion the worktree is cleaned up. HEAD always remains on the base branch; the user is asked whether to merge the task branch.
+Execute a single self-contained `*.plan.md` artifact with one worktree and one agent dispatch. The agent reads the plan and produces every phase commit inside that one dispatch. After it returns, stop-review evaluates the whole plan, then dev-review collects per-commit reviewer feedback. HEAD remains on the base branch; the user is asked whether to merge after dev-review approves.
 </Purpose>
 
 <Instructions>
 # plan-runner
 
-Orchestrate plan.md execution with task-level worktree isolation and commit-based phase progression.
+Orchestrate one plan's execution: validate header, create one worktree, dispatch one agent, gate merge behind stop-review and dev-review.
 
 ---
 
 ## Why this workflow matters
 
-`Agent(isolation: "worktree")` doesn't support nested Agent calls inside the worktree, so phase-level agent specialization is impossible with it. Using it when plan-runner is already in a worktree also causes nesting (`worktrees/A/worktrees/B`). And `EnterWorktree` has no mid-session exit, making post-work merge impossible.
+A plan is a self-contained execution context for one agent. Phase boundaries inside a plan are commit boundaries the agent itself maintains; the runner is not a phase loop. Splitting a plan into multiple `Agent(...)` dispatches would multiply cold-start cost and lose intra-plan continuity for no benefit, since reviewers evaluate the plan as a whole. This skill therefore performs **one** Agent dispatch per plan, lets the agent commit phase by phase inside that dispatch, and runs review at the end of the plan rather than between phases.
 
-This skill uses manual `git worktree` management: one worktree per task, phase agents commit sequentially within it, and after completion the worktree is removed while HEAD stays on the base branch. The user is then asked whether to merge. This gives full control over the worktree lifecycle while supporting different specialized agents per phase in a strict sequential workflow.
+`Agent(isolation: "worktree")` is not used — it does not support nested Agent calls and prevents post-work merge. Instead, this skill manages a worktree manually with `git worktree add`, dispatches one specialized agent into it, and removes the worktree after dev-review approves.
 
 ---
 
 ## Inputs
 
-1. Plan file path (`plans/{task-name}/plan.md`)
-2. Plan headers:
-    - `**Branch:** {task-branch}` — the name for this task's worktree and branch
-    - optional top routing table `| # | Phase | Agent |` for quick phase-to-agent mapping
-3. Linked phase detail files with `- owner_agent: \`{agent-name}\``
+The caller supplies the absolute or repo-relative path to a single `*.plan.md` file. The plan begins with a YAML frontmatter block:
+
+```yaml
+---
+plan_slug: login-frontend
+branch: feat/login-frontend
+owner_agent: frontend-developer
+---
+```
+
+Required header fields:
+
+- `plan_slug` — short identifier used as Agent.description suffix and as `task_slug` for dev-review.
+- `branch` — name of the task branch the worktree will create.
+- `owner_agent` — `subagent_type` for the dispatch.
+
+The plan body below the frontmatter is opaque to runner — it is forwarded to the agent verbatim via the plan file path. Runner does not parse phase tables, scenarios, or any other body content.
 
 ---
 
 ## Commit convention
 
-All phase commits follow the shared convention at `plugin/develop/references/commit-convention.md`. The dispatch prompt below embeds the minimal guarantees phase agents must respect (allowed types, the phase-number ban, and the WHY-body requirement) inline, because subagents often cannot reach out to read external files. The full spec — examples, footer rules, per-consumer policy — lives in the reference file.
+All commits made by the dispatched agent follow `plugin/develop/references/commit-convention.md`. The dispatch prompt below embeds the minimal guarantees inline (allowed types, no phase identity in subject, Korean WHY-body) because subagents often cannot reach external files.
 
 ---
 
 ## Core rules
 
 1. plan-runner runs in the main conversation context (no agent binding).
-2. The main context HEAD stays on the base branch at all times — during and after execution. Never checkout the task branch automatically.
-3. Task branches are created via `git worktree add -b` (one per task, not per phase).
-4. Phase agents are dispatched via `Agent` without `isolation: "worktree"` — they work directly in the worktree directory.
-5. Each phase ends with a commit. After the final phase + dev-review approval (every card approved or out-of-scope), plan-runner removes the worktree and asks the user whether to merge — it never checks out the task branch. The worktree stays alive through every dev-review rework round so phase agents can keep committing into it.
-6. plan-runner runs from the repository root, never from inside `worktrees/**`.
+2. Main HEAD stays on the base branch at all times — during and after execution.
+3. Exactly one worktree is created per plan via `git worktree add -b`. One session owns one worktree.
+4. Exactly one `Agent(...)` dispatch per plan. The agent commits phase by phase inside that dispatch.
+5. Phase agents are dispatched without `isolation: "worktree"` — they work directly in the manually created worktree.
+6. After the agent returns, runner ends its turn so the stop-review gate can evaluate the whole plan. After dev-review approves, runner removes the worktree and asks the user about merge — it never checks out the task branch.
+7. plan-runner runs from the repository root, never from inside `worktrees/**`.
+8. Multiple plans run in separate terminals as independent sessions. Sessions do not coordinate — each plan goes through stop-review and dev-review on its own.
 
 ---
 
@@ -56,17 +70,17 @@ All phase commits follow the shared convention at `plugin/develop/references/com
 ```
 X (base branch — HEAD stays here during execution)
 │
-└── git worktree add -b task-A worktrees/task-A X
-    ├── commit: feat(auth): implement JWT-based login
-    ├── commit: feat(auth): add token refresh middleware
-    ├── commit: test(auth): add integration tests for login flow
-    ├── commit: fix(auth): token exp 15m (rework from dev-review R1) ← Step 4 rework commits (0..N rounds)
+└── git worktree add -b feat/login-frontend worktrees/feat-login-frontend X
+    ├── commit: feat(login): add login form (phase 1)
+    ├── commit: feat(login): add validation rules (phase 2)
+    ├── commit: test(login): add scenario coverage (phase 3)
+    ├── commit: fix(login): error message visibility (rework from dev-review R1)
     └── (dev-review approved)
     → worktree remove → ask user: merge into X? (HEAD stays on X)
 ```
 
-- **Base branch (X):** Where HEAD is when plan-runner starts. HEAD stays here throughout the entire lifecycle — during and after execution.
-- **Task branch:** Created by `git worktree add -b`. All phase commits accumulate on this branch inside the worktree. After completion, the worktree is removed and the user decides whether to merge.
+- **Base branch (X):** Where HEAD is when plan-runner starts. HEAD stays here throughout the entire lifecycle.
+- **Task branch:** Created by `git worktree add -b`. All commits accumulate on this branch inside the worktree. After dev-review approval, the worktree is removed and the user decides whether to merge.
 
 ---
 
@@ -74,12 +88,12 @@ X (base branch — HEAD stays here during execution)
 
 ### Step 1. Validate
 
-- Ensure `**Branch:**` header exists in the plan file.
-- Ensure the Phase Index table (`| # | Phase | Agent |`) exists near the top of plan.md — this is the primary routing source.
-- Ensure every phase file path listed in the table exists under the plan folder.
-- Ensure current working directory is the repository root (not inside `worktrees/**`).
+- The plan file exists and is readable.
+- The plan begins with a YAML frontmatter block (`---` ... `---`).
+- The frontmatter contains `plan_slug`, `branch`, and `owner_agent`. All three must be non-empty.
+- Current working directory is the repository root (not inside `worktrees/**`).
 - Do NOT pre-check agent existence here — the `Agent` tool validates `subagent_type` at dispatch time and fails immediately if the agent is missing.
-- If validation fails → stop immediately.
+- If validation fails → report the failure as plain text and stop.
 
 ### Step 2. Set up
 
@@ -87,16 +101,17 @@ X (base branch — HEAD stays here during execution)
 # Record the base branch
 BASE=$(git rev-parse --abbrev-ref HEAD)
 
-# Read task branch name from plan header
-TASK_BRANCH="{value from **Branch:**}"
-WORKTREE_DIR="worktrees/${TASK_BRANCH}"
+# Read header values from the plan frontmatter
+PLAN_SLUG="{value of plan_slug}"
+TASK_BRANCH="{value of branch}"
+OWNER_AGENT="{value of owner_agent}"
+PLAN_FILE_ABS="{absolute path to the plan file}"
 
-# Parallel-task awareness (informational — does NOT block execution).
-# If other worktrees are already active, surface them so the user (or you)
-# can decide whether another task is intentionally in progress or whether
-# those are stale leftovers from a previous failed run. Intentional parallel
-# work is allowed; the stop-gate only tracks the first worktree in the diff
-# list, so running two tasks at once will lose phase context for one of them.
+# Worktree path: derive from branch, replacing slashes with dashes
+WORKTREE_DIR="worktrees/$(printf %s "$TASK_BRANCH" | tr '/' '-')"
+
+# Parallel-task awareness (informational — does NOT block).
+# Multiple plans intentionally run in parallel terminals; this is just a heads-up.
 OTHER_WORKTREES=$(git worktree list --porcelain \
   | awk '/^worktree / && $2 != ENVIRON["PWD"]' \
   | grep -v "$WORKTREE_DIR" || true)
@@ -104,8 +119,7 @@ if [ -n "$OTHER_WORKTREES" ]; then
   echo "ℹ️  Other active worktrees detected (informational, not blocking):" >&2
   echo "$OTHER_WORKTREES" >&2
   echo "  - If these are stale from a failed run: clean up with 'git worktree remove <path>'." >&2
-  echo "  - If another task is intentionally in progress: proceed, but note that" >&2
-  echo "    stop-gate phase tracking covers only one worktree per session." >&2
+  echo "  - If another plan is intentionally running in another terminal: proceed." >&2
 fi
 
 # Check for stale worktree from a previous failed run
@@ -116,88 +130,87 @@ if git worktree list --porcelain | grep -q "$WORKTREE_DIR"; then
   # → Report existing commits/changes as plain text and end your turn.
   #   Options:
   #   - "정리하고 새로 시작" → remove worktree + delete branch, then recreate
-  #   - "기존 worktree에서 이어서 진행" → skip creation, resume from last completed phase
+  #   - "기존 worktree에서 이어서 진행" → skip creation, dispatch into existing worktree
   #   - "중단" → stop execution
 fi
 
-# Create worktree with a new branch based on the base
+# Create the worktree with a new branch based on the base
 git worktree add -b "$TASK_BRANCH" "$WORKTREE_DIR" "$BASE"
 ```
 
-The plan folder (`plans/{task-name}/`) is **not** copied into the worktree. It stays in the main repo as the single source of truth — phase agents read it via the absolute path passed in their dispatch prompt (Step 3). This avoids two-location drift during rework rounds and keeps the task branch history limited to real implementation commits.
+The plan file stays in the main repo. The worktree branch only contains real implementation commits made by the dispatched agent.
 
 After this step, HEAD is still on `$BASE` in the main repo. The worktree has its own checkout of `$TASK_BRANCH` with no commits beyond `$BASE` yet.
 
-### Step 3. Execute phases
+### Step 3. Dispatch the plan agent (single Agent call)
 
-Read the Phase Index table from the top of plan.md to get the ordered list of `(phase_file_path, owner_agent)` pairs. For each row in order, dispatch the phase agent and then end your turn so the stop-gate can review.
+Dispatch exactly one `Agent(...)` call. The agent is responsible for reading the plan file and producing every phase commit inside its single turn.
 
-The agent's job is to read its own phase file and execute it — don't inline the phase content into the prompt. The phase file lives in the **main repo** under `plans/{task-name}/phases/`, not inside the worktree. Pass an **absolute path** so the agent can read it from any cwd: resolve `phase_file_path` against the main repo root (e.g., `${repo_root}/plans/{task-name}/phases/01-foo.md`). Phase files are read-only during execution; agents cd into the worktree for code changes and read the plan from the main repo.
-
-> **Contract**: The exact shape of `description` and the leading `prompt` header below is a contract shared with `plugin/develop/scripts/lib/contract.mjs` (regexes and builder functions) and the hook CI tests. Do NOT alter the `"Phase N: ..."` description form or the `"## Working directory / You are working in: ..."` block. If you need a new shape, update contract.mjs and the unit tests together.
+> **Contract**: The exact shape of `description` and the leading `prompt` headers below is a contract shared with `plugin/develop/scripts/lib/contract.mjs` (regexes and builder functions) and the hook tests. Do NOT alter the `"Plan: {plan_slug}"` description form, the `"## Working directory / You are working in: ..."` block, or the `"## Your plan / Read and execute the plan at: ..."` block. If you need a new shape, update contract.mjs and the unit tests together.
 
 ```
 Agent(
   subagent_type: "{owner_agent}",
+  description: "Plan: {plan_slug}",
   prompt: "
     ## Working directory
     You are working in: {repo_root}/{WORKTREE_DIR}
     cd to this directory before starting any work.
 
-    ## Your phase
-    Read and execute the phase contract at: {absolute_phase_file_path}
+    ## Your plan
+    Read and execute the plan at: {PLAN_FILE_ABS}
     (This is an absolute path in the main repo, outside your worktree. Read it as-is; do not try to resolve it relative to your cwd.)
-    That file contains your complete task spec, boundary, acceptance criteria, and validation checklist.
+    The plan is self-contained: every spec, boundary, acceptance criterion, and validation step you need is in that file.
 
     ## Rules
     - Work directly in your current directory.
     - Do NOT create additional worktrees or use EnterWorktree.
-    - Only implement the phase described in your phase file. Do NOT redo prior phases.
+    - Treat phase boundaries inside the plan as commit boundaries: complete each phase, commit, then proceed to the next.
+    - Do NOT commit-amend across phases — every phase produces its own commit.
+    - Only implement what the plan describes. Do NOT pull in adjacent work.
 
     ## Commit rules (keep these exact — the dev-review UI reads them back)
     - Format: `{type}(scope): {description}`. scope is optional; description uses imperative mood and stays within ~72 characters.
     - Allowed types: feat / fix / refactor / docs / chore / style / test.
-    - Do NOT include phase identity anywhere in the commit — no "phase 2 — ...", no "[Phase 2] ...", no "2단계: ...". The hook system tracks phase from my Agent.description, never from your commit message. A phase prefix in the subject or body only duplicates what the UI already shows and confuses reviewers.
-    - Body is **required and written in Korean**, exactly 2 lines: Line 1 = 무엇 (이 커밋이 한 변경의 핵심), Line 2 = 왜 (동기·제약·맥락 — diff만으로 드러나지 않는 정보). Do NOT prefix labels like `작업:` / `이유:` — line position alone communicates the role. Subject stays English. The body is surfaced verbatim in the dev-review UI at Step 4. Self-evident changes (typo, formatting, dep bump) may use a single Korean WHAT line as an escape hatch — use sparingly.
-    - Commit when done: `git add -A && git commit -m '...'` using a HEREDOC or `-m`+`-m` for the body.
+    - Do NOT include phase identity anywhere in the commit — no \"phase 2 — ...\", no \"[Phase 2] ...\", no \"2단계: ...\". Phase metadata is tracked outside the commit message.
+    - Body is **required and written in Korean**, exactly 2 lines: Line 1 = 무엇 (이 커밋이 한 변경의 핵심), Line 2 = 왜 (동기·제약·맥락 — diff만으로 드러나지 않는 정보). Do NOT prefix labels like `작업:` / `이유:` — line position alone communicates the role. Subject stays English. The body is surfaced verbatim in the dev-review UI. Self-evident changes (typo, formatting, dep bump) may use a single Korean WHAT line as an escape hatch — use sparingly.
+    - Commit when each phase is done: `git add -A && git commit -m '...'` using a HEREDOC or `-m`+`-m` for the body.
     - Full spec (footer rules, examples, rationale): `plugin/develop/references/commit-convention.md`.
   ",
-  description: "Phase {N}: {short summary}"
 )
 ```
 
 **Before calling `Agent(...)`, run a self-check on the dispatch:**
 
-1. The `description` field MUST start with `"Phase N:"` (literal word "Phase", a space, the phase number, a colon). Examples of correctly formatted descriptions: `"Phase 1: implement login"`, `"Phase 10: final cleanup"`. Examples that WILL break the hook contract: `"[Phase 1] …"`, `"1단계: …"`, `"phase one: …"`.
-2. The `prompt` MUST include a line reading exactly `"You are working in: <absolute_worktree_path>"`. Do not rename this header, do not translate it, and do not wrap the path in quotes.
-3. The `phase_file_path` injected after `"Read and execute the phase contract at:"` MUST be an absolute path in the main repo (e.g., `/abs/.../plans/{task-name}/phases/NN-slug.md`), not a relative path. The agent's cwd is the worktree, so a relative path won't resolve to the plan file.
+1. The `description` field MUST be exactly `"Plan: {plan_slug}"` (literal word "Plan", a colon, a space, the slug). Examples that pass: `"Plan: login-frontend"`, `"Plan: backend-api"`. Examples that WILL break the hook contract: `"[Plan: login]"`, `"plan: login"` (lowercase), `"Plan login"` (no colon).
+2. The `prompt` MUST contain a line reading exactly `"You are working in: <absolute_worktree_path>"`. Do not rename this header, do not translate it, and do not wrap the path in quotes.
+3. The `prompt` MUST contain a line reading exactly `"Read and execute the plan at: <absolute_plan_path>"`. Same rules — no translation, no quotes.
+4. Both paths above MUST be absolute. The agent's cwd is the worktree, so a relative path won't resolve to the right file.
 
-If any check fails, fix the dispatch before calling `Agent`. The first two strings are the shared contract with `scripts/lib/contract.mjs`; drift will cause the Stop hook to lose phase context silently.
+If any check fails, fix the dispatch before calling `Agent`. The exact strings above are the shared contract with `scripts/lib/contract.mjs`; drift will cause the Stop hook to lose plan context silently.
 
 After the agent returns, output a brief report as **plain text** and let your turn end naturally. Do NOT use `AskUserQuestion` — just output text so that `end_turn` triggers the Stop hook.
 
 Report:
-- `git -C "$WORKTREE_DIR" log --oneline -1` (latest commit)
-- "Phase {N} 완료. Stop-gate review가 실행됩니다. 계속하려면 답장해주세요."
+- `git -C "$WORKTREE_DIR" log --oneline "$BASE".."$TASK_BRANCH"` (commits produced by the plan)
+- "Plan {plan_slug} 완료. Stop-review가 실행됩니다."
 
-Do not proceed to the next phase until the user explicitly replies. If the user chooses to stop, keep the worktree intact for inspection.
-
-> **BLOCK handling is automatic.** When the stop-gate returns BLOCK, the hook injects a `[plan-runner workflow directive]` into the feedback. Follow that directive — it tells you to re-dispatch the same phase agent with the BLOCK reason. Do NOT fix the code yourself in the main session.
+> **BLOCK handling is automatic.** When the stop-gate returns BLOCK, the hook injects a `[plan-runner: Plan: {slug}]` directive into the feedback. Follow that directive — it tells you to re-dispatch the same plan agent with the BLOCK reason. Do NOT fix the code yourself in the main session.
 
 ### Step 4. Developer review gate (browser)
 
-After all plan phases complete, invoke the `dev-review` skill to collect explicit per-card reviewer approval before cleaning up the worktree. This gate always runs; the merge decision in Step 5 is only reached when every card is `approved` or `out-of-scope`. The worktree MUST stay alive through every rework round so phase agents can keep committing into it.
+After stop-review passes, invoke the `dev-review` skill to collect explicit per-commit reviewer approval before cleaning up the worktree. This gate always runs; the merge decision in Step 5 is only reached when every card is `approved` or `out-of-scope`. The worktree MUST stay alive through every rework round so the plan agent (or dispatched rework agents) can keep committing into it.
 
-Dispatch the skill with the runtime's skill invocation (or `Agent(subagent_type: "general-purpose", ...)` wrapping the `dev-review` skill) and pass:
+Pass these inputs to dev-review:
 
-- `task_slug` — plan folder name
-- `plan_path` — `plans/{task-name}/plan.md`
+- `task_slug` — the plan_slug
+- `plan_path` — absolute path to the plan file
 - `worktree_path` — absolute path to the worktree
 - `base_branch` — `$BASE`
 - `task_branch` — `$TASK_BRANCH`
 - `review_iteration` — `1` for the first gate entry, `N+1` for each re-entry after rework
 
-The skill will generate `plans/{task-name}/dev-review/`, print the server command + URL, and end its turn so the user can review in the browser and say `리뷰 완료`.
+The skill will generate `plans/{plan_slug}/dev-review/`, print the server command + URL, and end its turn so the user can review in the browser and say `리뷰 완료`.
 
 On user `리뷰 완료`, re-enter the skill; it reads `feedback.json` and returns a terminal summary:
 
@@ -234,7 +247,7 @@ On user `리뷰 완료`, re-enter the skill; it reads `feedback.json` and return
   - Full spec: `plugin/develop/references/commit-convention.md`.
   ```
 
-  v2 rework is **per-commit**: one `rework_items[i]` covers one flagged commit and aggregates every `needs-change` line comment on it. Multiple rework items may be dispatched sequentially (safe default) or in parallel when they target different commits AND those commits' files are disjoint. After all rework agents have committed, re-invoke `dev-review` with `review_iteration += 1` and loop.
+  Rework is **per-commit**: one `rework_items[i]` covers one flagged commit and aggregates every `needs-change` line comment on it. Multiple rework items may be dispatched sequentially (safe default) or in parallel when they target different commits AND those commits' files are disjoint. The rework dispatch's description is whatever the runtime produces (it is not a `Plan:` dispatch and will not retrigger plan-context loading). After all rework agents have committed, re-invoke `dev-review` with `review_iteration += 1` and loop.
 
 - `result = "qa_required"` → answer the questions in chat, then re-invoke `dev-review` with the same `review_iteration` (the skill expects the reviewer to reset the relevant `question` comments in the browser) and ask the user to re-review.
 
@@ -242,20 +255,19 @@ Do not advance past this gate on anything except `result = "approved"`. Do not r
 
 ### Step 5. Clean up worktree and ask user
 
-After Step 4 returns `result = "approved"`, the task branch has all phase commits and any rework commits from review rounds. Remove the worktree but **stay on the base branch**. Then ask the user whether to merge:
+After Step 4 returns `result = "approved"`, the task branch holds every plan commit plus any rework commits. Remove the worktree but **stay on the base branch**. Then ask the user whether to merge.
 
 ```bash
 # 1. Remove worktree (frees the branch)
 git worktree remove "$WORKTREE_DIR" --force
 
 # 2. HEAD stays on $BASE — do NOT checkout $TASK_BRANCH
-# Verify HEAD is still on base
 git rev-parse --abbrev-ref HEAD  # should be $BASE
 ```
 
 After cleanup, output the following as **plain text** and let your turn end naturally. Do NOT use `AskUserQuestion`:
 
-- Summary of all phase commits: `git log --oneline $BASE..$TASK_BRANCH`
+- Summary of all commits: `git log --oneline $BASE..$TASK_BRANCH`
 - Changed files: `git diff --stat $BASE..$TASK_BRANCH`
 - Options the user can choose:
   - "base 브랜치($BASE)에 병합" → `git merge $TASK_BRANCH --no-ff -m "merge: $TASK_BRANCH into $BASE"` then `git branch -d $TASK_BRANCH`
@@ -273,7 +285,7 @@ git worktree list --porcelain
 # HEAD should still be on the base branch
 git rev-parse --abbrev-ref HEAD  # should be $BASE
 
-# Task branch should contain all phase commits
+# Task branch should contain all plan commits
 git log --oneline "$BASE".."$TASK_BRANCH"
 ```
 
@@ -285,31 +297,27 @@ git log --oneline "$BASE".."$TASK_BRANCH"
 
 Handled in Step 2 — if the worktree directory already exists, existing commits and uncommitted changes are reported as plain text and the turn ends. The user chooses to clean up and restart, resume from existing state, or abort. Previous work is never destroyed without explicit user consent.
 
-### Phase agent failure
+### Plan agent failure
 
-If a phase agent fails or produces no work:
-1. Check `git -C "$WORKTREE_DIR" status` for partial changes
-2. Decide: retry the phase, skip it, or stop execution
-3. The worktree remains intact for inspection
+If the plan agent fails or commits less than the plan expects:
+1. Check `git -C "$WORKTREE_DIR" status` for partial changes.
+2. Report what was committed vs. what is missing as plain text.
+3. Decide with the user: re-dispatch the plan agent, repair manually, or abort. The worktree stays intact for inspection.
 
 ### Post-completion
 
-After Step 5, HEAD is still on the base branch. The task branch exists with all phase commits. Depending on the user's choice:
-1. If merged → task branch is deleted, all commits are on the base branch
-2. If PR → task branch remains for PR creation
-3. If deferred → task branch remains, user can merge later
+After Step 5, HEAD is still on the base branch and the task branch exists with every plan commit. Depending on the user's choice:
+1. If merged → task branch is deleted, all commits are on the base branch.
+2. If PR → task branch remains for PR creation.
+3. If deferred → task branch remains, user can merge later.
 
 ---
 
 ## Validation commands
 
 ```bash
-# Check plan headers and Phase Index table
-rg -n "^\*\*Branch:\*\*" <plan-path>
-rg -n "^\| # \| Phase \| Agent" <plan-path>
-
-# Check phase files exist
-ls <plan-dir>/phases/
+# Inspect plan header (first frontmatter block)
+sed -n '1,/^---$/p' <plan-path> | sed -n '/^---$/,/^---$/p'
 
 # Inspect worktree state
 git worktree list --porcelain
@@ -325,15 +333,16 @@ git rev-parse --abbrev-ref HEAD
 
 ## Guardrails
 
-1. Never pass `isolation: "worktree"` to Agent — it doesn't support nested Agent calls, making phase-level specialization impossible.
+1. Never pass `isolation: "worktree"` to Agent — it doesn't support nested Agent calls and prevents merge.
 2. Never call `EnterWorktree` — it lacks mid-session exit, making merge impossible.
 3. Never run plan-runner from inside `worktrees/**` — always from repository root.
 4. Never delete task branches — the user decides when to merge and clean up.
-5. Always verify phase commits and branch before starting the next phase.
+5. Always verify the plan dispatch produced commits before proceeding to stop-review.
 6. Always remove the worktree before asking the user about merge. Never checkout the task branch — HEAD must stay on the base branch.
 7. Never reinterpret one request as multiple plan files or extra workstreams.
 8. Never bypass Step 4 developer review. The worktree stays alive until dev-review returns `approved`; rework commits and question-answer cycles both happen inside that gate.
 9. Never re-dispatch rework commits to a different `dispatch_agent` than the reviewer selected in the UI. The reviewer's choice is authoritative.
+10. Never split one plan across multiple Agent dispatches. One plan = one Agent call. Phase boundaries are commit boundaries inside that one dispatch.
 
 </Instructions>
 </Skill_Guide>

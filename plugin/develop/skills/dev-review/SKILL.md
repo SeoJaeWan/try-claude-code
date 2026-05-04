@@ -1,6 +1,6 @@
 ---
 name: dev-review
-description: "Browser-based developer review gate for runner-executed tasks. Triggered after runner finishes all phase commits, before the merge/PR/later decision. Generates a GitHub-style commit list + Files Changed UI served over localhost; reviewer drags lines to attach `needs-change` / `question` / `out-of-scope` comments per commit, optionally selects a `dispatch_agent` for needs-change. The skill reads back feedback.json and routes non-approved comments into the runner's worktree as rework, Q&A, or out-of-scope records. Invoke when runner reaches Step 4, when the user says '리뷰 완료', when re-running developer review after a rework round, or when the user asks '개발 리뷰', 'dev review', or 'runner 리뷰'."
+description: "Browser-based developer review gate for runner-executed plans. Triggered after the runner's plan agent finishes committing every phase, before the merge/PR/later decision. Generates a GitHub-style commit list + Files Changed UI served over localhost; reviewer drags lines to attach `needs-change` / `question` / `out-of-scope` comments per commit, optionally selects a `dispatch_agent` for needs-change. The skill reads back feedback.json and routes non-approved comments into the runner's worktree as rework, Q&A, or out-of-scope records. Invoke when runner reaches Step 4, when the user says '리뷰 완료', when re-running developer review after a rework round, or when the user asks '개발 리뷰', 'dev review', or 'runner 리뷰'."
 model: sonnet
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
@@ -20,7 +20,7 @@ This skill mirrors `.codex/skills/orchestrator` developer review at the workflow
 
 ## When runner invokes this skill
 
-The runner calls dev-review at its Step 4, after all plan phases complete and before Step 5 merge/PR/later. The worktree at `worktrees/{task-branch}` is still present and contains all phase commits.
+The runner calls dev-review at its Step 4, after the plan agent has finished committing every phase and before Step 5 merge/PR/later. The worktree at `worktrees/{task-branch}` is still present and contains all plan commits.
 
 Runner re-invokes after each rework round: when a `needs-change` comment triggers re-dispatch, the re-dispatched agent writes new commits into the same worktree, then dev-review regenerates the package against the new `task_head_sha`.
 
@@ -249,7 +249,7 @@ Return a terminal summary to the runner:
 
 ## Re-dispatch prompt shape (for the runner)
 
-When runner runs re-dispatch for a `rework_items[i]`, it builds a phase-agent prompt roughly like:
+When runner runs re-dispatch for a `rework_items[i]`, it builds a rework-agent prompt roughly like:
 
 ```
 ## Working directory

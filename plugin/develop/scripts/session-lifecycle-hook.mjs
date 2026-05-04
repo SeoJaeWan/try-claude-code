@@ -8,18 +8,15 @@ import {
   createSession,
   deleteSession,
   cleanStaleSessions,
-  loadSession,
   addWorktree,
   removeWorktree,
-  updateWorktreePhase,
-  addSessionWarning
+  updateWorktreePlan
 } from "./lib/sessions.mjs";
 import { toPosixPath } from "./lib/fs.mjs";
 import { runCommand } from "./lib/process.mjs";
 import {
-  PHASE_DESC_RE,
-  SOFT_PHASE_HINT_RE,
-  SOFT_WORKTREE_PATH_HINT_RE,
+  PLAN_DESC_RE,
+  PLAN_PATH_RE,
   WORKTREE_ADD_RE,
   WORKTREE_PATH_RE,
   WORKTREE_REMOVE_RE,
@@ -182,10 +179,10 @@ function handlePostToolUse(input) {
 }
 
 // ---------------------------------------------------------------------------
-// PostToolUse (Agent) — detect plan-runner phase dispatch
+// PostToolUse (Agent) — detect plan-runner plan dispatch
 // ---------------------------------------------------------------------------
 
-// PHASE_DESC_RE and WORKTREE_PATH_RE are imported from lib/contract.mjs.
+// PLAN_DESC_RE, PLAN_PATH_RE and WORKTREE_PATH_RE are imported from lib/contract.mjs.
 
 function handlePostAgentUse(input) {
   const sessionId = input.session_id || process.env[SESSION_ID_ENV];
@@ -195,39 +192,31 @@ function handlePostAgentUse(input) {
 
   const description = input.tool_input?.description ?? "";
   const prompt = input.tool_input?.prompt ?? "";
-  const phaseMatch = description.match(PHASE_DESC_RE);
+  const planMatch = description.match(PLAN_DESC_RE);
 
-  if (!phaseMatch) {
-    // Drift detection: description looks phase-ish but fails the strict contract.
-    if (description && SOFT_PHASE_HINT_RE.test(description)) {
-      addSessionWarning(sessionId, {
-        kind: "phase-desc-drift",
-        detail: "Agent description contains 'phase' but does not match the 'Phase N: ...' contract.",
-        sample: description.slice(0, 120)
-      });
-      recordHookEvent({ kind: "phase_desc", ok: false, sessionId });
-    }
+  if (!planMatch) {
     return;
   }
 
-  const phase = parseInt(phaseMatch[1], 10);
+  const planSlug = planMatch[1];
   const wtMatch = prompt.match(WORKTREE_PATH_RE);
   if (!wtMatch) {
-    // Drift detection: prompt mentions a working directory but fails the contract.
-    if (prompt && SOFT_WORKTREE_PATH_HINT_RE.test(prompt)) {
-      addSessionWarning(sessionId, {
-        kind: "worktree-path-drift",
-        detail: "Agent prompt references a working directory but is missing the 'You are working in: <path>' line.",
-        sample: prompt.slice(0, 200)
-      });
-    }
-    recordHookEvent({ kind: "worktree_path", ok: false, sessionId, phase });
+    recordHookEvent({ kind: "plan_dispatch", ok: false, sessionId, planSlug, missing: "worktree_path" });
     return;
   }
 
   const wtPath = toPosixPath(wtMatch[1]);
-  updateWorktreePhase(sessionId, wtPath, phase);
-  recordHookEvent({ kind: "phase_dispatch", ok: true, sessionId, phase });
+  const planMatchPath = prompt.match(PLAN_PATH_RE);
+  const planFile = planMatchPath ? toPosixPath(planMatchPath[1]) : null;
+
+  updateWorktreePlan(sessionId, wtPath, planSlug, planFile);
+  recordHookEvent({
+    kind: "plan_dispatch",
+    ok: true,
+    sessionId,
+    planSlug,
+    hasPlanFile: Boolean(planFile),
+  });
 }
 
 // ---------------------------------------------------------------------------

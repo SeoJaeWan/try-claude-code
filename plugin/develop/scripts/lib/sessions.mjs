@@ -51,7 +51,6 @@ export function loadSession(sessionId) {
       cwd: parsed.cwd ?? "",
       worktrees: Array.isArray(parsed.worktrees) ? parsed.worktrees : [],
       stopReviewThreadId: parsed.stopReviewThreadId ?? null,
-      warnings: Array.isArray(parsed.warnings) ? parsed.warnings : [],
       blockHistory: Array.isArray(parsed.blockHistory) ? parsed.blockHistory : []
     };
   } catch {
@@ -139,7 +138,7 @@ export function updateWorktreeReviewedCommit(sessionId, worktreePath, commitSha)
   }
 }
 
-export function updateWorktreePhase(sessionId, worktreePath, phase) {
+export function updateWorktreePlan(sessionId, worktreePath, planSlug, planFile) {
   const session = loadSession(sessionId);
   if (!session) {
     return;
@@ -147,7 +146,10 @@ export function updateWorktreePhase(sessionId, worktreePath, phase) {
   const normalized = normalizePath(worktreePath);
   const wt = session.worktrees.find((w) => normalizePath(w.path) === normalized);
   if (wt) {
-    wt.currentPhase = phase;
+    wt.currentPlan = planSlug;
+    if (planFile) {
+      wt.planFile = planFile;
+    }
     saveSession(session);
   }
 }
@@ -174,39 +176,6 @@ export function removeWorktree(sessionId, worktreePath) {
   const normalized = normalizePath(worktreePath);
   session.worktrees = session.worktrees.filter((wt) => normalizePath(wt.path) !== normalized);
   saveSession(session);
-}
-
-// Append a contract-drift warning to the session. Stop-gate consumes these and
-// injects them into the review prompt so drift is surfaced to the reviewer.
-export function addSessionWarning(sessionId, warning) {
-  const session = loadSession(sessionId);
-  if (!session) {
-    return;
-  }
-  session.warnings = session.warnings || [];
-  session.warnings.push({
-    at: nowIso(),
-    kind: warning.kind ?? "unknown",
-    detail: warning.detail ?? "",
-    sample: warning.sample ?? null
-  });
-  // Cap to last 20 to keep session file bounded.
-  if (session.warnings.length > 20) {
-    session.warnings = session.warnings.slice(-20);
-  }
-  saveSession(session);
-}
-
-// Read warnings and clear them atomically. Returns [] if none.
-export function consumeSessionWarnings(sessionId) {
-  const session = loadSession(sessionId);
-  if (!session || !Array.isArray(session.warnings) || session.warnings.length === 0) {
-    return [];
-  }
-  const warnings = session.warnings;
-  session.warnings = [];
-  saveSession(session);
-  return warnings;
 }
 
 // Record a BLOCK decision by its fingerprint (sha256 of the normalized reason).

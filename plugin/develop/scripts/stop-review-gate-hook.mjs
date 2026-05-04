@@ -14,7 +14,6 @@ import {
   updateWorktreeReviewedCommit,
   getStopReviewThreadId,
   setStopReviewThreadId,
-  consumeSessionWarnings,
   recordBlock,
   clearRecentBlockStreak,
 } from "./lib/sessions.mjs";
@@ -26,7 +25,6 @@ import { comparePaths } from "./lib/fs.mjs";
 import {
   collectBlockReview,
   collectInformationalReview,
-  findPlanDirByBranch,
 } from "./lib/review-collector.mjs";
 import { recordHookEvent } from "./lib/telemetry.mjs";
 
@@ -43,25 +41,6 @@ function fingerprintBlockReason(reason) {
     .replace(/\n{2,}/g, "\n\n")
     .trim();
   return crypto.createHash("sha256").update(normalized).digest("hex").slice(0, 16);
-}
-
-/**
- * Find a phase detail file matching the given phase number inside the phases/ directory.
- * Files are expected to follow the pattern: {nn}-{slug}.md (e.g., 03-api-setup.md).
- * Returns the full path to the file, or null if not found.
- */
-function findPhaseFile(phasesDir, phaseNumber) {
-  if (!fs.existsSync(phasesDir)) {
-    return null;
-  }
-  const padded = String(phaseNumber).padStart(2, "0");
-  try {
-    const entries = fs.readdirSync(phasesDir);
-    const match = entries.find((e) => e.startsWith(`${padded}-`) && e.endsWith(".md"));
-    return match ? path.join(phasesDir, match) : null;
-  } catch {
-    return null;
-  }
 }
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -108,26 +87,7 @@ function filterJobsForCurrentSession(jobs, input = {}) {
   return jobs.filter((job) => job.sessionId === sessionId);
 }
 
-function buildWarningsBlock(warnings = []) {
-  if (!warnings || warnings.length === 0) {
-    return "";
-  }
-  const lines = warnings.map((w) => {
-    const sample = w.sample ? `\n    sample: ${JSON.stringify(w.sample)}` : "";
-    return `- [${w.kind}] ${w.detail}${sample}`;
-  });
-  return [
-    "## Contract drift warnings (may affect review reliability)",
-    "",
-    "The runner↔hook contract detected drift in this session. These warnings are",
-    "informational — they may explain why phase context below is missing or partial.",
-    "Do NOT treat them as blocking findings.",
-    "",
-    ...lines,
-  ].join("\n");
-}
-
-function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "", session = null, warnings = []) {
+function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "", session = null) {
   const template = loadPromptTemplate(path.resolve(SCRIPT_DIR, ".."), "stop-review-gate");
 
   let worktreeDiffsBlock = "";
@@ -142,36 +102,23 @@ function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "
   }
 
   let planContextBlock = "";
-  const branch = worktreeDiffs[0]?.branch;
-  if (branch && workspaceRoot) {
-    const planDir = findPlanDirByBranch(workspaceRoot, branch);
-    logNote(`[stop-gate] plan-context chain: branch=${branch}, planDir=${planDir ?? "null"}`);
-    if (planDir && session) {
-      const wtRaw = worktreeDiffs[0]?.path ?? "";
-      const wt = session.worktrees.find((w) => comparePaths(w.path, wtRaw));
-      logNote(`[stop-gate] plan-context chain: wt=${wtRaw}, sessionMatch=${wt ? "found" : "miss"}, currentPhase=${wt?.currentPhase ?? "null"}`);
-      if (wt?.currentPhase != null) {
-        // Read the phase detail file instead of the full plan.
-        const phasesDir = path.join(planDir, "phases");
-        const phaseFile = findPhaseFile(phasesDir, wt.currentPhase);
-        logNote(`[stop-gate] plan-context chain: phasesDir=${phasesDir}, phaseFile=${phaseFile ?? "null"}`);
-        if (phaseFile) {
-          try {
-            const phaseContent = fs.readFileSync(phaseFile, "utf8");
-            planContextBlock = `Current phase (Phase ${wt.currentPhase}) detail:\n${phaseContent}`;
-            logNote(`[stop-gate] plan-context chain: loaded phase ${wt.currentPhase} (${phaseContent.length} chars)`);
-          } catch (err) {
-            logNote(`[stop-gate] plan-context chain: phase file read failed — ${err.message}`);
-          }
-        }
+  if (session) {
+    const wtRaw = worktreeDiffs[0]?.path ?? "";
+    const wt = session.worktrees.find((w) => comparePaths(w.path, wtRaw));
+    const planSlug = wt?.currentPlan ?? null;
+    const planFile = wt?.planFile ?? null;
+    logNote(`[stop-gate] plan-context chain: wt=${wtRaw}, sessionMatch=${wt ? "found" : "miss"}, currentPlan=${planSlug ?? "null"}, planFile=${planFile ?? "null"}`);
+    if (planFile) {
+      try {
+        const planContent = fs.readFileSync(planFile, "utf8");
+        planContextBlock = `Current plan (${planSlug ?? "unknown"}) detail:\n${planContent}`;
+        logNote(`[stop-gate] plan-context chain: loaded plan ${planSlug ?? "?"} (${planContent.length} chars)`);
+      } catch (err) {
+        logNote(`[stop-gate] plan-context chain: plan file read failed — ${err.message}`);
       }
-    } else if (!planDir) {
-      logNote(`[stop-gate] plan-context chain: no plan dir found for branch "${branch}" under ${workspaceRoot}/plans/`);
-    } else if (!session) {
-      logNote(`[stop-gate] plan-context chain: planDir found but session is null`);
     }
   } else {
-    logNote(`[stop-gate] plan-context chain: skipped — branch=${branch ?? "undefined"}, workspaceRoot=${workspaceRoot || "empty"}`);
+    logNote(`[stop-gate] plan-context chain: skipped — session is null`);
   }
 
   let commitMessagesBlock = "";
@@ -189,7 +136,7 @@ function buildStopReviewPrompt(input = {}, worktreeDiffs = [], workspaceRoot = "
     WORKTREE_DIFFS_BLOCK: worktreeDiffsBlock,
     PLAN_CONTEXT_BLOCK: planContextBlock,
     COMMIT_MESSAGES_BLOCK: commitMessagesBlock,
-    WARNINGS_BLOCK: buildWarningsBlock(warnings),
+    WARNINGS_BLOCK: "",
   });
 }
 
@@ -333,41 +280,32 @@ function parseStopReviewOutput(rawOutput) {
 
 /**
  * When a BLOCK occurs in a plan-runner worktree context, build a directive
- * that tells the main session to re-dispatch the phase agent instead of
+ * that tells the main session to re-dispatch the plan agent instead of
  * fixing the code directly.
  *
  * Returns the directive string, or "" if not in a plan-runner context.
  */
-function buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, session = null) {
-  const branch = worktreeDiffs[0]?.branch;
-  if (!branch || !workspaceRoot) {
+function buildPlannerBlockDirective(worktreeDiffs, session = null) {
+  if (!session) {
     return "";
   }
 
-  const planDir = findPlanDirByBranch(workspaceRoot, branch);
-  if (!planDir) {
+  const wtRaw = worktreeDiffs[0]?.path ?? "";
+  const wt = session.worktrees.find((w) => comparePaths(w.path, wtRaw));
+  if (!wt?.currentPlan) {
     return "";
   }
 
-  // Read the current phase from the session (set by PostToolUse Agent hook).
-  let phaseTag = "the current phase";
-  if (session) {
-    const wtRaw = worktreeDiffs[0]?.path ?? "";
-    const wt = session.worktrees.find((w) => comparePaths(w.path, wtRaw));
-    if (wt?.currentPhase != null) {
-      phaseTag = `Phase ${wt.currentPhase}`;
-    }
-  }
-
+  const planTag = `Plan: ${wt.currentPlan}`;
   const wtPath = worktreeDiffs[0]?.path ?? "the worktree";
 
   const lines = [
     "",
     "---",
-    `[plan-runner: ${phaseTag}] 아래 순서로 검증 후 행동:`,
-    "1. phase 외 이슈 또는 테스트파일 관련 이슈 → 폐기",
+    `[plan-runner: ${planTag}] 아래 순서로 검증 후 행동:`,
+    "1. 현재 plan 범위 밖 이슈 또는 테스트파일 관련 이슈 → 폐기",
     "2. 남은 이슈가 실제로 코드에 존재하는지 직접 확인 → 사실과 다르면 폐기",
-    `3. 유효 이슈가 남으면 → ${phaseTag} 에이전트를 워크트리(${wtPath})에서 재디스패치, 커밋 후 턴 종료`,
+    `3. 유효 이슈가 남으면 → ${planTag} 에이전트를 워크트리(${wtPath})에서 재디스패치, 커밋 후 턴 종료`,
     "4. 모두 폐기되면 → 재디스패치 없이 그냥 턴 종료 (다음 stop-gate에서 ALLOW)",
   ];
   return lines.join("\n");
@@ -470,9 +408,9 @@ function markWorktreesReviewed(sessionId, worktreeDiffs) {
   }
 }
 
-async function runStopReview(cwd, input = {}, worktreeDiffs = [], workspaceRoot = "", session = null, warnings = []) {
+async function runStopReview(cwd, input = {}, worktreeDiffs = [], workspaceRoot = "", session = null) {
   const sessionId = input.session_id || process.env[SESSION_ID_ENV] || null;
-  const prompt = buildStopReviewPrompt(input, worktreeDiffs, workspaceRoot, session, warnings);
+  const prompt = buildStopReviewPrompt(input, worktreeDiffs, workspaceRoot, session);
   const existingThreadId = sessionId ? getStopReviewThreadId(sessionId) : null;
   const turnCwd = workspaceRoot || cwd;
   const turnOptions = { prompt, sandbox: "read-only", persistThread: true };
@@ -736,11 +674,7 @@ async function main() {
 
   const workspaceRoot = resolveWorkspaceRoot(cwd);
 
-  // Drain contract-drift warnings accumulated since the last stop-gate. Passing
-  // them to the reviewer lets Codex explain why phase context may be missing.
-  const warnings = sessionId ? consumeSessionWarnings(sessionId) : [];
-
-  const review = await runStopReview(cwd, input, worktreeDiffs, workspaceRoot, session, warnings);
+  const review = await runStopReview(cwd, input, worktreeDiffs, workspaceRoot, session);
 
   // Check for running jobs (informational note only).
   const jobs = sortJobsNewestFirst(
@@ -769,7 +703,7 @@ async function main() {
   let plannerDirective = "";
   let escalationNote = "";
   if (outcome === "block") {
-    plannerDirective = buildPlannerBlockDirective(worktreeDiffs, workspaceRoot, session);
+    plannerDirective = buildPlannerBlockDirective(worktreeDiffs, session);
     if (sessionId) {
       const fingerprint = fingerprintBlockReason(review.reason);
       const { count } = recordBlock(sessionId, fingerprint);

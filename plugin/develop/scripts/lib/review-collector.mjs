@@ -11,44 +11,6 @@ function sanitizeBranch(branch) {
 }
 
 /**
- * Scan plans/{name}/plan.md to find the directory whose Branch header matches the given branch.
- * Returns the plan directory path or null.
- */
-export function findPlanDirByBranch(workspaceRoot, branch) {
-  const plansRoot = path.join(workspaceRoot, "plans");
-  if (!fs.existsSync(plansRoot)) {
-    return null;
-  }
-
-  let entries;
-  try {
-    entries = fs.readdirSync(plansRoot, { withFileTypes: true });
-  } catch {
-    return null;
-  }
-
-  for (const entry of entries) {
-    if (!entry.isDirectory()) {
-      continue;
-    }
-    const planFile = path.join(plansRoot, entry.name, "plan.md");
-    if (!fs.existsSync(planFile)) {
-      continue;
-    }
-    try {
-      const head = fs.readFileSync(planFile, "utf8").slice(0, 512);
-      const match = head.match(/\*\*Branch:\*\*\s*(.+)/);
-      if (match && match[1].trim() === branch) {
-        return path.join(plansRoot, entry.name);
-      }
-    } catch {
-      continue;
-    }
-  }
-  return null;
-}
-
-/**
  * Resolve the main worktree root (the actual repo, not a linked worktree).
  */
 function resolveRepoRoot(cwd) {

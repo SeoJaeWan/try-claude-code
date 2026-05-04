@@ -10,17 +10,22 @@
 // function used by tests.
 // ---------------------------------------------------------------------------
 
-// Agent.description for a phase dispatch, e.g. "Phase 3: add JWT middleware".
-// The leading "Phase N" form is what PHASE_DESC_RE extracts.
-export function buildPhaseDescription(phaseNumber, shortSummary) {
-  return `Phase ${phaseNumber}: ${shortSummary}`;
+// Agent.description for a plan dispatch, e.g. "Plan: login-frontend".
+// The leading "Plan: <slug>" form is what PLAN_DESC_RE extracts.
+export function buildPlanDescription(planSlug) {
+  return `Plan: ${planSlug}`;
 }
 
-// Leading block of a phase-dispatch Agent.prompt. The "You are working in: ..."
-// line is what WORKTREE_PATH_RE extracts; any wording change must update the
-// regex too.
+// Leading block of a plan-dispatch Agent.prompt. The "You are working in: ..."
+// line is what WORKTREE_PATH_RE extracts; the "Read and execute the plan at:
+// ..." line is what PLAN_PATH_RE extracts. Any wording change must update the
+// regexes too.
 export function buildWorktreePromptHeader(worktreePath) {
   return `## Working directory\nYou are working in: ${worktreePath}\ncd to this directory before starting any work.`;
+}
+
+export function buildPlanPromptHeader(planFilePath) {
+  return `## Your plan\nRead and execute the plan at: ${planFilePath}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -28,13 +33,21 @@ export function buildWorktreePromptHeader(worktreePath) {
 // and Bash commands.
 // ---------------------------------------------------------------------------
 
-// Match "Phase 3" / "PHASE 10" / "phase 7:" etc. at the start of an
-// Agent.description string. Captures the phase number as group 1.
-export const PHASE_DESC_RE = /^Phase\s+(\d+)/i;
+// Match "Plan: <slug>" at the start of an Agent.description string. Captures
+// the slug as group 1. The slug must be a single non-whitespace token so the
+// regex stays anchored to a stable shape.
+export const PLAN_DESC_RE = /^Plan:\s*(\S+)/;
 
 // Match the "You are working in: <path>" line inside an Agent.prompt. Captures
-// the worktree path as group 1 (no surrounding quotes; whitespace-delimited).
-export const WORKTREE_PATH_RE = /You are working in:\s*(\S+)/;
+// the worktree path as group 1. Uses (.+?)\s*$ in multiline mode so paths with
+// spaces (e.g. "C:\My Documents\...") are captured correctly and trailing
+// whitespace / CRLF is absorbed.
+export const WORKTREE_PATH_RE = /You are working in:\s*(.+?)\s*$/m;
+
+// Match the "Read and execute the plan at: <path>" line inside an Agent.prompt.
+// Captures the absolute plan file path as group 1. Same shape as
+// WORKTREE_PATH_RE — handles paths with spaces and CRLF tails.
+export const PLAN_PATH_RE = /Read and execute the plan at:\s*(.+?)\s*$/m;
 
 // Match `git worktree add [-C <dir>] [-b <branch>] <path>` inside a Bash
 // command string. Captures (1) optional -C target, (2) optional branch name,
@@ -46,13 +59,3 @@ export const WORKTREE_ADD_RE =
 // optional -C target, (2) the worktree path.
 export const WORKTREE_REMOVE_RE =
   /git\s+(?:-C\s+(\S+)\s+)?worktree\s+remove\s+(?:--force\s+)?(\S+)/;
-
-// ---------------------------------------------------------------------------
-// Soft-match detectors — used by the match-failure warning layer to spot
-// format drift when a string "looks like" a phase dispatch or worktree line
-// but fails the primary regex. Positive matches here + negative matches on
-// the primary regex indicate the contract has drifted.
-// ---------------------------------------------------------------------------
-
-export const SOFT_PHASE_HINT_RE = /phase/i;
-export const SOFT_WORKTREE_PATH_HINT_RE = /\bwork(?:ing)?\s+dir|worktree\s+dir|working in/i;

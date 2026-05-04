@@ -2,11 +2,11 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  buildPhaseDescription,
+  buildPlanDescription,
+  buildPlanPromptHeader,
   buildWorktreePromptHeader,
-  PHASE_DESC_RE,
-  SOFT_PHASE_HINT_RE,
-  SOFT_WORKTREE_PATH_HINT_RE,
+  PLAN_DESC_RE,
+  PLAN_PATH_RE,
   WORKTREE_ADD_RE,
   WORKTREE_PATH_RE,
   WORKTREE_REMOVE_RE,
@@ -22,29 +22,32 @@ import {
 // contract.mjs — builder + regex round-trips
 // ---------------------------------------------------------------------------
 
-describe("buildPhaseDescription ↔ PHASE_DESC_RE round-trip", () => {
-  it("extracts the number that was built in", () => {
-    for (const n of [1, 3, 10, 42, 100]) {
-      const desc = buildPhaseDescription(n, "placeholder summary");
-      const match = desc.match(PHASE_DESC_RE);
+describe("buildPlanDescription ↔ PLAN_DESC_RE round-trip", () => {
+  it("extracts the slug that was built in", () => {
+    for (const slug of [
+      "login-frontend",
+      "backend-api",
+      "x",
+      "feature.with.dots",
+      "slug_with_underscores",
+    ]) {
+      const desc = buildPlanDescription(slug);
+      const match = desc.match(PLAN_DESC_RE);
       assert.ok(match, `no match for built description: ${desc}`);
-      assert.equal(Number(match[1]), n);
+      assert.equal(match[1], slug);
     }
-  });
-
-  it("tolerates case variations in the literal word Phase", () => {
-    assert.ok("PHASE 7: foo".match(PHASE_DESC_RE));
-    assert.ok("phase 7: foo".match(PHASE_DESC_RE));
   });
 
   it("rejects drift forms that would silently break the hook", () => {
     for (const drift of [
-      "[Phase 1] impl",       // bracket prefix
-      "1단계: 로그인 구현",    // Korean numeral
-      "Step 3: add",          // different noun
-      " Phase 5: leading ws",  // leading whitespace (anchor fails)
+      "[Plan: login]",        // bracket prefix
+      "plan: login",           // lowercase keyword
+      "Plan login",            // missing colon
+      " Plan: login",          // leading whitespace (anchor fails)
+      "PLAN-LOGIN",            // wrong separator
+      "plan-runner: login",    // different keyword
     ]) {
-      assert.equal(drift.match(PHASE_DESC_RE), null, `should NOT match: ${drift}`);
+      assert.equal(drift.match(PLAN_DESC_RE), null, `should NOT match: ${drift}`);
     }
   });
 });
@@ -55,12 +58,20 @@ describe("buildWorktreePromptHeader ↔ WORKTREE_PATH_RE round-trip", () => {
       "/repo/worktrees/task-a",
       "C:/Users/test/worktrees/x",
       "./worktrees/task-with-dashes",
+      "C:/Users/My Documents/worktrees/with-spaces",
     ]) {
       const header = buildWorktreePromptHeader(p);
       const match = header.match(WORKTREE_PATH_RE);
       assert.ok(match, `no match for: ${header}`);
       assert.equal(match[1], p);
     }
+  });
+
+  it("absorbs CRLF line endings cleanly", () => {
+    const header = buildWorktreePromptHeader("/repo/x").replace(/\n/g, "\r\n");
+    const match = header.match(WORKTREE_PATH_RE);
+    assert.ok(match);
+    assert.equal(match[1], "/repo/x");
   });
 
   it("rejects drift forms that reword the header", () => {
@@ -70,6 +81,38 @@ describe("buildWorktreePromptHeader ↔ WORKTREE_PATH_RE round-trip", () => {
       "## Working directory\nYou're working in: /repo/x",
     ]) {
       assert.equal(drift.match(WORKTREE_PATH_RE), null, `should NOT match: ${drift}`);
+    }
+  });
+});
+
+describe("buildPlanPromptHeader ↔ PLAN_PATH_RE round-trip", () => {
+  it("extracts the path that was built in", () => {
+    for (const p of [
+      "/repo/plans/login/frontend.plan.md",
+      "C:/Users/test/plans/x/plan.md",
+      "C:/Users/My Documents/plans/with spaces/plan.md",
+    ]) {
+      const header = buildPlanPromptHeader(p);
+      const match = header.match(PLAN_PATH_RE);
+      assert.ok(match, `no match for: ${header}`);
+      assert.equal(match[1], p);
+    }
+  });
+
+  it("absorbs CRLF line endings cleanly", () => {
+    const header = buildPlanPromptHeader("/repo/plans/x/plan.md").replace(/\n/g, "\r\n");
+    const match = header.match(PLAN_PATH_RE);
+    assert.ok(match);
+    assert.equal(match[1], "/repo/plans/x/plan.md");
+  });
+
+  it("rejects drift forms that reword the header", () => {
+    for (const drift of [
+      "## Your plan\nPlan path: /repo/plans/x/plan.md",
+      "## Your plan\n계획 파일: /repo/plans/x/plan.md",
+      "## Your plan\nExecute the plan: /repo/plans/x/plan.md",
+    ]) {
+      assert.equal(drift.match(PLAN_PATH_RE), null, `should NOT match: ${drift}`);
     }
   });
 });
@@ -109,20 +152,6 @@ describe("WORKTREE_REMOVE_RE", () => {
     const m = "git worktree remove --force worktrees/task-a".match(WORKTREE_REMOVE_RE);
     assert.ok(m);
     assert.equal(m[2], "worktrees/task-a");
-  });
-});
-
-describe("soft hints catch drift that the strict regex misses", () => {
-  it("flags phase-ish descriptions that fail PHASE_DESC_RE", () => {
-    const drift = "[Phase 1] impl login";
-    assert.equal(drift.match(PHASE_DESC_RE), null);
-    assert.ok(SOFT_PHASE_HINT_RE.test(drift));
-  });
-
-  it("flags worktree-path-ish prompts that fail WORKTREE_PATH_RE", () => {
-    const drift = "## Working directory\nWork directory: /repo/x";
-    assert.equal(drift.match(WORKTREE_PATH_RE), null);
-    assert.ok(SOFT_WORKTREE_PATH_HINT_RE.test(drift));
   });
 });
 
