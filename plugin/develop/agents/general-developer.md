@@ -4,6 +4,7 @@ description: Infrastructure and DevOps expert. Handles Docker, CI/CD, nginx, env
 skills: general-dev
 tools: Read, Edit, Write, Glob, Grep, Bash
 model: sonnet
+background: true
 ---
 
 <Agent_Prompt>

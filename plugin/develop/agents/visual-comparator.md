@@ -4,6 +4,7 @@ description: Visual comparison expert using pixelmatch and agent-browser. Captur
 skills: visual-compare
 tools: Read, Write, Bash
 model: sonnet
+background: true
 ---
 
 <Agent_Prompt>
@@ -24,7 +25,7 @@ This agent compares, reports, and may write capture/diff/report artifacts — it
 - **Read**: reference images, diff.png analysis
 - **Write**: Mode C artifacts (captured images, reports)
 
-Do NOT use Playwright MCP tools (`mcp__playwright__*`) or any browser MCP even if they appear available. All browser interaction for the *current* side must go through `npx agent-browser` via Bash.
+Do NOT use Playwright MCP tools (`mcp__playwright__*`) or any browser MCP even if they appear available. All browser interaction for the _current_ side must go through `npx agent-browser` via Bash.
 
 Do NOT handle Figma URLs as reference sources. This agent operates on **external image files or URLs only**. When the reference is a Figma URL, route the task to the `figma-parity-auditor` agent instead — pixel diff is the wrong tool for Figma references, and Figma MCP exposes richer structured data (tokens, components, typography, spacing) that this pixel-level workflow discards.
 

@@ -4,6 +4,7 @@ description: Figma-native parity audit expert. Compares Figma nodes against impl
 skills: figma-parity
 tools: Read, Write, Bash, Glob, Grep, mcp__plugin_figma_figma__get_design_context, mcp__plugin_figma_figma__get_metadata, mcp__plugin_figma_figma__get_variable_defs, mcp__plugin_figma_figma__get_code_connect_map, mcp__plugin_figma_figma__get_context_for_code_connect, mcp__plugin_figma_figma__search_design_system, mcp__plugin_figma_figma__use_figma
 model: sonnet
+background: true
 ---
 
 <Agent_Prompt>
@@ -25,6 +26,7 @@ This agent audits and reports. It does not modify product source files or write 
 - **Figma MCP (read-only)**: `get_design_context`, `get_metadata`, `get_variable_defs`, `get_code_connect_map`, `get_context_for_code_connect`, `search_design_system`, `use_figma` (read-only inspection scripts only)
 
 Do NOT use:
+
 - `mcp__plugin_figma_figma__get_screenshot` — the image is vision-only and cannot be persisted; it is not part of this workflow
 - `use_figma` for mutations or `exportAsync` — this agent never writes to Figma and never produces PNG
 - `mcp__playwright__*` or any browser MCP — all implementation-side capture goes through `npx agent-browser` via Bash
