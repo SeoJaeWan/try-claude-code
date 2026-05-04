@@ -71,7 +71,7 @@ test/{task-slug}
 - A type prefix is required
 - Use kebab-case only
 - Use exactly one slash (`/`) in the branch name
-- Reuse the owning executable plan folder name as the `task-slug`
+- Reuse the plan header `branch` value as the source of truth, and keep the branch summary mechanically related to `plan_slug`
 
 Examples:
 
@@ -87,26 +87,20 @@ X  feat/AddArchivePage
 
 ## Worktree Naming
 
-### Format
+### Rule
 
-```text
-{task-slug}
-```
-
-### Rules
-
-- Reuse the executable plan folder name as the worktree directory name
-- Reuse the branch summary as-is and do not include the branch type prefix
-- Do not invent a second summary; keep plan, branch summary, and worktree names mechanically linked
+- The executable plan file has one worktree execution unit.
+- The runner may sanitize the `branch` value for a filesystem directory name.
+- Do not invent a second human summary; keep `plan_slug`, `branch`, and any worktree display name mechanically linked.
 
 Examples:
 
 ```text
-Plan:     plans/windows-ui-taskbar-shell/plan.md
+Plan:     plans/windows-ui-taskbar-shell/frontend.plan.md
 Branch:   feat/windows-ui-taskbar-shell
 Worktree: windows-ui-taskbar-shell
 
-Plan:     plans/taskbar-01-overflow-hitbox/plan.md
+Plan:     plans/taskbar-overflow-hitbox/plan.md
 Branch:   fix/taskbar-01-overflow-hitbox
 Worktree: taskbar-01-overflow-hitbox
 ```

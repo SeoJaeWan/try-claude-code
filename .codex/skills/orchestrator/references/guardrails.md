@@ -1,6 +1,7 @@
 # Orchestrator Guardrails
 
-- Orchestrate only: do not substitute for request-scope locking, UI direction locking, `architect`, `plan-review`, or `plan-tdd`.
+- Orchestrate only: do not substitute for request-scope locking, UI direction locking, `architect`, or `plan-review`.
+- Do not invoke `brainstorm`; require the user or upstream context to provide the locked scope before this workflow starts.
 - Do not implement production code.
 - Do not create or rely on `state.json`, `clarification.md`, or `user-gate.md`.
 - Do not hardcode runtime-specific spawn mechanics into the skill contract.
@@ -8,27 +9,15 @@
 - Do not ask planning sub-agents to rediscover controller-owned authority or reinterpret missing paths into fresh authoritative inputs.
 - Do not pass open-ended discovery prompts in orchestrated handoff packets.
 - Do not ask `architect` to perform full-file Figma tree reads or to use Code Connect tools as Figma inventory evidence.
-- Do not let `orchestrator` classify Figma component families; it may only prepare and verify snapshot artifacts for `architect`.
+- Do not let `orchestrator` classify Figma component families; it may only pass through controller-verified snapshot artifacts when already available.
 - Do not route missing Figma tool data as a user decision unless the user must choose the root nodes or inventory scope.
-- Do not trust stale review or TDD artifacts after `plan_signature` changes.
-- Do not skip submitted developer review approval.
-- Do not show raw `plan.md` or phase markdown as the primary developer review surface.
-- Do not treat UI previews as implemented behavior; they are only visual planning previews.
-- Do not let the `plan-review` reviewer pass edit plans or write any file except the required `review.md` artifact.
-- Do not let the `plan-tdd` pass patch plan ambiguity with tests.
+- Do not trust stale review artifacts after `plan_signature` changes.
+- Do not let the `plan-review` reviewer edit plans or write any file except the required `review.md` artifact.
 - Do not abandon a still-progressing role pass just because an initial short wait expired.
 - Do not respawn duplicate planning sub-agents for the same unchanged handoff when the earlier pass is still running and making recent progress.
 - Do not bypass review after architect revisions.
-- Do not reuse approval after the plan changes unless the current review item signature still matches and the browser review is submitted again.
-- Do not route non-approved developer review feedback directly to `architect` from status labels alone.
 - Do not treat `question` as automatically meaning `architect`.
-- Do not continue to TDD while any required developer review step or card is not `approved`.
-- Do not leave answer-only feedback in the same submitted non-approved state after you answered it; reset or regenerate the review package before asking for re-review.
-- Do not lose prior review comments and controller responses when resetting same-signature feedback or regenerating the developer review package.
-- Do not use `feedback.json` as both the editable live-review state and the historical review/action log.
-- Do not turn raw developer review comments into plan wiki pattern rules before triage and generalization.
-- Do not let developer review learning capture become a hidden TDD approval gate.
-- Do not respawn request-scope, UI-spec, `architect`, or tdd role agents by reflex when a compatible live role agent already exists.
+- Do not respawn `architect` by reflex when a compatible live role agent already exists.
 - Do not reuse the prior `plan-review` reviewer by default; cold review stays fresh.
 - Do not keep looping silently when the same signature repeats with no plan progress.
 - Do not collapse invocation, protocol, and artifact-writeback failures into one generic stall.

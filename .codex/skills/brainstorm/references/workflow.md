@@ -12,6 +12,7 @@ Identify what is clear vs unclear:
 - Missing product-policy decisions across data model, business rules, UX behavior, permissions, validation, state/error handling, and accessibility expectations
 - Missing test-strategy decisions that would change planning under the active plan wiki decision policy
 - Touched work bundles such as components, hooks, routes, screens, or services
+- Required execution-agent boundary and explicitly excluded execution areas
 - Touched public boundaries such as props, callbacks, inputs, outputs, observable behavior, state ownership, and explicit exclusions
 
 Rules:
@@ -48,6 +49,7 @@ Read only what is needed:
 - Legacy `./.codex/artifacts/design-discovery/**` artifacts only as read-only compatibility input when directly relevant
 - `./.codex/` references only when they directly constrain this workflow
 - `./.codex/plan-wiki/sync/current/core/common/용어-정책.md` when producing request-lock or artifact handoff text
+- `./.codex/plan-wiki/sync/current/core/common/실행-라우팅.md` when the request needs execution-area locking
 
 Do not assume or depend on `./.ai/` or any other external AI metadata directory.
 Prefer related-artifact lookup before asking the user to restate a prior decision.
@@ -80,6 +82,7 @@ Use the preflight only to:
 
 - classify missing information as `blocking`, `derivable`, or `deferrable`
 - public boundary contract, state, ownership, exclusion, and no-op questions that would later block planning
+- required execution areas and excluded execution areas that would later control which plan files are written
 - test-strategy questions that would later make planning or TDD authoring guess
 - capture applicable pattern guidance that narrows the confirmation questions or request-lock tables
 
@@ -89,6 +92,8 @@ Do not use the preflight to:
 - assign `owner_agent`
 - enforce `plan.md` formatting
 - decide concrete source-tree test files, runner placement, execution routing, or review outcomes
+
+Execution-area locking decides the required work areas and exclusions, not the final plan files. For example, lock "frontend only; backend and database are excluded because an existing API is in scope" instead of drafting `frontend.plan.md`.
 
 ### 4. Research latest information when needed
 
@@ -169,7 +174,13 @@ Apply the active plan wiki `core/common/용어-정책.md` to all human-readable 
    - `유지되는 것`
    - `관련 영역`
 
-3. `공개 경계 표`
+3. `실행 영역 표`
+   - `실행 영역`
+   - `이번 판단`
+   - `근거`
+   - `제외 또는 포함 이유`
+
+4. `공개 경계 표`
    - `대상`
    - `공개 경계`
    - `상태 소유권`
@@ -178,7 +189,7 @@ Apply the active plan wiki `core/common/용어-정책.md` to all human-readable 
 
 Optional table when exclusions matter:
 
-4. `제외 항목 표`
+5. `제외 항목 표`
    - `항목`
    - `처리`
    - `이유`
@@ -186,7 +197,7 @@ Optional table when exclusions matter:
 
 Optional table when state rules matter:
 
-5. `상태 소유권 표`
+6. `상태 소유권 표`
    - `대상`
    - `소유자`
    - `규칙`
@@ -194,7 +205,7 @@ Optional table when state rules matter:
 
 Optional table when test strategy changes planning or acceptance:
 
-6. `테스트 전략 잠금 표`
+7. `테스트 전략 잠금 표`
    - `목표 또는 위험`
    - `잠글 검증`
    - `검증 단위` (`unit`, `Component Test`, `E2E`, `command`, `manual/visual`)
@@ -206,7 +217,7 @@ Optional table when test strategy changes planning or acceptance:
 
 Optional table when plan wiki preflight matters:
 
-7. `plan wiki preflight 메모`
+8. `plan wiki preflight 메모`
    - `검토 기준`
    - `이번에 잠근 내용`
    - `계획 입력 메모`
@@ -214,14 +225,14 @@ Optional table when plan wiki preflight matters:
 
 Optional tables for diagnostic-lock path:
 
-8. `진단 기준선 표`
+9. `진단 기준선 표`
    - `조사 경계`
    - `권위 기준`
    - `현재 확인 대상`
    - `확인한 증거`
    - `남은 공백`
 
-9. `차이 후보 표`
+10. `차이 후보 표`
    - `대상`
    - `확인된 차이`
    - `근거`
@@ -252,6 +263,7 @@ Include:
 
 - `요청 대응표`
 - `작업 묶음 표`
+- `실행 영역 표`
 - `공개 경계 표`
 - `상태 소유권 표` when relevant
 - `테스트 전략 잠금 표` when test strategy changes planning or acceptance
@@ -300,13 +312,14 @@ When planning is needed and scope is decision-complete enough for planning, prov
 
 1. The locked `요청 대응표`
 2. The locked `작업 묶음 표`
-3. The locked `공개 경계 표`
-4. Any `상태 소유권 표`, `테스트 전략 잠금 표`, or `제외 항목 표` that matters to planning
-5. The durable request-lock artifact path
-6. Explicit defaults or deferred low-risk choices
-7. Diagnostic baseline findings that subsequent planning input should treat as already surfaced, including evidence gaps and confirmed differences when diagnostic-lock path was used
-8. Plan wiki preflight findings that subsequent planning input should treat as already surfaced, or an explicit note that the preflight could not run because the plan wiki root was missing
-9. Context7-confirmed external facts that subsequent planning input should treat as already resolved, plus any still-risky assumptions that may require fallback verification
+3. The locked `실행 영역 표`
+4. The locked `공개 경계 표`
+5. Any `상태 소유권 표`, `테스트 전략 잠금 표`, or `제외 항목 표` that matters to planning
+6. The durable request-lock artifact path
+7. Explicit defaults or deferred low-risk choices
+8. Diagnostic baseline findings that subsequent planning input should treat as already surfaced, including evidence gaps and confirmed differences when diagnostic-lock path was used
+9. Plan wiki preflight findings that subsequent planning input should treat as already surfaced, or an explicit note that the preflight could not run because the plan wiki root was missing
+10. Context7-confirmed external facts that subsequent planning input should treat as already resolved, plus any still-risky assumptions that may require fallback verification
 
 If planning is needed but `./.codex/plan-wiki/sync/current` is missing or unreadable, state that plan wiki setup is required before planning.
 

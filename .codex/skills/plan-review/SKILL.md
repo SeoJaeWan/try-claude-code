@@ -1,11 +1,11 @@
 ---
 name: plan-review
-description: Artifact-only critical review skill for executable `./plans/**/plan.md` artifacts and linked phase detail files. Use when Codex needs an independent cold review before execution, checking active plan artifact contract compliance, Korean-first visible prose terminology, user-request traceability, blocking ambiguity, topology quality, owner routing, scenario-level technical input/output contracts, UI decision completeness when relevant, TDD authoring readiness, and registry-selected plan wiki guidance without rewriting the plan.
+description: Artifact-only critical review skill for self-contained executable plan files under `./plans/**`. Use when Codex needs an independent cold review before execution, checking active plan wiki contract compliance, YAML plan header validity, plan self-containment, Korean-first visible prose terminology, user-request traceability, blocking ambiguity, owner routing, scenario-level contracts, UI decision completeness when relevant, and verification readiness without rewriting the plan.
 ---
 
 # Plan Review
 
-Cold-review one executable plan and write the required review artifact. Keep `SKILL.md` as the entrypoint; load detailed policy from references and the active plan wiki.
+Cold-review one executable plan file and write the required review artifact. Keep `SKILL.md` as the entrypoint; load detailed policy from references and the active plan wiki.
 
 ## Required Reading
 
@@ -24,6 +24,6 @@ Read repo-local execution contracts only when the reviewed plan makes concrete r
 - Review-write-only: do not edit plans, source code, tests, wiki files, or helper notes.
 - Write exactly one artifact: `./plans/_orchestrator/review/{task-slug}/review.md`.
 - Treat the resolved plan wiki registry, stage core docs, and selected patterns as mandatory review input.
-- Review the current plan files from disk; do not trust stale chat memory or prior review metadata.
+- Review the current plan file from disk; do not trust stale chat memory or prior review metadata.
 - Report findings first, ordered by severity.
 - Do not rewrite the plan inside the review skill.

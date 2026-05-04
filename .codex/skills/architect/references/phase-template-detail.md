@@ -1,56 +1,13 @@
-# 단계 {n}. {단계 제목}
+# Legacy Phase Detail Template
 
-- owner_agent: `{agent-name}`
+This reference is retained only for narrow legacy-plan review or migration work.
 
-## 목표와 완료 신호
+New plans must not create linked phase detail files by default. New executable plans follow the active plan wiki plan artifact contract and keep all execution context inside one self-contained plan file per `owner_agent`.
 
-| 항목 | 내용 |
-| --- | --- |
-| 목표 | {이번 단계가 남기는 구체적 결과} |
-| 선행 조건 | {직전 단계 또는 로컬 선행 계약. 없으면 `none`} |
-| output | {단계 완료 후 다음 단계나 사용자에게 제공되는 표준 출력} |
-| 완료 신호 | {리뷰어/실행자가 확인할 수 있는 완료 상태} |
+Use this file only when:
 
-## 작업 흐름
+- an existing legacy `plan.md + phases/*` artifact must be read to understand prior work.
+- the user explicitly asks to migrate or compare a legacy phase-detail plan.
+- a review finding refers to a legacy phase detail path and the current task is to preserve that evidence.
 
-| 순서 | 작업 | 이유 | 완료 조건 |
-| --- | --- | --- | --- |
-| 1 | {작업} | {이 순서가 필요한 이유} | {완료 조건} |
-| 2 | {작업} | {이 순서가 필요한 이유} | {완료 조건} |
-
-## 변경 경계
-
-| `boundary` (변경 경계) | 변경 내용 | 유지할 것 | 제약 |
-| --- | --- | --- | --- |
-| `{변경-경계-이름}` | {변경할 동작/구조} | {건드리지 않을 경계} | {제약. 없으면 `없음`} |
-| `{변경-경계-이름}` | {변경할 동작/구조} | {건드리지 않을 경계} | {제약. 없으면 `없음`} |
-
-## 시나리오 / 계약
-
-| scenario_id | scenario (시나리오) | input | output | negative/no-op | owner | 검증 단위 | 관찰 지점 | 식별자 정책 | E2E 선택 이유 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `{phase-slug}-s01` | {시나리오/트리거} | {입력, 사전 조건, 시작 상태} | {반드시 발생해야 하는 표준 출력} | {발생하면 안 되는 출력 또는 no-op 규칙} | {상태/API/component/test 소유자} | {`unit` / `Component Test` / `E2E` / `command` / `manual/visual`} | {테스트나 명령이 관찰할 최종 출력} | {role/label, existing test id, planned `data-testid`/`testID`, route marker, 또는 `none`} | {E2E가 아니면 `not applicable`. E2E면 핵심 여정, auth/session, cross-route, redirect, persisted browser state, browser-only behavior 등} |
-| `{phase-slug}-s02` | {시나리오/트리거} | {입력, 사전 조건, 시작 상태} | {반드시 발생해야 하는 표준 출력} | {발생하면 안 되는 출력 또는 no-op 규칙} | {상태/API/component/test 소유자} | {`unit` / `Component Test` / `E2E` / `command` / `manual/visual`} | {테스트나 명령이 관찰할 최종 출력} | {role/label, existing test id, planned `data-testid`/`testID`, route marker, 또는 `none`} | {E2E가 아니면 `not applicable`. E2E면 핵심 여정, auth/session, cross-route, redirect, persisted browser state, browser-only behavior 등} |
-
-> 시각 비교 인수가 이 단계의 일부라면 비교 모드, 차단 기준 지표, 참고 지표, 비교 정책, 지표 처리를 이 섹션의 별도 행이나 짧은 보조 표로 추가한다. 그대로 맞춰야 하는 표준 ID는 코드 표기로 남긴다.
-
-## 파일 영향
-
-| 파일 | 작업 방식 | 완료 조건 |
-| --- | --- | --- |
-| `path/to/file` | {변경 / 연결 / 확인 / 비공개} | {파일 기준 완료 상태} |
-| `path/to/file` | {변경 / 연결 / 확인 / 비공개} | {파일 기준 완료 상태} |
-
-## 검증
-
-| 검증 항목 | 검증 단위 | 확인 수단 | 기대 결과 |
-| --- | --- | --- | --- |
-| {검증이 필요한 계약 또는 상태} | {`unit` / `Component Test` / `E2E` / `command` / `manual/visual`} | {테스트 / story / 비교 / 소스 확인 / 명령} | {기대 결과} |
-| {검증이 필요한 계약 또는 상태} | {`unit` / `Component Test` / `E2E` / `command` / `manual/visual`} | {테스트 / story / 비교 / 소스 확인 / 명령} | {기대 결과} |
-
-## 리스크 / 주의점
-
-| 리스크 | failure/validation | 대응 |
-| --- | --- | --- |
-| {실패 가능성 또는 edge case} | {어떤 실패를 어떻게 확인할지} | {완화, 차단 조건, 후속 조치} |
-| {실패 가능성 또는 edge case} | {어떤 실패를 어떻게 확인할지} | {완화, 차단 조건, 후속 조치} |
+Do not use this reference to draft new plan artifacts.

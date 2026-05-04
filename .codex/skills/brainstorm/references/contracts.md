@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Clarify ambiguous requests or establish bounded diagnostic baselines by locking the user's requested outcome, affected work bundles, public boundaries, ownership rules, exclusions, test strategy decisions, current-state evidence, and pre-planning risk areas in the user's own language before planning starts.
+Clarify ambiguous requests or establish bounded diagnostic baselines by locking the user's requested outcome, affected work bundles, public boundaries, execution-agent boundary, ownership rules, exclusions, test strategy decisions, current-state evidence, and pre-planning risk areas in the user's own language before planning starts.
 
 ## Entry Notes
 
@@ -17,6 +17,7 @@ Use this as the entrypoint when ambiguity or unknown current-system state can ch
 - Acceptance criteria are missing or vague.
 - Test strategy choices governed by the active plan wiki decision policy can change the later plan.
 - Public props, callback names, state ownership, or exclusions are still unclear.
+- Required execution areas or excluded execution areas are unclear, such as whether a request needs only frontend work, backend work, infra work, visual audit work, or no implementation plan at all.
 - User-visible screens, layout, hierarchy, or state presentation are changing and the UI direction is still fuzzy.
 - The user wants clarification questions before committing to a plan.
 - Existing implementation, design-system, docs, runtime, preview, API, or visual parity problems must be diagnosed before the planning scope can be locked.

@@ -18,16 +18,17 @@
 - Read `{plan_wiki_root}/registry.json`.
 - Read every core document listed in `stage_core.review`; if absent, read the registry `core` array.
 - Select candidate patterns using registry `selection.review`, `domain_taxonomy`, and `adjacency_rules`; always include `common`, then add touched domains only.
-- Read only selected pattern files whose `적용 조건` actually match the reviewed plan or phase detail files.
+- Read only selected pattern files whose `적용 조건` actually match the reviewed plan file.
 - Read the active plan wiki `core/common/용어-정책.md` before drafting findings.
 
 ### Step 1. Load the plan
 
-- Review one executable `plan.md` at a time.
-- Load every phase detail file linked from that `plan.md`.
+- Review one executable plan file at a time.
+- Load the target plan file from disk and parse only its YAML frontmatter enough to confirm `plan_slug`, `branch`, and `owner_agent` are present.
+- Do not load linked phase detail files as part of the current contract. Legacy phase detail paths are evidence only when the task explicitly targets legacy migration or review.
 - Derive user-request items from the latest user request, upstream request-lock handoff, and the reviewed plan.
-- Treat the plan summary, linked phase details, active plan wiki guidance, and user request as the source of truth.
-- If a phase detail names a local prerequisite plan in `선행 조건`, inspect only that direct prerequisite and the minimum upstream phase needed to verify parity.
+- Treat the plan file, active plan wiki guidance, and user request as the source of truth.
+- If the plan names a local prerequisite plan, inspect only that direct prerequisite and the minimum needed to verify parity. Do not require prerequisite files to complete the reviewed plan's execution meaning.
 - When Figma-derived artifacts are in scope, require manifest-backed provenance as specified by the active plan wiki authority guidance and the reviewed plan.
 
 ### Step 2. Challenge the plan shape
@@ -36,8 +37,9 @@ Before the main review, check whether the plan shape itself is justified:
 
 - existing code, flow, or policy that already solves part of the request.
 - simpler repo-local patterns or framework built-ins.
-- over-split or under-split plan topology.
+- over-split or under-split plan-file topology.
 - new abstractions, services, or boundaries that are not justified by the request or repo fit.
+- execution-agent selection that does not match the upstream locked execution areas.
 
 Treat scope-challenge findings as normal review evidence.
 
@@ -47,16 +49,15 @@ Judge the plan against:
 
 - active plan wiki core docs and selected patterns.
 - active plan wiki plan artifact contract.
+- required YAML frontmatter and valid `owner_agent` routing.
+- plan self-containment for one execution agent.
 - user-request traceability.
-- summary/detail parity.
 - blocking ambiguity.
-- topology and plan-count justification.
-- `owner_agent` routing.
+- plan-count justification when multiple plan files exist.
 - scenario-level `input -> output` contract completeness.
 - affected public boundaries, exclusions, no-op rules, recipients, and final interpretation boundaries.
-- stable `scenario_id` coverage for phase-local `시나리오 / 계약` rows.
 - first-time test runner, command, spec root, source/test topology, mock/API fixture policy, storage/auth state policy, and expected red reason when implementation-first setup does not already exist.
-- verification realism and TDD readiness.
+- verification realism and readiness.
 - UI direction completeness when UI scope exists.
 - reference-based visual comparison, Figma parity, or Figma inventory provenance when in scope.
 
@@ -91,17 +92,17 @@ Required frontmatter keys:
 - `finding_signature`
 - `requires_user_decision`
 - `issue_codes`
-- `affected_phase_paths`
+- `affected_plan_paths`
 
 Rules:
 
 - preserve an orchestrator-provided current `plan_signature`.
 - compute signatures from the current plan and finding set when not provided.
 - set `requires_user_decision: true` only when a fresh user decision is required.
-- set `next_action: plan_revision` for `blocked`; otherwise `developer_review`.
+- set `next_action: plan_revision` for `blocked`; otherwise `planning_complete`.
 
 ### Step 7. Respond in chat
 
 - Present findings first, ordered by severity.
-- Reference the reviewed `plan.md`, relevant phase detail files, and the written `review.md`.
-- State clearly whether execution should proceed, requires plan revision, or can continue to developer review with findings.
+- Reference the reviewed plan file and the written `review.md`.
+- State clearly whether the plan requires revision or is planning-complete from the cold-review perspective.

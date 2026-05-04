@@ -1,4 +1,4 @@
 interface:
   display_name: "Brainstorm"
   short_description: "Lock ambiguous or diagnostic problem scope before planning."
-  default_prompt: "Use $brainstorm to run Korean-first request locking, compare viable directions, perform bounded diagnostic inventory when existing-system problems must be understood first, and hand off only decision-complete scope to planning."
+  default_prompt: "Use $brainstorm to run Korean-first request locking, compare viable directions, lock required/excluded execution areas, perform bounded diagnostic inventory when existing-system problems must be understood first, and hand off only decision-complete scope to planning."

@@ -1,4 +1,4 @@
 interface:
   display_name: "Architect"
   short_description: "Create readable overview-first implementation plans."
-  default_prompt: "Use $architect to resolve blocking ambiguity and produce Korean-first readable sequential plans with request scope, change shape, locked contracts, lean phase flow, risks, and linked detail files under ./plans without duplicating phase-local detail in plan.md."
+  default_prompt: "Use $architect to produce Korean-first self-contained executable plan files under ./plans from already locked request scope, execution areas, public contracts, verification responsibilities, and exclusions."

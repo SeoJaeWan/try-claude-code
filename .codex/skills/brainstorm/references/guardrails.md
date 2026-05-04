@@ -11,6 +11,7 @@
 - Do not depend on `./.ai/` or other external AI metadata directories.
 - Keep brainstorm-owned artifacts under `./.codex/`.
 - Do not let plan wiki preflight expand `brainstorm` into phase topology, execution routing, or review-authoring work.
+- Do not write plan files, plan headers, or final `owner_agent` values; lock only the required/excluded execution areas that planning must respect.
 - Do not turn test strategy locking into source-tree test design; lock only the decisions required by the active plan wiki decision policy.
 - Do not treat a partial example scan as bounded full-surface inventory.
 - Do not jump from diagnostic findings to implementation fixes during brainstorm.
@@ -18,6 +19,7 @@
 - Do not treat tool-specific output as authoritative by itself when the request depends on broader current-system state.
 - Do not ask the user questions that a bounded diagnostic pass can answer from local context.
 - If touched public props, callbacks, or state ownership are part of the request, lock them before handoff unless the user explicitly defers them.
+- If the request might be frontend-only, backend-only, full-stack, infra-only, visual-audit-only, or docs-only, lock that execution boundary before handoff unless the user explicitly defers it.
 - If test strategy choices would change the plan, lock the needed verification responsibility before handoff unless the user explicitly defers that choice.
 - If first-time TDD, future source/test topology, mock API, browser storage, or seeded state affects planning, lock those decisions before marking the request `ready_for_planning`.
 - Do not leave a `ready_for_planning` request-lock only in chat; write the durable brainstorm artifact or state the artifact-write blocker.
