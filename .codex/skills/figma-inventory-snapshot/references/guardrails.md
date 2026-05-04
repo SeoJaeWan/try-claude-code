@@ -1,14 +1,21 @@
 # Figma Inventory Snapshot Guardrails
 
-- Do not classify components or write planning decisions.
+- Do not classify components, write planning decisions, or infer a design-system registry.
 - Do not modify Figma.
-- Do not use Code Connect tools as a full tree inventory substitute.
+- Do not hardcode project-specific page names, section names, component names, style names, variable collection names, or category names.
+- Do not extract from predefined categories before discovering the actual file tree, pages, sections, frames, component sets, components, styles, variables, assets, naming patterns, and hierarchy.
+- Do not use Code Connect tools as a full tree, style, variable, or component recipe inventory substitute.
 - Do not treat Code Connect permission errors as proof that Figma tree metadata is unavailable.
-- Do not perform full-file tree reads when the task names root nodes or pages.
-- Do not use `use_figma` to recursively inventory multiple roots, pages, sections, or component trees.
-- Do not treat truncated or transport-limited tool output as a valid snapshot source.
-- Do not report `wrote_snapshot` until every successful root or shard is written to `snapshots/*.json` and referenced from `manifest.json`.
-- Do not fill required paths from previous parity reports, package registries, or memory.
-- Do not merge stale and fresh snapshots without recording root-level provenance.
-- Do not hide missing roots inside `summary.md`; record them in `manifest.json`.
-- Do not ask the user for tool failures, access failures, timeout failures, or missing shard data unless a user decision is actually needed.
+- Do not perform full-file recursive tree reads when discovery indexes, page reads, section reads, component-set reads, variable-collection reads, style reads, or child node shards can satisfy the request.
+- Do not use `use_figma` to recursively inventory multiple roots, pages, sections, component trees, styles, or variables.
+- Do not treat truncated, invalid, incomplete, timeout, oversize, or near-transport-limit tool output as a valid snapshot source.
+- Do not keep a discarded truncated response as evidence except for a small blocker excerpt that proves why the shard is blocked.
+- Do not report `complete` until every discovered target required by the current scope is represented by parseable JSON and referenced from `manifest.json`.
+- Do not report `complete` when `manifest.coverage.missing`, `componentRecipesMissing`, `invalidJsonFiles`, or `incompleteShards` contains entries.
+- Do not mark a component set complete from prop names, controls, or variant labels alone; extract variant node recipes when variant node ids are observable.
+- Do not treat missing optional node fields as failures. Store exposed fields in `observedProperties` and omit absent fields.
+- Do not store Markdown as the primary snapshot evidence. Markdown is summary-only.
+- Do not fill required paths, variables, styles, component recipes, or coverage from previous parity reports, package registries, summaries, or memory.
+- Do not merge stale and fresh snapshots without recording shard-level provenance.
+- Do not hide missing roots, missing shards, missing styles, missing variables, or missing component recipes inside `summary.md`; record them in `manifest.json`.
+- Do not ask the user for tool failures, access failures, timeout failures, response truncation, or missing shard data unless a user decision is actually needed.
