@@ -89,6 +89,7 @@ Do not deep-dive into implementation details or write source-tree tests.
 - Treat concrete paths in phase detail `파일 영향` as committed topology; omit or block when still tentative.
 - Treat concrete future source paths, route paths, test paths, and spec roots as committed topology only when the plan intentionally uses TDD to define that future structure.
 - Keep each phase detail precise enough that an owner agent and TDD authoring can act without guessing.
+- After drafting `plan.md` and phase detail files, run the active `용어-정책.md` writing pass on all human-readable prose. Translate avoidable English shorthand outside code spans, and keep English only when it has a literal identifier reason.
 
 ### Step 6. Choose plan count
 
@@ -120,7 +121,7 @@ If the plan includes implementation scope beyond documentation-only or structura
 ### Step 9. Run quality gates
 
 - Run the active plan wiki quality gate checklist before finalizing.
-- Re-check selected patterns, plan/phase parity, request traceability, public contracts, verification ownership, related-plan lineage, authority artifacts, and execution handoff requirements.
+- Re-check selected patterns, terminology policy compliance, plan/phase parity, request traceability, public contracts, verification ownership, related-plan lineage, authority artifacts, and execution handoff requirements.
 - Fix critical self-review findings before handoff.
 - If a required wiki registry, core doc, or pattern cannot be read, treat that as a failed quality gate.
 

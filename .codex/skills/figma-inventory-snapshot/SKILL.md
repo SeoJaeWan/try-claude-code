@@ -1,6 +1,6 @@
 ---
 name: figma-inventory-snapshot
-description: Capture bounded, controller-verified Figma node tree inventory snapshots as local evidence artifacts, including resumable checkpointed hash-run collection for large or multi-hundred-node inventories. Use when Codex needs a full or partial Figma hierarchy, component-set list, variant names, Resource/* entries, platform markers, or other Figma inventory evidence for planning input, parity realignment, design-system registry classification, or artifact handoff; especially when full-file reads may timeout, tool quota may pause collection, or Code Connect permissions are insufficient.
+description: Capture bounded, controller-verified Figma node tree inventory snapshots as local evidence artifacts. Use when Codex needs a full or partial Figma hierarchy, component-set list, variant names, Resource/* entries, platform markers, or other Figma inventory evidence for planning input, parity realignment, design-system registry classification, or artifact handoff; especially when full-file reads may timeout or Code Connect permissions are insufficient.
 ---
 
 # Figma Inventory Snapshot
@@ -12,9 +12,8 @@ Create compact, manifest-backed Figma inventory artifacts. This skill captures t
 Read these references in order whenever this skill runs:
 
 1. [references/contracts.md](references/contracts.md) for input/output shape, artifact schema, freshness, and blocker contract.
-2. [references/checkpointed-collection.md](references/checkpointed-collection.md) for resumable hash-run, queue, batch, index, and manifest rebuild rules.
-3. [references/workflow.md](references/workflow.md) for bounded Figma read and snapshot writing steps.
-4. [references/guardrails.md](references/guardrails.md) for non-negotiable source and inference rules.
+2. [references/workflow.md](references/workflow.md) for bounded Figma read and snapshot writing steps.
+3. [references/guardrails.md](references/guardrails.md) for non-negotiable source and inference rules.
 
 ## Controller Rules
 
@@ -25,7 +24,5 @@ Read these references in order whenever this skill runs:
 - Do not use Code Connect, component mapping, suggestion, or code-component inventory tools as proof of full Figma tree completeness.
 - Do not perform one full-file tree read when scoped root reads, page reads, or section reads can satisfy the request.
 - Write artifacts under `./.codex/artifacts/figma-inventory/{task_slug}/`.
-- Use checkpointed collection under `runs/{collectionHash}/` when the root/shard frontier is large, tool quota may pause collection, or prior passes already produced partial snapshots.
-- Let batch workers write only under their own `batches/{batchHash}/` directory. Rebuild `snapshot-index.json`, `manifest.json`, and `summary.md` from stored snapshots instead of incrementally editing the manifest during collection.
 - Preserve source provenance: `fileKey`, root node ids, root names, schema version, generated time, and per-root status must appear in `manifest.json`.
-- Return `paused_retryable` when collection stopped only because of quota, timeout budget, or batch limit and a saved queue can resume. Return a tool/data blocker with `needs_user_input: false` only when required Figma data cannot be captured or split further by available tools.
+- Return a tool/data blocker with `needs_user_input: false` when required Figma data cannot be captured by available tools.

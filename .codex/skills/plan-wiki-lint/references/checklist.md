@@ -32,7 +32,7 @@ Lint the plan wiki for routing integrity, evidence integrity, Korean docs-first 
 - every promoted pattern includes routing fields `domains` and `domain_tags`, with optional `stages` and `risks`
 - every promoted pattern's `tags` list mirrors its routing fields with `plan-wiki/domain/{domain}`, `plan-wiki/{domain}/{tag}`, `plan-wiki/stage/{stage}`, and `plan-wiki/risk/{risk}`
 - every promoted pattern body includes `개요`, `문제`, `적용 조건`, `해야 할 것`, `피해야 할 것`, `적용 예시`, `판단 근거`, and `관련 문서`
-- human-readable prose is Korean-first; avoidable mixed phrases such as `user action`, `surface`, `boundary`, `contract`, `validation`, `state`, `phase`, and `owner` are translated unless they are code/API/schema/path/tag tokens
+- human-readable prose follows the active `core/common/용어-정책.md`; English remains only when it has a literal identifier exception
 - every promoted pattern `## 관련 문서` section links to all `domain_tags` graph pages and all `raw_sources`
 - every raw document has a `## 관련 문서` section with a plain status value
 - every promoted or pattern-referenced raw document `## 관련 문서` section links back to every matching pattern and does not link directly to domain or tag pages
