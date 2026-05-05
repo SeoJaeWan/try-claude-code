@@ -51,9 +51,9 @@ test("writes developer review package as UTF-8 and preserves Korean text", () =>
 
 ## 실행 흐름
 
-| Phase | 목적 | 주요 변경 | 완료 신호 | 상세 문서 |
-| --- | --- | --- | --- | --- |
-| 단계 1. 생성기 | UTF-8 패키지를 만든다 | Node 생성기 추가 | JSON에 한글 보존 | \`./phases/01-core.md\` |
+| Phase | 목적 | 주요 변경 | 완료 신호 | 검증 | 커밋 경계 | 상세 문서 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 단계 1. 생성기 | UTF-8 패키지를 만든다 | Node 생성기 추가 | JSON에 한글 보존 | JSON 파싱으로 한글 문자열을 확인한다 | phase 1: generate review package | \`./phases/01-core.md\` |
 
 ## 리스크와 검증
 
@@ -158,8 +158,13 @@ affected_phase_paths: []
 
   const reviewData = JSON.parse(raw.toString("utf8"));
   assert.equal(reviewData.title, "한글 리뷰 패키지");
+  assert.equal(reviewData.post_approval_next_action, "plan-tdd");
+  assert.equal(reviewData.post_approval_next_label, "다음 단계: $plan-tdd");
+  assert.match(reviewData.post_approval_next_summary, /TDD 계약 테스트/);
   assert.equal(reviewData.overview.user_request[0], "한글이 깨지지 않는 review-data.json 생성");
   assert.equal(reviewData.phases[0].owner_agent, "general-developer");
+  assert.ok(reviewData.phases[0].validation.includes("JSON 파싱으로 한글 문자열을 확인한다"));
+  assert.ok(reviewData.phases[0].file_impacts.includes("커밋 경계: phase 1: generate review package"));
   assert.match(reviewData.phases[0].review_item_signature, /^rvw-/);
 
   const feedback = JSON.parse(fs.readFileSync(path.join(planDir, "developer-review", "feedback.json"), "utf8"));
@@ -191,4 +196,89 @@ test("fails before writing when source prose already contains lossy question mar
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /encoding-damaged/);
   assert.equal(fs.existsSync(path.join(planDir, "developer-review", "review-data.json")), false);
+});
+
+test("reads inline phase detail sections from a self-contained plan", () => {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "orchestrator-review-inline-"));
+  const taskSlug = "inline-review";
+  const planDir = path.join(repoRoot, "plans", taskSlug);
+  const reviewDir = path.join(repoRoot, "plans", "_orchestrator", "review", taskSlug);
+  fs.mkdirSync(planDir, { recursive: true });
+  fs.mkdirSync(reviewDir, { recursive: true });
+
+  fs.writeFileSync(path.join(planDir, "plan.md"), `# Inline phase review
+
+## 요청과 범위
+
+| 항목 | 내용 |
+| --- | --- |
+| 사용자 요청 | self-contained phase review |
+| 포함 범위 | inline phase detail |
+| 제외 범위 | linked phase files |
+| 완료 기준 | phase contract appears in review-data |
+
+## 실행 흐름
+
+| Phase | 목적 | 주요 변경 | 완료 신호 | 검증 | 커밋 경계 |
+| --- | --- | --- | --- | --- | --- |
+| Phase 1 | registry를 만든다 | schema와 generator 추가 | registry 생성 | unit으로 검증 | phase 1: registry |
+
+## Phase 상세 계약
+
+### Phase 1 - registry source
+
+#### 시나리오 / 계약
+
+| scenario (시나리오) | input | output | negative/no-op | owner |
+| --- | --- | --- | --- | --- |
+| registry 생성 | source JSON | generated registry | live Figma 호출 금지 | registry layer |
+
+#### 파일 영향
+
+| 파일 | 작업 방식 | 완료 조건 |
+| --- | --- | --- |
+| src/registry | 생성 | schema-valid |
+
+#### 리스크 / 주의점
+
+| 리스크 | failure/validation | 대응 |
+| --- | --- | --- |
+| stale registry | digest mismatch | build gate 실패 |
+`, "utf8");
+
+  fs.writeFileSync(path.join(reviewDir, "review.md"), `---
+plan_path: plans/${taskSlug}/plan.md
+task_slug: ${taskSlug}
+plan_signature: inline123
+outcome: ready
+next_action: planning_complete
+finding_signature: none
+requires_user_decision: false
+issue_codes: []
+affected_plan_paths: []
+---
+
+# plan-review
+
+## Findings
+`, "utf8");
+
+  const result = spawnSync(process.execPath, [
+    scriptPath,
+    "--task-slug", taskSlug,
+    "--plan-signature", "inline123",
+    "--now", "2026-05-04T00:00:00.000Z"
+  ], {
+    cwd: repoRoot,
+    encoding: "utf8"
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  const reviewData = JSON.parse(fs.readFileSync(path.join(planDir, "developer-review", "review-data.json"), "utf8"));
+  assert.equal(reviewData.phases.length, 1);
+  assert.equal(reviewData.phases[0].title, "Phase 1 - registry source");
+  assert.ok(reviewData.phases[0].contracts[0].includes("registry 생성"));
+  assert.ok(reviewData.phases[0].file_impacts.includes("커밋 경계: phase 1: registry"));
+  assert.ok(reviewData.phases[0].file_impacts.some((item) => item.includes("src/registry")));
+  assert.ok(reviewData.phases[0].risks[0].includes("stale registry"));
 });

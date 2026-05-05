@@ -16,7 +16,9 @@
 - Assume the runtime can invoke generic planning sub-agents and attach the local `architect` or `plan-review` skill for the active pass.
 - If a required local skill is missing, unreadable, or cannot be attached to a sub-agent, stop and report the blocker.
 - Do not silently inline architect or reviewer work when the sub-agent path is available.
-- Do not run `brainstorm`, request-scope locking, UI-spec locking, developer review, or TDD from this orchestrator contract.
+- Do not run `brainstorm`, request-scope locking, UI-spec locking, or TDD from this orchestrator contract unless the user explicitly invoked that separate skill or explicitly asked to continue beyond planning.
+- Even when not running TDD, report `$plan-tdd` as the next required gate after current-signature developer review approval for every implementation-scope plan.
+- Run developer review only through `references/developer-review.md` after a fresh `plan-review` has accepted the current plan signature.
 - Do not create, mutate, or rely on `state.json`, `clarification.md`, or `user-gate.md`.
 - Treat orchestration helper state as current-turn only. It may be recomputed from artifacts on every re-entry.
 - Prefer role-pinned live-agent reuse for `architect` when the same `task_slug`, role contract, and handoff authority still apply.
@@ -30,6 +32,7 @@ Treat only these artifacts as durable orchestration evidence:
 - executable plan files under `./plans/{task-slug}/`
 - controller-verified upstream Figma inventory artifacts under `./.codex/artifacts/figma-inventory/{task-slug}/` when the current pass selected them and lists them in `authoritative_existing_inputs`
 - review artifact at `./plans/_orchestrator/review/{task-slug}/review.md`
+- developer review artifacts under `./plans/{task-slug}/developer-review/`
 - directly referenced upstream request-lock or UI-direction artifacts under `./.codex/artifacts/**`
 
 Do not create a second source of truth for stage, approval, blocker routing, or agent reuse.
@@ -45,6 +48,7 @@ The orchestrator may keep only current-turn helper state such as:
 - `active_role_agent_id` for the currently running role pass when available
 - `live_role_agents` keyed by role for reusable `architect` passes when available
 - whether the current review artifact is fresh
+- whether the current developer review package and approval evidence match the current `plan_signature`
 - the latest user question still awaiting an answer
 - `last_meaningful_progress_at`
 - the last planning sub-agent outcome and exact failure text
@@ -56,7 +60,9 @@ This helper state must be safely discardable between turns.
 
 - The current plan fingerprint is `plan_signature`: a stable short fingerprint of the current executable plan file.
 - A `review.md` artifact is fresh only when both `plan_path` and `plan_signature` match the current plan file on disk.
+- Developer review approval is fresh only when `feedback.json.review_status` is `submitted`, every required Overview and Phase step is `approved`, and each `approved_against.plan_signature` and `approved_against.review_item_signature` matches the current `review-data.json`.
 - When `plan_signature` changes, treat previous cold review state as stale and recompute from artifacts.
+- When `plan_signature` changes, regenerate the developer review package and carry forward only approvals whose item signatures still match.
 
 ## Wait Policy
 
@@ -97,6 +103,7 @@ Do not force planning sub-agents to rediscover orchestrator-owned metadata. Do n
 - `agent_protocol_failure`: the agent replied or streamed progress, but did not provide a usable terminal result for the requested role before the bounded wait ended
 - `artifact_writeback_failure`: the agent claimed success but the required artifact is still missing or stale on disk
 - `tool_data_blocker`: the role pass completed with `needs_user_input = false` because required external tool data, permission, timeout-safe shard data, or source inventory coverage is unavailable
+- `developer_review_gate_blocker`: the developer review package cannot be generated, the review server cannot be started, feedback is incomplete, or submitted feedback requires routing before planning can complete
 - `controller_interruption`: the controller shut down a still-running planning sub-agent before explicit user cancellation or before the role-specific idle window was satisfied
 - `no_progress`: the same artifact signature or finding signature repeated against an unchanged plan after one safe retry
 
@@ -116,3 +123,5 @@ Report the exact classification when stopping.
 
 - Plan artifacts under `./plans/**`
 - Review artifact under `./plans/_orchestrator/review/{task-slug}/review.md` with YAML frontmatter status fields
+- Developer review artifacts under `./plans/{task-slug}/developer-review/**` when implementation scope requires user approval
+- Chat output that names the next required gate for each implementation-scope plan after developer review approval

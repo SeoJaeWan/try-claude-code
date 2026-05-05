@@ -4,6 +4,7 @@
 
 - Step 5. Developer review gate
 - Step 6. Triage developer review feedback
+- Step 7. Capture developer review learning
 
 ## Step 5. Developer Review Gate
 
@@ -23,6 +24,7 @@ At the gate:
   - Preserve `owner_agent` from the phase detail artifact.
   - UI preview is plan-level visual explanation only; do not imply functional implementation exists.
   - `Previous`, `Next`, and direct step navigation reset visible review content to the top of the current step.
+- Ensure `review-data.json` includes the post-approval next gate fields so the browser review can tell the user that approved implementation-scope plans proceed to `$plan-tdd` before production implementation.
 - Ensure the developer review package exposes historical rounds and controller action summaries from `review-history.json`.
 - Initialize or refresh `feedback.json` for current `plan_signature` with `review_status = in_progress`:
   - on the first review, leave all statuses empty
@@ -33,7 +35,7 @@ At the gate:
   1. Run `node .codex/tools/start-developer-review-server.mjs --task-slug {task-slug} --plan-signature {plan_signature}` from the repository root.
   2. The launcher must health-check existing compatible servers, start `.codex/tools/developer-review-server.mjs` as a detached background process when needed, skip foreign processes on occupied ports, choose an alternate port when needed, and print `developer_review_url=...`.
   3. Treat a non-zero launcher exit as a developer-review gate blocker and report the exact command output.
-- Tell the user in Korean: the server is running in the background, open the printed `developer_review_url`, press submit on the final step, then say `review complete` in chat.
+- Tell the user in Korean: the server is running in the background, open the printed `developer_review_url`, press submit on the final step, then say `review complete` in chat. Also say the browser review's final step shows the next gate after approval.
 - Do not create `user-gate.md`.
 
 When the user says `review complete`, read `feedback.json`:
@@ -85,3 +87,11 @@ Required sub-agent terminal results:
 - UI-spec: `result = locked_ui_direction` with `task_slug`, `ui_direction_summary`, `next_action`, and `artifact_paths`; or `result = needs_user_input` with `task_slug`, `needs_user_input`, `next_action`, `why_it_matters`, and `questions`.
 
 If a sub-agent returns `needs_user_input`, ask the user directly in chat and route the answer back to the next compatible pass. If it returns a locked result, update the active history round and continue with the returned `next_action`.
+
+## Step 7. Capture Developer Review Learning
+
+Follow `./references/developer-review-learning.md`.
+
+- Run after a submitted browser review round has been preserved in `review-history.json` and either approved or triaged.
+- Treat learning capture as non-blocking unless it corrupts authoritative developer review artifacts.
+- Do not block developer review approval, TDD, or plan revision only because learning capture cannot be promoted into plan wiki rules.

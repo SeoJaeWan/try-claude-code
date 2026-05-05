@@ -86,6 +86,9 @@ Required top-level fields:
   "plan_path": "plans/task-slug/plan.md",
   "plan_signature": "abc123",
   "review_outcome": "ready",
+  "post_approval_next_action": "plan-tdd",
+  "post_approval_next_label": "다음 단계: $plan-tdd",
+  "post_approval_next_summary": "리뷰가 승인되면 production code 구현 전에 승인된 plan.md 기준으로 source-tree TDD 계약 테스트와 tdd.md를 작성합니다.",
   "title": "Task title",
   "overview": {
     "user_request": [],

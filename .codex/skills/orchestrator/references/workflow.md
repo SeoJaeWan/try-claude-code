@@ -7,7 +7,10 @@
 - Step 2. Run architect draft or revision
 - Step 3. Run cold review
 - Step 4. Route review findings
-- Step 5. Completion
+- Step 5. Developer review gate
+- Step 6. Triage developer review feedback
+- Step 7. Capture developer review learning
+- Step 8. Completion
 
 Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output rules.
 
@@ -34,6 +37,7 @@ Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output ru
 - Compute current `plan_signature` for the selected plan file and determine whether `review.md` is fresh.
 - Do not reconstruct hidden stage from old chat text when artifacts disagree.
 - If multiple plan files were just written, run Step 3 for each file that lacks a fresh review.
+- If all selected plan files have fresh acceptable review artifacts, inspect developer review artifacts for the current `plan_signature` before deciding completion.
 
 ## Step 2. Run Architect Draft or Revision
 
@@ -68,17 +72,44 @@ Controller requirements:
 ## Step 4. Route Review Findings
 
 - If fresh review outcome is `blocked`, send findings to the next `architect` pass.
-- If outcome is `ready-with-findings`, treat the plan as planning-complete with noted non-blocking findings.
-- If outcome is `ready`, treat the plan as planning-complete.
+- If outcome is `ready-with-findings`, route to Step 5 with noted non-blocking findings.
+- If outcome is `ready`, route to Step 5.
 - If the same `finding_signature` repeats against the same `plan_signature` after one architect revision attempt, stop and report `no_progress`.
 
-## Step 5. Completion
+## Step 5. Developer Review Gate
 
-The orchestration is `planning_complete` only when all selected executable plan files have fresh `review.md` artifacts whose outcome is `ready` or `ready-with-findings`.
+- Follow `references/developer-review.md` Step 5.
+- Generate or refresh `./plans/{task-slug}/developer-review/` for the current `plan_signature`.
+- The package must expose Overview, every required Phase, and Final review steps. If the plan has implementation scope but does not provide reviewable Phase entries, route to `architect` for plan revision instead of presenting a flattened review.
+- Start or reuse the shared developer review server through the documented launcher and report the printed `developer_review_url` to the user.
+- Stop with `developer_review_gate_blocker` while waiting for the user to submit the browser review and say `review complete`.
+- When the user says `review complete`, read `feedback.json` and continue only if the submitted feedback matches the current `task_slug`, `plan_signature`, and review item signatures.
+
+## Step 6. Triage Developer Review Feedback
+
+- Follow `references/developer-review.md` Step 6.
+- If every required Overview and Phase step is approved with current signature evidence, continue to Step 7.
+- If any required item is not approved, preserve or update `review-history.json`, classify the feedback, and route according to `references/developer-review.md`.
+- Feedback that changes plan meaning routes to `architect`; after revision, rerun Step 3 and Step 5 for the new `plan_signature`.
+- Feedback that only needs an answer must be answered in chat, then the same-signature review package must require browser re-submit.
+
+## Step 7. Capture Developer Review Learning
+
+- Follow `references/developer-review-learning.md` after a submitted browser review round has been preserved and either approved or triaged.
+- Treat learning capture as non-blocking unless it corrupts authoritative developer review artifacts.
+- Run this step before resetting `feedback.json`, regenerating the package, changing `plan_signature`, or invoking the next role when feasible.
+
+## Step 8. Completion
+
+The orchestration is `planning_complete` only when all selected executable plan files have fresh `review.md` artifacts whose outcome is `ready` or `ready-with-findings`, and each implementation-scope plan has explicit current developer review approval.
+
+For implementation-scope plans, `planning_complete` is not the next implementation instruction by itself. The final report must explicitly state that the next required gate is `$plan-tdd` against the approved `plan_path`, and production implementation must wait until the TDD pass has written source-tree tests and `tdd.md` or returned a classified blocker.
 
 Report:
 
 - written or reviewed plan file paths
 - review artifact path
 - final review outcome for each plan
+- developer review artifact path and approval state for each implementation-scope plan
+- next required gate for each implementation-scope plan, normally `$plan-tdd`
 - any remaining non-blocking findings

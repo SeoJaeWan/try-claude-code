@@ -1004,6 +1004,8 @@
     function renderFinal() {
       const findings = asArray(model.review_findings);
       const history = normalizedHistoryEntries("");
+      const nextLabel = model.post_approval_next_label || "다음 단계: $plan-tdd";
+      const nextSummary = model.post_approval_next_summary || "모든 step이 승인되면 production code 구현 전에 승인된 plan.md 기준으로 TDD 계약 테스트를 작성합니다.";
       const stepRows = steps.filter((step) => step.kind !== "final").map((step) => {
         const item = feedback.steps[step.id] || {};
         return `<li><strong>${esc(step.label)}</strong>: ${esc(item.status || "not reviewed")} ${item.comment ? `— ${esc(item.comment)}` : ""}</li>`;
@@ -1015,6 +1017,7 @@
         <p class="meta">모든 step의 승인/수정 요청을 확인한 뒤 제출합니다. 제출 후 채팅에 <strong>리뷰 완료</strong>라고 알려주세요.</p>
         <div class="grid">
           <article class="card wide"><h3>Step 상태</h3><ul class="list">${stepRows}</ul></article>
+          <article class="card wide"><h3>${esc(nextLabel)}</h3><p>${esc(nextSummary)}</p></article>
           <article class="card wide"><h3>Plan review findings</h3>${findings.length ? findings.map((item) => `<p class="finding">${esc(item)}</p>`).join("") : "<p class=\"meta\">없음</p>"}</article>
           ${history.length ? `<article class="card wide"><h3>리뷰 이력과 조치 요약</h3>${renderHistoryEntries(history, { emptyText: "기록된 리뷰 이력이 없습니다.", showStepLabel: true })}</article>` : ""}
         </div>

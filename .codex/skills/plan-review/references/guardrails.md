@@ -15,5 +15,6 @@
 - Do not approve a plan that leaves canonical outputs, negative outputs, recipients, public boundaries, exclusions, or verification ownership for later agents to guess.
 - Do not approve a plan that expects first-time TDD but leaves runner, command, spec root, source/test topology, mock/API fixture policy, storage/auth state policy, or expected red reason for later test authoring to invent.
 - Do not approve a UI plan that leaves critical user-visible hierarchy, state coverage, responsive behavior, or accessibility implications unresolved.
+- Do not approve a non-trivial implementation plan that lacks reviewable Phase entries, completion signals, validation, and commit boundaries for developer review.
 - Do not approve a plan that requires a separate shared contract, linked phase detail file, or unstated note to understand execution meaning.
 - Do not approve Figma-derived plan artifacts that lack manifest-backed provenance when the plan depends on Figma inventory or classification.

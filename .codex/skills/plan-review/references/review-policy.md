@@ -27,6 +27,7 @@ Typical blocker signals:
 - missing test-strategy decisions required by the active plan wiki decision policy when later verification would otherwise choose the gate.
 - missing first-time test runner, command, spec root or test-owner placement, source/test topology, mock/API fixture policy, browser storage/auth state policy, or expected red reason when the plan expects contract tests before the test environment exists.
 - plan count, local prerequisite relationship, authority artifact, reference-comparison, Figma parity, or Figma inventory provenance contradicts the active plan wiki contract.
+- implementation scope is large enough to require staged execution or developer review, but the plan has no reviewable `## 실행 흐름` Phase entries, so later tooling or the user would have to infer phase boundaries.
 - visible prose terminology violates the active terminology policy in a way that hides scope, ownership, completion criteria, validation meaning, or required user-visible behavior.
 - selected pattern guidance reveals a direct contradiction that the plan leaves unresolved.
 
@@ -41,6 +42,8 @@ Typical major signals:
 - UI-facing observability or identifier detail is likely derivable but not clearly locked.
 - expected red reason is present but too thin to distinguish valid completion-blocking failure from malformed test/setup failure.
 - plan-file split is defensible but hides important sequencing or ownership assumptions.
+- implementation scope has Phase entries, but one or more phases lacks a meaningful completion signal, validation owner, or commit boundary.
+- developer review readiness is thin because phase labels are present but do not expose what the user should approve or what would trigger plan revision.
 - user-request traceability, public contract scanability, local prerequisite parity, or repo-fit evidence is thinner than it should be.
 - visible prose terminology drift reduces scanability or leaves repeated non-literal English shorthand, without making the contract ambiguous enough for a blocker.
 

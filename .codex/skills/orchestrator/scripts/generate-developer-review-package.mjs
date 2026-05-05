@@ -218,10 +218,11 @@ function buildReviewData({ repoRoot, taskSlug, planPath, planText, phaseRefs, ph
     ui_previews: []
   };
 
+  const inlinePhaseTexts = buildInlinePhaseTexts(planText, phaseRefs);
   const phases = phaseRefs.map((ref, index) => buildPhase({
     ref,
     index,
-    phaseText: ref.filePath ? phaseTexts.get(ref.filePath) : "",
+    phaseText: ref.filePath ? phaseTexts.get(ref.filePath) : inlinePhaseTexts.get(index) || "",
     flowRow: executionRows[index] || {},
     planDir: path.dirname(planPath)
   }));
@@ -232,6 +233,9 @@ function buildReviewData({ repoRoot, taskSlug, planPath, planText, phaseRefs, ph
     plan_path: toPosix(path.relative(repoRoot, planPath)),
     plan_signature: planSignature,
     review_outcome: reviewMeta.outcome || "ready",
+    post_approval_next_action: "plan-tdd",
+    post_approval_next_label: "다음 단계: $plan-tdd",
+    post_approval_next_summary: "리뷰가 승인되면 production code 구현 전에 승인된 plan.md 기준으로 source-tree TDD 계약 테스트와 tdd.md를 작성합니다.",
     title,
     overview,
     phases,
@@ -250,13 +254,13 @@ function buildPhase({ ref, index, phaseText, flowRow }) {
   const id = `P${index + 1}`;
   const detailTitle = phaseText ? firstHeading(phaseText) : "";
   const title = stripPhasePrefix(detailTitle || ref.title || flowRow["Phase"] || `Phase ${index + 1}`);
-  const goalRows = parseKeyValueTable(section(phaseText, "목표와 완료 신호"));
-  const workflowRows = parseFirstTable(section(phaseText, "작업 흐름")).rows;
-  const boundaryRows = parseFirstTable(section(phaseText, "변경 경계")).rows;
-  const contractRows = parseFirstTable(section(phaseText, "시나리오 / 계약")).rows;
-  const fileRows = parseFirstTable(section(phaseText, "파일 영향")).rows;
-  const validationRows = parseFirstTable(section(phaseText, "검증")).rows;
-  const riskRows = parseFirstTable(section(phaseText, "리스크 / 주의점")).rows;
+  const goalRows = parseKeyValueTable(sectionAtAnyLevel(phaseText, "목표와 완료 신호"));
+  const workflowRows = parseFirstTable(sectionAtAnyLevel(phaseText, "작업 흐름")).rows;
+  const boundaryRows = parseFirstTable(sectionAtAnyLevel(phaseText, "변경 경계")).rows;
+  const contractRows = parseFirstTable(sectionAtAnyLevel(phaseText, "시나리오 / 계약")).rows;
+  const fileRows = parseFirstTable(sectionAtAnyLevel(phaseText, "파일 영향")).rows;
+  const validationRows = parseFirstTable(sectionAtAnyLevel(phaseText, "검증")).rows;
+  const riskRows = parseFirstTable(sectionAtAnyLevel(phaseText, "리스크 / 주의점")).rows;
   const ownerAgent = ownerAgentFromText(phaseText) || ref.ownerAgent || "";
 
   const changes = [
@@ -267,8 +271,14 @@ function buildPhase({ ref, index, phaseText, flowRow }) {
 
   const validation = [
     flowRow["완료 신호"],
+    flowRow["검증"],
     goalRows.get("완료 신호"),
     ...validationRows.map((row) => tableRowSummary(row, ["검증 항목", "확인 수단", "기대 결과"]))
+  ].filter(Boolean);
+
+  const fileImpacts = [
+    flowRow["커밋 경계"] ? `커밋 경계: ${flowRow["커밋 경계"]}` : "",
+    ...fileRows.map((row) => tableRowSummary(row, ["파일", "작업 방식", "완료 조건"]))
   ].filter(Boolean);
 
   return {
@@ -278,7 +288,7 @@ function buildPhase({ ref, index, phaseText, flowRow }) {
     goal: goalRows.get("목표") || flowRow["목적"] || "",
     changes,
     contracts: contractRows.map((row) => tableRowSummary(row, ["scenario (시나리오)", "input", "output", "negative/no-op", "owner"])),
-    file_impacts: fileRows.map((row) => tableRowSummary(row, ["파일", "작업 방식", "완료 조건"])),
+    file_impacts: fileImpacts,
     validation,
     risks: riskRows.map((row) => tableRowSummary(row, ["리스크", "failure/validation", "대응"])),
     ui_previews: []
@@ -367,6 +377,39 @@ function discoverPhaseRefs(planText, planPath) {
     .map((name) => ({ title: name.replace(/^\d{2}-|\.md$/g, ""), ownerAgent: "", filePath: path.join(phasesDir, name) }));
 }
 
+function buildInlinePhaseTexts(planText, phaseRefs) {
+  const result = new Map();
+  phaseRefs.forEach((ref, index) => {
+    if (ref.filePath) return;
+    const text = inlinePhaseText(planText, index + 1);
+    if (text) result.set(index, text);
+  });
+  return result;
+}
+
+function inlinePhaseText(planText, phaseNumber) {
+  const lines = planText.split(/\r?\n/);
+  let start = -1;
+  let level = 0;
+  for (let i = 0; i < lines.length; i += 1) {
+    const match = lines[i].match(/^(#{3,6})\s+(?:Phase|단계)\s*([0-9]+)\b/i);
+    if (!match || Number(match[2]) !== phaseNumber) continue;
+    start = i;
+    level = match[1].length;
+    break;
+  }
+  if (start < 0) return "";
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i += 1) {
+    const heading = lines[i].match(/^(#{1,6})\s+/);
+    if (heading && heading[1].length <= level) {
+      end = i;
+      break;
+    }
+  }
+  return lines.slice(start, end).join("\n").trim();
+}
+
 function resolveMarkdownRef(value, baseDir) {
   const cleaned = stripMarkdown(value).match(/(?:\.\/|\.\.\/|plans\/|phases\/)[^\s)]+\.md/)?.[0] || "";
   if (!cleaned) return null;
@@ -423,6 +466,30 @@ function section(text, heading) {
   return sectionByLevel(text, 2, heading);
 }
 
+function sectionAtAnyLevel(text, heading) {
+  if (!text) return "";
+  const lines = text.split(/\r?\n/);
+  let start = -1;
+  let level = 0;
+  for (let i = 0; i < lines.length; i += 1) {
+    const match = lines[i].match(/^(#{1,6})\s+(.+?)\s*$/);
+    if (!match || stripMarkdown(match[2]) !== heading) continue;
+    start = i + 1;
+    level = match[1].length;
+    break;
+  }
+  if (start < 0) return "";
+  let end = lines.length;
+  for (let i = start; i < lines.length; i += 1) {
+    const match = lines[i].match(/^(#{1,6})\s+/);
+    if (match && match[1].length <= level) {
+      end = i;
+      break;
+    }
+  }
+  return lines.slice(start, end).join("\n").trim();
+}
+
 function sectionByLevel(text, level, heading) {
   if (!text) return "";
   const marker = "#".repeat(level);
@@ -448,7 +515,7 @@ function sectionByLevel(text, level, heading) {
 }
 
 function firstHeading(text) {
-  const match = text.match(/^#\s+(.+)$/m);
+  const match = text.match(/^#{1,6}\s+(.+)$/m);
   return match ? stripMarkdown(match[1]) : "";
 }
 

@@ -51,6 +51,7 @@ Judge the plan against:
 - active plan wiki plan artifact contract.
 - required YAML frontmatter and valid `owner_agent` routing.
 - plan self-containment for one execution agent.
+- implementation-scope phase readiness: a `## 실행 흐름` section with reviewable Phase entries, completion signals, validation, and commit boundaries when the work is not a trivial single-step change.
 - user-request traceability.
 - blocking ambiguity.
 - plan-count justification when multiple plan files exist.
@@ -100,6 +101,7 @@ Rules:
 - compute signatures from the current plan and finding set when not provided.
 - set `requires_user_decision: true` only when a fresh user decision is required.
 - set `next_action: plan_revision` for `blocked`; otherwise `planning_complete`.
+- `planning_complete` here means cold-review complete. The orchestrator must still require developer review approval for implementation-scope plans before final orchestration completion.
 
 ### Step 7. Respond in chat
 

@@ -79,6 +79,9 @@ Do not deep-dive into implementation details or write source-tree tests.
 - Use `./references/plan-template-sequential.md` as a writing aid, then conform to the active plan wiki plan artifact contract.
 - Write only the plan files required by the upstream locked execution areas.
 - Make each plan file self-contained for exactly one `owner_agent`.
+- For implementation-scope plans, write a `## 실행 흐름` section with reviewable Phase rows inside the same plan file. Each Phase row must include purpose, major changes, completion signal, validation, and commit boundary.
+- Keep Phase content self-contained in the plan body. Do not create linked phase detail files for new plans unless explicitly performing legacy migration or review.
+- Phase boundaries are human review and commit boundaries, not separate `owner_agent` or branch boundaries unless the plan count has already been split by execution ownership.
 - Include the required YAML frontmatter in every plan file.
 - Put all contracts needed by the executing agent into that plan file's body; do not rely on `shared-contract.md`, linked phase detail files, or external planning notes for execution meaning.
 - Record provenance paths only as evidence, not as required reading for the executing agent.
@@ -92,6 +95,7 @@ Do not deep-dive into implementation details or write source-tree tests.
 - Do not create a plan file for an execution area that `brainstorm` excluded.
 - Do not create a test-only plan unless the active `owner_agent` catalog contains a real test execution agent and the upstream lock selected it.
 - If two planned files need the same owner to edit the same public boundary at the same time, merge or re-lock the boundary before writing.
+- Do not split one `owner_agent` into multiple plan files just to represent phases; keep phases inside the self-contained plan unless ownership or independent review truly requires separate plan files.
 
 ### Step 7. Prepare verification contracts
 
@@ -113,6 +117,7 @@ If the plan includes implementation scope beyond documentation-only or structura
 
 - Run the active plan wiki quality gate checklist before finalizing.
 - Re-check selected patterns, terminology policy compliance, plan self-containment, request traceability, public contracts, verification ownership, related-plan lineage, authority artifacts, and execution handoff requirements.
+- Re-check that implementation-scope plans expose reviewable Phase rows and commit boundaries that developer review can present without inventing phase meaning.
 - Fix critical self-review findings before handoff.
 - If a required wiki registry, core doc, or pattern cannot be read, treat that as a failed quality gate.
 
