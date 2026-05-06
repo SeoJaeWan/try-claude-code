@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -52,6 +53,29 @@ export function readJsonFile(filePath) {
 
 export function writeJsonFile(filePath, value) {
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
+// Atomic JSON write: serialize, write to a sibling tempfile, then rename onto
+// the target. `renameSync` is atomic on both POSIX and Windows when source and
+// target live on the same volume — which is always the case here because the
+// tempfile is in the same directory as the target. Use this whenever a process
+// kill, OS crash, or full disk mid-write would otherwise leave callers reading
+// partially-written JSON. Plain `writeJsonFile` does not give that guarantee.
+export function writeJsonAtomic(filePath, value) {
+  const dir = path.dirname(filePath);
+  fs.mkdirSync(dir, { recursive: true });
+  const tmp = path.join(
+    dir,
+    `.${path.basename(filePath)}.${process.pid}.${crypto.randomBytes(4).toString("hex")}.tmp`,
+  );
+  const body = `${JSON.stringify(value, null, 2)}\n`;
+  fs.writeFileSync(tmp, body, "utf8");
+  try {
+    fs.renameSync(tmp, filePath);
+  } catch (err) {
+    try { fs.unlinkSync(tmp); } catch { /* best-effort cleanup */ }
+    throw err;
+  }
 }
 
 export function safeReadFile(filePath) {
