@@ -3,44 +3,59 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "plan.md에 정의된 3개 Phase를 worktree 격리 방식으로 실행해줘",
-      "expected_output": "Branch 헤더 검증, worktree 생성, phase별 실행, merge, 정리",
+      "prompt": "/runner plans/login-frontend.plan.md 진입 후 새 plan을 처음부터 끝까지 실행해줘. plan은 3개 phase로 구성돼 있어.",
+      "expected_output": "Bootstrap 컨텍스트 인식, status 분기, worktree 생성, 단일 Agent 디스패치, stop-review와 dev-review 통과 후 사용자에게 병합 옵션 제시",
       "files": ["../../../features/next-app/package.json"],
       "expectations": [
-        "Reads skills/runner/SKILL.md via Read tool",
-        "Validates Branch: header in plan.md",
-        "Validates owner_agent references exist in agents/*.md",
-        "Creates git worktree for task isolation",
-        "Executes phases in sequential order",
-        "Runs git merge --no-ff after each phase completion",
-        "Cleans up worktrees after merge"
+        "Reads SKILL.md via Read tool when needed",
+        "Recognizes the [runner-skill bootstrap] context block emitted by UserPromptSubmit",
+        "Reads state JSON at plans/{stem}/.runner-state.json before acting",
+        "Routes to Step 2 when status=validating",
+        "Creates exactly one git worktree at state.worktree_path",
+        "Dispatches exactly one Agent call with subagent_type = state.owner_agent",
+        "Updates state.stop_review.armed=true and status=awaiting_stop_review before the dispatch",
+        "Ends turn after the agent returns so the Stop hook can fire",
+        "Invokes dev-review skill once status=awaiting_dev_review",
+        "Removes the worktree only after dev-review returns approved",
+        "Keeps HEAD on state.base_branch throughout the run"
       ]
     },
     {
       "id": 2,
-      "prompt": "plan.md에 정의된 2개 Phase를 순서대로 실행해줘. 각 Phase가 끝날 때마다 사용자 승인도 받아야 해.",
-      "expected_output": "Phase-1 순차 실행, 승인 대기, Phase-2 순차 실행, worktree 격리",
+      "prompt": "/runner plans/login-frontend.plan.md 진입 후 stop-review가 BLOCK했어. status는 stop_review_blocked이고 last_block_excerpt도 컨텍스트에 있어. 어떻게 처리해?",
+      "expected_output": "BLOCK 사유 인지 후 plan 에이전트 재디스패치(직접 코드 수정 금지), block_count >= 3이면 사용자 escalation 안내",
       "files": ["../../../features/next-app/package.json"],
       "expectations": [
-        "Reads skills/runner/SKILL.md via Read tool",
-        "Executes Phase-1 before Phase-2",
-        "Waits for explicit user approval after Phase-1 verification",
-        "Uses one task worktree for the full plan lifecycle",
-        "Does not reinterpret one plan as additional same-phase tasks",
-        "Uses git merge --no-ff only after final user merge approval"
+        "Recognizes status=stop_review_blocked from the bootstrap and reads the state JSON",
+        "Does NOT attempt to fix the code directly in the main session",
+        "Re-dispatches the same plan agent with the BLOCK reason as additional context",
+        "Skips re-arming because state.stop_review.armed already remains true after BLOCK",
+        "When last_block_count >= 3, surfaces the escalation note instead of redispatching blindly"
       ]
     },
     {
       "id": 3,
-      "prompt": "plan.md를 실행하는데 Branch 헤더가 빠져있어. 어떻게 처리해?",
-      "expected_output": "Branch 헤더 누락 감지, 사용자에게 확인, 자동 생성 또는 에러",
+      "prompt": "/runner plans/login-frontend.plan.md 다시 입력. 이전에 dev-review에서 needs-change 2건이 나와서 멈췄어. status는 rework_in_progress, last_feedback_path도 컨텍스트에 있어.",
+      "expected_output": "feedback.json에서 rework_items[] 읽고 commit별로 reviewer가 지정한 dispatch_agent로 Agent를 디스패치, 완료 후 round 증가하여 dev-review 재진입",
       "files": ["../../../features/next-app/package.json"],
       "expectations": [
-        "Reads skills/runner/SKILL.md via Read tool",
-        "Detects missing Branch: header in plan.md",
-        "Reports validation error to user",
-        "Does not proceed without valid plan headers",
-        "Suggests adding required Branch: header"
+        "Recognizes status=rework_in_progress from the bootstrap",
+        "Reads last_feedback_path and parses rework_items[]",
+        "Dispatches one Agent call per rework_item using item.dispatch_agent (not the plan owner_agent)",
+        "Bumps state.dev_review.current_round before re-invoking dev-review skill",
+        "Re-enters dev-review with review_iteration matching the bumped round",
+        "Does NOT delete the worktree at this stage"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "/runner를 입력했는데 plan 경로 인자가 없어. 어떻게 처리해?",
+      "expected_output": "UserPromptSubmit hook이 차단해서 skill에는 도달하지 않거나, 도달했어도 bootstrap 부재를 인식하고 사용자에게 안내",
+      "files": [],
+      "expectations": [
+        "Either does not run (hook blocked) or detects missing bootstrap and asks the user to re-invoke /runner with a plan path",
+        "Does NOT try to validate plan files manually",
+        "Does NOT create a worktree without a state file"
       ]
     }
   ]

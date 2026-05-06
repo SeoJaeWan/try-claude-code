@@ -10,3 +10,6 @@ test/**/origin-workspace/test-results/
 test/**/origin-workspace/playwright-report/
 test/**/origin-workspace/tsconfig.tsbuildinfo
 
+# runner skill plan-state SSOT — local progress, not part of the plan itself.
+plans/**/.runner-state.json
+
