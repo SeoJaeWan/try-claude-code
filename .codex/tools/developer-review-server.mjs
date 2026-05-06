@@ -161,7 +161,9 @@ function reviewGlobalContext(model) {
       excluded_scope: asArray(overview.excluded_scope),
       change_shape: overview.change_shape || "",
       change_flow: asArray(overview.change_flow),
-      major_changes: asArray(overview.major_changes)
+      major_changes: asArray(overview.major_changes),
+      topology_contract: asArray(model?.topology_contract),
+      evidence_artifacts: asArray(model?.evidence_artifacts)
     }
   };
 }
@@ -183,7 +185,9 @@ function overviewSignaturePayload(model) {
       change_flow: asArray(overview.change_flow),
       major_changes: asArray(overview.major_changes),
       risks: asArray(overview.risks),
-      ui_previews: asArray(overview.ui_previews)
+      ui_previews: asArray(overview.ui_previews),
+      topology_contract: asArray(overview.topology_contract),
+      evidence_artifacts: asArray(overview.evidence_artifacts)
     }
   };
 }
@@ -203,7 +207,9 @@ function phaseSignaturePayload(model, phase, index) {
       file_impacts: asArray(phase?.file_impacts),
       validation: asArray(phase?.validation),
       risks: asArray(phase?.risks),
-      ui_previews: asArray(phase?.ui_previews)
+      ui_previews: asArray(phase?.ui_previews),
+      topology_contract: asArray(phase?.topology_contract),
+      evidence_artifacts: asArray(phase?.evidence_artifacts)
     }
   };
 }

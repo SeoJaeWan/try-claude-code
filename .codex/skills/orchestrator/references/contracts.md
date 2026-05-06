@@ -30,6 +30,7 @@
 Treat only these artifacts as durable orchestration evidence:
 
 - executable plan files under `./plans/{task-slug}/`
+- planning-only evidence artifacts referenced by executable plans under `./plans/{task-slug}/evidence/**`
 - controller-verified upstream Figma inventory artifacts under `./.codex/artifacts/figma-inventory/{task-slug}/` when the current pass selected them and lists them in `authoritative_existing_inputs`
 - review artifact at `./plans/_orchestrator/review/{task-slug}/review.md`
 - developer review artifacts under `./plans/{task-slug}/developer-review/`
@@ -61,6 +62,7 @@ This helper state must be safely discardable between turns.
 - The current plan fingerprint is `plan_signature`: a stable short fingerprint of the current executable plan file.
 - A `review.md` artifact is fresh only when both `plan_path` and `plan_signature` match the current plan file on disk.
 - Developer review approval is fresh only when `feedback.json.review_status` is `submitted`, every required Overview and Phase step is `approved`, and each `approved_against.plan_signature` and `approved_against.review_item_signature` matches the current `review-data.json`.
+- Developer review package generation is fresh only when any plan-referenced evidence asset has been copied from `plans/{task-slug}/evidence/**` into `plans/{task-slug}/developer-review/assets/evidence/**` and its `content_hash` is represented in `review-data.json`.
 - When `plan_signature` changes, treat previous cold review state as stale and recompute from artifacts.
 - When `plan_signature` changes, regenerate the developer review package and carry forward only approvals whose item signatures still match.
 

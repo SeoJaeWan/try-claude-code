@@ -36,6 +36,18 @@ owner_agent: {owner-agent}
 | --- | --- | --- | --- | --- | --- | --- |
 | {계약 이름} | `{component-hook-route-service}` | {입력/트리거} | {정상 출력/상태} | {발생하면 안 되는 출력 또는 no-op 규칙} | {상태/API/component 소유자} | {검증 항목 또는 명령} |
 
+## 파일/폴더 구조 계약
+
+| 경로 | 종류 | 상태 | 소유 phase | 책임 | 근거 |
+| --- | --- | --- | --- | --- | --- |
+| `{source-or-test-path}` | `source` / `test` / `fixture` / `config` / `artifact` / `docs` | `create` / `modify` / `keep` / `forbidden` / `remove` | `P1` | {이 경로가 맡는 책임} | {확인한 기존 구조 또는 중복 방지 근거} |
+
+## 체험 산출물
+
+| id | phase | kind | 경로 | 목적 | 검토 포인트 |
+| --- | --- | --- | --- | --- | --- |
+| `{artifact-id}` | `P1` | `ui-preview` / `api-contract` / `function-contract` / `backend-contract` / `fixture-view` | `evidence/{artifact}.html` | {HTML/JS로 체험할 계약} | {empty, loading, success, validation-error, forbidden 등} |
+
 ## 실행 흐름
 
 | Phase | 목적 | 주요 변경 | 완료 신호 | 검증 | 커밋 경계 |
@@ -66,5 +78,8 @@ owner_agent: {owner-agent}
 - [ ] 다른 plan, shared contract, 단계 상세 문서를 필수 읽기 대상으로 만들지 않았다.
 - [ ] 사람이 읽는 문장에 현재 `용어-정책.md`를 적용했고, 코드 표기 밖 영어는 원문 일치 예외 사유가 있을 때만 남겼다.
 - [ ] 기능 계약에 영향받는 공개 경계, `input`, `output`, 소유권/no-op, 검증 위치가 보인다.
+- [ ] 관련 프로젝트 구조를 실제 확인했고, 생성/수정/유지/금지 경로를 `파일/폴더 구조 계약`에 확정했다.
+- [ ] UI/API/function/backend 계약이 문장만으로 다르게 해석될 수 있으면 `체험 산출물`에 HTML/JS preview 또는 harness를 연결했다.
+- [ ] 체험 산출물은 production code가 아니라 plan 이해용 projection이며, 실제 API/server/DB/파일 쓰기를 요구하지 않는다.
 - [ ] 검증 책임은 실제 변경 경계와 관찰 가능한 완료 상태를 연결한다.
 - [ ] 구현 범위가 있으면 `## 실행 흐름`이 phase 단위로 보이고 각 phase의 완료 신호, 검증, 커밋 경계가 있다.

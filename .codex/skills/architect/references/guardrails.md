@@ -11,7 +11,9 @@
 - Do not duplicate the active plan wiki plan artifact contract inside skill prose; read and apply the wiki contract.
 - Do not leave product behavior, public boundaries, exclusions, canonical outputs, negative outputs, recipients, state ownership, no-op rules, or verification ownership implicit when later agents would have to guess.
 - Do not create a test-only plan unless the active routing catalog contains a real execution agent for that responsibility and the upstream lock selected it.
-- Do not make future source paths, route paths, or test paths look committed unless the plan intentionally locks that topology.
+- Do not make future source paths, route paths, or test paths look committed unless the plan intentionally locks that topology from actual repo inspection.
+- Do not invent topology from framework memory alone; inspect the relevant local route, component, API, service, utility, test, fixture, or package boundary first.
+- Do not present HTML/JS evidence as production code. Evidence is a planning-only projection of the plan contract and must not require real API calls, DB access, filesystem writes, live dev servers, React builds, or production stack execution.
 - Do not treat Context7 as mandatory for every plan; use it only when unstable external facts can change the boundary, contract, or plan split.
 - Do not treat old `plan.md + phases/*` artifacts as the current contract unless the task is explicitly a legacy migration or review.
 - Do not bypass Korean-first visible prose and terminology checks.

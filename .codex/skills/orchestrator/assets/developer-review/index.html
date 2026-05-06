@@ -295,6 +295,61 @@
       margin-top: 12px;
     }
 
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .data-table th,
+    .data-table td {
+      border-bottom: 1px solid var(--line);
+      padding: 9px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .data-table th {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--soft);
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .evidence-list {
+      display: grid;
+      gap: 16px;
+    }
+
+    .evidence-item {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 253, 248, 0.92);
+      padding: 14px;
+    }
+
+    .evidence-frame {
+      width: 100%;
+      min-height: 420px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: white;
+      margin-top: 12px;
+    }
+
     .phase-owner {
       display: inline-flex;
       align-items: center;
@@ -541,7 +596,9 @@
           excluded_scope: asArray(overview.excluded_scope),
           change_shape: overview.change_shape || "",
           change_flow: asArray(overview.change_flow),
-          major_changes: asArray(overview.major_changes)
+          major_changes: asArray(overview.major_changes),
+          topology_contract: asArray(value?.topology_contract),
+          evidence_artifacts: asArray(value?.evidence_artifacts)
         }
       };
     }
@@ -563,7 +620,9 @@
           change_flow: asArray(overview.change_flow),
           major_changes: asArray(overview.major_changes),
           risks: asArray(overview.risks),
-          ui_previews: asArray(overview.ui_previews)
+          ui_previews: asArray(overview.ui_previews),
+          topology_contract: asArray(overview.topology_contract),
+          evidence_artifacts: asArray(overview.evidence_artifacts)
         }
       };
     }
@@ -583,7 +642,9 @@
           file_impacts: asArray(phase?.file_impacts),
           validation: asArray(phase?.validation),
           risks: asArray(phase?.risks),
-          ui_previews: asArray(phase?.ui_previews)
+          ui_previews: asArray(phase?.ui_previews),
+          topology_contract: asArray(phase?.topology_contract),
+          evidence_artifacts: asArray(phase?.evidence_artifacts)
         }
       };
     }
@@ -655,6 +716,67 @@
           ${preview.asset ? `<img src="${esc(preview.asset)}" alt="${esc(preview.title || "UI preview")}">` : ""}
         </div>
       `).join("");
+    }
+
+    function topologyTable(items) {
+      const rows = asArray(items).filter(Boolean);
+      if (!rows.length) return "";
+      return `
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>경로</th>
+              <th>상태</th>
+              <th>종류</th>
+              <th>Phase</th>
+              <th>책임</th>
+              <th>근거</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((item) => `
+              <tr>
+                <td><code>${esc(item.path || "")}</code></td>
+                <td>${item.status ? `<span class="pill">${esc(item.status)}</span>` : ""}</td>
+                <td>${esc(item.kind || "")}</td>
+                <td>${esc(item.phase || "")}</td>
+                <td>${esc(item.responsibility || "")}</td>
+                <td>${esc(item.evidence || "")}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function evidenceBlock(items) {
+      const artifacts = asArray(items).filter(Boolean);
+      if (!artifacts.length) return "";
+      return `
+        <div class="evidence-list">
+          ${artifacts.map((item) => {
+            const src = item.asset || item.entry || "";
+            const canFrame = /\.html?$/i.test(src);
+            return `
+              <article class="evidence-item">
+                <div class="history-pills">
+                  <span class="history-pill">${esc(item.id || "evidence")}</span>
+                  ${item.kind ? `<span class="history-pill">${esc(item.kind)}</span>` : ""}
+                  ${item.phase ? `<span class="history-pill">${esc(item.phase)}</span>` : ""}
+                </div>
+                <p><strong>${esc(item.purpose || "체험 산출물")}</strong></p>
+                ${asArray(item.review_points).length ? list(item.review_points) : ""}
+                ${item.entry ? `<p class="meta">source: <code>${esc(item.entry)}</code>${item.content_hash ? ` · hash: <code>${esc(item.content_hash)}</code>` : ""}</p>` : ""}
+                ${src ? `
+                  ${canFrame
+                    ? `<iframe class="evidence-frame" sandbox="allow-scripts" src="${esc(src)}" title="${esc(item.id || "evidence")}"></iframe>`
+                    : `<p><a href="${esc(src)}" target="_blank" rel="noopener">Open evidence asset</a></p>`}
+                ` : ""}
+              </article>
+            `;
+          }).join("")}
+        </div>
+      `;
     }
 
     function cssToken(value) {
@@ -783,15 +905,15 @@
       const taskSlug = taskSlugFromUrl();
       if (!taskSlug || !value) return value;
 
-      const normalizeOne = (preview) => {
-        if (!preview || typeof preview !== "object" || typeof preview.asset !== "string") {
-          return preview;
+      const normalizeOne = (item) => {
+        if (!item || typeof item !== "object" || typeof item.asset !== "string") {
+          return item;
         }
-        if (/^(?:https?:)?\/\//.test(preview.asset) || preview.asset.startsWith("/")) {
-          return preview;
+        if (/^(?:https?:)?\/\//.test(item.asset) || item.asset.startsWith("/")) {
+          return item;
         }
-        const asset = preview.asset.replace(/^assets\//, "");
-        return { ...preview, asset: `/review-assets/${taskSlug}/${asset}` };
+        const asset = item.asset.replace(/^assets\//, "");
+        return { ...item, asset: `/review-assets/${taskSlug}/${asset}` };
       };
 
       const normalizeContainer = (container) => {
@@ -799,10 +921,16 @@
         if (Array.isArray(container.ui_previews)) {
           container.ui_previews = container.ui_previews.map(normalizeOne);
         }
+        if (Array.isArray(container.evidence_artifacts)) {
+          container.evidence_artifacts = container.evidence_artifacts.map(normalizeOne);
+        }
       };
 
       normalizeContainer(value.overview);
       asArray(value.phases).forEach(normalizeContainer);
+      if (Array.isArray(value.evidence_artifacts)) {
+        value.evidence_artifacts = value.evidence_artifacts.map(normalizeOne);
+      }
       return value;
     }
 
@@ -971,6 +1099,8 @@
           <article class="card"><h3>주요 변경점</h3>${list(overview.major_changes)}</article>
           <article class="card wide"><h3>변경 형상</h3><p>${esc(overview.change_shape || "")}</p>${flow(overview.change_flow)}</article>
           <article class="card wide"><h3>핵심 리스크</h3>${list(overview.risks)}</article>
+          ${topologyTable(overview.topology_contract || model.topology_contract) ? `<article class="card wide"><h3>파일/폴더 구조 계약</h3>${topologyTable(overview.topology_contract || model.topology_contract)}</article>` : ""}
+          ${evidenceBlock(overview.evidence_artifacts || model.evidence_artifacts) ? `<article class="card wide"><h3>체험 산출물</h3>${evidenceBlock(overview.evidence_artifacts || model.evidence_artifacts)}</article>` : ""}
           ${history.length ? `<article class="card wide"><h3>이전 리뷰와 조치</h3>${renderHistoryEntries(history, { emptyText: "이전 overview 리뷰 이력이 없습니다." })}</article>` : ""}
           ${previewBlock(overview.ui_previews) ? `<article class="card wide"><h3>UI 계획 preview</h3>${previewBlock(overview.ui_previews)}</article>` : ""}
         </div>
@@ -994,6 +1124,8 @@
           <article class="card"><h3>검증</h3>${list(phase.validation)}</article>
           <article class="card wide"><h3>계약</h3>${list(phase.contracts)}</article>
           <article class="card wide"><h3>파일 영향</h3>${list(phase.file_impacts)}</article>
+          ${topologyTable(phase.topology_contract) ? `<article class="card wide"><h3>파일/폴더 구조 계약</h3>${topologyTable(phase.topology_contract)}</article>` : ""}
+          ${evidenceBlock(phase.evidence_artifacts) ? `<article class="card wide"><h3>체험 산출물</h3>${evidenceBlock(phase.evidence_artifacts)}</article>` : ""}
           <article class="card wide"><h3>리스크 / 주의점</h3>${list(phase.risks)}</article>
           ${history.length ? `<article class="card wide"><h3>이전 리뷰와 조치</h3>${renderHistoryEntries(history, { emptyText: "이전 phase 리뷰 이력이 없습니다." })}</article>` : ""}
           ${previewBlock(phase.ui_previews) ? `<article class="card wide"><h3>UI 계획 preview</h3>${previewBlock(phase.ui_previews)}</article>` : ""}

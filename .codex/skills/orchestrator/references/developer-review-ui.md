@@ -18,6 +18,7 @@ plans/{task-slug}/developer-review/
 +-- feedback.json
 +-- review-history.json
 +-- assets/
+    +-- evidence/
     +-- previews/
     +-- diagrams/
 ```
@@ -77,6 +78,8 @@ When the visible step changes through `Previous`, `Next`, or direct step selecti
 `review-data.json` is generated from `plan.md`, linked phase files, and `review.md`.
 `review-history.json` preserves prior submitted developer-review rounds plus the controller's resulting action summary so the browser UI can show what the user asked to change and how the planning loop responded.
 
+For implementation-scope plans, `review-data.json` also carries the plan's file/folder topology and planning-only evidence artifacts. These are parsed from `plan.md`, not from a separate manifest. `plan.md` remains the authoritative source; copied assets are only browser-review projections.
+
 Required top-level fields:
 
 ```json
@@ -99,9 +102,13 @@ Required top-level fields:
     "change_flow": [],
     "major_changes": [],
     "risks": [],
-    "ui_previews": []
+    "ui_previews": [],
+    "topology_contract": [],
+    "evidence_artifacts": []
   },
   "phases": [],
+  "topology_contract": [],
+  "evidence_artifacts": [],
   "review_findings": []
 }
 ```
@@ -120,7 +127,9 @@ Phase objects:
   "file_impacts": [],
   "validation": [],
   "risks": [],
-  "ui_previews": []
+  "ui_previews": [],
+  "topology_contract": [],
+  "evidence_artifacts": []
 }
 ```
 
@@ -147,6 +156,43 @@ UI preview objects are allowed only for user-visible UI changes. They are plan p
 ```
 
 Preview `asset` values should stay relative to `plans/{task-slug}/developer-review/`. The shared HTML rewrites relative preview paths through `/review-assets/{task-slug}/...`.
+
+Topology rows come from the plan's `## 파일/폴더 구조 계약` table:
+
+```json
+{
+  "id": "T1",
+  "path": "src/app/users/page.tsx",
+  "kind": "source",
+  "status": "create",
+  "phase": "P1",
+  "responsibility": "users route entry",
+  "evidence": "기존 app router 구조 확인"
+}
+```
+
+Evidence artifacts come from the plan's `## 체험 산출물` table:
+
+```json
+{
+  "id": "UI-P1-empty",
+  "phase": "P1",
+  "kind": "ui-preview",
+  "entry": "evidence/ui/P1-empty.html",
+  "asset": "assets/evidence/ui/P1-empty.html",
+  "content_hash": "abc123def456",
+  "purpose": "empty 상태 UI 확인",
+  "review_points": ["empty", "CTA", "mobile"]
+}
+```
+
+Rules:
+
+- `entry` must be a relative path under `evidence/**` in the plan folder.
+- The generator copies allowed files to `developer-review/assets/evidence/**`; the browser only opens copied assets.
+- HTML evidence is displayed in a sandboxed iframe with scripts allowed but without same-origin privileges.
+- Evidence is a planning-only projection. Do not describe it as production code, a real API mock server, React implementation, DB behavior, or live dev-server output.
+- UI evidence should show the expected screen shape and important states. API/backend/utility evidence should show sample body/query/params/auth/context input choices and representative output/status/effects in HTML/JS.
 
 ## Feedback model
 

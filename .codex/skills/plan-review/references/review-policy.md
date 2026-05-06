@@ -24,6 +24,9 @@ Typical blocker signals:
 - unresolved `blocking` ambiguity under the active plan wiki decision policy.
 - missing user-request traceability, inclusion/exclusion boundary, or user-visible completion criteria.
 - missing affected public boundary, canonical output, important negative/no-op output, recipient, final interpretation boundary, or risky scenario invariant.
+- implementation-scope topology is committed without repo-local inspection evidence, or it duplicates/contradicts existing local surfaces the plan should have reused.
+- file/folder topology, phase rows, feature contracts, and evidence artifacts contradict each other on phase, path, input, output, state, or ownership.
+- evidence artifacts are presented as production code or require real API calls, DB access, filesystem writes, live dev servers, React builds, or production stack execution for planning review.
 - missing test-strategy decisions required by the active plan wiki decision policy when later verification would otherwise choose the gate.
 - missing first-time test runner, command, spec root or test-owner placement, source/test topology, mock/API fixture policy, browser storage/auth state policy, or expected red reason when the plan expects contract tests before the test environment exists.
 - plan count, local prerequisite relationship, authority artifact, reference-comparison, Figma parity, or Figma inventory provenance contradicts the active plan wiki contract.
@@ -44,7 +47,7 @@ Typical major signals:
 - plan-file split is defensible but hides important sequencing or ownership assumptions.
 - implementation scope has Phase entries, but one or more phases lacks a meaningful completion signal, validation owner, or commit boundary.
 - developer review readiness is thin because phase labels are present but do not expose what the user should approve or what would trigger plan revision.
-- user-request traceability, public contract scanability, local prerequisite parity, or repo-fit evidence is thinner than it should be.
+- user-request traceability, public contract scanability, local prerequisite parity, topology evidence, or repo-fit evidence is thinner than it should be.
 - visible prose terminology drift reduces scanability or leaves repeated non-literal English shorthand, without making the contract ambiguous enough for a blocker.
 
 ### Minor

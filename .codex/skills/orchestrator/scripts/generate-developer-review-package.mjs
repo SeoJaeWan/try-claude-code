@@ -67,9 +67,11 @@ export function generateDeveloperReviewPackage(options) {
     throw error;
   }
 
+  ensureDir(outDir);
   const reviewData = buildReviewData({
     repoRoot,
     taskSlug,
+    outDir,
     planPath,
     planText,
     phaseRefs,
@@ -78,7 +80,6 @@ export function generateDeveloperReviewPackage(options) {
     planSignature
   });
 
-  ensureDir(outDir);
   const reviewDataPath = path.join(outDir, "review-data.json");
   const feedbackPath = path.join(outDir, "feedback.json");
   const reviewHistoryPath = path.join(outDir, "review-history.json");
@@ -191,13 +192,19 @@ function suspiciousQuestionMarkLines(text) {
   return result;
 }
 
-function buildReviewData({ repoRoot, taskSlug, planPath, planText, phaseRefs, phaseTexts, reviewMeta, planSignature }) {
+function buildReviewData({ repoRoot, taskSlug, outDir, planPath, planText, phaseRefs, phaseTexts, reviewMeta, planSignature }) {
   const title = firstHeading(planText) || taskSlug;
   const requestScope = parseKeyValueTable(section(planText, "요청과 범위"));
   const changeShapeSection = section(planText, "변경 형상");
   const changeShapeTable = parseFirstTable(changeShapeSection);
   const executionRows = parseFirstTable(section(planText, "실행 흐름")).rows;
   const riskRows = parseFirstTable(section(planText, "리스크와 검증")).rows;
+  const topologyContract = buildTopologyContract(planText);
+  const evidenceArtifacts = buildEvidenceArtifacts({
+    planText,
+    planDir: path.dirname(planPath),
+    outDir
+  });
 
   const overview = {
     user_request: listFromCell(requestScope.get("사용자 요청")),
@@ -215,7 +222,9 @@ function buildReviewData({ repoRoot, taskSlug, planPath, planText, phaseRefs, ph
       })
     ].filter(Boolean),
     risks: riskRows.map((row) => tableRowSummary(row, ["리스크 / 엣지 케이스", "영향", "완화 또는 검증"])),
-    ui_previews: []
+    ui_previews: [],
+    topology_contract: topologyContract,
+    evidence_artifacts: evidenceArtifacts
   };
 
   const inlinePhaseTexts = buildInlinePhaseTexts(planText, phaseRefs);
@@ -224,7 +233,9 @@ function buildReviewData({ repoRoot, taskSlug, planPath, planText, phaseRefs, ph
     index,
     phaseText: ref.filePath ? phaseTexts.get(ref.filePath) : inlinePhaseTexts.get(index) || "",
     flowRow: executionRows[index] || {},
-    planDir: path.dirname(planPath)
+    planDir: path.dirname(planPath),
+    topologyContract,
+    evidenceArtifacts
   }));
 
   const reviewData = {
@@ -239,6 +250,8 @@ function buildReviewData({ repoRoot, taskSlug, planPath, planText, phaseRefs, ph
     title,
     overview,
     phases,
+    topology_contract: topologyContract,
+    evidence_artifacts: evidenceArtifacts,
     review_findings: reviewMeta.findings
   };
 
@@ -250,7 +263,7 @@ function buildReviewData({ repoRoot, taskSlug, planPath, planText, phaseRefs, ph
   return reviewData;
 }
 
-function buildPhase({ ref, index, phaseText, flowRow }) {
+function buildPhase({ ref, index, phaseText, flowRow, topologyContract = [], evidenceArtifacts = [] }) {
   const id = `P${index + 1}`;
   const detailTitle = phaseText ? firstHeading(phaseText) : "";
   const title = stripPhasePrefix(detailTitle || ref.title || flowRow["Phase"] || `Phase ${index + 1}`);
@@ -291,8 +304,106 @@ function buildPhase({ ref, index, phaseText, flowRow }) {
     file_impacts: fileImpacts,
     validation,
     risks: riskRows.map((row) => tableRowSummary(row, ["리스크", "failure/validation", "대응"])),
-    ui_previews: []
+    ui_previews: [],
+    topology_contract: topologyContract.filter((item) => itemMatchesPhase(item.phase, id)),
+    evidence_artifacts: evidenceArtifacts.filter((item) => itemMatchesPhase(item.phase, id))
   };
+}
+
+function buildTopologyContract(planText) {
+  return parseFirstTable(section(planText, "파일/폴더 구조 계약")).rows
+    .map((row, index) => {
+      const sourcePath = stripMarkdown(row["경로"] || row["path"] || row["Path"] || "");
+      if (!sourcePath || isNone(sourcePath)) return null;
+      const phase = normalizePhaseRef(row["소유 phase"] || row["phase"] || row["Phase"] || row["소유 단계"] || "");
+      return {
+        id: `T${index + 1}`,
+        path: sourcePath,
+        kind: stripMarkdown(row["종류"] || row["kind"] || row["Kind"] || ""),
+        status: stripMarkdown(row["상태"] || row["status"] || row["Status"] || ""),
+        phase,
+        responsibility: stripMarkdown(row["책임"] || row["responsibility"] || row["Responsibility"] || ""),
+        evidence: stripMarkdown(row["근거"] || row["evidence"] || row["Evidence"] || "")
+      };
+    })
+    .filter(Boolean);
+}
+
+function buildEvidenceArtifacts({ planText, planDir, outDir }) {
+  const sourceRows = parseFirstTable(section(planText, "체험 산출물")).rows;
+  const evidenceAssetRoot = path.join(outDir, "assets", "evidence");
+  fs.rmSync(evidenceAssetRoot, { recursive: true, force: true });
+
+  return sourceRows
+    .map((row, index) => {
+      const id = stripMarkdown(row["id"] || row["ID"] || `E${index + 1}`);
+      const entry = stripMarkdown(row["경로"] || row["entry"] || row["asset"] || "");
+      if (!entry || isNone(entry)) return null;
+      const safeEntry = normalizeEvidenceEntry(entry);
+      const sourcePath = path.resolve(planDir, safeEntry);
+      const evidenceRoot = path.resolve(planDir, "evidence");
+      if (!sourcePath.startsWith(`${evidenceRoot}${path.sep}`)) {
+        throw evidenceError(`Evidence path escapes evidence root: ${entry}`);
+      }
+      if (!fs.existsSync(sourcePath) || !fs.statSync(sourcePath).isFile()) {
+        throw evidenceError(`Evidence file not found: ${entry}`);
+      }
+
+      const relativeInsideEvidence = safeEntry.replace(/^evidence\//, "");
+      const copiedRelative = toPosix(path.join("assets", "evidence", ...relativeInsideEvidence.split("/")));
+      const targetPath = path.join(outDir, copiedRelative);
+      ensureDir(path.dirname(targetPath));
+      fs.copyFileSync(sourcePath, targetPath);
+      const contentHash = crypto.createHash("sha256").update(fs.readFileSync(sourcePath)).digest("hex").slice(0, 12);
+      const phase = normalizePhaseRef(row["phase"] || row["Phase"] || row["단계"] || "");
+
+      return {
+        id,
+        phase,
+        kind: stripMarkdown(row["kind"] || row["Kind"] || "evidence"),
+        entry: safeEntry,
+        asset: copiedRelative,
+        content_hash: contentHash,
+        purpose: stripMarkdown(row["목적"] || row["purpose"] || row["Purpose"] || ""),
+        review_points: listFromCell(row["검토 포인트"] || row["covers"] || row["Covers"] || "")
+      };
+    })
+    .filter(Boolean);
+}
+
+function normalizeEvidenceEntry(value) {
+  const cleaned = toPosix(stripMarkdown(value)).replace(/^\.\/+/, "");
+  if (!cleaned.startsWith("evidence/")) {
+    throw evidenceError(`Evidence path must be under evidence/**: ${value}`);
+  }
+  if (path.isAbsolute(cleaned) || /^[A-Za-z]:/.test(cleaned) || cleaned.includes("\\") || /^https?:\/\//i.test(cleaned)) {
+    throw evidenceError(`Evidence path must be a relative local path: ${value}`);
+  }
+  const normalized = path.posix.normalize(cleaned);
+  if (normalized.startsWith("../") || normalized === ".." || normalized.includes("/../")) {
+    throw evidenceError(`Evidence path must not contain '..': ${value}`);
+  }
+  return normalized;
+}
+
+function evidenceError(message) {
+  const error = new Error(message);
+  error.exitCode = 3;
+  return error;
+}
+
+function normalizePhaseRef(value) {
+  const cleaned = stripMarkdown(value || "");
+  if (!cleaned || isNone(cleaned)) return "";
+  if (/^(all|전체)$/i.test(cleaned)) return "all";
+  const match = cleaned.match(/^(?:P|Phase|단계)\s*([0-9]+)/i);
+  if (match) return `P${Number(match[1])}`;
+  return cleaned;
+}
+
+function itemMatchesPhase(value, phaseId) {
+  const normalized = normalizePhaseRef(value);
+  return normalized === phaseId || normalized === "all";
 }
 
 function parseReviewArtifact(text) {
@@ -662,7 +773,9 @@ function reviewGlobalContext(model) {
       excluded_scope: asArray(overview.excluded_scope),
       change_shape: overview.change_shape || "",
       change_flow: asArray(overview.change_flow),
-      major_changes: asArray(overview.major_changes)
+      major_changes: asArray(overview.major_changes),
+      topology_contract: asArray(model?.topology_contract),
+      evidence_artifacts: asArray(model?.evidence_artifacts)
     }
   };
 }
@@ -684,7 +797,9 @@ function overviewSignaturePayload(model) {
       change_flow: asArray(overview.change_flow),
       major_changes: asArray(overview.major_changes),
       risks: asArray(overview.risks),
-      ui_previews: asArray(overview.ui_previews)
+      ui_previews: asArray(overview.ui_previews),
+      topology_contract: asArray(overview.topology_contract),
+      evidence_artifacts: asArray(overview.evidence_artifacts)
     }
   };
 }
@@ -704,7 +819,9 @@ function phaseSignaturePayload(model, phase, index) {
       file_impacts: asArray(phase?.file_impacts),
       validation: asArray(phase?.validation),
       risks: asArray(phase?.risks),
-      ui_previews: asArray(phase?.ui_previews)
+      ui_previews: asArray(phase?.ui_previews),
+      topology_contract: asArray(phase?.topology_contract),
+      evidence_artifacts: asArray(phase?.evidence_artifacts)
     }
   };
 }

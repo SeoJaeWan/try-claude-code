@@ -282,3 +282,133 @@ affected_plan_paths: []
   assert.ok(reviewData.phases[0].file_impacts.some((item) => item.includes("src/registry")));
   assert.ok(reviewData.phases[0].risks[0].includes("stale registry"));
 });
+
+test("includes topology and safely copied evidence artifacts", () => {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "orchestrator-review-evidence-"));
+  const taskSlug = "evidence-review";
+  const planDir = path.join(repoRoot, "plans", taskSlug);
+  const evidenceDir = path.join(planDir, "evidence", "ui");
+  const reviewDir = path.join(repoRoot, "plans", "_orchestrator", "review", taskSlug);
+  fs.mkdirSync(evidenceDir, { recursive: true });
+  fs.mkdirSync(reviewDir, { recursive: true });
+
+  fs.writeFileSync(path.join(evidenceDir, "P1-empty.html"), "<!doctype html><html><body><button>Invite</button></body></html>\n", "utf8");
+  fs.writeFileSync(path.join(planDir, "plan.md"), `# Evidence review
+
+## 요청과 범위
+
+| 항목 | 내용 |
+| --- | --- |
+| 사용자 요청 | users empty state를 계획 단계에서 확인 |
+| 포함 범위 | route shell, empty UI, preview |
+| 제외 범위 | 실제 API 호출 |
+| 완료 기준 | review UI에서 topology와 preview를 확인 |
+
+## 현재 근거
+
+| 근거 | 확인 내용 | plan에 반영한 결론 |
+| --- | --- | --- |
+| \`src/app/users/page.tsx\` | users route가 아직 없음 | 새 route를 생성 |
+
+## 기능 계약
+
+| 계약 | 대상 경계 | input | output | negative/no-op | 소유권 | 검증 위치 |
+| --- | --- | --- | --- | --- | --- | --- |
+| empty state | \`users route\` | user list empty | empty copy and CTA | 실제 API 호출 없음 | frontend | component test |
+
+## 파일/폴더 구조 계약
+
+| 경로 | 종류 | 상태 | 소유 phase | 책임 | 근거 |
+| --- | --- | --- | --- | --- | --- |
+| \`src/app/users/page.tsx\` | source | create | P1 | users route entry | 기존 app router 구조 확인 |
+| \`plans/${taskSlug}/evidence/ui/P1-empty.html\` | artifact | create | P1 | empty state preview | planning review evidence |
+
+## 체험 산출물
+
+| id | phase | kind | 경로 | 목적 | 검토 포인트 |
+| --- | --- | --- | --- | --- | --- |
+| UI-P1-empty | P1 | ui-preview | \`evidence/ui/P1-empty.html\` | empty 상태 UI 확인 | empty; CTA; mobile |
+
+## 실행 흐름
+
+| Phase | 목적 | 주요 변경 | 완료 신호 | 검증 | 커밋 경계 |
+| --- | --- | --- | --- | --- | --- |
+| Phase 1 | users route를 만든다 | route shell과 empty UI | empty preview와 동일한 상태 표시 | component test | phase 1: users empty |
+`, "utf8");
+
+  fs.writeFileSync(path.join(reviewDir, "review.md"), `---
+plan_path: plans/${taskSlug}/plan.md
+task_slug: ${taskSlug}
+plan_signature: evidence123
+outcome: ready
+next_action: planning_complete
+finding_signature: none
+requires_user_decision: false
+issue_codes: []
+affected_plan_paths: []
+---
+
+# plan-review
+
+## Findings
+`, "utf8");
+
+  const result = spawnSync(process.execPath, [
+    scriptPath,
+    "--task-slug", taskSlug,
+    "--plan-signature", "evidence123"
+  ], {
+    cwd: repoRoot,
+    encoding: "utf8"
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  const reviewData = JSON.parse(fs.readFileSync(path.join(planDir, "developer-review", "review-data.json"), "utf8"));
+  assert.equal(reviewData.topology_contract.length, 2);
+  assert.equal(reviewData.phases[0].topology_contract.length, 2);
+  assert.equal(reviewData.evidence_artifacts[0].asset, "assets/evidence/ui/P1-empty.html");
+  assert.equal(reviewData.phases[0].evidence_artifacts[0].id, "UI-P1-empty");
+  assert.deepEqual(reviewData.evidence_artifacts[0].review_points, ["empty", "CTA", "mobile"]);
+  assert.match(reviewData.evidence_artifacts[0].content_hash, /^[a-f0-9]{12}$/);
+  assert.equal(
+    fs.existsSync(path.join(planDir, "developer-review", "assets", "evidence", "ui", "P1-empty.html")),
+    true
+  );
+});
+
+test("rejects evidence paths outside evidence root", () => {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "orchestrator-review-evidence-bad-"));
+  const taskSlug = "bad-evidence-review";
+  const planDir = path.join(repoRoot, "plans", taskSlug);
+  const reviewDir = path.join(repoRoot, "plans", "_orchestrator", "review", taskSlug);
+  fs.mkdirSync(planDir, { recursive: true });
+  fs.mkdirSync(reviewDir, { recursive: true });
+  fs.writeFileSync(path.join(planDir, "plan.md"), `# Bad evidence
+
+## 체험 산출물
+
+| id | phase | kind | 경로 | 목적 | 검토 포인트 |
+| --- | --- | --- | --- | --- | --- |
+| BAD | P1 | ui-preview | \`../secret.html\` | bad path | security |
+
+## 실행 흐름
+
+| Phase | 목적 | 주요 변경 | 완료 신호 | 검증 | 커밋 경계 |
+| --- | --- | --- | --- | --- | --- |
+| Phase 1 | bad | bad | bad | bad | bad |
+`, "utf8");
+  fs.writeFileSync(path.join(reviewDir, "review.md"), "---\nplan_signature: bad123\noutcome: ready\n---\n\n# plan-review\n", "utf8");
+
+  const result = spawnSync(process.execPath, [
+    scriptPath,
+    "--task-slug", taskSlug,
+    "--plan-signature", "bad123"
+  ], {
+    cwd: repoRoot,
+    encoding: "utf8"
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Evidence path must be under evidence/);
+  assert.equal(fs.existsSync(path.join(planDir, "developer-review", "review-data.json")), false);
+});
