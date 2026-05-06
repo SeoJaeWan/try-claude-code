@@ -272,6 +272,18 @@ describe("transitionStatus", () => {
     assert.equal(s.status, STATUS.AWAITING_STOP_REVIEW);
   });
 
+  // Regression: after a BLOCK, the next plan-agent dispatch's commits go
+  // through stop-review again while the state stays in STOP_REVIEW_BLOCKED
+  // (the runner skill does not transition back to AWAITING_STOP_REVIEW between
+  // re-dispatches). When that re-review ALLOWs, the Stop hook advances the
+  // plan directly from STOP_REVIEW_BLOCKED to AWAITING_DEV_REVIEW.
+  it("recovers from BLOCK directly into dev-review on the next ALLOW", () => {
+    const s = fresh();
+    s.status = STATUS.STOP_REVIEW_BLOCKED;
+    transitionStatus(s, STATUS.AWAITING_DEV_REVIEW);
+    assert.equal(s.status, STATUS.AWAITING_DEV_REVIEW);
+  });
+
   it("rejects illegal jumps (e.g. validating → approved)", () => {
     const s = fresh();
     assert.throws(() => transitionStatus(s, STATUS.APPROVED));

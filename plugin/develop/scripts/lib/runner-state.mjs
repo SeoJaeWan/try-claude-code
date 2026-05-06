@@ -25,74 +25,17 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { absoluteNormalizePath, toPosixPath } from "./fs.mjs";
+import {
+  ALLOWED_TRANSITIONS,
+  SCHEMA_VERSION,
+  STATUS,
+  STATUS_VALUES,
+  TERMINAL_STATUSES,
+} from "./runner-state-machine.mjs";
 
-export const SCHEMA_VERSION = 1;
-
-// All legal `status` values, in the canonical order they appear during a
-// plan's lifecycle. The runner skill reads `status` to decide where to resume,
-// so the set of strings here is part of the contract — additions are fine,
-// renames are a breaking change.
-export const STATUS = Object.freeze({
-  VALIDATING: "validating",
-  DISPATCHING: "dispatching",
-  AWAITING_STOP_REVIEW: "awaiting_stop_review",
-  STOP_REVIEW_BLOCKED: "stop_review_blocked",
-  AWAITING_DEV_REVIEW: "awaiting_dev_review",
-  REWORK_IN_PROGRESS: "rework_in_progress",
-  QA_PENDING: "qa_pending",
-  APPROVED: "approved",
-  MERGED: "merged",
-});
-
-const STATUS_VALUES = new Set(Object.values(STATUS));
-
-// Terminal states never re-enter the runner flow without being deleted first.
-// UserPromptSubmit treats a state file in TERMINAL status as "this plan is
-// finished — start a fresh one or remove the state file to re-run".
-export const TERMINAL_STATUSES = new Set([STATUS.MERGED]);
-
-// Allowed status transitions. The runner skill drives most transitions; hooks
-// drive a few (UserPromptSubmit creates VALIDATING, Stop hook moves
-// AWAITING_STOP_REVIEW to AWAITING_DEV_REVIEW or STOP_REVIEW_BLOCKED).
-// Anything not listed is rejected so a buggy caller cannot quietly corrupt
-// state. Self-transitions are allowed where they are idempotent (e.g. Stop
-// hook re-arming after a BLOCK).
-const ALLOWED_TRANSITIONS = new Map([
-  [null, new Set([STATUS.VALIDATING])], // first write
-  [STATUS.VALIDATING, new Set([STATUS.DISPATCHING, STATUS.VALIDATING])],
-  [STATUS.DISPATCHING, new Set([STATUS.AWAITING_STOP_REVIEW, STATUS.DISPATCHING])],
-  [
-    STATUS.AWAITING_STOP_REVIEW,
-    new Set([
-      STATUS.STOP_REVIEW_BLOCKED,
-      STATUS.AWAITING_DEV_REVIEW,
-      STATUS.AWAITING_STOP_REVIEW,
-    ]),
-  ],
-  [
-    STATUS.STOP_REVIEW_BLOCKED,
-    new Set([STATUS.AWAITING_STOP_REVIEW, STATUS.STOP_REVIEW_BLOCKED]),
-  ],
-  [
-    STATUS.AWAITING_DEV_REVIEW,
-    new Set([
-      STATUS.REWORK_IN_PROGRESS,
-      STATUS.QA_PENDING,
-      STATUS.APPROVED,
-      STATUS.AWAITING_DEV_REVIEW,
-    ]),
-  ],
-  [
-    STATUS.REWORK_IN_PROGRESS,
-    new Set([STATUS.AWAITING_DEV_REVIEW, STATUS.REWORK_IN_PROGRESS]),
-  ],
-  [
-    STATUS.QA_PENDING,
-    new Set([STATUS.AWAITING_DEV_REVIEW, STATUS.QA_PENDING]),
-  ],
-  [STATUS.APPROVED, new Set([STATUS.MERGED, STATUS.APPROVED])],
-  [STATUS.MERGED, new Set()],
-]);
+// Re-export the state-machine contract so existing callers
+// (`from "./lib/runner-state.mjs"`) keep working unchanged.
+export { SCHEMA_VERSION, STATUS, TERMINAL_STATUSES };
 
 function nowIso() {
   return new Date().toISOString();
