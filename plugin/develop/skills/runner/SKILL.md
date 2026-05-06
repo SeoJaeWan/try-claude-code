@@ -169,8 +169,9 @@ bootstrap, not by scanning git output:
 - **`status: dispatching`, worktree missing** — previous run never finished
   Step 2. Re-run Step 2 from scratch.
 
-After the worktree is in place, transition the state to
-`awaiting_stop_review` (it stays in `dispatching` until the Agent dispatch in
+After the worktree is in place, advance the state to
+`awaiting_stop_review` via `transitionStatus(state, STATUS.AWAITING_STOP_REVIEW)`
+from `runner-state.mjs` (it stays in `dispatching` until the Agent dispatch in
 Step 3 actually fires; the transition lives there, not here). Then move on.
 
 ### Step 3. Dispatch the plan agent (single Agent call)
@@ -180,17 +181,21 @@ commits phase by phase inside its single turn. The skill's only job in this
 step is to: (a) arm the stop-review gate, and (b) hand the agent the right
 working directory, plan path, and state path.
 
-Before calling `Agent`, update the state file:
+Before calling `Agent`, update the state file via the runner-state library:
 
-- Set `state.status = "awaiting_stop_review"`.
-- Set `state.stop_review.armed = true`.
-- Save via the runner-state library (atomic write).
+- `transitionStatus(state, STATUS.AWAITING_STOP_REVIEW)` — never assign
+  `state.status` directly. The helper enforces the legal-transitions table
+  (`runner-state-machine.mjs`); a raw assignment bypasses it and a typo
+  silently corrupts the JSON.
+- `setStopReviewArmed(state, true)` — same reason; do not write the nested
+  field by hand.
+- `saveState(statePath, state)` — atomic write, also re-runs `validateState`
+  before persisting.
 
 The simplest way to do that from the skill is to run a small Node script
-inline that imports `runner-state.mjs` — but the goal is just an atomic write
-of those two fields, so any equivalent that does not corrupt the file is
-fine. Direct ad-hoc edits with `Edit`/`Write` on the JSON are discouraged
-because they bypass the schema check.
+inline that imports `runner-state.mjs`. Direct ad-hoc edits with
+`Edit`/`Write` on the JSON are discouraged because they bypass the schema
+check **and** the transition guard.
 
 Then dispatch:
 
@@ -297,11 +302,12 @@ When the user replies `리뷰 완료`, re-enter the dev-review skill; it returns
 a terminal summary based on `feedback.json`:
 
 - `result = "approved"` →
-    transition state to `approved`.
-    Go to Step 5.
+    `transitionStatus(state, STATUS.APPROVED)`. Go to Step 5.
 - `result = "rework"` →
-    transition state to `rework_in_progress` and write the feedback path
-    into `state.dev_review.last_feedback_path`. Then for each item in
+    `transitionStatus(state, STATUS.REWORK_IN_PROGRESS)` and write the
+    feedback path into `state.dev_review.last_feedback_path` (the round
+    bump itself goes through `bumpDevReviewRound(state)` — see below).
+    Then for each item in
     `rework_items[]`, dispatch `Agent(subagent_type: item.dispatch_agent,
     ...)` with this prompt shape:
 
@@ -346,15 +352,15 @@ a terminal summary based on `feedback.json`:
     parallel when they target different commits whose files do not overlap.
     The rework dispatch's description is whatever the runtime produces; it
     is not a `Plan: ...` dispatch and does not arm the stop-review gate.
-    After all rework agents commit, transition state back to
-    `awaiting_dev_review` and re-invoke `dev-review` with `review_iteration
-    += 1`.
+    After all rework agents commit, advance the state with
+    `transitionStatus(state, STATUS.AWAITING_DEV_REVIEW)` and re-invoke
+    `dev-review` with `review_iteration += 1`.
 
 - `result = "qa_required"` →
-    transition state to `qa_pending`. Answer the questions in chat, then
-    re-invoke `dev-review` with the same `review_iteration` and ask the user
-    to re-review. Transition back to `awaiting_dev_review` after the
-    re-invocation.
+    `transitionStatus(state, STATUS.QA_PENDING)`. Answer the questions in
+    chat, then re-invoke `dev-review` with the same `review_iteration` and
+    ask the user to re-review. After the re-invocation,
+    `transitionStatus(state, STATUS.AWAITING_DEV_REVIEW)`.
 
 Do not advance past this gate on anything except `result = "approved"`. Do
 not remove the worktree, do not merge, do not ask about merge until approval.
@@ -377,7 +383,7 @@ After cleanup, output as plain text (do NOT use AskUserQuestion):
 - Summary of all commits: `git log --oneline <base>..<task_branch>`
 - Changed files: `git diff --stat <base>..<task_branch>`
 - The three options:
-  - "base 브랜치(<base>)에 병합" → `git merge <task_branch> --no-ff -m "merge: <task_branch> into <base>"` then `git branch -d <task_branch>`. Transition state to `merged`.
+  - "base 브랜치(<base>)에 병합" → `git merge <task_branch> --no-ff -m "merge: <task_branch> into <base>"` then `git branch -d <task_branch>`. `transitionStatus(state, STATUS.MERGED)`.
   - "PR 생성" → leave the task branch in place for PR creation. State stays at `approved`.
   - "나중에 처리" → leave the task branch, do nothing. State stays at `approved`.
 
