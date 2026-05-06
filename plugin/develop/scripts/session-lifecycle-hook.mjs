@@ -1,28 +1,29 @@
 #!/usr/bin/env node
 
+// Session lifecycle hook — SessionStart and SessionEnd only.
+//
+// PostToolUse(Bash) and PostToolUse(Agent) used to live here too. They sniffed
+// `git worktree add/remove` and Agent description regexes to mirror runner
+// state into the session JSON. That responsibility has moved into the
+// runner-state SSOT (`plans/{stem}/.runner-state.json`), driven directly by
+// the runner skill and the UserPromptSubmit hook, so the regex contract is
+// no longer needed and the matching code has been deleted.
+//
+// What stays here:
+//   - SessionStart: create the session JSON (tracking Codex thread reuse and
+//     active plan-state pointers), propagate the session id and plugin data
+//     dir to subsequent hooks, and probe Codex once for visibility.
+//   - SessionEnd: remove the session JSON and prune stale ones.
+
 import fs from "node:fs";
-import path from "node:path";
 import process from "node:process";
 
 import {
+  cleanStaleSessions,
   createSession,
   deleteSession,
-  cleanStaleSessions,
-  addWorktree,
-  removeWorktree,
-  updateWorktreePlan,
-  setWorktreeStopReviewActive
 } from "./lib/sessions.mjs";
-import { toPosixPath } from "./lib/fs.mjs";
 import { runCommand } from "./lib/process.mjs";
-import {
-  PLAN_DESC_RE,
-  PLAN_PATH_RE,
-  WORKTREE_ADD_RE,
-  WORKTREE_PATH_RE,
-  WORKTREE_REMOVE_RE,
-} from "./lib/contract.mjs";
-import { recordHookEvent } from "./lib/telemetry.mjs";
 import { SESSION_ID_ENV } from "./lib/tracked-jobs.mjs";
 
 const PLUGIN_DATA_ENV = "CLAUDE_PLUGIN_DATA";
@@ -30,9 +31,7 @@ const STALE_SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 function readHookInput() {
   const raw = fs.readFileSync(0, "utf8").trim();
-  if (!raw) {
-    return {};
-  }
+  if (!raw) return {};
   return JSON.parse(raw);
 }
 
@@ -41,15 +40,9 @@ function shellEscape(value) {
 }
 
 function appendEnvVar(name, value) {
-  if (!process.env.CLAUDE_ENV_FILE || value == null || value === "") {
-    return;
-  }
+  if (!process.env.CLAUDE_ENV_FILE || value == null || value === "") return;
   fs.appendFileSync(process.env.CLAUDE_ENV_FILE, `export ${name}=${shellEscape(value)}\n`, "utf8");
 }
-
-// ---------------------------------------------------------------------------
-// SessionStart
-// ---------------------------------------------------------------------------
 
 function probeCodex() {
   try {
@@ -79,171 +72,36 @@ function reportCodexProbe(probe) {
       `  reason: ${probe.reason}`,
       `  install: ${codexInstallHint()}`,
       "  (The session will continue normally; stop-time reviews simply won't run.)",
-      ""
-    ].join("\n")
+      "",
+    ].join("\n"),
   );
 }
 
 function handleSessionStart(input) {
   const sessionId = input.session_id;
-  if (!sessionId) {
-    return;
-  }
+  if (!sessionId) return;
   const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
   createSession(sessionId, cwd);
-
-  // Propagate session ID and plugin data dir to subsequent hooks via CLAUDE_ENV_FILE.
   appendEnvVar(SESSION_ID_ENV, sessionId);
   appendEnvVar(PLUGIN_DATA_ENV, process.env[PLUGIN_DATA_ENV]);
-
-  // Probe Codex once at session start so the user learns about it immediately
-  // rather than discovering it on the first stop-gate failure. Informational
-  // only — never blocks the session.
   reportCodexProbe(probeCodex());
 }
 
-// ---------------------------------------------------------------------------
-// SessionEnd
-// ---------------------------------------------------------------------------
-
 function handleSessionEnd(input) {
   const sessionId = input.session_id || process.env[SESSION_ID_ENV];
-  if (sessionId) {
-    deleteSession(sessionId);
-  }
+  if (sessionId) deleteSession(sessionId);
   cleanStaleSessions(STALE_SESSION_MAX_AGE_MS);
 }
-
-// ---------------------------------------------------------------------------
-// PostToolUse (Bash) — detect git worktree add/remove
-// ---------------------------------------------------------------------------
-
-// Regexes live in lib/contract.mjs so runner SKILL.md and these hooks share
-// a single source of truth.
-
-function resolveWorktreePath(baseCwd, gitCDir, worktreeArg) {
-  // Strip surrounding quotes if present.
-  const cleaned = worktreeArg.replace(/^["']|["']$/g, "");
-  if (path.isAbsolute(cleaned)) {
-    return cleaned;
-  }
-  const base = gitCDir ? path.resolve(baseCwd, gitCDir.replace(/^["']|["']$/g, "")) : baseCwd;
-  return path.resolve(base, cleaned);
-}
-
-function handlePostToolUse(input) {
-  const sessionId = input.session_id || process.env[SESSION_ID_ENV];
-  if (!sessionId) {
-    return;
-  }
-
-  const command = input.tool_input?.command ?? "";
-  if (!command) {
-    return;
-  }
-
-  const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
-  const mentionsWorktree = /worktree/i.test(command);
-
-  // Check for git worktree add
-  const addMatch = command.match(WORKTREE_ADD_RE);
-  if (addMatch) {
-    const gitCDir = addMatch[1] || null;
-    const branch = addMatch[2] || null;
-    const wtArg = addMatch[3];
-    const resolvedPath = resolveWorktreePath(cwd, gitCDir, wtArg);
-
-    // Only register if the worktree directory actually exists (PostToolUse = after execution).
-    if (fs.existsSync(resolvedPath)) {
-      addWorktree(sessionId, resolvedPath, branch);
-    }
-    recordHookEvent({ kind: "worktree_add", ok: true, sessionId });
-    return;
-  }
-
-  // Check for git worktree remove
-  const removeMatch = command.match(WORKTREE_REMOVE_RE);
-  if (removeMatch) {
-    const gitCDir = removeMatch[1] || null;
-    const wtArg = removeMatch[2];
-    const resolvedPath = resolveWorktreePath(cwd, gitCDir, wtArg);
-    removeWorktree(sessionId, resolvedPath);
-    recordHookEvent({ kind: "worktree_remove", ok: true, sessionId });
-    return;
-  }
-
-  // Only emit miss telemetry when the command *looked* like a worktree op.
-  // This keeps the metrics file signal-rich; normal Bash runs are not logged.
-  if (mentionsWorktree) {
-    recordHookEvent({ kind: "worktree_cmd", ok: false, sessionId });
-  }
-}
-
-// ---------------------------------------------------------------------------
-// PostToolUse (Agent) — detect plan-runner plan dispatch
-// ---------------------------------------------------------------------------
-
-// PLAN_DESC_RE, PLAN_PATH_RE and WORKTREE_PATH_RE are imported from lib/contract.mjs.
-
-function handlePostAgentUse(input) {
-  const sessionId = input.session_id || process.env[SESSION_ID_ENV];
-  if (!sessionId) {
-    return;
-  }
-
-  const description = input.tool_input?.description ?? "";
-  const prompt = input.tool_input?.prompt ?? "";
-  const planMatch = description.match(PLAN_DESC_RE);
-
-  if (!planMatch) {
-    return;
-  }
-
-  const planSlug = planMatch[1];
-  const wtMatch = prompt.match(WORKTREE_PATH_RE);
-  if (!wtMatch) {
-    recordHookEvent({ kind: "plan_dispatch", ok: false, sessionId, planSlug, missing: "worktree_path" });
-    return;
-  }
-
-  const wtPath = toPosixPath(wtMatch[1]);
-  const planMatchPath = prompt.match(PLAN_PATH_RE);
-  const planFile = planMatchPath ? toPosixPath(planMatchPath[1]) : null;
-
-  updateWorktreePlan(sessionId, wtPath, planSlug, planFile);
-  // Arm the one-shot stop-review gate for this worktree. Stop hook disarms it
-  // permanently on ALLOW/skipped; BLOCK leaves it armed so re-dispatched
-  // plan-agent commits trigger another review.
-  setWorktreeStopReviewActive(sessionId, wtPath, true);
-  recordHookEvent({
-    kind: "plan_dispatch",
-    ok: true,
-    sessionId,
-    planSlug,
-    hasPlanFile: Boolean(planFile),
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Main dispatcher
-// ---------------------------------------------------------------------------
 
 function main() {
   const mode = process.argv[2] ?? "";
   const input = readHookInput();
-
   switch (mode) {
     case "session-start":
       handleSessionStart(input);
       break;
     case "session-end":
       handleSessionEnd(input);
-      break;
-    case "post-tool-use":
-      handlePostToolUse(input);
-      break;
-    case "post-agent-use":
-      handlePostAgentUse(input);
       break;
     default:
       process.stderr.write(`session-lifecycle-hook: unknown mode "${mode}"\n`);

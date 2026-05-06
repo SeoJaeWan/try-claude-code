@@ -1,3 +1,24 @@
+// Session-scoped state for the runner pipeline.
+//
+// One file per Claude Code session, written by SessionStart and consumed by
+// the Stop hook. The session file holds two kinds of information:
+//
+//   1. Codex thread reuse — `stopReviewThreadId`. Reusing a single Codex
+//      thread across stop-review passes avoids cold-start latency, so the
+//      thread id outlives any individual plan and stays here.
+//
+//   2. Active plan-state pointers — `activePlanStates`. The Stop hook needs
+//      to know which plan-state files this session is currently driving.
+//      Keeping a small list of paths (not the plan state itself) lets the
+//      Stop hook open the relevant `.runner-state.json` files without
+//      globbing the entire `plans/` tree.
+//
+// Plan-level details (worktree path, current status, BLOCK history,
+// pendingStopReview flag) used to live here on a `worktrees[]` array. They
+// have been moved to `lib/runner-state.mjs` (one file per plan) so the runner
+// flow stays debuggable and survives session boundaries. This module no
+// longer carries any per-plan field.
+
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -31,13 +52,18 @@ export function createSession(sessionId, cwd) {
     sessionId,
     createdAt: nowIso(),
     cwd: normalizePath(cwd),
-    worktrees: [],
-    stopReviewThreadId: null
+    activePlanStates: [],
+    stopReviewThreadId: null,
   };
   fs.writeFileSync(resolveSessionFile(sessionId), `${JSON.stringify(session, null, 2)}\n`, "utf8");
   return session;
 }
 
+// loadSession is forgiving by design: legacy session files that still carry
+// the old `worktrees[]` / `blockHistory` fields parse cleanly, but only the
+// new fields are surfaced to callers. The next saveSession overwrites the
+// file in the new shape, so legacy keys decay naturally without a migration
+// step.
 export function loadSession(sessionId) {
   const file = resolveSessionFile(sessionId);
   if (!fs.existsSync(file)) {
@@ -49,9 +75,10 @@ export function loadSession(sessionId) {
       sessionId: parsed.sessionId ?? sessionId,
       createdAt: parsed.createdAt ?? nowIso(),
       cwd: parsed.cwd ?? "",
-      worktrees: Array.isArray(parsed.worktrees) ? parsed.worktrees : [],
+      activePlanStates: Array.isArray(parsed.activePlanStates)
+        ? parsed.activePlanStates.filter((p) => typeof p === "string" && p.length > 0)
+        : [],
       stopReviewThreadId: parsed.stopReviewThreadId ?? null,
-      blockHistory: Array.isArray(parsed.blockHistory) ? parsed.blockHistory : []
     };
   } catch {
     return null;
@@ -63,7 +90,7 @@ function saveSession(session) {
   fs.writeFileSync(
     resolveSessionFile(session.sessionId),
     `${JSON.stringify(session, null, 2)}\n`,
-    "utf8"
+    "utf8",
   );
 }
 
@@ -106,72 +133,55 @@ export function cleanStaleSessions(maxAgeMs = STALE_SESSION_MS) {
   }
 }
 
-export function addWorktree(sessionId, worktreePath, branch) {
-  const session = loadSession(sessionId);
-  if (!session) {
-    return;
-  }
-  const normalized = normalizePath(worktreePath);
-  const exists = session.worktrees.some((wt) => normalizePath(wt.path) === normalized);
-  if (exists) {
-    return;
-  }
-  session.worktrees.push({
-    path: normalized,
-    branch: branch || null,
-    addedAt: nowIso(),
-    lastReviewedCommit: null
-  });
-  saveSession(session);
+// ---------------------------------------------------------------------------
+// Active plan-state pointers
+// ---------------------------------------------------------------------------
+//
+// The runner pipeline registers each plan it starts here so the Stop hook
+// can find the relevant plan-state files without globbing. Pointers are
+// normalized POSIX paths so comparisons are stable across the Bash and PWSH
+// callers that hand them in.
+
+function normalizePtr(p) {
+  return normalizePath(p);
 }
 
-export function updateWorktreeReviewedCommit(sessionId, worktreePath, commitSha) {
+export function addActivePlanState(sessionId, statePath) {
   const session = loadSession(sessionId);
-  if (!session) {
-    return;
-  }
-  const normalized = normalizePath(worktreePath);
-  const wt = session.worktrees.find((w) => normalizePath(w.path) === normalized);
-  if (wt) {
-    wt.lastReviewedCommit = commitSha;
+  if (!session) return;
+  const ptr = normalizePtr(statePath);
+  if (!ptr) return;
+  if (!session.activePlanStates.includes(ptr)) {
+    session.activePlanStates.push(ptr);
     saveSession(session);
   }
 }
 
-// One-shot stop-review lifecycle flag.
-// Armed when a plan agent is dispatched (Step 3 of plan-runner). Disarmed
-// permanently once stop-review returns ALLOW (or is skipped because Codex is
-// unavailable). BLOCK leaves the flag armed so a re-dispatched plan agent's
-// next commits get reviewed again. Once disarmed, no later turn-end
-// (dev-review URL emission, rework Agent commits, etc.) re-fires the gate.
-export function setWorktreeStopReviewActive(sessionId, worktreePath, active) {
+export function removeActivePlanState(sessionId, statePath) {
   const session = loadSession(sessionId);
-  if (!session) {
-    return;
-  }
-  const normalized = normalizePath(worktreePath);
-  const wt = session.worktrees.find((w) => normalizePath(w.path) === normalized);
-  if (wt) {
-    wt.pendingStopReview = Boolean(active);
+  if (!session) return;
+  const ptr = normalizePtr(statePath);
+  if (!ptr) return;
+  const before = session.activePlanStates.length;
+  session.activePlanStates = session.activePlanStates.filter((p) => p !== ptr);
+  if (session.activePlanStates.length !== before) {
     saveSession(session);
   }
 }
 
-export function updateWorktreePlan(sessionId, worktreePath, planSlug, planFile) {
+export function listActivePlanStates(sessionId) {
   const session = loadSession(sessionId);
-  if (!session) {
-    return;
-  }
-  const normalized = normalizePath(worktreePath);
-  const wt = session.worktrees.find((w) => normalizePath(w.path) === normalized);
-  if (wt) {
-    wt.currentPlan = planSlug;
-    if (planFile) {
-      wt.planFile = planFile;
-    }
-    saveSession(session);
-  }
+  return session ? [...session.activePlanStates] : [];
 }
+
+// ---------------------------------------------------------------------------
+// Codex thread reuse
+// ---------------------------------------------------------------------------
+//
+// The Stop hook stores the Codex thread id here after the first review pass
+// in a session. Subsequent passes resume the same thread to skip cold start.
+// Plan-scoped, per-plan thread isolation was considered and explicitly
+// declined: the latency win of reuse outweighs the noise of a shared thread.
 
 export function getStopReviewThreadId(sessionId) {
   const session = loadSession(sessionId);
@@ -180,73 +190,7 @@ export function getStopReviewThreadId(sessionId) {
 
 export function setStopReviewThreadId(sessionId, threadId) {
   const session = loadSession(sessionId);
-  if (!session) {
-    return;
-  }
+  if (!session) return;
   session.stopReviewThreadId = threadId;
   saveSession(session);
-}
-
-export function removeWorktree(sessionId, worktreePath) {
-  const session = loadSession(sessionId);
-  if (!session) {
-    return;
-  }
-  const normalized = normalizePath(worktreePath);
-  session.worktrees = session.worktrees.filter((wt) => normalizePath(wt.path) !== normalized);
-  saveSession(session);
-}
-
-// Record a BLOCK decision by its fingerprint (sha256 of the normalized reason).
-// If the most recent block has the same fingerprint, increment its count;
-// otherwise append a new entry with count=1. Returns { fingerprint, count }.
-export function recordBlock(sessionId, fingerprint) {
-  const session = loadSession(sessionId);
-  if (!session) {
-    return { fingerprint, count: 1 };
-  }
-  session.blockHistory = session.blockHistory || [];
-  const last = session.blockHistory[session.blockHistory.length - 1];
-  if (last && last.fingerprint === fingerprint) {
-    last.count = (last.count || 1) + 1;
-    last.lastAt = nowIso();
-  } else {
-    session.blockHistory.push({
-      fingerprint,
-      count: 1,
-      firstAt: nowIso(),
-      lastAt: nowIso()
-    });
-  }
-  // Cap block history to last 10 entries.
-  if (session.blockHistory.length > 10) {
-    session.blockHistory = session.blockHistory.slice(-10);
-  }
-  saveSession(session);
-  const current = session.blockHistory[session.blockHistory.length - 1];
-  return { fingerprint: current.fingerprint, count: current.count };
-}
-
-// Called when stop-gate returns ALLOW. Clears consecutive-BLOCK tracking so a
-// later BLOCK with the same fingerprint starts fresh at count=1.
-export function clearRecentBlockStreak(sessionId) {
-  const session = loadSession(sessionId);
-  if (!session || !Array.isArray(session.blockHistory) || session.blockHistory.length === 0) {
-    return;
-  }
-  // Keep the history for auditability but mark the streak as broken by
-  // appending a synthetic "allow" separator.
-  const last = session.blockHistory[session.blockHistory.length - 1];
-  if (last && last.fingerprint !== "__allow__") {
-    session.blockHistory.push({
-      fingerprint: "__allow__",
-      count: 1,
-      firstAt: nowIso(),
-      lastAt: nowIso()
-    });
-    if (session.blockHistory.length > 10) {
-      session.blockHistory = session.blockHistory.slice(-10);
-    }
-    saveSession(session);
-  }
 }
