@@ -13,6 +13,12 @@ import { createReadStream } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  COMMENT_TYPE,
+  COMMENT_TYPE_LIST_TEXT,
+  COMMENT_TYPE_VALUES,
+} from "./lib/comment-types.mjs";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const htmlRoot = path.resolve(__dirname, "..", "assets");
 const argv = process.argv.slice(2);
@@ -49,7 +55,6 @@ const port = Number.isFinite(requestedPort) ? requestedPort : 9797;
 const SLUG_RE = /^[A-Za-z0-9_-]+$/;
 const SHA_RE = /^[a-f0-9]{40}$/;
 const COMMENT_ID_RE = /^cm_\d+$/;
-const VALID_TYPES = new Set(["needs-change", "question", "out-of-scope"]);
 const VALID_SIDES = new Set(["new", "old"]);
 
 const isSafeSlug = (s) => typeof s === "string" && SLUG_RE.test(s);
@@ -389,7 +394,7 @@ async function handleCommentCreate(req, res, slug, dataRoot) {
       line_end: body.line_end,
       type: body.type,
       body: body.body ?? "",
-      dispatch_agent: body.type === "needs-change" ? body.dispatch_agent : null,
+      dispatch_agent: body.type === COMMENT_TYPE.NEEDS_CHANGE ? body.dispatch_agent : null,
       created_at: now,
       updated_at: now,
     };
@@ -420,14 +425,14 @@ async function handleCommentPatch(req, res, slug, dataRoot, id) {
     const next = { ...current };
     if (typeof body.body === "string") next.body = body.body;
     if (typeof body.type === "string") {
-      if (!VALID_TYPES.has(body.type)) return sendJson(res, 400, { error: "invalid type" });
+      if (!COMMENT_TYPE_VALUES.has(body.type)) return sendJson(res, 400, { error: "invalid type" });
       next.type = body.type;
     }
     if (Object.prototype.hasOwnProperty.call(body, "dispatch_agent")) {
       next.dispatch_agent = body.dispatch_agent;
     }
 
-    if (next.type === "needs-change") {
+    if (next.type === COMMENT_TYPE.NEEDS_CHANGE) {
       if (!next.dispatch_agent || !isAvailableAgent(model, next.dispatch_agent)) {
         return sendJson(res, 400, { error: "needs-change requires a valid dispatch_agent" });
       }
@@ -499,7 +504,7 @@ async function handleSubmit(req, res, slug, dataRoot) {
 
   // Server-side guardrail: every needs-change comment must carry a valid agent.
   const offenders = fb.comments.filter(
-    (c) => c.type === "needs-change" && !isAvailableAgent(model, c.dispatch_agent),
+    (c) => c.type === COMMENT_TYPE.NEEDS_CHANGE && !isAvailableAgent(model, c.dispatch_agent),
   );
   if (offenders.length > 0) {
     return sendJson(res, 400, {
@@ -524,8 +529,8 @@ function validateCommentInput(body, model) {
   if (!VALID_SIDES.has(body.side)) return "side must be 'new' or 'old'";
   if (!Number.isInteger(body.line_start) || body.line_start < 1) return "invalid line_start";
   if (!Number.isInteger(body.line_end) || body.line_end < body.line_start) return "invalid line_end";
-  if (!VALID_TYPES.has(body.type)) return "type must be needs-change | question | out-of-scope";
-  if (body.type === "needs-change") {
+  if (!COMMENT_TYPE_VALUES.has(body.type)) return `type must be ${COMMENT_TYPE_LIST_TEXT}`;
+  if (body.type === COMMENT_TYPE.NEEDS_CHANGE) {
     if (!body.dispatch_agent || !isAvailableAgent(model, body.dispatch_agent)) {
       return "needs-change requires a valid dispatch_agent";
     }
