@@ -1,30 +1,23 @@
 import process from "node:process";
 
+// Helper CLI was simplified in the runner-state migration. Every per-plan
+// input that the helper used to take as a separate flag now lives in the
+// plan-state JSON, so the helper only needs `--state-path`. `--out` is
+// optional — when omitted, the helper writes
+// `{state-dir}/dev-review/review-data.json` (next to the state file).
+
 const FLAGS = {
   string: new Set([
-    "--task-slug",
-    "--plan-path",
-    "--worktree",
-    "--base",
-    "--task-branch",
+    "--state-path",
     "--out",
     "--diffs-dir",
     "--log-level",
     "--now",
   ]),
-  integer: new Set(["--iteration"]),
   repeatable: new Set(["--available-agents-dir"]),
 };
 
-const REQUIRED = [
-  "--task-slug",
-  "--plan-path",
-  "--worktree",
-  "--base",
-  "--task-branch",
-  "--iteration",
-  "--out",
-];
+const REQUIRED = ["--state-path"];
 
 export function parseArgs(argv) {
   const raw = argv.slice(2);
@@ -43,12 +36,6 @@ export function parseArgs(argv) {
 
     if (FLAGS.string.has(flag)) {
       out[camelize(flag)] = value;
-    } else if (FLAGS.integer.has(flag)) {
-      const parsed = Number.parseInt(value, 10);
-      if (!Number.isFinite(parsed) || parsed < 1) {
-        throw invalid(`invalid integer for ${flag}: ${value}`);
-      }
-      out[camelize(flag)] = parsed;
     } else if (FLAGS.repeatable.has(flag)) {
       out.availableAgentsDirs.push(value);
     } else {

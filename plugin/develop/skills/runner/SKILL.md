@@ -273,23 +273,22 @@ Action:
 ### Step 4. Developer review gate (browser)
 
 Once `status` is `awaiting_dev_review`, invoke the `dev-review` skill to
-collect explicit per-commit reviewer approval. The dev-review skill reads
-state metadata (worktree, branch, plan, current round) so it does not need
-to be told everything separately, but it does need the inputs the existing
-contract expects:
+collect explicit per-commit reviewer approval. The dev-review skill takes a
+single input — the absolute path to the plan-state JSON — and reads
+everything else (slug, plan path, worktree, branches, iteration) from it:
 
-- `task_slug` — `state.plan_slug`
-- `plan_path` — `state.plan_path`
-- `worktree_path` — `state.worktree_path`
-- `base_branch` — `state.base_branch`
-- `task_branch` — `state.task_branch`
-- `review_iteration` — `state.dev_review.current_round + 1` for a new round,
-  the existing round when re-entering after a `qa_required` answer
+```
+dev-review(state_path: <state.state_path>)
+```
 
-Before invoking dev-review for a fresh round, bump
-`state.dev_review.current_round` and clear `last_feedback_path` (the
-runner-state library exposes a helper for this). Save state. Then call the
-skill.
+Before invoking for a **fresh round**, bump `state.dev_review.current_round`
+via `runner-state.bumpDevReviewRound(state)` and save. The dev-review skill
+and helper script use that value directly as `review_iteration` — they do
+not increment it themselves.
+
+Re-entering for the **same round** (e.g. after answering `qa_required`
+questions, or simply because the user replied `리뷰 완료`) does NOT bump
+the round; just call the skill again with the same `state_path`.
 
 The dev-review skill prints a server URL and ends its turn so the user can
 review in the browser and reply `리뷰 완료`.

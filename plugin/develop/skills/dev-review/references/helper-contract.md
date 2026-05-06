@@ -1,20 +1,15 @@
-# Helper Script Contract (v2)
+# Helper Script Contract (v2 / runner-state)
 
 The deterministic generator is `plugin/develop/skills/dev-review/scripts/generate-review-data.mjs`. The skill invokes it once per round and relies on its output without re-validating git state.
 
-In v2 the helper produces the **final** `review-data.json` directly — no `.partial.json`, no interpretation step, no agent. Every field is deterministic.
+The helper produces the **final** `review-data.json` directly — no `.partial.json`, no interpretation step, no agent. Every field is deterministic. As of the runner-state migration, the helper takes a single per-plan input (`--state-path`) and reads everything it needs from the plan-state JSON.
 
 ## CLI
 
 ```bash
 node {CLAUDE_PLUGIN_ROOT}/develop/skills/dev-review/scripts/generate-review-data.mjs \
-  --task-slug       <string>         # required
-  --plan-path       <path>           # required, must exist (used for plan_signature only)
-  --worktree        <path>           # required, must exist with task_branch checked out
-  --base            <branch>         # required, base branch name
-  --task-branch     <branch>         # required, task branch name
-  --iteration       <integer>        # required, 1 for first round, N+1 after rework
-  --out             <path>           # required, where to write review-data.json
+  --state-path      <path>           # required; plan-state JSON
+  --out             <path>           # optional; defaults to {state-dir}/dev-review/review-data.json
   --diffs-dir       <path>           # optional, defaults to {out-dir}/assets/diffs/
   --available-agents-dir <path>      # optional, repeatable; defaults to plugin + .claude
   --log-level       <error|warn|info|debug>  # optional, default "warn"
@@ -23,10 +18,27 @@ node {CLAUDE_PLUGIN_ROOT}/develop/skills/dev-review/scripts/generate-review-data
 
 All paths may be absolute or relative to `process.cwd()`. The script resolves them internally and prints the resolved paths to stderr at `info` level.
 
+Per-plan fields the helper used to take as flags (`--task-slug`,
+`--plan-path`, `--worktree`, `--base`, `--task-branch`, `--iteration`) are
+now read from the plan-state JSON:
+
+| Helper field         | State source                          |
+|----------------------|---------------------------------------|
+| `task_slug`          | `state.plan_slug`                     |
+| `plan_path`          | `state.plan_path`                     |
+| `worktree_path`      | `state.worktree_path`                 |
+| `base_branch`        | `state.base_branch`                   |
+| `task_branch`        | `state.task_branch`                   |
+| `review_iteration`   | `state.dev_review.current_round`      |
+
+`current_round` must be `>= 1` when the helper runs — the runner skill is
+responsible for bumping it via `runner-state.bumpDevReviewRound` before
+invoking the helper. A `0` value exits with code `2`.
+
 Exit codes:
 
 - `0` — `review-data.json` written, all deterministic fields populated
-- `2` — invalid arguments (missing required, malformed iteration)
+- `2` — invalid arguments (missing `--state-path`, state load failure, `current_round < 1`)
 - `3` — git invocation failed (worktree missing, branch missing, no commits in range)
 - `4` — plan parsing failed (file missing — only used for signature)
 - `5` — I/O failure (cannot write output, cannot read asset)
@@ -36,20 +48,25 @@ Exit code `0` is the only success. Any non-zero exit must stop the runner.
 
 ## What the helper reads
 
-1. **Plan** (`--plan-path`)
+1. **Plan-state** (`--state-path`)
+   - Loaded via `runner-state.loadState`. Schema mismatch fails with exit code 2.
+   - Supplies every per-plan input listed in the table above; the helper does
+     not mutate the state.
+
+2. **Plan** (resolved from `state.plan_path`)
    - Parsed only to compute `plan_signature` (short SHA-256 of plan.md + linked phase files).
    - The helper does NOT extract `user_request` / `plan_summary` / `major_changes` anymore — v2 has no overview section.
 
-2. **Worktree** (`--worktree`)
+3. **Worktree** (resolved from `state.worktree_path`)
    - `git -C {worktree} rev-parse HEAD` → `task_head_sha`
-   - `git -C {worktree} rev-parse --abbrev-ref HEAD` cross-checked against `--task-branch`
+   - `git -C {worktree} rev-parse --abbrev-ref HEAD` cross-checked against `state.task_branch`
    - `git -C {worktree} log --format="%H%x00%s%x00%b%x00%an%x00%ae%x00%aI" {base}..HEAD` → commits in order
    - Per commit: `git -C {worktree} show --format= --numstat {sha}` → files_changed additions/deletions
    - Per commit: `git -C {worktree} show --format= --name-status {sha}` → files_changed kinds (A/M/D/R)
    - Per commit: `git -C {worktree} diff {parent}..{sha}` → written as raw `.diff` to `--diffs-dir`. The browser parses these via `diff2html` on demand.
    - Per commit binary detection: `git -C {worktree} diff --numstat {parent}..{sha}` returns `-\t-\tpath` for binaries → `binary: true`.
 
-3. **Available agents** (`--available-agents-dir`, repeatable)
+4. **Available agents** (`--available-agents-dir`, repeatable)
    - Defaults (in order): `${workspaceRoot}/plugin/develop/agents/*.md`, `${workspaceRoot}/.claude/agents/*.md`, `${CLAUDE_PLUGIN_ROOT}/develop/agents/*.md`, `${CLAUDE_PLUGIN_ROOT}/agents/*.md`.
    - Each `*.md` with YAML frontmatter containing `name` and `description` becomes an entry in `available_agents[]`, sorted by name.
    - Files without valid frontmatter are skipped with a `warn` log.

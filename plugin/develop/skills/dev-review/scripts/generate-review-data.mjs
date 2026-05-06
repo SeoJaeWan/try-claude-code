@@ -2,10 +2,21 @@
 
 // Deterministic generator for dev-review/review-data.json (schema v2).
 //
-// In v2 this script writes the FINAL review-data.json directly. There is no
+// In v2 the helper writes the FINAL review-data.json directly. There is no
 // interpretation agent and no .partial.json intermediate. Every field is
-// derived from git, the plan file (signature only), and discovered agent
-// frontmatter.
+// derived from git, the plan file (signature only), discovered agent
+// frontmatter, and — since the runner-state migration — the plan-state JSON
+// passed via `--state-path`.
+//
+// CLI shape:
+//   --state-path <abs path>     required. The plan-state JSON; supplies
+//                               plan_slug / plan_path / worktree_path /
+//                               base_branch / task_branch / iteration.
+//   --out <abs path>            optional. Defaults to
+//                               `{state-dir}/dev-review/review-data.json`.
+//   --diffs-dir <abs path>      optional. Defaults to `{out-dir}/assets/diffs/`.
+//   --available-agents-dir ...  optional, repeatable.
+//   --log-level / --now         optional.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -25,6 +36,7 @@ import {
 import { readPlan } from "./lib/plan.mjs";
 import { discoverAvailableAgents, defaultAgentsDirs } from "./lib/agents.mjs";
 import { writeJsonAtomic, writeTextAtomic, ensureDir } from "./lib/output.mjs";
+import { loadState } from "../../../scripts/lib/runner-state.mjs";
 
 const SCHEMA_VERSION = 2;
 const SHORT_SHA_LEN = 7;
@@ -51,16 +63,48 @@ function main() {
 function run(args, logger) {
   const workspaceRoot = process.env.CLAUDE_WORKSPACE_ROOT || process.cwd();
 
-  const planAbs = path.resolve(args.planPath);
-  const worktreeAbs = path.resolve(args.worktree);
-  const outAbs = path.resolve(args.out);
+  // Resolve every per-plan input from the plan-state JSON. The runner skill
+  // is responsible for bumping `dev_review.current_round` *before* calling
+  // the helper, so whatever value lives there is also the iteration we use
+  // for this round — the helper does not recompute it.
+  const statePathAbs = path.resolve(args.statePath);
+  ensurePathExists(statePathAbs, "--state-path", 2);
+
+  let state;
+  try {
+    state = loadState(statePathAbs);
+  } catch (err) {
+    const wrapped = new Error(`failed to load plan-state: ${err.message}`);
+    wrapped.exitCode = 2;
+    throw wrapped;
+  }
+
+  const planAbs = path.resolve(state.plan_path);
+  const worktreeAbs = path.resolve(state.worktree_path);
+  const stateDir = path.dirname(statePathAbs);
+  const outAbs = path.resolve(
+    args.out ?? path.join(stateDir, "dev-review", "review-data.json"),
+  );
   const dataRootAbs = path.dirname(outAbs);
   const diffsDirAbs = path.resolve(
     args.diffsDir ?? path.join(dataRootAbs, "assets", "diffs"),
   );
 
-  ensurePathExists(planAbs, "--plan-path", 4);
-  ensurePathExists(worktreeAbs, "--worktree", 3);
+  const taskSlug = state.plan_slug;
+  const baseBranch = state.base_branch;
+  const taskBranch = state.task_branch;
+  const iteration = state.dev_review?.current_round ?? 0;
+  if (iteration < 1) {
+    const err = new Error(
+      `plan-state.dev_review.current_round must be >= 1 before invoking dev-review ` +
+      `(was ${iteration}). The runner skill bumps this before calling the helper.`,
+    );
+    err.exitCode = 2;
+    throw err;
+  }
+
+  ensurePathExists(planAbs, "state.plan_path", 4);
+  ensurePathExists(worktreeAbs, "state.worktree_path", 3);
 
   // One-time stale-schema cleanup: if a v1 (or older) review-data.json exists,
   // wipe the data folder before regenerating. v2-or-newer passes through.
@@ -73,21 +117,21 @@ function run(args, logger) {
   const branchInWorktree = currentBranch(worktreeAbs);
   logger.info(`worktree=${worktreeAbs} task_head_sha=${taskHeadSha} branch=${branchInWorktree}`);
 
-  if (branchInWorktree !== args.taskBranch) {
+  if (branchInWorktree !== taskBranch) {
     logger.warn(
-      `worktree branch ${branchInWorktree} does not match --task-branch ${args.taskBranch}; continuing`,
+      `worktree branch ${branchInWorktree} does not match state.task_branch ${taskBranch}; continuing`,
     );
   }
 
-  if (!revParseSilent(worktreeAbs, args.base)) {
-    const err = new Error(`base branch ${args.base} does not exist in the worktree`);
+  if (!revParseSilent(worktreeAbs, baseBranch)) {
+    const err = new Error(`base branch ${baseBranch} does not exist in the worktree`);
     err.exitCode = 3;
     throw err;
   }
 
-  const commits = listCommits(worktreeAbs, args.base, taskHeadSha);
+  const commits = listCommits(worktreeAbs, baseBranch, taskHeadSha);
   if (commits.length === 0) {
-    const err = new Error(`no commits in range ${args.base}..${taskHeadSha}`);
+    const err = new Error(`no commits in range ${baseBranch}..${taskHeadSha}`);
     err.exitCode = 3;
     throw err;
   }
@@ -160,14 +204,15 @@ function run(args, logger) {
   const generatedAt = args.now ?? new Date().toISOString();
   const reviewData = {
     schema_version: SCHEMA_VERSION,
-    task_slug: args.taskSlug,
+    task_slug: taskSlug,
     plan_path: toPosix(path.relative(workspaceRoot, planAbs)),
     plan_signature: plan.planSignature,
-    base_branch: args.base,
-    task_branch: args.taskBranch,
+    base_branch: baseBranch,
+    task_branch: taskBranch,
     task_head_sha: taskHeadSha,
     worktree_path: worktreeAbs,
-    review_iteration: args.iteration,
+    review_iteration: iteration,
+    state_path: toPosix(path.relative(workspaceRoot, statePathAbs)),
     generated_at: generatedAt,
     available_agents: availableAgents,
     totals: {

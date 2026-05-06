@@ -24,18 +24,34 @@ The runner calls dev-review at its Step 4, after the plan agent has finished com
 
 Runner re-invokes after each rework round: when a `needs-change` comment triggers re-dispatch, the re-dispatched agent writes new commits into the same worktree, then dev-review regenerates the package against the new `task_head_sha`.
 
-## Inputs from the caller
+## Input from the caller
 
-The runner passes:
+The runner passes a single absolute path:
 
-- `task_slug` — plan folder name under `plans/`
-- `plan_path` — `plans/{task_slug}/plan.md`
-- `worktree_path` — absolute path, usually `worktrees/{task_branch}`
-- `base_branch` — branch the runner started on (HEAD stays here)
-- `task_branch` — branch name inside the worktree
-- `review_iteration` — 1 on first call, N+1 on each re-entry
+- `state_path` — `plans/{plan_stem}/.runner-state.json`
 
-The skill infers `task_head_sha` from the worktree, derives `plan_signature` via the helper, and reads prior `feedback.json` / `review-history.json` when they exist.
+Everything the skill used to receive as separate flags (`task_slug`,
+`plan_path`, `worktree_path`, `base_branch`, `task_branch`, `review_iteration`)
+is read from that state file via the runner-state library. The skill
+therefore does not negotiate identity with the caller — there is one source
+of truth and it lives on disk.
+
+The skill infers `task_head_sha` from the worktree the state points at,
+derives `plan_signature` via the helper, and reads prior `feedback.json` /
+`review-history.json` when they exist.
+
+### Round bookkeeping is the runner's job
+
+Before invoking this skill for a new round, the runner bumps
+`state.dev_review.current_round` (using the `bumpDevReviewRound` helper from
+`runner-state.mjs`). When this skill or the helper script reads
+`state.dev_review.current_round`, that value is used **as-is** for the
+`review_iteration` field — no in-skill increment.
+
+When the skill is re-entered after the user replies `리뷰 완료` for the
+same round (e.g. answering `qa_required` questions), the runner does NOT
+bump the round; the skill picks up the existing value and re-reads
+`feedback.json` against the same iteration.
 
 ## Artifacts the skill owns
 
@@ -61,9 +77,15 @@ plugin/develop/skills/dev-review/    ← html-root (one global copy)
 
 ### Step 0. Validate prerequisites
 
-- `plan_path` exists and `worktree_path` contains `task_branch` checked out.
-- `task_head_sha = git -C {worktree_path} rev-parse HEAD`.
-- There is at least one commit in `base_branch..task_head_sha`. An empty range is a caller bug — stop and report.
+- `state_path` exists and parses with `runner-state.loadState`. Anything
+  beyond schema validation lives in the helper, but the skill verifies the
+  file is loadable before doing anything else.
+- The state's `worktree_path` exists on disk and has `task_branch` checked
+  out. `task_head_sha = git -C {state.worktree_path} rev-parse HEAD`.
+- There is at least one commit in `state.base_branch..task_head_sha`. An
+  empty range is a caller bug — stop and report.
+- `state.dev_review.current_round >= 1`. The runner bumps it before calling;
+  a value of `0` means the runner skipped the bump and we cannot proceed.
 - The plugin's dev-review server `${CLAUDE_PLUGIN_ROOT}/skills/dev-review/scripts/server.mjs` exists. This server is plugin-internal — do not reference the orchestrator's server.
 - The plugin html-root is readable: `${CLAUDE_PLUGIN_ROOT}/skills/dev-review/assets/index.html` AND the diff2html / highlight.js bundles under `assets/vendor/`. If any vendor file is missing, stop — the plugin install is broken.
 
@@ -71,23 +93,24 @@ If validation fails, do not write partial artifacts. Report the exact blocker.
 
 ### Step 1. Run the deterministic generator
 
-Call the helper with absolute paths:
+Call the helper with the state path. Every per-plan field (slug, plan path,
+worktree, branches, iteration) is read from the state JSON inside the helper:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/dev-review/scripts/generate-review-data.mjs" \
-  --task-slug "{task_slug}" \
-  --plan-path "{plan_path}" \
-  --worktree "{worktree_path}" \
-  --base "{base_branch}" \
-  --task-branch "{task_branch}" \
-  --iteration {review_iteration} \
-  --available-agents-dir "${CLAUDE_PLUGIN_ROOT}/agents" \
-  --out "plans/{task_slug}/dev-review/review-data.json"
+  --state-path "{state_path}" \
+  --available-agents-dir "${CLAUDE_PLUGIN_ROOT}/agents"
 ```
+
+`--out` is optional; when omitted the helper writes
+`{state-dir}/dev-review/review-data.json` next to the state file, which is
+where the rest of this skill expects to find it.
 
 The helper writes the **final** `review-data.json` directly. There is no `.partial.json` and no merge step. If a stale (`schema_version < 2`) artifact exists in the data folder, the helper wipes it before regenerating (one-time migration).
 
-The `--available-agents-dir` flag is required so `available_agents` is populated even when `CLAUDE_PLUGIN_ROOT` does not propagate. Without it the dispatch dropdown is empty and reviewers cannot route `needs-change` comments.
+Pass `--available-agents-dir` so `available_agents` is populated even when
+`CLAUDE_PLUGIN_ROOT` does not propagate. Without it the dispatch dropdown is
+empty and reviewers cannot route `needs-change` comments.
 
 Helper failure is fatal — propagate the exit code. The runner cannot continue without deterministic data.
 
@@ -157,6 +180,20 @@ On re-entry (`review_iteration > 1`), append a new round entry capturing what cl
 `plan_signature` mismatch flips the prior round's `resolution_state` to `superseded`.
 
 See `references/review-data-schema.md` for the full history shape.
+
+### Step 3.5. Record the round in plan-state
+
+After Steps 1–3 produce the round's artifacts, write the feedback file path
+back into the plan-state so the runner skill (and the next `/runner` resume)
+can find it without re-deriving the location:
+
+- Load the state via `runner-state.loadState(state_path)`.
+- Set `state.dev_review.last_feedback_path` to the absolute path of the
+  freshly initialized `feedback.json`.
+- Save with `runner-state.saveState`. This bumps `updated_at` automatically.
+
+The `current_round` value is **not** changed here — the runner already bumped
+it before calling.
 
 ### Step 4. Auto-start the server and hand off to the user
 
