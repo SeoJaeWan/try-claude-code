@@ -38,6 +38,7 @@ Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output ru
 - Do not reconstruct hidden stage from old chat text when artifacts disagree.
 - If multiple plan files were just written, run Step 3 for each file that lacks a fresh review.
 - If all selected plan files have fresh acceptable review artifacts, inspect developer review artifacts for the current `plan_signature` before deciding completion.
+- Treat a developer review package as reusable only when it was generated for the current selected plan file and current `plan_signature`; otherwise regenerate before presenting the browser URL.
 
 ## Step 2. Run Architect Draft or Revision
 
@@ -52,6 +53,7 @@ Controller requirements:
 - Reuse the live `architect` role agent for the same `task_slug` when compatible; otherwise start a new generic planning sub-agent and attach `architect`.
 - Pass a handoff packet with exact `task-slug`, optional `plan_path`, `plan_wiki_root`, verified inputs, missing-input notes, latest review path when revising, locked request summary when available, and write scope under `./plans/{task-slug}/`.
 - When Figma inventory is required, include only controller-verified `figma-inventory` manifest and snapshot paths in `authoritative_existing_inputs`.
+- If required planning authority data is missing, route the next pass as a missing tool/data blocker instead of asking `architect` to convert that missing data into an implementation phase.
 - Require exactly one result: `result = wrote_plan` with `written_paths`, or `result = blocking_packet` with user-input fields.
 - After every architect pass, re-check written plan files and recompute `plan_signature` for each selected review target.
 - If the architect returned a blocking packet with `needs_user_input = true`, ask the user directly in chat and stop. The user's answer should be handled upstream or by a later architect pass.
@@ -81,6 +83,7 @@ Controller requirements:
 - Follow `references/developer-review.md` Step 5.
 - Generate or refresh `./plans/{task-slug}/developer-review/` for the current `plan_signature`.
 - The package must expose Overview, every required Phase, and Final review steps. If the plan has implementation scope but does not provide reviewable Phase entries, route to `architect` for plan revision instead of presenting a flattened review.
+- If an existing package shape does not match the orchestrator planning review schema for the current selected plan, discard it by regenerating from the current plan and fresh `review.md`.
 - Start or reuse the shared developer review server through the documented launcher and report the printed `developer_review_url` to the user.
 - Stop with `developer_review_gate_blocker` while waiting for the user to submit the browser review and say `review complete`.
 - When the user says `review complete`, read `feedback.json` and continue only if the submitted feedback matches the current `task_slug`, `plan_signature`, and review item signatures.

@@ -11,6 +11,7 @@
 - Do not ask `architect` to perform full-file Figma tree reads or to use Code Connect tools as Figma inventory evidence.
 - Do not let `orchestrator` classify Figma component families; it may only pass through controller-verified snapshot artifacts when already available.
 - Do not route missing Figma tool data as a user decision unless the user must choose the root nodes or inventory scope.
+- Do not let missing planning authority data become implementation-phase work through orchestration handoff wording.
 - Do not trust stale review artifacts after `plan_signature` changes.
 - Do not let the `plan-review` reviewer edit plans or write any file except the required `review.md` artifact.
 - Do not abandon a still-progressing role pass just because an initial short wait expired.

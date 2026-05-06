@@ -30,6 +30,7 @@ Typical blocker signals:
 - missing test-strategy decisions required by the active plan wiki decision policy when later verification would otherwise choose the gate.
 - missing first-time test runner, command, spec root or test-owner placement, source/test topology, mock/API fixture policy, browser storage/auth state policy, or expected red reason when the plan expects contract tests before the test environment exists.
 - plan count, local prerequisite relationship, authority artifact, reference-comparison, Figma parity, or Figma inventory provenance contradicts the active plan wiki contract.
+- missing planning authority data is turned into implementation work instead of being blocked or supplied as a verified upstream input under the active plan wiki authority contract.
 - implementation scope is large enough to require staged execution or developer review, but the plan has no reviewable `## 실행 흐름` Phase entries, so later tooling or the user would have to infer phase boundaries.
 - visible prose terminology violates the active terminology policy in a way that hides scope, ownership, completion criteria, validation meaning, or required user-visible behavior.
 - selected pattern guidance reveals a direct contradiction that the plan leaves unresolved.

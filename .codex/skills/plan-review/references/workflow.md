@@ -59,10 +59,12 @@ Judge the plan against:
 - affected public boundaries, exclusions, no-op rules, recipients, and final interpretation boundaries.
 - source/test/fixture/artifact topology: implementation-scope plans should show concrete paths, status, owning phase, responsibility, and repo-local evidence for placement instead of invented or duplicate paths.
 - planning-only evidence artifacts: UI/API/backend/utility evidence referenced by the plan should live under `evidence/**`, map to the stated phase and input/output/state contract, and avoid production-code or live-server implications.
+- authority inputs, topology, evidence requirements, and visible-prose terminology are judged from the active plan wiki; do not substitute skill-local preferences for those policy decisions.
 - first-time test runner, command, spec root, source/test topology, mock/API fixture policy, storage/auth state policy, and expected red reason when implementation-first setup does not already exist.
 - verification realism and readiness.
 - UI direction completeness when UI scope exists.
 - reference-based visual comparison, Figma parity, or Figma inventory provenance when in scope.
+- if a plan moves missing planning authority data into execution work, classify it through the active plan wiki authority guidance instead of treating it as an ordinary Phase.
 
 Apply the plan wiki as the policy source for plan artifact meaning, test strategy expectations, quality gates, and learned pattern rules. Use `references/review-policy.md` only to map issues to severity and artifact shape.
 

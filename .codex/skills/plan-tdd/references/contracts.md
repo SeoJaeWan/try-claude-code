@@ -18,7 +18,7 @@ Author TDD contract tests after planning, not during implementation.
 - Allow new assertions only when they trace back to an explicit plan clause or a risk pattern already implied by that clause
 - Update or delete stale owner tests when a selected clause changes the canonical truth they freeze
 - Distinguish TDD contract test authoring completion from gate pass/fail in the final report
-- When the target app/module or runner setup is not implemented yet but the plan locks the runner, command path, source/test topology, and behavior contract, still create source-tree TDD contract tests. Do not call them "covered" by scaffold alone; report validation as not run/failed and keep them as completion blockers.
+- When the target app/module or runner setup is not implemented yet but the plan locks the runner, command path, source/test topology, and behavior contract, still create source-tree TDD contract tests. Do not call them covered by initial structure alone; report validation as not run/failed and keep them as completion blockers.
 - Treat plan-locked future route files, source modules, spec roots, locator/test id policy, mock/API fixtures, and browser storage/auth state as intentional TDD contracts. Do not reinterpret them as speculative only because the implementation does not exist yet.
 - Use source-inspection tests only when the selected plan clause makes source topology itself the durable behavior, such as workspace membership, public export presence, route file topology, or required config ownership. Do not use source inspection as a substitute for user-visible behavior, state transitions, runtime wiring, code generation, route outcomes, or UI flow.
 

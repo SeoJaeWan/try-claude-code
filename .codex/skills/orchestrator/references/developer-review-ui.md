@@ -60,9 +60,9 @@ The user finishes review by saying `review complete` in chat after pressing subm
 
 ## Review shape
 
-The HTML is not a markdown viewer. It is a stepper review surface that explains the plan in user-readable form.
+The HTML is not a markdown viewer. It is a planning review surface with the same broad layout pattern as the plugin runner's dev-review UI: a persistent left sidebar of review targets, a central detail panel for the selected target, and a sticky review panel for the selected target's status and comment.
 
-Steps:
+Targets:
 
 1. `Overview`
 2. `Phase 1`
@@ -70,8 +70,7 @@ Steps:
 4. additional phases as needed
 5. `Final`
 
-Only one step is visible at a time. The user navigates with `Previous` and `Next`.
-When the visible step changes through `Previous`, `Next`, or direct step selection, scroll the review surface back to the top of the current step.
+Only one target is selected at a time. The sidebar remains visible on desktop, shows target status badges, and keeps the submit action fixed at the bottom. The UI does not implement commit diff viewing, line-anchored comments, or runner state transitions.
 
 ## Review model
 
@@ -193,6 +192,7 @@ Rules:
 - HTML evidence is displayed in a sandboxed iframe with scripts allowed but without same-origin privileges.
 - Evidence is a planning-only projection. Do not describe it as production code, a real API mock server, React implementation, DB behavior, or live dev-server output.
 - UI evidence should show the expected screen shape and important states. API/backend/utility evidence should show sample body/query/params/auth/context input choices and representative output/status/effects in HTML/JS.
+- The browser UI displays evidence and topology prominently for the selected target when present, but does not decide whether missing evidence is acceptable. That judgment belongs to `plan-review` under the active plan wiki.
 
 ## Feedback model
 

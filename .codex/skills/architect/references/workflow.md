@@ -48,6 +48,7 @@ Use this step only when a planning boundary depends on facts not already locked 
   - use only controller-verified `figma-inventory` manifest and snapshot files passed as authoritative input.
   - do not treat Code Connect, design context, package registries, old parity reports, memory, or raw tool output as complete inventory.
   - if required inventory is missing, stale, or incomplete, return a `tool_data_blocker` instead of inventing classification.
+  - do not turn missing planning authority data into an implementation step; stop with the blocker shape required by `contracts.md`.
   - when writing plan-local Figma-derived artifacts, include manifest-backed provenance required by the active plan wiki authority guidance.
 
 ### Step 3. Resolve blocking decisions before planning
@@ -81,12 +82,12 @@ Do not deep-dive into implementation details or write source-tree tests.
 - Use `./references/plan-template-sequential.md` as a writing aid, then conform to the active plan wiki plan artifact contract.
 - Write only the plan files required by the upstream locked execution areas.
 - Make each plan file self-contained for exactly one `owner_agent`.
-- For implementation-scope plans, write a `## 실행 흐름` section with reviewable Phase rows inside the same plan file. Each Phase row must include purpose, major changes, completion signal, validation, and commit boundary.
+- For implementation-scope plans, write a `## 실행 흐름` section with reviewable 단계 행 inside the same plan file. Each row must include purpose, major changes, completion signal, validation, and commit boundary.
 - For implementation-scope plans, write a `## 파일/폴더 구조 계약` section that locks the source/test/fixture/artifact topology derived from actual repo inspection. Include create/modify/keep/forbidden/remove paths, owning phase, responsibility, and the local evidence for each placement.
-- When UI, API, backend boundary, utility function, or complex state behavior would be easier to misunderstand from prose alone, write a `## 체험 산출물` section and create planning-only HTML/JS evidence under `plans/{task_slug}/evidence/**`.
-- UI evidence should show the expected screen shape and important states. API/backend/utility evidence should let a reviewer choose sample body/query/params/auth/context inputs and inspect representative output/status/effects. Do not require real API calls, DB access, filesystem writes, live dev servers, React builds, or production stack execution.
-- Keep Phase content self-contained in the plan body. Do not create linked phase detail files for new plans unless explicitly performing legacy migration or review.
-- Phase boundaries are human review and commit boundaries, not separate `owner_agent` or branch boundaries unless the plan count has already been split by execution ownership.
+- Apply the active plan wiki artifact contract to decide when `## 체험 산출물` is required. When required, create planning-only HTML/JS evidence under `plans/{task_slug}/evidence/**`.
+- Keep evidence implementation lightweight and reviewable: UI evidence shows expected screen shape and important states, while API/backend/utility evidence exposes sample body/query/params/auth/context inputs with representative output/status/effects. Do not require real API calls, DB access, filesystem writes, live dev servers, React builds, or production stack execution.
+- Keep step content self-contained in the plan body. Do not create linked phase detail files for new plans unless explicitly performing legacy migration or review.
+- Step boundaries are human review and commit boundaries, not separate `owner_agent` or branch boundaries unless the plan count has already been split by execution ownership.
 - Include the required YAML frontmatter in every plan file.
 - Put all contracts needed by the executing agent into that plan file's body; do not rely on `shared-contract.md`, linked phase detail files, or external planning notes for execution meaning.
 - Record provenance paths only as evidence, not as required reading for the executing agent.
@@ -122,9 +123,10 @@ If the plan includes implementation scope beyond documentation-only or structura
 
 - Run the active plan wiki quality gate checklist before finalizing.
 - Re-check selected patterns, terminology policy compliance, plan self-containment, request traceability, public contracts, verification ownership, related-plan lineage, authority artifacts, and execution handoff requirements.
-- Re-check that implementation-scope plans expose reviewable Phase rows and commit boundaries that developer review can present without inventing phase meaning.
+- Re-check that implementation-scope plans expose reviewable 단계 행 and commit boundaries that developer review can present without inventing step meaning.
 - Re-check that implementation-scope topology was derived from actual repo structure, not invented paths, and that topology rows do not duplicate existing UI/API/utility surfaces.
 - Re-check that every evidence row points under `evidence/**`, matches the plan's phase/input/output/state contract, and is clearly planning-only.
+- Re-check that no missing authority input was moved into an implementation step and that avoidable English planner shorthand outside code spans was cleaned up under the active terminology policy.
 - Fix critical self-review findings before handoff.
 - If a required wiki registry, core doc, or pattern cannot be read, treat that as a failed quality gate.
 
