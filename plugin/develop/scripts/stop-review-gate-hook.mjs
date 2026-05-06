@@ -48,6 +48,7 @@ import {
   collectInformationalReview,
 } from "./lib/review-collector.mjs";
 import { recordHookEvent } from "./lib/telemetry.mjs";
+import { STOP_REVIEW_OUTCOME } from "./lib/stop-review-outcome.mjs";
 import {
   STATUS,
   clearPlanBlockStreak,
@@ -410,16 +411,21 @@ async function runStopReview(workspaceRoot, sessionId, reviewItem) {
 // ---------------------------------------------------------------------------
 
 function classifyOutcome(review) {
-  if (review.skipped) return "skipped";
-  if (!review.ok) return "block";
-  if (review.suppressedNote) return "allow_downgraded";
-  return "allow";
+  if (review.skipped) return STOP_REVIEW_OUTCOME.SKIPPED;
+  if (!review.ok) return STOP_REVIEW_OUTCOME.BLOCK;
+  if (review.suppressedNote) return STOP_REVIEW_OUTCOME.ALLOW_DOWNGRADED;
+  return STOP_REVIEW_OUTCOME.ALLOW;
 }
 
 function persistReviewArtifacts(outcome, review, reviewItem, workspaceRoot) {
-  if (outcome !== "block" && outcome !== "allow_downgraded") return;
+  if (
+    outcome !== STOP_REVIEW_OUTCOME.BLOCK &&
+    outcome !== STOP_REVIEW_OUTCOME.ALLOW_DOWNGRADED
+  ) {
+    return;
+  }
   try {
-    if (outcome === "block") {
+    if (outcome === STOP_REVIEW_OUTCOME.BLOCK) {
       collectBlockReview(workspaceRoot, {
         branch: reviewItem.branch,
         headSha: reviewItem.headSha,
@@ -458,18 +464,18 @@ function buildPlannerBlockDirective(reviewItem) {
 }
 
 function emitReviewLog({ outcome, branch, headSha, reason, runningTaskNote }) {
-  if (outcome === "skipped") {
+  if (outcome === STOP_REVIEW_OUTCOME.SKIPPED) {
     if (runningTaskNote) process.stderr.write(`${runningTaskNote}\n`);
     return;
   }
   const tag = {
-    allow: "[stop-gate] ALLOW",
-    allow_downgraded: "[stop-gate] ALLOW (저신뢰 BLOCK 다운그레이드 — .codex/reviews/ 참고)",
-    block: "[stop-gate] BLOCK",
+    [STOP_REVIEW_OUTCOME.ALLOW]: "[stop-gate] ALLOW",
+    [STOP_REVIEW_OUTCOME.ALLOW_DOWNGRADED]: "[stop-gate] ALLOW (저신뢰 BLOCK 다운그레이드 — .codex/reviews/ 참고)",
+    [STOP_REVIEW_OUTCOME.BLOCK]: "[stop-gate] BLOCK",
   }[outcome] ?? "[stop-gate]";
   const shortSha = headSha ? String(headSha).slice(0, 7) : "?";
   const lines = [`${tag} — ${branch ?? "?"}@${shortSha}`];
-  if (outcome === "block" && reason) {
+  if (outcome === STOP_REVIEW_OUTCOME.BLOCK && reason) {
     lines.push("", reason);
   }
   if (runningTaskNote) {
@@ -485,9 +491,20 @@ function applyVerdictToPlanState(reviewItem, outcome, review) {
   let plannerDirective = "";
   let escalationNote = "";
 
-  if (outcome === "allow" || outcome === "allow_downgraded" || outcome === "skipped") {
+  if (
+    outcome === STOP_REVIEW_OUTCOME.ALLOW ||
+    outcome === STOP_REVIEW_OUTCOME.ALLOW_DOWNGRADED ||
+    outcome === STOP_REVIEW_OUTCOME.SKIPPED
+  ) {
     setStopReviewArmed(state, false);
-    setLastReviewedCommit(state, reviewItem.headSha, outcome === "skipped" ? "skipped" : "ALLOW");
+    // last_result is a user-visible log label, not the outcome enum — keep
+    // the historical "ALLOW" / "skipped" casing the plan-state JSON has
+    // always recorded.
+    setLastReviewedCommit(
+      state,
+      reviewItem.headSha,
+      outcome === STOP_REVIEW_OUTCOME.SKIPPED ? "skipped" : "ALLOW",
+    );
     clearPlanBlockStreak(state);
     // Move forward only from the canonical post-stop-review states. Other
     // statuses keep their position so we do not accidentally rewind a plan
@@ -498,7 +515,7 @@ function applyVerdictToPlanState(reviewItem, outcome, review) {
     ) {
       transitionStatus(state, STATUS.AWAITING_DEV_REVIEW);
     }
-  } else if (outcome === "block") {
+  } else if (outcome === STOP_REVIEW_OUTCOME.BLOCK) {
     // BLOCK leaves the gate armed so the next plan-agent dispatch's commits
     // get reviewed again. The runner skill is responsible for that dispatch
     // — we just record the block_history entry and emit the directive.
@@ -589,7 +606,7 @@ async function main() {
       runningTaskNote,
     });
 
-    if (outcome === "block" && !blockedReviewItem) {
+    if (outcome === STOP_REVIEW_OUTCOME.BLOCK && !blockedReviewItem) {
       blockedReviewItem = item;
       blockedReason = (review.reason || "") + plannerDirective + escalationNote;
     }
