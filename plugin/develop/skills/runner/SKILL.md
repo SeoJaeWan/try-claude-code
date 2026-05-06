@@ -189,13 +189,17 @@ Agent(
 
 If any check fails, fix the dispatch before calling `Agent`. The exact strings above are the shared contract with `scripts/lib/contract.mjs`; drift will cause the Stop hook to lose plan context silently.
 
-After the agent returns, output a brief report as **plain text** and let your turn end naturally. Do NOT use `AskUserQuestion` — just output text so that `end_turn` triggers the Stop hook.
+After the agent returns, output a brief report as **plain text** and let your turn end naturally.
+
+**Do NOT call any tool after the agent returns. Do NOT invoke `dev-review` here. Do NOT use `AskUserQuestion`.** Step 4 (dev-review) is entered in a **separate turn**, after the Stop hook's stop-review gate has run and returned ALLOW. Proceeding to Step 4 in the same turn skips the gate entirely — reviewer-facing artifacts get generated before automated review has a chance to fire.
 
 Report:
 - `git -C "$WORKTREE_DIR" log --oneline "$BASE".."$TASK_BRANCH"` (commits produced by the plan)
 - "Plan {plan_slug} 완료. Stop-review가 실행됩니다."
 
-> **BLOCK handling is automatic.** When the stop-gate returns BLOCK, the hook injects a `[plan-runner: Plan: {slug}]` directive into the feedback. Follow that directive — it tells you to re-dispatch the same plan agent with the BLOCK reason. Do NOT fix the code yourself in the main session.
+> **Stop-review lifecycle (one-shot per plan).** The gate is **armed** when the plan agent is dispatched in this step (the `Plan: {slug}` Agent call sets `pendingStopReview = true` on the worktree via the PostToolUse hook) and **disarmed permanently** the first time stop-review returns ALLOW (or is skipped because Codex is unavailable). BLOCK leaves the gate armed, so re-dispatch + re-commit triggers another review. Once disarmed, no later turn-end fires stop-review for this plan — Step 4's dev-review URL emission, rework Agent commits, and follow-up turns all flow through without the gate.
+
+> **BLOCK handling is automatic.** When the stop-gate returns BLOCK, the hook injects a `[plan-runner: Plan: {slug}]` directive into the feedback. Follow that directive — it tells you to re-dispatch the same plan agent with the BLOCK reason. Do NOT fix the code yourself in the main session. The re-dispatched plan agent's PostToolUse hook re-arms the gate (idempotent), so the next turn-end will review the new commits.
 
 ### Step 4. Developer review gate (browser)
 

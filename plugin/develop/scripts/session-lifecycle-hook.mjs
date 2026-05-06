@@ -10,7 +10,8 @@ import {
   cleanStaleSessions,
   addWorktree,
   removeWorktree,
-  updateWorktreePlan
+  updateWorktreePlan,
+  setWorktreeStopReviewActive
 } from "./lib/sessions.mjs";
 import { toPosixPath } from "./lib/fs.mjs";
 import { runCommand } from "./lib/process.mjs";
@@ -210,6 +211,10 @@ function handlePostAgentUse(input) {
   const planFile = planMatchPath ? toPosixPath(planMatchPath[1]) : null;
 
   updateWorktreePlan(sessionId, wtPath, planSlug, planFile);
+  // Arm the one-shot stop-review gate for this worktree. Stop hook disarms it
+  // permanently on ALLOW/skipped; BLOCK leaves it armed so re-dispatched
+  // plan-agent commits trigger another review.
+  setWorktreeStopReviewActive(sessionId, wtPath, true);
   recordHookEvent({
     kind: "plan_dispatch",
     ok: true,

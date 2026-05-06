@@ -16,6 +16,7 @@ import {
   setStopReviewThreadId,
   recordBlock,
   clearRecentBlockStreak,
+  setWorktreeStopReviewActive,
 } from "./lib/sessions.mjs";
 import { listJobs } from "./lib/state.mjs";
 import { sortJobsNewestFirst } from "./lib/job-control.mjs";
@@ -329,6 +330,12 @@ function getWorktreeDiffs(session, cwd) {
 
   const diffs = [];
   for (const wt of session.worktrees) {
+    // One-shot lifecycle gate: only review worktrees whose plan agent is
+    // currently armed for stop-review. Disarmed worktrees (post-ALLOW or
+    // non-plan-runner) are permanently skipped.
+    if (!wt.pendingStopReview) {
+      continue;
+    }
     const wtPath = path.isAbsolute(wt.path) ? wt.path : path.join(cwd, wt.path);
     if (!fs.existsSync(wtPath)) {
       continue;
@@ -695,6 +702,18 @@ async function main() {
 
   const outcome = classifyOutcome(review);
   const primaryWt = worktreeDiffs[0] ?? {};
+
+  // One-shot lifecycle: ALLOW (incl. downgraded) and skipped permanently
+  // disarm the gate for this worktree. BLOCK leaves it armed so a
+  // re-dispatched plan agent's next commits trigger another review.
+  if (
+    sessionId &&
+    (outcome === "allow" || outcome === "allow_downgraded" || outcome === "skipped")
+  ) {
+    for (const wt of worktreeDiffs) {
+      setWorktreeStopReviewActive(sessionId, wt.path, false);
+    }
+  }
 
   // 1) Persist artifacts (BLOCK reasons + suppressed notes).
   persistReviewArtifacts(outcome, review, worktreeDiffs, workspaceRoot);

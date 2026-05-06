@@ -138,6 +138,25 @@ export function updateWorktreeReviewedCommit(sessionId, worktreePath, commitSha)
   }
 }
 
+// One-shot stop-review lifecycle flag.
+// Armed when a plan agent is dispatched (Step 3 of plan-runner). Disarmed
+// permanently once stop-review returns ALLOW (or is skipped because Codex is
+// unavailable). BLOCK leaves the flag armed so a re-dispatched plan agent's
+// next commits get reviewed again. Once disarmed, no later turn-end
+// (dev-review URL emission, rework Agent commits, etc.) re-fires the gate.
+export function setWorktreeStopReviewActive(sessionId, worktreePath, active) {
+  const session = loadSession(sessionId);
+  if (!session) {
+    return;
+  }
+  const normalized = normalizePath(worktreePath);
+  const wt = session.worktrees.find((w) => normalizePath(w.path) === normalized);
+  if (wt) {
+    wt.pendingStopReview = Boolean(active);
+    saveSession(session);
+  }
+}
+
 export function updateWorktreePlan(sessionId, worktreePath, planSlug, planFile) {
   const session = loadSession(sessionId);
   if (!session) {
