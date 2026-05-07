@@ -8,11 +8,13 @@ import { spawnSync } from "node:child_process";
 
 import {
   STATUS,
+  STOP_REVIEW_PHASE,
   createInitialState,
   recordPlanBlock,
   saveState,
   setLastReviewedCommit,
   setStopReviewArmed,
+  setStopReviewPhase,
   transitionStatus,
 } from "../lib/runner-state.mjs";
 
@@ -87,10 +89,11 @@ function makeStuckPlan({ sessionId }) {
     worktreePath: wt,
     sessionId,
   });
-  // Walk to STOP_REVIEW_BLOCKED.
+  // Walk to DISPATCHING + phase=BLOCKED (v2 equivalent of v1's
+  // STOP_REVIEW_BLOCKED).
   transitionStatus(state, STATUS.DISPATCHING);
-  transitionStatus(state, STATUS.AWAITING_STOP_REVIEW);
-  transitionStatus(state, STATUS.STOP_REVIEW_BLOCKED);
+  setStopReviewPhase(state, STOP_REVIEW_PHASE.ARMED);
+  setStopReviewPhase(state, STOP_REVIEW_PHASE.BLOCKED);
   setStopReviewArmed(state, true);
   // Record a BLOCK with a recognizable excerpt.
   recordPlanBlock(state, "BLOCK: simulated finding for the test\n[conf 9] reason");
@@ -135,7 +138,7 @@ function runHook({ sessionId }) {
 // ---------------------------------------------------------------------------
 
 describe("Stop hook BLOCK-stuck surface", () => {
-  it("emits a systemMessage when STOP_REVIEW_BLOCKED has no new commits", () => {
+  it("emits a systemMessage when DISPATCHING+BLOCKED has no new commits", () => {
     const sessionId = `sess-stuck-${++counter}`;
     const { slug } = makeStuckPlan({ sessionId });
     const r = runHook({ sessionId });
@@ -156,8 +159,8 @@ describe("Stop hook BLOCK-stuck surface", () => {
     assert.equal(messages.find((m) => m.decision === "block"), undefined);
   });
 
-  it("stays silent when the only armed plan is AWAITING_STOP_REVIEW with nothing new", () => {
-    // Same shape as above but status is AWAITING_STOP_REVIEW — the canonical
+  it("stays silent when the only armed plan is DISPATCHING+ARMED with nothing new", () => {
+    // Same shape as above but stop_review.phase is ARMED — the canonical
     // "user sent a non-runner turn while armed" case. Hook should stay quiet.
     const sessionId = `sess-quiet-${++counter}`;
     counter += 1;
@@ -178,7 +181,7 @@ describe("Stop hook BLOCK-stuck surface", () => {
       sessionId,
     });
     transitionStatus(state, STATUS.DISPATCHING);
-    transitionStatus(state, STATUS.AWAITING_STOP_REVIEW);
+    setStopReviewPhase(state, STOP_REVIEW_PHASE.ARMED);
     setStopReviewArmed(state, true);
     setLastReviewedCommit(state, head, "ALLOW");
     saveState(statePath, state);

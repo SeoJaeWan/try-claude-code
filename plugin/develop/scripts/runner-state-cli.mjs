@@ -16,30 +16,40 @@
 // transitions and wrong-status entries throw with actionable messages, and
 // the unit tests cover the matrix that prose alone cannot.
 //
-// Subcommands (state path is always argv[1]):
+// Subcommands (state path is always argv[1]). Phase 4 reshape: most rework /
+// QA subcommands are *phase mutators* (they change `dev_review.phase` while
+// status stays at DEV_REVIEWING). Only `arm-for-dispatch`, `mark-approved`,
+// and `mark-merged` cross status boundaries.
+//
 //   arm-for-dispatch <state>
-//     Assert status in [validating, dispatching, stop_review_blocked].
-//     Transition → awaiting_stop_review. Set stop_review.armed = true.
+//     Assert status in [preparing, dispatching]. Transition → dispatching +
+//     stop_review.phase = "armed". Sets stop_review.armed = true. Kept for
+//     manual recovery — PreToolUse auto-arms in normal operation.
 //
 //   begin-rework <state> <feedback-path>
-//     Assert status = awaiting_dev_review. Transition → rework_in_progress.
-//     bumpDevReviewRound(state, feedback-path) so the round number visible
-//     to the reviewer matches the persisted round.
+//     Assert status = dev_reviewing && dev_review.phase = "awaiting".
+//     Phase mutation → "rework". bumpDevReviewRound(state, feedback-path)
+//     so the round number visible to the reviewer matches the persisted
+//     round.
 //
 //   rework-done <state>
-//     Assert status = rework_in_progress. Transition → awaiting_dev_review.
+//     Assert status = dev_reviewing && dev_review.phase = "rework".
+//     Phase mutation → "awaiting".
 //
 //   mark-qa-pending <state>
-//     Assert status = awaiting_dev_review. Transition → qa_pending.
+//     Assert status = dev_reviewing && dev_review.phase = "awaiting".
+//     Phase mutation → "qa".
 //
 //   qa-resolved <state>
-//     Assert status = qa_pending. Transition → awaiting_dev_review.
+//     Assert status = dev_reviewing && dev_review.phase = "qa".
+//     Phase mutation → "awaiting".
 //
 //   mark-approved <state>
-//     Assert status = awaiting_dev_review. Transition → approved.
+//     Assert status = dev_reviewing && dev_review.phase = "awaiting".
+//     Transition → closing. Clears dev_review.phase.
 //
 //   mark-merged <state>
-//     Assert status = approved. Transition → merged.
+//     Assert status = closing. Transition → merged.
 //
 //   reset <state> --confirm
 //     Assert status = merged. Delete the state file and any sibling
@@ -58,12 +68,16 @@ import path from "node:path";
 import process from "node:process";
 
 import {
+  DEV_REVIEW_PHASE,
   STATUS,
+  STOP_REVIEW_PHASE,
   assertExpectedStatus,
   bumpDevReviewRound,
   loadState,
   saveState,
+  setDevReviewPhase,
   setStopReviewArmed,
+  setStopReviewPhase,
   transitionStatus,
 } from "./lib/runner-state.mjs";
 
@@ -120,39 +134,75 @@ function runTransition({ statePath, allowedFrom, nextStatus, mutate, label }) {
   process.stdout.write(`${state.status}\n`);
 }
 
-// arm-for-dispatch is the one subcommand that may need to walk the state
-// machine through more than one edge: a fresh plan enters as VALIDATING,
-// and ALLOWED_TRANSITIONS forbids VALIDATING → AWAITING_STOP_REVIEW directly
-// (the canonical path is VALIDATING → DISPATCHING → AWAITING_STOP_REVIEW).
-// The runner skill's Step 2 doesn't surface DISPATCHING as a separate event;
-// the worktree is prepared and Step 3 immediately arms the gate. So we
-// collapse the two edges here and emit a single "before → after" line.
+// Phase 4: a phase-mutator helper for subcommands that change a sub-state
+// (begin-rework, rework-done, mark-qa-pending, qa-resolved). Status stays at
+// DEV_REVIEWING the whole time — only `dev_review.phase` moves.
+function runPhaseMutation({
+  statePath, label, allowedStatus, mutate,
+}) {
+  const state = loadOrFail(statePath);
+  const before = state.dev_review?.phase ?? null;
+  try {
+    assertExpectedStatus(state, allowedStatus, label);
+  } catch (err) {
+    fail(`runner-state-cli: ${err.message}`);
+  }
+  try {
+    mutate(state);
+  } catch (err) {
+    fail(`runner-state-cli: ${err.message} (label="${label}")`);
+  }
+  saveState(statePath, state);
+  const after = state.dev_review?.phase ?? null;
+  process.stderr.write(`[${label}] phase ${before ?? "null"} → ${after ?? "null"}\n`);
+  process.stdout.write(`${after ?? "null"}\n`);
+}
+
+// arm-for-dispatch is kept for manual recovery — PreToolUse auto-arms the
+// gate as a side-effect of seeing the plan-agent dispatch, but a runner
+// operator may still need to walk a state forward by hand (e.g. after a
+// runner-state-fixup --rollback-to dispatching). The CLI accepts:
+//   - `preparing`                         → DISPATCHING + phase=ARMED
+//   - `dispatching` + phase in {armed, blocked}  → phase=ARMED (idempotent
+//     re-arm). PASSED is rejected because it is the post-ALLOW transient
+//     phase — re-arming after an ALLOW means going back to stop-review,
+//     which is not a recovery move the operator should drive.
 function cmdArmForDispatch(statePath) {
   const state = loadOrFail(statePath);
-  const before = state.status;
+  const beforeStatus = state.status;
+  const beforePhase = state.stop_review?.phase ?? null;
   try {
     assertExpectedStatus(
       state,
-      [STATUS.VALIDATING, STATUS.DISPATCHING, STATUS.STOP_REVIEW_BLOCKED],
+      [STATUS.PREPARING, STATUS.DISPATCHING],
       "arm-for-dispatch",
     );
   } catch (err) {
     fail(`runner-state-cli: ${err.message}`);
   }
+  if (
+    state.status === STATUS.DISPATCHING &&
+    state.stop_review.phase === STOP_REVIEW_PHASE.PASSED
+  ) {
+    fail(
+      `runner-state-cli: cannot re-arm from stop_review.phase="passed" — that ` +
+      `phase is set right before transitioning to dev_reviewing.`,
+    );
+  }
   try {
-    if (state.status === STATUS.VALIDATING) {
+    if (state.status === STATUS.PREPARING) {
       transitionStatus(state, STATUS.DISPATCHING);
     }
-    transitionStatus(state, STATUS.AWAITING_STOP_REVIEW);
+    setStopReviewPhase(state, STOP_REVIEW_PHASE.ARMED);
   } catch (err) {
-    fail(
-      `runner-state-cli: ${err.message} (status was "${before}", attempted ` +
-      `"${STATUS.AWAITING_STOP_REVIEW}")`,
-    );
+    fail(`runner-state-cli: ${err.message} (status was "${beforeStatus}")`);
   }
   setStopReviewArmed(state, true);
   saveState(statePath, state);
-  process.stderr.write(`[arm-for-dispatch] ${before} → ${state.status}\n`);
+  process.stderr.write(
+    `[arm-for-dispatch] ${beforeStatus}/${beforePhase ?? "null"} → ` +
+    `${state.status}/${state.stop_review.phase}\n`,
+  );
   process.stdout.write(`${state.status}\n`);
 }
 
@@ -160,45 +210,76 @@ function cmdBeginRework(statePath, feedbackPath) {
   if (!feedbackPath) {
     fail("runner-state-cli: begin-rework requires <feedback-path>");
   }
-  // Resolve to absolute so subsequent runner turns can read it back without
-  // depending on cwd. The state JSON serializer normalizes to POSIX, so we
-  // pass the resolved path through bumpDevReviewRound which calls toPosixPath.
   const absFeedback = path.isAbsolute(feedbackPath)
     ? feedbackPath
     : path.resolve(process.cwd(), feedbackPath);
-  runTransition({
+  runPhaseMutation({
     statePath,
     label: "begin-rework",
-    allowedFrom: STATUS.AWAITING_DEV_REVIEW,
-    nextStatus: STATUS.REWORK_IN_PROGRESS,
-    mutate: (state) => bumpDevReviewRound(state, absFeedback),
+    allowedStatus: STATUS.DEV_REVIEWING,
+    mutate: (state) => {
+      // Phase guard: only AWAITING → REWORK is legal here. setDevReviewPhase
+      // throws on any other source phase.
+      if (state.dev_review.phase !== DEV_REVIEW_PHASE.AWAITING) {
+        throw new Error(
+          `begin-rework: dev_review.phase must be "awaiting" (was ` +
+          `"${state.dev_review.phase}").`,
+        );
+      }
+      bumpDevReviewRound(state, absFeedback);
+      setDevReviewPhase(state, DEV_REVIEW_PHASE.REWORK);
+    },
   });
 }
 
 function cmdReworkDone(statePath) {
-  runTransition({
+  runPhaseMutation({
     statePath,
     label: "rework-done",
-    allowedFrom: STATUS.REWORK_IN_PROGRESS,
-    nextStatus: STATUS.AWAITING_DEV_REVIEW,
+    allowedStatus: STATUS.DEV_REVIEWING,
+    mutate: (state) => {
+      if (state.dev_review.phase !== DEV_REVIEW_PHASE.REWORK) {
+        throw new Error(
+          `rework-done: dev_review.phase must be "rework" (was ` +
+          `"${state.dev_review.phase}").`,
+        );
+      }
+      setDevReviewPhase(state, DEV_REVIEW_PHASE.AWAITING);
+    },
   });
 }
 
 function cmdMarkQaPending(statePath) {
-  runTransition({
+  runPhaseMutation({
     statePath,
     label: "mark-qa-pending",
-    allowedFrom: STATUS.AWAITING_DEV_REVIEW,
-    nextStatus: STATUS.QA_PENDING,
+    allowedStatus: STATUS.DEV_REVIEWING,
+    mutate: (state) => {
+      if (state.dev_review.phase !== DEV_REVIEW_PHASE.AWAITING) {
+        throw new Error(
+          `mark-qa-pending: dev_review.phase must be "awaiting" (was ` +
+          `"${state.dev_review.phase}").`,
+        );
+      }
+      setDevReviewPhase(state, DEV_REVIEW_PHASE.QA);
+    },
   });
 }
 
 function cmdQaResolved(statePath) {
-  runTransition({
+  runPhaseMutation({
     statePath,
     label: "qa-resolved",
-    allowedFrom: STATUS.QA_PENDING,
-    nextStatus: STATUS.AWAITING_DEV_REVIEW,
+    allowedStatus: STATUS.DEV_REVIEWING,
+    mutate: (state) => {
+      if (state.dev_review.phase !== DEV_REVIEW_PHASE.QA) {
+        throw new Error(
+          `qa-resolved: dev_review.phase must be "qa" (was ` +
+          `"${state.dev_review.phase}").`,
+        );
+      }
+      setDevReviewPhase(state, DEV_REVIEW_PHASE.AWAITING);
+    },
   });
 }
 
@@ -206,8 +287,18 @@ function cmdMarkApproved(statePath) {
   runTransition({
     statePath,
     label: "mark-approved",
-    allowedFrom: STATUS.AWAITING_DEV_REVIEW,
-    nextStatus: STATUS.APPROVED,
+    allowedFrom: STATUS.DEV_REVIEWING,
+    nextStatus: STATUS.CLOSING,
+    mutate: (state) => {
+      if (state.dev_review.phase !== DEV_REVIEW_PHASE.AWAITING) {
+        throw new Error(
+          `mark-approved: dev_review.phase must be "awaiting" (was ` +
+          `"${state.dev_review.phase}").`,
+        );
+      }
+      // Status leaves DEV_REVIEWING; phase is no longer meaningful.
+      setDevReviewPhase(state, null);
+    },
   });
 }
 
@@ -215,7 +306,7 @@ function cmdMarkMerged(statePath) {
   runTransition({
     statePath,
     label: "mark-merged",
-    allowedFrom: STATUS.APPROVED,
+    allowedFrom: STATUS.CLOSING,
     nextStatus: STATUS.MERGED,
   });
 }

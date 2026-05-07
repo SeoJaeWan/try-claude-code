@@ -5,11 +5,14 @@ import os from "node:os";
 import path from "node:path";
 
 import {
+  DEV_REVIEW_PHASE,
   STATUS,
+  STOP_REVIEW_PHASE,
   createInitialState,
   loadState,
   saveState,
   setStopReviewArmed,
+  setStopReviewPhase,
   transitionStatus,
 } from "../lib/runner-state.mjs";
 import { STOP_REVIEW_OUTCOME } from "../lib/stop-review-outcome.mjs";
@@ -49,7 +52,7 @@ function makeStateAtAwaiting(extraSetup) {
     worktreePath: `/repo/worktrees/feat-plan-${counter}`,
   });
   transitionStatus(state, STATUS.DISPATCHING);
-  transitionStatus(state, STATUS.AWAITING_STOP_REVIEW);
+  setStopReviewPhase(state, STOP_REVIEW_PHASE.ARMED);
   setStopReviewArmed(state, true);
   if (extraSetup) extraSetup(state);
   saveState(statePath, state);
@@ -73,7 +76,7 @@ function reviewItemFor(state, statePath, headSha = "abcdef1234567890") {
 // ---------------------------------------------------------------------------
 
 describe("applyVerdictToPlanState — ALLOW", () => {
-  it("disarms, advances to awaiting_dev_review, clears downgrade streak", () => {
+  it("disarms, advances to dev_reviewing+awaiting, clears downgrade streak", () => {
     const { statePath, state } = makeStateAtAwaiting((s) => {
       s.stop_review.consecutive_downgrades = 4;
     });
@@ -86,7 +89,9 @@ describe("applyVerdictToPlanState — ALLOW", () => {
     assert.equal(out.escalationNote, "");
     assert.equal(out.downgradeWarning, "");
     const after = loadState(statePath);
-    assert.equal(after.status, STATUS.AWAITING_DEV_REVIEW);
+    assert.equal(after.status, STATUS.DEV_REVIEWING);
+    assert.equal(after.stop_review.phase, null);
+    assert.equal(after.dev_review.phase, DEV_REVIEW_PHASE.AWAITING);
     assert.equal(after.stop_review.armed, false);
     assert.equal(after.stop_review.last_reviewed_commit, "abcdef1234567890");
     assert.equal(after.stop_review.last_result, "ALLOW");
@@ -108,7 +113,7 @@ describe("applyVerdictToPlanState — ALLOW_DOWNGRADED", () => {
     );
     assert.equal(out.downgradeWarning, "");
     const after = loadState(statePath);
-    assert.equal(after.status, STATUS.AWAITING_DEV_REVIEW);
+    assert.equal(after.status, STATUS.DEV_REVIEWING);
     assert.equal(after.stop_review.consecutive_downgrades, 1);
   });
 
@@ -165,7 +170,8 @@ describe("applyVerdictToPlanState — streak reset paths", () => {
       { reason: "BLOCK: real high-confidence finding\n[conf 9] x" },
     );
     const after = loadState(statePath);
-    assert.equal(after.status, STATUS.STOP_REVIEW_BLOCKED);
+    assert.equal(after.status, STATUS.DISPATCHING);
+    assert.equal(after.stop_review.phase, STOP_REVIEW_PHASE.BLOCKED);
     assert.equal(after.stop_review.consecutive_downgrades, 0);
   });
 
@@ -179,7 +185,7 @@ describe("applyVerdictToPlanState — streak reset paths", () => {
       { reason: null },
     );
     const after = loadState(statePath);
-    assert.equal(after.status, STATUS.AWAITING_DEV_REVIEW);
+    assert.equal(after.status, STATUS.DEV_REVIEWING);
     assert.equal(after.stop_review.consecutive_downgrades, 0);
     assert.equal(after.stop_review.last_result, "skipped");
   });

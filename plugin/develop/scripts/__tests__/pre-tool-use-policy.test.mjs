@@ -2,8 +2,12 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  DEV_REVIEW_PHASE,
   STATUS,
+  STOP_REVIEW_PHASE,
   createInitialState,
+  setDevReviewPhase,
+  setStopReviewPhase,
   transitionStatus,
 } from "../lib/runner-state.mjs";
 import {
@@ -13,14 +17,17 @@ import {
 } from "../lib/pre-tool-use-policy.mjs";
 
 // pre-tool-use-policy is the pure decision function. Tests cover the matrix
-// directly so a future status / tool addition shows up here without needing
-// to spawn the hook process. Hook integration tests live next door in
-// pre-tool-use-hook.test.mjs.
+// directly so a future status / tool / phase addition shows up here without
+// needing to spawn the hook process. Hook integration tests live next door
+// in pre-tool-use-hook.test.mjs.
 
 const PLAN_AREA = "/repo/worktrees/feat-x";
 const PLAN_DIR = "/repo/plans/x";
 
-function stateAt(status, overrides = {}) {
+// Build a state at the requested top-level status. For DISPATCHING and
+// DEV_REVIEWING, callers can also pass `stopPhase` / `devPhase` overrides
+// to land on the right sub-state.
+function stateAt(status, { stopPhase = null, devPhase = null, overrides = {} } = {}) {
   const s = createInitialState({
     planSlug: "plan-x",
     planPath: "/repo/plans/x.plan.md",
@@ -30,31 +37,25 @@ function stateAt(status, overrides = {}) {
     worktreePath: PLAN_AREA,
     sessionId: "sess-1",
   });
-  // Walk forward so the legal-transition table approves every step.
   const order = [
-    STATUS.VALIDATING,
+    STATUS.PREPARING,
     STATUS.DISPATCHING,
-    STATUS.AWAITING_STOP_REVIEW,
-    STATUS.AWAITING_DEV_REVIEW,
-    STATUS.APPROVED,
+    STATUS.DEV_REVIEWING,
+    STATUS.CLOSING,
     STATUS.MERGED,
   ];
   const i = order.indexOf(status);
   if (i > 0) for (let j = 1; j <= i; j += 1) transitionStatus(s, order[j]);
-  else if (status === STATUS.STOP_REVIEW_BLOCKED) {
-    transitionStatus(s, STATUS.DISPATCHING);
-    transitionStatus(s, STATUS.AWAITING_STOP_REVIEW);
-    transitionStatus(s, STATUS.STOP_REVIEW_BLOCKED);
-  } else if (status === STATUS.REWORK_IN_PROGRESS) {
-    transitionStatus(s, STATUS.DISPATCHING);
-    transitionStatus(s, STATUS.AWAITING_STOP_REVIEW);
-    transitionStatus(s, STATUS.AWAITING_DEV_REVIEW);
-    transitionStatus(s, STATUS.REWORK_IN_PROGRESS);
-  } else if (status === STATUS.QA_PENDING) {
-    transitionStatus(s, STATUS.DISPATCHING);
-    transitionStatus(s, STATUS.AWAITING_STOP_REVIEW);
-    transitionStatus(s, STATUS.AWAITING_DEV_REVIEW);
-    transitionStatus(s, STATUS.QA_PENDING);
+  if (status === STATUS.DISPATCHING) {
+    setStopReviewPhase(s, STOP_REVIEW_PHASE.ARMED);
+    if (stopPhase && stopPhase !== STOP_REVIEW_PHASE.ARMED) {
+      setStopReviewPhase(s, stopPhase);
+    }
+  } else if (status === STATUS.DEV_REVIEWING) {
+    setDevReviewPhase(s, DEV_REVIEW_PHASE.AWAITING);
+    if (devPhase && devPhase !== DEV_REVIEW_PHASE.AWAITING) {
+      setDevReviewPhase(s, devPhase);
+    }
   }
   s.__statePath = "/repo/plans/x/.runner-state.json";
   return Object.assign(s, overrides);
@@ -64,7 +65,7 @@ describe("classifyBashCommand", () => {
   it("classifies runner-state-cli invocations as safe", () => {
     assert.equal(
       classifyBashCommand(
-        'node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" arm-for-dispatch /x/.runner-state.json',
+        'node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" mark-approved /x/.runner-state.json',
       ),
       "safe",
     );
@@ -121,7 +122,7 @@ describe("classifyBashCommand", () => {
 
   it("classifies unknown commands as ambiguous", () => {
     assert.equal(classifyBashCommand("python3 some_script.py"), "ambiguous");
-    assert.equal(classifyBashCommand(""), "safe"); // empty / blank → trivially safe
+    assert.equal(classifyBashCommand(""), "safe");
   });
 });
 
@@ -151,17 +152,12 @@ describe("evaluate — no active plan", () => {
 
 describe("evaluate — Bash gating", () => {
   it("allows safe Bash at every non-terminal status", () => {
-    const statuses = [
-      STATUS.VALIDATING,
+    for (const status of [
+      STATUS.PREPARING,
       STATUS.DISPATCHING,
-      STATUS.AWAITING_STOP_REVIEW,
-      STATUS.STOP_REVIEW_BLOCKED,
-      STATUS.AWAITING_DEV_REVIEW,
-      STATUS.REWORK_IN_PROGRESS,
-      STATUS.QA_PENDING,
-      STATUS.APPROVED,
-    ];
-    for (const status of statuses) {
+      STATUS.DEV_REVIEWING,
+      STATUS.CLOSING,
+    ]) {
       const r = evaluate({
         state: stateAt(status),
         toolName: "Bash",
@@ -172,15 +168,11 @@ describe("evaluate — Bash gating", () => {
     }
   });
 
-  it("blocks mutating Bash mid-flight", () => {
+  it("blocks mutating Bash mid-flight (preparing / dispatching / dev_reviewing)", () => {
     for (const status of [
-      STATUS.VALIDATING,
+      STATUS.PREPARING,
       STATUS.DISPATCHING,
-      STATUS.AWAITING_STOP_REVIEW,
-      STATUS.STOP_REVIEW_BLOCKED,
-      STATUS.AWAITING_DEV_REVIEW,
-      STATUS.REWORK_IN_PROGRESS,
-      STATUS.QA_PENDING,
+      STATUS.DEV_REVIEWING,
     ]) {
       const r = evaluate({
         state: stateAt(status),
@@ -193,9 +185,9 @@ describe("evaluate — Bash gating", () => {
     }
   });
 
-  it("allows mutating Bash at status=approved (Step 5 merges)", () => {
+  it("allows mutating Bash at status=closing (Step 5 merges)", () => {
     const r = evaluate({
-      state: stateAt(STATUS.APPROVED),
+      state: stateAt(STATUS.CLOSING),
       toolName: "Bash",
       toolInput: { command: "git merge feat/x --no-ff -m 'merge'" },
       planAreas: [PLAN_AREA, PLAN_DIR],
@@ -205,7 +197,7 @@ describe("evaluate — Bash gating", () => {
 
   it("treats ambiguous Bash as mutating (block)", () => {
     const r = evaluate({
-      state: stateAt(STATUS.AWAITING_DEV_REVIEW),
+      state: stateAt(STATUS.DEV_REVIEWING),
       toolName: "Bash",
       toolInput: { command: "python3 mystery.py" },
       planAreas: [PLAN_AREA, PLAN_DIR],
@@ -217,7 +209,7 @@ describe("evaluate — Bash gating", () => {
 describe("evaluate — Edit / Write gating", () => {
   it("blocks Edit on worktree files mid-review", () => {
     const r = evaluate({
-      state: stateAt(STATUS.AWAITING_DEV_REVIEW),
+      state: stateAt(STATUS.DEV_REVIEWING),
       toolName: "Edit",
       toolInput: { file_path: `${PLAN_AREA}/src/index.ts` },
       planAreas: [PLAN_AREA, PLAN_DIR],
@@ -227,7 +219,7 @@ describe("evaluate — Edit / Write gating", () => {
 
   it("downgrades Edit on unrelated files to a warn", () => {
     const r = evaluate({
-      state: stateAt(STATUS.AWAITING_DEV_REVIEW),
+      state: stateAt(STATUS.DEV_REVIEWING),
       toolName: "Edit",
       toolInput: { file_path: "/repo/scratch/notes.md" },
       planAreas: [PLAN_AREA, PLAN_DIR],
@@ -244,12 +236,22 @@ describe("evaluate — Edit / Write gating", () => {
     });
     assert.equal(r.decision, VERDICT.BLOCK);
   });
+
+  it("warns (does not block) Edit on worktree files at status=closing", () => {
+    const r = evaluate({
+      state: stateAt(STATUS.CLOSING),
+      toolName: "Edit",
+      toolInput: { file_path: `${PLAN_AREA}/src/index.ts` },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.WARN);
+  });
 });
 
 describe("evaluate — Agent / Task dispatch gating", () => {
-  it("allows Agent dispatch at awaiting_stop_review when subagent_type matches owner_agent", () => {
+  it("allows Agent dispatch at dispatching when subagent_type matches owner_agent", () => {
     const r = evaluate({
-      state: stateAt(STATUS.AWAITING_STOP_REVIEW),
+      state: stateAt(STATUS.DISPATCHING),
       toolName: "Task",
       toolInput: {
         subagent_type: "general-developer",
@@ -260,9 +262,9 @@ describe("evaluate — Agent / Task dispatch gating", () => {
     assert.equal(r.decision, VERDICT.ALLOW);
   });
 
-  it("blocks unrelated Agent dispatch at awaiting_stop_review", () => {
+  it("blocks unrelated Agent dispatch at dispatching", () => {
     const r = evaluate({
-      state: stateAt(STATUS.AWAITING_STOP_REVIEW),
+      state: stateAt(STATUS.DISPATCHING),
       toolName: "Task",
       toolInput: {
         subagent_type: "Explore",
@@ -273,40 +275,48 @@ describe("evaluate — Agent / Task dispatch gating", () => {
     assert.equal(r.decision, VERDICT.BLOCK);
   });
 
-  it("blocks Agent dispatch at validating (skill must arm first)", () => {
+  it("allows owner_agent Agent dispatch at preparing (auto-arm path)", () => {
     const r = evaluate({
-      state: stateAt(STATUS.VALIDATING),
+      state: stateAt(STATUS.PREPARING),
       toolName: "Task",
       toolInput: { subagent_type: "general-developer", prompt: "..." },
-      planAreas: [PLAN_AREA, PLAN_DIR],
-    });
-    assert.equal(r.decision, VERDICT.BLOCK);
-  });
-
-  it("allows any Agent dispatch at rework_in_progress (reviewer chose the agent)", () => {
-    const r = evaluate({
-      state: stateAt(STATUS.REWORK_IN_PROGRESS),
-      toolName: "Task",
-      toolInput: { subagent_type: "frontend-developer", prompt: "..." },
       planAreas: [PLAN_AREA, PLAN_DIR],
     });
     assert.equal(r.decision, VERDICT.ALLOW);
   });
 
-  it("blocks Agent dispatch at awaiting_dev_review (no fresh dispatches mid-review)", () => {
-    const r = evaluate({
-      state: stateAt(STATUS.AWAITING_DEV_REVIEW),
+  it("allows Agent dispatch at dev_reviewing only when phase is rework", () => {
+    const rework = evaluate({
+      state: stateAt(STATUS.DEV_REVIEWING, { devPhase: DEV_REVIEW_PHASE.REWORK }),
+      toolName: "Task",
+      toolInput: { subagent_type: "frontend-developer", prompt: "..." },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(rework.decision, VERDICT.ALLOW);
+
+    const awaiting = evaluate({
+      state: stateAt(STATUS.DEV_REVIEWING, { devPhase: DEV_REVIEW_PHASE.AWAITING }),
       toolName: "Task",
       toolInput: { subagent_type: "general-developer", prompt: "..." },
       planAreas: [PLAN_AREA, PLAN_DIR],
     });
-    assert.equal(r.decision, VERDICT.BLOCK);
+    assert.equal(awaiting.decision, VERDICT.BLOCK);
+    assert.match(awaiting.reason, /phase="awaiting"/);
+
+    const qa = evaluate({
+      state: stateAt(STATUS.DEV_REVIEWING, { devPhase: DEV_REVIEW_PHASE.QA }),
+      toolName: "Task",
+      toolInput: { subagent_type: "general-developer", prompt: "..." },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(qa.decision, VERDICT.BLOCK);
+    assert.match(qa.reason, /phase="qa"/);
   });
 });
 
 describe("evaluate — passthrough tools", () => {
   it("does not gate Read / Glob / Grep / AskUserQuestion", () => {
-    const s = stateAt(STATUS.AWAITING_DEV_REVIEW);
+    const s = stateAt(STATUS.DEV_REVIEWING);
     for (const toolName of ["Read", "Glob", "Grep", "AskUserQuestion"]) {
       const r = evaluate({
         state: s,

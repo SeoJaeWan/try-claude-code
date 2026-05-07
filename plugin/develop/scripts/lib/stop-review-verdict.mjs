@@ -10,14 +10,18 @@
 // outgoing decision payload.
 
 import {
+  DEV_REVIEW_PHASE,
   STATUS,
+  STOP_REVIEW_PHASE,
   bumpConsecutiveDowngrades,
   clearConsecutiveDowngrades,
   clearPlanBlockStreak,
   recordPlanBlock,
   saveState,
+  setDevReviewPhase,
   setLastReviewedCommit,
   setStopReviewArmed,
+  setStopReviewPhase,
   transitionStatus,
 } from "./runner-state.mjs";
 import { STOP_REVIEW_OUTCOME } from "./stop-review-outcome.mjs";
@@ -99,14 +103,18 @@ export function applyVerdictToPlanState(reviewItem, outcome, review) {
     } else {
       clearConsecutiveDowngrades(state);
     }
-    // Move forward only from the canonical post-stop-review states. Other
-    // statuses keep their position so we do not accidentally rewind a plan
-    // that already advanced (e.g. mid-rework).
-    if (
-      state.status === STATUS.AWAITING_STOP_REVIEW ||
-      state.status === STATUS.STOP_REVIEW_BLOCKED
-    ) {
-      transitionStatus(state, STATUS.AWAITING_DEV_REVIEW);
+    // Move forward only when we are still inside Step 3 (DISPATCHING with
+    // an armed/blocked phase). Other statuses keep their position so we do
+    // not accidentally rewind a plan that already advanced (e.g. mid-rework
+    // commits flow through the DEV_REVIEWING+REWORK phase, not stop-review).
+    if (state.status === STATUS.DISPATCHING) {
+      // Mark the gate as having passed for callers reading between the
+      // verdict and the transition; then leave Step 3 for Step 4 with a
+      // fresh AWAITING phase.
+      setStopReviewPhase(state, STOP_REVIEW_PHASE.PASSED);
+      transitionStatus(state, STATUS.DEV_REVIEWING);
+      setStopReviewPhase(state, null);
+      setDevReviewPhase(state, DEV_REVIEW_PHASE.AWAITING);
     }
   } else if (outcome === STOP_REVIEW_OUTCOME.BLOCK) {
     // BLOCK leaves the gate armed so the next plan-agent dispatch's commits
@@ -117,8 +125,14 @@ export function applyVerdictToPlanState(reviewItem, outcome, review) {
     clearConsecutiveDowngrades(state);
     setLastReviewedCommit(state, reviewItem.headSha, "BLOCK");
     const { count } = recordPlanBlock(state, review.reason);
-    if (state.status === STATUS.AWAITING_STOP_REVIEW) {
-      transitionStatus(state, STATUS.STOP_REVIEW_BLOCKED);
+    // BLOCK is a phase change inside DISPATCHING; the status itself does not
+    // move. The PreToolUse auto-arm flips phase back to ARMED on the next
+    // plan-agent re-dispatch.
+    if (
+      state.status === STATUS.DISPATCHING &&
+      state.stop_review.phase !== STOP_REVIEW_PHASE.BLOCKED
+    ) {
+      setStopReviewPhase(state, STOP_REVIEW_PHASE.BLOCKED);
     }
     plannerDirective = buildPlannerBlockDirective(reviewItem);
     if (count >= SAME_BLOCK_ESCALATION_THRESHOLD) {

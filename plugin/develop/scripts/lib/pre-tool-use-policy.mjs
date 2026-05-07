@@ -20,40 +20,33 @@
 // verdict. That separation keeps the matrix unit-testable across every
 // (status, tool, command-shape, cwd) combination without spawning a hook.
 //
-// Status semantics, summarized so the matrix below makes sense without
-// re-reading SKILL.md every time:
+// Status semantics (v2, 5-status enum), summarized so the matrix below makes
+// sense without re-reading SKILL.md every time. Sub-states (rework/qa/awaiting
+// inside dev-review, armed/blocked/passed inside stop-review) live on
+// `state.{stop_review,dev_review}.phase` and only matter for the agent-
+// dispatch resolver.
 //
-//   validating          — fresh plan; worktree may not exist yet. Skill is in
-//                         Step 2. Main session may run read-only Bash and the
-//                         runner-state-cli; everything else waits for Step 3
-//                         to arm and dispatch.
-//   dispatching         — Step 2 finished, gate not yet armed. Same posture as
-//                         validating: read-only inspection is fine, mutating
-//                         work belongs to the dispatched agent.
-//   awaiting_stop_review — gate armed, main session is *about* to dispatch the
-//                         plan agent (Agent call) or has just dispatched it and
-//                         is waiting for the Stop hook to score the diff. The
-//                         Agent call itself is the only legitimate dispatch
-//                         here; rework dispatches happen at a different status.
-//   stop_review_blocked  — Stop hook returned BLOCK. Skill must re-dispatch the
-//                         plan agent (same Agent call) so it commits a fix.
-//   awaiting_dev_review  — Stop-review passed; the user is reviewing in the
-//                         dev-review browser. Main session must not edit the
-//                         worktree on its own — rework lives behind the
-//                         `begin-rework` CLI + Agent dispatch path.
-//   rework_in_progress   — `begin-rework` CLI was called; one or more rework
-//                         Agent dispatches are running. Same posture: main
-//                         session does not directly edit; the rework agent
-//                         does.
-//   qa_pending           — Reviewer asked questions. Main session answers in
-//                         chat (no tool calls needed) and runs the
-//                         `qa-resolved` CLI when done.
-//   approved             — Dev-review accepted. Step 5 prose has the main
-//                         session run `git worktree remove`, `git merge`,
-//                         `git branch -d`, and the `mark-merged` / `reset`
-//                         CLIs. Mutating Bash is *expected* here.
-//   merged               — Terminal. UserPromptSubmit refuses re-entry, so
-//                         this is mostly defensive — treat as no-active-plan.
+//   preparing      — fresh plan; worktree may not exist yet. Step 1-2.
+//                    Main session may run read-only Bash and the runner-state
+//                    CLI; mutating work waits for Step 3 to arm + dispatch
+//                    (PreToolUse auto-arms when it sees the matching Agent
+//                    dispatch from this status).
+//   dispatching    — Step 3. `stop_review.phase` distinguishes "armed" (gate
+//                    primed) from "blocked" (Stop hook reported BLOCK,
+//                    awaiting re-dispatch) from "passed" (transient pre-flip
+//                    to dev_reviewing). Plan-agent dispatch is the only
+//                    legitimate Agent call here.
+//   dev_reviewing  — Step 4. `dev_review.phase` distinguishes "awaiting" /
+//                    "rework" / "qa". Main session does not edit the worktree
+//                    directly — rework happens through the `begin-rework`
+//                    CLI + Agent dispatch path; phase=rework is the only
+//                    sub-state where Agent dispatches are allowed.
+//   closing        — Step 5: dev-review approved. Main session runs git
+//                    merge / branch -d / worktree remove. Mutating Bash is
+//                    *expected* here; Edit/Write on the (now-removed)
+//                    worktree is unusual but downgraded to warn.
+//   merged         — Terminal. UserPromptSubmit refuses re-entry, so this
+//                    is mostly defensive — treat as no-active-plan.
 //
 // The matrix below encodes those rules. Edit the matrix, not callers.
 
@@ -182,66 +175,57 @@ function dispatchMatchesPlan(toolInput, state) {
   // owner_agent is the plan-agent for the main dispatch; rework agents are
   // selected per-item by the reviewer and may differ. We cannot know the
   // rework choice from policy alone, so we accept any subagent_type when
-  // status is rework_in_progress and rely on the prose to pick correctly.
+  // dev_review.phase === "rework" and rely on the prose to pick correctly.
   if (subagent === state.owner_agent) return true;
   return false;
 }
 
 // Per-status disposition for each tool family. `allow`, `warn`, `block` are
 // the three terminal verdicts; functions defer the choice to runtime context
-// (e.g. classifying the Bash command, checking dispatch identity).
+// (e.g. classifying the Bash command, checking dispatch identity, the
+// dev-review sub-state phase).
+//
+// Phase 4 reshape: only 5 rows now. Sub-states (rework vs Q&A inside Step 4,
+// armed vs blocked inside Step 3) are checked through the `state.*.phase`
+// fields inside the agent-dispatch resolver functions, not via separate
+// rows. See state.dev_review.phase / state.stop_review.phase.
 const MATRIX = {
-  validating: {
+  preparing: {
+    // Step 1-2: worktree setup. The PreToolUse hook also auto-arms the
+    // gate when it sees a matching Agent dispatch here, so this row only
+    // needs to lock down everything *else*.
     bashSafe: VERDICT.ALLOW,
     bashMutating: VERDICT.BLOCK,
     fileMutating: VERDICT.BLOCK,
-    agentDispatch: VERDICT.BLOCK,
+    agentDispatch: ({ matchesPlan }) =>
+      matchesPlan ? VERDICT.ALLOW : VERDICT.BLOCK,
   },
   dispatching: {
-    bashSafe: VERDICT.ALLOW,
-    bashMutating: VERDICT.BLOCK,
-    fileMutating: VERDICT.BLOCK,
-    agentDispatch: VERDICT.BLOCK,
-  },
-  awaiting_stop_review: {
-    bashSafe: VERDICT.ALLOW,
-    bashMutating: VERDICT.BLOCK,
-    fileMutating: VERDICT.BLOCK,
-    agentDispatch: ({ matchesPlan }) =>
-      matchesPlan ? VERDICT.ALLOW : VERDICT.BLOCK,
-  },
-  stop_review_blocked: {
+    // Step 3: stop-review gate active. `stop_review.phase` may be "armed"
+    // (initial fire) or "blocked" (BLOCK feedback received, awaiting
+    // re-dispatch). Both legitimately accept the same plan-agent dispatch.
     bashSafe: VERDICT.ALLOW,
     bashMutating: VERDICT.BLOCK,
     fileMutating: VERDICT.BLOCK,
     agentDispatch: ({ matchesPlan }) =>
       matchesPlan ? VERDICT.ALLOW : VERDICT.BLOCK,
   },
-  awaiting_dev_review: {
+  dev_reviewing: {
+    // Step 4. Sub-state branches:
+    //   phase "rework"   → reviewer-chosen rework agent allowed.
+    //   phase "awaiting" → reviewer reading; no dispatches until reply.
+    //   phase "qa"       → main session answers in chat; no dispatches.
     bashSafe: VERDICT.ALLOW,
     bashMutating: VERDICT.BLOCK,
     fileMutating: VERDICT.BLOCK,
-    agentDispatch: VERDICT.BLOCK,
+    agentDispatch: ({ state }) =>
+      state.dev_review?.phase === "rework" ? VERDICT.ALLOW : VERDICT.BLOCK,
   },
-  rework_in_progress: {
+  closing: {
+    // Step 5: dev-review approved. Main session runs git merge / branch -d /
+    // worktree remove. Mutating Bash is *expected* here; Edit/Write on the
+    // worktree is unusual but not illegal — downgrade to warn.
     bashSafe: VERDICT.ALLOW,
-    bashMutating: VERDICT.BLOCK,
-    fileMutating: VERDICT.BLOCK,
-    // Rework dispatches use a per-item agent the reviewer chose, which we
-    // cannot validate from policy. Allow any Agent call here and rely on
-    // SKILL.md prose to dispatch only the reviewer's selection.
-    agentDispatch: VERDICT.ALLOW,
-  },
-  qa_pending: {
-    bashSafe: VERDICT.ALLOW,
-    bashMutating: VERDICT.BLOCK,
-    fileMutating: VERDICT.BLOCK,
-    agentDispatch: VERDICT.BLOCK,
-  },
-  approved: {
-    bashSafe: VERDICT.ALLOW,
-    // Step 5 explicitly runs git merge / branch -d / worktree remove from the
-    // main session. Allow mutating Bash here so the prose can do its job.
     bashMutating: VERDICT.ALLOW,
     fileMutating: VERDICT.WARN,
     agentDispatch: VERDICT.WARN,
@@ -318,7 +302,14 @@ export function evaluate({ state, toolName, toolInput, planAreas }) {
   } else if (toolName === "Task" || toolName === "Agent") {
     ctx.matchesPlan = dispatchMatchesPlan(toolInput, state);
     cell = row.agentDispatch;
-    if (!ctx.matchesPlan && cell === VERDICT.BLOCK) {
+    if (state.status === "dev_reviewing") {
+      const phase = state.dev_review?.phase ?? null;
+      if (phase !== "rework") {
+        hint =
+          `dev-review 단계 (phase="${phase}")에서는 Agent dispatch를 차단합니다. ` +
+          `rework가 필요하면 begin-rework CLI를 먼저 호출해 phase를 "rework"로 옮기세요.`;
+      }
+    } else if (!ctx.matchesPlan) {
       hint =
         `Agent 호출이 활성 plan의 owner_agent(${state.owner_agent})와 일치하지 않습니다. ` +
         `현재 status에서는 plan dispatch 외 Agent 호출을 차단합니다.`;

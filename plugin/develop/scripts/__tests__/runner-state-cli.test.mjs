@@ -7,10 +7,15 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 import {
+  DEV_REVIEW_PHASE,
   STATUS,
+  STOP_REVIEW_PHASE,
   createInitialState,
   loadState,
   saveState,
+  setDevReviewPhase,
+  setStopReviewArmed,
+  setStopReviewPhase,
   transitionStatus,
 } from "../lib/runner-state.mjs";
 
@@ -35,8 +40,9 @@ after(() => {
 let counter = 0;
 
 // Build a fresh plan-state file in a unique sub-directory and return its
-// absolute path. `setup` lets the test pre-position status / fields.
-function makeStateFile({ status = STATUS.VALIDATING, mutate } = {}) {
+// absolute path. `target` accepts either a bare v2 status enum value or a
+// `{ status, stopPhase, devPhase }` tuple to land on a specific sub-state.
+function makeStateFile({ status = STATUS.PREPARING, mutate } = {}) {
   counter += 1;
   const dir = path.join(tmpDir, `plan-${counter}`);
   fs.mkdirSync(dir, { recursive: true });
@@ -49,36 +55,47 @@ function makeStateFile({ status = STATUS.VALIDATING, mutate } = {}) {
     taskBranch: `feat/plan-${counter}`,
     worktreePath: `/repo/worktrees/feat-plan-${counter}`,
   });
-  // Walk the state machine forward so we land on the requested status. Saves
-  // tests from re-encoding ALLOWED_TRANSITIONS by hand.
-  const path1 = [
-    STATUS.VALIDATING,
-    STATUS.DISPATCHING,
-    STATUS.AWAITING_STOP_REVIEW,
-    STATUS.AWAITING_DEV_REVIEW,
-    STATUS.APPROVED,
-    STATUS.MERGED,
-  ];
-  const idx = path1.indexOf(status);
-  if (idx > 0) {
-    for (let i = 1; i <= idx; i += 1) {
-      transitionStatus(state, path1[i]);
+
+  const target = typeof status === "object" ? status : { status };
+  const top = target.status;
+  const stopPhase = target.stopPhase;
+  const devPhase = target.devPhase;
+
+  if (top === STATUS.PREPARING) {
+    // already there
+  } else if (top === STATUS.DISPATCHING) {
+    transitionStatus(state, STATUS.DISPATCHING);
+    setStopReviewPhase(state, STOP_REVIEW_PHASE.ARMED);
+    setStopReviewArmed(state, true);
+    if (stopPhase && stopPhase !== STOP_REVIEW_PHASE.ARMED) {
+      setStopReviewPhase(state, stopPhase);
     }
-  } else if (status === STATUS.STOP_REVIEW_BLOCKED) {
+  } else if (top === STATUS.DEV_REVIEWING) {
     transitionStatus(state, STATUS.DISPATCHING);
-    transitionStatus(state, STATUS.AWAITING_STOP_REVIEW);
-    transitionStatus(state, STATUS.STOP_REVIEW_BLOCKED);
-  } else if (status === STATUS.REWORK_IN_PROGRESS) {
+    setStopReviewPhase(state, STOP_REVIEW_PHASE.ARMED);
+    transitionStatus(state, STATUS.DEV_REVIEWING);
+    setStopReviewPhase(state, null);
+    setDevReviewPhase(state, DEV_REVIEW_PHASE.AWAITING);
+    if (devPhase && devPhase !== DEV_REVIEW_PHASE.AWAITING) {
+      setDevReviewPhase(state, devPhase);
+    }
+  } else if (top === STATUS.CLOSING) {
     transitionStatus(state, STATUS.DISPATCHING);
-    transitionStatus(state, STATUS.AWAITING_STOP_REVIEW);
-    transitionStatus(state, STATUS.AWAITING_DEV_REVIEW);
-    transitionStatus(state, STATUS.REWORK_IN_PROGRESS);
-  } else if (status === STATUS.QA_PENDING) {
+    setStopReviewPhase(state, STOP_REVIEW_PHASE.ARMED);
+    transitionStatus(state, STATUS.DEV_REVIEWING);
+    setDevReviewPhase(state, DEV_REVIEW_PHASE.AWAITING);
+    transitionStatus(state, STATUS.CLOSING);
+    setDevReviewPhase(state, null);
+  } else if (top === STATUS.MERGED) {
     transitionStatus(state, STATUS.DISPATCHING);
-    transitionStatus(state, STATUS.AWAITING_STOP_REVIEW);
-    transitionStatus(state, STATUS.AWAITING_DEV_REVIEW);
-    transitionStatus(state, STATUS.QA_PENDING);
+    setStopReviewPhase(state, STOP_REVIEW_PHASE.ARMED);
+    transitionStatus(state, STATUS.DEV_REVIEWING);
+    setDevReviewPhase(state, DEV_REVIEW_PHASE.AWAITING);
+    transitionStatus(state, STATUS.CLOSING);
+    setDevReviewPhase(state, null);
+    transitionStatus(state, STATUS.MERGED);
   }
+
   if (mutate) mutate(state);
   saveState(statePath, state);
   return statePath;
@@ -93,33 +110,36 @@ function runCli(...args) {
 // ---------------------------------------------------------------------------
 
 describe("runner-state-cli arm-for-dispatch", () => {
-  it("transitions VALIDATING → AWAITING_STOP_REVIEW and arms the gate", () => {
-    const file = makeStateFile({ status: STATUS.VALIDATING });
+  it("transitions PREPARING → DISPATCHING + phase=ARMED", () => {
+    const file = makeStateFile({ status: STATUS.PREPARING });
     const r = runCli("arm-for-dispatch", file);
     assert.equal(r.status, 0, r.stderr);
-    assert.match(r.stdout, /awaiting_stop_review/);
-    assert.match(r.stderr, /validating → awaiting_stop_review/);
+    assert.match(r.stdout, /dispatching/);
+    assert.match(r.stderr, /preparing.*→.*dispatching\/armed/);
     const after = loadState(file);
-    assert.equal(after.status, STATUS.AWAITING_STOP_REVIEW);
+    assert.equal(after.status, STATUS.DISPATCHING);
+    assert.equal(after.stop_review.phase, STOP_REVIEW_PHASE.ARMED);
     assert.equal(after.stop_review.armed, true);
   });
 
-  it("re-arms from STOP_REVIEW_BLOCKED (post-BLOCK redispatch path)", () => {
-    const file = makeStateFile({ status: STATUS.STOP_REVIEW_BLOCKED });
+  it("re-arms from DISPATCHING + phase=BLOCKED (post-BLOCK redispatch path)", () => {
+    const file = makeStateFile({
+      status: { status: STATUS.DISPATCHING, stopPhase: STOP_REVIEW_PHASE.BLOCKED },
+    });
     const r = runCli("arm-for-dispatch", file);
     assert.equal(r.status, 0, r.stderr);
     const after = loadState(file);
-    assert.equal(after.status, STATUS.AWAITING_STOP_REVIEW);
+    assert.equal(after.status, STATUS.DISPATCHING);
+    assert.equal(after.stop_review.phase, STOP_REVIEW_PHASE.ARMED);
     assert.equal(after.stop_review.armed, true);
   });
 
-  it("rejects invocation from a non-dispatch status (e.g. approved)", () => {
-    const file = makeStateFile({ status: STATUS.APPROVED });
+  it("rejects invocation from a non-dispatch status (e.g. closing)", () => {
+    const file = makeStateFile({ status: STATUS.CLOSING });
     const r = runCli("arm-for-dispatch", file);
     assert.equal(r.status, 1);
-    assert.match(r.stderr, /assertExpectedStatus|status.*approved/i);
-    // State unchanged.
-    assert.equal(loadState(file).status, STATUS.APPROVED);
+    assert.match(r.stderr, /assertExpectedStatus|status.*closing/i);
+    assert.equal(loadState(file).status, STATUS.CLOSING);
   });
 });
 
@@ -128,36 +148,43 @@ describe("runner-state-cli arm-for-dispatch", () => {
 // ---------------------------------------------------------------------------
 
 describe("runner-state-cli begin-rework + rework-done", () => {
-  it("begin-rework bumps round, records feedback path, transitions", () => {
-    const file = makeStateFile({ status: STATUS.AWAITING_DEV_REVIEW });
+  it("begin-rework bumps round, records feedback path, sets phase=rework", () => {
+    const file = makeStateFile({ status: STATUS.DEV_REVIEWING });
     const feedback = path.join(path.dirname(file), "feedback-round-2.json");
     const r = runCli("begin-rework", file, feedback);
     assert.equal(r.status, 0, r.stderr);
     const after = loadState(file);
-    assert.equal(after.status, STATUS.REWORK_IN_PROGRESS);
+    // Status stays at DEV_REVIEWING — only the phase moves.
+    assert.equal(after.status, STATUS.DEV_REVIEWING);
+    assert.equal(after.dev_review.phase, DEV_REVIEW_PHASE.REWORK);
     assert.equal(after.dev_review.current_round, 1);
     assert.match(after.dev_review.last_feedback_path, /feedback-round-2\.json$/);
   });
 
   it("begin-rework requires a feedback path", () => {
-    const file = makeStateFile({ status: STATUS.AWAITING_DEV_REVIEW });
+    const file = makeStateFile({ status: STATUS.DEV_REVIEWING });
     const r = runCli("begin-rework", file);
     assert.equal(r.status, 1);
     assert.match(r.stderr, /feedback-path/);
   });
 
-  it("rework-done returns to AWAITING_DEV_REVIEW", () => {
-    const file = makeStateFile({ status: STATUS.REWORK_IN_PROGRESS });
+  it("rework-done returns phase to AWAITING (status unchanged)", () => {
+    const file = makeStateFile({
+      status: { status: STATUS.DEV_REVIEWING, devPhase: DEV_REVIEW_PHASE.REWORK },
+    });
     const r = runCli("rework-done", file);
     assert.equal(r.status, 0, r.stderr);
-    assert.equal(loadState(file).status, STATUS.AWAITING_DEV_REVIEW);
+    const after = loadState(file);
+    assert.equal(after.status, STATUS.DEV_REVIEWING);
+    assert.equal(after.dev_review.phase, DEV_REVIEW_PHASE.AWAITING);
   });
 
-  it("rework-done rejects from AWAITING_DEV_REVIEW (no rework in flight)", () => {
-    const file = makeStateFile({ status: STATUS.AWAITING_DEV_REVIEW });
+  it("rework-done rejects from phase=awaiting (no rework in flight)", () => {
+    const file = makeStateFile({ status: STATUS.DEV_REVIEWING });
     const r = runCli("rework-done", file);
     assert.equal(r.status, 1);
-    assert.equal(loadState(file).status, STATUS.AWAITING_DEV_REVIEW);
+    const after = loadState(file);
+    assert.equal(after.dev_review.phase, DEV_REVIEW_PHASE.AWAITING);
   });
 });
 
@@ -166,22 +193,28 @@ describe("runner-state-cli begin-rework + rework-done", () => {
 // ---------------------------------------------------------------------------
 
 describe("runner-state-cli mark-qa-pending + qa-resolved", () => {
-  it("mark-qa-pending → qa_pending", () => {
-    const file = makeStateFile({ status: STATUS.AWAITING_DEV_REVIEW });
+  it("mark-qa-pending → phase=qa", () => {
+    const file = makeStateFile({ status: STATUS.DEV_REVIEWING });
     const r = runCli("mark-qa-pending", file);
     assert.equal(r.status, 0, r.stderr);
-    assert.equal(loadState(file).status, STATUS.QA_PENDING);
+    const after = loadState(file);
+    assert.equal(after.status, STATUS.DEV_REVIEWING);
+    assert.equal(after.dev_review.phase, DEV_REVIEW_PHASE.QA);
   });
 
-  it("qa-resolved → awaiting_dev_review", () => {
-    const file = makeStateFile({ status: STATUS.QA_PENDING });
+  it("qa-resolved → phase=awaiting", () => {
+    const file = makeStateFile({
+      status: { status: STATUS.DEV_REVIEWING, devPhase: DEV_REVIEW_PHASE.QA },
+    });
     const r = runCli("qa-resolved", file);
     assert.equal(r.status, 0, r.stderr);
-    assert.equal(loadState(file).status, STATUS.AWAITING_DEV_REVIEW);
+    const after = loadState(file);
+    assert.equal(after.status, STATUS.DEV_REVIEWING);
+    assert.equal(after.dev_review.phase, DEV_REVIEW_PHASE.AWAITING);
   });
 
-  it("qa-resolved rejects when status is not qa_pending", () => {
-    const file = makeStateFile({ status: STATUS.AWAITING_DEV_REVIEW });
+  it("qa-resolved rejects when phase is not qa", () => {
+    const file = makeStateFile({ status: STATUS.DEV_REVIEWING });
     const r = runCli("qa-resolved", file);
     assert.equal(r.status, 1);
   });
@@ -192,22 +225,32 @@ describe("runner-state-cli mark-qa-pending + qa-resolved", () => {
 // ---------------------------------------------------------------------------
 
 describe("runner-state-cli mark-approved + mark-merged", () => {
-  it("mark-approved transitions awaiting_dev_review → approved", () => {
-    const file = makeStateFile({ status: STATUS.AWAITING_DEV_REVIEW });
+  it("mark-approved transitions DEV_REVIEWING → CLOSING (clears dev_review.phase)", () => {
+    const file = makeStateFile({ status: STATUS.DEV_REVIEWING });
     const r = runCli("mark-approved", file);
     assert.equal(r.status, 0, r.stderr);
-    assert.equal(loadState(file).status, STATUS.APPROVED);
+    const after = loadState(file);
+    assert.equal(after.status, STATUS.CLOSING);
+    assert.equal(after.dev_review.phase, null);
   });
 
-  it("mark-merged transitions approved → merged", () => {
-    const file = makeStateFile({ status: STATUS.APPROVED });
+  it("mark-approved rejects when phase is not awaiting", () => {
+    const file = makeStateFile({
+      status: { status: STATUS.DEV_REVIEWING, devPhase: DEV_REVIEW_PHASE.REWORK },
+    });
+    const r = runCli("mark-approved", file);
+    assert.equal(r.status, 1);
+  });
+
+  it("mark-merged transitions CLOSING → MERGED", () => {
+    const file = makeStateFile({ status: STATUS.CLOSING });
     const r = runCli("mark-merged", file);
     assert.equal(r.status, 0, r.stderr);
     assert.equal(loadState(file).status, STATUS.MERGED);
   });
 
-  it("mark-merged rejects from a non-approved status", () => {
-    const file = makeStateFile({ status: STATUS.AWAITING_DEV_REVIEW });
+  it("mark-merged rejects from a non-closing status", () => {
+    const file = makeStateFile({ status: STATUS.DEV_REVIEWING });
     const r = runCli("mark-merged", file);
     assert.equal(r.status, 1);
   });
@@ -248,13 +291,13 @@ describe("runner-state-cli reset", () => {
   });
 
   it("rejects reset on a plan that is not yet merged", () => {
-    const file = makeStateFile({ status: STATUS.APPROVED });
+    const file = makeStateFile({ status: STATUS.CLOSING });
     const r = runCli("reset", file, "--confirm");
     assert.equal(r.status, 1);
     assert.match(r.stderr, /merged/);
     // State untouched.
     assert.equal(fs.existsSync(file), true);
-    assert.equal(loadState(file).status, STATUS.APPROVED);
+    assert.equal(loadState(file).status, STATUS.CLOSING);
   });
 });
 
@@ -270,7 +313,7 @@ describe("runner-state-cli argument handling", () => {
   });
 
   it("rejects unknown subcommands", () => {
-    const file = makeStateFile({ status: STATUS.VALIDATING });
+    const file = makeStateFile({ status: STATUS.PREPARING });
     const r = runCli("teleport", file);
     assert.equal(r.status, 1);
     assert.match(r.stderr, /unknown subcommand/);

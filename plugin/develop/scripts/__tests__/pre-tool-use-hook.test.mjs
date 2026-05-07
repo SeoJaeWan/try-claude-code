@@ -7,11 +7,15 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 import {
+  DEV_REVIEW_PHASE,
   STATUS,
+  STOP_REVIEW_PHASE,
   createInitialState,
   loadState,
   saveState,
+  setDevReviewPhase,
   setStopReviewArmed,
+  setStopReviewPhase,
   transitionStatus,
 } from "../lib/runner-state.mjs";
 
@@ -62,33 +66,48 @@ function seedSession({ sessionId, status }) {
     sessionId,
   });
 
-  // Walk to the requested status.
-  if (status === STATUS.VALIDATING) {
+  // Walk to the requested (status, phase). v2 status names are:
+  //   PREPARING / DISPATCHING / DEV_REVIEWING / CLOSING / MERGED.
+  // For DISPATCHING the test passes either a phase tuple or just the bare
+  // status (defaults to ARMED). Same for DEV_REVIEWING (defaults to AWAITING).
+  const target = typeof status === "object" ? status : { status };
+  const top = target.status;
+  const stopPhase = target.stopPhase;
+  const devPhase = target.devPhase;
+
+  if (top === STATUS.PREPARING) {
     // already there
-  } else if (status === STATUS.DISPATCHING) {
+  } else if (top === STATUS.DISPATCHING) {
     transitionStatus(state, STATUS.DISPATCHING);
-  } else if (status === STATUS.STOP_REVIEW_BLOCKED) {
-    transitionStatus(state, STATUS.DISPATCHING);
-    transitionStatus(state, STATUS.AWAITING_STOP_REVIEW);
-    transitionStatus(state, STATUS.STOP_REVIEW_BLOCKED);
-  } else if (status === STATUS.AWAITING_DEV_REVIEW) {
-    transitionStatus(state, STATUS.DISPATCHING);
-    transitionStatus(state, STATUS.AWAITING_STOP_REVIEW);
-    transitionStatus(state, STATUS.AWAITING_DEV_REVIEW);
-  } else if (status === STATUS.AWAITING_STOP_REVIEW) {
-    transitionStatus(state, STATUS.DISPATCHING);
-    transitionStatus(state, STATUS.AWAITING_STOP_REVIEW);
+    setStopReviewPhase(state, STOP_REVIEW_PHASE.ARMED);
     setStopReviewArmed(state, true);
-  } else if (status === STATUS.APPROVED) {
+    if (stopPhase && stopPhase !== STOP_REVIEW_PHASE.ARMED) {
+      setStopReviewPhase(state, stopPhase);
+    }
+  } else if (top === STATUS.DEV_REVIEWING) {
     transitionStatus(state, STATUS.DISPATCHING);
-    transitionStatus(state, STATUS.AWAITING_STOP_REVIEW);
-    transitionStatus(state, STATUS.AWAITING_DEV_REVIEW);
-    transitionStatus(state, STATUS.APPROVED);
-  } else if (status === STATUS.MERGED) {
+    setStopReviewPhase(state, STOP_REVIEW_PHASE.ARMED);
+    setStopReviewArmed(state, true);
+    transitionStatus(state, STATUS.DEV_REVIEWING);
+    setStopReviewPhase(state, null);
+    setDevReviewPhase(state, DEV_REVIEW_PHASE.AWAITING);
+    if (devPhase && devPhase !== DEV_REVIEW_PHASE.AWAITING) {
+      setDevReviewPhase(state, devPhase);
+    }
+  } else if (top === STATUS.CLOSING) {
     transitionStatus(state, STATUS.DISPATCHING);
-    transitionStatus(state, STATUS.AWAITING_STOP_REVIEW);
-    transitionStatus(state, STATUS.AWAITING_DEV_REVIEW);
-    transitionStatus(state, STATUS.APPROVED);
+    setStopReviewPhase(state, STOP_REVIEW_PHASE.ARMED);
+    transitionStatus(state, STATUS.DEV_REVIEWING);
+    setDevReviewPhase(state, DEV_REVIEW_PHASE.AWAITING);
+    transitionStatus(state, STATUS.CLOSING);
+    setDevReviewPhase(state, null);
+  } else if (top === STATUS.MERGED) {
+    transitionStatus(state, STATUS.DISPATCHING);
+    setStopReviewPhase(state, STOP_REVIEW_PHASE.ARMED);
+    transitionStatus(state, STATUS.DEV_REVIEWING);
+    setDevReviewPhase(state, DEV_REVIEW_PHASE.AWAITING);
+    transitionStatus(state, STATUS.CLOSING);
+    setDevReviewPhase(state, null);
     transitionStatus(state, STATUS.MERGED);
   }
   saveState(statePath, state);
@@ -146,7 +165,7 @@ describe("PreToolUse hook — wiring", () => {
     const sessionId = `sess-${++counter}`;
     const { worktreePath } = seedSession({
       sessionId,
-      status: STATUS.AWAITING_DEV_REVIEW,
+      status: STATUS.DEV_REVIEWING,
     });
     const r = runHook({
       sessionId,
@@ -157,12 +176,12 @@ describe("PreToolUse hook — wiring", () => {
     const out = JSON.parse(r.stdout);
     assert.equal(out.decision, "block");
     assert.match(out.reason, /활성 plan/);
-    assert.match(out.reason, /awaiting_dev_review/);
+    assert.match(out.reason, /dev_reviewing/);
   });
 
   it("warns (does not block) on Edit outside the worktree", () => {
     const sessionId = `sess-${++counter}`;
-    seedSession({ sessionId, status: STATUS.AWAITING_DEV_REVIEW });
+    seedSession({ sessionId, status: STATUS.DEV_REVIEWING });
     const r = runHook({
       sessionId,
       toolName: "Edit",
@@ -176,7 +195,7 @@ describe("PreToolUse hook — wiring", () => {
 
   it("blocks mutating Bash mid dev-review", () => {
     const sessionId = `sess-${++counter}`;
-    seedSession({ sessionId, status: STATUS.AWAITING_DEV_REVIEW });
+    seedSession({ sessionId, status: STATUS.DEV_REVIEWING });
     const r = runHook({
       sessionId,
       toolName: "Bash",
@@ -188,7 +207,7 @@ describe("PreToolUse hook — wiring", () => {
 
   it("allows safe Bash inspection at any status", () => {
     const sessionId = `sess-${++counter}`;
-    seedSession({ sessionId, status: STATUS.AWAITING_DEV_REVIEW });
+    seedSession({ sessionId, status: STATUS.DEV_REVIEWING });
     const r = runHook({
       sessionId,
       toolName: "Bash",
@@ -202,7 +221,7 @@ describe("PreToolUse hook — wiring", () => {
     const sessionId = `sess-${++counter}`;
     const { statePath } = seedSession({
       sessionId,
-      status: STATUS.AWAITING_DEV_REVIEW,
+      status: STATUS.DEV_REVIEWING,
     });
     const r = runHook({
       sessionId,
@@ -215,9 +234,9 @@ describe("PreToolUse hook — wiring", () => {
     assert.equal(r.stdout.trim(), "");
   });
 
-  it("allows Agent dispatch matching owner_agent at awaiting_stop_review", () => {
+  it("allows Agent dispatch matching owner_agent at dispatching", () => {
     const sessionId = `sess-${++counter}`;
-    seedSession({ sessionId, status: STATUS.AWAITING_STOP_REVIEW });
+    seedSession({ sessionId, status: STATUS.DISPATCHING });
     const r = runHook({
       sessionId,
       toolName: "Task",
@@ -227,9 +246,9 @@ describe("PreToolUse hook — wiring", () => {
     assert.equal(r.stdout.trim(), "");
   });
 
-  it("blocks unrelated Agent dispatch at awaiting_stop_review", () => {
+  it("blocks unrelated Agent dispatch at dispatching", () => {
     const sessionId = `sess-${++counter}`;
-    seedSession({ sessionId, status: STATUS.AWAITING_STOP_REVIEW });
+    seedSession({ sessionId, status: STATUS.DISPATCHING });
     const r = runHook({
       sessionId,
       toolName: "Task",
@@ -239,9 +258,9 @@ describe("PreToolUse hook — wiring", () => {
     assert.equal(out.decision, "block");
   });
 
-  it("allows mutating Bash at status=approved (Step 5 merge)", () => {
+  it("allows mutating Bash at status=closing (Step 5 merge)", () => {
     const sessionId = `sess-${++counter}`;
-    seedSession({ sessionId, status: STATUS.APPROVED });
+    seedSession({ sessionId, status: STATUS.CLOSING });
     const r = runHook({
       sessionId,
       toolName: "Bash",
@@ -263,9 +282,9 @@ describe("PreToolUse hook — wiring", () => {
     assert.equal(r.stdout.trim(), "");
   });
 
-  it("auto-arms gate on plan-agent dispatch from validating", () => {
+  it("auto-arms gate on plan-agent dispatch from preparing", () => {
     const sessionId = `sess-${++counter}`;
-    const { statePath } = seedSession({ sessionId, status: STATUS.VALIDATING });
+    const { statePath } = seedSession({ sessionId, status: STATUS.PREPARING });
     const r = runHook({
       sessionId,
       toolName: "Task",
@@ -274,15 +293,16 @@ describe("PreToolUse hook — wiring", () => {
     assert.equal(r.status, 0);
     assert.equal(r.stdout.trim(), "", "auto-armed dispatch should be allowed silently");
     const after = loadState(statePath);
-    assert.equal(after.status, STATUS.AWAITING_STOP_REVIEW);
+    assert.equal(after.status, STATUS.DISPATCHING);
+    assert.equal(after.stop_review.phase, STOP_REVIEW_PHASE.ARMED);
     assert.equal(after.stop_review.armed, true);
   });
 
-  it("auto-arms gate on plan-agent dispatch from stop_review_blocked", () => {
+  it("auto-arms gate on re-dispatch from dispatching+blocked", () => {
     const sessionId = `sess-${++counter}`;
     const { statePath } = seedSession({
       sessionId,
-      status: STATUS.STOP_REVIEW_BLOCKED,
+      status: { status: STATUS.DISPATCHING, stopPhase: STOP_REVIEW_PHASE.BLOCKED },
     });
     const r = runHook({
       sessionId,
@@ -292,13 +312,14 @@ describe("PreToolUse hook — wiring", () => {
     assert.equal(r.status, 0);
     assert.equal(r.stdout.trim(), "");
     const after = loadState(statePath);
-    assert.equal(after.status, STATUS.AWAITING_STOP_REVIEW);
+    assert.equal(after.status, STATUS.DISPATCHING);
+    assert.equal(after.stop_review.phase, STOP_REVIEW_PHASE.ARMED);
     assert.equal(after.stop_review.armed, true);
   });
 
   it("does not auto-arm when subagent_type is unrelated", () => {
     const sessionId = `sess-${++counter}`;
-    const { statePath } = seedSession({ sessionId, status: STATUS.VALIDATING });
+    const { statePath } = seedSession({ sessionId, status: STATUS.PREPARING });
     const r = runHook({
       sessionId,
       toolName: "Task",
@@ -307,14 +328,14 @@ describe("PreToolUse hook — wiring", () => {
     const out = JSON.parse(r.stdout);
     assert.equal(out.decision, "block", "unrelated dispatch must still block");
     const after = loadState(statePath);
-    assert.equal(after.status, STATUS.VALIDATING, "status untouched");
+    assert.equal(after.status, STATUS.PREPARING, "status untouched");
   });
 
   it("auto-arm is idempotent when already armed", () => {
     const sessionId = `sess-${++counter}`;
     const { statePath } = seedSession({
       sessionId,
-      status: STATUS.AWAITING_STOP_REVIEW,
+      status: STATUS.DISPATCHING,
     });
     const r = runHook({
       sessionId,
@@ -324,7 +345,8 @@ describe("PreToolUse hook — wiring", () => {
     assert.equal(r.status, 0);
     assert.equal(r.stdout.trim(), "");
     const after = loadState(statePath);
-    assert.equal(after.status, STATUS.AWAITING_STOP_REVIEW);
+    assert.equal(after.status, STATUS.DISPATCHING);
+    assert.equal(after.stop_review.phase, STOP_REVIEW_PHASE.ARMED);
     assert.equal(after.stop_review.armed, true);
   });
 

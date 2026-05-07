@@ -531,13 +531,15 @@ async function main() {
   }
 
   // Empty reviewItems normally means "armed but nothing new to review" — fine
-  // for AWAITING_STOP_REVIEW (the user just sent a non-runner turn). But if a
-  // plan is STOP_REVIEW_BLOCKED and the same HEAD is back, the redispatch
+  // for DISPATCHING+ARMED (the user just sent a non-runner turn). But if a
+  // plan is DISPATCHING+BLOCKED and the same HEAD is back, the redispatch
   // produced no commits. Surface the hang so the user sees why nothing is
   // moving instead of staring at a quiet turn.
   if (reviewItems.length === 0) {
     const stuck = skipped.filter(
-      ({ state }) => state.status === STATUS.STOP_REVIEW_BLOCKED,
+      ({ state }) =>
+        state.status === STATUS.DISPATCHING &&
+        state.stop_review?.phase === "blocked",
     );
     if (stuck.length > 0) {
       const lines = stuck.map(({ state }) => {

@@ -5,8 +5,10 @@ import os from "node:os";
 import path from "node:path";
 
 import {
+  DEV_REVIEW_PHASE,
   SCHEMA_VERSION,
   STATUS,
+  STOP_REVIEW_PHASE,
   TERMINAL_STATUSES,
   assertExpectedStatus,
   bumpConsecutiveDowngrades,
@@ -18,10 +20,13 @@ import {
   deriveWorktreePathFromBranch,
   fingerprintBlockReason,
   loadState,
+  migrateV1ToV2,
   recordPlanBlock,
   saveState,
+  setDevReviewPhase,
   setLastReviewedCommit,
   setStopReviewArmed,
+  setStopReviewPhase,
   stateFileExists,
   transitionStatus,
   tryLoadState,
@@ -87,7 +92,7 @@ describe("deriveWorktreePathFromBranch", () => {
 // ---------------------------------------------------------------------------
 
 describe("createInitialState", () => {
-  it("produces a schema-v1 state in VALIDATING with armed=false", () => {
+  it("produces a fresh state in PREPARING with armed=false and no phases", () => {
     const state = createInitialState({
       planSlug: "login-frontend",
       planPath: "/repo/plans/login-frontend.plan.md",
@@ -98,8 +103,10 @@ describe("createInitialState", () => {
       sessionId: "sess-1",
     });
     assert.equal(state.schema_version, SCHEMA_VERSION);
-    assert.equal(state.status, STATUS.VALIDATING);
+    assert.equal(state.status, STATUS.PREPARING);
     assert.equal(state.stop_review.armed, false);
+    assert.equal(state.stop_review.phase, null);
+    assert.equal(state.dev_review.phase, null);
     assert.deepEqual(state.stop_review.block_history, []);
     assert.equal(state.dev_review.current_round, 0);
     assert.equal(state.session_id, "sess-1");
@@ -177,7 +184,7 @@ describe("saveState / loadState", () => {
 
     const loaded = loadState(file);
     assert.equal(loaded.plan_slug, "rt");
-    assert.equal(loaded.status, STATUS.VALIDATING);
+    assert.equal(loaded.status, STATUS.PREPARING);
   });
 
   it("creates parent directories on first save", () => {
@@ -267,7 +274,7 @@ describe("saveState / loadState", () => {
     fs.writeFileSync(file, "{ this is not valid JSON", "utf8");
     const loaded = loadState(file);
     assert.equal(loaded.plan_slug, "fallback");
-    assert.equal(loaded.status, STATUS.VALIDATING);
+    assert.equal(loaded.status, STATUS.PREPARING);
   });
 
   it("loadState surfaces the parse error if .bak is also unusable", () => {
@@ -306,44 +313,36 @@ describe("transitionStatus", () => {
   it("walks the canonical happy path", () => {
     const s = fresh();
     transitionStatus(s, STATUS.DISPATCHING);
-    transitionStatus(s, STATUS.AWAITING_STOP_REVIEW);
-    transitionStatus(s, STATUS.AWAITING_DEV_REVIEW);
-    transitionStatus(s, STATUS.APPROVED);
+    transitionStatus(s, STATUS.DEV_REVIEWING);
+    transitionStatus(s, STATUS.CLOSING);
     transitionStatus(s, STATUS.MERGED);
     assert.equal(s.status, STATUS.MERGED);
   });
 
-  it("supports rework round-trips", () => {
+  // The dev-review sub-states (rework / Q&A / awaiting) are no longer
+  // separate statuses in v2 — they are phase mutations on DEV_REVIEWING.
+  // transitionStatus only handles top-level Step boundaries.
+  it("DEV_REVIEWING self-edge is allowed (re-entry on round bump)", () => {
     const s = fresh();
-    s.status = STATUS.AWAITING_DEV_REVIEW;
-    transitionStatus(s, STATUS.REWORK_IN_PROGRESS);
-    transitionStatus(s, STATUS.AWAITING_DEV_REVIEW);
-    assert.equal(s.status, STATUS.AWAITING_DEV_REVIEW);
+    s.status = STATUS.DEV_REVIEWING;
+    transitionStatus(s, STATUS.DEV_REVIEWING);
+    assert.equal(s.status, STATUS.DEV_REVIEWING);
   });
 
-  it("supports stop-review BLOCK loop", () => {
+  // Regression: after a BLOCK, the gate stays armed via stop_review.phase
+  // (BLOCKED → ARMED → BLOCKED). The status stays at DISPATCHING the entire
+  // time and only flips to DEV_REVIEWING once the Stop hook ALLOWs.
+  it("DISPATCHING self-edge is allowed (gate cycles via phase)", () => {
     const s = fresh();
-    s.status = STATUS.AWAITING_STOP_REVIEW;
-    transitionStatus(s, STATUS.STOP_REVIEW_BLOCKED);
-    transitionStatus(s, STATUS.AWAITING_STOP_REVIEW);
-    assert.equal(s.status, STATUS.AWAITING_STOP_REVIEW);
+    s.status = STATUS.DISPATCHING;
+    transitionStatus(s, STATUS.DISPATCHING);
+    transitionStatus(s, STATUS.DEV_REVIEWING);
+    assert.equal(s.status, STATUS.DEV_REVIEWING);
   });
 
-  // Regression: after a BLOCK, the next plan-agent dispatch's commits go
-  // through stop-review again while the state stays in STOP_REVIEW_BLOCKED
-  // (the runner skill does not transition back to AWAITING_STOP_REVIEW between
-  // re-dispatches). When that re-review ALLOWs, the Stop hook advances the
-  // plan directly from STOP_REVIEW_BLOCKED to AWAITING_DEV_REVIEW.
-  it("recovers from BLOCK directly into dev-review on the next ALLOW", () => {
+  it("rejects illegal jumps (e.g. preparing → closing)", () => {
     const s = fresh();
-    s.status = STATUS.STOP_REVIEW_BLOCKED;
-    transitionStatus(s, STATUS.AWAITING_DEV_REVIEW);
-    assert.equal(s.status, STATUS.AWAITING_DEV_REVIEW);
-  });
-
-  it("rejects illegal jumps (e.g. validating → approved)", () => {
-    const s = fresh();
-    assert.throws(() => transitionStatus(s, STATUS.APPROVED));
+    assert.throws(() => transitionStatus(s, STATUS.CLOSING));
   });
 
   it("rejects unknown statuses", () => {
@@ -354,13 +353,13 @@ describe("transitionStatus", () => {
   it("MERGED is terminal — no transitions out", () => {
     const s = fresh();
     s.status = STATUS.MERGED;
-    assert.throws(() => transitionStatus(s, STATUS.APPROVED));
-    assert.throws(() => transitionStatus(s, STATUS.VALIDATING));
+    assert.throws(() => transitionStatus(s, STATUS.CLOSING));
+    assert.throws(() => transitionStatus(s, STATUS.PREPARING));
   });
 
   it("MERGED is the only terminal status", () => {
     assert.equal(TERMINAL_STATUSES.has(STATUS.MERGED), true);
-    assert.equal(TERMINAL_STATUSES.has(STATUS.APPROVED), false);
+    assert.equal(TERMINAL_STATUSES.has(STATUS.CLOSING), false);
   });
 });
 
@@ -378,21 +377,21 @@ describe("assertExpectedStatus", () => {
 
   it("returns state when status matches a single expectation", () => {
     const s = fresh();
-    assert.equal(assertExpectedStatus(s, STATUS.VALIDATING), s);
+    assert.equal(assertExpectedStatus(s, STATUS.PREPARING), s);
   });
 
   it("accepts an array of expected statuses", () => {
     const s = fresh();
-    s.status = STATUS.AWAITING_DEV_REVIEW;
-    assertExpectedStatus(s, [STATUS.AWAITING_DEV_REVIEW, STATUS.QA_PENDING]);
+    s.status = STATUS.DEV_REVIEWING;
+    assertExpectedStatus(s, [STATUS.DEV_REVIEWING, STATUS.CLOSING]);
   });
 
   it("throws with a useful message when status mismatches", () => {
     const s = fresh();
-    s.status = STATUS.AWAITING_STOP_REVIEW;
+    s.status = STATUS.DISPATCHING;
     assert.throws(
-      () => assertExpectedStatus(s, STATUS.AWAITING_DEV_REVIEW, "Step 4"),
-      /awaiting_stop_review.*expected "awaiting_dev_review".*Step 4/s,
+      () => assertExpectedStatus(s, STATUS.DEV_REVIEWING, "Step 4"),
+      /dispatching.*expected "dev_reviewing".*Step 4/s,
     );
   });
 
@@ -526,6 +525,156 @@ describe("clearPlanBlockStreak", () => {
 // ---------------------------------------------------------------------------
 // Dev-review round bookkeeping
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// v1 → v2 migration
+// ---------------------------------------------------------------------------
+
+describe("migrateV1ToV2", () => {
+  // Every v1 status is mapped to a (status, phase) pair. The table here
+  // mirrors lib/runner-state.mjs:V1_TO_V2 and exists to lock the contract.
+  const cases = [
+    ["validating",            STATUS.PREPARING,      null,                          null],
+    ["dispatching",           STATUS.PREPARING,      null,                          null],
+    ["awaiting_stop_review",  STATUS.DISPATCHING,    STOP_REVIEW_PHASE.ARMED,       null],
+    ["stop_review_blocked",   STATUS.DISPATCHING,    STOP_REVIEW_PHASE.BLOCKED,     null],
+    ["awaiting_dev_review",   STATUS.DEV_REVIEWING,  null,                          DEV_REVIEW_PHASE.AWAITING],
+    ["rework_in_progress",    STATUS.DEV_REVIEWING,  null,                          DEV_REVIEW_PHASE.REWORK],
+    ["qa_pending",            STATUS.DEV_REVIEWING,  null,                          DEV_REVIEW_PHASE.QA],
+    ["approved",              STATUS.CLOSING,        null,                          null],
+    ["merged",                STATUS.MERGED,         null,                          null],
+  ];
+
+  function v1State(status) {
+    return {
+      schema_version: 1,
+      plan_slug: "x",
+      plan_path: "/p/x.plan.md",
+      owner_agent: "a",
+      base_branch: "main",
+      task_branch: "feat/x",
+      worktree_path: "/p/worktrees/feat-x",
+      status,
+      stop_review: {
+        armed: false,
+        last_result: null,
+        last_reviewed_commit: null,
+        block_history: [],
+      },
+      dev_review: { current_round: 0, last_feedback_path: null },
+      session_id: null,
+      created_at: "2026-05-01T00:00:00.000Z",
+      updated_at: "2026-05-01T00:00:00.000Z",
+    };
+  }
+
+  for (const [v1Status, v2Status, stopPhase, devPhase] of cases) {
+    it(`maps ${v1Status} → status=${v2Status} stopPhase=${stopPhase} devPhase=${devPhase}`, () => {
+      const s = v1State(v1Status);
+      migrateV1ToV2(s);
+      assert.equal(s.schema_version, SCHEMA_VERSION);
+      assert.equal(s.status, v2Status);
+      assert.equal(s.stop_review.phase, stopPhase);
+      assert.equal(s.dev_review.phase, devPhase);
+    });
+  }
+
+  it("is idempotent — re-running on a v2 state is a no-op", () => {
+    const s = v1State("awaiting_dev_review");
+    migrateV1ToV2(s);
+    const after1 = JSON.stringify(s);
+    migrateV1ToV2(s);
+    assert.equal(JSON.stringify(s), after1);
+  });
+
+  it("preserves dev_review.current_round across migration", () => {
+    const s = v1State("rework_in_progress");
+    s.dev_review.current_round = 3;
+    s.dev_review.last_feedback_path = "/p/x/r3/feedback.json";
+    migrateV1ToV2(s);
+    assert.equal(s.dev_review.current_round, 3);
+    assert.equal(s.dev_review.last_feedback_path, "/p/x/r3/feedback.json");
+  });
+
+  it("rejects unknown v1 status values", () => {
+    const s = v1State("???");
+    assert.throws(() => migrateV1ToV2(s), /unknown value/);
+  });
+
+  it("auto-fires from validateState on a v1 state", () => {
+    const s = v1State("approved");
+    validateState(s);
+    assert.equal(s.schema_version, SCHEMA_VERSION);
+    assert.equal(s.status, STATUS.CLOSING);
+  });
+
+  it("loadState transparently migrates a v1 file on disk", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "v1-migrate-"));
+    try {
+      const file = path.join(tmp, ".runner-state.json");
+      fs.writeFileSync(file, JSON.stringify(v1State("awaiting_dev_review")), "utf8");
+      const loaded = loadState(file);
+      assert.equal(loaded.schema_version, SCHEMA_VERSION);
+      assert.equal(loaded.status, STATUS.DEV_REVIEWING);
+      assert.equal(loaded.dev_review.phase, DEV_REVIEW_PHASE.AWAITING);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("setStopReviewPhase / setDevReviewPhase", () => {
+  function fresh() {
+    return createInitialState({
+      planSlug: "x",
+      planPath: "/p/x.plan.md",
+      ownerAgent: "a",
+      baseBranch: "main",
+      taskBranch: "feat/x",
+      worktreePath: "/p/worktrees/feat-x",
+    });
+  }
+
+  it("walks stop-review phase: null → ARMED → BLOCKED → ARMED → PASSED", () => {
+    const s = fresh();
+    setStopReviewPhase(s, STOP_REVIEW_PHASE.ARMED);
+    setStopReviewPhase(s, STOP_REVIEW_PHASE.BLOCKED);
+    setStopReviewPhase(s, STOP_REVIEW_PHASE.ARMED);
+    setStopReviewPhase(s, STOP_REVIEW_PHASE.PASSED);
+    assert.equal(s.stop_review.phase, STOP_REVIEW_PHASE.PASSED);
+  });
+
+  it("walks dev-review phase: null → AWAITING → REWORK → AWAITING → QA → AWAITING", () => {
+    const s = fresh();
+    setDevReviewPhase(s, DEV_REVIEW_PHASE.AWAITING);
+    setDevReviewPhase(s, DEV_REVIEW_PHASE.REWORK);
+    setDevReviewPhase(s, DEV_REVIEW_PHASE.AWAITING);
+    setDevReviewPhase(s, DEV_REVIEW_PHASE.QA);
+    setDevReviewPhase(s, DEV_REVIEW_PHASE.AWAITING);
+    assert.equal(s.dev_review.phase, DEV_REVIEW_PHASE.AWAITING);
+  });
+
+  it("rejects illegal phase jumps", () => {
+    const s = fresh();
+    setDevReviewPhase(s, DEV_REVIEW_PHASE.AWAITING);
+    setDevReviewPhase(s, DEV_REVIEW_PHASE.REWORK);
+    // REWORK → QA is not allowed (must go through AWAITING).
+    assert.throws(() => setDevReviewPhase(s, DEV_REVIEW_PHASE.QA));
+  });
+
+  it("setting phase to null is always allowed (status leaving the block)", () => {
+    const s = fresh();
+    setStopReviewPhase(s, STOP_REVIEW_PHASE.ARMED);
+    setStopReviewPhase(s, null);
+    assert.equal(s.stop_review.phase, null);
+  });
+
+  it("rejects unknown phase values", () => {
+    const s = fresh();
+    assert.throws(() => setStopReviewPhase(s, "frozen"));
+    assert.throws(() => setDevReviewPhase(s, "thinking"));
+  });
+});
 
 describe("bumpDevReviewRound", () => {
   it("increments and stores feedback path", () => {

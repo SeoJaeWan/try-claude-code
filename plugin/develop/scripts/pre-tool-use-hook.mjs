@@ -32,25 +32,17 @@ import { readHookInput } from "./lib/hook-input.mjs";
 import { listActivePlanStates } from "./lib/sessions.mjs";
 import {
   STATUS,
+  STOP_REVIEW_PHASE,
   TERMINAL_STATUSES,
   deriveStatePathFromPlanPath,
   saveState,
   setStopReviewArmed,
+  setStopReviewPhase,
   transitionStatus,
   tryLoadState,
 } from "./lib/runner-state.mjs";
 import { evaluate, VERDICT } from "./lib/pre-tool-use-policy.mjs";
 import { recordHookEvent } from "./lib/telemetry.mjs";
-
-// Statuses from which a fresh plan-agent dispatch can legitimately arm the
-// stop-review gate. Mirrors the `arm-for-dispatch` CLI subcommand so the
-// runner skill prose no longer needs to call the CLI by hand — the hook arms
-// the gate as a side-effect of seeing the dispatch.
-const ARM_FROM_STATUSES = new Set([
-  STATUS.VALIDATING,
-  STATUS.DISPATCHING,
-  STATUS.STOP_REVIEW_BLOCKED,
-]);
 
 function emitBlock(reason) {
   process.stdout.write(JSON.stringify({ decision: "block", reason }));
@@ -80,40 +72,51 @@ function resolveActivePlanState(sessionId) {
 }
 
 // Auto-arm the stop-review gate when the main session is about to dispatch
-// the plan agent for this plan. Returns the (possibly updated) state. The
-// transitions mirror cmdArmForDispatch in runner-state-cli.mjs:
+// the plan agent for this plan. Returns the (possibly updated) state.
 //
-//   validating          → dispatching → awaiting_stop_review
-//   dispatching         →                awaiting_stop_review
-//   stop_review_blocked →                awaiting_stop_review
+// Phase 4 reshape: in v2 the arm path is much shorter because the 9-status
+// pre-dispatch fan-out collapsed to two states.
+//
+//   preparing                                  → dispatching + phase=ARMED
+//   dispatching + phase=BLOCKED (re-dispatch)  → dispatching + phase=ARMED
+//   dispatching + phase=ARMED  (idempotent)    → no-op
 //
 // Only fires when the dispatch's `subagent_type` matches `state.owner_agent`,
-// so unrelated Agent calls (Explore, etc.) do not advance the gate. Idempotent
-// on the armed flag: re-running on an already-armed state is a no-op.
+// so unrelated Agent calls (Explore, etc.) do not advance the gate.
 function maybeAutoArm(state, toolName, toolInput) {
   if (toolName !== "Task" && toolName !== "Agent") return state;
   if (!state || !state.__statePath) return state;
-  if (!ARM_FROM_STATUSES.has(state.status)) return state;
   const subagent = toolInput?.subagent_type;
   if (typeof subagent !== "string" || subagent !== state.owner_agent) {
     return state;
   }
+
   const before = state.status;
-  if (state.status === STATUS.VALIDATING) {
+  const beforePhase = state.stop_review.phase ?? null;
+
+  if (state.status === STATUS.PREPARING) {
     transitionStatus(state, STATUS.DISPATCHING);
+    setStopReviewPhase(state, STOP_REVIEW_PHASE.ARMED);
+    setStopReviewArmed(state, true);
+  } else if (
+    state.status === STATUS.DISPATCHING &&
+    state.stop_review.phase === STOP_REVIEW_PHASE.BLOCKED
+  ) {
+    setStopReviewPhase(state, STOP_REVIEW_PHASE.ARMED);
+    setStopReviewArmed(state, true);
+  } else {
+    // Already armed (or status not arm-able). Nothing to do.
+    return state;
   }
-  if (state.status !== STATUS.AWAITING_STOP_REVIEW) {
-    transitionStatus(state, STATUS.AWAITING_STOP_REVIEW);
-  }
-  setStopReviewArmed(state, true);
+
   saveState(state.__statePath, state);
   recordHookEvent({
     kind: "pre_tool_use_auto_arm",
     ok: true,
     sessionId: state.session_id ?? null,
     planSlug: state.plan_slug,
-    from: before,
-    to: state.status,
+    from: `${before}/${beforePhase ?? "null"}`,
+    to: `${state.status}/${state.stop_review.phase}`,
   });
   return state;
 }

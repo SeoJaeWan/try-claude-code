@@ -29,16 +29,29 @@ import path from "node:path";
 
 import { absoluteNormalizePath, toPosixPath } from "./fs.mjs";
 import {
+  ALLOWED_DEV_REVIEW_PHASE_TRANSITIONS,
+  ALLOWED_STOP_REVIEW_PHASE_TRANSITIONS,
   ALLOWED_TRANSITIONS,
+  DEV_REVIEW_PHASE,
+  DEV_REVIEW_PHASE_VALUES,
   SCHEMA_VERSION,
   STATUS,
   STATUS_VALUES,
+  STOP_REVIEW_PHASE,
+  STOP_REVIEW_PHASE_VALUES,
   TERMINAL_STATUSES,
 } from "./runner-state-machine.mjs";
 
 // Re-export the state-machine contract so existing callers
 // (`from "./lib/runner-state.mjs"`) keep working unchanged.
-export { SCHEMA_VERSION, STATUS, STATUS_VALUES, TERMINAL_STATUSES };
+export {
+  DEV_REVIEW_PHASE,
+  SCHEMA_VERSION,
+  STATUS,
+  STATUS_VALUES,
+  STOP_REVIEW_PHASE,
+  TERMINAL_STATUSES,
+};
 
 function nowIso() {
   return new Date().toISOString();
@@ -114,21 +127,91 @@ export function createInitialState({
     base_branch: baseBranch,
     task_branch: taskBranch,
     worktree_path: toPosixPath(worktreePath),
-    status: STATUS.VALIDATING,
+    status: STATUS.PREPARING,
     stop_review: {
       armed: false,
+      phase: null,
       last_result: null,
       last_reviewed_commit: null,
       block_history: [],
     },
     dev_review: {
       current_round: 0,
+      phase: null,
       last_feedback_path: null,
     },
     session_id: sessionId,
     created_at: now,
     updated_at: now,
   };
+}
+
+// v1 status names (the 9-status enum that predates Phase 4). Kept here as a
+// closed set so the migrator can reject anything that is neither v1 nor v2.
+// Do NOT use these strings anywhere outside the migrator — code that needs
+// status values must import the v2 STATUS enum.
+const V1_STATUS = Object.freeze({
+  VALIDATING: "validating",
+  DISPATCHING: "dispatching",
+  AWAITING_STOP_REVIEW: "awaiting_stop_review",
+  STOP_REVIEW_BLOCKED: "stop_review_blocked",
+  AWAITING_DEV_REVIEW: "awaiting_dev_review",
+  REWORK_IN_PROGRESS: "rework_in_progress",
+  QA_PENDING: "qa_pending",
+  APPROVED: "approved",
+  MERGED: "merged",
+});
+
+// v1 → v2 mapping table. The (status, phase) pair on the right is what the
+// state should look like after migration. Phase fields are nulled out where
+// the v2 status itself does not own a phase.
+const V1_TO_V2 = new Map([
+  [V1_STATUS.VALIDATING,           { status: STATUS.PREPARING,     stopPhase: null,                          devPhase: null }],
+  [V1_STATUS.DISPATCHING,          { status: STATUS.PREPARING,     stopPhase: null,                          devPhase: null }],
+  [V1_STATUS.AWAITING_STOP_REVIEW, { status: STATUS.DISPATCHING,   stopPhase: STOP_REVIEW_PHASE.ARMED,       devPhase: null }],
+  [V1_STATUS.STOP_REVIEW_BLOCKED,  { status: STATUS.DISPATCHING,   stopPhase: STOP_REVIEW_PHASE.BLOCKED,     devPhase: null }],
+  [V1_STATUS.AWAITING_DEV_REVIEW,  { status: STATUS.DEV_REVIEWING, stopPhase: null,                          devPhase: DEV_REVIEW_PHASE.AWAITING }],
+  [V1_STATUS.REWORK_IN_PROGRESS,   { status: STATUS.DEV_REVIEWING, stopPhase: null,                          devPhase: DEV_REVIEW_PHASE.REWORK }],
+  [V1_STATUS.QA_PENDING,           { status: STATUS.DEV_REVIEWING, stopPhase: null,                          devPhase: DEV_REVIEW_PHASE.QA }],
+  [V1_STATUS.APPROVED,             { status: STATUS.CLOSING,       stopPhase: null,                          devPhase: null }],
+  [V1_STATUS.MERGED,               { status: STATUS.MERGED,        stopPhase: null,                          devPhase: null }],
+]);
+
+// In-place migrator from schema_version 1 to 2. Idempotent: calling on a v2
+// state is a no-op. Pure: never touches disk. Called from validateState so
+// every load goes through it before any other check fires.
+//
+// The runner-state library always re-reads files through validateState, and
+// every saveState rewrites the file in the current schema; that is the
+// auto-rewrite path Phase 4 relies on. A read-only inspection (cat, jq) does
+// not trigger migration — that's fine because plan-state-recovery.md tells
+// users to use the CLI, not hand-edit.
+export function migrateV1ToV2(state) {
+  if (!state || typeof state !== "object") return state;
+  if (state.schema_version === SCHEMA_VERSION) return state;
+  if (state.schema_version !== 1) {
+    throw new Error(
+      `plan-state: cannot migrate from schema_version ${state.schema_version} ` +
+      `(only v1 → v2 is supported).`,
+    );
+  }
+  const mapping = V1_TO_V2.get(state.status);
+  if (!mapping) {
+    throw new Error(
+      `plan-state: cannot migrate v1 status "${state.status}" — unknown value.`,
+    );
+  }
+  state.status = mapping.status;
+  if (!state.stop_review || typeof state.stop_review !== "object") {
+    state.stop_review = { armed: false, last_result: null, last_reviewed_commit: null, block_history: [] };
+  }
+  if (!state.dev_review || typeof state.dev_review !== "object") {
+    state.dev_review = { current_round: 0, last_feedback_path: null };
+  }
+  state.stop_review.phase = mapping.stopPhase;
+  state.dev_review.phase = mapping.devPhase;
+  state.schema_version = SCHEMA_VERSION;
+  return state;
 }
 
 // Sanity-check a parsed state object. Returns the (mutated) state on success,
@@ -138,6 +221,12 @@ export function createInitialState({
 export function validateState(state) {
   if (!state || typeof state !== "object") {
     throw new Error("plan-state: not an object");
+  }
+  // Auto-migrate v1 → v2 transparently so a user mid-plan does not need a
+  // separate migration step. Anything that is neither v1 nor v2 still throws
+  // below.
+  if (state.schema_version === 1) {
+    migrateV1ToV2(state);
   }
   if (state.schema_version !== SCHEMA_VERSION) {
     throw new Error(
@@ -167,6 +256,26 @@ export function validateState(state) {
   }
   if (!state.dev_review || typeof state.dev_review !== "object") {
     throw new Error("plan-state: dev_review block is missing");
+  }
+  // Phase fields are optional for legacy fixtures that predate Phase 4 but
+  // when present must be a known value (or null).
+  if (
+    state.stop_review.phase !== undefined &&
+    state.stop_review.phase !== null &&
+    !STOP_REVIEW_PHASE_VALUES.has(state.stop_review.phase)
+  ) {
+    throw new Error(
+      `plan-state: unknown stop_review.phase "${state.stop_review.phase}"`,
+    );
+  }
+  if (
+    state.dev_review.phase !== undefined &&
+    state.dev_review.phase !== null &&
+    !DEV_REVIEW_PHASE_VALUES.has(state.dev_review.phase)
+  ) {
+    throw new Error(
+      `plan-state: unknown dev_review.phase "${state.dev_review.phase}"`,
+    );
   }
   if (!Array.isArray(state.stop_review.block_history)) {
     throw new Error("plan-state: stop_review.block_history must be an array");
@@ -336,6 +445,46 @@ export function transitionStatus(state, nextStatus) {
 // in the next plan dispatch.
 export function setStopReviewArmed(state, armed) {
   state.stop_review.armed = Boolean(armed);
+  return state;
+}
+
+// Phase setters. These validate the move against the per-block phase tables
+// in runner-state-machine.mjs. Passing `null` returns the state to "no phase"
+// (used when the status leaves the block — e.g. after `mark-approved`
+// clears `dev_review.phase` because the status is now CLOSING).
+export function setStopReviewPhase(state, nextPhase) {
+  if (nextPhase !== null && !STOP_REVIEW_PHASE_VALUES.has(nextPhase)) {
+    throw new Error(`setStopReviewPhase: unknown phase "${nextPhase}"`);
+  }
+  const current = state.stop_review.phase ?? null;
+  // null is reachable from any phase (the status is leaving DISPATCHING and
+  // the phase no longer applies). We do not validate that direction.
+  if (nextPhase !== null) {
+    const allowed = ALLOWED_STOP_REVIEW_PHASE_TRANSITIONS.get(current);
+    if (!allowed || !allowed.has(nextPhase)) {
+      throw new Error(
+        `setStopReviewPhase: ${current ?? "null"} → ${nextPhase} is not allowed.`,
+      );
+    }
+  }
+  state.stop_review.phase = nextPhase;
+  return state;
+}
+
+export function setDevReviewPhase(state, nextPhase) {
+  if (nextPhase !== null && !DEV_REVIEW_PHASE_VALUES.has(nextPhase)) {
+    throw new Error(`setDevReviewPhase: unknown phase "${nextPhase}"`);
+  }
+  const current = state.dev_review.phase ?? null;
+  if (nextPhase !== null) {
+    const allowed = ALLOWED_DEV_REVIEW_PHASE_TRANSITIONS.get(current);
+    if (!allowed || !allowed.has(nextPhase)) {
+      throw new Error(
+        `setDevReviewPhase: ${current ?? "null"} → ${nextPhase} is not allowed.`,
+      );
+    }
+  }
+  state.dev_review.phase = nextPhase;
   return state;
 }
 

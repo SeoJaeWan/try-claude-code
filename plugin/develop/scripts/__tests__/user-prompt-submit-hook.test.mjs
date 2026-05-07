@@ -121,13 +121,14 @@ function makeSessionWithActivePlan(sessionId, planSlug, branch, status) {
     worktreePath: path.join(projectRoot, "worktrees", branch.replace(/\//g, "-")),
     sessionId,
   });
-  // Walk to the requested status.
+  // Walk to the requested status (v2 enum). The five-status graph means each
+  // step is a single transitionStatus + an optional phase set; we don't care
+  // about phase here because UserPromptSubmit only checks TERMINAL_STATUSES.
   const path1 = [
-    STATUS.VALIDATING,
+    STATUS.PREPARING,
     STATUS.DISPATCHING,
-    STATUS.AWAITING_STOP_REVIEW,
-    STATUS.AWAITING_DEV_REVIEW,
-    STATUS.APPROVED,
+    STATUS.DEV_REVIEWING,
+    STATUS.CLOSING,
     STATUS.MERGED,
   ];
   const idx = path1.indexOf(status);
@@ -161,7 +162,7 @@ describe("UserPromptSubmit single-active-plan rule", () => {
       sessionId,
       "plan-a",
       "feat/plan-a",
-      STATUS.AWAITING_DEV_REVIEW,
+      STATUS.DEV_REVIEWING,
     );
     makePlanFile("plan-b", "feat/plan-b");
 
@@ -207,7 +208,7 @@ describe("UserPromptSubmit single-active-plan rule", () => {
       sessionId,
       "plan-resume",
       "feat/plan-resume",
-      STATUS.AWAITING_DEV_REVIEW,
+      STATUS.DEV_REVIEWING,
     );
     // The plan file must exist for the hook to validate frontmatter on resume.
     makePlanFile("plan-resume", "feat/plan-resume");
