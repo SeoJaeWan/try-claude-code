@@ -18,6 +18,36 @@ keep the on-disk plan-state JSON in sync with reality.
 <Instructions>
 # plan-runner
 
+## How this skill is enforced (and how it is not)
+
+The runner ships **no executable code of its own** — this SKILL.md is the
+runner. Every step below is prose Claude reads and acts on each turn. The
+hooks (`UserPromptSubmit`, `Stop`) and the `runner-state.mjs` library do
+provide hard guarantees, but only inside their boundaries:
+
+- `validateState`, `transitionStatus`, and the atomic `saveState` enforce
+  the plan-state schema and the ALLOWED_TRANSITIONS table. Bypassing them
+  with raw `Edit` / `Write` on the JSON breaks those guarantees silently.
+- The Stop hook decides ALLOW / BLOCK / TIMEOUT and writes the verdict back
+  through the same library. It cannot know whether *this skill* obeyed the
+  prose between turns.
+
+Everything else — "do not redispatch after BLOCK x3", "transition to
+`awaiting_dev_review` after QA round", "use `transitionStatus` rather than
+poking `state.status`" — is an honor system enforced only by you reading
+this file. If you skip a step the next hook firing will load whatever
+state you left and run with it. Two practical defenses you should always
+take:
+
+1. **Use `transitionStatus(state, STATUS.X)` and the named helpers
+   (`setStopReviewArmed`, `setLastReviewedCommit`, `bumpDevReviewRound`).**
+   Never assign `state.status` or nested fields by hand, and never edit
+   the JSON with `Edit` / `Write`. Use a small `node -e "..."` Bash that
+   imports `runner-state.mjs`.
+2. **Call `assertExpectedStatus(state, STATUS.X, "<step name>")` at the top
+   of every step.** It throws with a useful message when you arrived from
+   the wrong status — far better than silently doing the wrong thing.
+
 ## Why a plan-state JSON SSOT
 
 Every plan owns one file at `plans/{plan_stem}/.runner-state.json`. That file

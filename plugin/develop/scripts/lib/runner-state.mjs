@@ -227,6 +227,36 @@ export function saveState(statePath, state) {
 // Transitions
 // ---------------------------------------------------------------------------
 
+// Defensive precondition for runner skill steps. The skill is prose Claude
+// reads each turn, so there is no compile-time guarantee that it enters a
+// step with the status the prose assumed. Calling this at the top of each
+// branch turns "wrong status, silently does the wrong thing" into "wrong
+// status, throws with a useful message" — which the caller surfaces to the
+// user instead of corrupting state.
+//
+// Pass an array when more than one status is acceptable (e.g. dev-review
+// re-entry tolerates both AWAITING_DEV_REVIEW and QA_PENDING).
+export function assertExpectedStatus(state, expected, context = "") {
+  const accepted = new Set(Array.isArray(expected) ? expected : [expected]);
+  for (const value of accepted) {
+    if (!STATUS_VALUES.has(value)) {
+      throw new Error(
+        `assertExpectedStatus: unknown expected status "${value}"`,
+      );
+    }
+  }
+  if (!accepted.has(state.status)) {
+    const where = context ? ` (${context})` : "";
+    throw new Error(
+      `assertExpectedStatus: state.status is "${state.status}", expected ` +
+      `${[...accepted].map((v) => `"${v}"`).join(" or ")}${where}. ` +
+      "The runner skill drove this step from the wrong status — fix the skill " +
+      "or use transitionStatus to move state into the expected status before retrying.",
+    );
+  }
+  return state;
+}
+
 // Move state.status to a new value if the transition is allowed. Returns the
 // updated state (never a copy — caller is expected to saveState afterwards).
 // Throws on illegal transitions to make accidental misuse loud.

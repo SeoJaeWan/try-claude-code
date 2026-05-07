@@ -8,6 +8,7 @@ import {
   SCHEMA_VERSION,
   STATUS,
   TERMINAL_STATUSES,
+  assertExpectedStatus,
   bumpDevReviewRound,
   clearPlanBlockStreak,
   createInitialState,
@@ -304,6 +305,44 @@ describe("transitionStatus", () => {
   it("MERGED is the only terminal status", () => {
     assert.equal(TERMINAL_STATUSES.has(STATUS.MERGED), true);
     assert.equal(TERMINAL_STATUSES.has(STATUS.APPROVED), false);
+  });
+});
+
+describe("assertExpectedStatus", () => {
+  function fresh() {
+    return createInitialState({
+      planSlug: "x",
+      planPath: "/p/x.plan.md",
+      ownerAgent: "a",
+      baseBranch: "main",
+      taskBranch: "feat/x",
+      worktreePath: "/p/worktrees/feat-x",
+    });
+  }
+
+  it("returns state when status matches a single expectation", () => {
+    const s = fresh();
+    assert.equal(assertExpectedStatus(s, STATUS.VALIDATING), s);
+  });
+
+  it("accepts an array of expected statuses", () => {
+    const s = fresh();
+    s.status = STATUS.AWAITING_DEV_REVIEW;
+    assertExpectedStatus(s, [STATUS.AWAITING_DEV_REVIEW, STATUS.QA_PENDING]);
+  });
+
+  it("throws with a useful message when status mismatches", () => {
+    const s = fresh();
+    s.status = STATUS.AWAITING_STOP_REVIEW;
+    assert.throws(
+      () => assertExpectedStatus(s, STATUS.AWAITING_DEV_REVIEW, "Step 4"),
+      /awaiting_stop_review.*expected "awaiting_dev_review".*Step 4/s,
+    );
+  });
+
+  it("rejects unknown expected statuses", () => {
+    const s = fresh();
+    assert.throws(() => assertExpectedStatus(s, "running"), /unknown expected status/);
   });
 });
 
