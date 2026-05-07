@@ -5,247 +5,355 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Developer Review</title>
   <style>
+    /* dev-review visual alignment: keep planning data/approval semantics, use the
+       same dense GitHub-style review surface as the implementation gate. */
     :root {
-      --ink: #17211f;
-      --muted: #66736f;
-      --paper: #f7f1e6;
-      --panel: #fffaf0;
-      --line: #dfd1bd;
-      --accent: #0f6f5c;
+      --ink: #1f2328;
+      --muted: #57606a;
+      --paper: #f6f8fa;
+      --panel: #ffffff;
+      --line: #d0d7de;
+      --line-soft: #eaeef2;
+      --accent: #0969da;
       --accent-ink: #ffffff;
-      --warn: #b66b00;
-      --danger: #b34040;
-      --soft: #e9dfcf;
-      --shadow: 0 18px 44px rgba(50, 37, 20, 0.14);
+      --accent-soft: #ddf4ff;
+      --success: #1a7f37;
+      --warn: #9a6700;
+      --danger: #cf222e;
+      --soft: #f6f8fa;
+      --shadow: 0 1px 3px rgba(31, 35, 40, 0.04), 0 8px 24px rgba(31, 35, 40, 0.06);
     }
 
-    * {
-      box-sizing: border-box;
-    }
-
+    html, body { margin: 0; padding: 0; }
     body {
-      margin: 0;
       color: var(--ink);
-      background:
-        radial-gradient(circle at 12% 10%, rgba(15, 111, 92, 0.12), transparent 30%),
-        linear-gradient(135deg, #faf4e8 0%, #efe3d0 48%, #f7f1e6 100%);
-      font-family: "Aptos", "Segoe UI", sans-serif;
+      background: var(--paper);
+      font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      font-size: 14px;
       min-height: 100vh;
     }
 
     .shell {
       display: grid;
-      grid-template-columns: 280px minmax(0, 1fr);
+      grid-template-columns: 320px minmax(0, 1fr);
       min-height: 100vh;
     }
 
     aside {
       border-right: 1px solid var(--line);
-      background: rgba(255, 250, 240, 0.78);
-      backdrop-filter: blur(14px);
-      padding: 28px 20px;
+      background: var(--panel);
+      backdrop-filter: none;
+      padding: 0;
       position: sticky;
       top: 0;
       height: 100vh;
-      overflow: auto;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    aside > .eyebrow,
+    aside > h3,
+    aside > .meta {
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+
+    aside > .eyebrow {
+      margin: 0;
+      padding-top: 16px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    aside > h3 {
+      border-bottom: 1px solid var(--line-soft);
+      padding-bottom: 12px;
+      margin: 6px 0 0;
+      font-size: 15px;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    aside > .meta {
+      margin: 0;
+      padding-top: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line-soft);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
     }
 
     main {
-      padding: 36px;
+      width: 100%;
+      max-width: 1200px;
+      min-width: 0;
+      margin: 0 auto;
+      padding: 24px 28px 80px;
     }
 
     h1, h2, h3 {
-      font-family: "Georgia", "Times New Roman", serif;
-      letter-spacing: -0.035em;
+      font-family: inherit;
+      letter-spacing: 0;
       margin: 0;
     }
 
-    h1 {
-      font-size: clamp(34px, 5vw, 64px);
-      line-height: 0.95;
-    }
-
-    h2 {
-      font-size: clamp(26px, 3vw, 42px);
-      margin-bottom: 12px;
-    }
-
-    h3 {
-      font-size: 22px;
-      margin-bottom: 10px;
-    }
-
-    .eyebrow {
-      color: var(--accent);
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      margin-bottom: 12px;
-    }
-
-    .meta {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.6;
-      margin-top: 18px;
-      overflow-wrap: anywhere;
-    }
+    h1 { font-size: 22px; line-height: 1.35; }
+    h2 { font-size: 16px; line-height: 1.35; }
+    h3 { font-size: 13px; line-height: 1.35; margin-bottom: 8px; }
 
     .steps {
+      flex: 1;
+      overflow: auto;
       display: grid;
-      gap: 8px;
-      margin-top: 28px;
+      align-content: start;
+      gap: 0;
+      margin-top: 0;
+      padding: 8px;
     }
 
     .step-button {
       width: 100%;
-      border: 1px solid var(--line);
-      background: var(--panel);
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
       color: var(--ink);
-      padding: 11px 12px;
-      border-radius: 14px;
-      text-align: left;
+      padding: 8px 10px;
       cursor: pointer;
-      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: start;
+      text-align: left;
+      transition: none;
     }
 
     .step-button:hover {
-      transform: translateX(3px);
-      border-color: var(--accent);
+      transform: none;
+      background: var(--line-soft);
+      border-color: transparent;
     }
 
     .step-button.active {
-      background: var(--accent);
-      color: var(--accent-ink);
-      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--ink);
+      border-color: rgba(9, 105, 218, 0.3);
     }
 
     .step-button .status-dot {
-      display: inline-block;
       width: 9px;
       height: 9px;
+      margin: 5px 0 0;
       border-radius: 999px;
-      margin-right: 8px;
       background: var(--line);
-      vertical-align: 1px;
     }
 
-    .step-button[data-status="approved"] .status-dot {
-      background: #35a36b;
+    .step-title {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      font-size: 13px;
+      line-height: 1.35;
+      word-break: break-word;
     }
 
-    .step-button[data-status="needs-change"] .status-dot {
-      background: var(--danger);
+    .step-sub {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 2px;
     }
 
-    .step-button[data-status="question"] .status-dot {
-      background: var(--warn);
-    }
-
-    .step-button[data-status="out-of-scope"] .status-dot {
-      background: #68748a;
+    .step-status {
+      align-self: start;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 1px 6px;
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
     }
 
     .hero {
-      background: rgba(255, 250, 240, 0.82);
-      border: 1px solid var(--line);
-      border-radius: 32px;
-      box-shadow: var(--shadow);
-      padding: clamp(24px, 5vw, 54px);
-      margin-bottom: 22px;
-      position: relative;
-      overflow: hidden;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 0;
+      margin: 0;
+      overflow: visible;
     }
 
-    .hero::after {
-      content: "";
-      position: absolute;
-      width: 320px;
-      height: 320px;
-      right: -120px;
-      top: -130px;
+    .hero::after { display: none; }
+
+    .target-header,
+    .review-box,
+    .nav {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-shadow: none;
+    }
+
+    .target-header {
+      padding: 18px 20px;
+      margin-bottom: 18px;
+    }
+
+    .target-meta-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .target-kind-pill,
+    .pill,
+    .history-pill {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--line);
       border-radius: 999px;
-      border: 42px solid rgba(15, 111, 92, 0.08);
+      padding: 1px 7px;
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .target-title {
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.35;
+      margin: 0;
+    }
+
+    .target-summary {
+      white-space: pre-wrap;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--ink);
+      background: var(--soft);
+      border: 1px solid var(--line-soft);
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin: 10px 0 0;
     }
 
     .grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 16px;
-      margin-top: 20px;
+      margin-top: 0;
     }
 
     .card {
       background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 22px;
-      padding: 20px;
-      box-shadow: 0 8px 22px rgba(50, 37, 20, 0.07);
+      border-radius: 6px;
+      padding: 14px 16px;
+      box-shadow: none;
+      min-width: 0;
     }
 
-    .wide {
-      grid-column: 1 / -1;
-    }
-
-    .list {
-      display: grid;
-      gap: 9px;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-
+    .list { gap: 8px; }
     .list li {
-      padding: 10px 12px;
-      background: rgba(233, 223, 207, 0.7);
-      border-radius: 12px;
+      padding: 8px 10px;
+      background: var(--soft);
+      border: 1px solid var(--line-soft);
+      border-radius: 6px;
       line-height: 1.45;
     }
 
     .flow {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
+      display: grid;
+      gap: 8px;
+      align-items: stretch;
+      margin-top: 10px;
     }
 
     .flow span {
+      display: block;
       background: var(--soft);
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 9px 12px;
-      font-weight: 700;
+      border: 1px solid var(--line-soft);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-weight: 400;
+      line-height: 1.45;
     }
 
-    .flow .arrow {
-      color: var(--muted);
-      font-weight: 900;
-    }
+    .flow .arrow { display: none; }
 
     .review-box {
-      margin-top: 22px;
-      background: #fffdf8;
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      padding: 18px;
+      position: sticky;
+      top: 8px;
+      z-index: 5;
+      display: grid;
+      gap: 10px;
+      margin: 0 0 16px;
+      padding: 12px 16px;
+    }
+
+    .review-box-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .review-target-title {
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .review-box .meta {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .review-meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 6px;
     }
 
     .status-row {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin-bottom: 12px;
+      margin-bottom: 0;
     }
 
-    .status-row button, .nav button, .submit {
+    .status-row button,
+    .nav button,
+    .submit {
+      min-height: 32px;
       border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 10px 14px;
+      border-radius: 6px;
+      padding: 6px 12px;
       background: var(--panel);
       color: var(--ink);
       cursor: pointer;
-      font-weight: 800;
+      font-weight: 600;
+      font-size: 13px;
     }
 
     .status-row button.active {
@@ -254,17 +362,35 @@
       color: var(--accent-ink);
     }
 
+    .review-comment-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: start;
+    }
+
     textarea {
       width: 100%;
-      min-height: 112px;
+      min-height: 44px;
+      max-height: 140px;
       resize: vertical;
       border: 1px solid var(--line);
-      border-radius: 16px;
-      background: #fffaf0;
+      border-radius: 6px;
+      background: var(--panel);
       color: var(--ink);
-      padding: 12px;
+      padding: 8px 10px;
       font: inherit;
       line-height: 1.5;
+    }
+
+    .submitted-banner {
+      background: var(--accent-soft);
+      border: 1px solid rgba(9, 105, 218, 0.45);
+      color: var(--accent);
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1.45;
     }
 
     .nav {
@@ -272,234 +398,90 @@
       justify-content: space-between;
       gap: 12px;
       margin-top: 18px;
+      padding: 10px 12px;
     }
 
-    .nav button.primary, .submit {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: var(--accent-ink);
+    .nav button.primary,
+    .submit {
+      background: var(--success);
+      border-color: var(--success);
+      color: #fff;
     }
 
     .preview {
-      border: 1px dashed var(--accent);
-      background: rgba(15, 111, 92, 0.06);
-      border-radius: 18px;
-      padding: 16px;
-    }
-
-    .preview img {
-      display: block;
-      max-width: 100%;
-      border-radius: 14px;
       border: 1px solid var(--line);
-      margin-top: 12px;
+      background: var(--soft);
+      border-radius: 6px;
+      padding: 12px;
     }
 
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      line-height: 1.45;
+    .preview img,
+    .evidence-frame {
+      border-radius: 6px;
+      border: 1px solid var(--line);
     }
 
     .data-table th,
     .data-table td {
-      border-bottom: 1px solid var(--line);
-      padding: 9px 8px;
-      text-align: left;
-      vertical-align: top;
+      border-bottom: 1px solid var(--line-soft);
+      padding: 8px;
     }
 
-    .data-table th {
-      color: var(--muted);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      border-radius: 999px;
+    .evidence-list { gap: 14px; }
+    .evidence-item,
+    .history-entry {
       border: 1px solid var(--line);
-      background: var(--soft);
-      padding: 4px 8px;
-      font-size: 11px;
-      font-weight: 800;
-      white-space: nowrap;
+      border-radius: 6px;
+      background: var(--panel);
+      padding: 12px;
     }
 
-    .evidence-list {
-      display: grid;
-      gap: 16px;
+    .history-pills { gap: 6px; margin: 8px 0 10px; }
+    .history-pill.status-needs-change {
+      background: rgba(207, 34, 46, 0.1);
+      border-color: rgba(207, 34, 46, 0.3);
+      color: var(--danger);
     }
-
-    .evidence-item {
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: rgba(255, 253, 248, 0.92);
-      padding: 14px;
+    .history-pill.status-question {
+      background: rgba(154, 103, 0, 0.1);
+      border-color: rgba(154, 103, 0, 0.3);
+      color: var(--warn);
     }
-
-    .evidence-frame {
-      width: 100%;
-      min-height: 420px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: white;
-      margin-top: 12px;
+    .history-pill.status-approved,
+    .history-pill.resolution-resolved {
+      background: rgba(26, 127, 55, 0.1);
+      border-color: rgba(26, 127, 55, 0.3);
+      color: var(--success);
     }
 
     .phase-owner {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 18px;
-      padding: 10px 14px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      background: rgba(233, 223, 207, 0.52);
-      font-size: 13px;
-    }
-
-    .phase-owner-label {
-      color: var(--muted);
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-size: 11px;
-    }
-
-    .history-list {
-      display: grid;
-      gap: 14px;
-    }
-
-    .history-entry {
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: rgba(255, 253, 248, 0.92);
-      padding: 16px;
-    }
-
-    .history-meta {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    .history-pills {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
       margin-top: 10px;
-      margin-bottom: 12px;
-    }
-
-    .history-pill {
-      display: inline-flex;
-      align-items: center;
+      padding: 6px 9px;
       border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 11px;
-      font-weight: 800;
-      border: 1px solid var(--line);
       background: var(--soft);
-      color: var(--ink);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .history-pill.status-needs-change {
-      background: rgba(179, 64, 64, 0.12);
-      border-color: rgba(179, 64, 64, 0.28);
-      color: var(--danger);
-    }
-
-    .history-pill.status-question {
-      background: rgba(182, 107, 0, 0.12);
-      border-color: rgba(182, 107, 0, 0.28);
-      color: var(--warn);
-    }
-
-    .history-pill.status-out-of-scope {
-      background: rgba(104, 116, 138, 0.14);
-      border-color: rgba(104, 116, 138, 0.28);
-      color: #556172;
-    }
-
-    .history-pill.status-approved,
-    .history-pill.resolution-resolved {
-      background: rgba(53, 163, 107, 0.12);
-      border-color: rgba(53, 163, 107, 0.28);
-      color: #24724b;
-    }
-
-    .history-row + .history-row {
-      margin-top: 10px;
-    }
-
-    .history-row strong {
-      display: block;
       font-size: 12px;
-      margin-bottom: 6px;
-      letter-spacing: 0.02em;
     }
 
-    .history-row p {
-      margin: 0;
-      line-height: 1.55;
-    }
-
-    .history-row ul {
-      margin: 0;
-      padding-left: 18px;
-      line-height: 1.55;
-    }
-
-    .finding {
-      border-left: 4px solid var(--warn);
-      padding-left: 12px;
-    }
-
-    .toast {
-      position: fixed;
-      right: 22px;
-      bottom: 22px;
-      padding: 12px 14px;
-      background: var(--ink);
-      color: white;
-      border-radius: 14px;
-      opacity: 0;
-      transform: translateY(8px);
-      transition: opacity 160ms ease, transform 160ms ease;
-      pointer-events: none;
-    }
-
-    .toast.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    .toast { border-radius: 6px; padding: 10px 12px; }
 
     @media (max-width: 860px) {
-      .shell {
-        grid-template-columns: 1fr;
-      }
-
+      .shell { grid-template-columns: 1fr; }
       aside {
         position: static;
         height: auto;
         border-right: 0;
         border-bottom: 1px solid var(--line);
       }
-
-      main {
-        padding: 20px;
-      }
-
-      .grid {
+      .steps { max-height: 42vh; }
+      main { padding: 16px; }
+      .review-box { position: static; }
+      .review-box-top,
+      .review-comment-row {
         grid-template-columns: 1fr;
       }
+      .review-meta { justify-content: flex-start; }
+      .grid { grid-template-columns: 1fr; }
+      .wide { grid-column: auto; }
     }
   </style>
 </head>
@@ -512,8 +494,8 @@
       <div class="steps" id="steps"></div>
     </aside>
     <main>
-      <section class="hero" id="content"></section>
       <section class="review-box" id="reviewBox"></section>
+      <section class="hero" id="content"></section>
       <nav class="nav">
         <button id="prevBtn">Previous</button>
         <button class="primary" id="nextBtn">Next</button>
@@ -796,7 +778,8 @@
         plan_revision: "Plan Revision",
         resolved: "Resolved",
         active: "Active",
-        superseded: "Superseded"
+        superseded: "Superseded",
+        "not reviewed": "Not reviewed"
       }[value] || value;
     }
 
@@ -1056,6 +1039,16 @@
       return feedback.steps[id]?.status || "";
     }
 
+    function currentStep() {
+      return steps[current] || steps[0] || { id: "overview", label: "Overview", kind: "overview" };
+    }
+
+    function stepKindLabel(step) {
+      if (step.kind === "overview") return "Overview";
+      if (step.kind === "phase") return step.id || "Phase";
+      return "Final";
+    }
+
     function render() {
       $("navTitle").textContent = model.title || model.task_slug || "Planning Review";
       $("navMeta").innerHTML = `
@@ -1067,31 +1060,54 @@
       renderContent();
       renderFeedbackBox();
       $("prevBtn").disabled = current === 0;
-      $("nextBtn").textContent = current === steps.length - 1 ? "Submit review" : "Next";
+      $("nextBtn").textContent = current === steps.length - 1
+        ? (feedback.review_status === "submitted" ? "Submitted" : "Submit review")
+        : "Next";
     }
 
     function renderSteps() {
-      $("steps").innerHTML = steps.map((step, index) => `
-        <button class="step-button ${index === current ? "active" : ""}" data-status="${esc(stepStatus(step.id))}" onclick="go(${index})">
-          <span class="status-dot"></span>${esc(step.label)}
-        </button>
-      `).join("");
+      $("steps").innerHTML = steps.map((step, index) => {
+        const status = stepStatus(step.id);
+        return `
+          <button class="step-button ${index === current ? "active" : ""}" data-status="${esc(status)}" onclick="go(${index})">
+            <span class="status-dot"></span>
+            <span>
+              <span class="step-title">${esc(step.label)}</span>
+              <span class="step-sub">${esc(stepKindLabel(step))}</span>
+            </span>
+            <span class="step-status">${esc(historyLabel(status || "not reviewed"))}</span>
+          </button>
+        `;
+      }).join("");
     }
 
     function renderContent() {
-      const step = steps[current];
+      const step = currentStep();
       if (step.kind === "overview") renderOverview();
       if (step.kind === "phase") renderPhase(step.phase, step.id);
       if (step.kind === "final") renderFinal();
+    }
+
+    function contentHeader(kind, title, meta, extra = "") {
+      return `
+        <div class="target-header">
+          <div class="target-meta-row">
+            <span class="target-kind-pill">${esc(kind)}</span>
+            <span>task: <strong>${esc(model.task_slug || "")}</strong></span>
+            <span>review: <strong>${esc(model.review_outcome || "")}</strong></span>
+          </div>
+          <h1 class="target-title">${esc(title)}</h1>
+          ${meta ? `<p class="target-summary">${esc(meta)}</p>` : ""}
+          ${extra}
+        </div>
+      `;
     }
 
     function renderOverview() {
       const overview = model.overview || {};
       const history = normalizedHistoryEntries("overview");
       $("content").innerHTML = `
-        <div class="eyebrow">Overview</div>
-        <h1>${esc(model.title || model.task_slug || "Plan Review")}</h1>
-        <p class="meta">${esc(overview.understanding || "요청을 바탕으로 이해한 전체 방향을 검토합니다.")}</p>
+        ${contentHeader("Overview", model.title || model.task_slug || "Plan Review", overview.understanding || "요청을 바탕으로 이해한 전체 방향을 검토합니다.")}
         <div class="grid">
           <article class="card"><h3>사용자 요청</h3>${list(overview.user_request)}</article>
           <article class="card"><h3>포함 범위</h3>${list(overview.included_scope)}</article>
@@ -1110,15 +1126,12 @@
     function renderPhase(phase, stepId) {
       const history = normalizedHistoryEntries(stepId);
       $("content").innerHTML = `
-        <div class="eyebrow">${esc(stepId)}</div>
-        <h1>${esc(phase.title || stepId)}</h1>
-        <p class="meta">${esc(phase.goal || "이 phase의 목표와 실행 계약을 검토합니다.")}</p>
-        ${phase.owner_agent ? `
+        ${contentHeader(stepId, phase.title || stepId, phase.goal || "이 phase의 목표와 실행 계약을 검토합니다.", phase.owner_agent ? `
           <div class="phase-owner">
             <span class="phase-owner-label">담당 agent</span>
             <strong>${esc(phase.owner_agent)}</strong>
           </div>
-        ` : ""}
+        ` : "")}
         <div class="grid">
           <article class="card"><h3>변경 내용</h3>${list(phase.changes)}</article>
           <article class="card"><h3>검증</h3>${list(phase.validation)}</article>
@@ -1140,13 +1153,11 @@
       const nextSummary = model.post_approval_next_summary || "모든 step이 승인되면 production code 구현 전에 승인된 plan.md 기준으로 TDD 계약 테스트를 작성합니다.";
       const stepRows = steps.filter((step) => step.kind !== "final").map((step) => {
         const item = feedback.steps[step.id] || {};
-        return `<li><strong>${esc(step.label)}</strong>: ${esc(item.status || "not reviewed")} ${item.comment ? `— ${esc(item.comment)}` : ""}</li>`;
+        return `<li><strong>${esc(step.label)}</strong>: ${esc(historyLabel(item.status || "not reviewed"))} ${item.comment ? `- ${esc(item.comment)}` : ""}</li>`;
       }).join("");
 
       $("content").innerHTML = `
-        <div class="eyebrow">Final</div>
-        <h1>리뷰 제출</h1>
-        <p class="meta">모든 step의 승인/수정 요청을 확인한 뒤 제출합니다. 제출 후 채팅에 <strong>리뷰 완료</strong>라고 알려주세요.</p>
+        ${contentHeader("Final", "리뷰 제출", "모든 step의 승인/수정 요청을 확인한 뒤 제출합니다. 제출 후 채팅에 리뷰 완료라고 알려주세요.")}
         <div class="grid">
           <article class="card wide"><h3>Step 상태</h3><ul class="list">${stepRows}</ul></article>
           <article class="card wide"><h3>${esc(nextLabel)}</h3><p>${esc(nextSummary)}</p></article>
@@ -1157,12 +1168,26 @@
     }
 
     function renderFeedbackBox() {
-      const step = steps[current];
+      const step = currentStep();
       const item = feedback.steps[step.id] || { status: "", comment: "" };
+      const submitted = feedback.review_status === "submitted";
       $("reviewBox").innerHTML = `
-        <h3>이 step 리뷰</h3>
-        <div class="status-row">
-          ${statuses.map(([value, label]) => `<button class="${item.status === value ? "active" : ""}" onclick="setStatus('${value}')">${label}</button>`).join("")}
+        <div class="review-box-top">
+          <div>
+            <div class="review-target-title">${esc(step.label)}</div>
+            <p class="meta">현재 선택한 planning target의 승인 상태와 코멘트를 저장합니다.</p>
+          </div>
+          <div class="review-meta">
+            <span class="history-pill">${esc(stepKindLabel(step))}</span>
+            ${reviewItemSignature(step) ? `<span class="history-pill">signed</span>` : ""}
+            ${item.status ? `<span class="history-pill status-${cssToken(item.status)}">${esc(historyLabel(item.status))}</span>` : `<span class="history-pill">not reviewed</span>`}
+          </div>
+        </div>
+        <div class="review-comment-row">
+          <div class="status-row">
+            ${statuses.map(([value, label]) => `<button class="${item.status === value ? "active" : ""}" onclick="setStatus('${value}')">${label}</button>`).join("")}
+          </div>
+          ${submitted ? `<div class="submitted-banner">Submitted. 채팅에 <strong>리뷰 완료</strong>라고 입력해주세요. 내용을 바꾸면 다시 진행 중 상태가 됩니다.</div>` : ""}
         </div>
         <textarea id="comment" placeholder="수정 요청이나 질문을 적어주세요.">${esc(item.comment || "")}</textarea>
       `;
@@ -1248,6 +1273,10 @@
     $("prevBtn").addEventListener("click", () => go(current - 1));
     $("nextBtn").addEventListener("click", async () => {
       if (current === steps.length - 1) {
+        const unreviewed = steps.filter((step) => step.kind !== "final" && !stepStatus(step.id)).length;
+        if (unreviewed && !window.confirm(`미검토 대상 ${unreviewed}개가 있습니다. 그래도 제출하시겠습니까?`)) {
+          return;
+        }
         await save(true).catch(() => showToast("Submit failed"));
         render();
       } else {
