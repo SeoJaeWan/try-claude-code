@@ -13,11 +13,8 @@
 //      Stop hook open the relevant `.runner-state.json` files without
 //      globbing the entire `plans/` tree.
 //
-// Plan-level details (worktree path, current status, BLOCK history,
-// pendingStopReview flag) used to live here on a `worktrees[]` array. They
-// have been moved to `lib/runner-state.mjs` (one file per plan) so the runner
-// flow stays debuggable and survives session boundaries. This module no
-// longer carries any per-plan field.
+// Per-plan state (worktree path, status, BLOCK history) lives in the
+// runner-state SSOT (`plans/{plan_key}/.runner-state.json`), not here.
 
 import fs from "node:fs";
 import os from "node:os";
@@ -67,6 +64,10 @@ export function createSession(sessionId, cwd) {
 // new fields are surfaced to callers. The next saveSession overwrites the
 // file in the new shape, so legacy keys decay naturally without a migration
 // step.
+// Project the on-disk JSON onto the canonical session shape. Unknown keys
+// fall away naturally (we never spread `parsed`), so this also serves as the
+// upgrade path: any future shape change just teaches this projector and the
+// next saveSession overwrites the file in the new shape.
 function parseSessionShape(parsed, sessionId) {
   return {
     sessionId: parsed.sessionId ?? sessionId,

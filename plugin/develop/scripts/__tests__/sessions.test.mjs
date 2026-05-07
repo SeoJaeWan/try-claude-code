@@ -56,8 +56,9 @@ describe("createSession / loadSession", () => {
     assert.equal(s.stopReviewThreadId, null);
   });
 
-  it("loads legacy files but drops removed fields silently", () => {
-    // Hand-craft a legacy file mimicking the previous schema.
+  it("ignores unknown top-level keys on disk", () => {
+    // parseSessionShape projects onto a fixed shape and never spreads the
+    // parsed object, so anything we did not ask for falls away.
     const file = resolveSessionFile(SESSION_ID);
     fs.writeFileSync(
       file,
@@ -65,19 +66,16 @@ describe("createSession / loadSession", () => {
         sessionId: SESSION_ID,
         createdAt: new Date().toISOString(),
         cwd: "/repo",
-        worktrees: [{ path: "/repo/worktrees/old", branch: "feat/old" }],
-        blockHistory: [{ fingerprint: "abc", count: 1 }],
         stopReviewThreadId: "thread-123",
+        somethingElse: { foo: 1 },
+        anotherUnknown: [1, 2, 3],
       }),
       "utf8",
     );
     const s = loadSession(SESSION_ID);
-    // Removed fields are not surfaced.
-    assert.equal(s.worktrees, undefined);
-    assert.equal(s.blockHistory, undefined);
-    // Retained fields survive.
+    assert.equal(s.somethingElse, undefined);
+    assert.equal(s.anotherUnknown, undefined);
     assert.equal(s.stopReviewThreadId, "thread-123");
-    // New field defaults to empty array.
     assert.deepEqual(s.activePlanStates, []);
   });
 });
