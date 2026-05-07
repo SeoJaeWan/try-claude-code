@@ -1,5 +1,5 @@
 {
-  "description": "Session lifecycle, /runner bootstrap, and stop-time review gate.",
+  "description": "Session lifecycle, /runner bootstrap, runner-aware tool gate, and stop-time review gate.",
   "hooks": {
     "SessionStart": [
       {
@@ -30,6 +30,17 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/user-prompt-submit-hook.mjs\"",
             "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/pre-tool-use-hook.mjs\"",
+            "timeout": 5
           }
         ]
       }

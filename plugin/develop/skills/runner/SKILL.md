@@ -39,7 +39,7 @@ it always names the right directory.
 ## How this skill is enforced (and how it is not)
 
 This SKILL.md is prose Claude reads each turn — the runner has no
-"executable controller". Hard guarantees come from two places:
+"executable controller". Hard guarantees come from three places:
 
 - `runner-state.mjs` enforces the plan-state schema and the
   ALLOWED_TRANSITIONS table on every save. Bypassing it with raw
@@ -47,6 +47,15 @@ This SKILL.md is prose Claude reads each turn — the runner has no
 - The Stop hook decides ALLOW / BLOCK / TIMEOUT and writes the verdict
   back through the same library. It cannot know whether *this skill*
   obeyed the prose between turns.
+- The **PreToolUse hook** intercepts every tool call from the main
+  session and consults `lib/pre-tool-use-policy.mjs`. While a plan is
+  mid-flight it blocks tool calls that don't match the current status —
+  e.g. `Edit`/`Write` on the worktree during `awaiting_dev_review`,
+  mutating Bash before Step 5, or an `Agent` dispatch whose
+  `subagent_type` doesn't match `state.owner_agent`. If you see a
+  `decision: "block"` payload starting with `[runner] 활성 plan`, the
+  reason names the offending status and the recovery path — read it
+  instead of retrying the same call.
 
 To keep the gap small, every status transition in this skill goes through
 **one CLI**:
@@ -492,6 +501,8 @@ git rev-parse --abbrev-ref HEAD
     write inline `node -e` snippets that import `runner-state.mjs` directly.
     All status transitions go through `scripts/runner-state-cli.mjs` so the
     assertion, transition, auxiliary updates, and atomic save run together.
+    The PreToolUse hook also blocks direct `Edit`/`Write` on the state file
+    while a plan is mid-flight — the only way through is the CLI.
 
 </Instructions>
 </Skill_Guide>
