@@ -231,6 +231,60 @@ describe("saveState / loadState", () => {
     assert.throws(() => saveState(file, broken));
     assert.equal(fs.existsSync(file), false);
   });
+
+  it("mirrors the saved file to <state>.bak", () => {
+    const state = createInitialState({
+      planSlug: "bak",
+      planPath: "/p/bak.plan.md",
+      ownerAgent: "a",
+      baseBranch: "main",
+      taskBranch: "feat/bak",
+      worktreePath: "/p/worktrees/feat-bak",
+    });
+    const file = path.join(tmpDir, "bak", ".runner-state.json");
+    saveState(file, state);
+    const bak = `${file}.bak`;
+    assert.equal(fs.existsSync(bak), true, ".bak should exist after save");
+    assert.equal(
+      fs.readFileSync(bak, "utf8"),
+      fs.readFileSync(file, "utf8"),
+      ".bak content should match the canonical file",
+    );
+  });
+
+  it("loadState falls back to .bak when the main file is corrupt", () => {
+    const state = createInitialState({
+      planSlug: "fallback",
+      planPath: "/p/fallback.plan.md",
+      ownerAgent: "a",
+      baseBranch: "main",
+      taskBranch: "feat/fallback",
+      worktreePath: "/p/worktrees/feat-fallback",
+    });
+    const file = path.join(tmpDir, "fallback", ".runner-state.json");
+    saveState(file, state);
+    // Corrupt the main file but leave .bak intact.
+    fs.writeFileSync(file, "{ this is not valid JSON", "utf8");
+    const loaded = loadState(file);
+    assert.equal(loaded.plan_slug, "fallback");
+    assert.equal(loaded.status, STATUS.VALIDATING);
+  });
+
+  it("loadState surfaces the parse error if .bak is also unusable", () => {
+    const state = createInitialState({
+      planSlug: "doublebad",
+      planPath: "/p/doublebad.plan.md",
+      ownerAgent: "a",
+      baseBranch: "main",
+      taskBranch: "feat/doublebad",
+      worktreePath: "/p/worktrees/feat-doublebad",
+    });
+    const file = path.join(tmpDir, "doublebad", ".runner-state.json");
+    saveState(file, state);
+    fs.writeFileSync(file, "{ corrupt", "utf8");
+    fs.writeFileSync(`${file}.bak`, "{ also corrupt", "utf8");
+    assert.throws(() => loadState(file), /failed to parse JSON/);
+  });
 });
 
 // ---------------------------------------------------------------------------

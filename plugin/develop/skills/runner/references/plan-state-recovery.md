@@ -11,6 +11,14 @@ state file that needs trimming.
 > `node plugin/develop/scripts/runner-state-fixup.mjs` whenever it covers
 > what you need; only hand-edit the JSON when the CLI cannot.
 
+> **`<state>.bak` fallback.** Every successful `saveState` mirrors the
+> canonical file to a sibling `.bak`. If the main file ever fails to
+> parse, `loadState` reads the `.bak` instead and prints a one-line
+> warning to stderr — that lets the runner keep going while you decide
+> whether to copy `.bak` over the main file. Backups are best-effort and
+> single-level (no rotation), so a subsequent successful save overwrites
+> the `.bak` even if the recovery is still pending.
+
 ## Field map
 
 | Field | Type | Owner | Safe to hand-edit? |

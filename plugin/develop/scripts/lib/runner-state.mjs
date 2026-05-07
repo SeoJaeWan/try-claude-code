@@ -182,14 +182,63 @@ export function stateFileExists(statePath) {
   return fs.existsSync(statePath);
 }
 
+// Path to the single-level backup that mirrors the last successful save.
+// Phase 3 adds it to protect against three failure modes:
+//   1. A future schema bug that writes invalid JSON despite validateState.
+//   2. A disk-corruption / power-loss event that leaves the .json half-
+//      written even though the rename was atomic at the filesystem layer.
+//   3. A user hand-edit that breaks the schema (recovery.md tells them to
+//      revert from .bak rather than re-running /runner from scratch).
+//
+// The backup is *post-rename*: we only copy the canonical file after it
+// has landed cleanly. If saveState fails, the .bak from the previous save
+// stays untouched — that's the snapshot we want to recover from.
+function backupPathFor(statePath) {
+  return `${statePath}.bak`;
+}
+
+function writeBackupBestEffort(statePath) {
+  try {
+    fs.copyFileSync(statePath, backupPathFor(statePath));
+  } catch {
+    // Best-effort: a missing file or permission error here must not block
+    // the save itself. The next successful save will retry.
+  }
+}
+
 export function loadState(statePath) {
-  const raw = fs.readFileSync(statePath, "utf8");
+  let raw;
+  try {
+    raw = fs.readFileSync(statePath, "utf8");
+  } catch (err) {
+    throw new Error(
+      `plan-state: failed to read ${statePath}: ${err.message}`,
+    );
+  }
   let parsed;
   try {
     parsed = JSON.parse(raw);
-  } catch (err) {
+  } catch (parseErr) {
+    // Try the backup before giving up. If the .bak parses cleanly we
+    // surface a warning to stderr and return it — recovery.md tells the
+    // user to manually copy .bak over the main file once they've decided
+    // it's the right snapshot.
+    const bak = backupPathFor(statePath);
+    if (fs.existsSync(bak)) {
+      try {
+        const fallback = validateState(JSON.parse(fs.readFileSync(bak, "utf8")));
+        process.stderr.write(
+          `[plan-state] ${statePath} failed to parse (${parseErr.message}); ` +
+          `loaded ${bak} instead. The main file should be replaced with .bak ` +
+          `manually once you've confirmed the snapshot is correct.\n`,
+        );
+        return fallback;
+      } catch {
+        // .bak also unusable — fall through to throw on the main error.
+      }
+    }
     throw new Error(
-      `plan-state: failed to parse JSON at ${statePath}: ${err.message}`,
+      `plan-state: failed to parse JSON at ${statePath}: ${parseErr.message}`,
     );
   }
   return validateState(parsed);
@@ -204,6 +253,10 @@ export function tryLoadState(statePath) {
 // target. rename is atomic on both POSIX and Windows when source and target
 // live on the same volume, which is always the case here because we put the
 // tempfile in the same directory.
+//
+// After the rename succeeds, the canonical file is also mirrored to
+// `<statePath>.bak` for the recovery scenarios documented above. The mirror
+// is best-effort and never fails the save.
 export function saveState(statePath, state) {
   validateState(state);
   state.updated_at = nowIso();
@@ -223,6 +276,7 @@ export function saveState(statePath, state) {
     try { fs.unlinkSync(tmp); } catch { /* best-effort cleanup */ }
     throw err;
   }
+  writeBackupBestEffort(statePath);
   return state;
 }
 
