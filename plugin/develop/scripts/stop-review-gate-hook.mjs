@@ -41,13 +41,13 @@ import {
 } from "./lib/sessions.mjs";
 import { listJobs } from "./lib/state.mjs";
 import { sortJobsNewestFirst } from "./lib/job-control.mjs";
-import { SESSION_ID_ENV } from "./lib/tracked-jobs.mjs";
 import { resolveWorkspaceRoot } from "./lib/workspace.mjs";
 import {
   collectBlockReview,
   collectInformationalReview,
 } from "./lib/review-collector.mjs";
 import { recordHookEvent } from "./lib/telemetry.mjs";
+import { readHookInput } from "./lib/hook-input.mjs";
 import { STOP_REVIEW_OUTCOME } from "./lib/stop-review-outcome.mjs";
 import {
   STATUS,
@@ -83,12 +83,6 @@ function withTimeout(promise, ms) {
       timer.unref?.();
     }),
   ]).finally(() => clearTimeout(timer));
-}
-
-function readHookInput() {
-  const raw = fs.readFileSync(0, "utf8").trim();
-  if (!raw) return {};
-  return JSON.parse(raw);
 }
 
 function emitDecision(payload) {
@@ -571,9 +565,7 @@ function applyVerdictToPlanState(reviewItem, outcome, review) {
 // ---------------------------------------------------------------------------
 
 async function main() {
-  const input = readHookInput();
-  const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
-  const sessionId = input.session_id || process.env[SESSION_ID_ENV] || null;
+  const { cwd, sessionId } = readHookInput({ tag: "stop-gate" });
 
   // Resolve the session JSON. Three outcomes:
   //   - missing: no /runner has registered a plan yet — skip silently. Letting

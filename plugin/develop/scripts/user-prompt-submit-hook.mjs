@@ -45,20 +45,9 @@ import {
   saveState,
   tryLoadState,
 } from "./lib/runner-state.mjs";
-import { SESSION_ID_ENV } from "./lib/tracked-jobs.mjs";
+import { readHookInput } from "./lib/hook-input.mjs";
 
 const RUNNER_TRIGGER_RE = /^\s*\/runner(?:\s|$)/;
-
-function readHookInput() {
-  const raw = fs.readFileSync(0, "utf8").trim();
-  if (!raw) return {};
-  try {
-    return JSON.parse(raw);
-  } catch (err) {
-    process.stderr.write(`[user-prompt-hook] failed to parse stdin: ${err.message}\n`);
-    return {};
-  }
-}
 
 function emitContext(context) {
   process.stdout.write(
@@ -226,15 +215,11 @@ function buildBootstrapContext({
 }
 
 async function main() {
-  const input = readHookInput();
-  const prompt = String(input.prompt ?? "");
+  const { prompt, sessionId, cwd } = readHookInput({ tag: "user-prompt-hook" });
   if (!RUNNER_TRIGGER_RE.test(prompt)) {
     // Not a /runner invocation — get out of the way silently.
     return;
   }
-
-  const sessionId = input.session_id || process.env[SESSION_ID_ENV] || null;
-  const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
 
   let planPath;
   let frontmatter;

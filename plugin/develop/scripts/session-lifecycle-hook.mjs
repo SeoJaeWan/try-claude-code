@@ -25,15 +25,10 @@ import {
 } from "./lib/sessions.mjs";
 import { runCommand } from "./lib/process.mjs";
 import { SESSION_ID_ENV } from "./lib/tracked-jobs.mjs";
+import { readHookInput } from "./lib/hook-input.mjs";
 
 const PLUGIN_DATA_ENV = "CLAUDE_PLUGIN_DATA";
 const STALE_SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
-
-function readHookInput() {
-  const raw = fs.readFileSync(0, "utf8").trim();
-  if (!raw) return {};
-  return JSON.parse(raw);
-}
 
 function shellEscape(value) {
   return `'${String(value).replace(/'/g, `'\"'\"'`)}'`;
@@ -77,25 +72,22 @@ function reportCodexProbe(probe) {
   );
 }
 
-function handleSessionStart(input) {
-  const sessionId = input.session_id;
+function handleSessionStart({ sessionId, cwd }) {
   if (!sessionId) return;
-  const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
   createSession(sessionId, cwd);
   appendEnvVar(SESSION_ID_ENV, sessionId);
   appendEnvVar(PLUGIN_DATA_ENV, process.env[PLUGIN_DATA_ENV]);
   reportCodexProbe(probeCodex());
 }
 
-function handleSessionEnd(input) {
-  const sessionId = input.session_id || process.env[SESSION_ID_ENV];
+function handleSessionEnd({ sessionId }) {
   if (sessionId) deleteSession(sessionId);
   cleanStaleSessions(STALE_SESSION_MAX_AGE_MS);
 }
 
 function main() {
   const mode = process.argv[2] ?? "";
-  const input = readHookInput();
+  const input = readHookInput({ tag: "session-lifecycle" });
   switch (mode) {
     case "session-start":
       handleSessionStart(input);
