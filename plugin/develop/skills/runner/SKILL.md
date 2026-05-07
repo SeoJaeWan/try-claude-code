@@ -50,7 +50,7 @@ This SKILL.md is prose Claude reads each turn — the runner has no
 - The **PreToolUse hook** intercepts every tool call from the main
   session and consults `lib/pre-tool-use-policy.mjs`. While a plan is
   mid-flight it blocks tool calls that don't match the current status —
-  e.g. `Edit`/`Write` on the worktree during `awaiting_dev_review`,
+  e.g. `Edit`/`Write` on the worktree during `dev_reviewing`,
   mutating Bash before Step 5, or an `Agent` dispatch whose
   `subagent_type` doesn't match `state.owner_agent`. If you see a
   `decision: "block"` payload starting with `[runner] 활성 plan`, the
@@ -74,13 +74,13 @@ calls each, is:
 
 | Subcommand | Called from | Effect |
 |---|---|---|
-| `arm-for-dispatch` | _(deprecated in prose — PreToolUse arms automatically when the plan-agent dispatch is detected; kept for manual recovery / `--rollback-to dispatching` paths)_ | move into `awaiting_stop_review`, set `stop_review.armed = true` |
-| `begin-rework` | Step 4 (rework) | move into `rework_in_progress`, bump round, record feedback path |
-| `rework-done` | Step 4 (after rework dispatches commit) | move back to `awaiting_dev_review` |
-| `mark-qa-pending` | Step 4 (Q&A round) | move into `qa_pending` |
-| `qa-resolved` | Step 4 (after answering) | move back to `awaiting_dev_review` |
-| `mark-approved` | Step 4 (approval) | move into `approved` |
-| `mark-merged` | Step 5 (after `git merge`) | move into `merged` |
+| `arm-for-dispatch` | _(deprecated in prose — PreToolUse auto-arms when it sees the plan-agent dispatch; kept for manual recovery)_ | `preparing → dispatching` + `stop_review.phase = "armed"` (or re-arm from `phase = "blocked"`) |
+| `begin-rework` | Step 4 (rework) | phase mutation: `dev_review.phase: awaiting → rework`, bump round, record feedback path. **Status stays `dev_reviewing`.** |
+| `rework-done` | Step 4 (after rework dispatches commit) | phase mutation: `dev_review.phase: rework → awaiting` |
+| `mark-qa-pending` | Step 4 (Q&A round) | phase mutation: `dev_review.phase: awaiting → qa` |
+| `qa-resolved` | Step 4 (after answering) | phase mutation: `dev_review.phase: qa → awaiting` |
+| `mark-approved` | Step 4 (approval) | `dev_reviewing → closing`, clears `dev_review.phase` |
+| `mark-merged` | Step 5 (after `git merge`) | `closing → merged` |
 | `reset` | Step 5 (post-merge cleanup) | delete the state file + sibling `feedback*.json` (requires `--confirm`) |
 
 Anything **not** about a status transition (reading the state JSON, running
@@ -131,25 +131,21 @@ If the bootstrap block is missing, the user did not enter through `/runner`.
 Tell them so and stop — do not try to drive a plan without state.
 
 `mode: fresh` means the hook just created the state file (status will be
-`validating`). `mode: resume` means the hook loaded an existing one — pick
+`preparing`). `mode: resume` means the hook loaded an existing one — pick
 the action up from `state.status` per the routing table below.
 
 ## Status routing
 
-Read `state.status` from the JSON to decide where to enter. Each status maps
-to exactly one action:
+Read `state.status` from the JSON to pick the high-level Step. When the row
+also calls out a sub-state, read the named phase field to disambiguate.
 
-| status | action |
-|---|---|
-| `validating` | New plan. Go to **Step 2 — Set up worktree**. |
-| `dispatching` | Worktree was being prepared but the previous run did not finish. Check `fs.existsSync(state.worktree_path)` (e.g. `[ -d <wt> ]`); if missing, redo Step 2. If present, fall through to Step 3. |
-| `awaiting_stop_review` | The previous turn ended with the gate armed but the Stop hook never ran (e.g. the user typed something else). End your turn so the gate can fire. |
-| `stop_review_blocked` | The Stop hook reported BLOCK. Read `state.stop_review.block_history[last].reason_excerpt` as the BLOCK reason and re-dispatch the plan agent — see **Step 3 (re-entry)**. |
-| `awaiting_dev_review` | Stop-review passed; enter **Step 4 — Dev-review gate**. |
-| `rework_in_progress` | Reviewer left needs-change items. Read `state.dev_review.last_feedback_path` and dispatch rework agents — see **Step 4 (rework)**. |
-| `qa_pending` | Reviewer asked questions. Answer in chat, then re-enter Step 4 with the same round. |
-| `approved` | Dev-review accepted the plan. Go to **Step 5 — Cleanup and ask user**. |
-| `merged` | Terminal. The hook will already have blocked entry, so you should not normally see this. |
+| status | sub-state to read | action |
+|---|---|---|
+| `preparing` | — | Step 2 hasn't completed. Check `[ -d <state.worktree_path> ]`; if missing, run Step 2. If present, fall straight to Step 3 (PreToolUse auto-arms on the dispatch). |
+| `dispatching` | `state.stop_review.phase` | `phase = "armed"` → previous turn ended with the gate armed; end your turn so the Stop hook can fire. `phase = "blocked"` → Stop hook reported BLOCK; read `state.stop_review.block_history[last].reason_excerpt` and re-dispatch the plan agent — see **Step 3 (re-entry)**. `phase = "passed"` is transient (set right before the flip to `dev_reviewing`); you should not normally observe it. |
+| `dev_reviewing` | `state.dev_review.phase` | `phase = "awaiting"` → Stop-review passed; enter **Step 4 — Dev-review gate**. `phase = "rework"` → Reviewer left needs-change items; read `state.dev_review.last_feedback_path` and dispatch rework agents — see **Step 4 (rework)**. `phase = "qa"` → Reviewer asked questions; answer in chat, then `qa-resolved` and re-enter Step 4 with the same round. |
+| `closing` | — | Dev-review accepted the plan. Go to **Step 5 — Cleanup and ask user**. |
+| `merged` | — | Terminal. The hook will already have blocked entry, so you should not normally see this. |
 
 ## Core rules
 
@@ -217,27 +213,26 @@ base when the user invoked `/runner`, and the worktree must branch from that
 exact commit. Ask the user before doing anything destructive.
 
 Stale-worktree handling is driven by checking the worktree directory on
-disk yourself (`[ -d <state.worktree_path> ]` via Bash):
+disk yourself (`[ -d <state.worktree_path> ]` via Bash). All four cases
+live under `status: preparing` in v2 — the v1 distinction between
+`validating` and `dispatching` collapsed because both meant "Step 2 has
+not finished":
 
-- **worktree missing and `status: validating`** — fresh start. Run
+- **worktree missing** — fresh start. Run
   `git worktree add -b <task_branch> <worktree_path> <base_branch>`.
-- **worktree present and `status: validating`** — directory is there but
-  state is fresh. Two cases:
-  1. The directory is empty / unrelated → ask the user; if they confirm,
-     remove it and re-create.
-  2. There are commits on the task branch already → describe what is there
-     using `git -C <worktree_path> log --oneline <base_branch>..<task_branch>`
-     (cap at 20 lines), then ask whether to resume on top of the existing
-     work or wipe it and restart. Update the state via the runner-state
-     library after the user decides.
-- **`status: dispatching`, worktree present** — previous run got past Step 2.
-  Skip the `git worktree add` and go straight to Step 3.
-- **`status: dispatching`, worktree missing** — previous run never finished
-  Step 2. Re-run Step 2 from scratch.
+- **worktree present, directory empty / unrelated** — ask the user; if
+  they confirm, remove it and re-create.
+- **worktree present, commits already on the task branch** — describe
+  what is there using
+  `git -C <worktree_path> log --oneline <base_branch>..<task_branch>`
+  (cap at 20 lines), then ask whether to resume on top of the existing
+  work or wipe it and restart. The state stays at `preparing` until the
+  PreToolUse hook arms the gate on dispatch.
 
 After the worktree is in place, **stop here and proceed to Step 3**. The
 PreToolUse hook arms the gate atomically when it sees the plan-agent
-dispatch in Step 3, so Step 2 must not transition status itself.
+dispatch (transitioning `preparing → dispatching` + `phase = "armed"`),
+so Step 2 must not transition status itself.
 
 ### Step 3. Dispatch the plan agent (single Agent call)
 
@@ -248,13 +243,16 @@ state path — the PreToolUse hook arms the gate as a side-effect of seeing
 the dispatch.
 
 > **Auto-arm.** When the PreToolUse hook sees an `Agent` (or `Task`) call
-> whose `subagent_type` matches `state.owner_agent` and the current status
-> is one of `validating` / `dispatching` / `stop_review_blocked`, it walks
-> the state machine to `awaiting_stop_review`, sets
-> `stop_review.armed = true`, and saves the state file before letting the
-> dispatch through. The skill no longer calls `arm-for-dispatch` itself.
-> If the hook blocks the call, the status was not one of the three
-> arm-able values — read the block reason and investigate.
+> whose `subagent_type` matches `state.owner_agent`, it arms the gate as
+> a side-effect:
+>   - From `status: preparing` → walks to `dispatching` + `stop_review.phase = "armed"`.
+>   - From `status: dispatching, stop_review.phase = "blocked"` → flips
+>     phase back to `"armed"` for the re-dispatch.
+>   - From `status: dispatching, phase = "armed"` → idempotent no-op.
+>
+> The skill no longer calls `arm-for-dispatch` itself. If the hook blocks
+> the call, the status was not arm-able (e.g. you are at `dev_reviewing`
+> or `closing`) — read the block reason and investigate.
 
 Dispatch. The prompt body is **`references/prompts/plan-dispatch.md` —
 read it and substitute the placeholders before sending**:
@@ -281,12 +279,13 @@ plan-state to decide whether to gate.
 
 #### Step 3 re-entry (after BLOCK)
 
-If the bootstrap arrives with `status: stop_review_blocked`, the previous
-turn's Stop hook recorded a BLOCK and you are looking at the next user turn.
-Do **not** try to fix the code yourself in the main session — the BLOCK
-reason came in as a prior `decision: block` payload, and the Stop hook also
-appended a `[plan-runner: replay <state-path>]` directive that names the
-state file to consult.
+If the bootstrap arrives with `status: dispatching` and
+`stop_review.phase: blocked`, the previous turn's Stop hook recorded a
+BLOCK and you are looking at the next user turn. Do **not** try to fix the
+code yourself in the main session — the BLOCK reason came in as a prior
+`decision: block` payload, and the Stop hook also appended a
+`[plan-runner: replay <state-path>]` directive that names the state file
+to consult.
 
 Action:
 
@@ -299,14 +298,13 @@ Action:
    directive's choices. The Stop hook already attached the same note to the
    BLOCK reason.
 3. Otherwise, re-run Step 3's `Agent(...)` call directly. BLOCK leaves
-   `stop_review.armed = true` and the status at `stop_review_blocked`; the
-   PreToolUse hook accepts `stop_review_blocked` as an arm-able entry, walks
-   it back to `awaiting_stop_review`, and lets the dispatch through. The new
-   commits will trigger another stop-review on the next turn-end.
+   `stop_review.armed = true` and the phase at `"blocked"`; the PreToolUse
+   hook flips phase back to `"armed"` and lets the dispatch through. The
+   new commits will trigger another stop-review on the next turn-end.
 
 ### Step 4. Developer review gate (browser)
 
-Once `status` is `awaiting_dev_review`, invoke the `dev-review` skill to
+Once `status` is `dev_reviewing` with `dev_review.phase = "awaiting"`, invoke the `dev-review` skill to
 collect explicit per-commit reviewer approval. The dev-review skill takes a
 single input — the absolute path to the plan-state JSON — and reads
 everything else (slug, plan path, worktree, branches, iteration) from it:
@@ -320,10 +318,10 @@ as `review_iteration`, so the runner is responsible for keeping it accurate:
 
 | Trigger | Action |
 |---|---|
-| First time entering Step 4 (after Stop-review ALLOW) | round 1. The state arrives at `awaiting_dev_review` with `current_round = 0`; `begin-rework` is the only call that bumps it (see below). For the first round there is no rework yet, so no bump — just invoke `dev-review`. |
-| User replies `리뷰 완료`, result = `approved` | no round change. Move to Step 5 via `mark-approved`. |
-| User replies `리뷰 완료`, result = `qa_required` | no round change. Use `mark-qa-pending` to record the QA pause; after answering, `qa-resolved` flips back. Re-invoke `dev-review` with the same round. |
-| User replies `리뷰 완료`, result = `rework` | round bumps. `begin-rework` does the bump, the status transition, and records the feedback path in one call. After every rework agent commits, `rework-done` flips back to `awaiting_dev_review` for the next review pass. |
+| First time entering Step 4 (after Stop-review ALLOW) | round 1. The state arrives at `dev_reviewing` + phase `"awaiting"` with `current_round = 0`; `begin-rework` is the only call that bumps it (see below). For the first round there is no rework yet, so no bump — just invoke `dev-review`. |
+| User replies `리뷰 완료`, result = `approved` | no round change. Move to Step 5 via `mark-approved` (status flips `dev_reviewing → closing`). |
+| User replies `리뷰 완료`, result = `qa_required` | no round change. Use `mark-qa-pending` (phase `awaiting → qa`); after answering, `qa-resolved` flips back. Re-invoke `dev-review` with the same round. |
+| User replies `리뷰 완료`, result = `rework` | round bumps. `begin-rework` bumps round + flips phase `awaiting → rework` + records the feedback path in one call. After every rework agent commits, `rework-done` flips phase back to `awaiting` for the next review pass. |
 
 The dev-review skill prints a server URL and ends its turn so the user can
 review in the browser and reply `리뷰 완료`.
@@ -337,7 +335,7 @@ a terminal summary based on `feedback.json`:
 - `result = "rework"` →
     `node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" begin-rework <state.state_path> <feedback.json absolute path>`.
     This bumps `dev_review.current_round`, records the feedback path, and
-    transitions to `rework_in_progress` atomically. Then for each item in
+    flips `dev_review.phase` to `"rework"` atomically. Then for each item in
     `rework_items[]`, dispatch `Agent(subagent_type: item.dispatch_agent,
     ...)` with the prompt body from
     **`references/prompts/rework-dispatch.md`** — substitute
@@ -376,7 +374,7 @@ not remove the worktree, do not merge, do not ask about merge until approval.
 
 ### Step 5. Clean up the worktree and ask the user
 
-The state is `approved`. The task branch holds every plan commit plus any
+The state is `closing`. The task branch holds every plan commit plus any
 rework commits. Remove the worktree but **stay on the base branch**. Then
 ask the user about merge.
 
@@ -397,8 +395,8 @@ After cleanup, output as plain text (do NOT use AskUserQuestion):
     2. `git branch -d <task_branch>`
     3. `node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" mark-merged <state.state_path>`
     4. (optional) `node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" reset <state.state_path> --confirm` — removes the state file and any sibling `feedback*.json` so a future `/runner` on the same plan path is not rejected as `merged`. Skip if the user wants to keep the audit trail.
-  - **"PR 생성"** — leave the task branch in place and invoke the `/pr` skill so it can `git push` the branch and open the PR. State stays at `approved`. Pass the task branch and base branch from the state file.
-  - **"나중에 처리"** — leave the task branch, do nothing. State stays at `approved`.
+  - **"PR 생성"** — leave the task branch in place and invoke the `/pr` skill so it can `git push` the branch and open the PR. State stays at `closing`. Pass the task branch and base branch from the state file.
+  - **"나중에 처리"** — leave the task branch, do nothing. State stays at `closing`.
 
 Do not merge, checkout, or delete the task branch without explicit user
 approval. HEAD must remain on `state.base_branch` at all times.
