@@ -239,6 +239,23 @@ Optional tables for diagnostic-lock path:
    - `수정 판단 여부`
    - `planning 전달 메모`
 
+Required table when an artifact handoff is plausible:
+
+11. `planning-ready 판정표`
+   - `상태` (`ready`, `blocking`, `derivable`, `excluded`)
+   - `항목`
+   - `판단`
+   - `다음 조치`
+
+Use the table to decide the final state. `ready_for_planning` is allowed only when every planning-changing item is `ready`, `derivable`, or explicitly `excluded`; any `blocking` row must select a `needs_*` state instead.
+
+Figma-first design-system requests have an additional hard gate:
+
+- If a Figma URL, node id, token/style value, component-set inventory, icon/logo/font parity, or design-system registry is the authority for implementation or validation, require a controller-verified Figma inventory artifact before planning.
+- The artifact must name `manifest.json`, snapshot paths, `fileKey`, relevant node ids or roots, freshness, and coverage state.
+- If the artifact is missing, stale, partial, or names-only where exact values are required, set the final state to `needs_diagnostic_inventory`, not `ready_for_planning`.
+- Do not move "Figma 기준 확정", "inventory freeze", or similar authority creation into an implementation phase.
+
 Then include:
 
 - `남은 질문` if blocking ambiguity remains
@@ -270,15 +287,18 @@ Include:
 - `제외 항목 표` when relevant
 - `plan wiki preflight 메모` when relevant
 - `진단 기준선 표` and `차이 후보 표` when diagnostic-lock path is used
+- `planning-ready 판정표`
 - `남은 질문 / 가정`
 - `추천 다음 상태`
-- `artifact_status: ready_for_planning`
+- `artifact_status` set to one of `ready_for_planning`, `needs_plan_wiki_setup`, `needs_locked_ui_direction`, `needs_diagnostic_inventory`, `needs_diagnostic_review`, `needs_test_strategy_lock`, `needs_execution_environment_lock`, `needs_scope_lock`, or `superseded`
 - `artifact_path`
 
 Rules:
 
 - Derive `{feature-name}` from the user's wording or the locked task slug when available.
 - If the request-lock is not planning-ready yet, do not write a misleading ready artifact; keep the unresolved questions in chat or update an existing draft artifact only when that avoids losing already-locked decisions.
+- If writing a non-ready draft artifact, set `artifact_status` to the exact `needs_*` state and make the `planning-ready 판정표` show the blocking row and next tool or user action.
+- If an older artifact is superseded by a restart, set `artifact_status: superseded`, name `superseded_by`, and state why it must not be used as planning input.
 - If filesystem write fails, state that planning cannot treat the chat-only snapshot as the durable authority.
 - In the chat response, include the written artifact path and state that subsequent planning should consume it as a verified upstream input.
 
@@ -297,6 +317,8 @@ Before handoff, confirm:
 - If plan wiki preflight ran, its `blocking` findings are either locked or called out explicitly
 - If plan wiki preflight could not run, the missing dependency is explicit before recommending planning
 - If the request is `ready_for_planning`, the request-lock exists as a durable artifact or the missing artifact write is called out as a blocker
+- If the request depends on Figma-first or other external authority, controller-verified authority artifacts exist as files before recommending planning
+- The `planning-ready 판정표` contains no `blocking` row before recommending planning
 - Blocking questions are explicit when another clarification round is still needed
 - Recommended next state is clear
 

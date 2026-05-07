@@ -18,7 +18,6 @@ At the gate:
 - Generate `review-data.json` from current `plan.md`, linked phase detail files, and fresh `review.md`.
 - Parse `plan.md` `## 파일/폴더 구조 계약` and `## 체험 산출물` tables into `review-data.json.topology_contract` and `review-data.json.evidence_artifacts`.
 - Validate every evidence `경로` as a relative `evidence/**` path under the plan folder, copy it to `plans/{task-slug}/developer-review/assets/evidence/**`, and expose only the copied asset path in review data.
-- Regenerate instead of reusing a stale or custom package when `review-data.json.plan_path`, `plan_signature`, or schema shape does not match the current selected plan and fresh `review.md`.
 - Create or refresh `review-history.json` for current `task-slug` and `plan_signature`.
 - Ensure Overview and every required Phase/card in `review-data.json` has a stable `review_item_signature`; include global scope/contract context in phase signatures so scope changes invalidate affected approvals.
 - Include topology and evidence metadata in review item signatures so changes to phase-linked paths, responsibilities, input/output harnesses, or evidence content invalidate stale approval.
@@ -28,7 +27,7 @@ At the gate:
   - Preserve `owner_agent` from the phase detail artifact.
   - UI preview is plan-level visual explanation only; do not imply functional implementation exists.
   - Evidence artifacts are planning-only HTML/JS projections. Do not imply real API, DB, filesystem, live dev-server, React build, or production stack execution exists.
-  - Sidebar target selection keeps the selected review content visible and scrolls the main panel to the top when the target changes.
+  - `Previous`, `Next`, and direct step navigation reset visible review content to the top of the current step.
 - Ensure `review-data.json` includes the post-approval next gate fields so the browser review can tell the user that approved implementation-scope plans proceed to `$plan-tdd` before production implementation.
 - Ensure the developer review package exposes historical rounds and controller action summaries from `review-history.json`.
 - Initialize or refresh `feedback.json` for current `plan_signature` with `review_status = in_progress`:
@@ -84,7 +83,7 @@ Route by triage result:
 - `answer_only`: answer in chat from current plan/review/package, update active history round with answer summary and same-signature re-review outcome, refresh `feedback.json` for the same signature while preserving only unchanged approved items, require browser re-submit, and do not invoke `architect`.
 - `scope_decision` or `request_lock`: ask direct questions first when underspecified, then run or reuse the request-scope locking capability with exact task, plan, `plan_wiki_root`, current `plan_signature`, latest `feedback.json`, locked request summary when available, verified inputs, and chat-only output contract unless the user asked for an artifact.
 - `ui_direction`: ask for request-scope clarification first if product framing or scope is unstable; otherwise run or reuse the UI-spec capability with exact task, plan, current signature, latest `feedback.json`, locked request summary when available, verified inputs, and chat-only output contract unless the user asked for an artifact.
-- `plan_revision`: record the revision route in `review-history.json`, run Step 7, route exact feedback path and affected IDs to `architect`, rerun `plan-review`, regenerate the review data package, carry forward only approvals whose item signatures still match, and require browser re-submit. If the feedback says required evidence or authority data should have existed before planning, route that as a blocker or upstream input gap rather than as implementation work.
+- `plan_revision`: record the revision route in `review-history.json`, run Step 7, route exact feedback path and affected IDs to `architect`, rerun `plan-review`, regenerate the review data package, carry forward only approvals whose item signatures still match, and require browser re-submit.
 
 Required sub-agent terminal results:
 

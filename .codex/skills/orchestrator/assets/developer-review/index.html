@@ -3,299 +3,297 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>개발자 리뷰</title>
+  <title>Developer Review</title>
   <style>
     :root {
-      --ink: #1f2328;
-      --muted: #57606a;
-      --bg: #f6f8fa;
-      --panel: #ffffff;
-      --line: #d0d7de;
-      --line-soft: #eaeef2;
-      --accent: #0969da;
-      --accent-soft: #ddf4ff;
-      --success: #1a7f37;
-      --warn: #9a6700;
-      --danger: #cf222e;
-      --shadow: 0 1px 3px rgba(31, 35, 40, 0.04), 0 8px 24px rgba(31, 35, 40, 0.06);
+      --ink: #17211f;
+      --muted: #66736f;
+      --paper: #f7f1e6;
+      --panel: #fffaf0;
+      --line: #dfd1bd;
+      --accent: #0f6f5c;
+      --accent-ink: #ffffff;
+      --warn: #b66b00;
+      --danger: #b34040;
+      --soft: #e9dfcf;
+      --shadow: 0 18px 44px rgba(50, 37, 20, 0.14);
     }
 
-    * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+    }
+
     body {
+      margin: 0;
       color: var(--ink);
-      background: var(--bg);
-      font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-      font-size: 14px;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(15, 111, 92, 0.12), transparent 30%),
+        linear-gradient(135deg, #faf4e8 0%, #efe3d0 48%, #f7f1e6 100%);
+      font-family: "Aptos", "Segoe UI", sans-serif;
       min-height: 100vh;
     }
 
-    .app {
+    .shell {
       display: grid;
-      grid-template-columns: 320px minmax(0, 1fr) 340px;
+      grid-template-columns: 280px minmax(0, 1fr);
       min-height: 100vh;
     }
 
-    .sidebar, .review-rail {
-      background: var(--panel);
-      border-color: var(--line);
+    aside {
+      border-right: 1px solid var(--line);
+      background: rgba(255, 250, 240, 0.78);
+      backdrop-filter: blur(14px);
+      padding: 28px 20px;
       position: sticky;
       top: 0;
       height: 100vh;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
+      overflow: auto;
     }
 
-    .sidebar { border-right: 1px solid var(--line); }
-    .review-rail { border-left: 1px solid var(--line); }
-
-    .sb-header, .review-header {
-      padding: 16px;
-      border-bottom: 1px solid var(--line-soft);
+    main {
+      padding: 36px;
     }
 
-    .sb-kicker, .section-label {
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
+    h1, h2, h3 {
+      font-family: "Georgia", "Times New Roman", serif;
+      letter-spacing: -0.035em;
+      margin: 0;
     }
 
-    .sb-task {
-      margin-top: 6px;
-      font-size: 15px;
-      font-weight: 700;
-      line-height: 1.35;
-      word-break: break-word;
+    h1 {
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 0.95;
     }
 
-    .sb-meta, .meta {
-      color: var(--muted);
+    h2 {
+      font-size: clamp(26px, 3vw, 42px);
+      margin-bottom: 12px;
+    }
+
+    h3 {
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
       font-size: 12px;
-      line-height: 1.55;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      margin-top: 18px;
       overflow-wrap: anywhere;
     }
 
-    .sb-meta {
-      display: grid;
-      gap: 3px;
-      margin-top: 8px;
-    }
-
-    .sb-section-label {
-      padding: 14px 16px 6px;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
     .steps {
-      flex: 1;
-      overflow: auto;
-      padding: 0 8px 8px;
+      display: grid;
+      gap: 8px;
+      margin-top: 28px;
     }
 
     .step-button {
       width: 100%;
-      border: 1px solid transparent;
-      border-radius: 6px;
-      background: transparent;
+      border: 1px solid var(--line);
+      background: var(--panel);
       color: var(--ink);
-      padding: 8px 10px;
-      cursor: pointer;
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 8px;
-      align-items: start;
+      padding: 11px 12px;
+      border-radius: 14px;
       text-align: left;
+      cursor: pointer;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
     }
 
-    .step-button:hover { background: var(--line-soft); }
+    .step-button:hover {
+      transform: translateX(3px);
+      border-color: var(--accent);
+    }
+
     .step-button.active {
-      background: var(--accent-soft);
-      border-color: rgba(9, 105, 218, 0.3);
+      background: var(--accent);
+      color: var(--accent-ink);
+      border-color: var(--accent);
     }
 
-    .status-dot {
+    .step-button .status-dot {
+      display: inline-block;
       width: 9px;
       height: 9px;
       border-radius: 999px;
+      margin-right: 8px;
       background: var(--line);
-      margin-top: 5px;
+      vertical-align: 1px;
     }
 
-    .step-button[data-status="approved"] .status-dot { background: var(--success); }
-    .step-button[data-status="needs-change"] .status-dot { background: var(--danger); }
-    .step-button[data-status="question"] .status-dot { background: var(--warn); }
-    .step-button[data-status="out-of-scope"] .status-dot { background: var(--muted); }
+    .step-button[data-status="approved"] .status-dot {
+      background: #35a36b;
+    }
 
-    .step-main { min-width: 0; }
-    .step-title {
-      font-size: 13px;
-      line-height: 1.35;
-      word-break: break-word;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
+    .step-button[data-status="needs-change"] .status-dot {
+      background: var(--danger);
+    }
+
+    .step-button[data-status="question"] .status-dot {
+      background: var(--warn);
+    }
+
+    .step-button[data-status="out-of-scope"] .status-dot {
+      background: #68748a;
+    }
+
+    .hero {
+      background: rgba(255, 250, 240, 0.82);
+      border: 1px solid var(--line);
+      border-radius: 32px;
+      box-shadow: var(--shadow);
+      padding: clamp(24px, 5vw, 54px);
+      margin-bottom: 22px;
+      position: relative;
       overflow: hidden;
     }
-    .step-sub {
-      color: var(--muted);
-      font-size: 11px;
-      margin-top: 2px;
-    }
-    .step-badges {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 3px;
-    }
 
-    .badge, .pill, .history-pill {
-      display: inline-flex;
-      align-items: center;
-      border: 1px solid var(--line);
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      right: -120px;
+      top: -130px;
       border-radius: 999px;
-      padding: 1px 7px;
-      font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
-      color: var(--muted);
-      background: var(--bg);
+      border: 42px solid rgba(15, 111, 92, 0.08);
     }
 
-    .badge.evidence { color: var(--accent); background: var(--accent-soft); border-color: rgba(9, 105, 218, 0.3); }
-    .badge.topology { color: var(--success); background: rgba(26, 127, 55, 0.08); border-color: rgba(26, 127, 55, 0.25); }
-    .badge.status-needs-change, .history-pill.status-needs-change { color: var(--danger); background: rgba(207, 34, 46, 0.08); border-color: rgba(207, 34, 46, 0.25); }
-    .badge.status-question, .history-pill.status-question { color: var(--warn); background: rgba(154, 103, 0, 0.08); border-color: rgba(154, 103, 0, 0.25); }
-    .badge.status-approved, .history-pill.status-approved, .history-pill.resolution-resolved { color: var(--success); background: rgba(26, 127, 55, 0.08); border-color: rgba(26, 127, 55, 0.25); }
-
-    .sb-history {
-      border-top: 1px solid var(--line-soft);
-      padding: 10px 16px;
-      max-height: 28vh;
-      overflow: auto;
-    }
-    .sb-history summary {
-      cursor: pointer;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      list-style: none;
-    }
-    .sb-history summary::-webkit-details-marker { display: none; }
-    .sb-history-list { display: grid; gap: 8px; margin-top: 8px; }
-    .sb-history-round { border: 1px solid var(--line-soft); border-radius: 6px; background: var(--bg); padding: 7px 8px; font-size: 12px; }
-    .sb-history-round-meta { color: var(--muted); font-size: 11px; }
-
-    .sb-submit-area {
-      border-top: 1px solid var(--line-soft);
-      padding: 12px 16px;
-      display: grid;
-      gap: 8px;
-    }
-
-    .submit, .status-row button {
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 8px 12px;
-      background: var(--panel);
-      color: var(--ink);
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 13px;
-    }
-    .submit {
-      background: var(--success);
-      border-color: var(--success);
-      color: #fff;
-    }
-    .submit:disabled { background: #94a3b0; border-color: #94a3b0; cursor: not-allowed; }
-    .submit-hint { color: var(--muted); font-size: 11px; line-height: 1.45; }
-
-    main.main {
-      width: 100%;
-      max-width: 1180px;
-      min-width: 0;
-      margin: 0 auto;
-      padding: 24px 28px 80px;
-    }
-
-    .content-panel {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      box-shadow: var(--shadow);
-      padding: 20px;
-    }
-
-    .content-header {
-      border-bottom: 1px solid var(--line-soft);
-      padding-bottom: 16px;
-      margin-bottom: 16px;
-    }
-    .eyebrow {
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      margin-bottom: 6px;
-    }
-    h1, h2, h3 { margin: 0; letter-spacing: 0; }
-    h1 { font-size: 22px; line-height: 1.35; }
-    h2 { font-size: 16px; line-height: 1.35; }
-    h3 { font-size: 13px; line-height: 1.35; margin-bottom: 8px; }
-
-    .section-grid {
+    .grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
+      gap: 16px;
+      margin-top: 20px;
     }
-    .review-section {
-      border: 1px solid var(--line-soft);
-      border-radius: 6px;
-      background: #fff;
-      padding: 14px;
-      min-width: 0;
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 8px 22px rgba(50, 37, 20, 0.07);
     }
-    .wide { grid-column: 1 / -1; }
+
+    .wide {
+      grid-column: 1 / -1;
+    }
 
     .list {
       display: grid;
-      gap: 8px;
+      gap: 9px;
       margin: 0;
       padding: 0;
       list-style: none;
     }
+
     .list li {
-      padding: 8px 10px;
-      border: 1px solid var(--line-soft);
-      border-radius: 6px;
-      background: var(--bg);
+      padding: 10px 12px;
+      background: rgba(233, 223, 207, 0.7);
+      border-radius: 12px;
       line-height: 1.45;
     }
 
     .flow {
-      display: grid;
-      gap: 8px;
-      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
     }
+
     .flow span {
-      display: block;
-      border: 1px solid var(--line-soft);
-      border-radius: 6px;
-      background: var(--bg);
-      padding: 8px 10px;
-      line-height: 1.45;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 9px 12px;
+      font-weight: 700;
     }
-    .flow .arrow { display: none; }
+
+    .flow .arrow {
+      color: var(--muted);
+      font-weight: 900;
+    }
+
+    .review-box {
+      margin-top: 22px;
+      background: #fffdf8;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 18px;
+    }
+
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .status-row button, .nav button, .submit {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: var(--panel);
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .status-row button.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-ink);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 112px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fffaf0;
+      color: var(--ink);
+      padding: 12px;
+      font: inherit;
+      line-height: 1.5;
+    }
+
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .nav button.primary, .submit {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-ink);
+    }
+
+    .preview {
+      border: 1px dashed var(--accent);
+      background: rgba(15, 111, 92, 0.06);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .preview img {
+      display: block;
+      max-width: 100%;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      margin-top: 12px;
+    }
 
     .data-table {
       width: 100%;
@@ -303,48 +301,51 @@
       font-size: 13px;
       line-height: 1.45;
     }
+
     .data-table th,
     .data-table td {
-      border-bottom: 1px solid var(--line-soft);
-      padding: 8px;
+      border-bottom: 1px solid var(--line);
+      padding: 9px 8px;
       text-align: left;
       vertical-align: top;
     }
+
     .data-table th {
       color: var(--muted);
       font-size: 11px;
-      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.06em;
     }
-    code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; }
 
-    .preview {
-      border: 1px solid var(--line-soft);
-      background: var(--bg);
-      border-radius: 6px;
-      padding: 12px;
-    }
-    .preview img {
-      display: block;
-      max-width: 100%;
-      border-radius: 6px;
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
       border: 1px solid var(--line);
-      margin-top: 10px;
+      background: var(--soft);
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
     }
 
-    .evidence-list { display: grid; gap: 14px; }
+    .evidence-list {
+      display: grid;
+      gap: 16px;
+    }
+
     .evidence-item {
       border: 1px solid var(--line);
-      border-radius: 6px;
-      background: var(--panel);
-      padding: 12px;
+      border-radius: 18px;
+      background: rgba(255, 253, 248, 0.92);
+      padding: 14px;
     }
+
     .evidence-frame {
       width: 100%;
-      min-height: 460px;
+      min-height: 420px;
       border: 1px solid var(--line);
-      border-radius: 6px;
+      border-radius: 14px;
       background: white;
       margin-top: 12px;
     }
@@ -352,156 +353,181 @@
     .phase-owner {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      margin-top: 12px;
-      padding: 6px 9px;
+      gap: 10px;
+      margin-top: 18px;
+      padding: 10px 14px;
       border-radius: 999px;
       border: 1px solid var(--line);
-      background: var(--bg);
-      font-size: 12px;
+      background: rgba(233, 223, 207, 0.52);
+      font-size: 13px;
     }
+
     .phase-owner-label {
       color: var(--muted);
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
-      font-size: 10px;
+      letter-spacing: 0.08em;
+      font-size: 11px;
     }
 
-    .history-list { display: grid; gap: 10px; }
+    .history-list {
+      display: grid;
+      gap: 14px;
+    }
+
     .history-entry {
-      border: 1px solid var(--line-soft);
-      border-radius: 6px;
-      background: var(--bg);
-      padding: 12px;
-    }
-    .history-meta { color: var(--muted); font-size: 12px; line-height: 1.5; }
-    .history-pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 10px; }
-    .history-row + .history-row { margin-top: 10px; }
-    .history-row strong { display: block; font-size: 12px; margin-bottom: 4px; }
-    .history-row p { margin: 0; line-height: 1.55; }
-    .history-row ul { margin: 0; padding-left: 18px; line-height: 1.55; }
-
-    .finding { border-left: 3px solid var(--warn); padding-left: 10px; }
-
-    .review-rail { padding: 0; }
-    .review-box {
-      padding: 16px;
-      overflow: auto;
-      display: grid;
-      gap: 12px;
-    }
-    .review-target-title {
-      font-size: 14px;
-      font-weight: 700;
-      line-height: 1.35;
-      word-break: break-word;
-    }
-    .status-row {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 8px;
-    }
-    .status-row button {
-      text-align: left;
-    }
-    .status-row button.active {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-    }
-    textarea {
-      width: 100%;
-      min-height: 160px;
-      resize: vertical;
       border: 1px solid var(--line);
-      border-radius: 6px;
-      background: var(--panel);
-      color: var(--ink);
-      padding: 10px;
-      font: inherit;
+      border-radius: 18px;
+      background: rgba(255, 253, 248, 0.92);
+      padding: 16px;
+    }
+
+    .history-meta {
+      color: var(--muted);
+      font-size: 12px;
       line-height: 1.5;
+    }
+
+    .history-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      margin-bottom: 12px;
+    }
+
+    .history-pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 800;
+      border: 1px solid var(--line);
+      background: var(--soft);
+      color: var(--ink);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .history-pill.status-needs-change {
+      background: rgba(179, 64, 64, 0.12);
+      border-color: rgba(179, 64, 64, 0.28);
+      color: var(--danger);
+    }
+
+    .history-pill.status-question {
+      background: rgba(182, 107, 0, 0.12);
+      border-color: rgba(182, 107, 0, 0.28);
+      color: var(--warn);
+    }
+
+    .history-pill.status-out-of-scope {
+      background: rgba(104, 116, 138, 0.14);
+      border-color: rgba(104, 116, 138, 0.28);
+      color: #556172;
+    }
+
+    .history-pill.status-approved,
+    .history-pill.resolution-resolved {
+      background: rgba(53, 163, 107, 0.12);
+      border-color: rgba(53, 163, 107, 0.28);
+      color: #24724b;
+    }
+
+    .history-row + .history-row {
+      margin-top: 10px;
+    }
+
+    .history-row strong {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 6px;
+      letter-spacing: 0.02em;
+    }
+
+    .history-row p {
+      margin: 0;
+      line-height: 1.55;
+    }
+
+    .history-row ul {
+      margin: 0;
+      padding-left: 18px;
+      line-height: 1.55;
+    }
+
+    .finding {
+      border-left: 4px solid var(--warn);
+      padding-left: 12px;
     }
 
     .toast {
       position: fixed;
       right: 22px;
       bottom: 22px;
-      padding: 10px 12px;
+      padding: 12px 14px;
       background: var(--ink);
       color: white;
-      border-radius: 6px;
+      border-radius: 14px;
       opacity: 0;
       transform: translateY(8px);
       transition: opacity 160ms ease, transform 160ms ease;
       pointer-events: none;
     }
-    .toast.show { opacity: 1; transform: translateY(0); }
 
-    @media (max-width: 1120px) {
-      .app { grid-template-columns: 280px minmax(0, 1fr); }
-      .review-rail {
-        grid-column: 1 / -1;
-        position: static;
-        height: auto;
-        border-left: 0;
-        border-top: 1px solid var(--line);
-      }
-      .review-box { max-width: 760px; }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
     }
 
-    @media (max-width: 760px) {
-      .app { grid-template-columns: 1fr; }
-      .sidebar {
+    @media (max-width: 860px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
         position: static;
         height: auto;
         border-right: 0;
         border-bottom: 1px solid var(--line);
       }
-      .steps { max-height: 42vh; }
-      main.main { padding: 16px; }
-      .section-grid { grid-template-columns: 1fr; }
-      .wide { grid-column: auto; }
+
+      main {
+        padding: 20px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <aside class="sidebar">
-      <div class="sb-header">
-        <div class="sb-kicker">개발자 리뷰</div>
-        <div class="sb-task" id="navTitle">계획 리뷰</div>
-        <div class="sb-meta" id="navMeta"></div>
-      </div>
-      <div class="sb-section-label">검토 대상</div>
+  <div class="shell">
+    <aside>
+      <div class="eyebrow">Developer Review</div>
+      <h3 id="navTitle">Planning Review</h3>
+      <div class="meta" id="navMeta"></div>
       <div class="steps" id="steps"></div>
-      <details class="sb-history" id="sidebarHistory" style="display:none">
-        <summary>이력</summary>
-        <div class="sb-history-list" id="sidebarHistoryList"></div>
-      </details>
-      <div class="sb-submit-area">
-        <div class="submit-hint" id="submitHint"></div>
-        <button class="submit" id="submitBtn">리뷰 제출</button>
-      </div>
     </aside>
-    <main class="main">
-      <section class="content-panel" id="content"></section>
-    </main>
-    <aside class="review-rail">
-      <div class="review-header">
-        <div class="section-label">선택한 대상</div>
-      </div>
+    <main>
+      <section class="hero" id="content"></section>
       <section class="review-box" id="reviewBox"></section>
-    </aside>
+      <nav class="nav">
+        <button id="prevBtn">Previous</button>
+        <button class="primary" id="nextBtn">Next</button>
+      </nav>
+    </main>
   </div>
-  <div class="toast" id="toast">저장됨</div>
+  <div class="toast" id="toast">Saved</div>
 
   <script>
     const statuses = [
-      ["approved", "승인"],
-      ["needs-change", "수정 필요"],
-      ["question", "질문"],
-      ["out-of-scope", "범위 외"]
+      ["approved", "Approve"],
+      ["needs-change", "Needs change"],
+      ["question", "Question"],
+      ["out-of-scope", "Out of scope"]
     ];
 
     let model;
@@ -759,19 +785,18 @@
 
     function historyLabel(value) {
       return {
-        approved: "승인",
-        "needs-change": "수정 필요",
-        question: "질문",
-        "out-of-scope": "범위 외",
-        answer_only: "답변만 필요",
-        request_lock: "요청 재잠금",
-        scope_decision: "범위 결정",
-        ui_direction: "UI 방향",
-        plan_revision: "계획 수정",
-        resolved: "해결됨",
-        active: "진행 중",
-        superseded: "대체됨",
-        "not reviewed": "미검토"
+        approved: "Approved",
+        "needs-change": "Needs Change",
+        question: "Question",
+        "out-of-scope": "Out of Scope",
+        answer_only: "Answer Only",
+        request_lock: "Request Lock",
+        scope_decision: "Scope Decision",
+        ui_direction: "UI Direction",
+        plan_revision: "Plan Revision",
+        resolved: "Resolved",
+        active: "Active",
+        superseded: "Superseded"
       }[value] || value;
     }
 
@@ -930,20 +955,20 @@
       steps = [
         {
           id: "overview",
-          label: "개요",
+          label: "Overview",
           kind: "overview",
           review_item_signature: model.overview?.review_item_signature || ""
         },
         ...asArray(model.phases).map((phase, index) => ({
           id: phase.id || `P${index + 1}`,
-          label: phase.title || `단계 ${index + 1}`,
+          label: phase.title || `Phase ${index + 1}`,
           kind: "phase",
           review_item_signature: phase.review_item_signature || "",
           phase
         })),
         {
           id: "final",
-          label: "제출",
+          label: "Final",
           kind: "final",
           review_item_signature: `final-${model.plan_signature || ""}`
         }
@@ -1031,144 +1056,79 @@
       return feedback.steps[id]?.status || "";
     }
 
-    function currentStep() {
-      return steps[current] || steps[0] || { id: "overview", label: "개요", kind: "overview" };
-    }
-
-    function stepKindLabel(step) {
-      if (step.kind === "overview") return "개요";
-      if (step.kind === "phase") return step.id || "단계";
-      return "제출";
-    }
-
-    function targetTopology(step) {
-      if (step.kind === "overview") {
-        const overviewRows = asArray(model.overview?.topology_contract);
-        return overviewRows.length ? overviewRows : asArray(model.topology_contract);
-      }
-      if (step.kind === "phase") return asArray(step.phase?.topology_contract);
-      return [];
-    }
-
-    function targetEvidence(step) {
-      if (step.kind === "overview") {
-        const overviewItems = asArray(model.overview?.evidence_artifacts);
-        return overviewItems.length ? overviewItems : asArray(model.evidence_artifacts);
-      }
-      if (step.kind === "phase") return asArray(step.phase?.evidence_artifacts);
-      return [];
-    }
-
     function render() {
-      $("navTitle").textContent = model.title || model.task_slug || "계획 리뷰";
+      $("navTitle").textContent = model.title || model.task_slug || "Planning Review";
       $("navMeta").innerHTML = `
         <div>task: <strong>${esc(model.task_slug || "")}</strong></div>
         <div>signature: <strong>${esc(model.plan_signature || "")}</strong></div>
         <div>review: <strong>${esc(model.review_outcome || "")}</strong></div>
       `;
       renderSteps();
-      renderSidebarHistory();
       renderContent();
       renderFeedbackBox();
-      updateSubmitState();
+      $("prevBtn").disabled = current === 0;
+      $("nextBtn").textContent = current === steps.length - 1 ? "Submit review" : "Next";
     }
 
     function renderSteps() {
-      $("steps").innerHTML = steps.map((step, index) => {
-        const status = stepStatus(step.id);
-        const topologyCount = targetTopology(step).length;
-        const evidenceCount = targetEvidence(step).length;
-        const badges = [
-          status ? `<span class="badge status-${cssToken(status)}">${esc(historyLabel(status))}</span>` : "",
-          topologyCount ? `<span class="badge topology">구조 ${topologyCount}</span>` : "",
-          evidenceCount ? `<span class="badge evidence">산출물 ${evidenceCount}</span>` : ""
-        ].filter(Boolean).join("");
-        return `
-          <button class="step-button ${index === current ? "active" : ""}" data-status="${esc(status)}" onclick="go(${index})">
-            <span class="status-dot"></span>
-            <span class="step-main">
-              <span class="step-title">${esc(step.label)}</span>
-              <span class="step-sub">${esc(stepKindLabel(step))}</span>
-            </span>
-            <span class="step-badges">${badges}</span>
-          </button>
-        `;
-      }).join("");
-    }
-
-    function renderSidebarHistory() {
-      const rounds = historyRounds();
-      $("sidebarHistory").style.display = rounds.length ? "" : "none";
-      $("sidebarHistoryList").innerHTML = rounds.map((round, index) => {
-        const itemCount = asArray(round.items).length;
-        return `
-          <div class="sb-history-round">
-            <div><strong>${esc(round.id || `R${index + 1}`)}</strong> ${round.resolution_state ? `<span class="badge">${esc(historyLabel(round.resolution_state))}</span>` : ""}</div>
-            <div class="sb-history-round-meta">${esc(round.submitted_at || round.updated_at || "")}${itemCount ? ` · ${itemCount}개 항목` : ""}</div>
-          </div>
-        `;
-      }).join("");
+      $("steps").innerHTML = steps.map((step, index) => `
+        <button class="step-button ${index === current ? "active" : ""}" data-status="${esc(stepStatus(step.id))}" onclick="go(${index})">
+          <span class="status-dot"></span>${esc(step.label)}
+        </button>
+      `).join("");
     }
 
     function renderContent() {
-      const step = currentStep();
+      const step = steps[current];
       if (step.kind === "overview") renderOverview();
       if (step.kind === "phase") renderPhase(step.phase, step.id);
       if (step.kind === "final") renderFinal();
     }
 
-    function contentHeader(kind, title, meta, extra = "") {
-      return `
-        <div class="content-header">
-          <div class="eyebrow">${esc(kind)}</div>
-          <h1>${esc(title)}</h1>
-          ${meta ? `<p class="meta">${esc(meta)}</p>` : ""}
-          ${extra}
-        </div>
-      `;
-    }
-
     function renderOverview() {
       const overview = model.overview || {};
       const history = normalizedHistoryEntries("overview");
-      const step = currentStep();
       $("content").innerHTML = `
-        ${contentHeader("개요", model.title || model.task_slug || "계획 리뷰", overview.understanding || "요청을 바탕으로 이해한 전체 방향을 검토합니다.")}
-        <div class="section-grid">
-          <article class="review-section"><h3>사용자 요청</h3>${list(overview.user_request)}</article>
-          <article class="review-section"><h3>포함 범위</h3>${list(overview.included_scope)}</article>
-          <article class="review-section"><h3>제외 범위</h3>${list(overview.excluded_scope)}</article>
-          <article class="review-section"><h3>주요 변경점</h3>${list(overview.major_changes)}</article>
-          <article class="review-section wide"><h3>변경 형상</h3><p>${esc(overview.change_shape || "")}</p>${flow(overview.change_flow)}</article>
-          <article class="review-section wide"><h3>핵심 리스크</h3>${list(overview.risks)}</article>
-          ${topologyTable(targetTopology(step)) ? `<article class="review-section wide"><h3>파일/폴더 구조 계약</h3>${topologyTable(targetTopology(step))}</article>` : ""}
-          ${evidenceBlock(targetEvidence(step)) ? `<article class="review-section wide"><h3>체험 산출물</h3>${evidenceBlock(targetEvidence(step))}</article>` : ""}
-          ${history.length ? `<article class="review-section wide"><h3>이전 리뷰와 조치</h3>${renderHistoryEntries(history, { emptyText: "이전 overview 리뷰 이력이 없습니다." })}</article>` : ""}
-          ${previewBlock(overview.ui_previews) ? `<article class="review-section wide"><h3>UI 계획 preview</h3>${previewBlock(overview.ui_previews)}</article>` : ""}
+        <div class="eyebrow">Overview</div>
+        <h1>${esc(model.title || model.task_slug || "Plan Review")}</h1>
+        <p class="meta">${esc(overview.understanding || "요청을 바탕으로 이해한 전체 방향을 검토합니다.")}</p>
+        <div class="grid">
+          <article class="card"><h3>사용자 요청</h3>${list(overview.user_request)}</article>
+          <article class="card"><h3>포함 범위</h3>${list(overview.included_scope)}</article>
+          <article class="card"><h3>제외 범위</h3>${list(overview.excluded_scope)}</article>
+          <article class="card"><h3>주요 변경점</h3>${list(overview.major_changes)}</article>
+          <article class="card wide"><h3>변경 형상</h3><p>${esc(overview.change_shape || "")}</p>${flow(overview.change_flow)}</article>
+          <article class="card wide"><h3>핵심 리스크</h3>${list(overview.risks)}</article>
+          ${topologyTable(overview.topology_contract || model.topology_contract) ? `<article class="card wide"><h3>파일/폴더 구조 계약</h3>${topologyTable(overview.topology_contract || model.topology_contract)}</article>` : ""}
+          ${evidenceBlock(overview.evidence_artifacts || model.evidence_artifacts) ? `<article class="card wide"><h3>체험 산출물</h3>${evidenceBlock(overview.evidence_artifacts || model.evidence_artifacts)}</article>` : ""}
+          ${history.length ? `<article class="card wide"><h3>이전 리뷰와 조치</h3>${renderHistoryEntries(history, { emptyText: "이전 overview 리뷰 이력이 없습니다." })}</article>` : ""}
+          ${previewBlock(overview.ui_previews) ? `<article class="card wide"><h3>UI 계획 preview</h3>${previewBlock(overview.ui_previews)}</article>` : ""}
         </div>
       `;
     }
 
     function renderPhase(phase, stepId) {
       const history = normalizedHistoryEntries(stepId);
-      const step = currentStep();
       $("content").innerHTML = `
-        ${contentHeader(stepId, phase.title || stepId, phase.goal || "이 단계의 목표와 실행 계약을 검토합니다.", phase.owner_agent ? `
+        <div class="eyebrow">${esc(stepId)}</div>
+        <h1>${esc(phase.title || stepId)}</h1>
+        <p class="meta">${esc(phase.goal || "이 phase의 목표와 실행 계약을 검토합니다.")}</p>
+        ${phase.owner_agent ? `
           <div class="phase-owner">
             <span class="phase-owner-label">담당 agent</span>
             <strong>${esc(phase.owner_agent)}</strong>
           </div>
-        ` : "")}
-        <div class="section-grid">
-          <article class="review-section"><h3>변경 내용</h3>${list(phase.changes)}</article>
-          <article class="review-section"><h3>검증</h3>${list(phase.validation)}</article>
-          <article class="review-section wide"><h3>계약</h3>${list(phase.contracts)}</article>
-          <article class="review-section wide"><h3>파일 영향</h3>${list(phase.file_impacts)}</article>
-          ${topologyTable(targetTopology(step)) ? `<article class="review-section wide"><h3>파일/폴더 구조 계약</h3>${topologyTable(targetTopology(step))}</article>` : ""}
-          ${evidenceBlock(targetEvidence(step)) ? `<article class="review-section wide"><h3>체험 산출물</h3>${evidenceBlock(targetEvidence(step))}</article>` : ""}
-          <article class="review-section wide"><h3>리스크 / 주의점</h3>${list(phase.risks)}</article>
-          ${history.length ? `<article class="review-section wide"><h3>이전 리뷰와 조치</h3>${renderHistoryEntries(history, { emptyText: "이전 phase 리뷰 이력이 없습니다." })}</article>` : ""}
-          ${previewBlock(phase.ui_previews) ? `<article class="review-section wide"><h3>UI 계획 preview</h3>${previewBlock(phase.ui_previews)}</article>` : ""}
+        ` : ""}
+        <div class="grid">
+          <article class="card"><h3>변경 내용</h3>${list(phase.changes)}</article>
+          <article class="card"><h3>검증</h3>${list(phase.validation)}</article>
+          <article class="card wide"><h3>계약</h3>${list(phase.contracts)}</article>
+          <article class="card wide"><h3>파일 영향</h3>${list(phase.file_impacts)}</article>
+          ${topologyTable(phase.topology_contract) ? `<article class="card wide"><h3>파일/폴더 구조 계약</h3>${topologyTable(phase.topology_contract)}</article>` : ""}
+          ${evidenceBlock(phase.evidence_artifacts) ? `<article class="card wide"><h3>체험 산출물</h3>${evidenceBlock(phase.evidence_artifacts)}</article>` : ""}
+          <article class="card wide"><h3>리스크 / 주의점</h3>${list(phase.risks)}</article>
+          ${history.length ? `<article class="card wide"><h3>이전 리뷰와 조치</h3>${renderHistoryEntries(history, { emptyText: "이전 phase 리뷰 이력이 없습니다." })}</article>` : ""}
+          ${previewBlock(phase.ui_previews) ? `<article class="card wide"><h3>UI 계획 preview</h3>${previewBlock(phase.ui_previews)}</article>` : ""}
         </div>
       `;
     }
@@ -1180,58 +1140,37 @@
       const nextSummary = model.post_approval_next_summary || "모든 step이 승인되면 production code 구현 전에 승인된 plan.md 기준으로 TDD 계약 테스트를 작성합니다.";
       const stepRows = steps.filter((step) => step.kind !== "final").map((step) => {
         const item = feedback.steps[step.id] || {};
-        return `<li><strong>${esc(step.label)}</strong>: ${esc(historyLabel(item.status || "not reviewed"))} ${item.comment ? `- ${esc(item.comment)}` : ""}</li>`;
+        return `<li><strong>${esc(step.label)}</strong>: ${esc(item.status || "not reviewed")} ${item.comment ? `— ${esc(item.comment)}` : ""}</li>`;
       }).join("");
 
       $("content").innerHTML = `
-        ${contentHeader("제출", "리뷰 제출", "모든 대상의 승인/수정 요청을 확인한 뒤 제출합니다. 제출 후 채팅에 리뷰 완료라고 알려주세요.")}
-        <div class="section-grid">
-          <article class="review-section wide"><h3>대상 상태</h3><ul class="list">${stepRows}</ul></article>
-          <article class="review-section wide"><h3>${esc(nextLabel)}</h3><p>${esc(nextSummary)}</p></article>
-          <article class="review-section wide"><h3>계획 리뷰 지적 사항</h3>${findings.length ? findings.map((item) => `<p class="finding">${esc(item)}</p>`).join("") : "<p class=\"meta\">없음</p>"}</article>
-          ${history.length ? `<article class="review-section wide"><h3>리뷰 이력과 조치 요약</h3>${renderHistoryEntries(history, { emptyText: "기록된 리뷰 이력이 없습니다.", showStepLabel: true })}</article>` : ""}
+        <div class="eyebrow">Final</div>
+        <h1>리뷰 제출</h1>
+        <p class="meta">모든 step의 승인/수정 요청을 확인한 뒤 제출합니다. 제출 후 채팅에 <strong>리뷰 완료</strong>라고 알려주세요.</p>
+        <div class="grid">
+          <article class="card wide"><h3>Step 상태</h3><ul class="list">${stepRows}</ul></article>
+          <article class="card wide"><h3>${esc(nextLabel)}</h3><p>${esc(nextSummary)}</p></article>
+          <article class="card wide"><h3>Plan review findings</h3>${findings.length ? findings.map((item) => `<p class="finding">${esc(item)}</p>`).join("") : "<p class=\"meta\">없음</p>"}</article>
+          ${history.length ? `<article class="card wide"><h3>리뷰 이력과 조치 요약</h3>${renderHistoryEntries(history, { emptyText: "기록된 리뷰 이력이 없습니다.", showStepLabel: true })}</article>` : ""}
         </div>
       `;
     }
 
     function renderFeedbackBox() {
-      const step = currentStep();
+      const step = steps[current];
       const item = feedback.steps[step.id] || { status: "", comment: "" };
-      const topologyCount = targetTopology(step).length;
-      const evidenceCount = targetEvidence(step).length;
       $("reviewBox").innerHTML = `
-        <div class="review-target-title">${esc(step.label)}</div>
-        <p class="meta">현재 선택한 검토 대상에 대한 판단을 저장합니다.</p>
-        <div class="history-pills">
-          <span class="history-pill">${esc(stepKindLabel(step))}</span>
-          ${topologyCount ? `<span class="history-pill">구조 ${topologyCount}</span>` : ""}
-          ${evidenceCount ? `<span class="history-pill">산출물 ${evidenceCount}</span>` : ""}
-          ${reviewItemSignature(step) ? `<span class="history-pill">서명됨</span>` : ""}
-        </div>
+        <h3>이 step 리뷰</h3>
         <div class="status-row">
           ${statuses.map(([value, label]) => `<button class="${item.status === value ? "active" : ""}" onclick="setStatus('${value}')">${label}</button>`).join("")}
         </div>
         <textarea id="comment" placeholder="수정 요청이나 질문을 적어주세요.">${esc(item.comment || "")}</textarea>
-        ${feedback.review_status === "submitted" ? `<p class="meta">이 리뷰는 제출된 상태입니다. 내용을 바꾸면 다시 진행 중 상태로 돌아갑니다.</p>` : ""}
       `;
       $("comment").addEventListener("input", (event) => {
         markEdited();
         feedback.steps[step.id].comment = event.target.value;
         saveDebounced();
       });
-    }
-
-    function updateSubmitState() {
-      const reviewable = steps.filter((step) => step.kind !== "final");
-      const unreviewed = reviewable.filter((step) => !stepStatus(step.id)).length;
-      const nonApproved = reviewable.filter((step) => {
-        const status = stepStatus(step.id);
-        return status && status !== "approved";
-      }).length;
-      $("submitBtn").textContent = feedback.review_status === "submitted" ? "제출됨" : "리뷰 제출";
-      $("submitHint").textContent = feedback.review_status === "submitted"
-        ? "제출됨. 채팅에 리뷰 완료라고 알려주세요."
-        : `${unreviewed}개 미검토, ${nonApproved}개 승인 외 상태`;
     }
 
     function setStatus(status) {
@@ -1290,13 +1229,13 @@
         body: JSON.stringify(feedback, null, 2)
       });
       if (!res.ok) throw new Error("save failed");
-      showToast(submitted ? "제출됨" : "저장됨");
+      showToast(submitted ? "Submitted" : "Saved");
     }
 
     let saveTimer;
     function saveDebounced() {
       clearTimeout(saveTimer);
-      saveTimer = setTimeout(() => save(false).catch(() => showToast("저장 실패")), 250);
+      saveTimer = setTimeout(() => save(false).catch(() => showToast("Save failed")), 250);
     }
 
     function showToast(message) {
@@ -1306,13 +1245,14 @@
       setTimeout(() => toast.classList.remove("show"), 1400);
     }
 
-    $("submitBtn").addEventListener("click", async () => {
-      const unreviewed = steps.filter((step) => step.kind !== "final" && !stepStatus(step.id)).length;
-      if (unreviewed && !window.confirm(`미검토 대상 ${unreviewed}개가 있습니다. 그래도 제출하시겠습니까?`)) {
-        return;
+    $("prevBtn").addEventListener("click", () => go(current - 1));
+    $("nextBtn").addEventListener("click", async () => {
+      if (current === steps.length - 1) {
+        await save(true).catch(() => showToast("Submit failed"));
+        render();
+      } else {
+        go(current + 1);
       }
-      await save(true).catch(() => showToast("제출 실패"));
-      render();
     });
 
     window.go = go;

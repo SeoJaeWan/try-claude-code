@@ -22,6 +22,9 @@
 - If the request might be frontend-only, backend-only, full-stack, infra-only, visual-audit-only, or docs-only, lock that execution boundary before handoff unless the user explicitly defers it.
 - If test strategy choices would change the plan, lock the needed verification responsibility before handoff unless the user explicitly defers that choice.
 - If first-time TDD, future source/test topology, mock API, browser storage, or seeded state affects planning, lock those decisions before marking the request `ready_for_planning`.
+- If Figma URL, Figma node id, token/style values, component-set inventory, or design-system asset parity is the implementation or validation authority, do not mark the request `ready_for_planning` until a controller-verified Figma inventory artifact with manifest, snapshot paths, freshness, and coverage state exists.
+- Do not put first-time Figma authority collection, inventory freeze, or parity classification into an implementation phase; route it to diagnostic inventory before planning.
 - Do not leave a `ready_for_planning` request-lock only in chat; write the durable brainstorm artifact or state the artifact-write blocker.
+- Do not write `artifact_status: ready_for_planning` when the planning-ready judgment still contains a `blocking` row.
 - If user-visible UI direction is still materially under-specified, state that `locked_ui_direction` is required before planning.
 - If requirements are already clear, explicitly state why no request-scope lock is needed and mark the request `ready_for_planning` or `ready_for_direct_execution`.

@@ -5,7 +5,7 @@
 1. Latest user request and latest conversation context.
 2. Existing executable plan files under `./plans/**` relevant to the task.
 3. Existing review artifact under `./plans/_orchestrator/review/{task-slug}/review.md` when present.
-4. Existing `./.codex/artifacts/brainstorm/**` or `./.codex/artifacts/ui-spec/**` artifacts only when directly referenced or when they narrow the next architect pass.
+4. Existing `./.codex/artifacts/brainstorm/**` or `./.codex/artifacts/ui-spec/**` artifacts when directly referenced, latest relevant to the task, or needed to prove the next architect pass is planning-ready.
 5. `../architect/SKILL.md`.
 6. `../plan-review/SKILL.md`.
 7. `../plan-wiki-setup/references/staging-contract.md`.
@@ -100,7 +100,7 @@ Do not force planning sub-agents to rediscover orchestrator-owned metadata. Do n
 
 ## Failure Taxonomy
 
-- `missing_upstream_lock`: request scope, UI direction, or execution-agent boundary is not locked enough for `architect`
+- `missing_upstream_lock`: request scope, UI direction, test strategy, execution-agent boundary, planning-ready artifact status, or latest relevant request-lock artifact is not locked enough for `architect`
 - `invocation_failure`: the runtime could not invoke or reuse the planning sub-agent
 - `agent_protocol_failure`: the agent replied or streamed progress, but did not provide a usable terminal result for the requested role before the bounded wait ended
 - `artifact_writeback_failure`: the agent claimed success but the required artifact is still missing or stale on disk
@@ -117,7 +117,7 @@ Report the exact classification when stopping.
 - Tell the user which stage is running.
 - Present user-decision questions in Korean.
 - When blocked, say which role blocked and what the next safe route would be.
-- When blocked by `missing_upstream_lock`, state that `brainstorm` or another upstream locking step must happen before rerunning orchestrator.
+- When blocked by `missing_upstream_lock`, state that `brainstorm`, `figma-inventory-snapshot`, UI-direction locking, test-strategy locking, or another upstream locking step must happen before rerunning orchestrator.
 - When blocked by `tool_data_blocker`, report the exact missing tool/data root, path, or artifact instead of asking the user for a planning decision.
 - When stopping, report the exact failure classification.
 

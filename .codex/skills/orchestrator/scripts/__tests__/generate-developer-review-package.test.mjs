@@ -157,8 +157,6 @@ affected_phase_paths: []
   assert.ok(raw.includes(Buffer.from("한글 리뷰 패키지", "utf8")));
 
   const reviewData = JSON.parse(raw.toString("utf8"));
-  assert.equal(reviewData.review_data_kind, "planning-developer-review");
-  assert.equal(reviewData.generator_version, 2);
   assert.equal(reviewData.title, "한글 리뷰 패키지");
   assert.equal(reviewData.post_approval_next_action, "plan-tdd");
   assert.equal(reviewData.post_approval_next_label, "다음 단계: $plan-tdd");
@@ -333,9 +331,9 @@ test("includes topology and safely copied evidence artifacts", () => {
 
 ## 실행 흐름
 
-  | 단계 | 목적 | 주요 변경 | 완료 신호 | 검증 | 커밋 경계 |
-  | --- | --- | --- | --- | --- | --- |
-  | P1 | users route를 만든다 | route shell과 empty UI | empty preview와 동일한 상태 표시 | component test | phase 1: users empty |
+| Phase | 목적 | 주요 변경 | 완료 신호 | 검증 | 커밋 경계 |
+| --- | --- | --- | --- | --- | --- |
+| Phase 1 | users route를 만든다 | route shell과 empty UI | empty preview와 동일한 상태 표시 | component test | phase 1: users empty |
 `, "utf8");
 
   fs.writeFileSync(path.join(reviewDir, "review.md"), `---
@@ -367,7 +365,6 @@ affected_plan_paths: []
   assert.equal(result.status, 0, result.stderr);
   const reviewData = JSON.parse(fs.readFileSync(path.join(planDir, "developer-review", "review-data.json"), "utf8"));
   assert.equal(reviewData.topology_contract.length, 2);
-  assert.equal(reviewData.phases[0].title, "P1");
   assert.equal(reviewData.phases[0].topology_contract.length, 2);
   assert.equal(reviewData.evidence_artifacts[0].asset, "assets/evidence/ui/P1-empty.html");
   assert.equal(reviewData.phases[0].evidence_artifacts[0].id, "UI-P1-empty");
@@ -413,42 +410,5 @@ test("rejects evidence paths outside evidence root", () => {
 
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Evidence path must be under evidence/);
-  assert.equal(fs.existsSync(path.join(planDir, "developer-review", "review-data.json")), false);
-});
-
-test("rejects missing evidence files before writing review data", () => {
-  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "orchestrator-review-evidence-missing-"));
-  const taskSlug = "missing-evidence-review";
-  const planDir = path.join(repoRoot, "plans", taskSlug);
-  const reviewDir = path.join(repoRoot, "plans", "_orchestrator", "review", taskSlug);
-  fs.mkdirSync(planDir, { recursive: true });
-  fs.mkdirSync(reviewDir, { recursive: true });
-  fs.writeFileSync(path.join(planDir, "plan.md"), `# Missing evidence
-
-## 체험 산출물
-
-| id | phase | kind | 경로 | 목적 | 검토 포인트 |
-| --- | --- | --- | --- | --- | --- |
-| MISSING | P1 | api-contract | \`evidence/api/request.html\` | request body 확인 | body; status |
-
-## 실행 흐름
-
-| 단계 | 목적 | 주요 변경 | 완료 신호 | 검증 | 커밋 경계 |
-| --- | --- | --- | --- | --- | --- |
-| P1 | API 계약을 닫는다 | harness 연결 | evidence 표시 | review | phase 1: api contract |
-`, "utf8");
-  fs.writeFileSync(path.join(reviewDir, "review.md"), "---\nplan_signature: missing123\noutcome: ready\n---\n\n# plan-review\n", "utf8");
-
-  const result = spawnSync(process.execPath, [
-    scriptPath,
-    "--task-slug", taskSlug,
-    "--plan-signature", "missing123"
-  ], {
-    cwd: repoRoot,
-    encoding: "utf8"
-  });
-
-  assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /Evidence file not found/);
   assert.equal(fs.existsSync(path.join(planDir, "developer-review", "review-data.json")), false);
 });

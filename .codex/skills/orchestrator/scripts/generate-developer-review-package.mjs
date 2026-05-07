@@ -240,8 +240,6 @@ function buildReviewData({ repoRoot, taskSlug, outDir, planPath, planText, phase
 
   const reviewData = {
     schema_version: SCHEMA_VERSION,
-    review_data_kind: "planning-developer-review",
-    generator_version: 2,
     task_slug: taskSlug,
     plan_path: toPosix(path.relative(repoRoot, planPath)),
     plan_signature: planSignature,
@@ -268,7 +266,7 @@ function buildReviewData({ repoRoot, taskSlug, outDir, planPath, planText, phase
 function buildPhase({ ref, index, phaseText, flowRow, topologyContract = [], evidenceArtifacts = [] }) {
   const id = `P${index + 1}`;
   const detailTitle = phaseText ? firstHeading(phaseText) : "";
-  const title = stripPhasePrefix(detailTitle || ref.title || flowRow["Phase"] || `단계 ${index + 1}`);
+  const title = stripPhasePrefix(detailTitle || ref.title || flowRow["Phase"] || `Phase ${index + 1}`);
   const goalRows = parseKeyValueTable(sectionAtAnyLevel(phaseText, "목표와 완료 신호"));
   const workflowRows = parseFirstTable(sectionAtAnyLevel(phaseText, "작업 흐름")).rows;
   const boundaryRows = parseFirstTable(sectionAtAnyLevel(phaseText, "변경 경계")).rows;
@@ -469,12 +467,11 @@ function discoverPhaseRefs(planText, planPath) {
   const rows = executionRows.length ? executionRows : topRows;
   const refs = rows
     .map((row, index) => {
-      const phaseLabel = row["Phase"] || row["단계"] || "";
-      const rawPath = row["상세 문서"] || phaseLabel || "";
+      const rawPath = row["상세 문서"] || row["Phase"] || "";
       const ownerAgent = row["Agent"] || row["owner_agent"] || "";
       const filePath = resolveMarkdownRef(rawPath, planDir);
       return {
-        title: phaseLabel || row["목적"] || `단계 ${index + 1}`,
+        title: row["Phase"] || row["목적"] || `Phase ${index + 1}`,
         ownerAgent,
         filePath
       };
