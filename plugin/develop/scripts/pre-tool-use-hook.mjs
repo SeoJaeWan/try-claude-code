@@ -31,12 +31,26 @@ import process from "node:process";
 import { readHookInput } from "./lib/hook-input.mjs";
 import { listActivePlanStates } from "./lib/sessions.mjs";
 import {
+  STATUS,
   TERMINAL_STATUSES,
   deriveStatePathFromPlanPath,
+  saveState,
+  setStopReviewArmed,
+  transitionStatus,
   tryLoadState,
 } from "./lib/runner-state.mjs";
 import { evaluate, VERDICT } from "./lib/pre-tool-use-policy.mjs";
 import { recordHookEvent } from "./lib/telemetry.mjs";
+
+// Statuses from which a fresh plan-agent dispatch can legitimately arm the
+// stop-review gate. Mirrors the `arm-for-dispatch` CLI subcommand so the
+// runner skill prose no longer needs to call the CLI by hand — the hook arms
+// the gate as a side-effect of seeing the dispatch.
+const ARM_FROM_STATUSES = new Set([
+  STATUS.VALIDATING,
+  STATUS.DISPATCHING,
+  STATUS.STOP_REVIEW_BLOCKED,
+]);
 
 function emitBlock(reason) {
   process.stdout.write(JSON.stringify({ decision: "block", reason }));
@@ -63,6 +77,45 @@ function resolveActivePlanState(sessionId) {
     return state;
   }
   return null;
+}
+
+// Auto-arm the stop-review gate when the main session is about to dispatch
+// the plan agent for this plan. Returns the (possibly updated) state. The
+// transitions mirror cmdArmForDispatch in runner-state-cli.mjs:
+//
+//   validating          → dispatching → awaiting_stop_review
+//   dispatching         →                awaiting_stop_review
+//   stop_review_blocked →                awaiting_stop_review
+//
+// Only fires when the dispatch's `subagent_type` matches `state.owner_agent`,
+// so unrelated Agent calls (Explore, etc.) do not advance the gate. Idempotent
+// on the armed flag: re-running on an already-armed state is a no-op.
+function maybeAutoArm(state, toolName, toolInput) {
+  if (toolName !== "Task" && toolName !== "Agent") return state;
+  if (!state || !state.__statePath) return state;
+  if (!ARM_FROM_STATUSES.has(state.status)) return state;
+  const subagent = toolInput?.subagent_type;
+  if (typeof subagent !== "string" || subagent !== state.owner_agent) {
+    return state;
+  }
+  const before = state.status;
+  if (state.status === STATUS.VALIDATING) {
+    transitionStatus(state, STATUS.DISPATCHING);
+  }
+  if (state.status !== STATUS.AWAITING_STOP_REVIEW) {
+    transitionStatus(state, STATUS.AWAITING_STOP_REVIEW);
+  }
+  setStopReviewArmed(state, true);
+  saveState(state.__statePath, state);
+  recordHookEvent({
+    kind: "pre_tool_use_auto_arm",
+    ok: true,
+    sessionId: state.session_id ?? null,
+    planSlug: state.plan_slug,
+    from: before,
+    to: state.status,
+  });
+  return state;
 }
 
 // Build the list of "plan-owned" directories for the warn-vs-block downgrade.
@@ -99,7 +152,8 @@ async function main() {
       return;
     }
 
-    const state = resolveActivePlanState(sessionId);
+    let state = resolveActivePlanState(sessionId);
+    state = maybeAutoArm(state, toolName, toolInput);
     const verdict = evaluate({
       state,
       toolName,

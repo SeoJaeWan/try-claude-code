@@ -74,7 +74,7 @@ calls each, is:
 
 | Subcommand | Called from | Effect |
 |---|---|---|
-| `arm-for-dispatch` | Step 3 (and Step 3 re-entry) | move into `awaiting_stop_review`, set `stop_review.armed = true` |
+| `arm-for-dispatch` | _(deprecated in prose — PreToolUse arms automatically when the plan-agent dispatch is detected; kept for manual recovery / `--rollback-to dispatching` paths)_ | move into `awaiting_stop_review`, set `stop_review.armed = true` |
 | `begin-rework` | Step 4 (rework) | move into `rework_in_progress`, bump round, record feedback path |
 | `rework-done` | Step 4 (after rework dispatches commit) | move back to `awaiting_dev_review` |
 | `mark-qa-pending` | Step 4 (Q&A round) | move into `qa_pending` |
@@ -235,33 +235,28 @@ disk yourself (`[ -d <state.worktree_path> ]` via Bash):
 - **`status: dispatching`, worktree missing** — previous run never finished
   Step 2. Re-run Step 2 from scratch.
 
-After the worktree is in place, **stop here and proceed to Step 3**. Step 3
-owns the transition from `validating` (or `dispatching`, on resume) to
-`awaiting_stop_review` — its first action is the `arm-for-dispatch` CLI,
-which makes the transition and the gate-arming a single atomic operation.
-Do not transition status from this step.
+After the worktree is in place, **stop here and proceed to Step 3**. The
+PreToolUse hook arms the gate atomically when it sees the plan-agent
+dispatch in Step 3, so Step 2 must not transition status itself.
 
 ### Step 3. Dispatch the plan agent (single Agent call)
 
 Dispatch exactly one `Agent(...)` call. The agent reads the plan and
 commits phase by phase inside its single turn. The skill's only job in this
-step is to: (a) arm the stop-review gate, and (b) hand the agent the right
-working directory, plan path, and state path.
+step is to hand the agent the right working directory, plan path, and
+state path — the PreToolUse hook arms the gate as a side-effect of seeing
+the dispatch.
 
-Before calling `Agent`, arm the gate with one CLI invocation:
+> **Auto-arm.** When the PreToolUse hook sees an `Agent` (or `Task`) call
+> whose `subagent_type` matches `state.owner_agent` and the current status
+> is one of `validating` / `dispatching` / `stop_review_blocked`, it walks
+> the state machine to `awaiting_stop_review`, sets
+> `stop_review.armed = true`, and saves the state file before letting the
+> dispatch through. The skill no longer calls `arm-for-dispatch` itself.
+> If the hook blocks the call, the status was not one of the three
+> arm-able values — read the block reason and investigate.
 
-```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" \
-  arm-for-dispatch <state.state_path>
-```
-
-This asserts the current status is one of `validating` / `dispatching` /
-`stop_review_blocked`, walks the state machine to `awaiting_stop_review`,
-sets `stop_review.armed = true`, and atomically saves. A non-zero exit
-means the state was not where the skill expected — read the stderr message
-and investigate before retrying.
-
-Then dispatch. The prompt body is **`references/prompts/plan-dispatch.md` —
+Dispatch. The prompt body is **`references/prompts/plan-dispatch.md` —
 read it and substitute the placeholders before sending**:
 
 ```
@@ -303,12 +298,11 @@ Action:
    blindly redispatching — ask the user to intervene per the planner
    directive's choices. The Stop hook already attached the same note to the
    BLOCK reason.
-3. Otherwise, re-run Step 3's `Agent(...)` call. BLOCK leaves
-   `stop_review.armed = true` and the status at `stop_review_blocked`, so
-   the gate is still primed. You may still call `arm-for-dispatch` — it
-   accepts `stop_review_blocked` as a valid entry status and is idempotent
-   on the armed flag. The new commits will trigger another stop-review on
-   the next turn-end.
+3. Otherwise, re-run Step 3's `Agent(...)` call directly. BLOCK leaves
+   `stop_review.armed = true` and the status at `stop_review_blocked`; the
+   PreToolUse hook accepts `stop_review_blocked` as an arm-able entry, walks
+   it back to `awaiting_stop_review`, and lets the dispatch through. The new
+   commits will trigger another stop-review on the next turn-end.
 
 ### Step 4. Developer review gate (browser)
 

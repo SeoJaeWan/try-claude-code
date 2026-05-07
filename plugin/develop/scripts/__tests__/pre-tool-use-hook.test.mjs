@@ -9,7 +9,9 @@ import { spawnSync } from "node:child_process";
 import {
   STATUS,
   createInitialState,
+  loadState,
   saveState,
+  setStopReviewArmed,
   transitionStatus,
 } from "../lib/runner-state.mjs";
 
@@ -61,13 +63,22 @@ function seedSession({ sessionId, status }) {
   });
 
   // Walk to the requested status.
-  if (status === STATUS.AWAITING_DEV_REVIEW) {
+  if (status === STATUS.VALIDATING) {
+    // already there
+  } else if (status === STATUS.DISPATCHING) {
+    transitionStatus(state, STATUS.DISPATCHING);
+  } else if (status === STATUS.STOP_REVIEW_BLOCKED) {
+    transitionStatus(state, STATUS.DISPATCHING);
+    transitionStatus(state, STATUS.AWAITING_STOP_REVIEW);
+    transitionStatus(state, STATUS.STOP_REVIEW_BLOCKED);
+  } else if (status === STATUS.AWAITING_DEV_REVIEW) {
     transitionStatus(state, STATUS.DISPATCHING);
     transitionStatus(state, STATUS.AWAITING_STOP_REVIEW);
     transitionStatus(state, STATUS.AWAITING_DEV_REVIEW);
   } else if (status === STATUS.AWAITING_STOP_REVIEW) {
     transitionStatus(state, STATUS.DISPATCHING);
     transitionStatus(state, STATUS.AWAITING_STOP_REVIEW);
+    setStopReviewArmed(state, true);
   } else if (status === STATUS.APPROVED) {
     transitionStatus(state, STATUS.DISPATCHING);
     transitionStatus(state, STATUS.AWAITING_STOP_REVIEW);
@@ -250,6 +261,71 @@ describe("PreToolUse hook — wiring", () => {
     });
     assert.equal(r.status, 0);
     assert.equal(r.stdout.trim(), "");
+  });
+
+  it("auto-arms gate on plan-agent dispatch from validating", () => {
+    const sessionId = `sess-${++counter}`;
+    const { statePath } = seedSession({ sessionId, status: STATUS.VALIDATING });
+    const r = runHook({
+      sessionId,
+      toolName: "Task",
+      toolInput: { subagent_type: "general-developer", prompt: "..." },
+    });
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout.trim(), "", "auto-armed dispatch should be allowed silently");
+    const after = loadState(statePath);
+    assert.equal(after.status, STATUS.AWAITING_STOP_REVIEW);
+    assert.equal(after.stop_review.armed, true);
+  });
+
+  it("auto-arms gate on plan-agent dispatch from stop_review_blocked", () => {
+    const sessionId = `sess-${++counter}`;
+    const { statePath } = seedSession({
+      sessionId,
+      status: STATUS.STOP_REVIEW_BLOCKED,
+    });
+    const r = runHook({
+      sessionId,
+      toolName: "Task",
+      toolInput: { subagent_type: "general-developer", prompt: "..." },
+    });
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout.trim(), "");
+    const after = loadState(statePath);
+    assert.equal(after.status, STATUS.AWAITING_STOP_REVIEW);
+    assert.equal(after.stop_review.armed, true);
+  });
+
+  it("does not auto-arm when subagent_type is unrelated", () => {
+    const sessionId = `sess-${++counter}`;
+    const { statePath } = seedSession({ sessionId, status: STATUS.VALIDATING });
+    const r = runHook({
+      sessionId,
+      toolName: "Task",
+      toolInput: { subagent_type: "Explore", prompt: "..." },
+    });
+    const out = JSON.parse(r.stdout);
+    assert.equal(out.decision, "block", "unrelated dispatch must still block");
+    const after = loadState(statePath);
+    assert.equal(after.status, STATUS.VALIDATING, "status untouched");
+  });
+
+  it("auto-arm is idempotent when already armed", () => {
+    const sessionId = `sess-${++counter}`;
+    const { statePath } = seedSession({
+      sessionId,
+      status: STATUS.AWAITING_STOP_REVIEW,
+    });
+    const r = runHook({
+      sessionId,
+      toolName: "Task",
+      toolInput: { subagent_type: "general-developer", prompt: "..." },
+    });
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout.trim(), "");
+    const after = loadState(statePath);
+    assert.equal(after.status, STATUS.AWAITING_STOP_REVIEW);
+    assert.equal(after.stop_review.armed, true);
   });
 
   it("fails open on a malformed payload", () => {
