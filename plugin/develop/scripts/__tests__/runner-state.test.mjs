@@ -9,7 +9,9 @@ import {
   STATUS,
   TERMINAL_STATUSES,
   assertExpectedStatus,
+  bumpConsecutiveDowngrades,
   bumpDevReviewRound,
+  clearConsecutiveDowngrades,
   clearPlanBlockStreak,
   createInitialState,
   deriveStatePathFromPlanPath,
@@ -510,5 +512,57 @@ describe("fingerprintBlockReason", () => {
     const a = fingerprintBlockReason("BLOCK: x");
     const b = fingerprintBlockReason("BLOCK: y");
     assert.notEqual(a, b);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// consecutive_downgrades (Phase 4)
+// ---------------------------------------------------------------------------
+
+describe("bumpConsecutiveDowngrades / clearConsecutiveDowngrades", () => {
+  function freshState() {
+    return createInitialState({
+      planSlug: "cd",
+      planPath: "/p/cd.plan.md",
+      ownerAgent: "a",
+      baseBranch: "main",
+      taskBranch: "feat/cd",
+      worktreePath: "/p/worktrees/feat-cd",
+    });
+  }
+
+  it("treats a missing field as 0 and writes the field on first bump", () => {
+    const s = freshState();
+    delete s.stop_review.consecutive_downgrades;
+    const n = bumpConsecutiveDowngrades(s);
+    assert.equal(n, 1);
+    assert.equal(s.stop_review.consecutive_downgrades, 1);
+  });
+
+  it("increments on each call", () => {
+    const s = freshState();
+    bumpConsecutiveDowngrades(s);
+    bumpConsecutiveDowngrades(s);
+    bumpConsecutiveDowngrades(s);
+    assert.equal(s.stop_review.consecutive_downgrades, 3);
+  });
+
+  it("clear resets to 0", () => {
+    const s = freshState();
+    bumpConsecutiveDowngrades(s);
+    bumpConsecutiveDowngrades(s);
+    clearConsecutiveDowngrades(s);
+    assert.equal(s.stop_review.consecutive_downgrades, 0);
+  });
+
+  it("legacy state files without the field validate and load fine", () => {
+    // A state file written before this helper existed has no
+    // consecutive_downgrades. validateState must not require it.
+    const s = freshState();
+    delete s.stop_review.consecutive_downgrades;
+    assert.doesNotThrow(() => validateState(s));
+    // And clear is a no-op on the missing field, leaving 0.
+    clearConsecutiveDowngrades(s);
+    assert.equal(s.stop_review.consecutive_downgrades, 0);
   });
 });

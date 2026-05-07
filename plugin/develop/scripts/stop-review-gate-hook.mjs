@@ -51,22 +51,20 @@ import { readHookInput } from "./lib/hook-input.mjs";
 import { STOP_REVIEW_OUTCOME } from "./lib/stop-review-outcome.mjs";
 import {
   STATUS,
-  clearPlanBlockStreak,
   loadState,
-  recordPlanBlock,
-  saveState,
-  setLastReviewedCommit,
-  setStopReviewArmed,
-  transitionStatus,
   tryLoadState,
 } from "./lib/runner-state.mjs";
+import { applyVerdictToPlanState } from "./lib/stop-review-verdict.mjs";
 
 // 15 minutes. hooks.json sets the external Stop-hook timeout to 960s so this
 // internal withTimeout always fires first — the 60-second margin prevents
 // Claude Code from killing the process mid-applyVerdictToPlanState and
 // leaving the plan-state armed with no systemMessage explaining why.
 const STOP_REVIEW_TIMEOUT_MS = 15 * 60 * 1000;
-const SAME_BLOCK_ESCALATION_THRESHOLD = 3;
+// CONFIDENCE_THRESHOLD lives here because it shapes how Codex output is
+// parsed (BLOCK vs ALLOW_DOWNGRADED classification). The downgrade-streak
+// warning threshold and the BLOCK-streak escalation threshold both moved to
+// lib/stop-review-verdict.mjs along with applyVerdictToPlanState.
 const CONFIDENCE_THRESHOLD = 7;
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -455,22 +453,6 @@ function persistReviewArtifacts(outcome, review, reviewItem, workspaceRoot) {
   }
 }
 
-// Build the "[plan-runner: replay <state-path>]" directive that the runner
-// skill consumes on the next turn. The skill reads the state file at that
-// path and re-dispatches the plan agent against the current BLOCK reason.
-function buildPlannerBlockDirective(reviewItem) {
-  const planTag = `replay ${reviewItem.statePath}`;
-  return [
-    "",
-    "---",
-    `[plan-runner: ${planTag}] 아래 순서로 검증 후 행동:`,
-    "1. 현재 plan 범위 밖 이슈 또는 테스트파일 관련 이슈 → 폐기",
-    "2. 남은 이슈가 실제로 코드에 존재하는지 직접 확인 → 사실과 다르면 폐기",
-    `3. 유효 이슈가 남으면 → 위 state 파일을 읽어 owner_agent와 worktree_path를 확인하고 같은 plan 에이전트를 재디스패치, 커밋 후 턴 종료`,
-    "4. 모두 폐기되면 → 재디스패치 없이 그냥 턴 종료 (다음 stop-gate에서 ALLOW)",
-  ].join("\n");
-}
-
 function emitReviewLog({ outcome, branch, headSha, reason, runningTaskNote }) {
   if (outcome === STOP_REVIEW_OUTCOME.SKIPPED) {
     if (runningTaskNote) process.stderr.write(`${runningTaskNote}\n`);
@@ -494,74 +476,6 @@ function emitReviewLog({ outcome, branch, headSha, reason, runningTaskNote }) {
     lines.push("", runningTaskNote);
   }
   process.stderr.write(lines.join("\n") + "\n");
-}
-
-// Apply the verdict to the plan-state and return any extra text (escalation
-// notes, planner directive) that needs to ride along with the BLOCK reason.
-function applyVerdictToPlanState(reviewItem, outcome, review) {
-  const { state, statePath } = reviewItem;
-  let plannerDirective = "";
-  let escalationNote = "";
-
-  // TIMEOUT is a non-event from the plan's perspective: Codex didn't return
-  // a verdict, so we must not advance status, mark a commit as reviewed, or
-  // record a block. Leaving the gate armed and last_reviewed_commit unchanged
-  // means the next Stop hook firing reviews the same diff again — exactly the
-  // retry the user is told to expect in the systemMessage. No saveState here
-  // because we did not mutate.
-  if (outcome === STOP_REVIEW_OUTCOME.TIMEOUT) {
-    return { plannerDirective, escalationNote };
-  }
-
-  if (
-    outcome === STOP_REVIEW_OUTCOME.ALLOW ||
-    outcome === STOP_REVIEW_OUTCOME.ALLOW_DOWNGRADED ||
-    outcome === STOP_REVIEW_OUTCOME.SKIPPED
-  ) {
-    setStopReviewArmed(state, false);
-    // last_result is a user-visible log label, not the outcome enum — keep
-    // the historical "ALLOW" / "skipped" casing the plan-state JSON has
-    // always recorded.
-    setLastReviewedCommit(
-      state,
-      reviewItem.headSha,
-      outcome === STOP_REVIEW_OUTCOME.SKIPPED ? "skipped" : "ALLOW",
-    );
-    clearPlanBlockStreak(state);
-    // Move forward only from the canonical post-stop-review states. Other
-    // statuses keep their position so we do not accidentally rewind a plan
-    // that already advanced (e.g. mid-rework).
-    if (
-      state.status === STATUS.AWAITING_STOP_REVIEW ||
-      state.status === STATUS.STOP_REVIEW_BLOCKED
-    ) {
-      transitionStatus(state, STATUS.AWAITING_DEV_REVIEW);
-    }
-  } else if (outcome === STOP_REVIEW_OUTCOME.BLOCK) {
-    // BLOCK leaves the gate armed so the next plan-agent dispatch's commits
-    // get reviewed again. The runner skill is responsible for that dispatch
-    // — we just record the block_history entry and emit the directive.
-    setLastReviewedCommit(state, reviewItem.headSha, "BLOCK");
-    const { count } = recordPlanBlock(state, review.reason);
-    if (state.status === STATUS.AWAITING_STOP_REVIEW) {
-      transitionStatus(state, STATUS.STOP_REVIEW_BLOCKED);
-    }
-    plannerDirective = buildPlannerBlockDirective(reviewItem);
-    if (count >= SAME_BLOCK_ESCALATION_THRESHOLD) {
-      escalationNote = [
-        "",
-        "---",
-        `[escalation] 같은 이슈로 ${count}회 연속 BLOCK되었습니다. 자동 재디스패치만으로는 해결되지 않을 가능성이 큽니다.`,
-        "다음 중 하나를 선택하세요:",
-        "  1) 사용자(사람)가 직접 원인을 진단 — 코드/테스트/plan을 재검토",
-        "  2) 해당 phase의 기대 동작(plan 또는 phase 파일)을 수정",
-        "  3) 현재 worktree를 폐기하고 처음부터 다시 시작",
-      ].join("\n");
-    }
-  }
-
-  saveState(statePath, state);
-  return { plannerDirective, escalationNote };
 }
 
 // ---------------------------------------------------------------------------
@@ -673,13 +587,19 @@ async function main() {
   let blockedReason = null;
   let blockedExtras = "";
   const timedOutItems = [];
+  // Collected across all reviewItems so the final ALLOW systemMessage can
+  // tack on a single warning paragraph if any plan crossed the threshold
+  // this turn. (In practice there is almost always exactly one armed plan,
+  // so this stays a single string.)
+  const downgradeWarnings = [];
 
   for (const item of reviewItems) {
     const review = await runStopReview(workspaceRoot, sessionId, item);
     const outcome = classifyOutcome(review);
 
     persistReviewArtifacts(outcome, review, item, workspaceRoot);
-    const { plannerDirective, escalationNote } = applyVerdictToPlanState(item, outcome, review);
+    const { plannerDirective, escalationNote, downgradeWarning } =
+      applyVerdictToPlanState(item, outcome, review);
 
     emitReviewLog({
       outcome,
@@ -695,6 +615,9 @@ async function main() {
     }
     if (outcome === STOP_REVIEW_OUTCOME.TIMEOUT) {
       timedOutItems.push({ item, reason: review.reason });
+    }
+    if (downgradeWarning) {
+      downgradeWarnings.push(downgradeWarning);
     }
   }
 
@@ -734,10 +657,10 @@ async function main() {
   const last = reviewItems[reviewItems.length - 1];
   const shortSha = last.headSha ? String(last.headSha).slice(0, 7) : "?";
   const tag = "[stop-gate] ALLOW";
-  const systemMessage = runningTaskNote
-    ? `${tag} — ${last.branch ?? "?"}@${shortSha}\n\n${runningTaskNote}`
-    : `${tag} — ${last.branch ?? "?"}@${shortSha}`;
-  emitDecision({ systemMessage });
+  const parts = [`${tag} — ${last.branch ?? "?"}@${shortSha}`];
+  if (runningTaskNote) parts.push("", runningTaskNote);
+  if (downgradeWarnings.length > 0) parts.push(downgradeWarnings.join("\n"));
+  emitDecision({ systemMessage: parts.join("\n") });
 }
 
 main();
