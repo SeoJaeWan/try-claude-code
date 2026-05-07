@@ -38,33 +38,46 @@ it always names the right directory.
 
 ## How this skill is enforced (and how it is not)
 
-The runner ships **no executable code of its own** — this SKILL.md is the
-runner. Every step below is prose Claude reads and acts on each turn. The
-hooks (`UserPromptSubmit`, `Stop`) and the `runner-state.mjs` library do
-provide hard guarantees, but only inside their boundaries:
+This SKILL.md is prose Claude reads each turn — the runner has no
+"executable controller". Hard guarantees come from two places:
 
-- `validateState`, `transitionStatus`, and the atomic `saveState` enforce
-  the plan-state schema and the ALLOWED_TRANSITIONS table. Bypassing them
-  with raw `Edit` / `Write` on the JSON breaks those guarantees silently.
-- The Stop hook decides ALLOW / BLOCK / TIMEOUT and writes the verdict back
-  through the same library. It cannot know whether *this skill* obeyed the
-  prose between turns.
+- `runner-state.mjs` enforces the plan-state schema and the
+  ALLOWED_TRANSITIONS table on every save. Bypassing it with raw
+  `Edit` / `Write` on the JSON breaks the guarantees silently.
+- The Stop hook decides ALLOW / BLOCK / TIMEOUT and writes the verdict
+  back through the same library. It cannot know whether *this skill*
+  obeyed the prose between turns.
 
-Everything else — "do not redispatch after BLOCK x3", "transition to
-`awaiting_dev_review` after QA round", "use `transitionStatus` rather than
-poking `state.status`" — is an honor system enforced only by you reading
-this file. If you skip a step the next hook firing will load whatever
-state you left and run with it. Two practical defenses you should always
-take:
+To keep the gap small, every status transition in this skill goes through
+**one CLI**:
 
-1. **Use `transitionStatus(state, STATUS.X)` and the named helpers
-   (`setStopReviewArmed`, `setLastReviewedCommit`, `bumpDevReviewRound`).**
-   Never assign `state.status` or nested fields by hand, and never edit
-   the JSON with `Edit` / `Write`. Use a small `node -e "..."` Bash that
-   imports `runner-state.mjs`.
-2. **Call `assertExpectedStatus(state, STATUS.X, "<step name>")` at the top
-   of every step.** It throws with a useful message when you arrived from
-   the wrong status — far better than silently doing the wrong thing.
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" \
+  <subcommand> <state-path> [extra-args]
+```
+
+The CLI bundles `assertExpectedStatus` + `transitionStatus` + the auxiliary
+helpers (`setStopReviewArmed`, `bumpDevReviewRound`) + atomic `saveState`
+for each step the skill needs. Do **not** reach into `runner-state.mjs`
+helpers from inline `node -e` snippets, and do **not** edit the JSON with
+`Edit` / `Write`. The subcommand catalogue, with the canonical step that
+calls each, is:
+
+| Subcommand | Called from | Effect |
+|---|---|---|
+| `arm-for-dispatch` | Step 3 (and Step 3 re-entry) | move into `awaiting_stop_review`, set `stop_review.armed = true` |
+| `begin-rework` | Step 4 (rework) | move into `rework_in_progress`, bump round, record feedback path |
+| `rework-done` | Step 4 (after rework dispatches commit) | move back to `awaiting_dev_review` |
+| `mark-qa-pending` | Step 4 (Q&A round) | move into `qa_pending` |
+| `qa-resolved` | Step 4 (after answering) | move back to `awaiting_dev_review` |
+| `mark-approved` | Step 4 (approval) | move into `approved` |
+| `mark-merged` | Step 5 (after `git merge`) | move into `merged` |
+| `reset` | Step 5 (post-merge cleanup) | delete the state file + sibling `feedback*.json` (requires `--confirm`) |
+
+Anything **not** about a status transition (reading the state JSON, running
+git commands, dispatching agents) is still on the prose — that is the
+honor-system surface this skill cannot eliminate. Read the state file
+fresh at the top of each turn.
 
 ## Why a plan-state JSON SSOT
 
@@ -217,10 +230,11 @@ bootstrap, not by scanning git output:
 - **`status: dispatching`, worktree missing** — previous run never finished
   Step 2. Re-run Step 2 from scratch.
 
-After the worktree is in place, advance the state to
-`awaiting_stop_review` via `transitionStatus(state, STATUS.AWAITING_STOP_REVIEW)`
-from `runner-state.mjs` (it stays in `dispatching` until the Agent dispatch in
-Step 3 actually fires; the transition lives there, not here). Then move on.
+After the worktree is in place, **stop here and proceed to Step 3**. Step 3
+owns the transition from `validating` (or `dispatching`, on resume) to
+`awaiting_stop_review` — its first action is the `arm-for-dispatch` CLI,
+which makes the transition and the gate-arming a single atomic operation.
+Do not transition status from this step.
 
 ### Step 3. Dispatch the plan agent (single Agent call)
 
@@ -229,21 +243,18 @@ commits phase by phase inside its single turn. The skill's only job in this
 step is to: (a) arm the stop-review gate, and (b) hand the agent the right
 working directory, plan path, and state path.
 
-Before calling `Agent`, update the state file via the runner-state library:
+Before calling `Agent`, arm the gate with one CLI invocation:
 
-- `transitionStatus(state, STATUS.AWAITING_STOP_REVIEW)` — never assign
-  `state.status` directly. The helper enforces the legal-transitions table
-  (`runner-state-machine.mjs`); a raw assignment bypasses it and a typo
-  silently corrupts the JSON.
-- `setStopReviewArmed(state, true)` — same reason; do not write the nested
-  field by hand.
-- `saveState(statePath, state)` — atomic write, also re-runs `validateState`
-  before persisting.
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" \
+  arm-for-dispatch <state.state_path>
+```
 
-The simplest way to do that from the skill is to run a small Node script
-inline that imports `runner-state.mjs`. Direct ad-hoc edits with
-`Edit`/`Write` on the JSON are discouraged because they bypass the schema
-check **and** the transition guard.
+This asserts the current status is one of `validating` / `dispatching` /
+`stop_review_blocked`, walks the state machine to `awaiting_stop_review`,
+sets `stop_review.armed = true`, and atomically saves. A non-zero exit
+means the state was not where the skill expected — read the stderr message
+and investigate before retrying.
 
 Then dispatch:
 
@@ -318,10 +329,12 @@ Action:
 2. If `last_block_count >= 3`, surface the escalation note instead of blindly
    redispatching — ask the user to intervene per the planner directive's
    choices. The Stop hook already attached the same note to the BLOCK reason.
-3. Otherwise, re-run Step 3's `Agent(...)` call. The same state record is
-   already armed (BLOCK leaves `stop_review.armed = true`), so no extra arm
-   step is required. The new commits will trigger another stop-review on the
-   next turn-end.
+3. Otherwise, re-run Step 3's `Agent(...)` call. BLOCK leaves
+   `stop_review.armed = true` and the status at `stop_review_blocked`, so
+   the gate is still primed. You may still call `arm-for-dispatch` — it
+   accepts `stop_review_blocked` as a valid entry status and is idempotent
+   on the armed flag. The new commits will trigger another stop-review on
+   the next turn-end.
 
 ### Step 4. Developer review gate (browser)
 
@@ -334,14 +347,15 @@ everything else (slug, plan path, worktree, branches, iteration) from it:
 dev-review(state_path: <state.state_path>)
 ```
 
-Before invoking for a **fresh round**, bump `state.dev_review.current_round`
-via `runner-state.bumpDevReviewRound(state)` and save. The dev-review skill
-and helper script use that value directly as `review_iteration` — they do
-not increment it themselves.
+**Round bookkeeping** — the dev-review server reads `current_round` directly
+as `review_iteration`, so the runner is responsible for keeping it accurate:
 
-Re-entering for the **same round** (e.g. after answering `qa_required`
-questions, or simply because the user replied `리뷰 완료`) does NOT bump
-the round; just call the skill again with the same `state_path`.
+| Trigger | Action |
+|---|---|
+| First time entering Step 4 (after Stop-review ALLOW) | round 1. The state arrives at `awaiting_dev_review` with `current_round = 0`; `begin-rework` is the only call that bumps it (see below). For the first round there is no rework yet, so no bump — just invoke `dev-review`. |
+| User replies `리뷰 완료`, result = `approved` | no round change. Move to Step 5 via `mark-approved`. |
+| User replies `리뷰 완료`, result = `qa_required` | no round change. Use `mark-qa-pending` to record the QA pause; after answering, `qa-resolved` flips back. Re-invoke `dev-review` with the same round. |
+| User replies `리뷰 완료`, result = `rework` | round bumps. `begin-rework` does the bump, the status transition, and records the feedback path in one call. After every rework agent commits, `rework-done` flips back to `awaiting_dev_review` for the next review pass. |
 
 The dev-review skill prints a server URL and ends its turn so the user can
 review in the browser and reply `리뷰 완료`.
@@ -350,12 +364,12 @@ When the user replies `리뷰 완료`, re-enter the dev-review skill; it returns
 a terminal summary based on `feedback.json`:
 
 - `result = "approved"` →
-    `transitionStatus(state, STATUS.APPROVED)`. Go to Step 5.
+    `node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" mark-approved <state.state_path>`.
+    Go to Step 5.
 - `result = "rework"` →
-    `transitionStatus(state, STATUS.REWORK_IN_PROGRESS)` and write the
-    feedback path into `state.dev_review.last_feedback_path` (the round
-    bump itself goes through `bumpDevReviewRound(state)` — see below).
-    Then for each item in
+    `node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" begin-rework <state.state_path> <feedback.json absolute path>`.
+    This bumps `dev_review.current_round`, records the feedback path, and
+    transitions to `rework_in_progress` atomically. Then for each item in
     `rework_items[]`, dispatch `Agent(subagent_type: item.dispatch_agent,
     ...)` with this prompt shape:
 
@@ -399,16 +413,26 @@ a terminal summary based on `feedback.json`:
     rework items may be dispatched sequentially (safe default) or in
     parallel when they target different commits whose files do not overlap.
     The rework dispatch's description is whatever the runtime produces; it
-    is not a `Plan: ...` dispatch and does not arm the stop-review gate.
-    After all rework agents commit, advance the state with
-    `transitionStatus(state, STATUS.AWAITING_DEV_REVIEW)` and re-invoke
-    `dev-review` with `review_iteration += 1`.
+    is not a `Plan: ...` dispatch.
+
+    Rework intentionally **does not** call `arm-for-dispatch`. Stop-review
+    is bypassed for rework commits because the reviewer sees them directly
+    in the next dev-review round; routing them through stop-review would
+    decouple round counts from review results and create BLOCK ↔ rework
+    cycles that the UI cannot represent. After all rework agents commit:
+
+    ```bash
+    node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" \
+      rework-done <state.state_path>
+    ```
+
+    Then re-invoke `dev-review` with the bumped round.
 
 - `result = "qa_required"` →
-    `transitionStatus(state, STATUS.QA_PENDING)`. Answer the questions in
-    chat, then re-invoke `dev-review` with the same `review_iteration` and
-    ask the user to re-review. After the re-invocation,
-    `transitionStatus(state, STATUS.AWAITING_DEV_REVIEW)`.
+    `node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" mark-qa-pending <state.state_path>`.
+    Answer the questions in chat, then run
+    `node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" qa-resolved <state.state_path>`
+    and re-invoke `dev-review` with the same round.
 
 Do not advance past this gate on anything except `result = "approved"`. Do
 not remove the worktree, do not merge, do not ask about merge until approval.
@@ -431,16 +455,21 @@ After cleanup, output as plain text (do NOT use AskUserQuestion):
 - Summary of all commits: `git log --oneline <base>..<task_branch>`
 - Changed files: `git diff --stat <base>..<task_branch>`
 - The three options:
-  - "base 브랜치(<base>)에 병합" → `git merge <task_branch> --no-ff -m "merge: <task_branch> into <base>"` then `git branch -d <task_branch>`. `transitionStatus(state, STATUS.MERGED)`.
-  - "PR 생성" → leave the task branch in place for PR creation. State stays at `approved`.
-  - "나중에 처리" → leave the task branch, do nothing. State stays at `approved`.
+  - **"base 브랜치(<base>)에 병합"** —
+    1. `git merge <task_branch> --no-ff -m "merge: <task_branch> into <base>"`
+    2. `git branch -d <task_branch>`
+    3. `node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" mark-merged <state.state_path>`
+    4. (optional) `node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" reset <state.state_path> --confirm` — removes the state file and any sibling `feedback*.json` so a future `/runner` on the same plan path is not rejected as `merged`. Skip if the user wants to keep the audit trail.
+  - **"PR 생성"** — leave the task branch in place and invoke the `/pr` skill so it can `git push` the branch and open the PR. State stays at `approved`. Pass the task branch and base branch from the state file.
+  - **"나중에 처리"** — leave the task branch, do nothing. State stays at `approved`.
 
 Do not merge, checkout, or delete the task branch without explicit user
 approval. HEAD must remain on `state.base_branch` at all times.
 
-After the user merges, you may also remove the active-plan pointer for this
-state from the session via the runner-state / sessions helpers — the next
-time `/runner` is invoked on this plan it will be rejected as `merged`.
+After the user merges, the Stop hook removes the active-plan pointer for
+this state from the session automatically — the next time `/runner` is
+invoked on this plan it is rejected as `merged` until the state file is
+deleted (e.g. via `reset --confirm`).
 
 ### Step 6. Verify completion
 
@@ -525,8 +554,10 @@ git rev-parse --abbrev-ref HEAD
    reviewer selected in the UI. The reviewer's choice is authoritative.
 10. Never split one plan across multiple plan-agent dispatches. One plan =
     one Agent call. Rework dispatches are separate and narrower.
-11. Never edit the plan-state JSON ad hoc with `Edit`/`Write`. Use the
-    runner-state library helpers so the schema check and atomic write run.
+11. Never edit the plan-state JSON ad hoc with `Edit`/`Write`, and never
+    write inline `node -e` snippets that import `runner-state.mjs` directly.
+    All status transitions go through `scripts/runner-state-cli.mjs` so the
+    assertion, transition, auxiliary updates, and atomic save run together.
 
 </Instructions>
 </Skill_Guide>
