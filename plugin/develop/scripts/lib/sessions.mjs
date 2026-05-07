@@ -67,31 +67,53 @@ export function createSession(sessionId, cwd) {
 // new fields are surfaced to callers. The next saveSession overwrites the
 // file in the new shape, so legacy keys decay naturally without a migration
 // step.
+function parseSessionShape(parsed, sessionId) {
+  return {
+    sessionId: parsed.sessionId ?? sessionId,
+    createdAt: parsed.createdAt ?? nowIso(),
+    cwd: parsed.cwd ?? "",
+    activePlanStates: Array.isArray(parsed.activePlanStates)
+      ? parsed.activePlanStates.filter((p) => typeof p === "string" && p.length > 0)
+      : [],
+    stopReviewThreadId: parsed.stopReviewThreadId ?? null,
+  };
+}
+
 export function loadSession(sessionId) {
   const file = resolveSessionFile(sessionId);
   if (!fs.existsSync(file)) {
     return null;
   }
   try {
-    const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
-    return {
-      sessionId: parsed.sessionId ?? sessionId,
-      createdAt: parsed.createdAt ?? nowIso(),
-      cwd: parsed.cwd ?? "",
-      activePlanStates: Array.isArray(parsed.activePlanStates)
-        ? parsed.activePlanStates.filter((p) => typeof p === "string" && p.length > 0)
-        : [],
-      stopReviewThreadId: parsed.stopReviewThreadId ?? null,
-    };
+    return parseSessionShape(JSON.parse(fs.readFileSync(file, "utf8")), sessionId);
   } catch (err) {
     // A corrupt session file is rare now that saveSession writes atomically,
     // but if it happens (manual edit, disk error) we surface it instead of
-    // silently dropping the session — silent loss would manifest as the Stop
-    // hook quietly skipping stop-review, which is the worst possible mode.
+    // silently dropping the session.
     process.stderr.write(
       `[sessions] failed to parse ${file}: ${err.message}\n`,
     );
     return null;
+  }
+}
+
+// Variant of loadSession that distinguishes "missing" (no file yet — normal
+// before /runner has registered anything) from "corrupt" (file exists but
+// failed to parse — operational failure that must NOT be treated as ALLOW).
+//
+// Stop hook uses this to decide between silent skip and explicit gate close;
+// other callers can keep using loadSession because they are best-effort
+// mutators where either failure mode reduces to "no session, give up".
+export function loadSessionStrict(sessionId) {
+  const file = resolveSessionFile(sessionId);
+  if (!fs.existsSync(file)) {
+    return { status: "missing", file, session: null, error: null };
+  }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
+    return { status: "ok", file, session: parseSessionShape(parsed, sessionId), error: null };
+  } catch (err) {
+    return { status: "corrupt", file, session: null, error: err };
   }
 }
 

@@ -35,7 +35,7 @@ import { loadPromptTemplate, interpolateTemplate } from "./lib/prompts.mjs";
 import {
   getStopReviewThreadId,
   listActivePlanStates,
-  loadSession,
+  loadSessionStrict,
   removeActivePlanState,
   setStopReviewThreadId,
 } from "./lib/sessions.mjs";
@@ -551,11 +551,32 @@ async function main() {
   const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
   const sessionId = input.session_id || process.env[SESSION_ID_ENV] || null;
 
-  // Make sure the session JSON exists (stop-gate might fire before any other
-  // hook has had a chance to touch it).
-  const session = sessionId ? loadSession(sessionId) : null;
-  if (sessionId && !session) {
-    return;
+  // Resolve the session JSON. Three outcomes:
+  //   - missing: no /runner has registered a plan yet — skip silently. Letting
+  //     the turn end as ALLOW is the right call because there is nothing armed.
+  //   - corrupt: the file exists but failed to parse. Treat this as a loud gate
+  //     failure: emit an explicit BLOCK so an operational failure (disk error,
+  //     manual edit gone wrong) cannot silently bypass stop-review. ALLOW-by-
+  //     omission is the worst possible mode here.
+  //   - ok: continue.
+  if (sessionId) {
+    const probe = loadSessionStrict(sessionId);
+    if (probe.status === "missing") {
+      return;
+    }
+    if (probe.status === "corrupt") {
+      emitDecision({
+        decision: "block",
+        reason:
+          `[stop-gate] Session file ${probe.file} failed to parse ` +
+          `(${probe.error?.message ?? "unknown error"}). ` +
+          "Stop-review가 실행될 수 없으므로 게이트를 닫습니다. " +
+          "세션 파일을 점검하거나 삭제 후 다시 시도해주세요.",
+      });
+      return;
+    }
+    // probe.session is parsed but we only need the sessionId from here on —
+    // listActivePlanStates / loadArmedPlanStates re-read the file as needed.
   }
 
   const armed = loadArmedPlanStates(sessionId);
