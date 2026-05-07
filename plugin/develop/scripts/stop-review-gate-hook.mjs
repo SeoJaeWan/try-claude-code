@@ -387,7 +387,15 @@ async function runStopReview(workspaceRoot, sessionId, reviewItem) {
   } catch (error) {
     recordHookEvent({ kind: "stop_review_codex", step: "total", ok: false, elapsedMs: Date.now() - totalStart, path: finalPath, errorCode: error?.code ?? null, errorMessage: error?.message ?? String(error), sessionId });
     if (error.code === "ETIMEDOUT") {
-      return { ok: false, reason: "The stop-time Codex review task timed out after 15 minutes. Run /codex:review --wait manually or bypass the gate." };
+      // Surface the timeout as a separate flag so classifyOutcome can route
+      // it to STOP_REVIEW_OUTCOME.TIMEOUT — a slow Codex call is not a code
+      // finding, so it must not collapse into BLOCK and freeze the plan in
+      // STOP_REVIEW_BLOCKED with an unrelated reason.
+      return {
+        ok: false,
+        timedOut: true,
+        reason: "The stop-time Codex review task timed out after 15 minutes.",
+      };
     }
     const errText = error instanceof Error ? error.message : String(error);
     const isMissingCodex =
@@ -412,6 +420,8 @@ async function runStopReview(workspaceRoot, sessionId, reviewItem) {
 
 function classifyOutcome(review) {
   if (review.skipped) return STOP_REVIEW_OUTCOME.SKIPPED;
+  // Order matters: timedOut implies !ok, so check it first.
+  if (review.timedOut) return STOP_REVIEW_OUTCOME.TIMEOUT;
   if (!review.ok) return STOP_REVIEW_OUTCOME.BLOCK;
   if (review.suppressedNote) return STOP_REVIEW_OUTCOME.ALLOW_DOWNGRADED;
   return STOP_REVIEW_OUTCOME.ALLOW;
@@ -472,10 +482,14 @@ function emitReviewLog({ outcome, branch, headSha, reason, runningTaskNote }) {
     [STOP_REVIEW_OUTCOME.ALLOW]: "[stop-gate] ALLOW",
     [STOP_REVIEW_OUTCOME.ALLOW_DOWNGRADED]: "[stop-gate] ALLOW (저신뢰 BLOCK 다운그레이드 — .codex/reviews/ 참고)",
     [STOP_REVIEW_OUTCOME.BLOCK]: "[stop-gate] BLOCK",
+    [STOP_REVIEW_OUTCOME.TIMEOUT]: "[stop-gate] TIMEOUT (다음 턴에 자동 재시도)",
   }[outcome] ?? "[stop-gate]";
   const shortSha = headSha ? String(headSha).slice(0, 7) : "?";
   const lines = [`${tag} — ${branch ?? "?"}@${shortSha}`];
-  if (outcome === STOP_REVIEW_OUTCOME.BLOCK && reason) {
+  if (
+    (outcome === STOP_REVIEW_OUTCOME.BLOCK || outcome === STOP_REVIEW_OUTCOME.TIMEOUT) &&
+    reason
+  ) {
     lines.push("", reason);
   }
   if (runningTaskNote) {
@@ -490,6 +504,16 @@ function applyVerdictToPlanState(reviewItem, outcome, review) {
   const { state, statePath } = reviewItem;
   let plannerDirective = "";
   let escalationNote = "";
+
+  // TIMEOUT is a non-event from the plan's perspective: Codex didn't return
+  // a verdict, so we must not advance status, mark a commit as reviewed, or
+  // record a block. Leaving the gate armed and last_reviewed_commit unchanged
+  // means the next Stop hook firing reviews the same diff again — exactly the
+  // retry the user is told to expect in the systemMessage. No saveState here
+  // because we did not mutate.
+  if (outcome === STOP_REVIEW_OUTCOME.TIMEOUT) {
+    return { plannerDirective, escalationNote };
+  }
 
   if (
     outcome === STOP_REVIEW_OUTCOME.ALLOW ||
@@ -611,6 +635,7 @@ async function main() {
   let blockedReviewItem = null;
   let blockedReason = null;
   let blockedExtras = "";
+  const timedOutItems = [];
 
   for (const item of reviewItems) {
     const review = await runStopReview(workspaceRoot, sessionId, item);
@@ -631,16 +656,40 @@ async function main() {
       blockedReviewItem = item;
       blockedReason = (review.reason || "") + plannerDirective + escalationNote;
     }
+    if (outcome === STOP_REVIEW_OUTCOME.TIMEOUT) {
+      timedOutItems.push({ item, reason: review.reason });
+    }
   }
 
   // Emit terminal signal: BLOCK halts the next turn with a reason; ALLOW /
-  // downgraded ALLOW emits a systemMessage so the user sees the verdict
-  // (Claude Code swallows stderr from a Stop hook that exits 0 silently).
+  // downgraded ALLOW / TIMEOUT emit a systemMessage so the user sees the
+  // verdict (Claude Code swallows stderr from a Stop hook that exits 0
+  // silently).
   if (blockedReviewItem) {
     emitDecision({
       decision: "block",
       reason: runningTaskNote ? `${runningTaskNote} ${blockedReason}` : blockedReason,
     });
+    return;
+  }
+
+  // TIMEOUT-only outcome: do not pretend ALLOW. The plan is still armed,
+  // last_reviewed_commit is unchanged, so the next Stop hook firing reviews
+  // the same diff. Tell the user that explicitly so they can choose to wait
+  // or cancel via /codex:cancel.
+  if (timedOutItems.length > 0) {
+    const lines = timedOutItems.map(({ item, reason }) => {
+      const shortSha = item.headSha ? String(item.headSha).slice(0, 7) : "?";
+      const head = `[stop-gate] TIMEOUT — ${item.branch ?? "?"}@${shortSha}`;
+      return reason ? `${head}\n${reason}` : head;
+    });
+    lines.push(
+      "",
+      "게이트는 armed 상태로 유지되며 다음 턴 종료 시 같은 diff를 다시 리뷰합니다.",
+      "재시도를 원치 않으면 `/codex:cancel`로 진행 중인 Codex 작업을 취소하세요.",
+    );
+    if (runningTaskNote) lines.push("", runningTaskNote);
+    emitDecision({ systemMessage: lines.join("\n") });
     return;
   }
 
