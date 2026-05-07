@@ -2,13 +2,15 @@
 
 // dev-review server — Claude-side, plugin-internal, multi-review (schema v2).
 //
-// Hosts every task review under /review/{slug} simultaneously. Granular
+// Hosts every task review under /review/{key}/ simultaneously, where `key`
+// is the review directory's relative path under `plans/` (so nested plans
+// land at /review/foo/bar/ verbatim). Granular
 // endpoints replace the v1 whole-blob feedback POST: comments are CRUD'd
 // individually, commit_status is toggled, and submit is a separate call.
 
 import { createServer } from "node:http";
-import { readFile, rename, stat, writeFile, readdir, mkdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { readFile, rename, stat, writeFile, mkdir } from "node:fs/promises";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { createReadStream } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,11 +28,13 @@ const argv = process.argv.slice(2);
 if (argv.includes("--help") || argv.includes("-h")) {
   console.log("Usage: node plugin/develop/skills/dev-review/scripts/server.mjs [--plans-root <path>] [--port 9797]");
   console.log("");
-  console.log("  --plans-root  defaults to ${cwd}/plans. The server resolves each task review");
-  console.log("                under {plans-root}/{task-slug}/dev-review/.");
+  console.log("  --plans-root  defaults to ${cwd}/plans. The server walks this tree on each");
+  console.log("                request and discovers every directory containing");
+  console.log("                dev-review/review-data.json — nested plans included.");
   console.log("  --port        default 9797.");
   console.log("");
-  console.log("Open a task review at http://localhost:{port}/review/{task-slug}.");
+  console.log("Open http://localhost:{port}/ to pick a discovered review. Direct links use");
+  console.log("the review's path under plans-root, e.g. /review/parent/child/.");
   console.log("Multiple Claude sessions may share one server: the second session's");
   console.log("health-check will find this process and reuse it.");
   process.exit(0);
@@ -52,29 +56,89 @@ const portArg = takeFlag("--port");
 const requestedPort = portArg !== null ? Number(portArg) : 9797;
 const port = Number.isFinite(requestedPort) ? requestedPort : 9797;
 
-const SLUG_RE = /^[A-Za-z0-9_-]+$/;
 const SHA_RE = /^[a-f0-9]{40}$/;
 const COMMENT_ID_RE = /^cm_\d+$/;
 const VALID_SIDES = new Set(["new", "old"]);
+const REVIEW_DISCOVERY_MAX_DEPTH = 6;
 
-const isSafeSlug = (s) => typeof s === "string" && SLUG_RE.test(s);
-
-function dataRootForSlug(slug) {
-  if (!isSafeSlug(slug)) return null;
-  const root = path.resolve(plansRoot, slug, "dev-review");
-  const prefix = `${path.resolve(plansRoot)}${path.sep}`;
-  if (!root.startsWith(prefix)) return null;
-  return root;
+// Reviews are discovered by walking the plans tree on each request that needs
+// the lookup. The walk is cheap (filesystem stat + directory enumeration over
+// a tree that is normally < 100 nodes deep), and skipping the cache means a
+// review created mid-session shows up immediately.
+//
+// Key form: POSIX-relative path from `plansRoot` to the directory containing
+// `dev-review/review-data.json`. For `plans/A/B/dev-review/review-data.json`
+// the key is `A/B`. URLs use that key verbatim — `/review/A/B/...` — so the
+// path with slashes works as a natural URL segment chain.
+//
+// Validation is whitelist-based: a request is valid iff its key is in the
+// discovered set. There is no SLUG_RE / traversal guard / startsWith check
+// because the walker only emits paths inside `plansRoot` to begin with.
+function discoverReviews() {
+  const root = path.resolve(plansRoot);
+  if (!existsSync(root)) return new Map();
+  const out = new Map();
+  walkForReviews(root, root, 0, out);
+  return out;
 }
 
+function walkForReviews(root, dir, depth, out) {
+  if (depth > REVIEW_DISCOVERY_MAX_DEPTH) return;
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  // If this dir itself contains `dev-review/review-data.json`, register it.
+  const reviewDataPath = path.join(dir, "dev-review", "review-data.json");
+  if (existsSync(reviewDataPath)) {
+    const rel = path.relative(root, dir).split(path.sep).join("/");
+    if (rel) {
+      let mtimeMs = 0;
+      try { mtimeMs = statSync(reviewDataPath).mtimeMs; } catch { /* ignore */ }
+      out.set(rel, {
+        key: rel,
+        dataRoot: path.dirname(reviewDataPath),
+        reviewDataPath,
+        mtimeMs,
+      });
+    }
+    // Don't recurse below a registered review — its `dev-review/` subtree is
+    // not a review-bearing parent for nested plans.
+    return;
+  }
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (entry.name === "dev-review") continue; // never the parent of another review
+    if (entry.name.startsWith(".")) continue;
+    walkForReviews(root, path.join(dir, entry.name), depth + 1, out);
+  }
+}
+
+function resolveReview(key) {
+  if (typeof key !== "string" || key.length === 0) return null;
+  const reviews = discoverReviews();
+  return reviews.get(key) ?? null;
+}
+
+// Pull `/review/{key}/{tail}` apart by matching the longest discovered key
+// against the prefix. Returns null when no discovered key fits — including
+// when the URL points at a stale (since-deleted) review.
 function parseReviewPath(pathname) {
   if (!pathname.startsWith("/review/")) return null;
   const rest = pathname.slice("/review/".length);
-  const slashIdx = rest.indexOf("/");
-  const slug = slashIdx === -1 ? rest : rest.slice(0, slashIdx);
-  const tail = slashIdx === -1 ? "" : rest.slice(slashIdx + 1);
-  if (!isSafeSlug(slug)) return null;
-  return { slug, tail };
+  if (!rest) return null;
+  const reviews = discoverReviews();
+  const segs = rest.split("/");
+  for (let n = segs.length; n >= 1; n--) {
+    const candidate = segs.slice(0, n).join("/");
+    if (reviews.has(candidate)) {
+      const tail = segs.slice(n).join("/");
+      return { key: candidate, tail, review: reviews.get(candidate) };
+    }
+  }
+  return null;
 }
 
 function sendJson(res, status, value) {
@@ -153,26 +217,36 @@ async function sendFile(res, filePath) {
   }
 }
 
-async function listAvailableReviews() {
+function listDiscoveredReviews() {
+  const reviews = Array.from(discoverReviews().values());
+  // Newest first — the review most likely to be the active one bubbles up.
+  reviews.sort((a, b) => b.mtimeMs - a.mtimeMs);
+  return reviews;
+}
+
+// Pick a few cheap human-readable bits out of review-data.json for the
+// picker UI. Stays synchronous because the file is tens of KB and the index
+// page renders in a single response cycle.
+function summarizeReview(review) {
+  let model = null;
   try {
-    const entries = await readdir(plansRoot, { withFileTypes: true });
-    const slugs = [];
-    for (const e of entries) {
-      if (!e.isDirectory()) continue;
-      if (!isSafeSlug(e.name)) continue;
-      const dataRoot = path.resolve(plansRoot, e.name, "dev-review");
-      if (existsSync(path.join(dataRoot, "review-data.json"))) {
-        slugs.push(e.name);
-      }
-    }
-    return slugs.sort();
+    model = JSON.parse(readFileSync(review.reviewDataPath, "utf8"));
   } catch {
-    return [];
+    /* malformed or mid-write — picker still shows the row, just without metadata */
   }
+  return {
+    key: review.key,
+    plan_slug: model?.plan_slug ?? null,
+    review_iteration: model?.review_iteration ?? null,
+    task_head_sha: typeof model?.task_head_sha === "string"
+      ? model.task_head_sha.slice(0, 7)
+      : null,
+    mtimeMs: review.mtimeMs,
+  };
 }
 
 async function handleServerHealth(res) {
-  const reviews = await listAvailableReviews();
+  const reviews = listDiscoveredReviews().map(summarizeReview);
   return sendJson(res, 200, {
     ok: true,
     kind: "dev-review",
@@ -184,12 +258,75 @@ async function handleServerHealth(res) {
 }
 
 async function handleIndexListing(res) {
-  const reviews = await listAvailableReviews();
-  if (reviews.length === 0) {
-    return sendText(res, 200, "No dev-review packages found under " + plansRoot + "\nOpen /review/{task-slug} once a review is generated.");
-  }
-  const lines = reviews.map((s) => `  • http://localhost:${port}/review/${s}`).join("\n");
-  return sendText(res, 200, "dev-review server (multi-review)\n\nAvailable reviews:\n" + lines + "\n");
+  const reviews = listDiscoveredReviews().map(summarizeReview);
+  return sendHtml(res, 200, renderPicker(reviews));
+}
+
+function htmlEscape(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function urlEncodeKey(key) {
+  // Encode each path segment but keep the slashes — they are the URL's own
+  // path separators, not data inside a single segment.
+  return key.split("/").map(encodeURIComponent).join("/");
+}
+
+function renderPicker(reviews) {
+  const rows = reviews.length === 0
+    ? `<tr><td colspan="4" class="empty">No reviews under <code>${htmlEscape(plansRoot)}</code> yet — generate one with the dev-review helper and refresh.</td></tr>`
+    : reviews.map((r) => {
+        const href = `/review/${urlEncodeKey(r.key)}/`;
+        const round = r.review_iteration != null ? `#${r.review_iteration}` : "—";
+        const head = r.task_head_sha ?? "—";
+        const when = r.mtimeMs ? new Date(r.mtimeMs).toISOString().replace("T", " ").slice(0, 19) + " UTC" : "—";
+        return `<tr>
+          <td><a href="${htmlEscape(href)}"><code>${htmlEscape(r.key)}</code></a>${r.plan_slug && r.plan_slug !== r.key ? `<div class="sub">plan_slug: <code>${htmlEscape(r.plan_slug)}</code></div>` : ""}</td>
+          <td>${htmlEscape(round)}</td>
+          <td><code>${htmlEscape(head)}</code></td>
+          <td class="when">${htmlEscape(when)}</td>
+        </tr>`;
+      }).join("\n");
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>dev-review · pick a review</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font: 14px/1.5 -apple-system, "Segoe UI", system-ui, sans-serif; max-width: 960px; margin: 32px auto; padding: 0 16px; }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    .root { color: #666; font-size: 13px; margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid rgba(127,127,127,0.2); vertical-align: top; }
+    th { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #888; }
+    a { color: inherit; }
+    code { font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; font-size: 12.5px; }
+    .sub { color: #888; font-size: 12px; margin-top: 2px; }
+    .when { color: #666; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .empty { color: #888; padding: 32px 12px; text-align: center; }
+  </style>
+</head>
+<body>
+  <h1>dev-review</h1>
+  <div class="root">Plans root: <code>${htmlEscape(plansRoot)}</code></div>
+  <table>
+    <thead>
+      <tr><th>Review</th><th>Round</th><th>HEAD</th><th>Updated</th></tr>
+    </thead>
+    <tbody>
+${rows}
+    </tbody>
+  </table>
+</body>
+</html>
+`;
 }
 
 let cachedIndexHtml = null;
@@ -200,25 +337,21 @@ async function readIndexHtml() {
   return cachedIndexHtml;
 }
 
-async function handleReviewPage(req, res, slug) {
-  const dataRoot = dataRootForSlug(slug);
-  if (!dataRoot) return sendText(res, 400, "Invalid task slug");
-  if (!existsSync(dataRoot)) return sendText(res, 404, `No review at ${dataRoot}`);
+async function handleReviewPage(req, res, review) {
   let html;
   try {
     html = await readIndexHtml();
   } catch {
     return sendText(res, 500, "index.html not readable");
   }
-  const baseTag = `<base href="/review/${slug}/">`;
+  // The browser resolves relative URLs (assets/diffs/..., api/..., review-data.json)
+  // against this base, so the trailing slash matters.
+  const baseTag = `<base href="/review/${urlEncodeKey(review.key)}/">`;
   const injected = html.replace(/<head>/i, `<head>\n  ${baseTag}`);
   return sendHtml(res, 200, injected);
 }
 
-function resolveStaticForReview(slug, tail) {
-  const dataRoot = dataRootForSlug(slug);
-  if (!dataRoot) return null;
-
+function resolveStaticForReview(review, tail) {
   if (tail === "" || tail === "index.html") return null;
 
   if (tail.startsWith("vendor/")) {
@@ -229,11 +362,11 @@ function resolveStaticForReview(slug, tail) {
 
   const dataPathStaticFiles = ["review-data.json", "feedback.json", "review-history.json"];
   if (dataPathStaticFiles.includes(tail)) {
-    return path.join(dataRoot, tail);
+    return path.join(review.dataRoot, tail);
   }
   if (tail.startsWith("assets/diffs/")) {
-    const resolved = path.resolve(dataRoot, tail);
-    if (!resolved.startsWith(`${dataRoot}${path.sep}`)) return null;
+    const resolved = path.resolve(review.dataRoot, tail);
+    if (!resolved.startsWith(`${review.dataRoot}${path.sep}`)) return null;
     return resolved;
   }
   return null;
@@ -313,9 +446,8 @@ function isAvailableAgent(model, name) {
 
 // ---------- API ----------
 
-async function handleReviewApi(req, res, slug, endpoint) {
-  const dataRoot = dataRootForSlug(slug);
-  if (!dataRoot) return sendJson(res, 400, { error: "invalid slug" });
+async function handleReviewApi(req, res, review, endpoint) {
+  const { key: slug, dataRoot } = review;
 
   if (endpoint === "health") {
     const model = await loadModel(dataRoot);
@@ -551,18 +683,22 @@ const server = createServer(async (req, res) => {
       return handleIndexListing(res);
     }
 
-    const review = parseReviewPath(pathname);
-    if (!review) return sendText(res, 404, "Not found");
-
-    if (review.tail === "" || review.tail === "/") {
-      return handleReviewPage(req, res, review.slug);
+    const parsed = parseReviewPath(pathname);
+    if (!parsed) {
+      // No discovered review matches this URL — guide the user back to the
+      // picker instead of a bare 404. Helps when an old link goes stale.
+      return sendText(res, 404, `No review matches "${pathname}". See http://localhost:${port}/ for available reviews.`);
     }
 
-    if (review.tail.startsWith("api/")) {
-      return handleReviewApi(req, res, review.slug, review.tail.slice("api/".length));
+    if (parsed.tail === "" || parsed.tail === "/") {
+      return handleReviewPage(req, res, parsed.review);
     }
 
-    const filePath = resolveStaticForReview(review.slug, review.tail);
+    if (parsed.tail.startsWith("api/")) {
+      return handleReviewApi(req, res, parsed.review, parsed.tail.slice("api/".length));
+    }
+
+    const filePath = resolveStaticForReview(parsed.review, parsed.tail);
     if (!filePath) return sendText(res, 404, "Not found");
     return sendFile(res, filePath);
   } catch (error) {
@@ -576,7 +712,7 @@ server.listen(port, () => {
   console.log(`dev-review server (multi-review, schema v2): http://localhost:${actualPort}`);
   console.log(`Plans root: ${plansRoot}`);
   console.log(`HTML root:  ${htmlRoot}`);
-  console.log("Open a review at /review/{task-slug}");
+  console.log(`Open http://localhost:${actualPort}/ to pick a review.`);
   console.log("When a review is submitted, tell Claude: 리뷰 완료");
 });
 

@@ -1,6 +1,6 @@
 # Review Data Schema (v2)
 
-Three JSON artifacts live under `plans/{task_slug}/dev-review/`. They share a `schema_version` of `2` and are written with 2-space indentation.
+Three JSON artifacts live under `plans/{key}/dev-review/`, where `key` is the plan directory's relative path under `plans/` (so `foo/bar` for a nested plan at `plans/foo/bar.plan.md`). They share a `schema_version` of `2` and are written with 2-space indentation.
 
 | File | Writer | Reader | Lifecycle |
 |---|---|---|---|

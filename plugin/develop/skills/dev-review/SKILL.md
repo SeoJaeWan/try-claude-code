@@ -56,7 +56,10 @@ bump the round; the skill picks up the existing value and re-reads
 ## Artifacts the skill owns
 
 ```text
-plans/{task_slug}/dev-review/        ← data-root (per-task)
+plans/{key}/dev-review/              ← data-root; `key` is the plan dir's
+                                       relative path under `plans/`. For a
+                                       nested plan `plans/foo/bar.plan.md`
+                                       it is `foo/bar`.
 ├── review-data.json                # written by helper; deterministic; regenerated each round
 ├── feedback.json                   # written by server on each reviewer action
 ├── review-history.json             # append-only record of prior rounds
@@ -199,7 +202,7 @@ it before calling.
 
 The skill boots the review server itself — do NOT ask the user to run any `node` command. Use `Bash` with `run_in_background: true` so the process keeps serving across turn boundaries.
 
-The plugin's dev-review server is **multi-review**: one process hosts every task review under `/review/{task-slug}`. Parallel Claude sessions reuse the same port (the second session's health-check finds the first one).
+The plugin's dev-review server is **multi-review** and **discovery-based**: on every request it walks `plans/` and serves any directory containing `dev-review/review-data.json`. The URL key is the directory's POSIX-relative path under `plans/` — so a nested plan at `plans/foo/bar.plan.md` is served at `/review/foo/bar/`. Parallel Claude sessions reuse the same port (the second session's health-check finds the first one).
 
 1. Health-check first to avoid duplicate launches:
 
@@ -222,11 +225,15 @@ The plugin's dev-review server is **multi-review**: one process hosts every task
 
    After dispatch, re-run the health-check briefly to verify the port is bound. The server's `/api/health` returns `kind: "dev-review"`. If the second health-check still fails, surface the background output to diagnose (port collision, missing artifacts) instead of giving the user a broken URL.
 
-3. Tell the user (Korean):
+3. Tell the user (Korean) — the URL key is the plan's relative directory under
+   `plans/` with `/` separators. For a flat plan it is just the slug; for a
+   nested plan like `plans/foo/bar.plan.md` it is `foo/bar`. When in doubt,
+   point them at the picker page (`http://localhost:9797/`):
 
    ```
    리뷰 서버가 백그라운드에서 실행 중입니다.
-   브라우저에서 http://localhost:9797/review/{task_slug} 를 열어 리뷰를 진행해주세요.
+   브라우저에서 http://localhost:9797/review/{review_key}/ 를 열어 리뷰를 진행해주세요.
+   (어떤 키인지 모르면 http://localhost:9797/ 에서 골라주세요.)
    - 사이드바에서 커밋을 선택하고, diff에서 라인을 드래그해 코멘트를 남길 수 있습니다.
    - needs-change / question / out-of-scope 중 타입을 선택해주세요.
    - 모든 needs-change에 dispatch agent를 지정한 뒤, 사이드바 하단의 Submit을 누르고 채팅에 `리뷰 완료`라고 답장해주세요.

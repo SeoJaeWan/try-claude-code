@@ -11,7 +11,9 @@ This is the implementation-review counterpart to `.codex/skills/orchestrator/ref
 The runner's dev-review uses a **two-root layout**: per-task data under the plan folder; HTML + vendor bundle live exclusively in the plugin and are served straight from there.
 
 ```text
-plans/{task_slug}/dev-review/        ← data-root (per-task)
+plans/{key}/dev-review/              ← data-root (per-task; `key` is the
+                                       plan dir's POSIX-relative path under
+                                       `plans/`, can contain `/`)
 ├── review-data.json                 # regenerated every round, deterministic
 ├── feedback.json                    # written by server on each reviewer action
 ├── review-history.json              # append-only record of prior rounds
@@ -35,31 +37,35 @@ Serve with the **plugin-internal** dev-review server (NOT the orchestrator's). T
 node "${CLAUDE_PLUGIN_ROOT}/develop/skills/dev-review/scripts/server.mjs"
 ```
 
-The server is **multi-review**: one process hosts every task under `plans/*/dev-review/` at `/review/{task-slug}`. Parallel Claude sessions share the same port.
+The server is **multi-review** and **discovery-based**: it walks `plans/` on every request and serves any directory containing `dev-review/review-data.json`, including nested plans (`plans/foo/bar/dev-review/...` is reachable at `/review/foo/bar/`). The URL key is the directory's POSIX-relative path under `plans/`, so URL paths can contain `/`. Parallel Claude sessions share the same port.
 
 ## URL routing
 
+`{key}` below is the review's relative path under `plans/` and may contain
+slashes (e.g. `foo`, `foo/bar`). The router resolves it by longest-prefix
+match against the discovered set; nothing else parses or validates it.
+
 ```text
 GET    /api/health                                  # server diagnostic; kind:"dev-review"
-GET    /                                            # listing page
-GET    /review/{slug}                               # SPA shell, with <base href="/review/{slug}/">
-GET    /review/{slug}/vendor/{...}                  # plugin html-root assets
-GET    /review/{slug}/review-data.json              # data-root JSON (proxied)
-GET    /review/{slug}/feedback.json                 # data-root JSON (proxied)
-GET    /review/{slug}/review-history.json           # data-root JSON (proxied)
-GET    /review/{slug}/assets/diffs/{short_sha}.diff # data-root raw diff
-GET    /review/{slug}/api/health                    # per-review diagnostic
-GET    /review/{slug}/api/review-data               # JSON proxy
-GET    /review/{slug}/api/feedback                  # JSON proxy
+GET    /                                            # picker page — lists every discovered review
+GET    /review/{key}/                               # SPA shell, with <base href="/review/{key}/">
+GET    /review/{key}/vendor/{...}                   # plugin html-root assets
+GET    /review/{key}/review-data.json               # data-root JSON (proxied)
+GET    /review/{key}/feedback.json                  # data-root JSON (proxied)
+GET    /review/{key}/review-history.json            # data-root JSON (proxied)
+GET    /review/{key}/assets/diffs/{short_sha}.diff  # data-root raw diff
+GET    /review/{key}/api/health                     # per-review diagnostic
+GET    /review/{key}/api/review-data                # JSON proxy
+GET    /review/{key}/api/feedback                   # JSON proxy
 
-POST   /review/{slug}/api/comment                   # create line comment
-PATCH  /review/{slug}/api/comment/{id}              # edit comment body / type / dispatch_agent
-DELETE /review/{slug}/api/comment/{id}              # delete comment
-POST   /review/{slug}/api/commit-status             # toggle viewed / out_of_scope
-POST   /review/{slug}/api/submit                    # finalize: review_status = "submitted"
+POST   /review/{key}/api/comment                   # create line comment
+PATCH  /review/{key}/api/comment/{id}              # edit comment body / type / dispatch_agent
+DELETE /review/{key}/api/comment/{id}              # delete comment
+POST   /review/{key}/api/commit-status             # toggle viewed / out_of_scope
+POST   /review/{key}/api/submit                    # finalize: review_status = "submitted"
 ```
 
-The HTML uses purely relative URLs; the server injects `<base href="/review/{slug}/">` per request so every fetch resolves correctly.
+The HTML uses purely relative URLs; the server injects `<base href="/review/{key}/">` per request so every fetch resolves correctly.
 
 The reviewer finishes by saying `리뷰 완료` in chat. The UI does not signal completion to the shell directly — the skill polls `feedback.json.review_status` only on re-entry, never mid-turn.
 
