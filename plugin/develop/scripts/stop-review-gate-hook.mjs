@@ -61,6 +61,10 @@ import {
   tryLoadState,
 } from "./lib/runner-state.mjs";
 
+// 15 minutes. hooks.json sets the external Stop-hook timeout to 960s so this
+// internal withTimeout always fires first — the 60-second margin prevents
+// Claude Code from killing the process mid-applyVerdictToPlanState and
+// leaving the plan-state armed with no systemMessage explaining why.
 const STOP_REVIEW_TIMEOUT_MS = 15 * 60 * 1000;
 const SAME_BLOCK_ESCALATION_THRESHOLD = 3;
 const CONFIDENCE_THRESHOLD = 7;
@@ -602,11 +606,52 @@ async function main() {
 
   // Build review items only for plans whose worktree actually has new commits.
   const reviewItems = [];
+  const skipped = []; // armed plans that produced no diff this turn
   for (const item of armed) {
     const r = collectDiffForPlan(item);
-    if (r) reviewItems.push(r);
+    if (r) {
+      reviewItems.push(r);
+    } else {
+      skipped.push(item);
+    }
   }
+
+  // Empty reviewItems normally means "armed but nothing new to review" — fine
+  // for AWAITING_STOP_REVIEW (the user just sent a non-runner turn). But if a
+  // plan is STOP_REVIEW_BLOCKED and the same HEAD is back, the redispatch
+  // produced no commits. Surface the hang so the user sees why nothing is
+  // moving instead of staring at a quiet turn.
   if (reviewItems.length === 0) {
+    const stuck = skipped.filter(
+      ({ state }) => state.status === STATUS.STOP_REVIEW_BLOCKED,
+    );
+    if (stuck.length > 0) {
+      const lines = stuck.map(({ state }) => {
+        const slug = state.plan_slug ?? "?";
+        const branch = state.task_branch ?? "?";
+        const head = state.stop_review?.last_reviewed_commit
+          ? String(state.stop_review.last_reviewed_commit).slice(0, 7)
+          : "?";
+        const history = Array.isArray(state.stop_review?.block_history)
+          ? state.stop_review.block_history
+          : [];
+        const lastReal = [...history]
+          .reverse()
+          .find((h) => h && h.fingerprint !== "__allow__");
+        const excerpt = lastReal?.reason_excerpt ?? "(사유 기록 없음)";
+        return [
+          `[stop-gate] BLOCK 상태 유지 — ${slug}@${branch}@${head}`,
+          `  마지막 BLOCK 사유: ${excerpt}`,
+        ].join("\n");
+      });
+      lines.push(
+        "",
+        "재디스패치가 새 commit을 만들지 못한 상태입니다. plan 에이전트를",
+        "다시 부르거나, 같은 사유가 3회 누적되었다면 사용자가 직접 개입해야",
+        "합니다. state는 STOP_REVIEW_BLOCKED 그대로 유지됩니다.",
+      );
+      emitDecision({ systemMessage: lines.join("\n") });
+    }
     return;
   }
 

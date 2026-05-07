@@ -32,7 +32,7 @@ import path from "node:path";
 import process from "node:process";
 import { spawnSync } from "node:child_process";
 
-import { absoluteNormalizePath, comparePaths, toPosixPath } from "./lib/fs.mjs";
+import { absoluteNormalizePath, toPosixPath } from "./lib/fs.mjs";
 import { addActivePlanState, listActivePlanStates } from "./lib/sessions.mjs";
 import { extractRunnerHeaders, readPlanFrontmatter } from "./lib/plan-frontmatter.mjs";
 import { recordHookEvent } from "./lib/telemetry.mjs";
@@ -270,20 +270,33 @@ async function main() {
       state = existing;
       resume = true;
     } else {
-      // Fresh start. Verify no other live plan is using the same worktree
-      // path before we commit to a state file.
+      // Fresh start. Two collision checks against other plans in this
+      // session — both reject before we touch disk:
+      //   (1) Single-active-plan rule. A session that already drives a
+      //       non-terminal plan should not pick up a second one — the runner
+      //       prose says "one /runner per terminal" but nothing else enforces
+      //       it, and overlapping armed plans cause the Stop hook to surface
+      //       only the first BLOCK while the rest are written silently.
+      //   (2) Worktree path collision. Even with rule (1) satisfied (e.g.
+      //       state pointers pruned but we are paranoid), refuse if the new
+      //       plan would share a worktree directory with an existing one.
       const wtPath = deriveWorktreePathFromBranch(cwd, frontmatter.branch);
       if (sessionId) {
         const otherPtrs = listActivePlanStates(sessionId).filter((p) => p !== statePath);
         for (const ptr of otherPtrs) {
           const ptrAbs = path.isAbsolute(ptr) ? ptr : path.resolve(cwd, ptr);
           const otherState = tryLoadState(ptrAbs);
-          if (otherState && comparePaths(otherState.worktree_path, wtPath)) {
-            throw new Error(
-              `다른 진행 중인 plan(${otherState.plan_slug})이 같은 worktree 경로(${wtPath})를 사용 중입니다.\n` +
-              `branch가 충돌합니다. 다른 branch로 plan frontmatter를 조정하거나 기존 plan을 정리한 뒤 다시 시도하세요.`,
-            );
-          }
+          if (!otherState) continue;
+          if (TERMINAL_STATUSES.has(otherState.status)) continue;
+          // (1) Any other non-terminal plan is enough to reject.
+          throw new Error(
+            `이 세션에 이미 진행 중인 plan(${otherState.plan_slug}, status="${otherState.status}")이 있습니다.\n` +
+            `state: ${ptrAbs}\n` +
+            `먼저 그 plan을 마무리하거나, 새 터미널에서 /runner를 실행하세요.\n` +
+            `한 세션 = 한 plan 규칙은 stop-review BLOCK이 다른 plan에 묻히는 것을 막기 위한 것입니다.`,
+          );
+          // (2) (unreachable while (1) rejects, kept for future relaxation:
+          //     if comparePaths(otherState.worktree_path, wtPath) ...)
         }
       }
       const baseBranch = detectBaseBranch(cwd);
