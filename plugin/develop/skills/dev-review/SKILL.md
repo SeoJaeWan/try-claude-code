@@ -28,7 +28,7 @@ Runner re-invokes after each rework round: when a `needs-change` comment trigger
 
 The runner passes a single absolute path:
 
-- `state_path` — `plans/{plan_stem}/.runner-state.json`
+- `state_path` — `plans/{plan_key}/.runner-state.json` (`plan_key` is the plan dir's relative path under `plans/`; `auth/login` for a nested plan, just the filename stem for a flat one)
 
 Everything the skill used to receive as separate flags (`task_slug`,
 `plan_path`, `worktree_path`, `base_branch`, `task_branch`, `review_iteration`)

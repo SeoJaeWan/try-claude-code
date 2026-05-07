@@ -9,7 +9,7 @@
       "expectations": [
         "Reads SKILL.md via Read tool when needed",
         "Recognizes the [runner-skill bootstrap] context block emitted by UserPromptSubmit",
-        "Reads state JSON at plans/{stem}/.runner-state.json before acting",
+        "Reads state JSON at plans/{plan_key}/.runner-state.json before acting",
         "Routes to Step 2 when status=validating",
         "Creates exactly one git worktree at state.worktree_path",
         "Dispatches exactly one Agent call with subagent_type = state.owner_agent",

@@ -1,7 +1,10 @@
 // Plan-state SSOT for the runner skill.
 //
 // Every plan that the runner executes owns one JSON file at
-// `plans/{plan_stem}/.runner-state.json`. That file is the single source of
+// `plans/{plan_key}/.runner-state.json` — where `plan_key` is the plan
+// directory's relative path under `plans/`, slashes preserved (so a nested
+// plan at `plans/auth/login.plan.md` has `plan_key=auth/login`). That file
+// is the single source of
 // truth for everything the runner, the UserPromptSubmit hook, and the Stop
 // hook need to know about the plan: which worktree it lives in, what status
 // it is at, whether the stop-review gate is armed, how the dev-review loop is

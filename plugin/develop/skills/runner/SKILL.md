@@ -1,6 +1,6 @@
 ---
 name: runner
-description: Deterministic plan-runner that executes a single self-contained plan in one worktree, dispatches one agent, and gates merge behind stop-review and dev-review. Use when executing a finalized `*.plan.md` file. Each session owns exactly one plan per `/runner` invocation; multiple plans run in independent terminals. HEAD always stays on the base branch and the plan-state JSON at `plans/{stem}/.runner-state.json` is the single source of truth for progress.
+description: Deterministic plan-runner that executes a single self-contained plan in one worktree, dispatches one agent, and gates merge behind stop-review and dev-review. Use when executing a finalized `*.plan.md` file. Each session owns exactly one plan per `/runner` invocation; multiple plans run in independent terminals. HEAD always stays on the base branch and the plan-state JSON at `plans/{plan_key}/.runner-state.json` is the single source of truth for progress.
 model: sonnet
 ---
 
@@ -17,6 +17,24 @@ keep the on-disk plan-state JSON in sync with reality.
 
 <Instructions>
 # plan-runner
+
+## Glossary
+
+Terms that look similar but mean different things. Cross-checking these
+when reading a hook log or commit message saves time.
+
+| Term | Defined as | Example for `plans/auth/login.plan.md` |
+|---|---|---|
+| `plan_path` | Full path to the `.plan.md` file | `plans/auth/login.plan.md` |
+| `plan_key` | The plan's directory relative to `plans/`, slashes preserved. Same vocabulary as the dev-review server's URL key. | `auth/login` |
+| `stem` | Filename basename minus `.plan.md`. Internal to `deriveStatePathFromPlanPath`; surfaces only in lib code. | `login` |
+| `plan_slug` | The `plan_slug:` field from the plan's YAML frontmatter. User-controlled, used in commit messages and dev-review's `task_slug`. **Not** auto-derived from path. | whatever the plan author chose (often `login`, but free) |
+| `task_branch` | Git branch the worktree lives on. From frontmatter `branch:`. | `feat/auth-login` |
+
+For a flat plan (`plans/foo.plan.md`) `plan_key` and `stem` coincide and
+prose that says `plans/{stem}/...` is technically right. For a nested
+plan they diverge — prose throughout this skill uses `plan_key` because
+it always names the right directory.
 
 ## How this skill is enforced (and how it is not)
 
@@ -50,7 +68,7 @@ take:
 
 ## Why a plan-state JSON SSOT
 
-Every plan owns one file at `plans/{plan_stem}/.runner-state.json`. That file
+Every plan owns one file at `plans/{plan_key}/.runner-state.json`. That file
 is the only place the runner records progress, and every hook that the runner
 participates in (UserPromptSubmit, Stop) reads from and writes to it. There is
 no parallel record kept in chat memory, in commit messages, or in regex
@@ -475,7 +493,7 @@ report the saved status and routing will pick the right step.
 
 ```bash
 # Inspect the current plan-state JSON
-cat plans/<stem>/.runner-state.json
+cat plans/<plan_key>/.runner-state.json
 
 # Inspect worktree state
 git worktree list --porcelain

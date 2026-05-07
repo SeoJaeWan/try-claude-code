@@ -5,7 +5,7 @@
 // PostToolUse(Bash) and PostToolUse(Agent) used to live here too. They sniffed
 // `git worktree add/remove` and Agent description regexes to mirror runner
 // state into the session JSON. That responsibility has moved into the
-// runner-state SSOT (`plans/{stem}/.runner-state.json`), driven directly by
+// runner-state SSOT (`plans/{plan_key}/.runner-state.json`), driven directly by
 // the runner skill and the UserPromptSubmit hook, so the regex contract is
 // no longer needed and the matching code has been deleted.
 //

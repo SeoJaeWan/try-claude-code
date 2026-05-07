@@ -12,7 +12,7 @@
 //   2. Verify the named owner_agent exists as `agents/<name>.md` in the
 //      plugin so the dispatch later cannot silently pick a missing agent.
 //   3. Derive the canonical plan-state path
-//      (`plans/<stem>/.runner-state.json`) and either:
+//      (`plans/<plan_key>/.runner-state.json`) and either:
 //        - create a brand-new state file in `validating`, or
 //        - load the existing state and treat the request as a resume.
 //   4. Detect worktree-path collisions with other in-flight plans so the user
