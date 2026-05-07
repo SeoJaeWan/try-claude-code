@@ -35,7 +35,7 @@ import {
 
 // Re-export the state-machine contract so existing callers
 // (`from "./lib/runner-state.mjs"`) keep working unchanged.
-export { SCHEMA_VERSION, STATUS, TERMINAL_STATUSES };
+export { SCHEMA_VERSION, STATUS, STATUS_VALUES, TERMINAL_STATUSES };
 
 function nowIso() {
   return new Date().toISOString();
