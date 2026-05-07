@@ -32,12 +32,11 @@ import path from "node:path";
 import process from "node:process";
 import { spawnSync } from "node:child_process";
 
-import { absoluteNormalizePath, toPosixPath } from "./lib/fs.mjs";
+import { toPosixPath } from "./lib/fs.mjs";
 import { addActivePlanState, listActivePlanStates } from "./lib/sessions.mjs";
 import { extractRunnerHeaders, readPlanFrontmatter } from "./lib/plan-frontmatter.mjs";
 import { recordHookEvent } from "./lib/telemetry.mjs";
 import {
-  STATUS,
   TERMINAL_STATUSES,
   createInitialState,
   deriveStatePathFromPlanPath,
@@ -145,73 +144,25 @@ function detectBaseBranch(cwd) {
   return "main";
 }
 
-// Build the additionalContext payload. The runner skill keys off the
-// "[runner-skill bootstrap]" header line, then reads the structured fields
-// underneath to decide which step to enter. Adding a new field here is safe;
-// renaming an existing one is a coordinated change with the runner skill.
-function buildBootstrapContext({
-  planSlug,
-  planPath,
-  statePath,
-  status,
-  resume,
-  state,
-  worktreeExists,
-}) {
-  const lines = [
+// Build the additionalContext payload. The skill keys off the
+// "[runner-skill bootstrap]" header and then reads the JSON at `state_path`
+// directly — every other field (status, worktree_path, dev_review round,
+// block history) lives in that file and was previously duplicated into prose
+// here. The duplication created a second string contract; the bootstrap is
+// now reduced to two fields:
+//
+//   state_path  — absolute POSIX path to the canonical .runner-state.json
+//   mode        — "fresh" for a brand-new plan, "resume" otherwise
+//
+// Per-status guidance is the runner SKILL.md's responsibility (its routing
+// table reads `status` from the JSON). Anything that needs to grow lives in
+// the JSON, not here.
+function buildBootstrapContext({ statePath, resume }) {
+  return [
     "[runner-skill bootstrap]",
-    `  plan_slug: ${planSlug}`,
-    `  plan_path: ${planPath}`,
     `  state_path: ${statePath}`,
-    `  status: ${status}`,
-    `  resume: ${resume ? "true" : "false"}`,
-  ];
-  if (state?.worktree_path) {
-    lines.push(`  worktree_path: ${state.worktree_path}`);
-    lines.push(`  worktree_exists_on_disk: ${worktreeExists ? "true" : "false"}`);
-  }
-  if (state?.dev_review?.current_round) {
-    lines.push(`  dev_review_round: ${state.dev_review.current_round}`);
-  }
-  if (state?.dev_review?.last_feedback_path) {
-    lines.push(`  last_feedback_path: ${state.dev_review.last_feedback_path}`);
-  }
-  if (state?.stop_review?.block_history?.length) {
-    const last = state.stop_review.block_history[state.stop_review.block_history.length - 1];
-    if (last?.fingerprint && last.fingerprint !== "__allow__") {
-      lines.push(`  last_block_count: ${last.count ?? 1}`);
-      if (last.reason_excerpt) {
-        lines.push(`  last_block_excerpt: ${last.reason_excerpt}`);
-      }
-    }
-  }
-
-  // Step guidance. Each status has one canonical action so the skill does
-  // not need to reason about "what comes next" from scratch.
-  const guidance = {
-    [STATUS.VALIDATING]:
-      "새 plan 진입입니다. SKILL.md의 Step 2(워크트리 준비)부터 시작하세요. " +
-      "state_path의 JSON이 진행 상태의 단일 진실 원천이며, 모든 갱신은 runner-state 라이브러리 함수를 통해야 합니다.",
-    [STATUS.DISPATCHING]:
-      "이전 세션이 워크트리 준비 단계에서 멈췄습니다. state.worktree_path가 실제로 존재하는지 확인하고, 없다면 Step 2를 다시 진행해 worktree를 만든 뒤 Step 3로 이어가세요.",
-    [STATUS.AWAITING_STOP_REVIEW]:
-      "이전 턴이 stop-review 게이트 통과를 기다리는 상태로 끝났습니다. 워크트리에 새 commit이 없다면 빈 prompt로 턴을 종료해 게이트가 발동하도록 하고, 새 BLOCK 사유가 있다면 그에 맞춰 plan 에이전트를 재디스패치하세요.",
-    [STATUS.STOP_REVIEW_BLOCKED]:
-      "직전 stop-review가 BLOCK했습니다. last_block_excerpt와 state.stop_review.block_history를 확인해 사유를 파악한 뒤, plan 에이전트를 재디스패치하여 후속 commit을 만드세요.",
-    [STATUS.AWAITING_DEV_REVIEW]:
-      "stop-review를 통과했고 dev-review 단계로 들어갈 준비가 되었습니다. dev-review skill을 호출해 reviewer 피드백을 수집하세요.",
-    [STATUS.REWORK_IN_PROGRESS]:
-      "이전 dev-review 라운드에서 needs-change 항목이 있었습니다. last_feedback_path의 feedback.json을 읽고 각 rework_item별 Agent 디스패치를 이어 진행하세요.",
-    [STATUS.QA_PENDING]:
-      "이전 dev-review 라운드에서 reviewer가 question을 남겼습니다. 채팅에서 답변한 뒤 dev-review skill을 같은 round로 재진입하세요.",
-    [STATUS.APPROVED]:
-      "dev-review가 approved 상태입니다. 워크트리를 정리하고 사용자에게 병합/PR/나중에 옵션을 제시하세요.",
-  };
-  const note = guidance[status];
-  if (note) {
-    lines.push("", note);
-  }
-  return lines.join("\n");
+    `  mode: ${resume ? "resume" : "fresh"}`,
+  ].join("\n");
 }
 
 async function main() {
@@ -316,19 +267,7 @@ async function main() {
       addActivePlanState(sessionId, statePath);
     }
 
-    const worktreeExists = state.worktree_path
-      ? fs.existsSync(absoluteNormalizePath(state.worktree_path))
-      : false;
-
-    const context = buildBootstrapContext({
-      planSlug: state.plan_slug,
-      planPath,
-      statePath,
-      status: state.status,
-      resume,
-      state,
-      worktreeExists,
-    });
+    const context = buildBootstrapContext({ statePath, resume });
 
     recordHookEvent({
       kind: "runner_bootstrap",

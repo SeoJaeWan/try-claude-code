@@ -222,7 +222,7 @@ describe("UserPromptSubmit single-active-plan rule", () => {
     assert.ok(out.hookSpecificOutput, "resume should pass through");
     assert.match(
       out.hookSpecificOutput.additionalContext,
-      /resume: true/,
+      /mode: resume/,
     );
   });
 });

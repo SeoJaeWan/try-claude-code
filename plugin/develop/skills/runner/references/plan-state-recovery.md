@@ -45,7 +45,15 @@ validating → dispatching → awaiting_stop_review ─┬─→ stop_review_blo
 ```
 
 `merged` is terminal — UserPromptSubmit refuses to resume a merged plan.
-The full edge table lives in `scripts/lib/runner-state-machine.mjs`.
+The full edge table lives in `scripts/lib/runner-state-machine.mjs`. To
+print the current table without opening the source:
+
+```bash
+node plugin/develop/scripts/print-transitions.mjs
+```
+
+That script is the canonical renderer — when this diagram and the source
+disagree, the source wins.
 
 ## Recovery scenarios
 

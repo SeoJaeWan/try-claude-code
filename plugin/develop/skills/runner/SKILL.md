@@ -104,44 +104,40 @@ something about the plan; never guess from chat history alone.
 When the user invokes `/runner <plan-path>` the UserPromptSubmit hook fires
 **before** this skill is engaged. It validates the plan, creates or loads the
 state file, and injects an `additionalContext` block that begins with
-`[runner-skill bootstrap]`. That block is the entry point — start every
-runner turn by locating it and reading these fields:
+`[runner-skill bootstrap]` and carries exactly two fields:
 
 ```
 [runner-skill bootstrap]
-  plan_slug: <slug>
-  plan_path: <abs path to .plan.md>
   state_path: <abs path to .runner-state.json>
-  status: <one of the status enum values>
-  resume: true | false
-  worktree_path: <abs>            (when known)
-  worktree_exists_on_disk: true | false
-  dev_review_round: <int>          (only when > 0)
-  last_feedback_path: <abs>        (only when set)
-  last_block_count: <int>          (only on resume into stop_review_blocked)
-  last_block_excerpt: <one line>   (only on resume into stop_review_blocked)
+  mode: fresh | resume
 ```
+
+That is the entire contract. Everything else — `status`, `plan_slug`,
+`plan_path`, `worktree_path`, `dev_review.current_round`,
+`stop_review.block_history` — lives in the JSON at `state_path`. **Open it
+and read it as your first action every turn**; do not try to remember fields
+from a previous turn.
 
 If the bootstrap block is missing, the user did not enter through `/runner`.
 Tell them so and stop — do not try to drive a plan without state.
 
-After reading the bootstrap, **always read the full state JSON** before
-acting. The hook only surfaces the fields above; everything else (base
-branch, owner agent, block history) lives in the JSON.
+`mode: fresh` means the hook just created the state file (status will be
+`validating`). `mode: resume` means the hook loaded an existing one — pick
+the action up from `state.status` per the routing table below.
 
 ## Status routing
 
-Use `status` from the bootstrap to decide where to enter. Each status maps to
-exactly one action:
+Read `state.status` from the JSON to decide where to enter. Each status maps
+to exactly one action:
 
 | status | action |
 |---|---|
 | `validating` | New plan. Go to **Step 2 — Set up worktree**. |
-| `dispatching` | Worktree was being prepared but the previous run did not finish. Verify whether `worktree_exists_on_disk` is true; if not, redo Step 2. If yes, fall through to Step 3. |
+| `dispatching` | Worktree was being prepared but the previous run did not finish. Check `fs.existsSync(state.worktree_path)` (e.g. `[ -d <wt> ]`); if missing, redo Step 2. If present, fall through to Step 3. |
 | `awaiting_stop_review` | The previous turn ended with the gate armed but the Stop hook never ran (e.g. the user typed something else). End your turn so the gate can fire. |
-| `stop_review_blocked` | The Stop hook reported BLOCK. Treat the BLOCK reason from the previous turn (or `last_block_excerpt`) as input and re-dispatch the plan agent — see **Step 3 (re-entry)**. |
+| `stop_review_blocked` | The Stop hook reported BLOCK. Read `state.stop_review.block_history[last].reason_excerpt` as the BLOCK reason and re-dispatch the plan agent — see **Step 3 (re-entry)**. |
 | `awaiting_dev_review` | Stop-review passed; enter **Step 4 — Dev-review gate**. |
-| `rework_in_progress` | Reviewer left needs-change items. Read `last_feedback_path` and dispatch rework agents — see **Step 4 (rework)**. |
+| `rework_in_progress` | Reviewer left needs-change items. Read `state.dev_review.last_feedback_path` and dispatch rework agents — see **Step 4 (rework)**. |
 | `qa_pending` | Reviewer asked questions. Answer in chat, then re-enter Step 4 with the same round. |
 | `approved` | Dev-review accepted the plan. Go to **Step 5 — Cleanup and ask user**. |
 | `merged` | Terminal. The hook will already have blocked entry, so you should not normally see this. |
@@ -211,13 +207,13 @@ If HEAD is not on `state.base_branch`, do not proceed — the hook captured the
 base when the user invoked `/runner`, and the worktree must branch from that
 exact commit. Ask the user before doing anything destructive.
 
-Stale-worktree handling is now driven by `worktree_exists_on_disk` from the
-bootstrap, not by scanning git output:
+Stale-worktree handling is driven by checking the worktree directory on
+disk yourself (`[ -d <state.worktree_path> ]` via Bash):
 
-- **`worktree_exists_on_disk: false` and `status: validating`** — fresh
-  start. Run `git worktree add -b <task_branch> <worktree_path> <base_branch>`.
-- **`worktree_exists_on_disk: true` and `status: validating`** — directory
-  is there but state is fresh. Two cases:
+- **worktree missing and `status: validating`** — fresh start. Run
+  `git worktree add -b <task_branch> <worktree_path> <base_branch>`.
+- **worktree present and `status: validating`** — directory is there but
+  state is fresh. Two cases:
   1. The directory is empty / unrelated → ask the user; if they confirm,
      remove it and re-create.
   2. There are commits on the task branch already → describe what is there
@@ -225,7 +221,7 @@ bootstrap, not by scanning git output:
      (cap at 20 lines), then ask whether to resume on top of the existing
      work or wipe it and restart. Update the state via the runner-state
      library after the user decides.
-- **`status: dispatching`, worktree exists** — previous run got past Step 2.
+- **`status: dispatching`, worktree present** — previous run got past Step 2.
   Skip the `git worktree add` and go straight to Step 3.
 - **`status: dispatching`, worktree missing** — previous run never finished
   Step 2. Re-run Step 2 from scratch.
@@ -256,57 +252,23 @@ sets `stop_review.armed = true`, and atomically saves. A non-zero exit
 means the state was not where the skill expected — read the stderr message
 and investigate before retrying.
 
-Then dispatch:
+Then dispatch. The prompt body is **`references/prompts/plan-dispatch.md` —
+read it and substitute the placeholders before sending**:
 
 ```
 Agent(
   subagent_type: <state.owner_agent>,
   description: "Plan: <state.plan_slug>",
-  prompt: "
-    ## Working directory
-    You are working in: <state.worktree_path>
-    cd to this directory before starting any work.
-
-    ## Plan + state
-    Plan file: <state.plan_path>
-    Runner state: <state.state_path or the value passed to you>
-    Read the plan as your spec. The state JSON records progress (status,
-    last reviewed commit, dev-review round, block history) and is the only
-    place runner-side metadata lives — do NOT modify it; that is the runner
-    skill's responsibility.
-
-    ## Rules
-    - Work directly in your current directory.
-    - Do NOT create additional worktrees or use EnterWorktree.
-    - Treat phase boundaries inside the plan as commit boundaries: complete
-      each phase, commit, then proceed to the next.
-    - Do NOT commit-amend across phases — every phase produces its own commit.
-    - Only implement what the plan describes. Do NOT pull in adjacent work.
-
-    ## Commit rules (the dev-review UI reads these back verbatim)
-    - Format: `{type}(scope): {description}`. scope is optional; description
-      uses imperative mood and stays within ~72 characters.
-    - Allowed types: feat / fix / refactor / docs / chore / style / test.
-    - Do NOT include phase identity in the commit — no \"phase 2 — ...\",
-      no \"[Phase 2] ...\", no \"2단계: ...\".
-    - Body is **required and written in Korean**, exactly 2 lines:
-        Line 1 = 무엇 (이 커밋이 한 변경의 핵심)
-        Line 2 = 왜 (동기·제약·맥락 — diff만으로 드러나지 않는 정보)
-      Do NOT prefix labels (`작업:` / `이유:`); line position alone
-      communicates the role. Subject stays English.
-      Self-evident changes (typo, formatting, dep bump) may use a single
-      Korean WHAT line as an escape hatch — use sparingly.
-    - Commit each phase with `git add -A && git commit -m '...'` using a
-      HEREDOC or `-m`+`-m` for the body.
-    - Full spec: `plugin/develop/references/commit-convention.md`.
-  ",
+  prompt: <contents of references/prompts/plan-dispatch.md with
+           {{worktree_path}}, {{plan_path}}, {{state_path}} substituted>,
 )
 ```
 
-The `description` form `Plan: <slug>` and the prompt headers are kept for
-human readability and continuity, but the hooks no longer parse them. If you
-need to vary the wording, you may — the runner-state JSON is the only
-contract.
+The `description` form `Plan: <slug>` is kept for human readability and
+continuity, but the hooks no longer parse them. If you need to vary the
+wording, you may — the runner-state JSON is the only contract. The prompt
+body itself, however, must come from the reference file so any contract
+change updates one place.
 
 After the agent returns, output a brief plain-text report (commit list +
 "Stop-review가 실행됩니다.") and end your turn. **Do not call any tool
@@ -324,11 +286,14 @@ state file to consult.
 
 Action:
 
-1. Read the state file (the bootstrap already gives you `last_block_excerpt`
-   and `last_block_count`; the full block_history is in the JSON).
-2. If `last_block_count >= 3`, surface the escalation note instead of blindly
-   redispatching — ask the user to intervene per the planner directive's
-   choices. The Stop hook already attached the same note to the BLOCK reason.
+1. Read the state file. The last entry of
+   `state.stop_review.block_history` carries the BLOCK count and a one-line
+   `reason_excerpt`; the full reason was in the previous turn's
+   `decision: block` payload.
+2. If that last entry's `count >= 3`, surface the escalation note instead of
+   blindly redispatching — ask the user to intervene per the planner
+   directive's choices. The Stop hook already attached the same note to the
+   BLOCK reason.
 3. Otherwise, re-run Step 3's `Agent(...)` call. BLOCK leaves
    `stop_review.armed = true` and the status at `stop_review_blocked`, so
    the gate is still primed. You may still call `arm-for-dispatch` — it
@@ -371,42 +336,11 @@ a terminal summary based on `feedback.json`:
     This bumps `dev_review.current_round`, records the feedback path, and
     transitions to `rework_in_progress` atomically. Then for each item in
     `rework_items[]`, dispatch `Agent(subagent_type: item.dispatch_agent,
-    ...)` with this prompt shape:
-
-    ```
-    ## Working directory
-    You are working in: <state.worktree_path>
-    cd to this directory before starting any work.
-
-    ## Context
-    You are revising prior work based on reviewer feedback. The code already
-    exists in this worktree; build on it, do not redo prior commits.
-
-    ## Target commit
-    - Commit: <item.short_sha> — <item.message_subject>
-    - This is the commit the reviewer flagged. The follow-up commit you
-      create should address every line comment listed below.
-
-    ## Feedback (line-anchored comments on this commit)
-    {for each c in item.comments}
-    - <c.file>:L<c.line_start>-L<c.line_end> (side: <c.side>): "<c.body>"
-    {/for}
-
-    ## Instructions
-    Apply the feedback. Do NOT touch unrelated files. Do NOT rebase or amend
-    existing commits.
-
-    ## Commit rules (the dev-review UI reads these back verbatim)
-    - Format: `{type}(scope): {description}`. Allowed types: feat / fix /
-      refactor / docs / chore / style / test. Imperative mood, ~72
-      characters or less.
-    - Do NOT include phase or rework-round identity in the message.
-    - Body is required and written in Korean, exactly 2 lines:
-        Line 1 = 리뷰 피드백이 요구한 변경
-        Line 2 = 그 변경이 피드백을 어떻게 해소하는지
-      Do NOT prefix labels (`작업:` / `이유:`). Subject stays English.
-    - Full spec: `plugin/develop/references/commit-convention.md`.
-    ```
+    ...)` with the prompt body from
+    **`references/prompts/rework-dispatch.md`** — substitute
+    `{{worktree_path}}`, `{{commit_short_sha}}`, `{{commit_subject}}`, and
+    render `{{comments_block}}` from `item.comments[]` per the format
+    documented in that file.
 
     Rework is **per-commit**: one `rework_items[i]` covers one flagged
     commit and aggregates every `needs-change` line comment on it. Multiple
@@ -497,8 +431,8 @@ either did not fire or ran into an error. Tell the user to enter through
 
 ### Stale worktree from a previous run
 
-Handled in Step 2 via the bootstrap's `worktree_exists_on_disk` flag. The
-user is always asked before existing work is destroyed.
+Handled in Step 2 by checking the worktree path on disk yourself. The user
+is always asked before existing work is destroyed.
 
 ### Plan agent failure
 
