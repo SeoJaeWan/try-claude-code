@@ -226,4 +226,29 @@ describe("UserPromptSubmit single-active-plan rule", () => {
       /mode: resume/,
     );
   });
+
+  // Plan authors may write owner_agent either bare (`general-developer`) or
+  // plugin-namespaced (`try-claude-code:general-developer`). The hook strips
+  // the `<plugin>:` prefix before the `agents/<name>.md` lookup, both because
+  // only the bare form lives on disk and because `:` is illegal in Windows
+  // filenames.
+  it("accepts a plugin-namespaced owner_agent in plan frontmatter", () => {
+    const sessionId = `sess-${++counter}`;
+    makePlanFile(
+      "plan-namespaced",
+      "feat/plan-namespaced",
+      "try-claude-code:general-developer",
+    );
+    const r = runHook({
+      prompt: "/runner plans/plan-namespaced.plan.md",
+      sessionId,
+    });
+    assert.equal(r.status, 0);
+    const out = JSON.parse(r.stdout);
+    assert.ok(
+      out.hookSpecificOutput,
+      "namespaced owner_agent must pass frontmatter validation",
+    );
+    assert.equal(out.hookSpecificOutput.hookEventName, "UserPromptSubmit");
+  });
 });

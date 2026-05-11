@@ -164,6 +164,39 @@ function toolTargetsPlanArea(toolName, toolInput, planAreas) {
   return true;
 }
 
+// Plugin-namespacing-aware equality for agent names.
+//
+// Claude Code routes plugin-shipped subagents through a `<plugin>:<agent>`
+// identifier (e.g. `try-claude-code:frontend-developer`), but plan authors
+// may write `owner_agent` either way — bare (`frontend-developer`) or fully
+// qualified. Strict `===` therefore splits the same logical agent into two
+// non-matching strings and trips the runner gate.
+//
+// Rules:
+//   - identical strings always match.
+//   - one side bare + one side namespaced  → match when the namespaced side
+//     ends with `:<bare>`. The bare form encodes "any plugin shipping an
+//     agent of this name", which mirrors how `agents/<name>.md` lookups
+//     resolve on disk (one file per plugin, name is the unique key inside
+//     a plugin).
+//   - both sides namespaced                → strict equality. Two plugins
+//     can ship agents with the same short name; only the prefix
+//     disambiguates them, so we refuse cross-plugin matches.
+//
+// Exported so `pre-tool-use-hook.mjs:maybeAutoArm` uses the same predicate.
+// Drift between the two callers would let a dispatch pass the BLOCK gate
+// without arming the stop-review phase, leaving the plan stuck at `preparing`.
+export function agentNamesMatch(a, b) {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  if (a === b) return true;
+  const aNs = a.includes(":");
+  const bNs = b.includes(":");
+  if (aNs && bNs) return false;
+  if (aNs && a.endsWith(`:${b}`)) return true;
+  if (bNs && b.endsWith(`:${a}`)) return true;
+  return false;
+}
+
 // Does this Agent / Task dispatch correspond to the active plan's owner_agent
 // and worktree? When yes, the call is part of the runner pipeline and is
 // allowed (subject to status). When no, it's an unrelated Agent call the user
@@ -176,8 +209,7 @@ function dispatchMatchesPlan(toolInput, state) {
   // selected per-item by the reviewer and may differ. We cannot know the
   // rework choice from policy alone, so we accept any subagent_type when
   // dev_review.phase === "rework" and rely on the prose to pick correctly.
-  if (subagent === state.owner_agent) return true;
-  return false;
+  return agentNamesMatch(subagent, state.owner_agent);
 }
 
 // Per-status disposition for each tool family. `allow`, `warn`, `block` are

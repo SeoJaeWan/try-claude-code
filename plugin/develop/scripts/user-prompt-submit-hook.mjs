@@ -118,7 +118,17 @@ function resolveAgentsDir() {
 
 function verifyOwnerAgentExists(ownerAgent) {
   const agentsDir = resolveAgentsDir();
-  const candidate = path.join(agentsDir, `${ownerAgent}.md`);
+  // Plan authors may write `owner_agent` either bare (`frontend-developer`)
+  // or plugin-namespaced (`try-claude-code:frontend-developer`). Claude Code
+  // emits the namespaced form when dispatching plugin agents, and `agents/`
+  // on disk only stores the bare form (one file per agent in this plugin).
+  // Strip any `<plugin>:` prefix before the filesystem lookup so both inputs
+  // resolve to the same file — and importantly, so `:` does not leak into a
+  // path on Windows, where it is an invalid filename character.
+  const bareName = ownerAgent.includes(":")
+    ? ownerAgent.slice(ownerAgent.indexOf(":") + 1)
+    : ownerAgent;
+  const candidate = path.join(agentsDir, `${bareName}.md`);
   if (!fs.existsSync(candidate)) {
     throw new Error(
       `owner_agent "${ownerAgent}"에 해당하는 ${candidate} 파일이 없습니다.\n` +

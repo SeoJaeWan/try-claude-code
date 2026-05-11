@@ -41,7 +41,7 @@ import {
   transitionStatus,
   tryLoadState,
 } from "./lib/runner-state.mjs";
-import { evaluate, VERDICT } from "./lib/pre-tool-use-policy.mjs";
+import { agentNamesMatch, evaluate, VERDICT } from "./lib/pre-tool-use-policy.mjs";
 import { recordHookEvent } from "./lib/telemetry.mjs";
 
 function emitBlock(reason) {
@@ -83,11 +83,16 @@ function resolveActivePlanState(sessionId) {
 //
 // Only fires when the dispatch's `subagent_type` matches `state.owner_agent`,
 // so unrelated Agent calls (Explore, etc.) do not advance the gate.
+//
+// Matching delegates to `agentNamesMatch` so the auto-arm path and the BLOCK
+// path in `pre-tool-use-policy.mjs` use the same plugin-namespacing rule.
+// If they ever diverge, a dispatch could pass the BLOCK gate without arming
+// the stop-review phase, leaving the plan stuck at `preparing`.
 function maybeAutoArm(state, toolName, toolInput) {
   if (toolName !== "Task" && toolName !== "Agent") return state;
   if (!state || !state.__statePath) return state;
   const subagent = toolInput?.subagent_type;
-  if (typeof subagent !== "string" || subagent !== state.owner_agent) {
+  if (!agentNamesMatch(subagent, state.owner_agent)) {
     return state;
   }
 
