@@ -262,6 +262,15 @@ function partitionFindingsByConfidence(text) {
   return { highFindings, lowFindings, taggedCount };
 }
 
+// Extract a model slug from the server error message, e.g.
+//   "The 'gpt-5.5' model requires a newer version of Codex..."
+//                ^^^^^^^
+// Returns null if no quoted token precedes the word "model".
+function extractModelSlugFromError(text) {
+  const match = String(text ?? "").match(/['"]([^'"]+)['"]\s+model/i);
+  return match ? match[1] : null;
+}
+
 function diagnoseCodexFailure(result) {
   const errorMessage = String(result?.error?.message ?? result?.error ?? "").trim();
   const stderrText = String(result?.stderr ?? "").trim();
@@ -269,14 +278,48 @@ function diagnoseCodexFailure(result) {
   if (!errorMessage && !stderrText) return null;
   if (/requires? a newer version of (?:the )?(?:Codex|app|CLI)|please upgrade.*Codex|newer version of Codex/i.test(combined)) {
     const detail = errorMessage || stderrText.split(/\r?\n/).find((l) => l.includes("requires")) || stderrText.split(/\r?\n/, 1)[0];
-    return [
-      "Codex CLI 버전이 OpenAI 서버가 요구하는 모델 버전보다 낮습니다.",
-      "다음 명령으로 업그레이드 후 다시 시도하세요:",
+    const modelSlug = extractModelSlugFromError(detail);
+    const modelLine = modelSlug ? `문제 모델: \`${modelSlug}\`` : null;
+
+    // Do not assert "your CLI is outdated" — that single-cause framing trapped
+    // users whose CLI already knew the model (gpt-5.5 ships in npm-latest
+    // 0.130.0 and is visible in interactive `codex`, yet this same error still
+    // fired in app-server mode). Present the three real possibilities and tell
+    // the user how to disambiguate, instead of forcing one wrong action.
+    const lines = [
+      "Codex 서버가 모델 호환성 오류를 반환했습니다.",
+    ];
+    if (modelLine) lines.push(modelLine);
+    lines.push(
       "",
-      "    npm i -g @openai/codex@latest",
+      "다음 중 하나입니다:",
+      "",
+      "1) Codex CLI 자체가 구버전 — 터미널에서 `codex --version` 확인,",
+      "   npm latest와 다르면 `npm i -g @openai/codex@latest`",
+    );
+    if (modelSlug) {
+      lines.push(
+        "",
+        `2) \`~/.codex/config.toml\`의 \`model\` 슬러그(\`${modelSlug}\`)가 잘못됐거나`,
+        "   현재 CLI가 인식하지 못함 — 터미널에서 그냥 `codex`를 실행했을 때",
+        `   \`model: ${modelSlug}\`이 활성으로 표시되는지 확인.`,
+        "   인터랙티브에서는 동작한다면 플러그인 호출 경로(app-server)와의",
+        "   메타데이터/capabilities 차이일 수 있음.",
+      );
+    } else {
+      lines.push(
+        "",
+        "2) `~/.codex/config.toml`의 `model` 슬러그 점검 — 터미널에서 `codex`를",
+        "   실행했을 때 활성 모델로 표시되는지 확인.",
+      );
+    }
+    lines.push(
+      "",
+      "3) OpenAI 측 일시 게이팅 — 1, 2가 정상이라면 잠시 후 자동 재시도.",
       "",
       `원본 에러: ${detail}`,
-    ].join("\n");
+    );
+    return lines.join("\n");
   }
   if (errorMessage) {
     return `Codex 측 에러로 리뷰가 완료되지 않았습니다: ${errorMessage}`;

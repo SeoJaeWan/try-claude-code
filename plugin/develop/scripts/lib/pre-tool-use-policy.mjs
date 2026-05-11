@@ -312,8 +312,16 @@ const MATRIX = {
 // Build a Korean reason string. Kept inline so test diffs are readable; the
 // runner audience reads Korean and the format roughly mirrors the
 // UserPromptSubmit hook's existing block reasons.
-function reasonFor({ status, planSlug, statePath, hint }) {
-  const head = `[runner] 활성 plan(${planSlug}, status="${status}") 보호 중입니다.`;
+//
+// The `[runner 정책 ... · 에러 아님]` prefix exists because Claude Code surfaces
+// PreToolUse `decision: "block"` responses with a red "Error:" label in the
+// UI. The block itself is an intended safety guardrail (one-session-one-plan),
+// not a failure — the prefix tells the reader that up front before they parse
+// the message body. WARN uses a softer label since nothing was actually
+// blocked in that case.
+function reasonFor({ verdict, status, planSlug, statePath, hint }) {
+  const label = verdict === VERDICT.WARN ? "정책 알림 · 에러 아님" : "정책 차단 · 에러 아님";
+  const head = `[runner ${label}] 활성 plan(${planSlug}, status="${status}") 보호 중입니다.`;
   const body = hint || "현재 상태에서는 허용되지 않은 도구 호출입니다.";
   const tail =
     `state: ${statePath}\n` +
@@ -403,6 +411,7 @@ export function evaluate({ state, toolName, toolInput, planAreas }) {
   return {
     decision: verdict,
     reason: reasonFor({
+      verdict,
       status: state.status,
       planSlug: state.plan_slug,
       statePath: state.__statePath ?? "(state path unknown)",
