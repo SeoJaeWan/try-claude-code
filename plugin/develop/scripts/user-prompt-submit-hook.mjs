@@ -98,9 +98,14 @@ function resolvePlanFile(rawPath, cwd) {
       `(${posix}). cwd 또는 경로를 확인하세요.`,
     );
   }
-  if (!posix.endsWith(".plan.md")) {
+  // Two accepted shapes — `<name>.plan.md` (named plan) or `plan.md` inside a
+  // named directory (the directory's canonical plan). Both map cleanly through
+  // deriveStatePathFromPlanPath; anything else is rejected so the user notices
+  // a typo here rather than at dispatch time.
+  const basename = path.basename(posix);
+  if (!posix.endsWith(".plan.md") && basename !== "plan.md") {
     throw new Error(
-      `Plan 파일은 .plan.md 확장자여야 합니다: ${rawPath}`,
+      `Plan 파일은 .plan.md 확장자이거나 폴더 안의 plan.md 여야 합니다: ${rawPath}`,
     );
   }
   return posix;
@@ -194,7 +199,8 @@ async function main() {
     if (!rawArg) {
       throw new Error(
         "/runner 명령에 plan 파일 경로 인자가 없습니다.\n" +
-        "예: /runner plans/login-frontend.plan.md",
+        "예: /runner plans/login-frontend.plan.md\n" +
+        "    /runner plans/login-frontend/plan.md",
       );
     }
     planPath = resolvePlanFile(rawArg, cwd);
@@ -207,6 +213,30 @@ async function main() {
     const derived = deriveStatePathFromPlanPath(planPath);
     statePath = derived.statePath;
     stateDir = derived.stateDir;
+
+    // Collision: `plans/foo.plan.md` and `plans/foo/plan.md` both map to the
+    // same `plans/foo/.runner-state.json`. Either alone is fine; together they
+    // would silently share state. Refuse loudly so the user renames one before
+    // anything else touches disk.
+    const planDir = path.dirname(planPath);
+    const planBase = path.basename(planPath);
+    let siblingPlanPath = null;
+    if (planBase === "plan.md") {
+      const candidate = `${planDir}.plan.md`;
+      if (fs.existsSync(candidate)) siblingPlanPath = candidate;
+    } else if (planBase.endsWith(".plan.md")) {
+      const stem = planBase.slice(0, -".plan.md".length);
+      const candidate = path.join(planDir, stem, "plan.md");
+      if (fs.existsSync(candidate)) siblingPlanPath = candidate;
+    }
+    if (siblingPlanPath) {
+      throw new Error(
+        `Plan 경로 충돌: 다음 두 파일이 같은 state 위치(${statePath})를 공유합니다.\n` +
+        `  - ${planPath}\n` +
+        `  - ${siblingPlanPath}\n` +
+        `한 plan_key당 plan 파일은 하나여야 합니다. 둘 중 하나를 다른 이름으로 옮긴 뒤 다시 실행하세요.`,
+      );
+    }
 
     const existing = tryLoadState(statePath);
     if (existing) {

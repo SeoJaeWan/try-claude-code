@@ -87,6 +87,28 @@ function makePlanFile(slug, branch, ownerAgent = "general-developer") {
   return file;
 }
 
+// Write a bare `plan.md` inside `plans/<dir>/`. State will live at
+// `plans/<dir>/.runner-state.json` because the directory itself is plan_key.
+function makeFolderPlanFile(dir, planSlug, branch, ownerAgent = "general-developer") {
+  counter += 1;
+  const planDir = path.join(projectRoot, "plans", dir);
+  fs.mkdirSync(planDir, { recursive: true });
+  const file = path.join(planDir, "plan.md");
+  fs.writeFileSync(
+    file,
+    [
+      "---",
+      `plan_slug: ${planSlug}`,
+      `branch: ${branch}`,
+      `owner_agent: ${ownerAgent}`,
+      "---",
+      "",
+      "# stub plan",
+    ].join("\n"),
+  );
+  return file;
+}
+
 function runHook({ prompt, sessionId }) {
   const stdin = JSON.stringify({
     prompt,
@@ -250,5 +272,56 @@ describe("UserPromptSubmit single-active-plan rule", () => {
       "namespaced owner_agent must pass frontmatter validation",
     );
     assert.equal(out.hookSpecificOutput.hookEventName, "UserPromptSubmit");
+  });
+
+  // The runner accepts two plan-file shapes — `<name>.plan.md` (named plan,
+  // nested under a stem directory) and `<dir>/plan.md` (the directory is the
+  // plan_key). These two cases pin the second shape so a regression in path
+  // derivation shows up here, not at first dispatch.
+  it("accepts a bare plan.md inside a named directory", () => {
+    const sessionId = `sess-${++counter}`;
+    makeFolderPlanFile(
+      "wanted-design-system-mvp",
+      "wanted-design-system-mvp",
+      "feat/wanted-mvp",
+    );
+    const r = runHook({
+      prompt: "/runner plans/wanted-design-system-mvp/plan.md",
+      sessionId,
+    });
+    assert.equal(r.status, 0);
+    const out = JSON.parse(r.stdout);
+    assert.ok(
+      out.hookSpecificOutput,
+      "plan.md form should pass validation and produce a bootstrap",
+    );
+    // The bootstrap names the state file — folder-as-key means it lives at
+    // `plans/wanted-design-system-mvp/.runner-state.json`, NOT inside a
+    // nested `plan/` subdirectory.
+    assert.match(
+      out.hookSpecificOutput.additionalContext,
+      /wanted-design-system-mvp\/.runner-state\.json/,
+    );
+    assert.doesNotMatch(
+      out.hookSpecificOutput.additionalContext,
+      /wanted-design-system-mvp\/plan\/.runner-state\.json/,
+    );
+  });
+
+  it("rejects a bare plan.md when a sibling <dir>.plan.md exists", () => {
+    const sessionId = `sess-${++counter}`;
+    // Both files would resolve to the same plans/collide/.runner-state.json.
+    // The hook must surface the collision before any state is written.
+    makePlanFile("collide", "feat/collide-a");
+    makeFolderPlanFile("collide", "collide-folder", "feat/collide-b");
+
+    const r = runHook({
+      prompt: "/runner plans/collide/plan.md",
+      sessionId,
+    });
+    assert.equal(r.status, 0);
+    const decision = JSON.parse(r.stdout);
+    assert.equal(decision.decision, "block");
+    assert.match(decision.reason, /Plan 경로 충돌|충돌/);
   });
 });

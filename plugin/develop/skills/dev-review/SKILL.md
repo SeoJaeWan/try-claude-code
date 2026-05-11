@@ -59,7 +59,9 @@ bump the round; the skill picks up the existing value and re-reads
 plans/{key}/dev-review/              ← data-root; `key` is the plan dir's
                                        relative path under `plans/`. For a
                                        nested plan `plans/foo/bar.plan.md`
-                                       it is `foo/bar`.
+                                       it is `foo/bar`; for a folder-style
+                                       plan `plans/foo/plan.md` it is `foo`
+                                       (the directory IS the plan_key).
 ├── review-data.json                # written by helper; deterministic; regenerated each round
 ├── feedback.json                   # written by server on each reviewer action
 ├── review-history.json             # append-only record of prior rounds
@@ -202,7 +204,7 @@ it before calling.
 
 The skill boots the review server itself — do NOT ask the user to run any `node` command. Use `Bash` with `run_in_background: true` so the process keeps serving across turn boundaries.
 
-The plugin's dev-review server is **multi-review** and **discovery-based**: on every request it walks `plans/` and serves any directory containing `dev-review/review-data.json`. The URL key is the directory's POSIX-relative path under `plans/` — so a nested plan at `plans/foo/bar.plan.md` is served at `/review/foo/bar/`. Parallel Claude sessions reuse the same port (the second session's health-check finds the first one).
+The plugin's dev-review server is **multi-review** and **discovery-based**: on every request it walks `plans/` and serves any directory containing `dev-review/review-data.json`. The URL key is the directory's POSIX-relative path under `plans/` — so a nested plan at `plans/foo/bar.plan.md` is served at `/review/foo/bar/`, and a folder-style plan at `plans/foo/plan.md` is served at `/review/foo/`. Parallel Claude sessions reuse the same port (the second session's health-check finds the first one).
 
 1. Health-check first to avoid duplicate launches:
 
@@ -227,8 +229,9 @@ The plugin's dev-review server is **multi-review** and **discovery-based**: on e
 
 3. Tell the user (Korean) — the URL key is the plan's relative directory under
    `plans/` with `/` separators. For a flat plan it is just the slug; for a
-   nested plan like `plans/foo/bar.plan.md` it is `foo/bar`. When in doubt,
-   point them at the picker page (`http://localhost:9797/`):
+   nested plan like `plans/foo/bar.plan.md` it is `foo/bar`; for a folder-style
+   plan `plans/foo/plan.md` it is `foo`. When in doubt, point them at the
+   picker page (`http://localhost:9797/`):
 
    ```
    리뷰 서버가 백그라운드에서 실행 중입니다.

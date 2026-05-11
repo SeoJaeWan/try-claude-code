@@ -3,8 +3,10 @@
 // Every plan that the runner executes owns one JSON file at
 // `plans/{plan_key}/.runner-state.json` — where `plan_key` is the plan
 // directory's relative path under `plans/`, slashes preserved (so a nested
-// plan at `plans/auth/login.plan.md` has `plan_key=auth/login`). That file
-// is the single source of
+// plan at `plans/auth/login.plan.md` has `plan_key=auth/login`). A bare
+// `plans/auth/plan.md` collapses to `plan_key=auth` — the directory itself
+// IS the plan key when its file is named `plan.md` (Next-style convention).
+// That file is the single source of
 // truth for everything the runner, the UserPromptSubmit hook, and the Stop
 // hook need to know about the plan: which worktree it lives in, what status
 // it is at, whether the stop-review gate is armed, how the dev-review loop is
@@ -61,29 +63,52 @@ function nowIso() {
 // Path derivation
 // ---------------------------------------------------------------------------
 
-// Given a plan file path like `plans/login-frontend.plan.md`, return the
-// directory the runner uses for that plan's artifacts (`plans/login-frontend/`)
-// and the canonical state file path inside it.
+// Given a plan file path, return the directory the runner uses for that plan's
+// artifacts and the canonical state file path inside it. Three shapes accepted,
+// in order of preference:
 //
-// The state path mirrors the plan file's own location so that nested plan
-// directories (e.g. `plans/auth/login.plan.md`) don't collide on a shared
-// `plans/{slug}/` namespace. The plan_slug field inside the state is used for
-// commit messages and identification, but the on-disk state location is keyed
-// off the plan file path.
+//   1. `<dir>/plan.md` — the file is the directory's canonical plan. stateDir
+//      is `<dir>` itself; stem is `<dir>`'s basename. So
+//      `plans/auth/plan.md` → `plans/auth/.runner-state.json` (plan_key=auth).
+//   2. `<dir>/<name>.plan.md` — named plan. Strip the `.plan.md` suffix to get
+//      the stem, then nest under it. So
+//      `plans/auth/login.plan.md` → `plans/auth/login/.runner-state.json`
+//      (plan_key=auth/login).
+//   3. `<dir>/<name>.md` — legacy fallback (e.g. notes.md). Strip just `.md`.
+//
+// Both `plans/foo.plan.md` and `plans/foo/plan.md` map to the same
+// `plans/foo/.runner-state.json`. That collision is rare in practice but
+// silently overwriting one with the other would be confusing — callers that
+// know both files might exist (UserPromptSubmit hook) are expected to flag it
+// before reaching this function.
+//
+// The plan_slug field inside the state is used for commit messages and
+// identification, but the on-disk state location is keyed off the plan file
+// path.
 export function deriveStatePathFromPlanPath(planPath) {
   const abs = absoluteNormalizePath(planPath);
   const dir = path.dirname(abs);
   const base = path.basename(abs);
-  const stem = base.endsWith(".plan.md")
-    ? base.slice(0, -".plan.md".length)
-    : base.replace(/\.md$/i, "");
+
+  let stateDir;
+  let stem;
+  if (base === "plan.md") {
+    stateDir = toPosixPath(dir);
+    stem = path.basename(dir);
+  } else if (base.endsWith(".plan.md")) {
+    stem = base.slice(0, -".plan.md".length);
+    stateDir = toPosixPath(path.join(dir, stem));
+  } else {
+    stem = base.replace(/\.md$/i, "");
+    stateDir = toPosixPath(path.join(dir, stem));
+  }
   if (!stem) {
     throw new Error(
       `Cannot derive plan-state path from plan path: "${planPath}". The file ` +
-      `must end in .plan.md so the runner knows where to put state.`,
+      `must end in .plan.md, or be named plan.md inside a named directory, ` +
+      `so the runner knows where to put state.`,
     );
   }
-  const stateDir = toPosixPath(path.join(dir, stem));
   const statePath = toPosixPath(path.join(stateDir, ".runner-state.json"));
   return { stateDir, statePath, stem };
 }

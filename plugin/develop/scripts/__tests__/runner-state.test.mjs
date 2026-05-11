@@ -65,9 +65,47 @@ describe("deriveStatePathFromPlanPath", () => {
     assert.ok(b.statePath.endsWith("/repo/plans/login/.runner-state.json"));
   });
 
+  it("treats a bare plan.md as the directory's canonical plan", () => {
+    // plans/wanted-design-system-mvp/plan.md → state at
+    // plans/wanted-design-system-mvp/.runner-state.json (plan_key = directory).
+    const { stateDir, statePath, stem } = deriveStatePathFromPlanPath(
+      "/repo/plans/wanted-design-system-mvp/plan.md",
+    );
+    assert.equal(stem, "wanted-design-system-mvp");
+    assert.ok(
+      stateDir.endsWith("/repo/plans/wanted-design-system-mvp"),
+      `stateDir was: ${stateDir}`,
+    );
+    assert.ok(
+      statePath.endsWith("/repo/plans/wanted-design-system-mvp/.runner-state.json"),
+      `statePath was: ${statePath}`,
+    );
+  });
+
+  it("keeps plan.md and front.plan.md as siblings under the same parent", () => {
+    // The point: a folder may hold both its canonical plan.md *and* one or
+    // more named <slug>.plan.md children, each with its own state path.
+    const main = deriveStatePathFromPlanPath(
+      "/repo/plans/wanted-design-system-mvp/plan.md",
+    );
+    const front = deriveStatePathFromPlanPath(
+      "/repo/plans/wanted-design-system-mvp/front.plan.md",
+    );
+    assert.notEqual(main.statePath, front.statePath);
+    assert.ok(
+      main.statePath.endsWith("/repo/plans/wanted-design-system-mvp/.runner-state.json"),
+    );
+    assert.ok(
+      front.statePath.endsWith("/repo/plans/wanted-design-system-mvp/front/.runner-state.json"),
+    );
+  });
+
   it("falls back to the plain filename stem when not .plan.md", () => {
     const { stem } = deriveStatePathFromPlanPath("/repo/plans/notes.md");
     assert.equal(stem, "notes");
+    // And plan.md must NOT take this fallback — stem comes from the parent dir.
+    const planMd = deriveStatePathFromPlanPath("/repo/plans/foo/plan.md");
+    assert.equal(planMd.stem, "foo");
   });
 
   it("rejects empty stems", () => {
