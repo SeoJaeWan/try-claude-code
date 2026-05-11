@@ -141,6 +141,23 @@ export const VERDICT = Object.freeze({
   BLOCK: "block",
 });
 
+// Strip optional git-level flags (`-C <path>`, `--git-dir=...`,
+// `--work-tree=...`, `--no-pager`, `-c key=value`) that sit between `git` and
+// the actual subcommand. Without this, `git -C "<worktree>" log` falls
+// through to "ambiguous" and the matrix blocks a read-only inspection — the
+// exact shape Claude Code generates when the runner skill asks it to verify
+// commits in another directory. We normalize once instead of duplicating
+// every git regex with an optional flag prefix.
+//
+// Path values may be quoted (single or double) or bare. We greedily consume
+// one or more flag occurrences and leave the subcommand untouched.
+function stripGitGlobalFlags(command) {
+  return command.replace(
+    /^(\s*git\s+)(?:(?:-C\s+(?:"[^"]*"|'[^']*'|\S+)|--git-dir(?:=|\s+)(?:"[^"]*"|'[^']*'|\S+)|--work-tree(?:=|\s+)(?:"[^"]*"|'[^']*'|\S+)|--no-pager|-c\s+\S+)\s+)+/,
+    "$1"
+  );
+}
+
 // Classify a Bash command into one of three buckets the matrix can switch on.
 //   "safe"          — never blocked.
 //   "mutating"      — gated by status.
@@ -149,11 +166,12 @@ export const VERDICT = Object.freeze({
 //                     classifier separately.
 export function classifyBashCommand(command) {
   if (typeof command !== "string" || !command.trim()) return "safe";
+  const normalized = stripGitGlobalFlags(command);
   for (const re of SAFE_BASH_PATTERNS) {
-    if (re.test(command)) return "safe";
+    if (re.test(normalized)) return "safe";
   }
   for (const re of MUTATING_BASH_PATTERNS) {
-    if (re.test(command)) return "mutating";
+    if (re.test(normalized)) return "mutating";
   }
   return "ambiguous";
 }

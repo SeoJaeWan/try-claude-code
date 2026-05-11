@@ -84,6 +84,37 @@ describe("classifyBashCommand", () => {
     }
   });
 
+  // Regression: PreToolUse was blocking `git -C <worktree> log ...` because
+  // the SAFE regex required the subcommand to be the second token and `-C`
+  // sat in front of it. The normalizer strips git-level flags before the
+  // subcommand match.
+  it("treats git-level flags (-C, --git-dir, --work-tree, --no-pager, -c) as transparent", () => {
+    for (const cmd of [
+      "git -C /tmp/repo log --oneline",
+      'git -C "C:/Users/x/y" log --oneline main..feat',
+      "git -C '/tmp/repo with spaces' status",
+      "git --git-dir=/tmp/.git log",
+      "git --git-dir /tmp/.git log",
+      "git --work-tree=/tmp log",
+      "git --no-pager log --oneline",
+      "git -c color.ui=never log",
+      "git -C /tmp -c color.ui=never --no-pager log",
+    ]) {
+      assert.equal(classifyBashCommand(cmd), "safe", cmd);
+    }
+  });
+
+  it("keeps git-level flags from masking a mutating subcommand", () => {
+    for (const cmd of [
+      "git -C /tmp/repo commit -m x",
+      'git -C "C:/Users/x/y" push origin main',
+      "git --git-dir=/tmp/.git reset --hard HEAD~1",
+      "git -c user.email=x@y.com commit -m x",
+    ]) {
+      assert.equal(classifyBashCommand(cmd), "mutating", cmd);
+    }
+  });
+
   it("classifies POSIX read-only inspection as safe", () => {
     for (const cmd of [
       "ls plans/",

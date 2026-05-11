@@ -30,7 +30,9 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-import { runAppServerTurn } from "./lib/codex.mjs";
+import { listAvailableModels, runAppServerTurn } from "./lib/codex.mjs";
+import { restartBrokerSession } from "./lib/broker-lifecycle.mjs";
+import { terminateProcessTree } from "./lib/process.mjs";
 import { loadPromptTemplate, interpolateTemplate } from "./lib/prompts.mjs";
 import {
   getStopReviewThreadId,
@@ -271,6 +273,58 @@ function extractModelSlugFromError(text) {
   return match ? match[1] : null;
 }
 
+// Match the failure signature that indicates the broker's long-lived codex
+// child is operating on a stale models snapshot. OpenAI returns this exact
+// wording when the codex client's advertised model list does not include the
+// requested model; that list is built from the in-memory models cache the
+// codex process loaded at spawn time. After a codex CLI upgrade or a models
+// cache refresh, the running broker child still serves the pre-upgrade list
+// until restarted.
+export function matchesBrokerStaleModelSignature(result) {
+  const finalText = String(result?.finalMessage ?? "").trim();
+  if (finalText) return false;
+  const errorMessage = String(result?.error?.message ?? result?.error ?? "").trim();
+  const stderrText = String(result?.stderr ?? "").trim();
+  const combined = `${errorMessage}\n${stderrText}`;
+  if (!/invalid_request_error/i.test(combined)) return false;
+  if (!/newer version of (?:the )?(?:Codex|app|CLI)/i.test(combined)) return false;
+  return true;
+}
+
+// Confirm broker-codex staleness by asking the broker which models it
+// currently knows about. The rejected model being absent from `model/list`
+// is direct evidence that the broker's child is stale — empirically
+// reproduced against the user's environment where the broker's codex (spawned
+// before a models cache refresh) returned an old list missing gpt-5.5 while
+// fresh-spawn codex returned a current list including it.
+//
+// Returns `{ confirmed: true, knownModels }` when the broker is confirmed
+// stale, `{ confirmed: false, reason }` otherwise. We treat any inability
+// to verify (model/list throws, slug cannot be extracted, model IS present)
+// as "not confirmed" so the existing diagnostic message handles the failure
+// instead of triggering a wrong recovery.
+async function confirmStaleBroker(cwd, result) {
+  if (!matchesBrokerStaleModelSignature(result)) {
+    return { confirmed: false, reason: "signature_mismatch" };
+  }
+  const errorMessage = String(result?.error?.message ?? result?.error ?? "");
+  const stderrText = String(result?.stderr ?? "");
+  const rejectedModel = extractModelSlugFromError(errorMessage) || extractModelSlugFromError(stderrText);
+  if (!rejectedModel) {
+    return { confirmed: false, reason: "no_model_slug" };
+  }
+  let knownModels;
+  try {
+    knownModels = await listAvailableModels(cwd);
+  } catch (err) {
+    return { confirmed: false, reason: `model_list_failed:${err?.message ?? err}` };
+  }
+  if (knownModels.has(rejectedModel)) {
+    return { confirmed: false, reason: "model_present_in_list", rejectedModel, knownModels };
+  }
+  return { confirmed: true, rejectedModel, knownModels };
+}
+
 function diagnoseCodexFailure(result) {
   const errorMessage = String(result?.error?.message ?? result?.error ?? "").trim();
   const stderrText = String(result?.stderr ?? "").trim();
@@ -413,6 +467,59 @@ async function runStopReview(workspaceRoot, sessionId, reviewItem) {
 
     if (sessionId && result.threadId) {
       setStopReviewThreadId(sessionId, result.threadId);
+    }
+
+    // Broker-staleness attribution + recovery. Only runs when the result
+    // looks like the specific "newer version of Codex" signature; only acts
+    // when listAvailableModels confirms the rejected slug is absent from the
+    // broker's current view. On confirmation we restart the broker (its next
+    // spawn reads the fresh models cache) and retry once with a fresh thread.
+    const stale = await confirmStaleBroker(turnCwd, result);
+    if (stale.confirmed) {
+      const restart = restartBrokerSession(turnCwd, {
+        killProcess: (pid) => terminateProcessTree(pid),
+      });
+      recordHookEvent({
+        kind: "stop_review_broker_recovery",
+        ok: restart.restarted,
+        sessionId,
+        rejectedModel: stale.rejectedModel,
+        previousPid: restart.previousPid ?? null,
+        reason: restart.reason ?? null,
+      });
+      if (restart.restarted) {
+        const retryStart = Date.now();
+        try {
+          // Fresh thread on retry: the previous threadId was tied to the now-
+          // dead broker codex. persistThread stays true so the *new* thread
+          // gets persisted for subsequent stop reviews.
+          result = await withTimeout(runAppServerTurn(turnCwd, turnOptions), STOP_REVIEW_TIMEOUT_MS);
+          finalPath = `${finalPath}+broker_restart`;
+          if (sessionId && result.threadId) {
+            setStopReviewThreadId(sessionId, result.threadId);
+          }
+          recordHookEvent({
+            kind: "stop_review_codex",
+            step: "broker_restart_retry",
+            ok: true,
+            elapsedMs: Date.now() - retryStart,
+            sessionId,
+          });
+        } catch (retryErr) {
+          recordHookEvent({
+            kind: "stop_review_codex",
+            step: "broker_restart_retry",
+            ok: false,
+            elapsedMs: Date.now() - retryStart,
+            errorCode: retryErr?.code ?? null,
+            errorMessage: retryErr?.message ?? String(retryErr),
+            sessionId,
+          });
+          if (retryErr?.code === "ETIMEDOUT") throw retryErr;
+          // Fall through with the original (stale) result; diagnoseCodexFailure
+          // will surface the 3-option message.
+        }
+      }
     }
 
     recordHookEvent({ kind: "stop_review_codex", step: "total", ok: true, elapsedMs: Date.now() - totalStart, path: finalPath, sessionId });
@@ -708,4 +815,11 @@ async function main() {
   emitDecision({ systemMessage: parts.join("\n") });
 }
 
-main();
+// Run main() only when invoked as a script — keeps the file importable from
+// unit tests for matchesBrokerStaleModelSignature without triggering the full
+// hook lifecycle (which would block on stdin).
+const invokedAsScript =
+  process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+if (invokedAsScript) {
+  main();
+}

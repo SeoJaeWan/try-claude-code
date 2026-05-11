@@ -733,4 +733,28 @@ export function buildPersistentTaskThreadName(prompt) {
   return buildTaskThreadName(prompt);
 }
 
+// Ask the live codex app-server which models it currently considers available.
+// Used by stop-review-gate-hook's broker-staleness attribution path: when a
+// turn fails with the "newer version of Codex" wording, we cross-check the
+// rejected model slug against this list. If it is absent, the broker's
+// long-lived codex child is operating on a stale models snapshot and must be
+// restarted; if present, the failure has a different cause and falls through
+// to the existing diagnostic message.
+//
+// Returns a Set<string> of model ids the local codex knows about. Empty Set
+// on unexpected response shape — callers should treat empty as "unknown" and
+// skip attribution rather than misclassify.
+export async function listAvailableModels(cwd) {
+  return withAppServer(cwd, async (client) => {
+    const response = await client.request("model/list", {});
+    const data = Array.isArray(response?.data) ? response.data : [];
+    const ids = new Set();
+    for (const entry of data) {
+      const id = entry?.id ?? entry?.model;
+      if (typeof id === "string" && id) ids.add(id);
+    }
+    return ids;
+  });
+}
+
 export { DEFAULT_CONTINUE_PROMPT };

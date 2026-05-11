@@ -170,6 +170,32 @@ export async function ensureBrokerSession(cwd, options = {}) {
   return session;
 }
 
+// Forcibly tear down the current broker session for `cwd` and clear its
+// state file. Returns `{ restarted: true, previousPid }` when there was a
+// session to tear down; `{ restarted: false, reason }` otherwise.
+//
+// We do not respawn here — `ensureBrokerSession` is called lazily by
+// withAppServer on the next codex request and will spawn fresh because the
+// state file is gone. This is the precise recovery path used by
+// stop-review-gate-hook when its broker-staleness attribution confirms that
+// the long-lived codex child is operating on a stale models snapshot.
+export function restartBrokerSession(cwd, options = {}) {
+  const existing = loadBrokerSession(cwd);
+  if (!existing) {
+    return { restarted: false, reason: "no_session" };
+  }
+  teardownBrokerSession({
+    endpoint: existing.endpoint ?? null,
+    pidFile: existing.pidFile ?? null,
+    logFile: existing.logFile ?? null,
+    sessionDir: existing.sessionDir ?? null,
+    pid: existing.pid ?? null,
+    killProcess: options.killProcess ?? null,
+  });
+  clearBrokerSession(cwd);
+  return { restarted: true, previousPid: existing.pid ?? null };
+}
+
 export function teardownBrokerSession({ endpoint = null, pidFile, logFile, sessionDir = null, pid = null, killProcess = null }) {
   if (Number.isFinite(pid) && killProcess) {
     try {
