@@ -46,7 +46,7 @@ after(() => {
 
 let counter = 0;
 
-function seedSession({ sessionId, status }) {
+function seedSession({ sessionId, status, ownerAgent = "general-developer" }) {
   counter += 1;
   const planSlug = `plan-${counter}`;
   const taskBranch = `feat/${planSlug}`;
@@ -59,7 +59,7 @@ function seedSession({ sessionId, status }) {
   const state = createInitialState({
     planSlug,
     planPath,
-    ownerAgent: "general-developer",
+    ownerAgent,
     baseBranch: "main",
     taskBranch,
     worktreePath,
@@ -358,5 +358,54 @@ describe("PreToolUse hook — wiring", () => {
     });
     assert.equal(r.status, 0);
     assert.equal(r.stdout.trim(), "");
+  });
+
+  // Regression: the original BLOCK seen in the field. owner_agent stored bare
+  // ("frontend-developer") while Claude dispatched the plugin-namespaced form
+  // ("try-claude-code:frontend-developer"). The hook must (a) not block and
+  // (b) still auto-arm the stop-review gate via the shared namespacing rule.
+  it("auto-arms from preparing when bare owner_agent matches namespaced subagent_type", () => {
+    const sessionId = `sess-${++counter}`;
+    const { statePath } = seedSession({
+      sessionId,
+      status: STATUS.PREPARING,
+      ownerAgent: "frontend-developer",
+    });
+    const r = runHook({
+      sessionId,
+      toolName: "Task",
+      toolInput: {
+        subagent_type: "try-claude-code:frontend-developer",
+        prompt: "...",
+      },
+    });
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout.trim(), "", "namespaced dispatch should be allowed silently");
+    const after = loadState(statePath);
+    assert.equal(after.status, STATUS.DISPATCHING);
+    assert.equal(after.stop_review.phase, STOP_REVIEW_PHASE.ARMED);
+    assert.equal(after.stop_review.armed, true);
+  });
+
+  it("blocks a namespaced subagent from a different plugin", () => {
+    const sessionId = `sess-${++counter}`;
+    const { statePath } = seedSession({
+      sessionId,
+      status: STATUS.PREPARING,
+      ownerAgent: "try-claude-code:frontend-developer",
+    });
+    const r = runHook({
+      sessionId,
+      toolName: "Task",
+      toolInput: {
+        subagent_type: "figma:frontend-developer",
+        prompt: "...",
+      },
+    });
+    const out = JSON.parse(r.stdout);
+    assert.equal(out.decision, "block");
+    assert.match(out.reason, /owner_agent/);
+    const after = loadState(statePath);
+    assert.equal(after.status, STATUS.PREPARING, "status must not advance");
   });
 });

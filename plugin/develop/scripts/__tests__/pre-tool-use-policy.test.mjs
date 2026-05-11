@@ -12,6 +12,7 @@ import {
 } from "../lib/runner-state.mjs";
 import {
   VERDICT,
+  agentNamesMatch,
   classifyBashCommand,
   evaluate,
 } from "../lib/pre-tool-use-policy.mjs";
@@ -311,6 +312,107 @@ describe("evaluate — Agent / Task dispatch gating", () => {
     });
     assert.equal(qa.decision, VERDICT.BLOCK);
     assert.match(qa.reason, /phase="qa"/);
+  });
+});
+
+describe("agentNamesMatch — plugin-namespacing rule", () => {
+  it("treats identical strings as a match", () => {
+    assert.equal(agentNamesMatch("frontend-developer", "frontend-developer"), true);
+    assert.equal(
+      agentNamesMatch(
+        "try-claude-code:frontend-developer",
+        "try-claude-code:frontend-developer",
+      ),
+      true,
+    );
+  });
+
+  it("matches a namespaced subagent against a bare owner_agent", () => {
+    // Claude Code dispatches `<plugin>:<agent>`; plan author wrote bare.
+    assert.equal(
+      agentNamesMatch("try-claude-code:frontend-developer", "frontend-developer"),
+      true,
+    );
+  });
+
+  it("matches a bare subagent against a namespaced owner_agent", () => {
+    // Symmetry: plan author wrote namespaced, runtime dispatch is bare.
+    assert.equal(
+      agentNamesMatch("frontend-developer", "try-claude-code:frontend-developer"),
+      true,
+    );
+  });
+
+  it("refuses cross-plugin namespaced collisions", () => {
+    // Same short name in two plugins must not collapse into one identity.
+    assert.equal(
+      agentNamesMatch(
+        "try-claude-code:frontend-developer",
+        "figma:frontend-developer",
+      ),
+      false,
+    );
+  });
+
+  it("refuses unrelated names regardless of namespacing", () => {
+    assert.equal(agentNamesMatch("Explore", "frontend-developer"), false);
+    assert.equal(
+      agentNamesMatch("try-claude-code:frontend-developer", "general-developer"),
+      false,
+    );
+  });
+
+  it("rejects non-string inputs without throwing", () => {
+    assert.equal(agentNamesMatch(null, "frontend-developer"), false);
+    assert.equal(agentNamesMatch("frontend-developer", undefined), false);
+  });
+});
+
+describe("evaluate — Agent dispatch with plugin namespacing", () => {
+  it("ALLOWs bare owner_agent vs namespaced subagent_type", () => {
+    // The original BLOCK seen in the field:
+    //   owner_agent = "frontend-developer" (written bare by the planner)
+    //   subagent_type = "try-claude-code:frontend-developer" (Claude's form)
+    const s = stateAt(STATUS.PREPARING);
+    s.owner_agent = "frontend-developer";
+    const r = evaluate({
+      state: s,
+      toolName: "Task",
+      toolInput: {
+        subagent_type: "try-claude-code:frontend-developer",
+        prompt: "...",
+      },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.ALLOW);
+  });
+
+  it("ALLOWs namespaced owner_agent vs bare subagent_type", () => {
+    const s = stateAt(STATUS.DISPATCHING);
+    s.owner_agent = "try-claude-code:frontend-developer";
+    const r = evaluate({
+      state: s,
+      toolName: "Task",
+      toolInput: { subagent_type: "frontend-developer", prompt: "..." },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.ALLOW);
+  });
+
+  it("BLOCKs a namespaced subagent from a different plugin", () => {
+    const s = stateAt(STATUS.DISPATCHING);
+    s.owner_agent = "try-claude-code:frontend-developer";
+    const r = evaluate({
+      state: s,
+      toolName: "Task",
+      toolInput: {
+        subagent_type: "figma:frontend-developer",
+        prompt: "...",
+      },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.BLOCK);
+    assert.match(r.reason, /owner_agent/);
   });
 });
 
