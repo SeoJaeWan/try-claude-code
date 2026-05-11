@@ -108,6 +108,8 @@ async function readJsonFile(filePath, fallback) {
 }
 
 const VALID_FEEDBACK_STATUSES = new Set(["", "approved", "needs-change", "question", "out-of-scope"]);
+const COMMENT_TYPES = new Set(["needs-change", "question", "out-of-scope"]);
+const COMMENT_ID_RE = /^cm_\d+$/;
 
 function asArray(value) {
   if (!value) return [];
@@ -229,6 +231,13 @@ function itemSignature(item, fallbackPayload) {
 
 function currentReviewItemSignatures(model) {
   const result = new Map();
+  if (Array.isArray(model?.review_items) && model.review_items.length) {
+    for (const item of model.review_items) {
+      if (!item || typeof item !== "object" || !item.id) continue;
+      result.set(item.id, itemSignature(item, item));
+    }
+    return result;
+  }
   result.set("overview", itemSignature(model?.overview || {}, overviewSignaturePayload(model)));
   asArray(model?.phases).forEach((phase, index) => {
     if (!phase || typeof phase !== "object") return;
@@ -276,12 +285,62 @@ function validateFeedbackCollection(collection, itemSignatures, label, planSigna
 }
 
 function validateFeedbackForModel(feedback, model) {
+  if (feedback?.schema_version === 2 || Array.isArray(feedback?.comments) || feedback?.item_status) {
+    return validateV2FeedbackForModel(feedback, model);
+  }
   if (!feedback.steps || typeof feedback.steps !== "object") {
     return "feedback.steps must be an object";
   }
   const itemSignatures = currentReviewItemSignatures(model);
   return validateFeedbackCollection(feedback.steps, itemSignatures, "steps", model.plan_signature) ||
     validateFeedbackCollection(feedback.cards, itemSignatures, "cards", model.plan_signature);
+}
+
+function validateV2FeedbackForModel(feedback, model) {
+  if (!Array.isArray(feedback.comments)) {
+    return "feedback.comments must be an array";
+  }
+  if (!feedback.item_status || typeof feedback.item_status !== "object") {
+    return "feedback.item_status must be an object";
+  }
+
+  const itemSignatures = currentReviewItemSignatures(model);
+  for (const comment of feedback.comments) {
+    const error = validateCommentShape(comment, model);
+    if (error) return error;
+  }
+
+  for (const [itemId, status] of Object.entries(feedback.item_status)) {
+    if (!itemSignatures.has(itemId)) {
+      return `item_status.${itemId} is not present in current review-data`;
+    }
+    if (!status || typeof status !== "object") {
+      return `item_status.${itemId} must be an object`;
+    }
+    if (status.approved === true) {
+      const approvedAgainst = status.approved_against;
+      if (!approvedAgainst || typeof approvedAgainst !== "object") {
+        return `item_status.${itemId}.approved_against is required for approved item`;
+      }
+      if (approvedAgainst.plan_signature !== model.plan_signature) {
+        return `item_status.${itemId}.approved_against.plan_signature is stale`;
+      }
+      if (approvedAgainst.review_item_signature !== itemSignatures.get(itemId)) {
+        return `item_status.${itemId}.approved_against.review_item_signature is stale`;
+      }
+    }
+  }
+  return null;
+}
+
+function validateCommentShape(comment, model) {
+  if (!comment || typeof comment !== "object") return "comment must be an object";
+  if (typeof comment.id !== "string" || !COMMENT_ID_RE.test(comment.id)) return "comment.id is invalid";
+  if (!currentReviewItemSignatures(model).has(comment.target_id)) return "comment.target_id is not present in current review-data";
+  if (typeof comment.anchor_id !== "string" || !comment.anchor_id) return "comment.anchor_id is required";
+  if (!COMMENT_TYPES.has(comment.type)) return "comment.type is invalid";
+  if (comment.body !== undefined && typeof comment.body !== "string") return "comment.body must be a string";
+  return null;
 }
 
 async function writeJsonAtomic(filePath, value) {
@@ -352,6 +411,91 @@ async function currentReviewModel(reviewRoot) {
   return readJsonFile(path.join(reviewRoot, "review-data.json"), null);
 }
 
+async function currentFeedback(reviewRoot, model, taskSlug) {
+  const existing = await readJsonFile(path.join(reviewRoot, "feedback.json"), null);
+  return ensureV2Feedback(existing, model, taskSlug);
+}
+
+function ensureV2Feedback(feedback, model, taskSlug) {
+  if (feedback?.schema_version === 2 || Array.isArray(feedback?.comments) || feedback?.item_status) {
+    const sameTask = !feedback.task_slug || feedback.task_slug === taskSlug;
+    const samePlan = feedback.plan_signature === model?.plan_signature;
+    const next = {
+      schema_version: 2,
+      task_slug: taskSlug,
+      plan_signature: model?.plan_signature || "",
+      review_status: sameTask && samePlan && feedback.review_status === "submitted" ? "submitted" : "in_progress",
+      updated_at: feedback.updated_at || new Date().toISOString(),
+      comments: sameTask && samePlan && Array.isArray(feedback.comments) ? feedback.comments : [],
+      item_status: sameTask && samePlan && feedback.item_status && typeof feedback.item_status === "object" ? feedback.item_status : {}
+    };
+    ensureItemStatus(next, model);
+    return next;
+  }
+
+  const next = {
+    schema_version: 2,
+    task_slug: taskSlug,
+    plan_signature: model?.plan_signature || "",
+    review_status: "in_progress",
+    updated_at: new Date().toISOString(),
+    comments: [],
+    item_status: {}
+  };
+
+  for (const [itemId, signature] of currentReviewItemSignatures(model)) {
+    const prior = feedback?.steps?.[itemId];
+    if (prior?.status === "approved" && prior?.approved_against?.review_item_signature === signature) {
+      next.item_status[itemId] = {
+        viewed: true,
+        approved: true,
+        approved_against: approvalEvidence(model, itemId, prior.approved_against?.approved_at, prior.approved_against?.carried_from_plan_signature)
+      };
+    } else {
+      next.item_status[itemId] = { viewed: false, approved: false };
+    }
+  }
+  return next;
+}
+
+function ensureItemStatus(feedback, model) {
+  for (const itemId of currentReviewItemSignatures(model).keys()) {
+    if (!feedback.item_status[itemId] || typeof feedback.item_status[itemId] !== "object") {
+      feedback.item_status[itemId] = { viewed: false, approved: false };
+    }
+  }
+}
+
+function approvalEvidence(model, itemId, approvedAt = null, carriedFromPlanSignature = null) {
+  const signature = currentReviewItemSignatures(model).get(itemId);
+  return {
+    plan_signature: model.plan_signature,
+    review_item_signature: signature,
+    approved_at: approvedAt || new Date().toISOString(),
+    carried_from_plan_signature: carriedFromPlanSignature && carriedFromPlanSignature !== model.plan_signature
+      ? carriedFromPlanSignature
+      : null
+  };
+}
+
+function nextCommentId(feedback) {
+  let max = 0;
+  for (const comment of feedback.comments || []) {
+    const match = /^cm_(\d+)$/.exec(comment.id || "");
+    if (match) max = Math.max(max, Number(match[1]));
+  }
+  return `cm_${String(max + 1).padStart(3, "0")}`;
+}
+
+function assertEditable(feedback) {
+  return feedback.review_status === "submitted" ? "review already submitted" : null;
+}
+
+async function saveFeedback(reviewRoot, feedback) {
+  feedback.updated_at = new Date().toISOString();
+  await writeJsonAtomic(path.join(reviewRoot, "feedback.json"), feedback);
+}
+
 async function handleApi(req, res, pathname) {
   if (pathname === "/api/health") {
     const legacyTaskSlug = taskSlugFromLegacyRoot();
@@ -399,6 +543,28 @@ async function handleApi(req, res, pathname) {
     return sendJson(res, 200, await readJsonFile(path.join(reviewRoot, "feedback.json"), {}));
   }
 
+  if (endpoint === "comment" && req.method === "POST") {
+    return handleCommentCreate(req, res, taskSlug, reviewRoot);
+  }
+
+  if (endpoint.startsWith("comment/")) {
+    const id = endpoint.slice("comment/".length);
+    if (!COMMENT_ID_RE.test(id)) {
+      return sendJson(res, 400, { error: "invalid comment id" });
+    }
+    if (req.method === "PATCH") return handleCommentPatch(req, res, taskSlug, reviewRoot, id);
+    if (req.method === "DELETE") return handleCommentDelete(req, res, taskSlug, reviewRoot, id);
+    return sendJson(res, 405, { error: "method not allowed" });
+  }
+
+  if (endpoint === "item-status" && req.method === "POST") {
+    return handleItemStatus(req, res, taskSlug, reviewRoot);
+  }
+
+  if (endpoint === "submit" && req.method === "POST") {
+    return handleSubmit(req, res, taskSlug, reviewRoot);
+  }
+
   if (endpoint === "feedback" && req.method === "POST") {
     try {
       const feedback = JSON.parse(await readBody(req));
@@ -431,6 +597,134 @@ async function handleApi(req, res, pathname) {
   }
 
   return sendJson(res, 404, { error: "not found" });
+}
+
+async function handleCommentCreate(req, res, taskSlug, reviewRoot) {
+  try {
+    const body = JSON.parse(await readBody(req));
+    const model = await currentReviewModel(reviewRoot);
+    if (!model) return sendJson(res, 404, { error: "review-data.json not found" });
+    let feedback = await currentFeedback(reviewRoot, model, taskSlug);
+    const editableError = assertEditable(feedback);
+    if (editableError) return sendJson(res, 409, { error: editableError });
+    const inputError = validateCommentInput(body, model);
+    if (inputError) return sendJson(res, 400, { error: inputError });
+    const now = new Date().toISOString();
+    const comment = {
+      id: nextCommentId(feedback),
+      target_id: body.target_id,
+      anchor_id: body.anchor_id,
+      type: body.type,
+      body: body.body || "",
+      created_at: now,
+      updated_at: now
+    };
+    feedback.comments.push(comment);
+    if (comment.type !== "out-of-scope") {
+      feedback.item_status[comment.target_id] = {
+        ...(feedback.item_status[comment.target_id] || { viewed: false, approved: false }),
+        approved: false
+      };
+      delete feedback.item_status[comment.target_id].approved_against;
+    }
+    await saveFeedback(reviewRoot, feedback);
+    return sendJson(res, 200, { ok: true, comment, feedback });
+  } catch (error) {
+    return sendJson(res, 400, { error: error.message });
+  }
+}
+
+async function handleCommentPatch(req, res, taskSlug, reviewRoot, id) {
+  try {
+    const body = JSON.parse(await readBody(req));
+    const model = await currentReviewModel(reviewRoot);
+    if (!model) return sendJson(res, 404, { error: "review-data.json not found" });
+    const feedback = await currentFeedback(reviewRoot, model, taskSlug);
+    const editableError = assertEditable(feedback);
+    if (editableError) return sendJson(res, 409, { error: editableError });
+    const index = feedback.comments.findIndex((comment) => comment.id === id);
+    if (index < 0) return sendJson(res, 404, { error: "comment not found" });
+    const next = { ...feedback.comments[index] };
+    if (typeof body.body === "string") next.body = body.body;
+    if (typeof body.type === "string") next.type = body.type;
+    if (typeof body.anchor_id === "string") next.anchor_id = body.anchor_id;
+    const inputError = validateCommentInput(next, model, true);
+    if (inputError) return sendJson(res, 400, { error: inputError });
+    next.updated_at = new Date().toISOString();
+    feedback.comments[index] = next;
+    await saveFeedback(reviewRoot, feedback);
+    return sendJson(res, 200, { ok: true, comment: next, feedback });
+  } catch (error) {
+    return sendJson(res, 400, { error: error.message });
+  }
+}
+
+async function handleCommentDelete(req, res, taskSlug, reviewRoot, id) {
+  const model = await currentReviewModel(reviewRoot);
+  if (!model) return sendJson(res, 404, { error: "review-data.json not found" });
+  const feedback = await currentFeedback(reviewRoot, model, taskSlug);
+  const editableError = assertEditable(feedback);
+  if (editableError) return sendJson(res, 409, { error: editableError });
+  const before = feedback.comments.length;
+  feedback.comments = feedback.comments.filter((comment) => comment.id !== id);
+  if (feedback.comments.length === before) {
+    return sendJson(res, 404, { error: "comment not found" });
+  }
+  await saveFeedback(reviewRoot, feedback);
+  return sendJson(res, 200, { ok: true, feedback });
+}
+
+async function handleItemStatus(req, res, taskSlug, reviewRoot) {
+  try {
+    const body = JSON.parse(await readBody(req));
+    const model = await currentReviewModel(reviewRoot);
+    if (!model) return sendJson(res, 404, { error: "review-data.json not found" });
+    const feedback = await currentFeedback(reviewRoot, model, taskSlug);
+    const editableError = assertEditable(feedback);
+    if (editableError) return sendJson(res, 409, { error: editableError });
+    const itemId = body.target_id;
+    if (!currentReviewItemSignatures(model).has(itemId)) {
+      return sendJson(res, 400, { error: "target_id is not present in current review-data" });
+    }
+    const current = feedback.item_status[itemId] || { viewed: false, approved: false };
+    const next = { ...current };
+    if (typeof body.viewed === "boolean") next.viewed = body.viewed;
+    if (typeof body.approved === "boolean") {
+      next.approved = body.approved;
+      if (body.approved) {
+        next.viewed = true;
+        next.approved_against = approvalEvidence(model, itemId, current.approved_against?.approved_at, current.approved_against?.carried_from_plan_signature);
+      } else {
+        delete next.approved_against;
+      }
+    }
+    feedback.item_status[itemId] = next;
+    await saveFeedback(reviewRoot, feedback);
+    return sendJson(res, 200, { ok: true, item_status: next, feedback });
+  } catch (error) {
+    return sendJson(res, 400, { error: error.message });
+  }
+}
+
+async function handleSubmit(req, res, taskSlug, reviewRoot) {
+  const model = await currentReviewModel(reviewRoot);
+  if (!model) return sendJson(res, 404, { error: "review-data.json not found" });
+  const feedback = await currentFeedback(reviewRoot, model, taskSlug);
+  const validationError = validateV2FeedbackForModel(feedback, model);
+  if (validationError) return sendJson(res, 400, { error: validationError });
+  feedback.review_status = "submitted";
+  await saveFeedback(reviewRoot, feedback);
+  return sendJson(res, 200, { ok: true, review_status: "submitted", feedback });
+}
+
+function validateCommentInput(body, model, allowExistingId = false) {
+  if (!body || typeof body !== "object") return "body must be an object";
+  if (allowExistingId && (!body.id || !COMMENT_ID_RE.test(body.id))) return "invalid comment id";
+  if (!currentReviewItemSignatures(model).has(body.target_id)) return "target_id is not present in current review-data";
+  if (typeof body.anchor_id !== "string" || !body.anchor_id) return "anchor_id is required";
+  if (!COMMENT_TYPES.has(body.type)) return "type must be needs-change | question | out-of-scope";
+  if (body.body !== undefined && typeof body.body !== "string") return "body must be a string";
+  return null;
 }
 
 async function handleStatic(req, res, pathname) {

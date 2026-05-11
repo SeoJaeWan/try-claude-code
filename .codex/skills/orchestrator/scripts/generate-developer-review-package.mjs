@@ -6,7 +6,7 @@ import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 function main() {
   try {
@@ -259,8 +259,74 @@ function buildReviewData({ repoRoot, taskSlug, outDir, planPath, planText, phase
   reviewData.phases.forEach((phase, index) => {
     phase.review_item_signature = reviewItemSignatureFromPayload(phaseSignaturePayload(reviewData, phase, index));
   });
+  reviewData.review_items = buildReviewItems(reviewData);
 
   return reviewData;
+}
+
+function buildReviewItems(reviewData) {
+  return [
+    {
+      id: "overview",
+      label: "Overview",
+      kind: "overview",
+      required: true,
+      review_item_signature: reviewData.overview.review_item_signature,
+      summary: reviewData.overview.understanding || reviewData.overview.change_shape || "",
+      anchors: compactAnchors([
+        anchor("scope", "요청과 범위", "scope", [
+          ...asArray(reviewData.overview.user_request),
+          ...asArray(reviewData.overview.included_scope),
+          ...asArray(reviewData.overview.excluded_scope)
+        ]),
+        anchor("change-shape", "변경 형상", "section", reviewData.overview.change_shape),
+        anchor("change-flow", "실행 흐름", "section", reviewData.overview.change_flow),
+        anchor("major-changes", "주요 변경점", "section", reviewData.overview.major_changes),
+        anchor("risks", "핵심 리스크", "section", reviewData.overview.risks),
+        anchor("topology", "파일/폴더 구조 계약", "topology", reviewData.topology_contract),
+        anchor("evidence", "체험 산출물", "evidence", reviewData.evidence_artifacts),
+        anchor("findings", "Plan review findings", "finding", reviewData.review_findings)
+      ])
+    },
+    ...reviewData.phases.map((phase) => ({
+      id: phase.id,
+      label: phase.title || phase.id,
+      kind: "phase",
+      required: true,
+      owner_agent: phase.owner_agent || "",
+      review_item_signature: phase.review_item_signature,
+      summary: phase.goal || "",
+      anchors: compactAnchors([
+        anchor("goal", "목표", "section", phase.goal),
+        anchor("changes", "변경 내용", "section", phase.changes),
+        anchor("contracts", "계약", "contract", phase.contracts),
+        anchor("file-impacts", "파일 영향", "file-impact", phase.file_impacts),
+        anchor("validation", "검증", "validation", phase.validation),
+        anchor("risks", "리스크 / 주의점", "risk", phase.risks),
+        anchor("topology", "파일/폴더 구조 계약", "topology", phase.topology_contract),
+        anchor("evidence", "체험 산출물", "evidence", phase.evidence_artifacts)
+      ])
+    }))
+  ];
+}
+
+function anchor(id, label, kind, source) {
+  return {
+    id,
+    label,
+    kind,
+    present: hasReviewContent(source)
+  };
+}
+
+function compactAnchors(anchors) {
+  return anchors.filter((item) => item.present).map(({ present, ...item }) => item);
+}
+
+function hasReviewContent(value) {
+  if (Array.isArray(value)) return value.filter(Boolean).length > 0;
+  if (value && typeof value === "object") return Object.keys(value).length > 0;
+  return Boolean(String(value || "").trim());
 }
 
 function buildPhase({ ref, index, phaseText, flowRow, topologyContract = [], evidenceArtifacts = [] }) {
@@ -831,47 +897,73 @@ function reviewItemSignatureFromPayload(payload) {
 }
 
 function buildFeedback(reviewData, existingFeedback, now) {
-  const steps = [
-    { id: "overview", signature: reviewData.overview.review_item_signature },
-    ...reviewData.phases.map((phase, index) => ({
-      id: phase.id || `P${index + 1}`,
-      signature: phase.review_item_signature
-    })),
-    { id: "final", signature: `final-${reviewData.plan_signature}` }
-  ];
+  const reviewItems = currentReviewItems(reviewData);
 
   const feedback = {
-    schema_version: SCHEMA_VERSION,
+    schema_version: 2,
     task_slug: reviewData.task_slug,
     plan_signature: reviewData.plan_signature,
     review_status: "in_progress",
     updated_at: now,
-    steps: {},
-    cards: {}
+    comments: [],
+    item_status: {}
   };
 
-  for (const step of steps) {
-    const prior = existingFeedback?.steps?.[step.id];
-    if (prior?.status === "approved" && prior?.approved_against?.review_item_signature === step.signature) {
+  for (const item of reviewItems) {
+    const prior = priorApprovedItem(existingFeedback, item);
+    if (prior) {
       const carriedFrom = prior.approved_against.plan_signature === reviewData.plan_signature
         ? prior.approved_against.carried_from_plan_signature || null
         : prior.approved_against.plan_signature || existingFeedback?.plan_signature || null;
-      feedback.steps[step.id] = {
-        status: "approved",
-        comment: typeof prior.comment === "string" ? prior.comment : "",
+      feedback.item_status[item.id] = {
+        viewed: true,
+        approved: true,
         approved_against: {
           plan_signature: reviewData.plan_signature,
-          review_item_signature: step.signature,
+          review_item_signature: item.review_item_signature,
           approved_at: prior.approved_against.approved_at || now,
           carried_from_plan_signature: carriedFrom === reviewData.plan_signature ? null : carriedFrom
         }
       };
     } else {
-      feedback.steps[step.id] = { status: "", comment: "" };
+      feedback.item_status[item.id] = { viewed: false, approved: false };
     }
   }
 
   return feedback;
+}
+
+function currentReviewItems(reviewData) {
+  if (Array.isArray(reviewData.review_items) && reviewData.review_items.length) {
+    return reviewData.review_items.map((item) => ({
+      id: item.id,
+      review_item_signature: item.review_item_signature
+    }));
+  }
+  return [
+    { id: "overview", review_item_signature: reviewData.overview.review_item_signature },
+    ...reviewData.phases.map((phase, index) => ({
+      id: phase.id || `P${index + 1}`,
+      review_item_signature: phase.review_item_signature
+    }))
+  ];
+}
+
+function priorApprovedItem(existingFeedback, item) {
+  if (!existingFeedback || typeof existingFeedback !== "object") return null;
+  const v2 = existingFeedback.item_status?.[item.id];
+  if (v2?.approved === true && v2?.approved_against?.review_item_signature === item.review_item_signature) {
+    return {
+      approved_against: v2.approved_against
+    };
+  }
+  const v1 = existingFeedback.steps?.[item.id];
+  if (v1?.status === "approved" && v1?.approved_against?.review_item_signature === item.review_item_signature) {
+    return {
+      approved_against: v1.approved_against
+    };
+  }
+  return null;
 }
 
 function buildReviewHistory(reviewData, existingHistory) {

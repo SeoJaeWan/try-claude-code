@@ -86,7 +86,7 @@ Controller requirements:
 
 - Follow `references/developer-review.md` Step 5.
 - Generate or refresh `./plans/{task-slug}/developer-review/` for the current `plan_signature`.
-- The package must expose Overview, every required Phase, and Final review steps. If the plan has implementation scope but does not provide reviewable Phase entries, route to `architect` for plan revision instead of presenting a flattened review.
+- The package must expose `review_items[]` for Overview and every required Phase target. If the plan has implementation scope but does not provide reviewable Phase targets, route to `architect` for plan revision instead of presenting a flattened review.
 - Start or reuse the shared developer review server through the documented launcher and report the printed `developer_review_url` to the user.
 - Stop with `developer_review_gate_blocker` while waiting for the user to submit the browser review and say `review complete`.
 - When the user says `review complete`, read `feedback.json` and continue only if the submitted feedback matches the current `task_slug`, `plan_signature`, and review item signatures.
@@ -94,8 +94,8 @@ Controller requirements:
 ## Step 6. Triage Developer Review Feedback
 
 - Follow `references/developer-review.md` Step 6.
-- If every required Overview and Phase step is approved with current signature evidence, continue to Step 7.
-- If any required item is not approved, preserve or update `review-history.json`, classify the feedback, and route according to `references/developer-review.md`.
+- If every required review item is approved with current signature evidence and no active `needs-change` or `question` comment remains, continue to Step 7.
+- If any required review item is not approved or any active non-approved comment remains, preserve or update `review-history.json`, classify the feedback, and route according to `references/developer-review.md`.
 - Feedback that changes plan meaning routes to `architect`; after revision, rerun Step 3 and Step 5 for the new `plan_signature`.
 - Feedback that only needs an answer must be answered in chat, then the same-signature review package must require browser re-submit.
 

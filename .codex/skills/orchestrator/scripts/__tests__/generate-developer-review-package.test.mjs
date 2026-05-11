@@ -166,9 +166,13 @@ affected_phase_paths: []
   assert.ok(reviewData.phases[0].validation.includes("JSON 파싱으로 한글 문자열을 확인한다"));
   assert.ok(reviewData.phases[0].file_impacts.includes("커밋 경계: phase 1: generate review package"));
   assert.match(reviewData.phases[0].review_item_signature, /^rvw-/);
+  assert.deepEqual(reviewData.review_items.map((item) => item.id), ["overview", "P1"]);
+  assert.ok(reviewData.review_items[0].anchors.some((anchor) => anchor.id === "scope"));
 
   const feedback = JSON.parse(fs.readFileSync(path.join(planDir, "developer-review", "feedback.json"), "utf8"));
-  assert.deepEqual(Object.keys(feedback.steps), ["overview", "P1", "final"]);
+  assert.equal(feedback.schema_version, 2);
+  assert.deepEqual(Object.keys(feedback.item_status), ["overview", "P1"]);
+  assert.deepEqual(feedback.comments, []);
   assert.equal(feedback.review_status, "in_progress");
 });
 

@@ -5,63 +5,71 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Developer Review</title>
   <style>
-    /* dev-review visual alignment: keep planning data/approval semantics, use the
-       same dense GitHub-style review surface as the implementation gate. */
     :root {
       --ink: #1f2328;
       --muted: #57606a;
-      --paper: #f6f8fa;
+      --bg: #f6f8fa;
       --panel: #ffffff;
       --line: #d0d7de;
       --line-soft: #eaeef2;
       --accent: #0969da;
-      --accent-ink: #ffffff;
       --accent-soft: #ddf4ff;
       --success: #1a7f37;
       --warn: #9a6700;
       --danger: #cf222e;
-      --soft: #f6f8fa;
       --shadow: 0 1px 3px rgba(31, 35, 40, 0.04), 0 8px 24px rgba(31, 35, 40, 0.06);
     }
 
+    * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body {
+      min-height: 100vh;
       color: var(--ink);
-      background: var(--paper);
+      background: var(--bg);
       font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
       font-size: 14px;
-      min-height: 100vh;
     }
 
-    .shell {
+    .app {
       display: grid;
       grid-template-columns: 320px minmax(0, 1fr);
       min-height: 100vh;
     }
 
-    aside {
-      border-right: 1px solid var(--line);
-      background: var(--panel);
-      backdrop-filter: none;
-      padding: 0;
+    aside.sidebar {
       position: sticky;
       top: 0;
       height: 100vh;
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      background: var(--panel);
+      border-right: 1px solid var(--line);
     }
 
-    aside > .eyebrow,
-    aside > h3,
-    aside > .meta {
-      padding-left: 16px;
-      padding-right: 16px;
+    .sb-header {
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--line-soft);
     }
 
-    aside > .eyebrow {
-      margin: 0;
-      padding-top: 16px;
+    .sb-title {
+      font-weight: 700;
+      font-size: 15px;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .sb-meta {
+      display: grid;
+      gap: 2px;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .sb-section-label {
+      padding: 14px 16px 6px;
       color: var(--muted);
       font-size: 11px;
       font-weight: 700;
@@ -69,26 +77,125 @@
       text-transform: uppercase;
     }
 
-    aside > h3 {
-      border-bottom: 1px solid var(--line-soft);
-      padding-bottom: 12px;
-      margin: 6px 0 0;
-      font-size: 15px;
+    .targets {
+      flex: 1;
+      overflow: auto;
+      padding: 0 8px 8px;
+    }
+
+    .target-button {
+      width: 100%;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: start;
+      padding: 8px 10px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--ink);
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .target-button:hover { background: var(--line-soft); }
+    .target-button.active {
+      background: var(--accent-soft);
+      border-color: rgba(9, 105, 218, 0.3);
+    }
+
+    .target-viewed {
+      margin-top: 3px;
+      cursor: pointer;
+    }
+
+    .target-body { min-width: 0; }
+    .target-kind {
+      color: var(--muted);
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 11px;
+    }
+    .target-label {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-top: 1px;
+      font-size: 13px;
       line-height: 1.35;
       word-break: break-word;
     }
 
-    aside > .meta {
-      margin: 0;
-      padding-top: 12px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--line-soft);
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.55;
+    .target-badges {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      align-items: flex-end;
     }
 
-    main {
+    .badge {
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.4;
+      white-space: nowrap;
+    }
+    .badge.approved { background: rgba(26, 127, 55, 0.1); color: var(--success); }
+    .badge.needs-change { background: rgba(207, 34, 46, 0.1); color: var(--danger); }
+    .badge.question { background: rgba(154, 103, 0, 0.1); color: var(--warn); }
+    .badge.out-of-scope { background: rgba(87, 96, 106, 0.1); color: var(--muted); }
+    .badge.viewed { background: rgba(9, 105, 218, 0.1); color: var(--accent); }
+
+    .history {
+      border-top: 1px solid var(--line-soft);
+      padding: 10px 16px;
+      max-height: 28vh;
+      overflow: auto;
+    }
+    .history summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      list-style: none;
+    }
+    .history summary::-webkit-details-marker { display: none; }
+    .history-entry {
+      margin-top: 8px;
+      padding: 8px;
+      border: 1px solid var(--line-soft);
+      border-radius: 6px;
+      background: var(--bg);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .submit-area {
+      display: grid;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--line-soft);
+    }
+    .submit-hint { color: var(--muted); font-size: 11px; line-height: 1.45; }
+    .btn-submit {
+      min-height: 34px;
+      border: 0;
+      border-radius: 6px;
+      background: var(--success);
+      color: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .btn-submit:disabled {
+      background: #94a3b0;
+      cursor: not-allowed;
+    }
+
+    main.main {
       width: 100%;
       max-width: 1200px;
       min-width: 0;
@@ -96,643 +203,756 @@
       padding: 24px 28px 80px;
     }
 
-    h1, h2, h3 {
-      font-family: inherit;
-      letter-spacing: 0;
-      margin: 0;
-    }
-
-    h1 { font-size: 22px; line-height: 1.35; }
-    h2 { font-size: 16px; line-height: 1.35; }
-    h3 { font-size: 13px; line-height: 1.35; margin-bottom: 8px; }
-
-    .steps {
-      flex: 1;
-      overflow: auto;
-      display: grid;
-      align-content: start;
-      gap: 0;
-      margin-top: 0;
-      padding: 8px;
-    }
-
-    .step-button {
-      width: 100%;
-      border: 1px solid transparent;
+    .submitted-banner {
+      margin-bottom: 14px;
+      padding: 10px 14px;
+      border: 1px solid rgba(9, 105, 218, 0.45);
       border-radius: 6px;
-      background: transparent;
-      color: var(--ink);
-      padding: 8px 10px;
-      cursor: pointer;
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto;
-      gap: 8px;
-      align-items: start;
-      text-align: left;
-      transition: none;
-    }
-
-    .step-button:hover {
-      transform: none;
-      background: var(--line-soft);
-      border-color: transparent;
-    }
-
-    .step-button.active {
       background: var(--accent-soft);
-      color: var(--ink);
-      border-color: rgba(9, 105, 218, 0.3);
-    }
-
-    .step-button .status-dot {
-      width: 9px;
-      height: 9px;
-      margin: 5px 0 0;
-      border-radius: 999px;
-      background: var(--line);
-    }
-
-    .step-title {
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+      color: var(--accent);
       font-size: 13px;
-      line-height: 1.35;
-      word-break: break-word;
+      line-height: 1.45;
     }
-
-    .step-sub {
-      display: block;
-      color: var(--muted);
-      font-size: 11px;
-      margin-top: 2px;
-    }
-
-    .step-status {
-      align-self: start;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 1px 6px;
-      background: var(--soft);
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .hero {
-      background: transparent;
-      border: 0;
-      border-radius: 0;
-      box-shadow: none;
-      padding: 0;
-      margin: 0;
-      overflow: visible;
-    }
-
-    .hero::after { display: none; }
 
     .target-header,
-    .review-box,
-    .nav {
-      background: var(--panel);
+    .toolbar,
+    .section-card {
       border: 1px solid var(--line);
       border-radius: 6px;
-      box-shadow: none;
+      background: var(--panel);
     }
 
     .target-header {
       padding: 18px 20px;
       margin-bottom: 18px;
     }
-
-    .target-meta-row {
+    .meta-row {
       display: flex;
-      gap: 12px;
-      align-items: center;
       flex-wrap: wrap;
+      gap: 8px 12px;
+      align-items: center;
       color: var(--muted);
       font-size: 12px;
-      margin-bottom: 8px;
     }
-
-    .target-kind-pill,
-    .pill,
-    .history-pill {
+    .pill {
       display: inline-flex;
       align-items: center;
+      padding: 1px 7px;
       border: 1px solid var(--line);
       border-radius: 999px;
-      padding: 1px 7px;
-      background: var(--soft);
+      background: var(--bg);
       color: var(--muted);
       font-size: 11px;
       font-weight: 600;
-      white-space: nowrap;
-      text-transform: none;
-      letter-spacing: 0;
     }
-
     .target-title {
+      margin: 8px 0 6px;
       font-size: 18px;
       font-weight: 600;
       line-height: 1.35;
-      margin: 0;
+      word-break: break-word;
     }
-
     .target-summary {
+      margin: 10px 0 0;
+      padding: 10px 12px;
+      border: 1px solid var(--line-soft);
+      border-radius: 6px;
+      background: var(--bg);
       white-space: pre-wrap;
       font-size: 13px;
       line-height: 1.6;
-      color: var(--ink);
-      background: var(--soft);
-      border: 1px solid var(--line-soft);
-      border-radius: 6px;
-      padding: 10px 12px;
-      margin: 10px 0 0;
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
-      margin-top: 0;
-    }
-
-    .card {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 14px 16px;
-      box-shadow: none;
-      min-width: 0;
-    }
-
-    .list { gap: 8px; }
-    .list li {
-      padding: 8px 10px;
-      background: var(--soft);
-      border: 1px solid var(--line-soft);
-      border-radius: 6px;
-      line-height: 1.45;
-    }
-
-    .flow {
-      display: grid;
-      gap: 8px;
-      align-items: stretch;
-      margin-top: 10px;
-    }
-
-    .flow span {
-      display: block;
-      background: var(--soft);
-      border: 1px solid var(--line-soft);
-      border-radius: 6px;
-      padding: 8px 10px;
-      font-weight: 400;
-      line-height: 1.45;
-    }
-
-    .flow .arrow { display: none; }
-
-    .review-box {
+    .toolbar {
       position: sticky;
       top: 8px;
       z-index: 5;
-      display: grid;
-      gap: 10px;
-      margin: 0 0 16px;
-      padding: 12px 16px;
-    }
-
-    .review-box-top {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 12px;
-      align-items: start;
-    }
-
-    .review-target-title {
-      font-size: 14px;
-      font-weight: 700;
-      line-height: 1.35;
-      word-break: break-word;
-    }
-
-    .review-box .meta {
-      margin: 4px 0 0;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
-    }
-
-    .review-meta {
       display: flex;
       flex-wrap: wrap;
-      justify-content: flex-end;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 10px 16px;
+    }
+    .toolbar label {
+      display: inline-flex;
       gap: 6px;
-    }
-
-    .status-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 0;
-    }
-
-    .status-row button,
-    .nav button,
-    .submit {
-      min-height: 32px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 6px 12px;
-      background: var(--panel);
-      color: var(--ink);
+      align-items: center;
       cursor: pointer;
-      font-weight: 600;
       font-size: 13px;
     }
+    .toolbar-spacer { flex: 1; }
 
-    .status-row button.active {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: var(--accent-ink);
-    }
-
-    .review-comment-row {
+    .sections {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 10px;
-      align-items: start;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
     }
-
-    textarea {
-      width: 100%;
-      min-height: 44px;
-      max-height: 140px;
-      resize: vertical;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: var(--panel);
-      color: var(--ink);
-      padding: 8px 10px;
-      font: inherit;
-      line-height: 1.5;
+    .section-card {
+      overflow: hidden;
     }
-
-    .submitted-banner {
-      background: var(--accent-soft);
-      border: 1px solid rgba(9, 105, 218, 0.45);
-      color: var(--accent);
+    .section-head {
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line-soft);
+      background: var(--bg);
+    }
+    .section-head h2 {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .section-body {
+      padding: 14px;
+    }
+    .section-body p {
+      margin: 0;
+      line-height: 1.6;
+    }
+    .list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .list li {
       padding: 8px 10px;
+      border: 1px solid var(--line-soft);
       border-radius: 6px;
-      font-size: 12px;
+      background: var(--bg);
       line-height: 1.45;
     }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+    .data-table th,
+    .data-table td {
+      padding: 8px;
+      border-bottom: 1px solid var(--line-soft);
+      text-align: left;
+      vertical-align: top;
+    }
+    code {
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 12px;
+    }
 
-    .nav {
-      display: flex;
-      justify-content: space-between;
+    .evidence-list {
+      display: grid;
       gap: 12px;
-      margin-top: 18px;
-      padding: 10px 12px;
     }
-
-    .nav button.primary,
-    .submit {
-      background: var(--success);
-      border-color: var(--success);
-      color: #fff;
-    }
-
-    .preview {
-      border: 1px solid var(--line);
-      background: var(--soft);
-      border-radius: 6px;
+    .evidence-item {
       padding: 12px;
+      border: 1px solid var(--line-soft);
+      border-radius: 6px;
+      background: var(--bg);
     }
-
-    .preview img,
     .evidence-frame {
       display: block;
       width: 100%;
       min-height: 520px;
-      background: #fff;
-      border-radius: 6px;
+      margin-top: 10px;
       border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
     }
 
-    .preview img {
-      min-height: 0;
-      max-width: 100%;
+    .comments {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .comment {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fdfdfd;
+      padding: 10px 12px;
+    }
+    .comment-head {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 5px;
+      font-size: 12px;
+    }
+    .comment-body {
+      white-space: pre-wrap;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .comment-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 4px;
+    }
+    .comment-actions button,
+    .btn-secondary,
+    .btn-primary {
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--panel);
+      color: var(--ink);
+      cursor: pointer;
+      font: inherit;
+      font-size: 12px;
+      padding: 4px 9px;
+    }
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn-secondary:disabled,
+    .btn-primary:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
     }
 
-    .data-table th,
-    .data-table td {
-      border-bottom: 1px solid var(--line-soft);
-      padding: 8px;
+    .popup-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.2);
     }
-
-    .evidence-list { gap: 14px; }
-    .evidence-item,
-    .history-entry {
+    .popup {
+      width: min(560px, 92vw);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      padding: 18px 20px;
+    }
+    .popup h3 {
+      margin: 0 0 6px;
+      font-size: 14px;
+    }
+    .popup-anchor {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 12px;
+      word-break: break-all;
+    }
+    .type-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .type-row label {
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+      padding: 4px 8px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .popup textarea {
+      width: 100%;
+      min-height: 92px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 8px 10px;
+      resize: vertical;
+      font: inherit;
+      font-size: 13px;
+    }
+    .popup-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .empty-main {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 120ms ease, transform 120ms ease;
       border: 1px solid var(--line);
       border-radius: 6px;
       background: var(--panel);
-      padding: 12px;
+      box-shadow: var(--shadow);
+      padding: 10px 12px;
+      font-size: 13px;
     }
-
-    .history-pills { gap: 6px; margin: 8px 0 10px; }
-    .history-pill.status-needs-change {
-      background: rgba(207, 34, 46, 0.1);
-      border-color: rgba(207, 34, 46, 0.3);
-      color: var(--danger);
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
     }
-    .history-pill.status-question {
-      background: rgba(154, 103, 0, 0.1);
-      border-color: rgba(154, 103, 0, 0.3);
-      color: var(--warn);
-    }
-    .history-pill.status-approved,
-    .history-pill.resolution-resolved {
-      background: rgba(26, 127, 55, 0.1);
-      border-color: rgba(26, 127, 55, 0.3);
-      color: var(--success);
-    }
-
-    .phase-owner {
-      margin-top: 10px;
-      padding: 6px 9px;
-      border-radius: 999px;
-      background: var(--soft);
-      font-size: 12px;
-    }
-
-    .toast { border-radius: 6px; padding: 10px 12px; }
 
     @media (max-width: 860px) {
-      .shell { grid-template-columns: 1fr; }
-      aside {
+      .app { grid-template-columns: 1fr; }
+      aside.sidebar {
         position: static;
         height: auto;
         border-right: 0;
         border-bottom: 1px solid var(--line);
       }
-      .steps { max-height: 42vh; }
-      main { padding: 16px; }
-      .review-box { position: static; }
-      .review-box-top,
-      .review-comment-row {
-        grid-template-columns: 1fr;
-      }
-      .review-meta { justify-content: flex-start; }
-      .grid { grid-template-columns: 1fr; }
-      .wide { grid-column: auto; }
+      .targets { max-height: 42vh; }
+      main.main { padding: 16px; }
+      .toolbar { position: static; }
     }
   </style>
 </head>
 <body>
-  <div class="shell">
-    <aside>
-      <div class="eyebrow">Developer Review</div>
-      <h3 id="navTitle">Planning Review</h3>
-      <div class="meta" id="navMeta"></div>
-      <div class="steps" id="steps"></div>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sb-header">
+        <div class="sb-title" id="sb-title">Planning Review</div>
+        <div class="sb-meta" id="sb-meta"></div>
+      </div>
+      <div class="sb-section-label">Review Targets</div>
+      <div class="targets" id="targets"></div>
+      <details class="history" id="history-box" style="display:none">
+        <summary>History</summary>
+        <div id="history-list"></div>
+      </details>
+      <div class="submit-area">
+        <div class="submit-hint" id="submit-hint"></div>
+        <button class="btn-submit" id="submit-btn">Submit review</button>
+      </div>
     </aside>
-    <main>
-      <section class="review-box" id="reviewBox"></section>
-      <section class="hero" id="content"></section>
-      <nav class="nav">
-        <button id="prevBtn">Previous</button>
-        <button class="primary" id="nextBtn">Next</button>
-      </nav>
+    <main class="main" id="main">
+      <div class="empty-main">Loading...</div>
     </main>
   </div>
   <div class="toast" id="toast">Saved</div>
 
   <script>
-    const statuses = [
-      ["approved", "Approve"],
-      ["needs-change", "Needs change"],
-      ["question", "Question"],
-      ["out-of-scope", "Out of scope"]
-    ];
+  (function () {
+    "use strict";
 
-    let model;
-    let feedback;
-    let reviewHistory;
-    let steps = [];
-    let current = 0;
+    const COMMENT_TYPES = ["needs-change", "question", "out-of-scope"];
+    const state = {
+      model: null,
+      feedback: null,
+      history: null,
+      items: [],
+      activeId: null,
+      submitted: false
+    };
 
     const $ = (id) => document.getElementById(id);
+    const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      "\"": "&quot;",
+      "'": "&#039;"
+    }[ch]));
+    const asArray = (value) => !value ? [] : Array.isArray(value) ? value : [value];
 
-    function asArray(value) {
-      if (!value) return [];
-      return Array.isArray(value) ? value : [value];
+    function taskSlugFromUrl() {
+      const match = window.location.pathname.match(/^\/review\/([A-Za-z0-9_-]+)\/?$/);
+      return match ? match[1] : "";
     }
 
-    function esc(value) {
-      return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        "\"": "&quot;",
-        "'": "&#039;"
-      }[ch]));
+    function apiPath(resource) {
+      const taskSlug = taskSlugFromUrl();
+      return taskSlug ? `/api/reviews/${taskSlug}/${resource}` : "";
     }
 
-    function canonicalize(value) {
-      if (Array.isArray(value)) {
-        return value.map(canonicalize);
-      }
-      if (value && typeof value === "object") {
-        const ignored = new Set(["review_item_signature", "signature"]);
-        return Object.keys(value)
-          .filter((key) => !ignored.has(key) && value[key] !== undefined)
-          .sort()
-          .reduce((result, key) => {
-            result[key] = canonicalize(value[key]);
-            return result;
-          }, {});
-      }
-      return value ?? null;
+    async function apiGet(resource, fallback) {
+      const res = await fetch(apiPath(resource), { cache: "no-store" });
+      if (!res.ok) return fallback;
+      return res.json();
     }
 
-    function hashString(value) {
-      let h1 = 0xdeadbeef ^ value.length;
-      let h2 = 0x41c6ce57 ^ value.length;
-      for (let i = 0; i < value.length; i += 1) {
-        const ch = value.charCodeAt(i);
-        h1 = Math.imul(h1 ^ ch, 2654435761);
-        h2 = Math.imul(h2 ^ ch, 1597334677);
-      }
-      h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-      h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-      return `rvw-${(h2 >>> 0).toString(16).padStart(8, "0")}${(h1 >>> 0).toString(16).padStart(8, "0")}`;
-    }
-
-    function reviewGlobalContext(value) {
-      const overview = value?.overview || {};
-      return {
-        task_slug: value?.task_slug || "",
-        title: value?.title || "",
-        review_outcome: value?.review_outcome || "",
-        review_findings: asArray(value?.review_findings),
-        overview_scope: {
-          user_request: asArray(overview.user_request),
-          included_scope: asArray(overview.included_scope),
-          excluded_scope: asArray(overview.excluded_scope),
-          change_shape: overview.change_shape || "",
-          change_flow: asArray(overview.change_flow),
-          major_changes: asArray(overview.major_changes),
-          topology_contract: asArray(value?.topology_contract),
-          evidence_artifacts: asArray(value?.evidence_artifacts)
-        }
-      };
-    }
-
-    function overviewSignaturePayload(value) {
-      const overview = value?.overview || {};
-      return {
-        kind: "overview",
-        id: "overview",
-        title: value?.title || "",
-        review_outcome: value?.review_outcome || "",
-        review_findings: asArray(value?.review_findings),
-        overview: {
-          user_request: asArray(overview.user_request),
-          understanding: overview.understanding || "",
-          included_scope: asArray(overview.included_scope),
-          excluded_scope: asArray(overview.excluded_scope),
-          change_shape: overview.change_shape || "",
-          change_flow: asArray(overview.change_flow),
-          major_changes: asArray(overview.major_changes),
-          risks: asArray(overview.risks),
-          ui_previews: asArray(overview.ui_previews),
-          topology_contract: asArray(overview.topology_contract),
-          evidence_artifacts: asArray(overview.evidence_artifacts)
-        }
-      };
-    }
-
-    function phaseSignaturePayload(value, phase, index) {
-      return {
-        kind: "phase",
-        id: phase?.id || `P${index + 1}`,
-        global_context: reviewGlobalContext(value),
-        phase: {
-          id: phase?.id || `P${index + 1}`,
-          title: phase?.title || "",
-          owner_agent: phase?.owner_agent || "",
-          goal: phase?.goal || "",
-          changes: asArray(phase?.changes),
-          contracts: asArray(phase?.contracts),
-          file_impacts: asArray(phase?.file_impacts),
-          validation: asArray(phase?.validation),
-          risks: asArray(phase?.risks),
-          ui_previews: asArray(phase?.ui_previews),
-          topology_contract: asArray(phase?.topology_contract),
-          evidence_artifacts: asArray(phase?.evidence_artifacts)
-        }
-      };
-    }
-
-    function reviewItemSignatureFromPayload(payload) {
-      return hashString(JSON.stringify(canonicalize(payload)));
-    }
-
-    function attachReviewItemSignatures(value) {
-      if (!value || typeof value !== "object") return value;
-      if (value.overview && typeof value.overview === "object" && !value.overview.review_item_signature) {
-        value.overview.review_item_signature = reviewItemSignatureFromPayload(overviewSignaturePayload(value));
-      }
-      asArray(value.phases).forEach((phase, index) => {
-        if (phase && typeof phase === "object" && !phase.review_item_signature) {
-          phase.review_item_signature = reviewItemSignatureFromPayload(phaseSignaturePayload(value, phase, index));
-        }
+    async function apiSend(method, resource, body) {
+      const res = await fetch(apiPath(resource), {
+        method,
+        headers: body ? { "content-type": "application/json" } : {},
+        body: body ? JSON.stringify(body) : undefined,
+        cache: "no-store"
       });
-      return value;
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `${method} ${resource} failed`);
+      return data;
     }
 
-    function reviewItemSignature(step) {
-      return step?.review_item_signature || "";
-    }
-
-    function approvalEvidence(step, approvedAt = null, carriedFromPlanSignature = null) {
-      const carriedFrom = carriedFromPlanSignature && carriedFromPlanSignature !== model.plan_signature
-        ? carriedFromPlanSignature
-        : null;
-      return {
-        plan_signature: model.plan_signature,
-        review_item_signature: reviewItemSignature(step),
-        approved_at: approvedAt || new Date().toISOString(),
-        carried_from_plan_signature: carriedFrom
+    function normalizeAssets(model) {
+      const taskSlug = taskSlugFromUrl();
+      if (!taskSlug || !model) return model;
+      const normalizeOne = (item) => {
+        if (!item || typeof item !== "object" || typeof item.asset !== "string") return item;
+        if (/^(?:https?:)?\/\//.test(item.asset) || item.asset.startsWith("/")) return item;
+        const asset = item.asset.replace(/^assets\//, "");
+        return { ...item, asset: `/review-assets/${taskSlug}/${asset}` };
       };
+      const normalizeContainer = (container) => {
+        if (!container || typeof container !== "object") return;
+        if (Array.isArray(container.ui_previews)) container.ui_previews = container.ui_previews.map(normalizeOne);
+        if (Array.isArray(container.evidence_artifacts)) container.evidence_artifacts = container.evidence_artifacts.map(normalizeOne);
+      };
+      normalizeContainer(model.overview);
+      asArray(model.phases).forEach(normalizeContainer);
+      if (Array.isArray(model.evidence_artifacts)) model.evidence_artifacts = model.evidence_artifacts.map(normalizeOne);
+      return model;
     }
 
-    function isFreshApproval(item, step) {
-      return item?.status === "approved" &&
-        Boolean(reviewItemSignature(step)) &&
-        item?.approved_against?.review_item_signature === reviewItemSignature(step);
+    function deriveItems(model) {
+      if (Array.isArray(model.review_items) && model.review_items.length) return model.review_items;
+      return [
+        {
+          id: "overview",
+          label: "Overview",
+          kind: "overview",
+          required: true,
+          review_item_signature: model.overview?.review_item_signature || "",
+          summary: model.overview?.understanding || "",
+          anchors: [
+            { id: "scope", label: "요청과 범위", kind: "scope" },
+            { id: "major-changes", label: "주요 변경점", kind: "section" },
+            { id: "risks", label: "핵심 리스크", kind: "risk" }
+          ]
+        },
+        ...asArray(model.phases).map((phase, index) => ({
+          id: phase.id || `P${index + 1}`,
+          label: phase.title || `Phase ${index + 1}`,
+          kind: "phase",
+          required: true,
+          owner_agent: phase.owner_agent || "",
+          review_item_signature: phase.review_item_signature || "",
+          summary: phase.goal || "",
+          anchors: [
+            { id: "changes", label: "변경 내용", kind: "section" },
+            { id: "contracts", label: "계약", kind: "contract" },
+            { id: "file-impacts", label: "파일 영향", kind: "file-impact" },
+            { id: "validation", label: "검증", kind: "validation" },
+            { id: "risks", label: "리스크 / 주의점", kind: "risk" }
+          ]
+        }))
+      ];
     }
 
-    function markEdited() {
-      if (feedback.review_status === "submitted") {
-        feedback.review_status = "in_progress";
+    function createFeedback(existing) {
+      const base = {
+        schema_version: 2,
+        task_slug: state.model.task_slug,
+        plan_signature: state.model.plan_signature,
+        review_status: "in_progress",
+        updated_at: new Date().toISOString(),
+        comments: [],
+        item_status: {}
+      };
+      for (const item of state.items) {
+        base.item_status[item.id] = { viewed: false, approved: false };
       }
+      if (!existing || typeof existing !== "object") return base;
+      if (existing.task_slug && existing.task_slug !== state.model.task_slug) return base;
+      if (existing.plan_signature && existing.plan_signature !== state.model.plan_signature) return base;
+
+      if (existing.schema_version === 2 || Array.isArray(existing.comments) || existing.item_status) {
+        base.review_status = existing.review_status === "submitted" ? "submitted" : "in_progress";
+        base.comments = Array.isArray(existing.comments) ? existing.comments : [];
+        for (const item of state.items) {
+          const prior = existing.item_status?.[item.id];
+          base.item_status[item.id] = prior && typeof prior === "object"
+            ? { viewed: !!prior.viewed, approved: !!prior.approved, approved_against: prior.approved_against || undefined }
+            : { viewed: false, approved: false };
+        }
+        return base;
+      }
+
+      let counter = 1;
+      for (const item of state.items) {
+        const prior = existing.steps?.[item.id];
+        if (!prior || typeof prior !== "object") continue;
+        if (prior.status === "approved") {
+          base.item_status[item.id] = {
+            viewed: true,
+            approved: true,
+            approved_against: prior.approved_against
+          };
+        } else if (COMMENT_TYPES.includes(prior.status)) {
+          base.item_status[item.id] = { viewed: true, approved: false };
+          base.comments.push({
+            id: `cm_${String(counter++).padStart(3, "0")}`,
+            target_id: item.id,
+            anchor_id: "general",
+            type: prior.status,
+            body: prior.comment || "",
+            created_at: existing.updated_at || new Date().toISOString(),
+            updated_at: existing.updated_at || new Date().toISOString()
+          });
+        }
+      }
+      return base;
     }
 
-    function list(items) {
-      const normalized = asArray(items).filter(Boolean);
-      if (!normalized.length) return "<p class=\"meta\">없음</p>";
-      return `<ul class="list">${normalized.map((item) => `<li>${esc(item)}</li>`).join("")}</ul>`;
+    function itemStatus(itemId) {
+      return state.feedback.item_status[itemId] || { viewed: false, approved: false };
     }
 
-    function flow(items) {
-      const normalized = asArray(items).filter(Boolean);
-      if (!normalized.length) return "";
-      return `<div class="flow">${normalized.map((item, index) => `${index ? "<b class=\"arrow\">→</b>" : ""}<span>${esc(item)}</span>`).join("")}</div>`;
+    function itemComments(itemId) {
+      return asArray(state.feedback.comments).filter((comment) => comment.target_id === itemId);
     }
 
-    function previewBlock(previews) {
-      const items = asArray(previews).filter(Boolean);
-      if (!items.length) return "";
-      return items.map((preview) => `
-        <div class="preview">
-          <strong>${esc(preview.id || "UI")}. ${esc(preview.title || "UI preview")}</strong>
-          <p>${esc(preview.description || "화면이 어떤 식으로 나타날지 보여주는 계획 preview입니다.")}</p>
-          ${preview.asset ? `<img src="${esc(preview.asset)}" alt="${esc(preview.title || "UI preview")}">` : ""}
-        </div>
+    function anchorComments(itemId, anchorId) {
+      return itemComments(itemId).filter((comment) => comment.anchor_id === anchorId);
+    }
+
+    function commentCounts(itemId) {
+      const counts = { needsChange: 0, question: 0, outOfScope: 0 };
+      for (const comment of itemComments(itemId)) {
+        if (comment.type === "needs-change") counts.needsChange += 1;
+        if (comment.type === "question") counts.question += 1;
+        if (comment.type === "out-of-scope") counts.outOfScope += 1;
+      }
+      return counts;
+    }
+
+    function verdict(itemId) {
+      const counts = commentCounts(itemId);
+      if (counts.needsChange) return "needs-change";
+      if (counts.question) return "question";
+      if (counts.outOfScope) return "out-of-scope";
+      if (itemStatus(itemId).approved) return "approved";
+      if (itemStatus(itemId).viewed) return "viewed";
+      return "";
+    }
+
+    function historyLabel(value) {
+      return {
+        approved: "approved",
+        "needs-change": "needs-change",
+        question: "question",
+        "out-of-scope": "out-of-scope",
+        viewed: "viewed",
+        answer_only: "answer-only",
+        request_lock: "request-lock",
+        scope_decision: "scope-decision",
+        ui_direction: "ui-direction",
+        plan_revision: "plan-revision",
+        resolved: "resolved",
+        superseded: "superseded"
+      }[value] || value;
+    }
+
+    function render() {
+      state.submitted = state.feedback.review_status === "submitted";
+      $("sb-title").textContent = state.model.title || state.model.task_slug || "Planning Review";
+      $("sb-meta").innerHTML = `
+        <div>task: <strong>${esc(state.model.task_slug || "")}</strong></div>
+        <div>signature: <strong>${esc(state.model.plan_signature || "")}</strong></div>
+        <div>review: <strong>${esc(state.model.review_outcome || "")}</strong></div>
+      `;
+      renderTargets();
+      renderHistory();
+      renderSubmit();
+      renderMain();
+    }
+
+    function renderTargets() {
+      $("targets").innerHTML = state.items.map((item) => {
+        const status = itemStatus(item.id);
+        const currentVerdict = verdict(item.id);
+        const counts = commentCounts(item.id);
+        const badges = [];
+        if (currentVerdict === "needs-change") badges.push(`<span class="badge needs-change">needs-change (${counts.needsChange})</span>`);
+        else if (currentVerdict === "question") badges.push(`<span class="badge question">question (${counts.question})</span>`);
+        else if (currentVerdict === "out-of-scope") badges.push(`<span class="badge out-of-scope">out-of-scope</span>`);
+        else if (currentVerdict === "approved") badges.push(`<span class="badge approved">approved</span>`);
+        else if (currentVerdict === "viewed") badges.push(`<span class="badge viewed">viewed</span>`);
+        return `
+          <button class="target-button ${item.id === state.activeId ? "active" : ""}" data-id="${esc(item.id)}">
+            <input class="target-viewed" type="checkbox" data-viewed="${esc(item.id)}" ${status.viewed ? "checked" : ""} ${state.submitted ? "disabled" : ""} title="Mark viewed">
+            <span class="target-body">
+              <span class="target-kind">${esc(item.kind || "item")}</span>
+              <span class="target-label">${esc(item.label || item.id)}</span>
+            </span>
+            <span class="target-badges">${badges.join("")}</span>
+          </button>
+        `;
+      }).join("");
+      $("targets").querySelectorAll(".target-button").forEach((button) => {
+        button.addEventListener("click", (event) => {
+          if (event.target.matches("input")) return;
+          state.activeId = button.dataset.id;
+          render();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      });
+      $("targets").querySelectorAll("[data-viewed]").forEach((checkbox) => {
+        checkbox.addEventListener("change", async (event) => {
+          event.stopPropagation();
+          await updateItemStatus(checkbox.dataset.viewed, { viewed: checkbox.checked });
+        });
+      });
+    }
+
+    function renderHistory() {
+      const rounds = asArray(state.history?.rounds);
+      $("history-box").style.display = rounds.length ? "" : "none";
+      $("history-list").innerHTML = rounds.map((round) => `
+        <article class="history-entry">
+          <strong>${esc(round.id || "Round")}</strong>
+          ${round.submitted_at ? `<div>${esc(round.submitted_at)}</div>` : ""}
+          ${round.summary ? `<div>${esc(round.summary)}</div>` : ""}
+        </article>
       `).join("");
     }
 
-    function topologyTable(items) {
-      const rows = asArray(items).filter(Boolean);
-      if (!rows.length) return "";
+    function renderSubmit() {
+      const required = state.items.filter((item) => item.required !== false);
+      const unapproved = required.filter((item) => !itemStatus(item.id).approved);
+      const unresolved = asArray(state.feedback.comments).filter((comment) => comment.type !== "out-of-scope");
+      const unviewed = required.filter((item) => !itemStatus(item.id).viewed);
+      const hint = state.submitted
+        ? "제출되었습니다. 채팅에 'review complete'라고 알려주세요."
+        : `${unapproved.length}개 target 미승인 · ${unresolved.length}개 active comment · ${unviewed.length}개 미확인`;
+      $("submit-hint").textContent = hint;
+      $("submit-btn").textContent = state.submitted ? "Submitted" : "Submit review";
+      $("submit-btn").disabled = state.submitted;
+    }
+
+    function activeItem() {
+      return state.items.find((item) => item.id === state.activeId) || state.items[0];
+    }
+
+    function renderMain() {
+      const item = activeItem();
+      if (!item) {
+        $("main").innerHTML = `<div class="empty-main">review target이 없습니다.</div>`;
+        return;
+      }
+      const status = itemStatus(item.id);
+      $("main").innerHTML = `
+        ${state.submitted ? `<div class="submitted-banner">리뷰가 제출되었습니다. 채팅에 <strong>review complete</strong>라고 입력해주세요. 이 화면은 다음 라운드까지 read-only입니다.</div>` : ""}
+        <section class="target-header">
+          <div class="meta-row">
+            <span class="pill">${esc(item.kind || "item")}</span>
+            <span>${esc(item.id)}</span>
+            ${item.owner_agent ? `<span>owner: <strong>${esc(item.owner_agent)}</strong></span>` : ""}
+            ${item.review_item_signature ? `<span>signed</span>` : ""}
+          </div>
+          <h1 class="target-title">${esc(item.label || item.id)}</h1>
+          ${item.summary ? `<p class="target-summary">${esc(item.summary)}</p>` : ""}
+        </section>
+        <section class="toolbar">
+          <label><input id="viewed-toggle" type="checkbox" ${status.viewed ? "checked" : ""} ${state.submitted ? "disabled" : ""}> Viewed</label>
+          <label><input id="approved-toggle" type="checkbox" ${status.approved ? "checked" : ""} ${state.submitted ? "disabled" : ""}> Approved</label>
+          <span class="toolbar-spacer"></span>
+          ${verdict(item.id) ? `<span class="badge ${esc(verdict(item.id))}">${esc(historyLabel(verdict(item.id)))}</span>` : `<span class="badge">not reviewed</span>`}
+        </section>
+        <section class="sections">
+          ${renderSections(item)}
+        </section>
+      `;
+      $("viewed-toggle")?.addEventListener("change", (event) => updateItemStatus(item.id, { viewed: event.target.checked }));
+      $("approved-toggle")?.addEventListener("change", (event) => updateItemStatus(item.id, { approved: event.target.checked }));
+      $("main").querySelectorAll("[data-add-comment]").forEach((button) => {
+        button.addEventListener("click", () => openCommentPopup({ target_id: item.id, anchor_id: button.dataset.addComment }));
+      });
+      $("main").querySelectorAll("[data-edit-comment]").forEach((button) => {
+        const comment = state.feedback.comments.find((item) => item.id === button.dataset.editComment);
+        if (comment) button.addEventListener("click", () => openCommentPopup(comment));
+      });
+      $("main").querySelectorAll("[data-delete-comment]").forEach((button) => {
+        button.addEventListener("click", () => deleteComment(button.dataset.deleteComment));
+      });
+    }
+
+    function renderSections(item) {
+      const sections = sectionData(item);
+      if (!sections.some((section) => section.id === "general") && anchorComments(item.id, "general").length) {
+        sections.push({ id: "general", label: "General", html: `<p>이전 형식에서 변환된 코멘트입니다.</p>` });
+      }
+      if (!sections.length) {
+        sections.push({ id: "general", label: "General", html: `<p>검토할 상세 섹션이 없습니다.</p>` });
+      }
+      return sections.map((section) => `
+        <article class="section-card" id="anchor-${esc(section.id)}">
+          <div class="section-head">
+            <h2>${esc(section.label)}</h2>
+            <button class="btn-secondary" data-add-comment="${esc(section.id)}" ${state.submitted ? "disabled" : ""}>Add comment</button>
+          </div>
+          <div class="section-body">
+            ${section.html}
+            ${renderComments(item.id, section.id)}
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function sectionData(item) {
+      if (item.kind === "overview") return overviewSections();
+      if (item.kind === "phase") return phaseSections(item.id);
+      return [{ id: "general", label: item.label || item.id, html: `<p>${esc(item.summary || "")}</p>` }];
+    }
+
+    function overviewSections() {
+      const overview = state.model.overview || {};
+      const sections = [
+        { id: "scope", label: "요청과 범위", html: `${smallList("사용자 요청", overview.user_request)}${smallList("포함 범위", overview.included_scope)}${smallList("제외 범위", overview.excluded_scope)}` },
+        { id: "change-shape", label: "변경 형상", html: `<p>${esc(overview.change_shape || "")}</p>${smallList("실행 흐름", overview.change_flow)}` },
+        { id: "major-changes", label: "주요 변경점", html: list(overview.major_changes) },
+        { id: "risks", label: "핵심 리스크", html: list(overview.risks) },
+        { id: "topology", label: "파일/폴더 구조 계약", html: topologyTable(overview.topology_contract || state.model.topology_contract) },
+        { id: "evidence", label: "체험 산출물", html: evidenceBlock(overview.evidence_artifacts || state.model.evidence_artifacts) },
+        { id: "findings", label: "Plan review findings", html: list(state.model.review_findings) }
+      ];
+      return sections.filter((section) => section.html && !/class="empty"/.test(section.html));
+    }
+
+    function phaseSections(id) {
+      const phase = asArray(state.model.phases).find((item) => item.id === id) || {};
+      const sections = [
+        { id: "goal", label: "목표", html: `<p>${esc(phase.goal || "")}</p>` },
+        { id: "changes", label: "변경 내용", html: list(phase.changes) },
+        { id: "contracts", label: "계약", html: list(phase.contracts) },
+        { id: "file-impacts", label: "파일 영향", html: list(phase.file_impacts) },
+        { id: "validation", label: "검증", html: list(phase.validation) },
+        { id: "risks", label: "리스크 / 주의점", html: list(phase.risks) },
+        { id: "topology", label: "파일/폴더 구조 계약", html: topologyTable(phase.topology_contract) },
+        { id: "evidence", label: "체험 산출물", html: evidenceBlock(phase.evidence_artifacts) }
+      ];
+      return sections.filter((section) => section.html && !/class="empty"/.test(section.html));
+    }
+
+    function smallList(title, values) {
+      const html = list(values);
+      if (/class="empty"/.test(html)) return "";
+      return `<h3>${esc(title)}</h3>${html}`;
+    }
+
+    function list(values) {
+      const items = asArray(values).filter(Boolean);
+      if (!items.length) return `<p class="empty">없음</p>`;
+      return `<ul class="list">${items.map((item) => `<li>${esc(item)}</li>`).join("")}</ul>`;
+    }
+
+    function topologyTable(values) {
+      const rows = asArray(values).filter(Boolean);
+      if (!rows.length) return `<p class="empty">없음</p>`;
       return `
         <table class="data-table">
-          <thead>
-            <tr>
-              <th>경로</th>
-              <th>상태</th>
-              <th>종류</th>
-              <th>Phase</th>
-              <th>책임</th>
-              <th>근거</th>
-            </tr>
-          </thead>
+          <thead><tr><th>경로</th><th>상태</th><th>Phase</th><th>책임</th></tr></thead>
           <tbody>
-            ${rows.map((item) => `
+            ${rows.map((row) => `
               <tr>
-                <td><code>${esc(item.path || "")}</code></td>
-                <td>${item.status ? `<span class="pill">${esc(item.status)}</span>` : ""}</td>
-                <td>${esc(item.kind || "")}</td>
-                <td>${esc(item.phase || "")}</td>
-                <td>${esc(item.responsibility || "")}</td>
-                <td>${esc(item.evidence || "")}</td>
+                <td><code>${esc(row.path || "")}</code></td>
+                <td>${esc(row.status || "")}</td>
+                <td>${esc(row.phase || "")}</td>
+                <td>${esc(row.responsibility || "")}</td>
               </tr>
             `).join("")}
           </tbody>
@@ -740,30 +960,25 @@
       `;
     }
 
-    function evidenceBlock(items) {
-      const artifacts = asArray(items).filter(Boolean);
-      if (!artifacts.length) return "";
+    function evidenceBlock(values) {
+      const rows = asArray(values).filter(Boolean);
+      if (!rows.length) return `<p class="empty">없음</p>`;
       return `
         <div class="evidence-list">
-          ${artifacts.map((item) => {
+          ${rows.map((item) => {
             const src = item.asset || item.entry || "";
             const canFrame = /\.html?$/i.test(src);
             return `
               <article class="evidence-item">
-                <div class="history-pills">
-                  <span class="history-pill">${esc(item.id || "evidence")}</span>
-                  ${item.kind ? `<span class="history-pill">${esc(item.kind)}</span>` : ""}
-                  ${item.phase ? `<span class="history-pill">${esc(item.phase)}</span>` : ""}
+                <div class="meta-row">
+                  <span class="pill">${esc(item.id || "evidence")}</span>
+                  ${item.kind ? `<span class="pill">${esc(item.kind)}</span>` : ""}
+                  ${item.phase ? `<span class="pill">${esc(item.phase)}</span>` : ""}
                 </div>
                 <p><strong>${esc(item.purpose || "체험 산출물")}</strong></p>
-                ${asArray(item.review_points).length ? list(item.review_points) : ""}
-                ${item.entry ? `<p class="meta">source: <code>${esc(item.entry)}</code>${item.content_hash ? ` · hash: <code>${esc(item.content_hash)}</code>` : ""}</p>` : ""}
-                ${src ? `
-                  <p><a href="${esc(src)}" target="_blank" rel="noopener">체험 산출물 새 창으로 열기</a></p>
-                  ${canFrame
-                    ? `<iframe class="evidence-frame" sandbox="allow-scripts" src="${esc(src)}" title="${esc(item.id || "evidence")}"></iframe>`
-                    : ""}
-                ` : ""}
+                ${list(item.review_points)}
+                ${src ? `<p><a href="${esc(src)}" target="_blank" rel="noopener">새 창으로 열기</a></p>` : ""}
+                ${src && canFrame ? `<iframe class="evidence-frame" sandbox="allow-scripts" src="${esc(src)}" title="${esc(item.id || "evidence")}"></iframe>` : ""}
               </article>
             `;
           }).join("")}
@@ -771,506 +986,112 @@
       `;
     }
 
-    function cssToken(value) {
-      return String(value ?? "").toLowerCase().replace(/[^a-z0-9_-]+/g, "-");
-    }
-
-    function historyLabel(value) {
-      return {
-        approved: "Approved",
-        "needs-change": "Needs Change",
-        question: "Question",
-        "out-of-scope": "Out of Scope",
-        answer_only: "Answer Only",
-        request_lock: "Request Lock",
-        scope_decision: "Scope Decision",
-        ui_direction: "UI Direction",
-        plan_revision: "Plan Revision",
-        resolved: "Resolved",
-        active: "Active",
-        superseded: "Superseded",
-        "not reviewed": "Not reviewed"
-      }[value] || value;
-    }
-
-    function createHistoryFallback() {
-      return {
-        schema_version: 1,
-        task_slug: model?.task_slug || "",
-        current_plan_signature: model?.plan_signature || "",
-        rounds: []
-      };
-    }
-
-    function historyRounds() {
-      return asArray(reviewHistory?.rounds).filter((round) => round && typeof round === "object");
-    }
-
-    function normalizedHistoryEntries(stepId) {
-      const entries = [];
-      historyRounds().forEach((round, roundIndex) => {
-        asArray(round.items).forEach((item) => {
-          if (!item || typeof item !== "object") return;
-          if (stepId && item.step_id !== stepId) return;
-          entries.push({
-            roundId: round.id || `R${roundIndex + 1}`,
-            stepId: item.step_id || "",
-            stepLabel: item.step_label || item.step_id || "",
-            submittedAt: round.submitted_at || round.updated_at || "",
-            sourcePlanSignature: round.source_plan_signature || round.plan_signature || "",
-            resultingPlanSignature: item.resulting_plan_signature || round.resulting_plan_signature || "",
-            resolutionState: item.resolution_state || round.resolution_state || "",
-            summary: item.resolution_summary || round.summary || "",
-            userStatus: item.user_status || "",
-            userComment: item.user_comment || "",
-            triageRoute: item.triage_route || round.triage_route || "",
-            actionSummary: asArray(item.action_summary).filter(Boolean)
-          });
-        });
-      });
-      return entries;
-    }
-
-    function renderHistoryEntries(entries, options = {}) {
-      const { emptyText = "아직 기록된 리뷰 이력이 없습니다.", showStepLabel = false } = options;
-      if (!entries.length) return `<p class="meta">${esc(emptyText)}</p>`;
+    function renderComments(itemId, anchorId) {
+      const comments = anchorComments(itemId, anchorId);
+      if (!comments.length) return "";
       return `
-        <div class="history-list">
-          ${entries.map((entry) => `
-            <article class="history-entry">
-              <div class="history-meta">
-                Round ${esc(entry.roundId)}
-                ${entry.submittedAt ? ` · ${esc(entry.submittedAt)}` : ""}
-                ${entry.sourcePlanSignature ? ` · from ${esc(entry.sourcePlanSignature)}` : ""}
-                ${entry.resultingPlanSignature ? ` · to ${esc(entry.resultingPlanSignature)}` : ""}
+        <div class="comments">
+          ${comments.map((comment) => `
+            <article class="comment">
+              <div class="comment-head">
+                <span class="badge ${esc(comment.type)}">${esc(comment.type)}</span>
+                <code>${esc(comment.anchor_id)}</code>
+                <span class="comment-actions">
+                  <button data-edit-comment="${esc(comment.id)}" ${state.submitted ? "disabled" : ""}>Edit</button>
+                  <button data-delete-comment="${esc(comment.id)}" ${state.submitted ? "disabled" : ""}>Delete</button>
+                </span>
               </div>
-              <div class="history-pills">
-                ${entry.userStatus ? `<span class="history-pill status-${cssToken(entry.userStatus)}">${esc(historyLabel(entry.userStatus))}</span>` : ""}
-                ${entry.triageRoute ? `<span class="history-pill route-${cssToken(entry.triageRoute)}">${esc(historyLabel(entry.triageRoute))}</span>` : ""}
-                ${entry.resolutionState ? `<span class="history-pill resolution-${cssToken(entry.resolutionState)}">${esc(historyLabel(entry.resolutionState))}</span>` : ""}
-              </div>
-              ${showStepLabel && entry.stepLabel ? `
-                <div class="history-row">
-                  <strong>대상 step</strong>
-                  <p>${esc(entry.stepLabel)}</p>
-                </div>
-              ` : ""}
-              <div class="history-row">
-                <strong>사용자 리뷰</strong>
-                <p>${esc(entry.userComment || "코멘트 없음")}</p>
-              </div>
-              ${entry.actionSummary.length ? `
-                <div class="history-row">
-                  <strong>조치</strong>
-                  <ul>${entry.actionSummary.map((item) => `<li>${esc(item)}</li>`).join("")}</ul>
-                </div>
-              ` : ""}
-              ${entry.summary ? `
-                <div class="history-row">
-                  <strong>결과</strong>
-                  <p>${esc(entry.summary)}</p>
-                </div>
-              ` : ""}
+              <div class="comment-body">${esc(comment.body || "")}</div>
             </article>
           `).join("")}
         </div>
       `;
     }
 
-    async function loadJson(path, fallback) {
-      const res = await fetch(path, { cache: "no-store" });
-      if (!res.ok) return fallback;
-      return res.json();
-    }
-
-    function taskSlugFromUrl() {
-      const match = window.location.pathname.match(/^\/review\/([A-Za-z0-9_-]+)$/);
-      return match ? match[1] : "";
-    }
-
-    function apiPath(resource) {
-      const taskSlug = taskSlugFromUrl();
-      if (!taskSlug) return "";
-      return `/api/reviews/${taskSlug}/${resource}`;
-    }
-
-    function normalizePreviewAssets(value) {
-      const taskSlug = taskSlugFromUrl();
-      if (!taskSlug || !value) return value;
-
-      const normalizeOne = (item) => {
-        if (!item || typeof item !== "object" || typeof item.asset !== "string") {
-          return item;
-        }
-        if (/^(?:https?:)?\/\//.test(item.asset) || item.asset.startsWith("/")) {
-          return item;
-        }
-        const asset = item.asset.replace(/^assets\//, "");
-        return { ...item, asset: `/review-assets/${taskSlug}/${asset}` };
-      };
-
-      const normalizeContainer = (container) => {
-        if (!container || typeof container !== "object") return;
-        if (Array.isArray(container.ui_previews)) {
-          container.ui_previews = container.ui_previews.map(normalizeOne);
-        }
-        if (Array.isArray(container.evidence_artifacts)) {
-          container.evidence_artifacts = container.evidence_artifacts.map(normalizeOne);
-        }
-      };
-
-      normalizeContainer(value.overview);
-      asArray(value.phases).forEach(normalizeContainer);
-      if (Array.isArray(value.evidence_artifacts)) {
-        value.evidence_artifacts = value.evidence_artifacts.map(normalizeOne);
+    async function updateItemStatus(itemId, patch) {
+      try {
+        const data = await apiSend("POST", "item-status", { target_id: itemId, ...patch });
+        state.feedback = data.feedback || state.feedback;
+        render();
+        showToast("Saved");
+      } catch (error) {
+        showToast(error.message || "Save failed");
       }
-      return value;
     }
 
-    async function init() {
-      const reviewDataPath = apiPath("review-data");
-      if (!reviewDataPath) {
-        $("content").innerHTML = "<h1>Invalid review URL.</h1>";
-        return;
-      }
-
-      model = await loadJson(reviewDataPath, null);
-      if (!model) {
-        $("content").innerHTML = "<h1>review-data.json을 찾을 수 없습니다.</h1>";
-        return;
-      }
-      attachReviewItemSignatures(model);
-      model = normalizePreviewAssets(model);
-
-      reviewHistory = await loadJson(apiPath("review-history"), createHistoryFallback());
-      const existing = await loadJson(apiPath("feedback"), null);
-
-      steps = [
-        {
-          id: "overview",
-          label: "Overview",
-          kind: "overview",
-          review_item_signature: model.overview?.review_item_signature || ""
-        },
-        ...asArray(model.phases).map((phase, index) => ({
-          id: phase.id || `P${index + 1}`,
-          label: phase.title || `Phase ${index + 1}`,
-          kind: "phase",
-          review_item_signature: phase.review_item_signature || "",
-          phase
-        })),
-        {
-          id: "final",
-          label: "Final",
-          kind: "final",
-          review_item_signature: `final-${model.plan_signature || ""}`
-        }
-      ];
-
-      feedback = createFeedback();
-      mergeExistingFeedback(existing);
-      ensureStepFeedback();
-      render();
-    }
-
-    function createFeedback() {
-      return {
-        schema_version: 1,
-        task_slug: model.task_slug,
-        plan_signature: model.plan_signature,
-        review_status: "in_progress",
-        updated_at: new Date().toISOString(),
-        steps: {},
-        cards: {}
-      };
-    }
-
-    function mergeExistingFeedback(existing) {
-      if (!existing || typeof existing !== "object") return;
-      if (existing.task_slug && existing.task_slug !== model.task_slug) return;
-
-      const samePlan = existing.plan_signature === model.plan_signature;
-      if (samePlan && existing.review_status === "submitted") {
-        feedback.review_status = "submitted";
-      }
-
-      steps.forEach((step) => {
-        const prior = existing.steps?.[step.id];
-        if (!prior || typeof prior !== "object") return;
-
-        const next = {
-          status: typeof prior.status === "string" ? prior.status : "",
-          comment: typeof prior.comment === "string" ? prior.comment : ""
+    function openCommentPopup(comment) {
+      const isEdit = Boolean(comment.id);
+      const type = comment.type || "needs-change";
+      const backdrop = document.createElement("div");
+      backdrop.className = "popup-backdrop";
+      backdrop.innerHTML = `
+        <div class="popup">
+          <h3>${isEdit ? "Edit comment" : "New comment"}</h3>
+          <div class="popup-anchor">${esc(comment.target_id)} / ${esc(comment.anchor_id)}</div>
+          <div class="type-row">
+            ${COMMENT_TYPES.map((item) => `
+              <label><input type="radio" name="ctype" value="${esc(item)}" ${item === type ? "checked" : ""}> ${esc(item)}</label>
+            `).join("")}
+          </div>
+          <textarea id="popup-body">${esc(comment.body || "")}</textarea>
+          <div class="popup-actions">
+            <button class="btn-secondary" id="popup-cancel">Cancel</button>
+            <button class="btn-primary" id="popup-save">Save</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(backdrop);
+      const close = () => backdrop.remove();
+      backdrop.querySelector("#popup-cancel").addEventListener("click", close);
+      backdrop.addEventListener("click", (event) => {
+        if (event.target === backdrop) close();
+      });
+      backdrop.querySelector("#popup-save").addEventListener("click", async () => {
+        const selectedType = backdrop.querySelector("input[name='ctype']:checked")?.value || "needs-change";
+        const payload = {
+          target_id: comment.target_id,
+          anchor_id: comment.anchor_id,
+          type: selectedType,
+          body: backdrop.querySelector("#popup-body").value
         };
-
-        if (samePlan) {
-          if (next.status === "approved") {
-            if (isFreshApproval(prior, step) || !prior.approved_against) {
-              next.approved_against = approvalEvidence(
-                step,
-                prior.approved_against?.approved_at,
-                prior.approved_against?.carried_from_plan_signature
-              );
-            } else {
-              next.status = "";
-              next.comment = "";
-            }
-          }
-          feedback.steps[step.id] = next;
-          return;
-        }
-
-        if (isFreshApproval(prior, step)) {
-          const carriedFrom = prior.approved_against?.carried_from_plan_signature ||
-            prior.approved_against?.plan_signature ||
-            existing.plan_signature ||
-            null;
-          feedback.steps[step.id] = {
-            status: "approved",
-            comment: next.comment,
-            approved_against: approvalEvidence(step, prior.approved_against?.approved_at, carriedFrom)
-          };
+        try {
+          const data = isEdit
+            ? await apiSend("PATCH", `comment/${comment.id}`, payload)
+            : await apiSend("POST", "comment", payload);
+          state.feedback = data.feedback || state.feedback;
+          close();
+          render();
+          showToast("Saved");
+        } catch (error) {
+          showToast(error.message || "Save failed");
         }
       });
     }
 
-    function ensureStepFeedback() {
-      if (!feedback.steps || typeof feedback.steps !== "object") {
-        feedback.steps = {};
+    async function deleteComment(id) {
+      if (!window.confirm("이 코멘트를 삭제할까요?")) return;
+      try {
+        const data = await apiSend("DELETE", `comment/${id}`);
+        state.feedback = data.feedback || state.feedback;
+        render();
+        showToast("Deleted");
+      } catch (error) {
+        showToast(error.message || "Delete failed");
       }
-      steps.forEach((step) => {
-        if (!feedback.steps[step.id]) {
-          feedback.steps[step.id] = { status: "", comment: "" };
-        }
-      });
     }
 
-    function stepStatus(id) {
-      return feedback.steps[id]?.status || "";
-    }
-
-    function currentStep() {
-      return steps[current] || steps[0] || { id: "overview", label: "Overview", kind: "overview" };
-    }
-
-    function stepKindLabel(step) {
-      if (step.kind === "overview") return "Overview";
-      if (step.kind === "phase") return step.id || "Phase";
-      return "Final";
-    }
-
-    function render() {
-      $("navTitle").textContent = model.title || model.task_slug || "Planning Review";
-      $("navMeta").innerHTML = `
-        <div>task: <strong>${esc(model.task_slug || "")}</strong></div>
-        <div>signature: <strong>${esc(model.plan_signature || "")}</strong></div>
-        <div>review: <strong>${esc(model.review_outcome || "")}</strong></div>
-      `;
-      renderSteps();
-      renderContent();
-      renderFeedbackBox();
-      $("prevBtn").disabled = current === 0;
-      $("nextBtn").textContent = current === steps.length - 1
-        ? (feedback.review_status === "submitted" ? "Submitted" : "Submit review")
-        : "Next";
-    }
-
-    function renderSteps() {
-      $("steps").innerHTML = steps.map((step, index) => {
-        const status = stepStatus(step.id);
-        return `
-          <button class="step-button ${index === current ? "active" : ""}" data-status="${esc(status)}" onclick="go(${index})">
-            <span class="status-dot"></span>
-            <span>
-              <span class="step-title">${esc(step.label)}</span>
-              <span class="step-sub">${esc(stepKindLabel(step))}</span>
-            </span>
-            <span class="step-status">${esc(historyLabel(status || "not reviewed"))}</span>
-          </button>
-        `;
-      }).join("");
-    }
-
-    function renderContent() {
-      const step = currentStep();
-      if (step.kind === "overview") renderOverview();
-      if (step.kind === "phase") renderPhase(step.phase, step.id);
-      if (step.kind === "final") renderFinal();
-    }
-
-    function contentHeader(kind, title, meta, extra = "") {
-      return `
-        <div class="target-header">
-          <div class="target-meta-row">
-            <span class="target-kind-pill">${esc(kind)}</span>
-            <span>task: <strong>${esc(model.task_slug || "")}</strong></span>
-            <span>review: <strong>${esc(model.review_outcome || "")}</strong></span>
-          </div>
-          <h1 class="target-title">${esc(title)}</h1>
-          ${meta ? `<p class="target-summary">${esc(meta)}</p>` : ""}
-          ${extra}
-        </div>
-      `;
-    }
-
-    function renderOverview() {
-      const overview = model.overview || {};
-      const history = normalizedHistoryEntries("overview");
-      $("content").innerHTML = `
-        ${contentHeader("Overview", model.title || model.task_slug || "Plan Review", overview.understanding || "요청을 바탕으로 이해한 전체 방향을 검토합니다.")}
-        <div class="grid">
-          ${evidenceBlock(overview.evidence_artifacts || model.evidence_artifacts) ? `<article class="card wide"><h3>체험 산출물</h3>${evidenceBlock(overview.evidence_artifacts || model.evidence_artifacts)}</article>` : ""}
-          <article class="card"><h3>사용자 요청</h3>${list(overview.user_request)}</article>
-          <article class="card"><h3>포함 범위</h3>${list(overview.included_scope)}</article>
-          <article class="card"><h3>제외 범위</h3>${list(overview.excluded_scope)}</article>
-          <article class="card"><h3>주요 변경점</h3>${list(overview.major_changes)}</article>
-          <article class="card wide"><h3>변경 형상</h3><p>${esc(overview.change_shape || "")}</p>${flow(overview.change_flow)}</article>
-          <article class="card wide"><h3>핵심 리스크</h3>${list(overview.risks)}</article>
-          ${topologyTable(overview.topology_contract || model.topology_contract) ? `<article class="card wide"><h3>파일/폴더 구조 계약</h3>${topologyTable(overview.topology_contract || model.topology_contract)}</article>` : ""}
-          ${history.length ? `<article class="card wide"><h3>이전 리뷰와 조치</h3>${renderHistoryEntries(history, { emptyText: "이전 overview 리뷰 이력이 없습니다." })}</article>` : ""}
-          ${previewBlock(overview.ui_previews) ? `<article class="card wide"><h3>UI 계획 preview</h3>${previewBlock(overview.ui_previews)}</article>` : ""}
-        </div>
-      `;
-    }
-
-    function renderPhase(phase, stepId) {
-      const history = normalizedHistoryEntries(stepId);
-      $("content").innerHTML = `
-        ${contentHeader(stepId, phase.title || stepId, phase.goal || "이 phase의 목표와 실행 계약을 검토합니다.", phase.owner_agent ? `
-          <div class="phase-owner">
-            <span class="phase-owner-label">담당 agent</span>
-            <strong>${esc(phase.owner_agent)}</strong>
-          </div>
-        ` : "")}
-        <div class="grid">
-          ${evidenceBlock(phase.evidence_artifacts) ? `<article class="card wide"><h3>체험 산출물</h3>${evidenceBlock(phase.evidence_artifacts)}</article>` : ""}
-          <article class="card"><h3>변경 내용</h3>${list(phase.changes)}</article>
-          <article class="card"><h3>검증</h3>${list(phase.validation)}</article>
-          <article class="card wide"><h3>계약</h3>${list(phase.contracts)}</article>
-          <article class="card wide"><h3>파일 영향</h3>${list(phase.file_impacts)}</article>
-          ${topologyTable(phase.topology_contract) ? `<article class="card wide"><h3>파일/폴더 구조 계약</h3>${topologyTable(phase.topology_contract)}</article>` : ""}
-          <article class="card wide"><h3>리스크 / 주의점</h3>${list(phase.risks)}</article>
-          ${history.length ? `<article class="card wide"><h3>이전 리뷰와 조치</h3>${renderHistoryEntries(history, { emptyText: "이전 phase 리뷰 이력이 없습니다." })}</article>` : ""}
-          ${previewBlock(phase.ui_previews) ? `<article class="card wide"><h3>UI 계획 preview</h3>${previewBlock(phase.ui_previews)}</article>` : ""}
-        </div>
-      `;
-    }
-
-    function renderFinal() {
-      const findings = asArray(model.review_findings);
-      const history = normalizedHistoryEntries("");
-      const nextLabel = model.post_approval_next_label || "다음 단계: $plan-tdd";
-      const nextSummary = model.post_approval_next_summary || "모든 step이 승인되면 production code 구현 전에 승인된 plan.md 기준으로 TDD 계약 테스트를 작성합니다.";
-      const stepRows = steps.filter((step) => step.kind !== "final").map((step) => {
-        const item = feedback.steps[step.id] || {};
-        return `<li><strong>${esc(step.label)}</strong>: ${esc(historyLabel(item.status || "not reviewed"))} ${item.comment ? `- ${esc(item.comment)}` : ""}</li>`;
-      }).join("");
-
-      $("content").innerHTML = `
-        ${contentHeader("Final", "리뷰 제출", "모든 step의 승인/수정 요청을 확인한 뒤 제출합니다. 제출 후 채팅에 리뷰 완료라고 알려주세요.")}
-        <div class="grid">
-          <article class="card wide"><h3>Step 상태</h3><ul class="list">${stepRows}</ul></article>
-          <article class="card wide"><h3>${esc(nextLabel)}</h3><p>${esc(nextSummary)}</p></article>
-          <article class="card wide"><h3>Plan review findings</h3>${findings.length ? findings.map((item) => `<p class="finding">${esc(item)}</p>`).join("") : "<p class=\"meta\">없음</p>"}</article>
-          ${history.length ? `<article class="card wide"><h3>리뷰 이력과 조치 요약</h3>${renderHistoryEntries(history, { emptyText: "기록된 리뷰 이력이 없습니다.", showStepLabel: true })}</article>` : ""}
-        </div>
-      `;
-    }
-
-    function renderFeedbackBox() {
-      const step = currentStep();
-      const item = feedback.steps[step.id] || { status: "", comment: "" };
-      const submitted = feedback.review_status === "submitted";
-      $("reviewBox").innerHTML = `
-        <div class="review-box-top">
-          <div>
-            <div class="review-target-title">${esc(step.label)}</div>
-            <p class="meta">현재 선택한 planning target의 승인 상태와 코멘트를 저장합니다.</p>
-          </div>
-          <div class="review-meta">
-            <span class="history-pill">${esc(stepKindLabel(step))}</span>
-            ${reviewItemSignature(step) ? `<span class="history-pill">signed</span>` : ""}
-            ${item.status ? `<span class="history-pill status-${cssToken(item.status)}">${esc(historyLabel(item.status))}</span>` : `<span class="history-pill">not reviewed</span>`}
-          </div>
-        </div>
-        <div class="review-comment-row">
-          <div class="status-row">
-            ${statuses.map(([value, label]) => `<button class="${item.status === value ? "active" : ""}" onclick="setStatus('${value}')">${label}</button>`).join("")}
-          </div>
-          ${submitted ? `<div class="submitted-banner">Submitted. 채팅에 <strong>리뷰 완료</strong>라고 입력해주세요. 내용을 바꾸면 다시 진행 중 상태가 됩니다.</div>` : ""}
-        </div>
-        <textarea id="comment" placeholder="수정 요청이나 질문을 적어주세요.">${esc(item.comment || "")}</textarea>
-      `;
-      $("comment").addEventListener("input", (event) => {
-        markEdited();
-        feedback.steps[step.id].comment = event.target.value;
-        saveDebounced();
-      });
-    }
-
-    function setStatus(status) {
-      const step = steps[current];
-      markEdited();
-      feedback.steps[step.id].status = status;
-      if (status === "approved") {
-        feedback.steps[step.id].approved_against = approvalEvidence(
-          step,
-          feedback.steps[step.id].approved_against?.approved_at,
-          feedback.steps[step.id].approved_against?.carried_from_plan_signature
-        );
-      } else {
-        delete feedback.steps[step.id].approved_against;
+    async function submitReview() {
+      const required = state.items.filter((item) => item.required !== false);
+      const unviewed = required.filter((item) => !itemStatus(item.id).viewed);
+      if (unviewed.length && !window.confirm(`미확인 target ${unviewed.length}개가 있습니다. 그래도 제출할까요?`)) return;
+      try {
+        const data = await apiSend("POST", "submit");
+        state.feedback = data.feedback || state.feedback;
+        render();
+        showToast("Submitted");
+      } catch (error) {
+        showToast(error.message || "Submit failed");
       }
-      saveDebounced();
-      render();
-    }
-
-    function scrollStepTop() {
-      const content = $("content");
-      if (content?.scrollIntoView) {
-        content.scrollIntoView({ behavior: "smooth", block: "start" });
-        return;
-      }
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-
-    function go(index) {
-      current = Math.max(0, Math.min(index, steps.length - 1));
-      render();
-      scrollStepTop();
-    }
-
-    async function save(submitted = false) {
-      if (submitted) {
-        steps.forEach((step) => {
-          const item = feedback.steps[step.id];
-          if (!item) return;
-          if (item.status === "approved") {
-            item.approved_against = approvalEvidence(
-              step,
-              item.approved_against?.approved_at,
-              item.approved_against?.carried_from_plan_signature
-            );
-          } else {
-            delete item.approved_against;
-          }
-        });
-        feedback.review_status = "submitted";
-      }
-      feedback.updated_at = new Date().toISOString();
-      const res = await fetch(apiPath("feedback"), {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(feedback, null, 2)
-      });
-      if (!res.ok) throw new Error("save failed");
-      showToast(submitted ? "Submitted" : "Saved");
-    }
-
-    let saveTimer;
-    function saveDebounced() {
-      clearTimeout(saveTimer);
-      saveTimer = setTimeout(() => save(false).catch(() => showToast("Save failed")), 250);
     }
 
     function showToast(message) {
@@ -1280,25 +1101,28 @@
       setTimeout(() => toast.classList.remove("show"), 1400);
     }
 
-    $("prevBtn").addEventListener("click", () => go(current - 1));
-    $("nextBtn").addEventListener("click", async () => {
-      if (current === steps.length - 1) {
-        const unreviewed = steps.filter((step) => step.kind !== "final" && !stepStatus(step.id)).length;
-        if (unreviewed && !window.confirm(`미검토 대상 ${unreviewed}개가 있습니다. 그래도 제출하시겠습니까?`)) {
-          return;
-        }
-        await save(true).catch(() => showToast("Submit failed"));
-        render();
-      } else {
-        go(current + 1);
+    async function init() {
+      if (!taskSlugFromUrl()) {
+        $("main").innerHTML = `<div class="empty-main">Invalid review URL.</div>`;
+        return;
       }
-    });
+      state.model = normalizeAssets(await apiGet("review-data", null));
+      if (!state.model) {
+        $("main").innerHTML = `<div class="empty-main">review-data.json을 찾을 수 없습니다.</div>`;
+        return;
+      }
+      state.items = deriveItems(state.model);
+      state.activeId = state.items[0]?.id || null;
+      state.history = await apiGet("review-history", { rounds: [] });
+      state.feedback = createFeedback(await apiGet("feedback", null));
+      $("submit-btn").addEventListener("click", submitReview);
+      render();
+    }
 
-    window.go = go;
-    window.setStatus = setStatus;
     init().catch((error) => {
-      $("content").innerHTML = `<h1>리뷰 UI를 불러오지 못했습니다.</h1><p>${esc(error.message)}</p>`;
+      $("main").innerHTML = `<div class="empty-main">리뷰 UI를 불러오지 못했습니다.<br>${esc(error.message)}</div>`;
     });
+  })();
   </script>
 </body>
 </html>

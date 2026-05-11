@@ -61,7 +61,7 @@ This helper state must be safely discardable between turns.
 
 - The current plan fingerprint is `plan_signature`: a stable short fingerprint of the current executable plan file.
 - A `review.md` artifact is fresh only when both `plan_path` and `plan_signature` match the current plan file on disk.
-- Developer review approval is fresh only when `feedback.json.review_status` is `submitted`, every required Overview and Phase step is `approved`, and each `approved_against.plan_signature` and `approved_against.review_item_signature` matches the current `review-data.json`.
+- Developer review approval is fresh only when `feedback.json.review_status` is `submitted`, every required `review-data.json.review_items[]` entry has `item_status[target_id].approved = true`, each `approved_against.plan_signature` and `approved_against.review_item_signature` matches the current review item, and no active `needs-change` or `question` comments remain.
 - Developer review package generation is fresh only when any plan-referenced evidence asset has been copied from `plans/{task-slug}/evidence/**` into `plans/{task-slug}/developer-review/assets/evidence/**` and its `content_hash` is represented in `review-data.json`.
 - When `plan_signature` changes, treat previous cold review state as stale and recompute from artifacts.
 - When `plan_signature` changes, regenerate the developer review package and carry forward only approvals whose item signatures still match.
