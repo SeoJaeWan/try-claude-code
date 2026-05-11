@@ -417,8 +417,17 @@
 
     .preview img,
     .evidence-frame {
+      display: block;
+      width: 100%;
+      min-height: 520px;
+      background: #fff;
       border-radius: 6px;
       border: 1px solid var(--line);
+    }
+
+    .preview img {
+      min-height: 0;
+      max-width: 100%;
     }
 
     .data-table th,
@@ -750,9 +759,10 @@
                 ${asArray(item.review_points).length ? list(item.review_points) : ""}
                 ${item.entry ? `<p class="meta">source: <code>${esc(item.entry)}</code>${item.content_hash ? ` · hash: <code>${esc(item.content_hash)}</code>` : ""}</p>` : ""}
                 ${src ? `
+                  <p><a href="${esc(src)}" target="_blank" rel="noopener">체험 산출물 새 창으로 열기</a></p>
                   ${canFrame
                     ? `<iframe class="evidence-frame" sandbox="allow-scripts" src="${esc(src)}" title="${esc(item.id || "evidence")}"></iframe>`
-                    : `<p><a href="${esc(src)}" target="_blank" rel="noopener">Open evidence asset</a></p>`}
+                    : ""}
                 ` : ""}
               </article>
             `;
@@ -1109,6 +1119,7 @@
       $("content").innerHTML = `
         ${contentHeader("Overview", model.title || model.task_slug || "Plan Review", overview.understanding || "요청을 바탕으로 이해한 전체 방향을 검토합니다.")}
         <div class="grid">
+          ${evidenceBlock(overview.evidence_artifacts || model.evidence_artifacts) ? `<article class="card wide"><h3>체험 산출물</h3>${evidenceBlock(overview.evidence_artifacts || model.evidence_artifacts)}</article>` : ""}
           <article class="card"><h3>사용자 요청</h3>${list(overview.user_request)}</article>
           <article class="card"><h3>포함 범위</h3>${list(overview.included_scope)}</article>
           <article class="card"><h3>제외 범위</h3>${list(overview.excluded_scope)}</article>
@@ -1116,7 +1127,6 @@
           <article class="card wide"><h3>변경 형상</h3><p>${esc(overview.change_shape || "")}</p>${flow(overview.change_flow)}</article>
           <article class="card wide"><h3>핵심 리스크</h3>${list(overview.risks)}</article>
           ${topologyTable(overview.topology_contract || model.topology_contract) ? `<article class="card wide"><h3>파일/폴더 구조 계약</h3>${topologyTable(overview.topology_contract || model.topology_contract)}</article>` : ""}
-          ${evidenceBlock(overview.evidence_artifacts || model.evidence_artifacts) ? `<article class="card wide"><h3>체험 산출물</h3>${evidenceBlock(overview.evidence_artifacts || model.evidence_artifacts)}</article>` : ""}
           ${history.length ? `<article class="card wide"><h3>이전 리뷰와 조치</h3>${renderHistoryEntries(history, { emptyText: "이전 overview 리뷰 이력이 없습니다." })}</article>` : ""}
           ${previewBlock(overview.ui_previews) ? `<article class="card wide"><h3>UI 계획 preview</h3>${previewBlock(overview.ui_previews)}</article>` : ""}
         </div>
@@ -1133,12 +1143,12 @@
           </div>
         ` : "")}
         <div class="grid">
+          ${evidenceBlock(phase.evidence_artifacts) ? `<article class="card wide"><h3>체험 산출물</h3>${evidenceBlock(phase.evidence_artifacts)}</article>` : ""}
           <article class="card"><h3>변경 내용</h3>${list(phase.changes)}</article>
           <article class="card"><h3>검증</h3>${list(phase.validation)}</article>
           <article class="card wide"><h3>계약</h3>${list(phase.contracts)}</article>
           <article class="card wide"><h3>파일 영향</h3>${list(phase.file_impacts)}</article>
           ${topologyTable(phase.topology_contract) ? `<article class="card wide"><h3>파일/폴더 구조 계약</h3>${topologyTable(phase.topology_contract)}</article>` : ""}
-          ${evidenceBlock(phase.evidence_artifacts) ? `<article class="card wide"><h3>체험 산출물</h3>${evidenceBlock(phase.evidence_artifacts)}</article>` : ""}
           <article class="card wide"><h3>리스크 / 주의점</h3>${list(phase.risks)}</article>
           ${history.length ? `<article class="card wide"><h3>이전 리뷰와 조치</h3>${renderHistoryEntries(history, { emptyText: "이전 phase 리뷰 이력이 없습니다." })}</article>` : ""}
           ${previewBlock(phase.ui_previews) ? `<article class="card wide"><h3>UI 계획 preview</h3>${previewBlock(phase.ui_previews)}</article>` : ""}

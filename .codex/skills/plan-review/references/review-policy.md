@@ -27,6 +27,7 @@ Typical blocker signals:
 - implementation-scope topology is committed without repo-local inspection evidence, or it duplicates/contradicts existing local surfaces the plan should have reused.
 - file/folder topology, phase rows, feature contracts, and evidence artifacts contradict each other on phase, path, input, output, state, or ownership.
 - evidence artifacts are presented as production code or require real API calls, DB access, filesystem writes, live dev servers, React builds, or production stack execution for planning review.
+- UI-facing plans rely on browser developer review approval but do not provide any connected HTML/CSS preview evidence for the user-visible UI direction the reviewer must judge.
 - missing test-strategy decisions required by the active plan wiki decision policy when later verification would otherwise choose the gate.
 - missing first-time test runner, command, spec root or test-owner placement, source/test topology, mock/API fixture policy, browser storage/auth state policy, or expected red reason when the plan expects contract tests before the test environment exists.
 - plan count, local prerequisite relationship, authority artifact, reference-comparison, Figma parity, or Figma inventory provenance contradicts the active plan wiki contract.
@@ -44,6 +45,7 @@ Typical major signals:
 - validation exists but is too weak for the claimed boundary.
 - verification unit choice is plausible but thin or poorly justified.
 - UI-facing observability or identifier detail is likely derivable but not clearly locked.
+- UI preview evidence exists but its review points, phase mapping, or covered states are too thin for the reviewer to know what judgment the preview is meant to support.
 - expected red reason is present but too thin to distinguish valid completion-blocking failure from malformed test/setup failure.
 - plan-file split is defensible but hides important sequencing or ownership assumptions.
 - implementation scope has Phase entries, but one or more phases lacks a meaningful completion signal, validation owner, or commit boundary.

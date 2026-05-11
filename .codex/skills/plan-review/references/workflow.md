@@ -58,7 +58,7 @@ Judge the plan against:
 - scenario-level `input -> output` contract completeness.
 - affected public boundaries, exclusions, no-op rules, recipients, and final interpretation boundaries.
 - source/test/fixture/artifact topology: implementation-scope plans should show concrete paths, status, owning phase, responsibility, and repo-local evidence for placement instead of invented or duplicate paths.
-- planning-only evidence artifacts: UI/API/backend/utility evidence referenced by the plan should live under `evidence/**`, map to the stated phase and input/output/state contract, and avoid production-code or live-server implications.
+- planning-only evidence artifacts: UI/API/backend/utility evidence referenced by the plan should live under `evidence/**`, map to the stated phase and input/output/state contract, and avoid production-code or live-server implications. For UI scope, check that HTML/CSS preview evidence is present and connected when the plan relies on browser developer review judgment; do not approve or reject the preview on behalf of the reviewer.
 - first-time test runner, command, spec root, source/test topology, mock/API fixture policy, storage/auth state policy, and expected red reason when implementation-first setup does not already exist.
 - verification realism and readiness.
 - UI direction completeness when UI scope exists.

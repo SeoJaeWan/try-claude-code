@@ -143,13 +143,13 @@ Overview and every phase/card that can participate in approval must have a stabl
 
 When phase detail files define `owner_agent`, preserve that field in `review-data.json` and surface it inside each phase body. Do not require a separate sidebar summary for agent routing.
 
-UI preview objects are allowed only for user-visible UI changes. They are plan previews, not functional prototypes:
+Use `evidence_artifacts` from `## 체험 산출물` as the primary path for HTML/CSS preview evidence. `ui_previews` remains available for lightweight static image/SVG plan previews only. Both are plan previews, not functional prototypes:
 
 ```json
 {
   "id": "UI1",
   "title": "Mobile empty state",
-  "kind": "wireframe",
+  "kind": "static-preview",
   "description": "How the screen should appear",
   "asset": "assets/previews/ui1.svg"
 }
@@ -192,7 +192,8 @@ Rules:
 - The generator copies allowed files to `developer-review/assets/evidence/**`; the browser only opens copied assets.
 - HTML evidence is displayed in a sandboxed iframe with scripts allowed but without same-origin privileges.
 - Evidence is a planning-only projection. Do not describe it as production code, a real API mock server, React implementation, DB behavior, or live dev-server output.
-- UI evidence should show the expected screen shape and important states. API/backend/utility evidence should show sample body/query/params/auth/context input choices and representative output/status/effects in HTML/JS.
+- UI preview evidence should give the reviewer direct judgment material: planned screen/component structure, important controls, realistic content density, relevant states, and material viewport or responsive cues. The browser and generator do not judge whether the preview is close enough to approve; the reviewer decides that in developer review.
+- API/backend/utility evidence should show sample body/query/params/auth/context input choices and representative output/status/effects in HTML/JS.
 
 ## Feedback model
 

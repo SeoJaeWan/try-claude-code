@@ -18,6 +18,7 @@ At the gate:
 - Generate `review-data.json` from current `plan.md`, linked phase detail files, and fresh `review.md`.
 - Parse `plan.md` `## 파일/폴더 구조 계약` and `## 체험 산출물` tables into `review-data.json.topology_contract` and `review-data.json.evidence_artifacts`.
 - Validate every evidence `경로` as a relative `evidence/**` path under the plan folder, copy it to `plans/{task-slug}/developer-review/assets/evidence/**`, and expose only the copied asset path in review data.
+- Treat `ui-preview` evidence as browser developer review 검토자의 판단 자료. The package must expose the copied HTML/CSS preview and its review points, but must not decide whether the reviewer should approve the preview.
 - Create or refresh `review-history.json` for current `task-slug` and `plan_signature`.
 - Ensure Overview and every required Phase/card in `review-data.json` has a stable `review_item_signature`; include global scope/contract context in phase signatures so scope changes invalidate affected approvals.
 - Include topology and evidence metadata in review item signatures so changes to phase-linked paths, responsibilities, input/output harnesses, or evidence content invalidate stale approval.
@@ -25,8 +26,9 @@ At the gate:
   - Overview shows the user's request, planner understanding, included scope, excluded scope, change shape, major changes, risks, and review findings.
   - Each phase step shows only that phase's goal, changes, contracts, file impact, topology, evidence artifacts, validation, risks, UI plan preview when applicable, and phase `owner_agent` when known.
   - Preserve `owner_agent` from the phase detail artifact.
-  - UI preview is plan-level visual explanation only; do not imply functional implementation exists.
-  - Evidence artifacts are planning-only HTML/JS projections. Do not imply real API, DB, filesystem, live dev-server, React build, or production stack execution exists.
+  - UI preview and evidence artifacts are plan-level judgment material only; do not imply functional implementation exists.
+  - Evidence artifacts are planning-only HTML/CSS/JS projections. Do not imply real API, DB, filesystem, live dev-server, React build, or production stack execution exists.
+  - Surface `ui-preview` evidence prominently enough that the browser reviewer can inspect it before approving or requesting plan revision.
   - `Previous`, `Next`, and direct step navigation reset visible review content to the top of the current step.
 - Ensure `review-data.json` includes the post-approval next gate fields so the browser review can tell the user that approved implementation-scope plans proceed to `$plan-tdd` before production implementation.
 - Ensure the developer review package exposes historical rounds and controller action summaries from `review-history.json`.

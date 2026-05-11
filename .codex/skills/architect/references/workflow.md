@@ -84,8 +84,8 @@ Do not deep-dive into implementation details or write source-tree tests.
 - Make each plan file self-contained for exactly one `owner_agent`.
 - For implementation-scope plans, write a `## 실행 흐름` section with reviewable Phase rows inside the same plan file. Each Phase row must include purpose, major changes, completion signal, validation, and commit boundary.
 - For implementation-scope plans, write a `## 파일/폴더 구조 계약` section that locks the source/test/fixture/artifact topology derived from actual repo inspection. Include create/modify/keep/forbidden/remove paths, owning phase, responsibility, and the local evidence for each placement.
-- When UI, API, backend boundary, utility function, or complex state behavior would be easier to misunderstand from prose alone, write a `## 체험 산출물` section and create planning-only HTML/JS evidence under `plans/{task_slug}/evidence/**`.
-- UI evidence should show the expected screen shape and important states. API/backend/utility evidence should let a reviewer choose sample body/query/params/auth/context inputs and inspect representative output/status/effects. Do not require real API calls, DB access, filesystem writes, live dev servers, React builds, or production stack execution.
+- When UI, API, backend boundary, utility function, or complex state behavior would be easier to misunderstand from prose alone, write a `## 체험 산출물` section and create planning-only HTML/CSS/JS evidence under `plans/{task_slug}/evidence/**`.
+- UI evidence는 browser developer review 검토자가 직접 판단하는 자료이며, 승인 대체물이 아니다. For user-visible UI, make the HTML/CSS preview show the planned screen or component structure, important controls, realistic content density, relevant states, and material responsive breakpoints so the browser reviewer can approve or reject the direction directly. API/backend/utility evidence should let a reviewer choose sample body/query/params/auth/context inputs and inspect representative output/status/effects. Do not require real API calls, DB access, filesystem writes, live dev servers, React builds, or production stack execution.
 - Keep Phase content self-contained in the plan body. Do not create linked phase detail files for new plans unless explicitly performing legacy migration or review.
 - Phase boundaries are human review and commit boundaries, not separate `owner_agent` or branch boundaries unless the plan count has already been split by execution ownership.
 - Include the required YAML frontmatter in every plan file.
@@ -125,7 +125,7 @@ If the plan includes implementation scope beyond documentation-only or structura
 - Re-check selected patterns, terminology policy compliance, plan self-containment, request traceability, public contracts, verification ownership, related-plan lineage, authority artifacts, and execution handoff requirements.
 - Re-check that implementation-scope plans expose reviewable Phase rows and commit boundaries that developer review can present without inventing phase meaning.
 - Re-check that implementation-scope topology was derived from actual repo structure, not invented paths, and that topology rows do not duplicate existing UI/API/utility surfaces.
-- Re-check that every evidence row points under `evidence/**`, matches the plan's phase/input/output/state contract, and is clearly planning-only.
+- Re-check that every evidence row points under `evidence/**`, matches the plan's phase/input/output/state contract, is clearly planning-only, and gives the browser reviewer the concrete judgment material it claims to provide.
 - Fix critical self-review findings before handoff.
 - If a required wiki registry, core doc, or pattern cannot be read, treat that as a failed quality gate.
 

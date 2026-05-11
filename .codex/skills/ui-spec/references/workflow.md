@@ -31,6 +31,7 @@ Lock the direction in words before generating variants:
 - responsive and accessibility expectations that materially affect planning
 - reuse vs new-pattern expectations
 - design-system, tone, or visual constraints that artifact consumers must preserve
+- 나중 계획이 browser developer review에서 검토자 판단 자료를 요구할 때의 HTML/CSS preview evidence 기대치
 
 Rules:
 
@@ -130,6 +131,7 @@ When producing the final handoff, provide a `locked_ui_direction` packet contain
 3. state-presentation expectations for empty / loading / error / success flows
 4. responsive, accessibility, and reuse constraints that materially affect planning
 5. approved visual references or variant notes when present
-6. explicit low-risk defaults vs still-blocking UI questions
+6. HTML/CSS preview evidence guidance when the UI direction needs reviewer approval in browser developer review
+7. explicit low-risk defaults vs still-blocking UI questions
 
 Do not present `locked_ui_direction` while blocking UI-direction ambiguity remains.
