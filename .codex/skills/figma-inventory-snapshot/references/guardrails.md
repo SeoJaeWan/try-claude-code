@@ -5,8 +5,12 @@
 - Do not use Code Connect tools as a full tree inventory substitute.
 - Do not treat Code Connect permission errors as proof that Figma tree metadata is unavailable.
 - Do not perform full-file tree reads when the task names root nodes or pages.
+- Do not perform full-file or full-root recursive reads just to estimate size for sharding.
 - Do not use `use_figma` to recursively inventory multiple roots, pages, sections, or component trees.
 - Do not treat truncated or transport-limited tool output as a valid snapshot source.
+- Do not use fixed semantic shard names for broad Figma links when the topology has not been discovered.
+- Do not let parallel workers write the parent manifest, parent summary, shard plan, or sibling shard directories.
+- Do not mark a parent root `ok_by_shards` while any required worker manifest is missing, truncated, blocked, or stale.
 - Do not report `wrote_snapshot` until every successful root or shard is written to `snapshots/*.json` and referenced from `manifest.json`.
 - Do not fill required paths from previous parity reports, package registries, or memory.
 - Do not merge stale and fresh snapshots without recording root-level provenance.

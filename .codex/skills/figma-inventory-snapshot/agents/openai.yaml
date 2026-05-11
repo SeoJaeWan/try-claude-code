@@ -1,4 +1,4 @@
 interface:
   display_name: "Figma Inventory Snapshot"
-  short_description: "Capture bounded Figma tree inventory snapshots"
-  default_prompt: "Use $figma-inventory-snapshot to capture controller-verified Figma node inventory snapshots as manifest-backed local evidence artifacts."
+  short_description: "Capture bounded and adaptive Figma tree inventory snapshots"
+  default_prompt: "Use $figma-inventory-snapshot to capture controller-verified Figma node inventory snapshots as manifest-backed local evidence artifacts, using adaptive shards for large Figma links when appropriate."

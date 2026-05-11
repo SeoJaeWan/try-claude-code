@@ -3,6 +3,7 @@
 ## Step 1. Normalize Inputs
 
 - Confirm `task_slug`, `fileKey`, and at least one `root_nodes` entry.
+- If the user provided a Figma URL, parse `fileKey` and `nodeId`; if no exact root scope is known, treat the URL target as a discovery root rather than a full recursive read target.
 - Normalize node ids for Figma MCP calls, converting URL `node-id=1-2` to `1:2` when needed.
 - Resolve `output_dir` to `./.codex/artifacts/figma-inventory/{task_slug}/` unless the controller provided another literal path.
 - Create a safe snapshot file name by replacing `:` with `-`.
@@ -13,7 +14,16 @@
 - Reuse fresh roots and capture only missing/stale roots.
 - Do not reuse a manifest with missing required paths unless the current handoff explicitly does not require those paths.
 
-## Step 3. Capture Bounded Tree Shards
+## Step 3. Plan Adaptive Shards When Needed
+
+- For broad Figma links or roots likely to exceed one bounded response, perform a names-only or direct-children discovery pass.
+- Do not estimate size by recursively reading the target.
+- Build `shard-plan.json` from discovered child node ids, not from fixed semantic folder names.
+- Use parallel workers only when the current runtime policy permits subagents and the user requested parallel work; otherwise run the adaptive shard list sequentially.
+- Assign each worker a disjoint `output_dir` under `./.codex/artifacts/figma-inventory/{task_slug}/shards/{shardId}/`.
+- Skip this step for small explicit root lists that can be captured directly.
+
+## Step 4. Capture Bounded Tree Shards
 
 - Prefer one MCP `get_metadata` call per provided root node.
 - If a root is too large or times out, capture child sections/pages separately when their node ids are available.
@@ -24,7 +34,7 @@
 - Keep tool responses well below the known 20 KB transport ceiling. If output is truncated, incomplete, or close to the transport limit, discard that result and retry with smaller names-only, direct-children-only, or explicit node-id shards.
 - Do not switch to Code Connect tools after a tree read fails.
 
-## Step 4. Build Compact Snapshots
+## Step 5. Build Compact Snapshots
 
 For each successful shard:
 
@@ -37,10 +47,11 @@ For each successful shard:
   - `variant` when names contain property assignments such as `State=Pressed`
 - Keep marker derivation conservative; do not invent missing platform or resource families.
 
-## Step 5. Write Manifest and Summary
+## Step 6. Write Manifest and Summary
 
 - Write or update each `snapshots/{safe-node-id}.json`.
 - Write `manifest.json` with root status, coverage, fidelity, truncation state, shard provenance, and incomplete reasons.
+- For adaptive multi-shard runs, workers write only shard-local manifests; the controller validates shard manifests and writes the parent `manifest.json`.
 - Do not return success for any Figma result that was only observed in chat or tool output; every successful root or shard must be fixed as a snapshot file and referenced from `manifest.json`.
 - Write `summary.md` with:
   - source `fileKey`
@@ -49,7 +60,7 @@ For each successful shard:
   - incomplete roots or shard failures
   - exact next action when blocked
 
-## Step 6. Return Terminal Result
+## Step 7. Return Terminal Result
 
 - Return `result = wrote_snapshot` when the manifest satisfies current coverage.
 - Return `wrote_snapshot` only after `manifest.json`, `summary.md`, and every referenced snapshot file exist on disk.

@@ -38,6 +38,8 @@ Write all outputs under `output_dir`:
 - `manifest.json`: one controller-facing manifest for freshness and coverage
 - `summary.md`: human-readable source, coverage, and blocker summary
 - `snapshots/{safe-node-id}.json`: one compact snapshot per root or shard
+- `shard-plan.json`: required only for adaptive multi-shard or parallel runs
+- `shards/{shardId}/manifest.json`: worker manifests for adaptive multi-shard or parallel runs
 
 `manifest.json` must include:
 
@@ -47,6 +49,7 @@ Write all outputs under `output_dir`:
   "taskSlug": "example-task",
   "fileKey": "figma-file-key",
   "generatedAt": "ISO-8601 timestamp",
+  "shardPlanPath": null,
   "roots": [
     {
       "nodeId": "16222:137704",
@@ -102,6 +105,15 @@ Each snapshot JSON should include compact nodes with:
 
 Keep raw large MCP responses out of the manifest. Store compact, reusable data only unless a blocker requires a small error excerpt.
 Do not store or depend on truncated tool output. A truncated result must produce `blocked_truncated` or a smaller retry before success.
+
+For adaptive multi-agent runs:
+
+- The controller writes `shard-plan.json` before starting workers.
+- Each worker writes an isolated `manifest.json`, `summary.md`, and `snapshots/*.json` under its assigned `shards/{shardId}/` directory.
+- Workers must not edit the parent `manifest.json`.
+- The parent `manifest.json` sets `shardPlanPath` and records worker shard entries in `roots[].shards`.
+- Each shard entry must include `shardId`, `rootNodeId`, `manifestPath`, `status`, `coverageComplete`, and `truncated`.
+- A parent root may use `status = "ok_by_shards"` only when all required worker manifests pass freshness and coverage checks.
 
 ## Freshness
 
