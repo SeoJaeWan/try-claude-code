@@ -1,5 +1,5 @@
 {
     "name": "try-claude-code",
-    "version": "2.10.0",
+    "version": "2.10.1",
     "description": "Custom skills, hooks, and agents for Claude Code development workflow"
 }
