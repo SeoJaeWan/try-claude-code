@@ -37,6 +37,7 @@ import {
   stripAnsi,
 } from "./lib/box-renderer.mjs";
 import { readCache, isFresh, triggerRefreshIfStale } from "./lib/status-cache.mjs";
+import { readPermissionMode } from "./lib/permission-mode.mjs";
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -145,6 +146,23 @@ function formatCost(usd) {
   return `$${usd.toFixed(2)}`;
 }
 
+/**
+ * Color a permission mode label. Returns null when mode is unknown so
+ * callers can skip rendering. `default` is greyed-out; other modes get a
+ * color matching their risk profile.
+ */
+function formatPermissionMode(mode) {
+  if (!mode) return null;
+  switch (mode) {
+    case "plan":              return cyan(mode);
+    case "auto":              return yellow(mode);
+    case "acceptEdits":       return yellow("auto");
+    case "bypassPermissions": return red("bypass");
+    case "default":           return gray(mode);
+    default:                  return gray(mode);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Section renderers
 // ---------------------------------------------------------------------------
@@ -152,10 +170,12 @@ function formatCost(usd) {
 function renderCore(input) {
   const lines = [];
 
-  // Line 1: model + duration
+  // Line 1: model [mode] + duration
   const modelId = input.model?.id ?? "unknown";
+  const modeBadge = formatPermissionMode(readPermissionMode(input.transcript_path));
   const duration = formatDuration(input.cost?.total_duration_ms);
-  lines.push(`${white(modelId)}   ${gray("⏱")} ${duration}`);
+  const modelStr = modeBadge ? `${white(modelId)} ${modeBadge}` : white(modelId);
+  lines.push(`${modelStr}   ${gray("⏱")} ${duration}`);
 
   // Line 2: week% + session% with time-to-reset (always show, placeholder if missing)
   const weekPct = input.rate_limits?.seven_day?.used_percentage;
@@ -297,9 +317,10 @@ function renderInline(input) {
     parts.push(`${gray("7d:")}${pctStr}${leftStr}`);
   }
 
-  // 4. Model
+  // 4. Model [mode]
   const modelId = input.model?.id ?? "unknown";
-  parts.push(white(modelId));
+  const modeBadge = formatPermissionMode(readPermissionMode(input.transcript_path));
+  parts.push(modeBadge ? `${white(modelId)} ${modeBadge}` : white(modelId));
 
   // 5. Duration
   const duration = formatDuration(input.cost?.total_duration_ms);
