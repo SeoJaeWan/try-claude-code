@@ -207,6 +207,89 @@ describe("evaluate — Bash gating", () => {
   });
 });
 
+describe("evaluate — Step 2 worktree bootstrap carve-out", () => {
+  // Step 2 of runner/SKILL.md requires the main session to run
+  // `git worktree add` while status="preparing" — the worktree directory has
+  // to exist before the plan agent is dispatched in Step 3. The matrix
+  // narrows this carve-out via `isWorktreeBootstrapCommand` so only commands
+  // touching `state.worktree_path` are allowed, and only at `preparing`.
+
+  it("ALLOWs `git worktree add` at preparing when targeting state.worktree_path", () => {
+    const r = evaluate({
+      state: stateAt(STATUS.PREPARING),
+      toolName: "Bash",
+      toolInput: {
+        command: `git worktree add -b feat/x "${PLAN_AREA}" main`,
+      },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.ALLOW);
+  });
+
+  it("BLOCKs `git worktree add` at preparing when path is unrelated", () => {
+    const r = evaluate({
+      state: stateAt(STATUS.PREPARING),
+      toolName: "Bash",
+      toolInput: {
+        command: "git worktree add -b feat/other /tmp/elsewhere main",
+      },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.BLOCK);
+    assert.match(r.reason, /활성 plan/);
+  });
+
+  it("ALLOWs `git worktree remove --force` at preparing (stale-wipe path)", () => {
+    const r = evaluate({
+      state: stateAt(STATUS.PREPARING),
+      toolName: "Bash",
+      toolInput: {
+        command: `git worktree remove --force "${PLAN_AREA}"`,
+      },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.ALLOW);
+  });
+
+  it("BLOCKs `git worktree remove` without --force at preparing", () => {
+    // Only the stale-wipe shape (with --force) is carved out; a bare remove
+    // is unusual at Step 2 and should still be blocked.
+    const r = evaluate({
+      state: stateAt(STATUS.PREPARING),
+      toolName: "Bash",
+      toolInput: {
+        command: `git worktree remove "${PLAN_AREA}"`,
+      },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.BLOCK);
+  });
+
+  it("BLOCKs `git worktree add` at dispatching (carve-out is preparing-only)", () => {
+    const r = evaluate({
+      state: stateAt(STATUS.DISPATCHING),
+      toolName: "Bash",
+      toolInput: {
+        command: `git worktree add -b feat/x "${PLAN_AREA}" main`,
+      },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.BLOCK);
+  });
+
+  it("BLOCKs `git worktree add` at dev_reviewing (carve-out is preparing-only)", () => {
+    const r = evaluate({
+      state: stateAt(STATUS.DEV_REVIEWING),
+      toolName: "Bash",
+      toolInput: {
+        command: `git worktree add -b feat/x "${PLAN_AREA}" main`,
+      },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.BLOCK);
+  });
+});
+
 describe("evaluate — Edit / Write gating", () => {
   it("blocks Edit on worktree files mid-review", () => {
     const r = evaluate({

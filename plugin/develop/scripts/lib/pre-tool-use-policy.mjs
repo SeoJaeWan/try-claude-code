@@ -27,10 +27,18 @@
 // dispatch resolver.
 //
 //   preparing      — fresh plan; worktree may not exist yet. Step 1-2.
-//                    Main session may run read-only Bash and the runner-state
-//                    CLI; mutating work waits for Step 3 to arm + dispatch
-//                    (PreToolUse auto-arms when it sees the matching Agent
-//                    dispatch from this status).
+//                    Main session legitimately runs `git worktree add` here
+//                    to create the worktree directory the plan agent will
+//                    inhabit (runner/SKILL.md Core rule 3 + Step 2), and may
+//                    run `git worktree remove --force` on Step 2's stale-wipe
+//                    path. Both are narrowed by `isWorktreeBootstrapCommand`
+//                    so the command must touch `state.worktree_path` —
+//                    arbitrary worktree mutations are still BLOCKed. All
+//                    *other* mutations (commits, edits inside the worktree)
+//                    wait for Step 3's plan-agent dispatch; the worktree's
+//                    interior is the agent's domain. PreToolUse auto-arms
+//                    the gate when it sees the matching Agent dispatch from
+//                    this status.
 //   dispatching    — Step 3. `stop_review.phase` distinguishes "armed" (gate
 //                    primed) from "blocked" (Stop hook reported BLOCK,
 //                    awaiting re-dispatch) from "passed" (transient pre-flip
@@ -96,6 +104,36 @@ const MUTATING_BASH_PATTERNS = [
   /^\s*(printf|tee)\b/,
   /(^|\s|;|&&|\|\|)\s*\>\s*\S/,
 ];
+
+// Step 2 worktree bootstrap commands. The main session legitimately runs
+// `git worktree add` to create the plan's worktree directory (runner/SKILL.md
+// Core rule 3 + Step 2) and `git worktree remove --force` to wipe a stale
+// worktree before recreating it. The `preparing` matrix row routes its
+// `bashMutating` cell through this helper so only these two narrow shapes
+// pass — anything else mutating in `preparing` stays BLOCKed.
+//
+// Why not add these to SAFE_BASH_PATTERNS:
+//   `classifyBashCommand` returns the same verdict for every status. We only
+//   want this carve-out during `preparing` — once the plan reaches
+//   `dispatching` or later, the main session should never be re-creating or
+//   removing the worktree. Keeping the classifier strict and the matrix
+//   permissive keeps that scope tight.
+//
+// Guard conditions (all must hold):
+//   - command shape is `git worktree add …` OR `git worktree remove … --force …`
+//   - state.worktree_path is a non-empty string AND appears in the command
+//     (substring match — tolerates quoting and shell differences)
+// Other worktree subcommands (`move`, `prune`) and `remove` without --force
+// are intentionally NOT carved out; they should not appear during Step 2.
+export function isWorktreeBootstrapCommand(command, state) {
+  if (typeof command !== "string" || !command.trim()) return false;
+  const worktreePath = state?.worktree_path;
+  if (typeof worktreePath !== "string" || !worktreePath) return false;
+  if (!command.includes(worktreePath)) return false;
+  if (/^\s*git\s+worktree\s+add\b/.test(command)) return true;
+  if (/^\s*git\s+worktree\s+remove\b[^\n]*--force\b/.test(command)) return true;
+  return false;
+}
 
 export const VERDICT = Object.freeze({
   ALLOW: "allow",
@@ -223,11 +261,18 @@ function dispatchMatchesPlan(toolInput, state) {
 // rows. See state.dev_review.phase / state.stop_review.phase.
 const MATRIX = {
   preparing: {
-    // Step 1-2: worktree setup. The PreToolUse hook also auto-arms the
-    // gate when it sees a matching Agent dispatch here, so this row only
-    // needs to lock down everything *else*.
+    // Step 1-2: worktree setup. The main session legitimately runs
+    // `git worktree add` here to create the plan's worktree directory, and
+    // `git worktree remove --force` to wipe a stale one before recreating.
+    // `isWorktreeBootstrapCommand` narrows the ALLOW to commands that
+    // touch `state.worktree_path`; every other mutation waits for the
+    // plan-agent dispatch. The PreToolUse hook also auto-arms the gate
+    // when it sees a matching Agent dispatch from this row.
     bashSafe: VERDICT.ALLOW,
-    bashMutating: VERDICT.BLOCK,
+    bashMutating: ({ toolInput, state }) =>
+      isWorktreeBootstrapCommand(toolInput?.command, state)
+        ? VERDICT.ALLOW
+        : VERDICT.BLOCK,
     fileMutating: VERDICT.BLOCK,
     agentDispatch: ({ matchesPlan }) =>
       matchesPlan ? VERDICT.ALLOW : VERDICT.BLOCK,
