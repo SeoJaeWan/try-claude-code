@@ -9,7 +9,7 @@ on:
 
 jobs:
   test:
-    name: hook contract (${{ matrix.os }} / node ${{ matrix.node }})
+    name: plugin tests (${{ matrix.os }} / node ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - name: Run hook contract tests
+      - name: Run plugin tests
         run: npm test
 
       - name: Smoke test SessionStart Codex probe (no Codex expected)
