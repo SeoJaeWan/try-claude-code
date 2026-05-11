@@ -268,6 +268,20 @@ function dispatchMatchesPlan(toolInput, state) {
   return agentNamesMatch(subagent, state.owner_agent);
 }
 
+// A background Agent dispatch (`run_in_background: true`) returns
+// immediately from the tool call while the agent keeps working asynchronously.
+// The runner skill's Stop-hook contract relies on the foreground default —
+// the dispatch call blocks until the agent finishes, the model writes one
+// closing line, the turn ends, and the Stop hook reviews the agent's commits.
+// When the dispatch is backgrounded the call returns instantly, the model
+// often ends the turn before any commits exist, and the Stop hook ran (pre-
+// fix) on a base-branch commit it mistook for plan work. We now block
+// background dispatches in policy so the contract gap cannot be hit even
+// when the model would otherwise pick that flag.
+function isBackgroundDispatch(toolInput) {
+  return toolInput?.run_in_background === true;
+}
+
 // Per-status disposition for each tool family. `allow`, `warn`, `block` are
 // the three terminal verdicts; functions defer the choice to runtime context
 // (e.g. classifying the Bash command, checking dispatch identity, the
@@ -292,8 +306,11 @@ const MATRIX = {
         ? VERDICT.ALLOW
         : VERDICT.BLOCK,
     fileMutating: VERDICT.BLOCK,
-    agentDispatch: ({ matchesPlan }) =>
-      matchesPlan ? VERDICT.ALLOW : VERDICT.BLOCK,
+    agentDispatch: ({ matchesPlan, toolInput }) => {
+      if (!matchesPlan) return VERDICT.BLOCK;
+      if (isBackgroundDispatch(toolInput)) return VERDICT.BLOCK;
+      return VERDICT.ALLOW;
+    },
   },
   dispatching: {
     // Step 3: stop-review gate active. `stop_review.phase` may be "armed"
@@ -302,19 +319,28 @@ const MATRIX = {
     bashSafe: VERDICT.ALLOW,
     bashMutating: VERDICT.BLOCK,
     fileMutating: VERDICT.BLOCK,
-    agentDispatch: ({ matchesPlan }) =>
-      matchesPlan ? VERDICT.ALLOW : VERDICT.BLOCK,
+    agentDispatch: ({ matchesPlan, toolInput }) => {
+      if (!matchesPlan) return VERDICT.BLOCK;
+      if (isBackgroundDispatch(toolInput)) return VERDICT.BLOCK;
+      return VERDICT.ALLOW;
+    },
   },
   dev_reviewing: {
     // Step 4. Sub-state branches:
-    //   phase "rework"   → reviewer-chosen rework agent allowed.
+    //   phase "rework"   → reviewer-chosen rework agent allowed (but still
+    //                      foreground-only — rework commits feed the next
+    //                      dev-review round and the skill must wait for
+    //                      completion to call `rework-done`).
     //   phase "awaiting" → reviewer reading; no dispatches until reply.
     //   phase "qa"       → main session answers in chat; no dispatches.
     bashSafe: VERDICT.ALLOW,
     bashMutating: VERDICT.BLOCK,
     fileMutating: VERDICT.BLOCK,
-    agentDispatch: ({ state }) =>
-      state.dev_review?.phase === "rework" ? VERDICT.ALLOW : VERDICT.BLOCK,
+    agentDispatch: ({ state, toolInput }) => {
+      if (state.dev_review?.phase !== "rework") return VERDICT.BLOCK;
+      if (isBackgroundDispatch(toolInput)) return VERDICT.BLOCK;
+      return VERDICT.ALLOW;
+    },
   },
   closing: {
     // Step 5: dev-review approved. Main session runs git merge / branch -d /
@@ -411,11 +437,22 @@ export function evaluate({ state, toolName, toolInput, planAreas }) {
         hint =
           `dev-review 단계 (phase="${phase}")에서는 Agent dispatch를 차단합니다. ` +
           `rework가 필요하면 begin-rework CLI를 먼저 호출해 phase를 "rework"로 옮기세요.`;
+      } else if (isBackgroundDispatch(toolInput)) {
+        hint =
+          `rework dispatch를 백그라운드(run_in_background: true)로 호출하면 ` +
+          `tool 호출이 즉시 리턴되어 메인 세션이 commit 없이 턴을 끝낼 위험이 있습니다. ` +
+          `포그라운드(기본값)로 dispatch해서 호출이 agent 완료까지 block되게 하세요.`;
       }
     } else if (!ctx.matchesPlan) {
       hint =
         `Agent 호출이 활성 plan의 owner_agent(${state.owner_agent})와 일치하지 않습니다. ` +
         `현재 status에서는 plan dispatch 외 Agent 호출을 차단합니다.`;
+    } else if (isBackgroundDispatch(toolInput)) {
+      hint =
+        `plan-agent를 백그라운드(run_in_background: true)로 dispatch하면 Agent 호출이 ` +
+        `즉시 리턴되어 메인 세션이 commit 없이 턴을 끝낼 수 있습니다. 그 상태에서 Stop hook이 ` +
+        `발화하면 base 브랜치의 마지막 commit을 plan 작업으로 오인할 수 있어 매우 위험합니다. ` +
+        `포그라운드(기본값)로 dispatch해서 호출이 agent 완료까지 block되게 하세요.`;
     }
   } else {
     // Tools we don't gate (Read, Glob, Grep, AskUserQuestion, etc.).

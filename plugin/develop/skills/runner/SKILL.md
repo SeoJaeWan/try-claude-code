@@ -271,6 +271,16 @@ Agent(
 )
 ```
 
+**Foreground only — never pass `run_in_background: true`.** PreToolUse will
+refuse the call if you do, but the contract reason matters: a foreground
+Agent call blocks the turn until the agent finishes, so the Stop hook only
+fires once commits are in place. A background dispatch returns immediately,
+the model often ends the turn before commits exist, and the Stop hook would
+review the worktree's *branch-point* commit (= a base-branch commit) as if
+it were plan work. Pre-fix that produced an ALLOW and walked the state to
+`dev_reviewing` with zero agent commits; PreToolUse then blocked the
+late-arriving agent because status had already advanced — deadlock.
+
 The `description` form `Plan: <slug>` is kept for human readability and
 continuity, but the hooks no longer parse them. If you need to vary the
 wording, you may — the runner-state JSON is the only contract. The prompt
@@ -280,7 +290,10 @@ change updates one place.
 After the agent returns, output a brief plain-text report (commit list +
 "Stop-review가 실행됩니다.") and end your turn. **Do not call any tool
 afterwards in the same turn.** The Stop hook fires on turn end and reads the
-plan-state to decide whether to gate.
+plan-state to decide whether to gate. "After the agent returns" means after
+the foreground Agent tool call yields a tool result with the agent's final
+message — which only happens once the agent is done — not after the prompt
+was sent.
 
 #### Step 3 re-entry (after BLOCK)
 
@@ -353,7 +366,10 @@ a terminal summary based on `feedback.json`:
     rework items may be dispatched sequentially (safe default) or in
     parallel when they target different commits whose files do not overlap.
     The rework dispatch's description is whatever the runtime produces; it
-    is not a `Plan: ...` dispatch.
+    is not a `Plan: ...` dispatch. Like the plan dispatch in Step 3, rework
+    dispatches must be foreground (no `run_in_background: true`) — the
+    runner has to wait for completion before calling `rework-done` and
+    re-entering dev-review.
 
     Rework intentionally **does not** call `arm-for-dispatch`. Stop-review
     is bypassed for rework commits because the reviewer sees them directly

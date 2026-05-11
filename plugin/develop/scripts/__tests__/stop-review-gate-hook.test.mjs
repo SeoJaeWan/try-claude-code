@@ -53,6 +53,8 @@ let counter = 0;
 // the Stop hook only ever calls `git rev-parse HEAD` and `git diff` against
 // the path stored in state.worktree_path, so an init + single commit is
 // enough to drive the collectDiffForPlan branches deterministically).
+// We also create a `main` ref pointing at the same seed commit so the new
+// merge-base lookup path resolves (`git merge-base main HEAD` → seed).
 function makeFakeWorktree(name) {
   const wt = path.join(projectRoot, "worktrees", name);
   fs.mkdirSync(wt, { recursive: true });
@@ -62,12 +64,30 @@ function makeFakeWorktree(name) {
   fs.writeFileSync(path.join(wt, "x.txt"), "x");
   spawnSync("git", ["-C", wt, "add", "-A"], { stdio: "ignore" });
   spawnSync("git", ["-C", wt, "commit", "-q", "-m", "seed"], { stdio: "ignore" });
+  // Mirror the seed commit on a `main` ref so collectDiffForPlan's merge-base
+  // resolution succeeds. Without this, the new diff-base logic would fail
+  // (no `main` ref) and the hook would skip silently — masking what we are
+  // trying to test.
+  spawnSync("git", ["-C", wt, "branch", "main"], { stdio: "ignore" });
   const head = spawnSync(
     "git",
     ["-C", wt, "rev-parse", "HEAD"],
     { encoding: "utf8" },
   ).stdout.trim();
   return { wt, head };
+}
+
+// Add a fresh commit on top of the current branch and return its SHA. Lets
+// tests put a "task branch with one agent commit" state on disk.
+function addCommit(wt, message, filename) {
+  fs.writeFileSync(path.join(wt, filename), `content-${Date.now()}`);
+  spawnSync("git", ["-C", wt, "add", "-A"], { stdio: "ignore" });
+  spawnSync("git", ["-C", wt, "commit", "-q", "-m", message], { stdio: "ignore" });
+  return spawnSync(
+    "git",
+    ["-C", wt, "rev-parse", "HEAD"],
+    { encoding: "utf8" },
+  ).stdout.trim();
 }
 
 function makeStuckPlan({ sessionId }) {
@@ -157,6 +177,75 @@ describe("Stop hook BLOCK-stuck surface", () => {
     assert.match(sysMsg.systemMessage, /simulated finding/);
     // No `decision: block` should be emitted in this branch.
     assert.equal(messages.find((m) => m.decision === "block"), undefined);
+  });
+
+  // Regression for the bug that caused the dev_reviewing deadlock:
+  //   - last_reviewed_commit = null (first stop-hook firing)
+  //   - worktree HEAD = base branch tip (agent has not committed yet)
+  // Pre-fix, the hook fell back to `HEAD~1..HEAD` and reviewed the base
+  // branch's previous commit as if it were plan work, earning an ALLOW and
+  // walking state to dev_reviewing. Post-fix, the diff-base is resolved via
+  // `git merge-base main HEAD` = HEAD, so collectDiffForPlan returns null
+  // and the new armed-empty surface prints a hint instead of advancing.
+  it("surfaces armed-empty hint when DISPATCHING+ARMED has no agent commits yet", () => {
+    const sessionId = `sess-armed-empty-${++counter}`;
+    counter += 1;
+    const slug = `armed-empty-${counter}`;
+    const branch = `feat/${slug}`;
+    const { wt } = makeFakeWorktree(branch);
+
+    const stateDir = path.join(projectRoot, "plans", slug);
+    fs.mkdirSync(stateDir, { recursive: true });
+    const statePath = path.join(stateDir, ".runner-state.json");
+    const state = createInitialState({
+      planSlug: slug,
+      planPath: path.join(projectRoot, "plans", `${slug}.plan.md`),
+      ownerAgent: "general-developer",
+      baseBranch: "main",
+      taskBranch: branch,
+      worktreePath: wt,
+      sessionId,
+    });
+    transitionStatus(state, STATUS.DISPATCHING);
+    setStopReviewPhase(state, STOP_REVIEW_PHASE.ARMED);
+    setStopReviewArmed(state, true);
+    // Crucially leave last_reviewed_commit = null — that is the broken-fallback
+    // entry point. saveState as-is.
+    saveState(statePath, state);
+
+    const sessionsDir = path.join(pluginDataDir, "sessions");
+    fs.mkdirSync(sessionsDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(sessionsDir, `${sessionId}.json`),
+      JSON.stringify({
+        sessionId,
+        createdAt: new Date().toISOString(),
+        cwd: projectRoot,
+        activePlanStates: [statePath],
+        stopReviewThreadId: null,
+      }, null, 2),
+    );
+
+    const r = runHook({ sessionId });
+    assert.equal(r.status, 0, r.stderr);
+    const lines = r.stdout.split(/\r?\n/).filter(Boolean);
+    const messages = lines
+      .map((l) => { try { return JSON.parse(l); } catch { return null; } })
+      .filter(Boolean);
+    // No decision:block (the bug used to walk state via a fake ALLOW; the
+    // fix must emit only a systemMessage and not advance state).
+    assert.equal(messages.find((m) => m.decision === "block"), undefined);
+    const sysMsg = messages.find((m) => m.systemMessage);
+    assert.ok(sysMsg, `expected armed-empty systemMessage; got: ${r.stdout}`);
+    assert.match(sysMsg.systemMessage, /dispatch.*새 commit 없음/);
+    assert.match(sysMsg.systemMessage, new RegExp(slug));
+
+    // State must be unchanged — still dispatching/armed with no last_reviewed.
+    const finalState = JSON.parse(fs.readFileSync(statePath, "utf8"));
+    assert.equal(finalState.status, "dispatching");
+    assert.equal(finalState.stop_review.phase, "armed");
+    assert.equal(finalState.stop_review.armed, true);
+    assert.equal(finalState.stop_review.last_reviewed_commit, null);
   });
 
   it("stays silent when the only armed plan is DISPATCHING+ARMED with nothing new", () => {

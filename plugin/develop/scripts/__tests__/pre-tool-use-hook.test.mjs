@@ -387,6 +387,33 @@ describe("PreToolUse hook — wiring", () => {
     assert.equal(after.stop_review.armed, true);
   });
 
+  // Regression: pre-fix the model could dispatch the plan agent with
+  // run_in_background: true, which returned the Agent call immediately and
+  // let the turn end before any commits existed. The Stop hook then mistook
+  // a base-branch commit for plan work and walked state to dev_reviewing,
+  // deadlocking the late-arriving agent. The policy now blocks the call
+  // AND maybeAutoArm skips advancing state so a retry can pick up cleanly.
+  it("blocks background plan-agent dispatch and leaves state at preparing", () => {
+    const sessionId = `sess-${++counter}`;
+    const { statePath } = seedSession({ sessionId, status: STATUS.PREPARING });
+    const r = runHook({
+      sessionId,
+      toolName: "Task",
+      toolInput: {
+        subagent_type: "general-developer",
+        prompt: "...",
+        run_in_background: true,
+      },
+    });
+    const out = JSON.parse(r.stdout);
+    assert.equal(out.decision, "block");
+    assert.match(out.reason, /run_in_background/);
+    const after = loadState(statePath);
+    assert.equal(after.status, STATUS.PREPARING, "auto-arm must not have walked status");
+    assert.equal(after.stop_review.phase, null);
+    assert.equal(after.stop_review.armed, false);
+  });
+
   it("blocks a namespaced subagent from a different plugin", () => {
     const sessionId = `sess-${++counter}`;
     const { statePath } = seedSession({

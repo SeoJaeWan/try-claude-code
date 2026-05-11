@@ -95,6 +95,13 @@ function maybeAutoArm(state, toolName, toolInput) {
   if (!agentNamesMatch(subagent, state.owner_agent)) {
     return state;
   }
+  // Background dispatches are blocked by `pre-tool-use-policy.mjs` further
+  // down. Do not advance the gate for a dispatch the policy is about to
+  // refuse — otherwise the state walks to `dispatching/armed` while the
+  // agent never ran, and the user has to manually reset before retrying.
+  // Leaving state at `preparing` (or `dispatching/blocked`) means the next
+  // foreground re-dispatch auto-arms cleanly.
+  if (toolInput?.run_in_background === true) return state;
 
   const before = state.status;
   const beforePhase = state.stop_review.phase ?? null;

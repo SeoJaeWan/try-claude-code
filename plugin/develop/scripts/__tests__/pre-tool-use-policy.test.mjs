@@ -400,6 +400,74 @@ describe("evaluate — Agent / Task dispatch gating", () => {
     assert.equal(r.decision, VERDICT.ALLOW);
   });
 
+  it("blocks plan-agent dispatch when run_in_background is true (preparing)", () => {
+    // Regression: pre-fix, background dispatch returned the Agent call
+    // immediately and the model often ended its turn before commits existed.
+    // The Stop hook then fell back to HEAD~1..HEAD and reviewed a base
+    // commit as if it were plan work, walking state to dev_reviewing with
+    // zero agent commits — deadlock. Policy now refuses the call outright.
+    const r = evaluate({
+      state: stateAt(STATUS.PREPARING),
+      toolName: "Task",
+      toolInput: {
+        subagent_type: "general-developer",
+        prompt: "...",
+        run_in_background: true,
+      },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.BLOCK);
+    assert.match(r.reason, /run_in_background/);
+    assert.match(r.reason, /포그라운드/);
+  });
+
+  it("blocks plan-agent dispatch when run_in_background is true (dispatching)", () => {
+    const r = evaluate({
+      state: stateAt(STATUS.DISPATCHING),
+      toolName: "Task",
+      toolInput: {
+        subagent_type: "general-developer",
+        prompt: "...",
+        run_in_background: true,
+      },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.BLOCK);
+    assert.match(r.reason, /run_in_background/);
+  });
+
+  it("blocks rework dispatch when run_in_background is true (dev_reviewing/rework)", () => {
+    const r = evaluate({
+      state: stateAt(STATUS.DEV_REVIEWING, { devPhase: DEV_REVIEW_PHASE.REWORK }),
+      toolName: "Task",
+      toolInput: {
+        subagent_type: "frontend-developer",
+        prompt: "...",
+        run_in_background: true,
+      },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.BLOCK);
+    assert.match(r.reason, /run_in_background/);
+  });
+
+  it("does not treat run_in_background:false as background", () => {
+    // Defensive — false / undefined / missing should all be foreground.
+    for (const flag of [false, undefined, null]) {
+      const r = evaluate({
+        state: stateAt(STATUS.DISPATCHING),
+        toolName: "Task",
+        toolInput: {
+          subagent_type: "general-developer",
+          prompt: "...",
+          run_in_background: flag,
+        },
+        planAreas: [PLAN_AREA, PLAN_DIR],
+      });
+      assert.equal(r.decision, VERDICT.ALLOW, `flag=${flag}`);
+    }
+  });
+
   it("allows Agent dispatch at dev_reviewing only when phase is rework", () => {
     const rework = evaluate({
       state: stateAt(STATUS.DEV_REVIEWING, { devPhase: DEV_REVIEW_PHASE.REWORK }),

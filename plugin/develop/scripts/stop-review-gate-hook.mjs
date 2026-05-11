@@ -71,9 +71,6 @@ const CONFIDENCE_THRESHOLD = 7;
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 
-// Well-known SHA for an empty tree — used when HEAD has no parent (first commit).
-const EMPTY_TREE_SHA = "4b825dc642cb6eb9a060e54bf899d15006ef9a21";
-
 function withTimeout(promise, ms) {
   let timer;
   return Promise.race([
@@ -162,16 +159,54 @@ function collectDiffForPlan({ statePath, state }) {
     return null;
   }
 
+  // Determine the diff base. Priorities:
+  //   1. last_reviewed_commit — incremental review since the previous ALLOW,
+  //      provided that SHA still resolves inside the worktree.
+  //   2. worktree branch point — the commit `git worktree add -b <task>
+  //      <path> <base>` snapshotted. We resolve it on-the-fly via
+  //      `git merge-base <base_branch> HEAD`; the merge-base of the task
+  //      branch and the base branch is exactly that branching point and does
+  //      not drift when the base branch advances afterwards.
+  //
+  // We deliberately do NOT fall back to `HEAD~1` or the empty-tree SHA: both
+  // pretend the worktree's whole history is plan work and would treat the
+  // base branch's last commit (or every base commit) as something to review.
+  // That was the exact bug that drove a dev_reviewing-deadlock when the Stop
+  // hook fired before the plan agent had committed anything — the base
+  // branch's tip commit got reviewed as plan output, earned a clean ALLOW,
+  // and walked the state to dev_reviewing with zero agent commits on the
+  // branch. PreToolUse then blocked the late-arriving agent from writing
+  // because status was already dev_reviewing.
   let diffBase;
   if (lastReviewed && isValidCommit(wtPath, lastReviewed)) {
     diffBase = lastReviewed;
   } else {
-    const parentCheck = spawnSync(
+    const mbResult = spawnSync(
       "git",
-      ["-C", wtPath, "rev-parse", "--verify", "HEAD~1"],
+      ["-C", wtPath, "merge-base", state.base_branch, "HEAD"],
       { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
     );
-    diffBase = parentCheck.status === 0 ? "HEAD~1" : EMPTY_TREE_SHA;
+    if (mbResult.status !== 0 || !mbResult.stdout.trim()) {
+      // Cannot resolve the branch point — usually because the base branch
+      // was deleted or renamed since the worktree was created. Surface as
+      // no-op and let the BLOCK-stuck / armed-empty reporter at the call
+      // site explain what is going on instead of falling back to a wrong
+      // diff base. Leaving the gate armed means the next turn re-tries.
+      logNote(
+        `[stop-gate] merge-base ${state.base_branch}..HEAD failed inside ${wtPath}; ` +
+        `cannot determine diff base safely — skipping review this turn.`,
+      );
+      return null;
+    }
+    diffBase = mbResult.stdout.trim();
+  }
+
+  // No new commits since the branch point. The plan agent has not produced
+  // any work yet (e.g. the main session ended its turn before the background
+  // agent committed). Leave the gate armed and surface nothing here — the
+  // armed-empty branch in main() decides whether to nudge the user.
+  if (diffBase === headSha) {
+    return null;
   }
 
   const diffResult = spawnSync("git", ["-C", wtPath, "diff", `${diffBase}..HEAD`], {
@@ -680,11 +715,20 @@ async function main() {
     }
   }
 
-  // Empty reviewItems normally means "armed but nothing new to review" — fine
-  // for DISPATCHING+ARMED (the user just sent a non-runner turn). But if a
-  // plan is DISPATCHING+BLOCKED and the same HEAD is back, the redispatch
-  // produced no commits. Surface the hang so the user sees why nothing is
-  // moving instead of staring at a quiet turn.
+  // Empty reviewItems means none of the armed plans produced a diff this
+  // turn. Three sub-cases need different treatment:
+  //
+  //   1. DISPATCHING+BLOCKED with the same HEAD as before → the redispatch
+  //      ran but produced no commits. Surface the hang so the user sees why
+  //      nothing is moving.
+  //   2. DISPATCHING+ARMED with HEAD still at the branch point → the plan
+  //      agent never committed. Almost always means the main session ended
+  //      its turn before the agent finished (e.g. it backgrounded the
+  //      dispatch and replied to an unrelated reminder). Surface a hint so
+  //      the user can either wait for completion or re-dispatch in the
+  //      foreground.
+  //   3. Anything else → genuinely "nothing to do this turn" (a non-runner
+  //      reply landed while a plan happened to be armed). Stay silent.
   if (reviewItems.length === 0) {
     const stuck = skipped.filter(
       ({ state }) =>
@@ -715,6 +759,35 @@ async function main() {
         "재디스패치가 새 commit을 만들지 못한 상태입니다. plan 에이전트를",
         "다시 부르거나, 같은 사유가 3회 누적되었다면 사용자가 직접 개입해야",
         "합니다. state는 STOP_REVIEW_BLOCKED 그대로 유지됩니다.",
+      );
+      emitDecision({ systemMessage: lines.join("\n") });
+      return;
+    }
+
+    // Armed but no commits yet — likely an early turn-end after a
+    // background dispatch. The previous (pre-fix) Stop hook silently
+    // reviewed the base commit here and walked state to dev_reviewing;
+    // surfacing it explicitly tells the user the state is intact and what
+    // to do next.
+    const empty = skipped.filter(
+      ({ state }) =>
+        state.status === STATUS.DISPATCHING &&
+        state.stop_review?.phase === "armed" &&
+        !state.stop_review?.last_reviewed_commit,
+    );
+    if (empty.length > 0) {
+      const lines = empty.map(({ state }) => {
+        const slug = state.plan_slug ?? "?";
+        const branch = state.task_branch ?? "?";
+        return `[stop-gate] dispatch됐지만 새 commit 없음 — ${slug}@${branch}`;
+      });
+      lines.push(
+        "",
+        "plan-agent가 commit을 만들기 전에 메인 세션이 턴을 끝낸 것으로 보입니다.",
+        "백그라운드 dispatch였다면 에이전트가 아직 작업 중일 수 있으니 완료",
+        "알림을 기다리세요. 포그라운드였는데도 commit이 없다면 에이전트가 조용히",
+        "실패한 것이므로 다시 dispatch 하세요. state는 dispatching/armed 그대로",
+        "유지됩니다.",
       );
       emitDecision({ systemMessage: lines.join("\n") });
     }
