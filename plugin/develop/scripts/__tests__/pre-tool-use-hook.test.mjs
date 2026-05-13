@@ -282,7 +282,12 @@ describe("PreToolUse hook — wiring", () => {
     assert.equal(r.stdout.trim(), "");
   });
 
-  it("auto-arms gate on plan-agent dispatch from preparing", () => {
+  // Phase 2 reshape: the hook no longer mutates plan-state. Auto-arm was
+  // moved back to an explicit `runner-state-cli.mjs arm-for-dispatch` call
+  // from the runner skill, so the hook is pure judgment again. The tests
+  // below verify the policy verdicts; they do NOT touch state from the hook.
+
+  it("allows owner_agent dispatch from preparing without touching state", () => {
     const sessionId = `sess-${++counter}`;
     const { statePath } = seedSession({ sessionId, status: STATUS.PREPARING });
     const r = runHook({
@@ -291,14 +296,14 @@ describe("PreToolUse hook — wiring", () => {
       toolInput: { subagent_type: "general-developer", prompt: "..." },
     });
     assert.equal(r.status, 0);
-    assert.equal(r.stdout.trim(), "", "auto-armed dispatch should be allowed silently");
+    assert.equal(r.stdout.trim(), "", "owner_agent dispatch should be allowed silently");
     const after = loadState(statePath);
-    assert.equal(after.status, STATUS.DISPATCHING);
-    assert.equal(after.stop_review.phase, STOP_REVIEW_PHASE.ARMED);
-    assert.equal(after.stop_review.armed, true);
+    assert.equal(after.status, STATUS.PREPARING, "hook must NOT advance status");
+    assert.equal(after.stop_review.phase, null);
+    assert.equal(after.stop_review.armed, false);
   });
 
-  it("auto-arms gate on re-dispatch from dispatching+blocked", () => {
+  it("allows re-dispatch from dispatching+blocked without touching state", () => {
     const sessionId = `sess-${++counter}`;
     const { statePath } = seedSession({
       sessionId,
@@ -312,12 +317,13 @@ describe("PreToolUse hook — wiring", () => {
     assert.equal(r.status, 0);
     assert.equal(r.stdout.trim(), "");
     const after = loadState(statePath);
+    // Re-arming back to ARMED is the runner skill's job (via the
+    // arm-for-dispatch CLI). The hook leaves phase at BLOCKED.
     assert.equal(after.status, STATUS.DISPATCHING);
-    assert.equal(after.stop_review.phase, STOP_REVIEW_PHASE.ARMED);
-    assert.equal(after.stop_review.armed, true);
+    assert.equal(after.stop_review.phase, STOP_REVIEW_PHASE.BLOCKED);
   });
 
-  it("does not auto-arm when subagent_type is unrelated", () => {
+  it("blocks unrelated dispatch without touching state", () => {
     const sessionId = `sess-${++counter}`;
     const { statePath } = seedSession({ sessionId, status: STATUS.PREPARING });
     const r = runHook({
@@ -329,25 +335,6 @@ describe("PreToolUse hook — wiring", () => {
     assert.equal(out.decision, "block", "unrelated dispatch must still block");
     const after = loadState(statePath);
     assert.equal(after.status, STATUS.PREPARING, "status untouched");
-  });
-
-  it("auto-arm is idempotent when already armed", () => {
-    const sessionId = `sess-${++counter}`;
-    const { statePath } = seedSession({
-      sessionId,
-      status: STATUS.DISPATCHING,
-    });
-    const r = runHook({
-      sessionId,
-      toolName: "Task",
-      toolInput: { subagent_type: "general-developer", prompt: "..." },
-    });
-    assert.equal(r.status, 0);
-    assert.equal(r.stdout.trim(), "");
-    const after = loadState(statePath);
-    assert.equal(after.status, STATUS.DISPATCHING);
-    assert.equal(after.stop_review.phase, STOP_REVIEW_PHASE.ARMED);
-    assert.equal(after.stop_review.armed, true);
   });
 
   it("fails open on a malformed payload", () => {
@@ -362,9 +349,9 @@ describe("PreToolUse hook — wiring", () => {
 
   // Regression: the original BLOCK seen in the field. owner_agent stored bare
   // ("frontend-developer") while Claude dispatched the plugin-namespaced form
-  // ("try-claude-code:frontend-developer"). The hook must (a) not block and
-  // (b) still auto-arm the stop-review gate via the shared namespacing rule.
-  it("auto-arms from preparing when bare owner_agent matches namespaced subagent_type", () => {
+  // ("try-claude-code:frontend-developer"). The hook must not block via the
+  // shared namespacing rule. State stays untouched (hook is pure judgment).
+  it("allows namespaced subagent_type matching bare owner_agent", () => {
     const sessionId = `sess-${++counter}`;
     const { statePath } = seedSession({
       sessionId,
@@ -382,17 +369,14 @@ describe("PreToolUse hook — wiring", () => {
     assert.equal(r.status, 0);
     assert.equal(r.stdout.trim(), "", "namespaced dispatch should be allowed silently");
     const after = loadState(statePath);
-    assert.equal(after.status, STATUS.DISPATCHING);
-    assert.equal(after.stop_review.phase, STOP_REVIEW_PHASE.ARMED);
-    assert.equal(after.stop_review.armed, true);
+    assert.equal(after.status, STATUS.PREPARING);
   });
 
   // Regression: pre-fix the model could dispatch the plan agent with
   // run_in_background: true, which returned the Agent call immediately and
   // let the turn end before any commits existed. The Stop hook then mistook
   // a base-branch commit for plan work and walked state to dev_reviewing,
-  // deadlocking the late-arriving agent. The policy now blocks the call
-  // AND maybeAutoArm skips advancing state so a retry can pick up cleanly.
+  // deadlocking the late-arriving agent. The policy now blocks the call.
   it("blocks background plan-agent dispatch and leaves state at preparing", () => {
     const sessionId = `sess-${++counter}`;
     const { statePath } = seedSession({ sessionId, status: STATUS.PREPARING });
@@ -409,9 +393,47 @@ describe("PreToolUse hook — wiring", () => {
     assert.equal(out.decision, "block");
     assert.match(out.reason, /run_in_background/);
     const after = loadState(statePath);
-    assert.equal(after.status, STATUS.PREPARING, "auto-arm must not have walked status");
+    assert.equal(after.status, STATUS.PREPARING, "hook must not have walked status");
     assert.equal(after.stop_review.phase, null);
     assert.equal(after.stop_review.armed, false);
+  });
+
+  // Phase 2 fix: sub-agent's Edit on a worktree file must ALLOW even during
+  // dispatching. The target-location rule recognizes file_path inside
+  // worktree as the agent's work.
+  it("allows Edit on a worktree file during dispatching (sub-agent simulate)", () => {
+    const sessionId = `sess-${++counter}`;
+    const { worktreePath } = seedSession({
+      sessionId,
+      status: STATUS.DISPATCHING,
+    });
+    const r = runHook({
+      sessionId,
+      toolName: "Edit",
+      toolInput: { file_path: path.join(worktreePath, "src/x.ts") },
+    });
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout.trim(), "", "sub-agent's worktree edits must be silent ALLOW");
+  });
+
+  // Phase 2 fix: sub-agent's `git commit` from cwd=worktree must ALLOW
+  // even during dispatching.
+  it("allows mutating Bash with cwd inside worktree during dispatching", () => {
+    const sessionId = `sess-${++counter}`;
+    const { worktreePath } = seedSession({
+      sessionId,
+      status: STATUS.DISPATCHING,
+    });
+    const r = runHook({
+      sessionId,
+      toolName: "Bash",
+      toolInput: {
+        command: "git add -A && git commit -m 'feat(x): phase 1'",
+        cwd: worktreePath,
+      },
+    });
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout.trim(), "", "sub-agent's git commits must be silent ALLOW");
   });
 
   it("blocks a namespaced subagent from a different plugin", () => {
