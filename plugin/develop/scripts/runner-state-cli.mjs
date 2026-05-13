@@ -23,8 +23,9 @@
 //
 //   arm-for-dispatch <state>
 //     Assert status in [preparing, dispatching]. Transition → dispatching +
-//     stop_review.phase = "armed". Sets stop_review.armed = true. Kept for
-//     manual recovery — PreToolUse auto-arms in normal operation.
+//     stop_review.phase = "armed". Sets stop_review.armed = true. Called by
+//     the runner skill *before* every plan-agent dispatch (Step 3 + Step 3
+//     re-entry after BLOCK).
 //
 //   begin-rework <state> <feedback-path>
 //     Assert status = dev_reviewing && dev_review.phase = "awaiting".
@@ -158,10 +159,10 @@ function runPhaseMutation({
   process.stdout.write(`${after ?? "null"}\n`);
 }
 
-// arm-for-dispatch is kept for manual recovery — PreToolUse auto-arms the
-// gate as a side-effect of seeing the plan-agent dispatch, but a runner
-// operator may still need to walk a state forward by hand (e.g. after a
-// runner-state-fixup --rollback-to dispatching). The CLI accepts:
+// arm-for-dispatch is the runner skill's primary entry into Step 3. The hook
+// no longer auto-arms — every dispatch is preceded by an explicit Bash call
+// to this subcommand so the status transition is visible in the turn log.
+// The CLI accepts:
 //   - `preparing`                         → DISPATCHING + phase=ARMED
 //   - `dispatching` + phase in {armed, blocked}  → phase=ARMED (idempotent
 //     re-arm). PASSED is rejected because it is the post-ALLOW transient
