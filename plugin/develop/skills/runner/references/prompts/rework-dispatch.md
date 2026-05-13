@@ -48,6 +48,13 @@ exists in this worktree; build on it, do not redo prior commits.
 Apply the feedback. Do NOT touch unrelated files. Do NOT rebase or amend
 existing commits.
 
+## When a tool call is blocked
+If any tool call returns `decision: block` with a `[runner` reason,
+**immediately stop and return the full block reason verbatim in your
+final message** (do NOT retry the same call or paraphrase the reason).
+The runner replays from the main session — your job is to surface the
+exact wording so the runner can decide what to do next.
+
 ## Commit rules (the dev-review UI reads these back verbatim)
 - Format: `{type}(scope): {description}`. Allowed types: feat / fix /
   refactor / docs / chore / style / test. Imperative mood, ~72

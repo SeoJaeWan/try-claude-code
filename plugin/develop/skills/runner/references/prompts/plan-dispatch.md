@@ -35,10 +35,20 @@ skill's responsibility.
 ## Rules
 - Work directly in your current directory.
 - Do NOT create additional worktrees or use EnterWorktree.
-- Treat phase boundaries inside the plan as commit boundaries: complete
-  each phase, commit, then proceed to the next.
+- **Each phase in the plan MUST be exactly one git commit.** Combining
+  multiple phases into a single commit is forbidden. Splitting a single
+  phase across multiple commits is allowed only when the phase
+  explicitly says so. The dev-review UI shows one commit per
+  review unit — collapsing phases hides reviewer-visible boundaries.
 - Do NOT commit-amend across phases — every phase produces its own commit.
 - Only implement what the plan describes. Do NOT pull in adjacent work.
+
+## When a tool call is blocked
+If any tool call returns `decision: block` with a `[runner` reason,
+**immediately stop and return the full block reason verbatim in your
+final message** (do NOT retry the same call or paraphrase the reason).
+The runner replays from the main session — your job is to surface the
+exact wording so the runner can decide whether to re-dispatch.
 
 ## Commit rules (the dev-review UI reads these back verbatim)
 - Format: `{type}(scope): {description}`. scope is optional; description
