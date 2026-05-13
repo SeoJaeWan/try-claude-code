@@ -176,7 +176,11 @@ also calls out a sub-state, read the named phase field to disambiguate.
    and ask the user about merge.
 7. plan-runner runs from the repository root, never from inside `worktrees/**`.
 8. Multiple plans run in separate terminals as independent sessions. Sessions
-   do not coordinate; each plan goes through its own gates.
+   do not coordinate; each plan goes through its own gates. The
+   UserPromptSubmit hook enforces "one /runner per terminal" — if a
+   session already drives a non-terminal plan, a second `/runner` is
+   rejected. This keeps the Stop hook from having to multiplex BLOCK
+   feedback across plans (the first BLOCK would otherwise mask the rest).
 
 ## Branch model
 

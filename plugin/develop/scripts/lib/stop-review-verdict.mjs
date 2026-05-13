@@ -158,8 +158,8 @@ export function applyVerdictToPlanState(reviewItem, outcome, review) {
     setLastReviewedCommit(state, reviewItem.headSha, "BLOCK");
     const { count } = recordPlanBlock(state, review.reason);
     // BLOCK is a phase change inside DISPATCHING; the status itself does not
-    // move. The PreToolUse auto-arm flips phase back to ARMED on the next
-    // plan-agent re-dispatch.
+    // move. The runner skill calls `arm-for-dispatch` from Step 3 re-entry
+    // to flip phase back to ARMED before redispatching.
     if (
       state.status === STATUS.DISPATCHING &&
       state.stop_review.phase !== STOP_REVIEW_PHASE.BLOCKED
