@@ -9,6 +9,8 @@
 // (`plannerDirective`, `escalationNote`, `downgradeWarning`) onto its
 // outgoing decision payload.
 
+import process from "node:process";
+
 import {
   DEV_REVIEW_PHASE,
   STATUS,
@@ -50,11 +52,38 @@ export function buildPlannerBlockDirective(reviewItem) {
   ].join("\n");
 }
 
+// Build a one-line stderr trail describing the state mutation about to land.
+// Stop hook stderr surfaces as a Claude Code systemMessage so the user
+// sees every transition without having to open the JSON file. Kept here
+// (rather than at each setter) so the line emits exactly once per verdict
+// even though several fields change atomically.
+function logStateMutation(label, before, after, statePath) {
+  const fmt = (s) => (s == null ? "null" : s);
+  const lines = [
+    `[stop-gate] state mutation [${label}] — ${statePath}`,
+    `  status:           ${fmt(before.status)} → ${fmt(after.status)}`,
+    `  stop_review.phase:${fmt(before.stopPhase)} → ${fmt(after.stopPhase)}`,
+    `  stop_review.armed:${fmt(before.armed)} → ${fmt(after.armed)}`,
+    `  dev_review.phase: ${fmt(before.devPhase)} → ${fmt(after.devPhase)}`,
+  ];
+  process.stderr.write(`${lines.join("\n")}\n`);
+}
+
+function snapshot(state) {
+  return {
+    status: state.status,
+    stopPhase: state.stop_review?.phase ?? null,
+    armed: state.stop_review?.armed ?? false,
+    devPhase: state.dev_review?.phase ?? null,
+  };
+}
+
 // Apply the verdict to the plan-state and return any extra text (escalation
 // notes, planner directive, downgrade warning) that needs to ride along with
 // the BLOCK reason or the ALLOW systemMessage.
 export function applyVerdictToPlanState(reviewItem, outcome, review) {
   const { state, statePath } = reviewItem;
+  const before = snapshot(state);
   let plannerDirective = "";
   let escalationNote = "";
   let downgradeWarning = "";
@@ -66,6 +95,9 @@ export function applyVerdictToPlanState(reviewItem, outcome, review) {
   // the retry the user is told to expect in the systemMessage. No saveState
   // here because we did not mutate.
   if (outcome === STOP_REVIEW_OUTCOME.TIMEOUT) {
+    process.stderr.write(
+      `[stop-gate] TIMEOUT — no state mutation; gate stays armed (${statePath})\n`,
+    );
     return { plannerDirective, escalationNote, downgradeWarning };
   }
 
@@ -149,5 +181,6 @@ export function applyVerdictToPlanState(reviewItem, outcome, review) {
   }
 
   saveState(statePath, state);
+  logStateMutation(outcome, before, snapshot(state), statePath);
   return { plannerDirective, escalationNote, downgradeWarning };
 }
