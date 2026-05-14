@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import net from "node:net";
 import os from "node:os";
@@ -6,7 +7,29 @@ import process from "node:process";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createBrokerEndpoint, parseBrokerEndpoint } from "./broker-endpoint.mjs";
-import { resolveStateDir } from "./state.mjs";
+import { resolveWorkspaceRoot } from "./workspace.mjs";
+
+// Per-workspace state directory used to hold the broker socket / pid file.
+// Folded in from the now-removed lib/state.mjs Codex-job-tracking module; the
+// broker is the only remaining caller of this helper.
+const BROKER_STATE_PLUGIN_DATA_ENV = "CLAUDE_PLUGIN_DATA";
+const BROKER_STATE_FALLBACK_ROOT = path.join(os.tmpdir(), "codex-companion");
+
+function resolveStateDir(cwd) {
+  const workspaceRoot = resolveWorkspaceRoot(cwd);
+  let canonicalWorkspaceRoot = workspaceRoot;
+  try {
+    canonicalWorkspaceRoot = fs.realpathSync.native(workspaceRoot);
+  } catch {
+    canonicalWorkspaceRoot = workspaceRoot;
+  }
+  const slugSource = path.basename(workspaceRoot) || "workspace";
+  const slug = slugSource.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "workspace";
+  const hash = createHash("sha256").update(canonicalWorkspaceRoot).digest("hex").slice(0, 16);
+  const pluginDataDir = process.env[BROKER_STATE_PLUGIN_DATA_ENV];
+  const stateRoot = pluginDataDir ? path.join(pluginDataDir, "state") : BROKER_STATE_FALLBACK_ROOT;
+  return path.join(stateRoot, `${slug}-${hash}`);
+}
 
 export const PID_FILE_ENV = "CODEX_COMPANION_APP_SERVER_PID_FILE";
 export const LOG_FILE_ENV = "CODEX_COMPANION_APP_SERVER_LOG_FILE";

@@ -41,8 +41,6 @@ import {
   removeActivePlanState,
   setStopReviewThreadId,
 } from "./lib/sessions.mjs";
-import { listJobs } from "./lib/state.mjs";
-import { sortJobsNewestFirst } from "./lib/job-control.mjs";
 import { resolveWorkspaceRoot } from "./lib/workspace.mjs";
 import {
   collectBlockReview,
@@ -602,11 +600,8 @@ function persistReviewArtifacts(outcome, review, reviewItem, workspaceRoot) {
   }
 }
 
-function emitReviewLog({ outcome, branch, headSha, reason, runningTaskNote }) {
-  if (outcome === STOP_REVIEW_OUTCOME.SKIPPED) {
-    if (runningTaskNote) process.stderr.write(`${runningTaskNote}\n`);
-    return;
-  }
+function emitReviewLog({ outcome, branch, headSha, reason }) {
+  if (outcome === STOP_REVIEW_OUTCOME.SKIPPED) return;
   const tag = {
     [STOP_REVIEW_OUTCOME.ALLOW]: "[stop-gate] ALLOW",
     [STOP_REVIEW_OUTCOME.ALLOW_DOWNGRADED]: "[stop-gate] ALLOW (저신뢰 BLOCK 다운그레이드 — .codex/reviews/ 참고)",
@@ -620,9 +615,6 @@ function emitReviewLog({ outcome, branch, headSha, reason, runningTaskNote }) {
     reason
   ) {
     lines.push("", reason);
-  }
-  if (runningTaskNote) {
-    lines.push("", runningTaskNote);
   }
   process.stderr.write(lines.join("\n") + "\n");
 }
@@ -760,21 +752,11 @@ async function main() {
 
   const workspaceRoot = resolveWorkspaceRoot(cwd);
 
-  // Job-running note (informational only).
-  const jobs = sortJobsNewestFirst(
-    listJobs(workspaceRoot).filter((job) => !sessionId || job.sessionId === sessionId),
-  );
-  const runningJob = jobs.find((job) => job.status === "queued" || job.status === "running");
-  const runningTaskNote = runningJob
-    ? `Codex task ${runningJob.id} is still running. Check /codex:status and use /codex:cancel ${runningJob.id} if you want to stop it before ending the session.`
-    : null;
-
   // Run reviews sequentially so Codex thread reuse stays sound and stderr
   // output is interleaved cleanly. In practice there is almost always exactly
   // one armed plan per turn.
   let blockedReviewItem = null;
   let blockedReason = null;
-  let blockedExtras = "";
   const timedOutItems = [];
   // Collected across all reviewItems so the final ALLOW systemMessage can
   // tack on a single warning paragraph if any plan crossed the threshold
@@ -795,7 +777,6 @@ async function main() {
       branch: item.branch,
       headSha: item.headSha,
       reason: review.reason,
-      runningTaskNote,
     });
 
     if (outcome === STOP_REVIEW_OUTCOME.BLOCK && !blockedReviewItem) {
@@ -815,17 +796,13 @@ async function main() {
   // verdict (Claude Code swallows stderr from a Stop hook that exits 0
   // silently).
   if (blockedReviewItem) {
-    emitDecision({
-      decision: "block",
-      reason: runningTaskNote ? `${runningTaskNote} ${blockedReason}` : blockedReason,
-    });
+    emitDecision({ decision: "block", reason: blockedReason });
     return;
   }
 
   // TIMEOUT-only outcome: do not pretend ALLOW. The plan is still armed,
   // last_reviewed_commit is unchanged, so the next Stop hook firing reviews
-  // the same diff. Tell the user that explicitly so they can choose to wait
-  // or cancel via /codex:cancel.
+  // the same diff. Tell the user that explicitly so they can choose to wait.
   if (timedOutItems.length > 0) {
     const lines = timedOutItems.map(({ item, reason }) => {
       const shortSha = item.headSha ? String(item.headSha).slice(0, 7) : "?";
@@ -835,9 +812,7 @@ async function main() {
     lines.push(
       "",
       "게이트는 armed 상태로 유지되며 다음 턴 종료 시 같은 diff를 다시 리뷰합니다.",
-      "재시도를 원치 않으면 `/codex:cancel`로 진행 중인 Codex 작업을 취소하세요.",
     );
-    if (runningTaskNote) lines.push("", runningTaskNote);
     emitDecision({ systemMessage: lines.join("\n") });
     return;
   }
@@ -847,7 +822,6 @@ async function main() {
   const shortSha = last.headSha ? String(last.headSha).slice(0, 7) : "?";
   const tag = "[stop-gate] ALLOW";
   const parts = [`${tag} — ${last.branch ?? "?"}@${shortSha}`];
-  if (runningTaskNote) parts.push("", runningTaskNote);
   if (downgradeWarnings.length > 0) parts.push(downgradeWarnings.join("\n"));
   emitDecision({ systemMessage: parts.join("\n") });
 }
