@@ -230,10 +230,8 @@ base when the user invoked `/runner`, and the worktree must branch from that
 exact commit. Ask the user before doing anything destructive.
 
 Stale-worktree handling is driven by checking the worktree directory on
-disk yourself (`[ -d <state.worktree_path> ]` via Bash). All four cases
-live under `status: preparing` in v2 — the v1 distinction between
-`validating` and `dispatching` collapsed because both meant "Step 2 has
-not finished":
+disk yourself (`[ -d <state.worktree_path> ]` via Bash). All cases live
+under `status: preparing`:
 
 - **worktree missing** — fresh start. Run
   `git worktree add -b <task_branch> <worktree_path> <base_branch>`.
@@ -243,8 +241,8 @@ not finished":
   what is there using
   `git -C <worktree_path> log --oneline <base_branch>..<task_branch>`
   (cap at 20 lines), then ask whether to resume on top of the existing
-  work or wipe it and restart. The state stays at `preparing` until the
-  PreToolUse hook arms the gate on dispatch.
+  work or wipe it and restart. The state stays at `preparing` until
+  `arm-for-dispatch` is explicitly called in Step 3.
 
 After the worktree is in place, **stop here and proceed to Step 3**. Step 2
 must not transition status itself — `arm-for-dispatch` in Step 3 is the
