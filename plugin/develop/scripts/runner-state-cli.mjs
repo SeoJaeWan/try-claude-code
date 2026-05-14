@@ -220,79 +220,37 @@ function cmdArmForDispatch(statePath) {
   process.stdout.write(`${state.status}\n`);
 }
 
-function cmdBeginRework(statePath, feedbackPath) {
-  if (!feedbackPath) {
-    fail("runner-state-cli: begin-rework requires <feedback-path>");
+// All four DEV_REVIEW phase mutators share the same shape: assert status =
+// DEV_REVIEWING, assert phase = `from`, optionally bump round + record
+// feedback path, then move phase → `to`. Pulling the spec into one table
+// keeps the per-command boilerplate down to a single dispatch function.
+const PHASE_MUTATIONS = {
+  "begin-rework":    { from: DEV_REVIEW_PHASE.AWAITING, to: DEV_REVIEW_PHASE.REWORK,   bumpRound: true, needsFeedback: true },
+  "rework-done":     { from: DEV_REVIEW_PHASE.REWORK,   to: DEV_REVIEW_PHASE.AWAITING },
+  "mark-qa-pending": { from: DEV_REVIEW_PHASE.AWAITING, to: DEV_REVIEW_PHASE.QA },
+  "qa-resolved":     { from: DEV_REVIEW_PHASE.QA,       to: DEV_REVIEW_PHASE.AWAITING },
+};
+
+function cmdPhaseMutation(subcommand, statePath, args) {
+  const spec = PHASE_MUTATIONS[subcommand];
+  let feedbackPath = null;
+  if (spec.needsFeedback) {
+    if (!args[0]) fail(`runner-state-cli: ${subcommand} requires <feedback-path>`);
+    feedbackPath = path.isAbsolute(args[0]) ? args[0] : path.resolve(process.cwd(), args[0]);
   }
-  const absFeedback = path.isAbsolute(feedbackPath)
-    ? feedbackPath
-    : path.resolve(process.cwd(), feedbackPath);
   runPhaseMutation({
     statePath,
-    label: "begin-rework",
+    label: subcommand,
     allowedStatus: STATUS.DEV_REVIEWING,
     mutate: (state) => {
-      // Phase guard: only AWAITING → REWORK is legal here. setDevReviewPhase
-      // throws on any other source phase.
-      if (state.dev_review.phase !== DEV_REVIEW_PHASE.AWAITING) {
+      if (state.dev_review.phase !== spec.from) {
         throw new Error(
-          `begin-rework: dev_review.phase must be "awaiting" (was ` +
+          `${subcommand}: dev_review.phase must be "${spec.from}" (was ` +
           `"${state.dev_review.phase}").`,
         );
       }
-      bumpDevReviewRound(state, absFeedback);
-      setDevReviewPhase(state, DEV_REVIEW_PHASE.REWORK);
-    },
-  });
-}
-
-function cmdReworkDone(statePath) {
-  runPhaseMutation({
-    statePath,
-    label: "rework-done",
-    allowedStatus: STATUS.DEV_REVIEWING,
-    mutate: (state) => {
-      if (state.dev_review.phase !== DEV_REVIEW_PHASE.REWORK) {
-        throw new Error(
-          `rework-done: dev_review.phase must be "rework" (was ` +
-          `"${state.dev_review.phase}").`,
-        );
-      }
-      setDevReviewPhase(state, DEV_REVIEW_PHASE.AWAITING);
-    },
-  });
-}
-
-function cmdMarkQaPending(statePath) {
-  runPhaseMutation({
-    statePath,
-    label: "mark-qa-pending",
-    allowedStatus: STATUS.DEV_REVIEWING,
-    mutate: (state) => {
-      if (state.dev_review.phase !== DEV_REVIEW_PHASE.AWAITING) {
-        throw new Error(
-          `mark-qa-pending: dev_review.phase must be "awaiting" (was ` +
-          `"${state.dev_review.phase}").`,
-        );
-      }
-      setDevReviewPhase(state, DEV_REVIEW_PHASE.QA);
-    },
-  });
-}
-
-function cmdQaResolved(statePath) {
-  runPhaseMutation({
-    statePath,
-    label: "qa-resolved",
-    allowedStatus: STATUS.DEV_REVIEWING,
-    mutate: (state) => {
-      if (state.dev_review.phase !== DEV_REVIEW_PHASE.QA) {
-        throw new Error(
-          `qa-resolved: dev_review.phase must be "qa" (was ` +
-          `"${state.dev_review.phase}").`,
-        );
-      }
-      setDevReviewPhase(state, DEV_REVIEW_PHASE.AWAITING);
+      if (spec.bumpRound) bumpDevReviewRound(state, feedbackPath);
+      setDevReviewPhase(state, spec.to);
     },
   });
 }
@@ -516,13 +474,10 @@ function main() {
     case "arm-for-dispatch":
       return cmdArmForDispatch(statePath);
     case "begin-rework":
-      return cmdBeginRework(statePath, rest[0]);
     case "rework-done":
-      return cmdReworkDone(statePath);
     case "mark-qa-pending":
-      return cmdMarkQaPending(statePath);
     case "qa-resolved":
-      return cmdQaResolved(statePath);
+      return cmdPhaseMutation(subcommand, statePath, rest);
     case "mark-approved":
       return cmdMarkApproved(statePath);
     case "mark-merged":
