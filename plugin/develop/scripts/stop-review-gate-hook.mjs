@@ -25,6 +25,7 @@
 // The hook only chooses between the returned outcomes.
 
 import fs from "node:fs";
+import os from "node:os";
 import process from "node:process";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -43,9 +44,25 @@ import { resolveWorkspaceRoot } from "./lib/workspace.mjs";
 import { readHookInput } from "./lib/hook-input.mjs";
 import { STOP_REVIEW_OUTCOME } from "./lib/stop-review-outcome.mjs";
 import { STATUS, tryLoadState } from "./lib/runner-state.mjs";
-import { applyVerdictToPlanState } from "./lib/stop-review-verdict.mjs";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const RUNNER_STATE_CLI = path.resolve(SCRIPT_DIR, "runner-state-cli.mjs");
+
+// Invoke runner-state-cli to apply a stop-review verdict. Returns
+// { ok, stdout, stderr } so the caller can concatenate CLI output (planner
+// directive + escalation note) onto the BLOCK reason. On non-zero exit we
+// emit a systemMessage and leave the plan-state untouched — the gate stays
+// armed and the next Stop hook firing re-runs review against the same diff.
+function runRecordCli(args) {
+  const result = spawnSync("node", [RUNNER_STATE_CLI, ...args], { encoding: "utf8" });
+  return {
+    ok: result.status === 0 && !result.error,
+    stdout: result.stdout ?? "",
+    stderr: result.stderr ?? "",
+    status: result.status,
+    error: result.error,
+  };
+}
 
 function emitDecision(payload) {
   process.stdout.write(`${JSON.stringify(payload)}\n`);
@@ -319,6 +336,7 @@ async function main() {
   let blockedReason = null;
   const timedOutItems = [];
   const downgradeWarnings = [];
+  const recordFailures = [];
 
   for (const item of reviewItems) {
     const result = await review({
@@ -331,23 +349,62 @@ async function main() {
       setStopReviewThreadId(sessionId, result.threadId);
     }
 
-    // applyVerdictToPlanState consumes the legacy review-result shape
-    // ({ ok, reason, details, suppressedNote, timedOut, skipped }) so we
-    // adapt the new outcome-string result here. Phase 4 will replace this
-    // with a CLI call and the lib helper will go away entirely.
-    const reviewLike = {
-      ok:
-        result.outcome === STOP_REVIEW_OUTCOME.ALLOW ||
-        result.outcome === STOP_REVIEW_OUTCOME.ALLOW_DOWNGRADED ||
-        result.outcome === STOP_REVIEW_OUTCOME.SKIPPED,
-      reason: result.reason,
-      details: result.raw,
-      suppressedNote: result.suppressedNote,
-      timedOut: result.outcome === STOP_REVIEW_OUTCOME.TIMEOUT,
-      skipped: result.outcome === STOP_REVIEW_OUTCOME.SKIPPED,
-    };
-    const { plannerDirective, escalationNote, downgradeWarning } =
-      applyVerdictToPlanState(item, result.outcome, reviewLike);
+    // Apply the verdict by spawning runner-state-cli. All plan-state mutation
+    // lives in the CLI now — the hook never calls saveState directly.
+    let cliRun = { ok: true, stdout: "" };
+    if (
+      result.outcome === STOP_REVIEW_OUTCOME.ALLOW ||
+      result.outcome === STOP_REVIEW_OUTCOME.SKIPPED
+    ) {
+      cliRun = runRecordCli([
+        "record-stop-review-allow",
+        item.statePath,
+        item.headSha,
+      ]);
+    } else if (result.outcome === STOP_REVIEW_OUTCOME.ALLOW_DOWNGRADED) {
+      cliRun = runRecordCli([
+        "record-stop-review-downgrade",
+        item.statePath,
+        item.headSha,
+      ]);
+      if (cliRun.ok && cliRun.stdout.trim()) {
+        downgradeWarnings.push(cliRun.stdout.trim());
+      }
+    } else if (result.outcome === STOP_REVIEW_OUTCOME.BLOCK) {
+      const reasonFile = path.join(
+        os.tmpdir(),
+        `stop-review-reason-${Date.now()}-${process.pid}.txt`,
+      );
+      try {
+        fs.writeFileSync(reasonFile, result.reason ?? "", "utf8");
+        cliRun = runRecordCli([
+          "record-stop-review-block",
+          item.statePath,
+          item.headSha,
+          reasonFile,
+        ]);
+      } finally {
+        try { fs.unlinkSync(reasonFile); } catch { /* best-effort cleanup */ }
+      }
+    } else if (result.outcome === STOP_REVIEW_OUTCOME.TIMEOUT) {
+      // No state mutation for TIMEOUT — the gate stays armed and we retry.
+      timedOutItems.push({ item, reason: result.reason });
+    }
+
+    if (!cliRun.ok) {
+      const exitTag = cliRun.error
+        ? `spawn failed (${cliRun.error.code ?? cliRun.error.message})`
+        : `exit ${cliRun.status}`;
+      recordFailures.push({
+        item,
+        outcome: result.outcome,
+        exitTag,
+        stderr: cliRun.stderr,
+      });
+      // Skip the rest of the per-item handling — state is intact and the
+      // next Stop firing will retry the same review.
+      continue;
+    }
 
     emitReviewLog({
       outcome: result.outcome,
@@ -358,14 +415,23 @@ async function main() {
 
     if (result.outcome === STOP_REVIEW_OUTCOME.BLOCK && !blockedReviewItem) {
       blockedReviewItem = item;
-      blockedReason = (result.reason || "") + plannerDirective + escalationNote;
+      // CLI stdout carries the planner directive + escalation note.
+      blockedReason = (result.reason || "") + (cliRun.stdout || "");
     }
-    if (result.outcome === STOP_REVIEW_OUTCOME.TIMEOUT) {
-      timedOutItems.push({ item, reason: result.reason });
-    }
-    if (downgradeWarning) {
-      downgradeWarnings.push(downgradeWarning);
-    }
+  }
+
+  if (recordFailures.length > 0) {
+    const lines = recordFailures.map(({ item, outcome, exitTag, stderr }) => {
+      const head = `[stop-gate] record-CLI 실행 실패 — ${item.branch ?? "?"}@${String(item.headSha ?? "").slice(0, 7)}`;
+      return `${head}\n  outcome=${outcome}, ${exitTag}\n  ${(stderr || "").trim() || "(no stderr)"}`;
+    });
+    lines.push(
+      "",
+      "state는 변경되지 않았으며 다음 turn에 같은 review가 재시도됩니다.",
+      "위 stderr 출력을 확인하고 runner-state-cli가 정상 실행되는지 점검해주세요.",
+    );
+    emitDecision({ systemMessage: lines.join("\n") });
+    return;
   }
 
   if (blockedReviewItem) {

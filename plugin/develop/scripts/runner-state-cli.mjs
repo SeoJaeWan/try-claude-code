@@ -73,14 +73,24 @@ import {
   STATUS,
   STOP_REVIEW_PHASE,
   assertExpectedStatus,
+  bumpConsecutiveDowngrades,
   bumpDevReviewRound,
+  clearConsecutiveDowngrades,
+  clearPlanBlockStreak,
   loadState,
+  recordPlanBlock,
   saveState,
   setDevReviewPhase,
+  setLastReviewedCommit,
   setStopReviewArmed,
   setStopReviewPhase,
   transitionStatus,
 } from "./lib/runner-state.mjs";
+
+// Same thresholds the in-process verdict library used. Kept inline here
+// because the CLI is now the single owner of verdict mutations.
+const SAME_BLOCK_ESCALATION_THRESHOLD = 3;
+const CONSECUTIVE_DOWNGRADE_WARNING_THRESHOLD = 3;
 
 const USAGE = `Usage:
   runner-state-cli arm-for-dispatch <state-path>
@@ -90,6 +100,9 @@ const USAGE = `Usage:
   runner-state-cli qa-resolved <state-path>
   runner-state-cli mark-approved <state-path>
   runner-state-cli mark-merged <state-path>
+  runner-state-cli record-stop-review-allow <state-path> <head-sha>
+  runner-state-cli record-stop-review-downgrade <state-path> <head-sha>
+  runner-state-cli record-stop-review-block <state-path> <head-sha> <reason-file>
   runner-state-cli reset <state-path> --confirm`;
 
 function fail(message, code = 1) {
@@ -312,6 +325,138 @@ function cmdMarkMerged(statePath) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Stop-review verdict recorders (Phase 4 — replaces lib/stop-review-verdict.mjs)
+// ---------------------------------------------------------------------------
+//
+// The Stop hook calls one of these three commands after codex.review()
+// returns. They mutate the plan-state atomically, emit a stderr trail for
+// observability, and (for BLOCK) print the planner directive + escalation
+// note to stdout so the hook can concatenate it onto the BLOCK reason.
+//
+// TIMEOUT does not have a record command: there is no mutation to make.
+
+function buildPlannerBlockDirective(statePath) {
+  return [
+    "",
+    "---",
+    `[plan-runner: replay ${statePath}] 아래 순서로 검증 후 행동:`,
+    "1. 현재 plan 범위 밖 이슈 또는 테스트파일 관련 이슈 → 폐기",
+    "2. 남은 이슈가 실제로 코드에 존재하는지 직접 확인 → 사실과 다르면 폐기",
+    "3. 유효 이슈가 남으면 → 위 state 파일을 읽어 owner_agent와 worktree_path를 확인하고 같은 plan 에이전트를 재디스패치, 커밋 후 턴 종료",
+    "4. 모두 폐기되면 → 재디스패치 없이 그냥 턴 종료 (다음 stop-gate에서 ALLOW)",
+  ].join("\n");
+}
+
+function snapshot(state) {
+  return {
+    status: state.status,
+    stopPhase: state.stop_review?.phase ?? null,
+    armed: state.stop_review?.armed ?? false,
+    devPhase: state.dev_review?.phase ?? null,
+  };
+}
+
+function logMutation(label, before, after, statePath) {
+  const fmt = (s) => (s == null ? "null" : s);
+  const lines = [
+    `[${label}] state mutation — ${statePath}`,
+    `  status:           ${fmt(before.status)} → ${fmt(after.status)}`,
+    `  stop_review.phase:${fmt(before.stopPhase)} → ${fmt(after.stopPhase)}`,
+    `  stop_review.armed:${fmt(before.armed)} → ${fmt(after.armed)}`,
+    `  dev_review.phase: ${fmt(before.devPhase)} → ${fmt(after.devPhase)}`,
+  ];
+  process.stderr.write(`${lines.join("\n")}\n`);
+}
+
+// Walk a plan from DISPATCHING into DEV_REVIEWING/AWAITING, clear stop-review
+// flags. Shared by record-stop-review-allow and record-stop-review-downgrade.
+function advanceToDevReview(state) {
+  setStopReviewArmed(state, false);
+  if (state.status === STATUS.DISPATCHING) {
+    setStopReviewPhase(state, STOP_REVIEW_PHASE.PASSED);
+    transitionStatus(state, STATUS.DEV_REVIEWING);
+    setStopReviewPhase(state, null);
+    setDevReviewPhase(state, DEV_REVIEW_PHASE.AWAITING);
+  }
+}
+
+function cmdRecordStopReviewAllow(statePath, headSha) {
+  if (!headSha) fail("runner-state-cli: record-stop-review-allow requires <head-sha>");
+  const state = loadOrFail(statePath);
+  const before = snapshot(state);
+  setLastReviewedCommit(state, headSha, "ALLOW");
+  clearPlanBlockStreak(state);
+  clearConsecutiveDowngrades(state);
+  advanceToDevReview(state);
+  saveState(statePath, state);
+  logMutation("record-stop-review-allow", before, snapshot(state), statePath);
+}
+
+function cmdRecordStopReviewDowngrade(statePath, headSha) {
+  if (!headSha) fail("runner-state-cli: record-stop-review-downgrade requires <head-sha>");
+  const state = loadOrFail(statePath);
+  const before = snapshot(state);
+  setLastReviewedCommit(state, headSha, "ALLOW");
+  clearPlanBlockStreak(state);
+  const count = bumpConsecutiveDowngrades(state);
+  advanceToDevReview(state);
+  saveState(statePath, state);
+  logMutation("record-stop-review-downgrade", before, snapshot(state), statePath);
+  if (count >= CONSECUTIVE_DOWNGRADE_WARNING_THRESHOLD) {
+    const warning = [
+      "",
+      "---",
+      `[stop-gate] 주의 — 이 plan에서 연속 ${count}회 BLOCK이 저신뢰`,
+      "다운그레이드되었습니다. Codex prompt template 변경이 의심되면",
+      "confidence threshold(7)를 검토하세요.",
+    ].join("\n");
+    process.stdout.write(`${warning}\n`);
+  }
+}
+
+function cmdRecordStopReviewBlock(statePath, headSha, reasonFile) {
+  if (!headSha) fail("runner-state-cli: record-stop-review-block requires <head-sha>");
+  if (!reasonFile) fail("runner-state-cli: record-stop-review-block requires <reason-file>");
+  if (!fs.existsSync(reasonFile)) fail(`runner-state-cli: reason file not found: ${reasonFile}`);
+  let reason;
+  try {
+    reason = fs.readFileSync(reasonFile, "utf8");
+  } catch (err) {
+    fail(`runner-state-cli: failed to read reason file ${reasonFile}: ${err.message}`);
+  }
+  const state = loadOrFail(statePath);
+  const before = snapshot(state);
+  clearConsecutiveDowngrades(state);
+  setLastReviewedCommit(state, headSha, "BLOCK");
+  const { count } = recordPlanBlock(state, reason);
+  if (
+    state.status === STATUS.DISPATCHING &&
+    state.stop_review.phase !== STOP_REVIEW_PHASE.BLOCKED
+  ) {
+    setStopReviewPhase(state, STOP_REVIEW_PHASE.BLOCKED);
+  }
+  saveState(statePath, state);
+  logMutation("record-stop-review-block", before, snapshot(state), statePath);
+
+  // stdout: planner directive (+ escalation note when applicable). The Stop
+  // hook concatenates this onto the user-visible BLOCK reason so the next
+  // turn can replay against the same state.
+  let out = buildPlannerBlockDirective(statePath);
+  if (count >= SAME_BLOCK_ESCALATION_THRESHOLD) {
+    out += "\n" + [
+      "",
+      "---",
+      `[escalation] 같은 이슈로 ${count}회 연속 BLOCK되었습니다. 자동 재디스패치만으로는 해결되지 않을 가능성이 큽니다.`,
+      "다음 중 하나를 선택하세요:",
+      "  1) 사용자(사람)가 직접 원인을 진단 — 코드/테스트/plan을 재검토",
+      "  2) 해당 phase의 기대 동작(plan 또는 phase 파일)을 수정",
+      "  3) 현재 worktree를 폐기하고 처음부터 다시 시작",
+    ].join("\n");
+  }
+  process.stdout.write(`${out}\n`);
+}
+
 // reset is the only subcommand that does not transition status. It runs
 // post-merge cleanup: removes the state file and sibling feedback*.json so
 // the plan directory is empty and the user can re-run /runner against the
@@ -382,6 +527,12 @@ function main() {
       return cmdMarkApproved(statePath);
     case "mark-merged":
       return cmdMarkMerged(statePath);
+    case "record-stop-review-allow":
+      return cmdRecordStopReviewAllow(statePath, rest[0]);
+    case "record-stop-review-downgrade":
+      return cmdRecordStopReviewDowngrade(statePath, rest[0]);
+    case "record-stop-review-block":
+      return cmdRecordStopReviewBlock(statePath, rest[0], rest[1]);
     case "reset":
       return cmdReset(statePath, rest);
     default:
