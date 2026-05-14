@@ -24,7 +24,6 @@ import { normalizePath, writeJsonAtomic } from "./fs.mjs";
 
 const PLUGIN_DATA_ENV = "CLAUDE_PLUGIN_DATA";
 const FALLBACK_SESSIONS_DIR = path.join(os.tmpdir(), "codex-companion", "sessions");
-const STALE_SESSION_MS = 24 * 60 * 60 * 1000;
 
 function nowIso() {
   return new Date().toISOString();
@@ -128,35 +127,6 @@ export function deleteSession(sessionId) {
   }
 }
 
-export function listSessions() {
-  const dir = resolveSessionsDir();
-  if (!fs.existsSync(dir)) {
-    return [];
-  }
-  try {
-    return fs
-      .readdirSync(dir)
-      .filter((f) => f.endsWith(".json"))
-      .map((f) => f.slice(0, -5));
-  } catch {
-    return [];
-  }
-}
-
-export function cleanStaleSessions(maxAgeMs = STALE_SESSION_MS) {
-  const now = Date.now();
-  for (const sessionId of listSessions()) {
-    const session = loadSession(sessionId);
-    if (!session) {
-      deleteSession(sessionId);
-      continue;
-    }
-    const createdAt = new Date(session.createdAt).getTime();
-    if (now - createdAt > maxAgeMs) {
-      deleteSession(sessionId);
-    }
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Active plan-state pointers
