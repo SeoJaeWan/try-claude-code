@@ -1,5 +1,5 @@
 // Unit tests for matchesBrokerStaleModelSignature — the predicate that
-// gates the broker-staleness attribution path in runStopReview.
+// gates the broker-staleness attribution path inside codex.review().
 //
 // Empirically the broker-staleness scenario looks like this: OpenAI returns
 // `{type:"error", status:400, error:{type:"invalid_request_error",
@@ -11,7 +11,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { matchesBrokerStaleModelSignature } from "../stop-review-gate-hook.mjs";
+import { matchesBrokerStaleModelSignature } from "../lib/codex.mjs";
 
 describe("matchesBrokerStaleModelSignature", () => {
   it("matches the canonical gpt-5.5 broker-staleness failure", () => {
