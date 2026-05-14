@@ -35,7 +35,6 @@ import {
   tryLoadState,
 } from "./lib/runner-state.mjs";
 import { evaluate, VERDICT } from "./lib/pre-tool-use-policy.mjs";
-import { recordHookEvent } from "./lib/telemetry.mjs";
 
 function emitBlock(reason) {
   process.stdout.write(JSON.stringify({ decision: "block", reason }));
@@ -84,14 +83,10 @@ function planAreasFor(state) {
 }
 
 async function main() {
-  let toolName = null;
-  let toolInput = null;
-  let sessionId = null;
   try {
-    const { raw, sessionId: sid } = readHookInput({ tag: "pre-tool-use-hook" });
-    sessionId = sid;
-    toolName = typeof raw.tool_name === "string" ? raw.tool_name : null;
-    toolInput = (raw.tool_input && typeof raw.tool_input === "object") ? raw.tool_input : {};
+    const { raw, sessionId } = readHookInput({ tag: "pre-tool-use-hook" });
+    const toolName = typeof raw.tool_name === "string" ? raw.tool_name : null;
+    const toolInput = (raw.tool_input && typeof raw.tool_input === "object") ? raw.tool_input : {};
 
     if (!toolName) {
       // Nothing to gate.
@@ -108,36 +103,15 @@ async function main() {
 
     if (verdict.decision === VERDICT.BLOCK) {
       emitBlock(verdict.reason);
-      recordHookEvent({
-        kind: "pre_tool_use_block",
-        ok: true,
-        sessionId,
-        toolName,
-        status: state?.status ?? null,
-      });
       return;
     }
     if (verdict.decision === VERDICT.WARN) {
       emitWarn(verdict.reason);
-      recordHookEvent({
-        kind: "pre_tool_use_warn",
-        ok: true,
-        sessionId,
-        toolName,
-        status: state?.status ?? null,
-      });
       return;
     }
     // allow → silent.
-  } catch (err) {
+  } catch {
     // Fail open. A hook crash must not block the user's workflow.
-    recordHookEvent({
-      kind: "pre_tool_use_error",
-      ok: false,
-      sessionId,
-      toolName,
-      message: err?.message ?? String(err),
-    });
   }
 }
 

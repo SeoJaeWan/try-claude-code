@@ -171,93 +171,33 @@ export function createInitialState({
   };
 }
 
-// v1 status names (the 9-status enum that predates Phase 4). Kept here as a
-// closed set so the migrator can reject anything that is neither v1 nor v2.
-// Do NOT use these strings anywhere outside the migrator — code that needs
-// status values must import the v2 STATUS enum.
-const V1_STATUS = Object.freeze({
-  VALIDATING: "validating",
-  DISPATCHING: "dispatching",
-  AWAITING_STOP_REVIEW: "awaiting_stop_review",
-  STOP_REVIEW_BLOCKED: "stop_review_blocked",
-  AWAITING_DEV_REVIEW: "awaiting_dev_review",
-  REWORK_IN_PROGRESS: "rework_in_progress",
-  QA_PENDING: "qa_pending",
-  APPROVED: "approved",
-  MERGED: "merged",
-});
-
-// v1 → v2 mapping table. The (status, phase) pair on the right is what the
-// state should look like after migration. Phase fields are nulled out where
-// the v2 status itself does not own a phase.
-const V1_TO_V2 = new Map([
-  [V1_STATUS.VALIDATING,           { status: STATUS.PREPARING,     stopPhase: null,                          devPhase: null }],
-  [V1_STATUS.DISPATCHING,          { status: STATUS.PREPARING,     stopPhase: null,                          devPhase: null }],
-  [V1_STATUS.AWAITING_STOP_REVIEW, { status: STATUS.DISPATCHING,   stopPhase: STOP_REVIEW_PHASE.ARMED,       devPhase: null }],
-  [V1_STATUS.STOP_REVIEW_BLOCKED,  { status: STATUS.DISPATCHING,   stopPhase: STOP_REVIEW_PHASE.BLOCKED,     devPhase: null }],
-  [V1_STATUS.AWAITING_DEV_REVIEW,  { status: STATUS.DEV_REVIEWING, stopPhase: null,                          devPhase: DEV_REVIEW_PHASE.AWAITING }],
-  [V1_STATUS.REWORK_IN_PROGRESS,   { status: STATUS.DEV_REVIEWING, stopPhase: null,                          devPhase: DEV_REVIEW_PHASE.REWORK }],
-  [V1_STATUS.QA_PENDING,           { status: STATUS.DEV_REVIEWING, stopPhase: null,                          devPhase: DEV_REVIEW_PHASE.QA }],
-  [V1_STATUS.APPROVED,             { status: STATUS.CLOSING,       stopPhase: null,                          devPhase: null }],
-  [V1_STATUS.MERGED,               { status: STATUS.MERGED,        stopPhase: null,                          devPhase: null }],
-]);
-
-// In-place migrator from schema_version 1 to 2. Idempotent: calling on a v2
-// state is a no-op. Pure: never touches disk. Called from validateState so
-// every load goes through it before any other check fires.
-//
-// The runner-state library always re-reads files through validateState, and
-// every saveState rewrites the file in the current schema; that is the
-// auto-rewrite path Phase 4 relies on. A read-only inspection (cat, jq) does
-// not trigger migration — that's fine because plan-state-recovery.md tells
-// users to use the CLI, not hand-edit.
-export function migrateV1ToV2(state) {
-  if (!state || typeof state !== "object") return state;
-  if (state.schema_version === SCHEMA_VERSION) return state;
-  if (state.schema_version !== 1) {
-    throw new Error(
-      `plan-state: cannot migrate from schema_version ${state.schema_version} ` +
-      `(only v1 → v2 is supported).`,
-    );
-  }
-  const mapping = V1_TO_V2.get(state.status);
-  if (!mapping) {
-    throw new Error(
-      `plan-state: cannot migrate v1 status "${state.status}" — unknown value.`,
-    );
-  }
-  state.status = mapping.status;
-  if (!state.stop_review || typeof state.stop_review !== "object") {
-    state.stop_review = { armed: false, last_result: null, last_reviewed_commit: null, block_history: [] };
-  }
-  if (!state.dev_review || typeof state.dev_review !== "object") {
-    state.dev_review = { current_round: 0, last_feedback_path: null };
-  }
-  state.stop_review.phase = mapping.stopPhase;
-  state.dev_review.phase = mapping.devPhase;
-  state.schema_version = SCHEMA_VERSION;
-  return state;
-}
-
 // Sanity-check a parsed state object. Returns the (mutated) state on success,
 // throws a descriptive error on failure. Callers that load state from disk
 // rely on this so bad files surface immediately rather than poisoning later
 // transitions.
+//
+// schema_version=1 (the pre-Phase-4 9-status enum) is no longer auto-migrated.
+// State files written before the runner-hook-cleanup landed must be deleted
+// and re-created via `/runner` — the migration path was removed because every
+// active user had already moved past it, and keeping the v1 mapping table
+// alive forever cost more than the rare re-init.
 export function validateState(state) {
   if (!state || typeof state !== "object") {
     throw new Error("plan-state: not an object");
   }
-  // Auto-migrate v1 → v2 transparently so a user mid-plan does not need a
-  // separate migration step. Anything that is neither v1 nor v2 still throws
-  // below.
-  if (state.schema_version === 1) {
-    migrateV1ToV2(state);
-  }
   if (state.schema_version !== SCHEMA_VERSION) {
+    if (state.schema_version === 1) {
+      throw new Error(
+        `이 plan-state 파일은 schema_version=1 (v1) 입니다. 자동 마이그레이션은 ` +
+        `제거되었습니다. 해당 plan을 처음부터 다시 실행하려면 state 파일을 ` +
+        `삭제한 뒤 \`/runner\`를 다시 호출하세요. ` +
+        `(현재 runner는 schema_version=${SCHEMA_VERSION}을 사용합니다.)`,
+      );
+    }
     throw new Error(
       `plan-state: unsupported schema_version ${state.schema_version} ` +
-      `(this runner expects ${SCHEMA_VERSION}). Delete and re-run /runner ` +
-      `to regenerate, or migrate manually.`,
+      `(this runner expects ${SCHEMA_VERSION}). Delete the state file and ` +
+      `re-run /runner to regenerate.`,
     );
   }
   for (const field of [
@@ -316,30 +256,6 @@ export function stateFileExists(statePath) {
   return fs.existsSync(statePath);
 }
 
-// Path to the single-level backup that mirrors the last successful save.
-// Phase 3 adds it to protect against three failure modes:
-//   1. A future schema bug that writes invalid JSON despite validateState.
-//   2. A disk-corruption / power-loss event that leaves the .json half-
-//      written even though the rename was atomic at the filesystem layer.
-//   3. A user hand-edit that breaks the schema (recovery.md tells them to
-//      revert from .bak rather than re-running /runner from scratch).
-//
-// The backup is *post-rename*: we only copy the canonical file after it
-// has landed cleanly. If saveState fails, the .bak from the previous save
-// stays untouched — that's the snapshot we want to recover from.
-function backupPathFor(statePath) {
-  return `${statePath}.bak`;
-}
-
-function writeBackupBestEffort(statePath) {
-  try {
-    fs.copyFileSync(statePath, backupPathFor(statePath));
-  } catch {
-    // Best-effort: a missing file or permission error here must not block
-    // the save itself. The next successful save will retry.
-  }
-}
-
 export function loadState(statePath) {
   let raw;
   try {
@@ -353,24 +269,6 @@ export function loadState(statePath) {
   try {
     parsed = JSON.parse(raw);
   } catch (parseErr) {
-    // Try the backup before giving up. If the .bak parses cleanly we
-    // surface a warning to stderr and return it — recovery.md tells the
-    // user to manually copy .bak over the main file once they've decided
-    // it's the right snapshot.
-    const bak = backupPathFor(statePath);
-    if (fs.existsSync(bak)) {
-      try {
-        const fallback = validateState(JSON.parse(fs.readFileSync(bak, "utf8")));
-        process.stderr.write(
-          `[plan-state] ${statePath} failed to parse (${parseErr.message}); ` +
-          `loaded ${bak} instead. The main file should be replaced with .bak ` +
-          `manually once you've confirmed the snapshot is correct.\n`,
-        );
-        return fallback;
-      } catch {
-        // .bak also unusable — fall through to throw on the main error.
-      }
-    }
     throw new Error(
       `plan-state: failed to parse JSON at ${statePath}: ${parseErr.message}`,
     );
@@ -387,10 +285,6 @@ export function tryLoadState(statePath) {
 // target. rename is atomic on both POSIX and Windows when source and target
 // live on the same volume, which is always the case here because we put the
 // tempfile in the same directory.
-//
-// After the rename succeeds, the canonical file is also mirrored to
-// `<statePath>.bak` for the recovery scenarios documented above. The mirror
-// is best-effort and never fails the save.
 export function saveState(statePath, state) {
   validateState(state);
   state.updated_at = nowIso();
@@ -410,7 +304,6 @@ export function saveState(statePath, state) {
     try { fs.unlinkSync(tmp); } catch { /* best-effort cleanup */ }
     throw err;
   }
-  writeBackupBestEffort(statePath);
   return state;
 }
 

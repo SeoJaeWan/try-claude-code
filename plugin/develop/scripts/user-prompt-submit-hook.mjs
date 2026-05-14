@@ -35,7 +35,6 @@ import { spawnSync } from "node:child_process";
 import { toPosixPath } from "./lib/fs.mjs";
 import { addActivePlanState, listActivePlanStates } from "./lib/sessions.mjs";
 import { extractRunnerHeaders, readPlanFrontmatter } from "./lib/plan-frontmatter.mjs";
-import { recordHookEvent } from "./lib/telemetry.mjs";
 import {
   TERMINAL_STATUSES,
   createInitialState,
@@ -308,24 +307,8 @@ async function main() {
     }
 
     const context = buildBootstrapContext({ statePath, resume });
-
-    recordHookEvent({
-      kind: "runner_bootstrap",
-      ok: true,
-      sessionId,
-      planSlug: state.plan_slug,
-      status: state.status,
-      resume,
-    });
-
     emitContext(context);
   } catch (err) {
-    recordHookEvent({
-      kind: "runner_bootstrap",
-      ok: false,
-      sessionId,
-      message: err?.message ?? String(err),
-    });
     emitBlock(
       `[runner] /runner 진입을 차단했습니다.\n\n${err?.message ?? String(err)}`,
     );

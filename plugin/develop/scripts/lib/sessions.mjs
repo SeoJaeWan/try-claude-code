@@ -59,11 +59,6 @@ export function createSession(sessionId, cwd) {
   return session;
 }
 
-// loadSession is forgiving by design: legacy session files that still carry
-// the old `worktrees[]` / `blockHistory` fields parse cleanly, but only the
-// new fields are surfaced to callers. The next saveSession overwrites the
-// file in the new shape, so legacy keys decay naturally without a migration
-// step.
 // Project the on-disk JSON onto the canonical session shape. Unknown keys
 // fall away naturally (we never spread `parsed`), so this also serves as the
 // upgrade path: any future shape change just teaches this projector and the

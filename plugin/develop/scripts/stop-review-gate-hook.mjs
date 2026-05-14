@@ -48,7 +48,6 @@ import {
   collectBlockReview,
   collectInformationalReview,
 } from "./lib/review-collector.mjs";
-import { recordHookEvent } from "./lib/telemetry.mjs";
 import { readHookInput } from "./lib/hook-input.mjs";
 import { STOP_REVIEW_OUTCOME } from "./lib/stop-review-outcome.mjs";
 import {
@@ -474,29 +473,22 @@ async function runStopReview(workspaceRoot, sessionId, reviewItem) {
   try {
     let result;
     if (existingThreadId) {
-      const resumeStart = Date.now();
       try {
         result = await withTimeout(
           runAppServerTurn(turnCwd, { ...turnOptions, resumeThreadId: existingThreadId }),
           STOP_REVIEW_TIMEOUT_MS,
         );
-        recordHookEvent({ kind: "stop_review_codex", step: "resume", ok: true, elapsedMs: Date.now() - resumeStart, threadId: existingThreadId, sessionId });
         finalPath = "resume";
       } catch (err) {
         const errCode = err?.code ?? null;
         const errMessage = err?.message ?? String(err);
-        recordHookEvent({ kind: "stop_review_codex", step: "resume", ok: false, elapsedMs: Date.now() - resumeStart, threadId: existingThreadId, errorCode: errCode, errorMessage: errMessage, sessionId });
         if (errCode === "ETIMEDOUT") throw err;
         logNote(`[stop-gate] Codex resume failed (${errCode ?? "unknown"}): ${errMessage}. Falling back to fresh thread.`);
-        const freshStart = Date.now();
         result = await withTimeout(runAppServerTurn(turnCwd, turnOptions), STOP_REVIEW_TIMEOUT_MS);
-        recordHookEvent({ kind: "stop_review_codex", step: "fresh_fallback", ok: true, elapsedMs: Date.now() - freshStart, sessionId });
         finalPath = "fresh_fallback";
       }
     } else {
-      const coldStart = Date.now();
       result = await withTimeout(runAppServerTurn(turnCwd, turnOptions), STOP_REVIEW_TIMEOUT_MS);
-      recordHookEvent({ kind: "stop_review_codex", step: "fresh", ok: true, elapsedMs: Date.now() - coldStart, sessionId });
       finalPath = "fresh";
     }
 
@@ -514,16 +506,7 @@ async function runStopReview(workspaceRoot, sessionId, reviewItem) {
       const restart = restartBrokerSession(turnCwd, {
         killProcess: (pid) => terminateProcessTree(pid),
       });
-      recordHookEvent({
-        kind: "stop_review_broker_recovery",
-        ok: restart.restarted,
-        sessionId,
-        rejectedModel: stale.rejectedModel,
-        previousPid: restart.previousPid ?? null,
-        reason: restart.reason ?? null,
-      });
       if (restart.restarted) {
-        const retryStart = Date.now();
         try {
           // Fresh thread on retry: the previous threadId was tied to the now-
           // dead broker codex. persistThread stays true so the *new* thread
@@ -533,31 +516,13 @@ async function runStopReview(workspaceRoot, sessionId, reviewItem) {
           if (sessionId && result.threadId) {
             setStopReviewThreadId(sessionId, result.threadId);
           }
-          recordHookEvent({
-            kind: "stop_review_codex",
-            step: "broker_restart_retry",
-            ok: true,
-            elapsedMs: Date.now() - retryStart,
-            sessionId,
-          });
         } catch (retryErr) {
-          recordHookEvent({
-            kind: "stop_review_codex",
-            step: "broker_restart_retry",
-            ok: false,
-            elapsedMs: Date.now() - retryStart,
-            errorCode: retryErr?.code ?? null,
-            errorMessage: retryErr?.message ?? String(retryErr),
-            sessionId,
-          });
           if (retryErr?.code === "ETIMEDOUT") throw retryErr;
           // Fall through with the original (stale) result; diagnoseCodexFailure
           // will surface the 3-option message.
         }
       }
     }
-
-    recordHookEvent({ kind: "stop_review_codex", step: "total", ok: true, elapsedMs: Date.now() - totalStart, path: finalPath, sessionId });
 
     const finalText = String(result.finalMessage ?? "").trim();
     if (!finalText) {
@@ -566,7 +531,6 @@ async function runStopReview(workspaceRoot, sessionId, reviewItem) {
     }
     return parseStopReviewOutput(result.finalMessage);
   } catch (error) {
-    recordHookEvent({ kind: "stop_review_codex", step: "total", ok: false, elapsedMs: Date.now() - totalStart, path: finalPath, errorCode: error?.code ?? null, errorMessage: error?.message ?? String(error), sessionId });
     if (error.code === "ETIMEDOUT") {
       // Surface the timeout as a separate flag so classifyOutcome can route
       // it to STOP_REVIEW_OUTCOME.TIMEOUT — a slow Codex call is not a code
