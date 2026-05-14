@@ -1,9 +1,5 @@
 // Common entry point for the runner hooks (UserPromptSubmit, Stop,
-// SessionStart/End). Each hook used to define its own `readHookInput`
-// + post-resolve `cwd` / `sessionId` from `input ?? CLAUDE_PROJECT_DIR ??
-// process.cwd()` and `input.session_id ?? SESSION_ID_ENV` independently —
-// the resulting drift was exactly the kind of contract decay this lib
-// is meant to prevent.
+// SessionStart/End, PreToolUse).
 //
 // `readHookInput` consolidates three things:
 //
@@ -13,9 +9,10 @@
 //   2. Resolve `cwd` consistently (input → CLAUDE_PROJECT_DIR env →
 //      process.cwd()), then canonicalize to an absolute POSIX path so
 //      downstream `comparePaths` calls don't get mismatched separators.
-//   3. Resolve `sessionId` consistently (input → SESSION_ID_ENV env →
-//      null). Returns null rather than throwing because the SessionStart
-//      path legitimately has no session yet.
+//   3. Resolve `sessionId` from `input.session_id`. Claude Code always
+//      includes this in the hook payload; the previous CODEX_COMPANION_*
+//      env fallback has been removed along with the Codex job-tracking
+//      infrastructure that used it.
 //
 // Hook authors should treat the returned object as the only place these
 // fields live — never re-resolve `cwd` or `sessionId` from env later in
@@ -25,7 +22,6 @@ import fs from "node:fs";
 import process from "node:process";
 
 import { absoluteNormalizePath } from "./fs.mjs";
-import { SESSION_ID_ENV } from "./tracked-jobs.mjs";
 
 const EMPTY_INPUT = Object.freeze({});
 
@@ -38,9 +34,7 @@ export function readHookInput({ tag = "hook", strict = false } = {}) {
   const cwd = absoluteNormalizePath(inputCwd ?? envCwd ?? process.cwd());
 
   const sessionId =
-    (typeof input.session_id === "string" && input.session_id) ||
-    process.env[SESSION_ID_ENV] ||
-    null;
+    (typeof input.session_id === "string" && input.session_id) || null;
 
   return {
     raw: input,

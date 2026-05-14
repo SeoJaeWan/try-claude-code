@@ -20,7 +20,6 @@ import {
   deriveWorktreePathFromBranch,
   fingerprintBlockReason,
   loadState,
-  migrateV1ToV2,
   recordPlanBlock,
   saveState,
   setDevReviewPhase,
@@ -277,57 +276,32 @@ describe("saveState / loadState", () => {
     assert.equal(fs.existsSync(file), false);
   });
 
-  it("mirrors the saved file to <state>.bak", () => {
+  it("does not leave a stale .bak sidecar after save (backup removed)", () => {
     const state = createInitialState({
-      planSlug: "bak",
-      planPath: "/p/bak.plan.md",
+      planSlug: "nobak",
+      planPath: "/p/nobak.plan.md",
       ownerAgent: "a",
       baseBranch: "main",
-      taskBranch: "feat/bak",
-      worktreePath: "/p/worktrees/feat-bak",
+      taskBranch: "feat/nobak",
+      worktreePath: "/p/worktrees/feat-nobak",
     });
-    const file = path.join(tmpDir, "bak", ".runner-state.json");
+    const file = path.join(tmpDir, "nobak", ".runner-state.json");
     saveState(file, state);
-    const bak = `${file}.bak`;
-    assert.equal(fs.existsSync(bak), true, ".bak should exist after save");
-    assert.equal(
-      fs.readFileSync(bak, "utf8"),
-      fs.readFileSync(file, "utf8"),
-      ".bak content should match the canonical file",
-    );
+    assert.equal(fs.existsSync(`${file}.bak`), false, ".bak sidecar must not be created");
   });
 
-  it("loadState falls back to .bak when the main file is corrupt", () => {
+  it("loadState throws on corrupt JSON (no .bak fallback)", () => {
     const state = createInitialState({
-      planSlug: "fallback",
-      planPath: "/p/fallback.plan.md",
+      planSlug: "corrupt",
+      planPath: "/p/corrupt.plan.md",
       ownerAgent: "a",
       baseBranch: "main",
-      taskBranch: "feat/fallback",
-      worktreePath: "/p/worktrees/feat-fallback",
+      taskBranch: "feat/corrupt",
+      worktreePath: "/p/worktrees/feat-corrupt",
     });
-    const file = path.join(tmpDir, "fallback", ".runner-state.json");
-    saveState(file, state);
-    // Corrupt the main file but leave .bak intact.
-    fs.writeFileSync(file, "{ this is not valid JSON", "utf8");
-    const loaded = loadState(file);
-    assert.equal(loaded.plan_slug, "fallback");
-    assert.equal(loaded.status, STATUS.PREPARING);
-  });
-
-  it("loadState surfaces the parse error if .bak is also unusable", () => {
-    const state = createInitialState({
-      planSlug: "doublebad",
-      planPath: "/p/doublebad.plan.md",
-      ownerAgent: "a",
-      baseBranch: "main",
-      taskBranch: "feat/doublebad",
-      worktreePath: "/p/worktrees/feat-doublebad",
-    });
-    const file = path.join(tmpDir, "doublebad", ".runner-state.json");
+    const file = path.join(tmpDir, "corrupt", ".runner-state.json");
     saveState(file, state);
     fs.writeFileSync(file, "{ corrupt", "utf8");
-    fs.writeFileSync(`${file}.bak`, "{ also corrupt", "utf8");
     assert.throws(() => loadState(file), /failed to parse JSON/);
   });
 });
@@ -565,26 +539,12 @@ describe("clearPlanBlockStreak", () => {
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// v1 → v2 migration
+// v1 schema rejection (auto-migration was removed in runner-hook-cleanup)
 // ---------------------------------------------------------------------------
 
-describe("migrateV1ToV2", () => {
-  // Every v1 status is mapped to a (status, phase) pair. The table here
-  // mirrors lib/runner-state.mjs:V1_TO_V2 and exists to lock the contract.
-  const cases = [
-    ["validating",            STATUS.PREPARING,      null,                          null],
-    ["dispatching",           STATUS.PREPARING,      null,                          null],
-    ["awaiting_stop_review",  STATUS.DISPATCHING,    STOP_REVIEW_PHASE.ARMED,       null],
-    ["stop_review_blocked",   STATUS.DISPATCHING,    STOP_REVIEW_PHASE.BLOCKED,     null],
-    ["awaiting_dev_review",   STATUS.DEV_REVIEWING,  null,                          DEV_REVIEW_PHASE.AWAITING],
-    ["rework_in_progress",    STATUS.DEV_REVIEWING,  null,                          DEV_REVIEW_PHASE.REWORK],
-    ["qa_pending",            STATUS.DEV_REVIEWING,  null,                          DEV_REVIEW_PHASE.QA],
-    ["approved",              STATUS.CLOSING,        null,                          null],
-    ["merged",                STATUS.MERGED,         null,                          null],
-  ];
-
-  function v1State(status) {
-    return {
+describe("validateState (v1 rejection)", () => {
+  it("rejects a v1 state with a Korean message asking the user to delete it", () => {
+    const v1 = {
       schema_version: 1,
       plan_slug: "x",
       plan_path: "/p/x.plan.md",
@@ -592,72 +552,16 @@ describe("migrateV1ToV2", () => {
       base_branch: "main",
       task_branch: "feat/x",
       worktree_path: "/p/worktrees/feat-x",
-      status,
-      stop_review: {
-        armed: false,
-        last_result: null,
-        last_reviewed_commit: null,
-        block_history: [],
-      },
+      status: "validating",
+      stop_review: { armed: false, last_result: null, last_reviewed_commit: null, block_history: [] },
       dev_review: { current_round: 0, last_feedback_path: null },
-      session_id: null,
-      created_at: "2026-05-01T00:00:00.000Z",
-      updated_at: "2026-05-01T00:00:00.000Z",
     };
-  }
-
-  for (const [v1Status, v2Status, stopPhase, devPhase] of cases) {
-    it(`maps ${v1Status} → status=${v2Status} stopPhase=${stopPhase} devPhase=${devPhase}`, () => {
-      const s = v1State(v1Status);
-      migrateV1ToV2(s);
-      assert.equal(s.schema_version, SCHEMA_VERSION);
-      assert.equal(s.status, v2Status);
-      assert.equal(s.stop_review.phase, stopPhase);
-      assert.equal(s.dev_review.phase, devPhase);
-    });
-  }
-
-  it("is idempotent — re-running on a v2 state is a no-op", () => {
-    const s = v1State("awaiting_dev_review");
-    migrateV1ToV2(s);
-    const after1 = JSON.stringify(s);
-    migrateV1ToV2(s);
-    assert.equal(JSON.stringify(s), after1);
+    assert.throws(() => validateState(v1), /schema_version=1/);
   });
 
-  it("preserves dev_review.current_round across migration", () => {
-    const s = v1State("rework_in_progress");
-    s.dev_review.current_round = 3;
-    s.dev_review.last_feedback_path = "/p/x/r3/feedback.json";
-    migrateV1ToV2(s);
-    assert.equal(s.dev_review.current_round, 3);
-    assert.equal(s.dev_review.last_feedback_path, "/p/x/r3/feedback.json");
-  });
-
-  it("rejects unknown v1 status values", () => {
-    const s = v1State("???");
-    assert.throws(() => migrateV1ToV2(s), /unknown value/);
-  });
-
-  it("auto-fires from validateState on a v1 state", () => {
-    const s = v1State("approved");
-    validateState(s);
-    assert.equal(s.schema_version, SCHEMA_VERSION);
-    assert.equal(s.status, STATUS.CLOSING);
-  });
-
-  it("loadState transparently migrates a v1 file on disk", () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "v1-migrate-"));
-    try {
-      const file = path.join(tmp, ".runner-state.json");
-      fs.writeFileSync(file, JSON.stringify(v1State("awaiting_dev_review")), "utf8");
-      const loaded = loadState(file);
-      assert.equal(loaded.schema_version, SCHEMA_VERSION);
-      assert.equal(loaded.status, STATUS.DEV_REVIEWING);
-      assert.equal(loaded.dev_review.phase, DEV_REVIEW_PHASE.AWAITING);
-    } finally {
-      fs.rmSync(tmp, { recursive: true, force: true });
-    }
+  it("rejects any unknown schema_version with a generic message", () => {
+    const s = { schema_version: 99, plan_slug: "x", plan_path: "/p", owner_agent: "a", base_branch: "main", task_branch: "x", worktree_path: "/p/w", status: "preparing", stop_review: { armed: false, block_history: [] }, dev_review: {} };
+    assert.throws(() => validateState(s), /unsupported schema_version 99/);
   });
 });
 

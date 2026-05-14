@@ -7,19 +7,17 @@
 // imports keep working — but new code that only needs the state-machine
 // pieces (no fs / I/O) should import from this module directly.
 //
-// Phase 4 reshape (schema_version 2):
-//   The 9-status enum was collapsed to 5 by separating "which Step are we in"
-//   (status) from "what sub-state of that Step are we in" (phase). The phase
-//   lives on the relevant nested block (`stop_review.phase` /
-//   `dev_review.phase`) so a future routing table only needs to read one
-//   field for the high-level branch and a second field for the sub-branch.
+// Schema_version 2 separates "which Step are we in" (status) from "what
+// sub-state of that Step are we in" (phase). The phase lives on the relevant
+// nested block (`stop_review.phase` / `dev_review.phase`).
 //
 // Editing rules:
 //   - `STATUS` strings are part of the on-disk JSON contract. Adding a new
 //     value or phase is fine; renaming or removing one is a breaking change
-//     for any plan-state file already on disk and requires a schema bump
-//     plus a migrator (see lib/runner-state.mjs:migrateV1ToV2 for the v1→v2
-//     example).
+//     for any plan-state file already on disk and requires a schema bump.
+//     v1 → v2 auto-migration was removed in the runner-hook-cleanup pass;
+//     a future bump would have to ship its own migrator or expect users to
+//     delete and re-create state files.
 //   - Every `ALLOWED_TRANSITIONS` edge must reflect a real path that some
 //     caller actually drives. Phantom edges hide bugs by silently accepting
 //     accidental writes.
@@ -58,10 +56,9 @@ export const STATUS_VALUES = new Set(Object.values(STATUS));
 // finished — start a fresh one or remove the state file to re-run".
 export const TERMINAL_STATUSES = new Set([STATUS.MERGED]);
 
-// Allowed status transitions. Compared to v1 this graph is dramatically
-// smaller — the bulk of the old edges turned out to be sub-state moves
-// inside Step 3 (armed↔blocked) and Step 4 (awaiting↔rework↔qa) that are now
-// phase mutations. Only "we are leaving the Step entirely" is a status edge.
+// Allowed status transitions. Only "we are leaving the Step entirely" is a
+// status edge; phase moves inside a Step (armed↔blocked, awaiting↔rework↔qa)
+// stay in the phase enums below.
 //
 //   null         → preparing                (UserPromptSubmit, first write)
 //   preparing    → dispatching              (plan-agent dispatch fires)

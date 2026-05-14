@@ -2,43 +2,35 @@
 
 This is the manual escape hatch for `plans/{plan_dir}/.runner-state.json`.
 Use it when the runner is stuck in a way the skill itself cannot fix:
-Codex timeout loops, dispatch failures, partially-applied edits, or a
+Codex failures, dispatch failures, partially-applied edits, or a
 state file that needs trimming.
 
 > **Default to the CLI.** Direct edits with `Edit` / `Write` bypass
 > `validateState` and `transitionStatus`, which is exactly how state
 > files turn into something the next hook firing refuses to load. Use
 > `node plugin/develop/scripts/runner-state-fixup.mjs` whenever it covers
-> what you need; only hand-edit the JSON when the CLI cannot.
-
-> **`<state>.bak` fallback.** Every successful `saveState` mirrors the
-> canonical file to a sibling `.bak`. If the main file ever fails to
-> parse, `loadState` reads the `.bak` instead and prints a one-line
-> warning to stderr — that lets the runner keep going while you decide
-> whether to copy `.bak` over the main file. Backups are best-effort and
-> single-level (no rotation), so a subsequent successful save overwrites
-> the `.bak` even if the recovery is still pending.
+> what you need; only hand-edit the JSON (or use `jq`) when the CLI cannot.
 
 ## Field map
 
 | Field | Type | Owner | Safe to hand-edit? |
 |---|---|---|---|
-| `schema_version` | int | runner-state lib | **Mostly no.** v1 → v2 auto-migrates on load (Phase 4); anything else makes `validateState` reject the file. Do not touch. |
+| `schema_version` | int | runner-state lib | **No.** Only v2 is supported; v1 auto-migration was removed in the cleanup pass. A v1 file must be deleted and the plan re-created via `/runner`. |
 | `plan_slug` | string | UserPromptSubmit hook | Rarely. Only if you renamed the plan and `plan_path` no longer matches. Update both together. |
-| `plan_path` | POSIX path | UserPromptSubmit hook | Yes when you move the `.plan.md`. Use `--rotate-plan-path` to keep the state-file location and `worktree_path` consistent. |
+| `plan_path` | POSIX path | UserPromptSubmit hook | Yes when you move the `.plan.md`. See "Renamed the plan file" below. |
 | `owner_agent` | string | UserPromptSubmit hook | Rarely. Changing mid-plan means the next dispatch goes to a different agent — usually you want a fresh plan instead. |
 | `base_branch` | string | UserPromptSubmit hook | **No** mid-plan. Worktree was branched from this; changing it post-hoc breaks the rebase mental model. |
 | `task_branch` | string | UserPromptSubmit hook | **No** mid-plan. `worktree_path` is derived from this. |
 | `worktree_path` | POSIX path | UserPromptSubmit hook | Yes when you moved the worktree on disk. Update before the next `/runner` so the Stop hook can find it. |
 | `status` | enum (see below) | runner skill via `transitionStatus` | **No directly.** Use `--force-status` only when you understand the legal-transitions table. |
-| `stop_review.armed` | bool | Stop hook + runner skill | Use `--reset-armed` if a dispatch failed to arm or a stale arm survived. |
-| `stop_review.phase` | `"armed" \| "blocked" \| "passed" \| null` | Stop hook + PreToolUse | Sub-state of `dispatching`. Set via `setStopReviewPhase` library helper, not by hand. |
-| `stop_review.last_result` | `"ALLOW" \| "BLOCK" \| "skipped" \| null` | Stop hook | Log label only. Editing it does not change behaviour but makes block_history confusing. |
-| `stop_review.last_reviewed_commit` | sha or null | Stop hook | **No.** Stop hook uses this to decide "have I reviewed HEAD already?". Setting it wrong either replays a review or skips an unreviewed sha. |
-| `stop_review.block_history` | array | Stop hook | Use `--reset-block-history` to clear an escalation streak. Do not splice manually — entries have a fingerprint that drives the 3-strike escalation. |
-| `dev_review.current_round` | int | runner skill via `bumpDevReviewRound` | **No.** The dev-review helper reads it and writes review-data.json keyed by it. Mismatch means the browser shows the wrong round. |
-| `dev_review.phase` | `"awaiting" \| "rework" \| "qa" \| null` | runner skill via the CLI phase mutators | Sub-state of `dev_reviewing`. Set via `setDevReviewPhase` library helper, not by hand. |
-| `dev_review.last_feedback_path` | path or null | runner skill | Yes if you regenerated feedback.json elsewhere. |
+| `stop_review.armed` | bool | Stop hook + runner skill | Use `--clear-armed` if a dispatch failed to arm or a stale arm survived. |
+| `stop_review.phase` | `"armed" \| "blocked" \| "passed" \| null` | Stop hook + runner-state-cli | Sub-state of `dispatching`. Set via `setStopReviewPhase` library helper, not by hand. |
+| `stop_review.last_result` | `"ALLOW" \| "BLOCK" \| "skipped" \| null` | runner-state-cli `record-stop-review-*` | Log label only. Editing it does not change behaviour but makes block_history confusing. |
+| `stop_review.last_reviewed_commit` | sha or null | runner-state-cli `record-stop-review-*` | **No.** Stop hook uses this to decide "have I reviewed HEAD already?". Setting it wrong either replays a review or skips an unreviewed sha. |
+| `stop_review.block_history` | array | runner-state-cli `record-stop-review-block` | Use the jq snippet under "Reset BLOCK streak" below to clear an escalation streak. Do not splice manually — entries have a fingerprint that drives the 3-strike escalation. |
+| `dev_review.current_round` | int | runner-state-cli `begin-rework` | **No.** The dev-review helper reads it and writes review-data.json keyed by it. Mismatch means the browser shows the wrong round. |
+| `dev_review.phase` | `"awaiting" \| "rework" \| "qa" \| null` | runner-state-cli phase mutators | Sub-state of `dev_reviewing`. Set via `setDevReviewPhase` library helper, not by hand. |
+| `dev_review.last_feedback_path` | path or null | runner-state-cli `begin-rework` | Yes if you regenerated feedback.json elsewhere. |
 | `session_id` | string or null | UserPromptSubmit hook | Usually no. Only when manually re-attaching to a session. |
 | `created_at` / `updated_at` | ISO string | lib | **No.** `saveState` overwrites `updated_at` automatically. |
 
@@ -58,45 +50,28 @@ preparing ─→ dispatching ─→ dev_reviewing ─→ closing ─→ merged
 
 `merged` is terminal — UserPromptSubmit refuses to resume a merged plan.
 
-**v1 → v2 migration.** State files written before Phase 4 used a 9-status
-enum; `loadState` auto-migrates them on read (see
-`migrateV1ToV2` in `lib/runner-state.mjs`). The first `saveState` after
-load rewrites the file in v2. Read-only inspection (`cat`, `jq`) does
-**not** migrate — that's why hand-editing a v1 file no longer matches the
-on-disk shape this doc describes.
-The full edge table lives in `scripts/lib/runner-state-machine.mjs`. To
-print the current table without opening the source:
-
-```bash
-node plugin/develop/scripts/print-transitions.mjs
-```
-
-That script is the canonical renderer — when this diagram and the source
-disagree, the source wins.
+The full edge table lives in `scripts/lib/runner-state-machine.mjs`.
 
 ## Recovery scenarios
 
 ### 1. Codex timeout loop
 
 **Symptom:** `[stop-gate] TIMEOUT` keeps appearing every turn but Codex
-itself is not making progress (`/codex:status` shows nothing or a stuck
-job).
+itself is not making progress.
 
-**Why it happens:** with the 2.9.2 fix, timeouts no longer mark BLOCK, so
-state stays armed and the next Stop hook firing reviews the same diff.
-That is correct when Codex is just slow once. If Codex is stuck or down,
-the loop continues.
+**Why it happens:** timeouts do not mark BLOCK; state stays armed and the
+next Stop hook firing reviews the same diff. That is correct when Codex is
+just slow once. If Codex is stuck or down, the loop continues.
 
-**Recovery:**
-1. `/codex:cancel <task-id>` to stop the running Codex job.
-2. If the Codex daemon itself is dead, restart it before triggering the
-   next Stop hook.
-3. If you want to give up on stop-review for this round entirely:
-   ```bash
-   node plugin/develop/scripts/runner-state-fixup.mjs <state-path> \
-     --reset-armed
-   ```
-   This unsets `stop_review.armed`. The next dispatch re-arms.
+**Recovery:** stop the running Codex job manually (kill the broker
+process). If you want to give up on stop-review for this round entirely:
+
+```bash
+node plugin/develop/scripts/runner-state-fixup.mjs <state-path> --clear-armed
+```
+
+This unsets `stop_review.armed`. The next dispatch's `arm-for-dispatch`
+re-arms.
 
 ### 2. Stuck in `dispatching` + `stop_review.phase = "blocked"` after a real BLOCK that you have addressed
 
@@ -107,14 +82,17 @@ not want to wait for the next stop-review pass to confirm.
 new commit, it reviews; if it ALLOWs, the state advances. The whole
 point of the gate is that you do not get to skip it.
 
-If you genuinely need to bypass (e.g. Codex is offline), use:
+If you genuinely need to bypass (e.g. Codex is offline):
+
 ```bash
 node plugin/develop/scripts/runner-state-fixup.mjs <state-path> \
-  --force-status dev_reviewing --reset-armed
+  --force-status dev_reviewing --clear-armed
+# then manually fix dev_review.phase with jq if needed:
+jq '.dev_review.phase = "awaiting"' <state-path> > <state-path>.new && \
+  mv <state-path>.new <state-path>
 ```
-You may also need `--force-dev-review-phase awaiting` so the next dev-review
-entry behaves like a fresh round. Be honest with yourself about whether the
-code was actually fixed.
+
+Be honest with yourself about whether the code was actually fixed.
 
 ### 3. Worktree disappeared / corrupted
 
@@ -146,54 +124,87 @@ network died).
 2. If the work is salvageable, commit anything uncommitted and continue
    manually with `/runner` (the runner detects existing commits and asks
    how to proceed).
-3. If not, walk the state back to `preparing` so PreToolUse re-arms on
-   the next dispatch:
+3. If not, walk the state back to `preparing` so the next dispatch
+   re-arms cleanly:
    ```bash
    node plugin/develop/scripts/runner-state-fixup.mjs <state-path> \
-     --force-status preparing --reset-armed
+     --force-status preparing --clear-armed
    ```
    Then `/runner` will redispatch the agent.
 
-### 5. Repeated identical BLOCK has triggered the 3-strike escalation but you understand the issue and want to retry one more time
+### 5. Reset BLOCK streak (after addressing repeated BLOCK)
 
-**Symptom:** `last_block_count >= 3`, escalation note tells you to stop.
+**Symptom:** `block_history` last entry's `count >= 3`, escalation note
+tells you to stop. You understand the issue and want one more shot.
 
-**Recovery:**
+The fixup CLI no longer carries `--reset-block-history`; use jq to append
+the `__allow__` separator the streak counter looks for:
+
 ```bash
-node plugin/develop/scripts/runner-state-fixup.mjs <state-path> \
-  --reset-block-history
+jq '.stop_review.block_history += [{
+      "fingerprint": "__allow__",
+      "count": 1,
+      "first_at": (now | todate),
+      "last_at":  (now | todate),
+      "reason_excerpt": null
+    }]' <state-path> > <state-path>.new && mv <state-path>.new <state-path>
 ```
-This appends an `__allow__` separator so the next BLOCK starts a fresh
-streak. Do not edit `block_history` by hand — entries carry a fingerprint
-the streak counter depends on.
+
+Do not splice or rewrite earlier entries — their fingerprints are what the
+counter compares against.
 
 ### 6. Renamed the plan file
 
-```bash
-node plugin/develop/scripts/runner-state-fixup.mjs <state-path> \
-  --rotate-plan-path <new/path/to.plan.md>
-```
-Updates `plan_path`, moves the state file alongside the new plan
-location, and prints the new state path you should pass to subsequent
-commands.
+The fixup CLI no longer carries `--rotate-plan-path` because the
+state-file location is derived from the plan path. The cleanest move
+is to drop the old state and re-run `/runner` against the new plan path —
+the hook will create a fresh state at the new canonical location. If you
+need to preserve `block_history` / `dev_review.current_round` across the
+rename:
 
-### 7. Re-run a plan that was already `merged`
+```bash
+# 1. Update plan_path inside the JSON.
+jq --arg p "<new/abs/path/to.plan.md>" '.plan_path = $p' \
+  <old-state-path> > <old-state-path>.new && mv <old-state-path>.new <old-state-path>
+
+# 2. Move the state file to its new canonical location.
+#    For plans/foo.plan.md:      plans/foo/.runner-state.json
+#    For plans/foo/plan.md:      plans/foo/.runner-state.json (same dir, no move)
+mkdir -p <new-state-dir>
+mv <old-state-path> <new-state-dir>/.runner-state.json
+```
+
+### 7. Bump dev-review round manually
+
+```bash
+jq '.dev_review.current_round += 1 | .dev_review.last_feedback_path = $p' \
+  --arg p "<absolute/path/to/feedback.json>" \
+  <state-path> > <state-path>.new && mv <state-path>.new <state-path>
+```
+
+The dev-review skill reads `current_round` to find the matching
+`review-data-<n>.json` / `feedback-<n>.json` pair on disk.
+
+### 8. Re-run a plan that was already `merged`
 
 State files in `merged` are terminal; UserPromptSubmit refuses to resume
-them. To re-run from scratch:
+them. Use the CLI's reset command:
 
 ```bash
+node plugin/develop/scripts/runner-state-cli.mjs reset <state-path> --confirm
+# (or, manually:)
 rm <state-path>
 git branch -D <task_branch>           # only if you really want to redo it
 git worktree remove <worktree_path>   # if it survived merge
 ```
+
 Then `/runner <plan>` again.
 
 ## What `runner-state-fixup.mjs` will not do
 
 - Edit fields that affect git semantics (`base_branch`, `task_branch`,
   `worktree_path`-from-branch derivation). Do those by `git` first, then
-  `--rotate-plan-path` if needed.
+  recreate the plan if necessary.
 - Skip `validateState`. Every change is loaded, mutated, validated, and
   re-saved through the library, so a fixup run that fails is a fixup run
   that did not write.
@@ -202,6 +213,6 @@ Then `/runner <plan>` again.
   add a second layer of policy on top.
 
 If you find yourself reaching for raw `Edit` / `Write` because the CLI
-"won't let you" — that is the CLI doing its job. Open this doc, find
-the scenario, or add a new flag to the script. Hand-editing the JSON
-should be the last 1% of cases, not the first 30%.
+"won't let you" — first check whether a `jq` one-liner above already
+covers the scenario. Hand-editing the JSON should be the last 1% of
+cases, not the first 30%.

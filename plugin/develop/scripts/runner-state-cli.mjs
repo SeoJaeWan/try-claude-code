@@ -23,8 +23,9 @@
 //
 //   arm-for-dispatch <state>
 //     Assert status in [preparing, dispatching]. Transition → dispatching +
-//     stop_review.phase = "armed". Sets stop_review.armed = true. Kept for
-//     manual recovery — PreToolUse auto-arms in normal operation.
+//     stop_review.phase = "armed". Sets stop_review.armed = true. Called by
+//     the runner skill *before* every plan-agent dispatch (Step 3 + Step 3
+//     re-entry after BLOCK).
 //
 //   begin-rework <state> <feedback-path>
 //     Assert status = dev_reviewing && dev_review.phase = "awaiting".
@@ -72,14 +73,24 @@ import {
   STATUS,
   STOP_REVIEW_PHASE,
   assertExpectedStatus,
+  bumpConsecutiveDowngrades,
   bumpDevReviewRound,
+  clearConsecutiveDowngrades,
+  clearPlanBlockStreak,
   loadState,
+  recordPlanBlock,
   saveState,
   setDevReviewPhase,
+  setLastReviewedCommit,
   setStopReviewArmed,
   setStopReviewPhase,
   transitionStatus,
 } from "./lib/runner-state.mjs";
+
+// Same thresholds the in-process verdict library used. Kept inline here
+// because the CLI is now the single owner of verdict mutations.
+const SAME_BLOCK_ESCALATION_THRESHOLD = 3;
+const CONSECUTIVE_DOWNGRADE_WARNING_THRESHOLD = 3;
 
 const USAGE = `Usage:
   runner-state-cli arm-for-dispatch <state-path>
@@ -89,6 +100,9 @@ const USAGE = `Usage:
   runner-state-cli qa-resolved <state-path>
   runner-state-cli mark-approved <state-path>
   runner-state-cli mark-merged <state-path>
+  runner-state-cli record-stop-review-allow <state-path> <head-sha>
+  runner-state-cli record-stop-review-downgrade <state-path> <head-sha>
+  runner-state-cli record-stop-review-block <state-path> <head-sha> <reason-file>
   runner-state-cli reset <state-path> --confirm`;
 
 function fail(message, code = 1) {
@@ -158,10 +172,10 @@ function runPhaseMutation({
   process.stdout.write(`${after ?? "null"}\n`);
 }
 
-// arm-for-dispatch is kept for manual recovery — PreToolUse auto-arms the
-// gate as a side-effect of seeing the plan-agent dispatch, but a runner
-// operator may still need to walk a state forward by hand (e.g. after a
-// runner-state-fixup --rollback-to dispatching). The CLI accepts:
+// arm-for-dispatch is the runner skill's primary entry into Step 3. The hook
+// no longer auto-arms — every dispatch is preceded by an explicit Bash call
+// to this subcommand so the status transition is visible in the turn log.
+// The CLI accepts:
 //   - `preparing`                         → DISPATCHING + phase=ARMED
 //   - `dispatching` + phase in {armed, blocked}  → phase=ARMED (idempotent
 //     re-arm). PASSED is rejected because it is the post-ALLOW transient
@@ -206,79 +220,37 @@ function cmdArmForDispatch(statePath) {
   process.stdout.write(`${state.status}\n`);
 }
 
-function cmdBeginRework(statePath, feedbackPath) {
-  if (!feedbackPath) {
-    fail("runner-state-cli: begin-rework requires <feedback-path>");
+// All four DEV_REVIEW phase mutators share the same shape: assert status =
+// DEV_REVIEWING, assert phase = `from`, optionally bump round + record
+// feedback path, then move phase → `to`. Pulling the spec into one table
+// keeps the per-command boilerplate down to a single dispatch function.
+const PHASE_MUTATIONS = {
+  "begin-rework":    { from: DEV_REVIEW_PHASE.AWAITING, to: DEV_REVIEW_PHASE.REWORK,   bumpRound: true, needsFeedback: true },
+  "rework-done":     { from: DEV_REVIEW_PHASE.REWORK,   to: DEV_REVIEW_PHASE.AWAITING },
+  "mark-qa-pending": { from: DEV_REVIEW_PHASE.AWAITING, to: DEV_REVIEW_PHASE.QA },
+  "qa-resolved":     { from: DEV_REVIEW_PHASE.QA,       to: DEV_REVIEW_PHASE.AWAITING },
+};
+
+function cmdPhaseMutation(subcommand, statePath, args) {
+  const spec = PHASE_MUTATIONS[subcommand];
+  let feedbackPath = null;
+  if (spec.needsFeedback) {
+    if (!args[0]) fail(`runner-state-cli: ${subcommand} requires <feedback-path>`);
+    feedbackPath = path.isAbsolute(args[0]) ? args[0] : path.resolve(process.cwd(), args[0]);
   }
-  const absFeedback = path.isAbsolute(feedbackPath)
-    ? feedbackPath
-    : path.resolve(process.cwd(), feedbackPath);
   runPhaseMutation({
     statePath,
-    label: "begin-rework",
+    label: subcommand,
     allowedStatus: STATUS.DEV_REVIEWING,
     mutate: (state) => {
-      // Phase guard: only AWAITING → REWORK is legal here. setDevReviewPhase
-      // throws on any other source phase.
-      if (state.dev_review.phase !== DEV_REVIEW_PHASE.AWAITING) {
+      if (state.dev_review.phase !== spec.from) {
         throw new Error(
-          `begin-rework: dev_review.phase must be "awaiting" (was ` +
+          `${subcommand}: dev_review.phase must be "${spec.from}" (was ` +
           `"${state.dev_review.phase}").`,
         );
       }
-      bumpDevReviewRound(state, absFeedback);
-      setDevReviewPhase(state, DEV_REVIEW_PHASE.REWORK);
-    },
-  });
-}
-
-function cmdReworkDone(statePath) {
-  runPhaseMutation({
-    statePath,
-    label: "rework-done",
-    allowedStatus: STATUS.DEV_REVIEWING,
-    mutate: (state) => {
-      if (state.dev_review.phase !== DEV_REVIEW_PHASE.REWORK) {
-        throw new Error(
-          `rework-done: dev_review.phase must be "rework" (was ` +
-          `"${state.dev_review.phase}").`,
-        );
-      }
-      setDevReviewPhase(state, DEV_REVIEW_PHASE.AWAITING);
-    },
-  });
-}
-
-function cmdMarkQaPending(statePath) {
-  runPhaseMutation({
-    statePath,
-    label: "mark-qa-pending",
-    allowedStatus: STATUS.DEV_REVIEWING,
-    mutate: (state) => {
-      if (state.dev_review.phase !== DEV_REVIEW_PHASE.AWAITING) {
-        throw new Error(
-          `mark-qa-pending: dev_review.phase must be "awaiting" (was ` +
-          `"${state.dev_review.phase}").`,
-        );
-      }
-      setDevReviewPhase(state, DEV_REVIEW_PHASE.QA);
-    },
-  });
-}
-
-function cmdQaResolved(statePath) {
-  runPhaseMutation({
-    statePath,
-    label: "qa-resolved",
-    allowedStatus: STATUS.DEV_REVIEWING,
-    mutate: (state) => {
-      if (state.dev_review.phase !== DEV_REVIEW_PHASE.QA) {
-        throw new Error(
-          `qa-resolved: dev_review.phase must be "qa" (was ` +
-          `"${state.dev_review.phase}").`,
-        );
-      }
-      setDevReviewPhase(state, DEV_REVIEW_PHASE.AWAITING);
+      if (spec.bumpRound) bumpDevReviewRound(state, feedbackPath);
+      setDevReviewPhase(state, spec.to);
     },
   });
 }
@@ -309,6 +281,138 @@ function cmdMarkMerged(statePath) {
     allowedFrom: STATUS.CLOSING,
     nextStatus: STATUS.MERGED,
   });
+}
+
+// ---------------------------------------------------------------------------
+// Stop-review verdict recorders (Phase 4 — replaces lib/stop-review-verdict.mjs)
+// ---------------------------------------------------------------------------
+//
+// The Stop hook calls one of these three commands after codex.review()
+// returns. They mutate the plan-state atomically, emit a stderr trail for
+// observability, and (for BLOCK) print the planner directive + escalation
+// note to stdout so the hook can concatenate it onto the BLOCK reason.
+//
+// TIMEOUT does not have a record command: there is no mutation to make.
+
+function buildPlannerBlockDirective(statePath) {
+  return [
+    "",
+    "---",
+    `[plan-runner: replay ${statePath}] 아래 순서로 검증 후 행동:`,
+    "1. 현재 plan 범위 밖 이슈 또는 테스트파일 관련 이슈 → 폐기",
+    "2. 남은 이슈가 실제로 코드에 존재하는지 직접 확인 → 사실과 다르면 폐기",
+    "3. 유효 이슈가 남으면 → 위 state 파일을 읽어 owner_agent와 worktree_path를 확인하고 같은 plan 에이전트를 재디스패치, 커밋 후 턴 종료",
+    "4. 모두 폐기되면 → 재디스패치 없이 그냥 턴 종료 (다음 stop-gate에서 ALLOW)",
+  ].join("\n");
+}
+
+function snapshot(state) {
+  return {
+    status: state.status,
+    stopPhase: state.stop_review?.phase ?? null,
+    armed: state.stop_review?.armed ?? false,
+    devPhase: state.dev_review?.phase ?? null,
+  };
+}
+
+function logMutation(label, before, after, statePath) {
+  const fmt = (s) => (s == null ? "null" : s);
+  const lines = [
+    `[${label}] state mutation — ${statePath}`,
+    `  status:           ${fmt(before.status)} → ${fmt(after.status)}`,
+    `  stop_review.phase:${fmt(before.stopPhase)} → ${fmt(after.stopPhase)}`,
+    `  stop_review.armed:${fmt(before.armed)} → ${fmt(after.armed)}`,
+    `  dev_review.phase: ${fmt(before.devPhase)} → ${fmt(after.devPhase)}`,
+  ];
+  process.stderr.write(`${lines.join("\n")}\n`);
+}
+
+// Walk a plan from DISPATCHING into DEV_REVIEWING/AWAITING, clear stop-review
+// flags. Shared by record-stop-review-allow and record-stop-review-downgrade.
+function advanceToDevReview(state) {
+  setStopReviewArmed(state, false);
+  if (state.status === STATUS.DISPATCHING) {
+    setStopReviewPhase(state, STOP_REVIEW_PHASE.PASSED);
+    transitionStatus(state, STATUS.DEV_REVIEWING);
+    setStopReviewPhase(state, null);
+    setDevReviewPhase(state, DEV_REVIEW_PHASE.AWAITING);
+  }
+}
+
+function cmdRecordStopReviewAllow(statePath, headSha) {
+  if (!headSha) fail("runner-state-cli: record-stop-review-allow requires <head-sha>");
+  const state = loadOrFail(statePath);
+  const before = snapshot(state);
+  setLastReviewedCommit(state, headSha, "ALLOW");
+  clearPlanBlockStreak(state);
+  clearConsecutiveDowngrades(state);
+  advanceToDevReview(state);
+  saveState(statePath, state);
+  logMutation("record-stop-review-allow", before, snapshot(state), statePath);
+}
+
+function cmdRecordStopReviewDowngrade(statePath, headSha) {
+  if (!headSha) fail("runner-state-cli: record-stop-review-downgrade requires <head-sha>");
+  const state = loadOrFail(statePath);
+  const before = snapshot(state);
+  setLastReviewedCommit(state, headSha, "ALLOW");
+  clearPlanBlockStreak(state);
+  const count = bumpConsecutiveDowngrades(state);
+  advanceToDevReview(state);
+  saveState(statePath, state);
+  logMutation("record-stop-review-downgrade", before, snapshot(state), statePath);
+  if (count >= CONSECUTIVE_DOWNGRADE_WARNING_THRESHOLD) {
+    const warning = [
+      "",
+      "---",
+      `[stop-gate] 주의 — 이 plan에서 연속 ${count}회 BLOCK이 저신뢰`,
+      "다운그레이드되었습니다. Codex prompt template 변경이 의심되면",
+      "confidence threshold(7)를 검토하세요.",
+    ].join("\n");
+    process.stdout.write(`${warning}\n`);
+  }
+}
+
+function cmdRecordStopReviewBlock(statePath, headSha, reasonFile) {
+  if (!headSha) fail("runner-state-cli: record-stop-review-block requires <head-sha>");
+  if (!reasonFile) fail("runner-state-cli: record-stop-review-block requires <reason-file>");
+  if (!fs.existsSync(reasonFile)) fail(`runner-state-cli: reason file not found: ${reasonFile}`);
+  let reason;
+  try {
+    reason = fs.readFileSync(reasonFile, "utf8");
+  } catch (err) {
+    fail(`runner-state-cli: failed to read reason file ${reasonFile}: ${err.message}`);
+  }
+  const state = loadOrFail(statePath);
+  const before = snapshot(state);
+  clearConsecutiveDowngrades(state);
+  setLastReviewedCommit(state, headSha, "BLOCK");
+  const { count } = recordPlanBlock(state, reason);
+  if (
+    state.status === STATUS.DISPATCHING &&
+    state.stop_review.phase !== STOP_REVIEW_PHASE.BLOCKED
+  ) {
+    setStopReviewPhase(state, STOP_REVIEW_PHASE.BLOCKED);
+  }
+  saveState(statePath, state);
+  logMutation("record-stop-review-block", before, snapshot(state), statePath);
+
+  // stdout: planner directive (+ escalation note when applicable). The Stop
+  // hook concatenates this onto the user-visible BLOCK reason so the next
+  // turn can replay against the same state.
+  let out = buildPlannerBlockDirective(statePath);
+  if (count >= SAME_BLOCK_ESCALATION_THRESHOLD) {
+    out += "\n" + [
+      "",
+      "---",
+      `[escalation] 같은 이슈로 ${count}회 연속 BLOCK되었습니다. 자동 재디스패치만으로는 해결되지 않을 가능성이 큽니다.`,
+      "다음 중 하나를 선택하세요:",
+      "  1) 사용자(사람)가 직접 원인을 진단 — 코드/테스트/plan을 재검토",
+      "  2) 해당 phase의 기대 동작(plan 또는 phase 파일)을 수정",
+      "  3) 현재 worktree를 폐기하고 처음부터 다시 시작",
+    ].join("\n");
+  }
+  process.stdout.write(`${out}\n`);
 }
 
 // reset is the only subcommand that does not transition status. It runs
@@ -370,17 +474,20 @@ function main() {
     case "arm-for-dispatch":
       return cmdArmForDispatch(statePath);
     case "begin-rework":
-      return cmdBeginRework(statePath, rest[0]);
     case "rework-done":
-      return cmdReworkDone(statePath);
     case "mark-qa-pending":
-      return cmdMarkQaPending(statePath);
     case "qa-resolved":
-      return cmdQaResolved(statePath);
+      return cmdPhaseMutation(subcommand, statePath, rest);
     case "mark-approved":
       return cmdMarkApproved(statePath);
     case "mark-merged":
       return cmdMarkMerged(statePath);
+    case "record-stop-review-allow":
+      return cmdRecordStopReviewAllow(statePath, rest[0]);
+    case "record-stop-review-downgrade":
+      return cmdRecordStopReviewDowngrade(statePath, rest[0]);
+    case "record-stop-review-block":
+      return cmdRecordStopReviewBlock(statePath, rest[0], rest[1]);
     case "reset":
       return cmdReset(statePath, rest);
     default:

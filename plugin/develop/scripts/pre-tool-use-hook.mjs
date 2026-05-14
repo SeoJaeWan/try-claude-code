@@ -10,39 +10,31 @@
 //
 //   - allow → exit silently. Claude Code proceeds with the call.
 //   - warn  → print a systemMessage so the user is reminded the plan is still
-//             waiting for review, but allow the call. Used for unrelated
-//             edits during long review pauses.
+//             waiting for review, but allow the call.
 //   - block → emit `{"decision":"block","reason":...}` so Claude Code
 //             refuses the call and surfaces the Korean reason.
 //
 // Anything that fails inside this hook (parse error, missing session, throw)
 // must default to allow — a hook crash should never paralyze the user.
 //
-// Why a hook, not prose:
-//   The runner SKILL.md is prose Claude reads each turn. It tells the model
-//   "do not edit the worktree directly during dev-review". That works most
-//   of the time. This hook turns that instruction into a hard guarantee at
-//   the tool boundary, so the runner's mental model and the actual diff
-//   the reviewer sees cannot drift.
+// Phase 2 reshape: the hook used to mutate plan-state as a side effect of
+// the "auto-arm" path — seeing the plan-agent dispatch would atomically
+// walk `preparing → dispatching/armed` and save the state file. That has
+// been removed. Status transitions are now driven exclusively by explicit
+// `runner-state-cli.mjs arm-for-dispatch` calls from the runner skill, so
+// every state change shows up in the turn log. The hook is pure judgment
+// again: read state, ask policy, emit decision.
 
-import path from "node:path";
 import process from "node:process";
 
 import { readHookInput } from "./lib/hook-input.mjs";
 import { listActivePlanStates } from "./lib/sessions.mjs";
 import {
-  STATUS,
-  STOP_REVIEW_PHASE,
   TERMINAL_STATUSES,
   deriveStatePathFromPlanPath,
-  saveState,
-  setStopReviewArmed,
-  setStopReviewPhase,
-  transitionStatus,
   tryLoadState,
 } from "./lib/runner-state.mjs";
-import { agentNamesMatch, evaluate, VERDICT } from "./lib/pre-tool-use-policy.mjs";
-import { recordHookEvent } from "./lib/telemetry.mjs";
+import { evaluate, VERDICT } from "./lib/pre-tool-use-policy.mjs";
 
 function emitBlock(reason) {
   process.stdout.write(JSON.stringify({ decision: "block", reason }));
@@ -71,68 +63,6 @@ function resolveActivePlanState(sessionId) {
   return null;
 }
 
-// Auto-arm the stop-review gate when the main session is about to dispatch
-// the plan agent for this plan. Returns the (possibly updated) state.
-//
-// Phase 4 reshape: in v2 the arm path is much shorter because the 9-status
-// pre-dispatch fan-out collapsed to two states.
-//
-//   preparing                                  → dispatching + phase=ARMED
-//   dispatching + phase=BLOCKED (re-dispatch)  → dispatching + phase=ARMED
-//   dispatching + phase=ARMED  (idempotent)    → no-op
-//
-// Only fires when the dispatch's `subagent_type` matches `state.owner_agent`,
-// so unrelated Agent calls (Explore, etc.) do not advance the gate.
-//
-// Matching delegates to `agentNamesMatch` so the auto-arm path and the BLOCK
-// path in `pre-tool-use-policy.mjs` use the same plugin-namespacing rule.
-// If they ever diverge, a dispatch could pass the BLOCK gate without arming
-// the stop-review phase, leaving the plan stuck at `preparing`.
-function maybeAutoArm(state, toolName, toolInput) {
-  if (toolName !== "Task" && toolName !== "Agent") return state;
-  if (!state || !state.__statePath) return state;
-  const subagent = toolInput?.subagent_type;
-  if (!agentNamesMatch(subagent, state.owner_agent)) {
-    return state;
-  }
-  // Background dispatches are blocked by `pre-tool-use-policy.mjs` further
-  // down. Do not advance the gate for a dispatch the policy is about to
-  // refuse — otherwise the state walks to `dispatching/armed` while the
-  // agent never ran, and the user has to manually reset before retrying.
-  // Leaving state at `preparing` (or `dispatching/blocked`) means the next
-  // foreground re-dispatch auto-arms cleanly.
-  if (toolInput?.run_in_background === true) return state;
-
-  const before = state.status;
-  const beforePhase = state.stop_review.phase ?? null;
-
-  if (state.status === STATUS.PREPARING) {
-    transitionStatus(state, STATUS.DISPATCHING);
-    setStopReviewPhase(state, STOP_REVIEW_PHASE.ARMED);
-    setStopReviewArmed(state, true);
-  } else if (
-    state.status === STATUS.DISPATCHING &&
-    state.stop_review.phase === STOP_REVIEW_PHASE.BLOCKED
-  ) {
-    setStopReviewPhase(state, STOP_REVIEW_PHASE.ARMED);
-    setStopReviewArmed(state, true);
-  } else {
-    // Already armed (or status not arm-able). Nothing to do.
-    return state;
-  }
-
-  saveState(state.__statePath, state);
-  recordHookEvent({
-    kind: "pre_tool_use_auto_arm",
-    ok: true,
-    sessionId: state.session_id ?? null,
-    planSlug: state.plan_slug,
-    from: `${before}/${beforePhase ?? "null"}`,
-    to: `${state.status}/${state.stop_review.phase}`,
-  });
-  return state;
-}
-
 // Build the list of "plan-owned" directories for the warn-vs-block downgrade.
 // The worktree path is mandatory; we also include the plan-state directory so
 // edits to .runner-state.json or feedback*.json count as plan-area edits.
@@ -153,22 +83,17 @@ function planAreasFor(state) {
 }
 
 async function main() {
-  let toolName = null;
-  let toolInput = null;
-  let sessionId = null;
   try {
-    const { raw, sessionId: sid } = readHookInput({ tag: "pre-tool-use-hook" });
-    sessionId = sid;
-    toolName = typeof raw.tool_name === "string" ? raw.tool_name : null;
-    toolInput = (raw.tool_input && typeof raw.tool_input === "object") ? raw.tool_input : {};
+    const { raw, sessionId } = readHookInput({ tag: "pre-tool-use-hook" });
+    const toolName = typeof raw.tool_name === "string" ? raw.tool_name : null;
+    const toolInput = (raw.tool_input && typeof raw.tool_input === "object") ? raw.tool_input : {};
 
     if (!toolName) {
       // Nothing to gate.
       return;
     }
 
-    let state = resolveActivePlanState(sessionId);
-    state = maybeAutoArm(state, toolName, toolInput);
+    const state = resolveActivePlanState(sessionId);
     const verdict = evaluate({
       state,
       toolName,
@@ -178,36 +103,15 @@ async function main() {
 
     if (verdict.decision === VERDICT.BLOCK) {
       emitBlock(verdict.reason);
-      recordHookEvent({
-        kind: "pre_tool_use_block",
-        ok: true,
-        sessionId,
-        toolName,
-        status: state?.status ?? null,
-      });
       return;
     }
     if (verdict.decision === VERDICT.WARN) {
       emitWarn(verdict.reason);
-      recordHookEvent({
-        kind: "pre_tool_use_warn",
-        ok: true,
-        sessionId,
-        toolName,
-        status: state?.status ?? null,
-      });
       return;
     }
     // allow → silent.
-  } catch (err) {
+  } catch {
     // Fail open. A hook crash must not block the user's workflow.
-    recordHookEvent({
-      kind: "pre_tool_use_error",
-      ok: false,
-      sessionId,
-      toolName,
-      message: err?.message ?? String(err),
-    });
   }
 }
 

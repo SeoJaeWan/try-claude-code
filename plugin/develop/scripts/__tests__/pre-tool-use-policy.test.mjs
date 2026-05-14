@@ -17,17 +17,19 @@ import {
   evaluate,
 } from "../lib/pre-tool-use-policy.mjs";
 
-// pre-tool-use-policy is the pure decision function. Tests cover the matrix
-// directly so a future status / tool / phase addition shows up here without
-// needing to spawn the hook process. Hook integration tests live next door
-// in pre-tool-use-hook.test.mjs.
+// pre-tool-use-policy is the pure decision function. Phase 2 reshape replaced
+// the 5×4 status×tool matrix with a target-location rule: tool calls whose
+// `cwd` (Bash) or `file_path` (Edit/Write) lie inside the active worktree
+// are ALLOWed during agent-active phases (dispatching, dev_reviewing/rework).
+// Tests below cover the rule directly so a future status / tool / phase
+// addition shows up here without needing to spawn the hook process.
 
 const PLAN_AREA = "/repo/worktrees/feat-x";
 const PLAN_DIR = "/repo/plans/x";
 
 // Build a state at the requested top-level status. For DISPATCHING and
-// DEV_REVIEWING, callers can also pass `stopPhase` / `devPhase` overrides
-// to land on the right sub-state.
+// DEV_REVIEWING, callers can pass `stopPhase` / `devPhase` overrides to
+// land on the right sub-state.
 function stateAt(status, { stopPhase = null, devPhase = null, overrides = {} } = {}) {
   const s = createInitialState({
     planSlug: "plan-x",
@@ -104,7 +106,7 @@ describe("classifyBashCommand", () => {
     }
   });
 
-  it("keeps git-level flags from masking a mutating subcommand", () => {
+  it("classifies git-level flags in front of a mutating subcommand as mutating", () => {
     for (const cmd of [
       "git -C /tmp/repo commit -m x",
       'git -C "C:/Users/x/y" push origin main',
@@ -126,35 +128,24 @@ describe("classifyBashCommand", () => {
     }
   });
 
-  it("classifies mutating git operations as mutating", () => {
+  it("classifies anything not in the safe-list as mutating", () => {
+    // Phase 2 reshape: the explicit mutating-pattern list was removed.
+    // Everything not safe is mutating now — that flips the previous
+    // false-positive bias toward strict (unknown commands hit the
+    // mutating path instead of being silently allowed).
     for (const cmd of [
       "git commit -m 'x'",
       "git push origin main",
-      "git merge feat/x --no-ff",
-      "git checkout feat/x",
-      "git branch -d feat/x",
       "git worktree add -b feat/x worktrees/feat-x main",
-      "git reset --hard HEAD~1",
-      "git add -A",
-    ]) {
-      assert.equal(classifyBashCommand(cmd), "mutating", cmd);
-    }
-  });
-
-  it("classifies filesystem mutations as mutating", () => {
-    for (const cmd of [
       "rm -rf worktrees/feat-x",
-      "mv plans/x.plan.md plans/y.plan.md",
-      "echo foo > plans/x.plan.md",
-      "tee -a plans/x/.runner-state.json",
+      "python3 some_script.py",
+      "node -e 'process.exit(1)'",
     ]) {
       assert.equal(classifyBashCommand(cmd), "mutating", cmd);
     }
-  });
-
-  it("classifies unknown commands as ambiguous", () => {
-    assert.equal(classifyBashCommand("python3 some_script.py"), "ambiguous");
+    // Empty / whitespace commands still classify as safe.
     assert.equal(classifyBashCommand(""), "safe");
+    assert.equal(classifyBashCommand("   "), "safe");
   });
 });
 
@@ -200,7 +191,7 @@ describe("evaluate — Bash gating", () => {
     }
   });
 
-  it("blocks mutating Bash mid-flight (preparing / dispatching / dev_reviewing)", () => {
+  it("blocks mutating Bash mid-flight when called from outside the worktree", () => {
     for (const status of [
       STATUS.PREPARING,
       STATUS.DISPATCHING,
@@ -209,7 +200,7 @@ describe("evaluate — Bash gating", () => {
       const r = evaluate({
         state: stateAt(status),
         toolName: "Bash",
-        toolInput: { command: "git commit -m oops" },
+        toolInput: { command: "git commit -m oops" }, // no cwd → outside worktree
         planAreas: [PLAN_AREA, PLAN_DIR],
       });
       assert.equal(r.decision, VERDICT.BLOCK, `expected block at ${status}`);
@@ -227,7 +218,48 @@ describe("evaluate — Bash gating", () => {
     assert.equal(r.decision, VERDICT.ALLOW);
   });
 
-  it("treats ambiguous Bash as mutating (block)", () => {
+  it("ALLOWs mutating Bash when cwd is inside the worktree during dispatching", () => {
+    // The fix for the sub-agent BLOCK loop: the plan-dispatch.md prompt
+    // instructs the agent to `cd` into the worktree before any command,
+    // so its `git commit -m '...'` calls arrive with `cwd=<worktree>`.
+    // Pre-fix matrix BLOCKed these as if main session were committing;
+    // the target-based rule recognizes them as agent work and ALLOWs.
+    const r = evaluate({
+      state: stateAt(STATUS.DISPATCHING),
+      toolName: "Bash",
+      toolInput: {
+        command: "git add -A && git commit -m 'feat(x): phase 1'",
+        cwd: PLAN_AREA,
+      },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.ALLOW);
+  });
+
+  it("ALLOWs mutating Bash from inside the worktree during dev_reviewing/rework", () => {
+    const r = evaluate({
+      state: stateAt(STATUS.DEV_REVIEWING, { devPhase: DEV_REVIEW_PHASE.REWORK }),
+      toolName: "Bash",
+      toolInput: { command: "git commit -am 'fix(x): address review'", cwd: PLAN_AREA },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.ALLOW);
+  });
+
+  it("BLOCKs mutating Bash from inside the worktree during dev_reviewing/awaiting", () => {
+    // Reviewer-drift protection: even if a call arrives with cwd inside
+    // the worktree, no agent should be running during awaiting/qa, so we
+    // refuse the mutation to keep the reviewer's diff stable.
+    const r = evaluate({
+      state: stateAt(STATUS.DEV_REVIEWING, { devPhase: DEV_REVIEW_PHASE.AWAITING }),
+      toolName: "Bash",
+      toolInput: { command: "git commit -am 'oops'", cwd: PLAN_AREA },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.BLOCK);
+  });
+
+  it("treats unknown Bash commands as mutating (block from outside worktree)", () => {
     const r = evaluate({
       state: stateAt(STATUS.DEV_REVIEWING),
       toolName: "Bash",
@@ -241,7 +273,7 @@ describe("evaluate — Bash gating", () => {
 describe("evaluate — Step 2 worktree bootstrap carve-out", () => {
   // Step 2 of runner/SKILL.md requires the main session to run
   // `git worktree add` while status="preparing" — the worktree directory has
-  // to exist before the plan agent is dispatched in Step 3. The matrix
+  // to exist before the plan agent is dispatched in Step 3. The rule
   // narrows this carve-out via `isWorktreeBootstrapCommand` so only commands
   // touching `state.worktree_path` are allowed, and only at `preparing`.
 
@@ -283,8 +315,6 @@ describe("evaluate — Step 2 worktree bootstrap carve-out", () => {
   });
 
   it("BLOCKs `git worktree remove` without --force at preparing", () => {
-    // Only the stale-wipe shape (with --force) is carved out; a bare remove
-    // is unusual at Step 2 and should still be blocked.
     const r = evaluate({
       state: stateAt(STATUS.PREPARING),
       toolName: "Bash",
@@ -296,21 +326,9 @@ describe("evaluate — Step 2 worktree bootstrap carve-out", () => {
     assert.equal(r.decision, VERDICT.BLOCK);
   });
 
-  it("BLOCKs `git worktree add` at dispatching (carve-out is preparing-only)", () => {
+  it("BLOCKs `git worktree add` at dispatching from outside (carve-out is preparing-only)", () => {
     const r = evaluate({
       state: stateAt(STATUS.DISPATCHING),
-      toolName: "Bash",
-      toolInput: {
-        command: `git worktree add -b feat/x "${PLAN_AREA}" main`,
-      },
-      planAreas: [PLAN_AREA, PLAN_DIR],
-    });
-    assert.equal(r.decision, VERDICT.BLOCK);
-  });
-
-  it("BLOCKs `git worktree add` at dev_reviewing (carve-out is preparing-only)", () => {
-    const r = evaluate({
-      state: stateAt(STATUS.DEV_REVIEWING),
       toolName: "Bash",
       toolInput: {
         command: `git worktree add -b feat/x "${PLAN_AREA}" main`,
@@ -322,9 +340,42 @@ describe("evaluate — Step 2 worktree bootstrap carve-out", () => {
 });
 
 describe("evaluate — Edit / Write gating", () => {
-  it("blocks Edit on worktree files mid-review", () => {
+  it("ALLOWs Edit on worktree files during dispatching (sub-agent simulate)", () => {
+    // The fix for the sub-agent BLOCK loop: when the sub-agent edits a
+    // file inside the worktree, `file_path` lands inside `worktree_path`.
+    // The target-based rule recognizes this as agent work and ALLOWs.
+    const r = evaluate({
+      state: stateAt(STATUS.DISPATCHING),
+      toolName: "Edit",
+      toolInput: { file_path: `${PLAN_AREA}/src/index.ts` },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.ALLOW);
+  });
+
+  it("ALLOWs Edit on worktree files during dev_reviewing/rework", () => {
+    const r = evaluate({
+      state: stateAt(STATUS.DEV_REVIEWING, { devPhase: DEV_REVIEW_PHASE.REWORK }),
+      toolName: "Edit",
+      toolInput: { file_path: `${PLAN_AREA}/src/index.ts` },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.ALLOW);
+  });
+
+  it("BLOCKs Edit on worktree files during dev_reviewing/awaiting (drift protection)", () => {
     const r = evaluate({
       state: stateAt(STATUS.DEV_REVIEWING),
+      toolName: "Edit",
+      toolInput: { file_path: `${PLAN_AREA}/src/index.ts` },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.BLOCK);
+  });
+
+  it("BLOCKs Edit on worktree files during dev_reviewing/qa", () => {
+    const r = evaluate({
+      state: stateAt(STATUS.DEV_REVIEWING, { devPhase: DEV_REVIEW_PHASE.QA }),
       toolName: "Edit",
       toolInput: { file_path: `${PLAN_AREA}/src/index.ts` },
       planAreas: [PLAN_AREA, PLAN_DIR],
@@ -342,14 +393,17 @@ describe("evaluate — Edit / Write gating", () => {
     assert.equal(r.decision, VERDICT.WARN);
   });
 
-  it("blocks Write on plan-state file directly", () => {
-    const r = evaluate({
-      state: stateAt(STATUS.DISPATCHING),
-      toolName: "Write",
-      toolInput: { file_path: `${PLAN_DIR}/.runner-state.json` },
-      planAreas: [PLAN_AREA, PLAN_DIR],
-    });
-    assert.equal(r.decision, VERDICT.BLOCK);
+  it("BLOCKs Write on plan-state file directly (always, every status)", () => {
+    for (const status of [STATUS.PREPARING, STATUS.DISPATCHING, STATUS.DEV_REVIEWING]) {
+      const r = evaluate({
+        state: stateAt(status),
+        toolName: "Write",
+        toolInput: { file_path: `${PLAN_DIR}/.runner-state.json` },
+        planAreas: [PLAN_AREA, PLAN_DIR],
+      });
+      assert.equal(r.decision, VERDICT.BLOCK, status);
+      assert.match(r.reason, /runner-state-cli/);
+    }
   });
 
   it("warns (does not block) Edit on worktree files at status=closing", () => {
@@ -390,7 +444,7 @@ describe("evaluate — Agent / Task dispatch gating", () => {
     assert.equal(r.decision, VERDICT.BLOCK);
   });
 
-  it("allows owner_agent Agent dispatch at preparing (auto-arm path)", () => {
+  it("allows owner_agent Agent dispatch at preparing", () => {
     const r = evaluate({
       state: stateAt(STATUS.PREPARING),
       toolName: "Task",
@@ -401,11 +455,6 @@ describe("evaluate — Agent / Task dispatch gating", () => {
   });
 
   it("blocks plan-agent dispatch when run_in_background is true (preparing)", () => {
-    // Regression: pre-fix, background dispatch returned the Agent call
-    // immediately and the model often ended its turn before commits existed.
-    // The Stop hook then fell back to HEAD~1..HEAD and reviewed a base
-    // commit as if it were plan work, walking state to dev_reviewing with
-    // zero agent commits — deadlock. Policy now refuses the call outright.
     const r = evaluate({
       state: stateAt(STATUS.PREPARING),
       toolName: "Task",
@@ -452,7 +501,6 @@ describe("evaluate — Agent / Task dispatch gating", () => {
   });
 
   it("does not treat run_in_background:false as background", () => {
-    // Defensive — false / undefined / missing should all be foreground.
     for (const flag of [false, undefined, null]) {
       const r = evaluate({
         state: stateAt(STATUS.DISPATCHING),
@@ -495,6 +543,16 @@ describe("evaluate — Agent / Task dispatch gating", () => {
     assert.equal(qa.decision, VERDICT.BLOCK);
     assert.match(qa.reason, /phase="qa"/);
   });
+
+  it("warns on Agent dispatch at closing", () => {
+    const r = evaluate({
+      state: stateAt(STATUS.CLOSING),
+      toolName: "Task",
+      toolInput: { subagent_type: "general-developer", prompt: "..." },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.WARN);
+  });
 });
 
 describe("agentNamesMatch — plugin-namespacing rule", () => {
@@ -510,7 +568,6 @@ describe("agentNamesMatch — plugin-namespacing rule", () => {
   });
 
   it("matches a namespaced subagent against a bare owner_agent", () => {
-    // Claude Code dispatches `<plugin>:<agent>`; plan author wrote bare.
     assert.equal(
       agentNamesMatch("try-claude-code:frontend-developer", "frontend-developer"),
       true,
@@ -518,7 +575,6 @@ describe("agentNamesMatch — plugin-namespacing rule", () => {
   });
 
   it("matches a bare subagent against a namespaced owner_agent", () => {
-    // Symmetry: plan author wrote namespaced, runtime dispatch is bare.
     assert.equal(
       agentNamesMatch("frontend-developer", "try-claude-code:frontend-developer"),
       true,
@@ -526,7 +582,6 @@ describe("agentNamesMatch — plugin-namespacing rule", () => {
   });
 
   it("refuses cross-plugin namespaced collisions", () => {
-    // Same short name in two plugins must not collapse into one identity.
     assert.equal(
       agentNamesMatch(
         "try-claude-code:frontend-developer",
@@ -552,9 +607,6 @@ describe("agentNamesMatch — plugin-namespacing rule", () => {
 
 describe("evaluate — Agent dispatch with plugin namespacing", () => {
   it("ALLOWs bare owner_agent vs namespaced subagent_type", () => {
-    // The original BLOCK seen in the field:
-    //   owner_agent = "frontend-developer" (written bare by the planner)
-    //   subagent_type = "try-claude-code:frontend-developer" (Claude's form)
     const s = stateAt(STATUS.PREPARING);
     s.owner_agent = "frontend-developer";
     const r = evaluate({

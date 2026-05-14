@@ -1,79 +1,92 @@
-// PreToolUse policy — decides whether a main-session tool call is allowed
-// while a runner plan is mid-flight.
+// PreToolUse policy — decides whether a tool call is allowed while a runner
+// plan is mid-flight.
 //
 // The runner skill is prose Claude reads each turn (SKILL.md). Hard guarantees
 // only exist where hooks intercept the tool boundary. This module owns the
-// matrix of "given the active plan's status, which tools may the main session
-// call?" and is invoked by `pre-tool-use-hook.mjs`.
+// "given the active plan's status and the tool's target, what verdict?"
+// decision and is invoked by `pre-tool-use-hook.mjs`.
 //
-// Core idea: every tool call goes through one of three verdicts:
+// Three verdicts:
 //   - "allow"  — call is consistent with the current status, proceed silently.
 //   - "warn"   — call is suspicious but not destructive (e.g. editing an
 //                unrelated file mid-review). The hook surfaces a systemMessage
 //                but does not block.
 //   - "block"  — call would violate the runner's invariants (e.g. directly
-//                editing the worktree while waiting for dev-review). The hook
-//                emits `decision: "block"` with the returned reason.
+//                editing the plan-state JSON, or mutating the worktree from
+//                outside it during dispatching). The hook emits
+//                `decision: "block"` with the returned reason.
 //
 // This module is pure: no fs, no env, no spawn. The hook resolves the active
 // plan-state and current tool input, then asks `evaluate({...})` for a
-// verdict. That separation keeps the matrix unit-testable across every
+// verdict. That separation keeps the rule unit-testable across every
 // (status, tool, command-shape, cwd) combination without spawning a hook.
 //
-// Status semantics (v2, 5-status enum), summarized so the matrix below makes
-// sense without re-reading SKILL.md every time. Sub-states (rework/qa/awaiting
-// inside dev-review, armed/blocked/passed inside stop-review) live on
-// `state.{stop_review,dev_review}.phase` and only matter for the agent-
-// dispatch resolver.
+// Design — target-location rule (Phase 2 reshape):
+//
+//   The previous policy was a 5×4 status×tool matrix. Half its complexity
+//   existed to distinguish "the main session is touching the worktree" from
+//   "the dispatched sub-agent is touching the worktree" — but PreToolUse's
+//   payload does not surface a caller identifier, so the matrix had to
+//   pessimistically BLOCK both. That blocked legitimate sub-agent commits
+//   during `dispatching`, which was the root cause of the BLOCK-replay loop
+//   the runner kept getting stuck in.
+//
+//   The new rule sidesteps caller identification by reading the tool call's
+//   *target* instead: if the tool's working directory (Bash) or file_path
+//   (Edit / Write) is inside the active plan's worktree, the call is the
+//   agent's work and ALLOWed. Main session calls run from the repo root
+//   (runner SKILL.md Core rule 7), so their targets land outside the
+//   worktree directory and the existing BLOCK rules still apply.
+//
+//   Caveat: during dev_reviewing/awaiting we still want to BLOCK worktree
+//   edits as drift protection for the reviewer's diff — even if someone
+//   manages to issue an edit "from inside" the worktree. So the
+//   target-inside-worktree ALLOW only fires in phases where an agent is
+//   legitimately working: dispatching/* and dev_reviewing/rework.
+//
+// Status semantics (5-status enum). Sub-states (rework/qa/awaiting inside
+// dev-review, armed/blocked/passed inside stop-review) live on
+// `state.{stop_review,dev_review}.phase`.
 //
 //   preparing      — fresh plan; worktree may not exist yet. Step 1-2.
-//                    Main session legitimately runs `git worktree add` here
-//                    to create the worktree directory the plan agent will
-//                    inhabit (runner/SKILL.md Core rule 3 + Step 2), and may
-//                    run `git worktree remove --force` on Step 2's stale-wipe
-//                    path. Both are narrowed by `isWorktreeBootstrapCommand`
-//                    so the command must touch `state.worktree_path` —
-//                    arbitrary worktree mutations are still BLOCKed. All
-//                    *other* mutations (commits, edits inside the worktree)
-//                    wait for Step 3's plan-agent dispatch; the worktree's
-//                    interior is the agent's domain. PreToolUse auto-arms
-//                    the gate when it sees the matching Agent dispatch from
-//                    this status.
-//   dispatching    — Step 3. `stop_review.phase` distinguishes "armed" (gate
-//                    primed) from "blocked" (Stop hook reported BLOCK,
-//                    awaiting re-dispatch) from "passed" (transient pre-flip
-//                    to dev_reviewing). Plan-agent dispatch is the only
-//                    legitimate Agent call here.
-//   dev_reviewing  — Step 4. `dev_review.phase` distinguishes "awaiting" /
-//                    "rework" / "qa". Main session does not edit the worktree
-//                    directly — rework happens through the `begin-rework`
-//                    CLI + Agent dispatch path; phase=rework is the only
-//                    sub-state where Agent dispatches are allowed.
+//                    Main session legitimately runs `git worktree add`
+//                    (carved out by isWorktreeBootstrapCommand). All other
+//                    mutations wait for Step 3's plan-agent dispatch.
+//   dispatching    — Step 3. Plan-agent dispatched; its commits inside the
+//                    worktree are ALLOWed. Main session mutations from
+//                    outside the worktree are BLOCKed.
+//   dev_reviewing  — Step 4. `dev_review.phase` distinguishes awaiting /
+//                    rework / qa. Only `rework` permits agent dispatch AND
+//                    worktree edits (the rework agent commits inside the
+//                    worktree just like the plan agent did).
 //   closing        — Step 5: dev-review approved. Main session runs git
 //                    merge / branch -d / worktree remove. Mutating Bash is
-//                    *expected* here; Edit/Write on the (now-removed)
-//                    worktree is unusual but downgraded to warn.
+//                    expected; Edit/Write on the (now-removed) worktree is
+//                    downgraded to warn.
 //   merged         — Terminal. UserPromptSubmit refuses re-entry, so this
 //                    is mostly defensive — treat as no-active-plan.
-//
-// The matrix below encodes those rules. Edit the matrix, not callers.
 
 import path from "node:path";
 
-import { TERMINAL_STATUSES } from "./runner-state-machine.mjs";
+import {
+  DEV_REVIEW_PHASE,
+  STATUS,
+  TERMINAL_STATUSES,
+} from "./runner-state-machine.mjs";
 
-// Tools that can mutate the filesystem. The hook also screens Bash separately
-// because Bash sees both read-only inspection and mutating commands, so its
-// row needs the command-shape sub-classifier below.
+// Tools that can mutate the filesystem. Bash is handled separately so its
+// row can read the command shape.
 const MUTATING_FILE_TOOLS = new Set(["Edit", "Write", "NotebookEdit"]);
 
 // Bash commands the runner skill needs every turn — read-only inspection and
 // the runner-state CLI itself. Anything matching these patterns is "safe"
 // regardless of status; everything else is "mutating" and gated by status.
 //
-// Patterns are intentionally broad: false positives (treating something safe
-// as mutating) annoy but recover with a re-try; false negatives (treating
-// something mutating as safe) silently bypass the gate. Lean strict.
+// Phase 2 reshape: the dual SAFE/MUTATING regex lists collapsed to one
+// SAFE list. "Anything not safe" is treated as mutating — that flips a
+// previous false-positive bias toward strict (a few unknown commands now
+// hit the mutating row instead of being silently ALLOWed). Safe-list
+// patterns stay broad and conservative.
 const SAFE_BASH_PATTERNS = [
   // runner-state-cli invocations — every status transition the skill makes
   // routes through this CLI, so the hook must never block it.
@@ -84,45 +97,16 @@ const SAFE_BASH_PATTERNS = [
   /^\s*(ls|cat|head|tail|wc|file|find\s+\S+\s+-type\b|test\s+-[defsr])\b/,
   /^\s*\[\s+-[defsr]\s+/, // [ -d <path> ], etc.
   // Node test runners and similar read-mostly invocations the skill may
-  // surface for diagnostics. Matching `node --test` and `node -e "..."` would
-  // be too broad — those are not gated here, see the Bash mutating list.
+  // surface for diagnostics.
   /^\s*pnpm\s+(exec|test|run\s+test)\b/,
 ];
 
-// Bash commands that mutate enough to matter. We only need a list strict
-// enough to catch the mistakes the runner is meant to prevent (manual git
-// commits, branch deletions, worktree edits, etc.); anything ambiguous falls
-// through to the catch-all "mutating" classification at the end of
-// `classifyBashCommand`.
-const MUTATING_BASH_PATTERNS = [
-  /^\s*git\s+(commit|push|merge|reset|checkout|switch|rebase|cherry-pick|revert|tag|am|apply|stash\s+(?!list|show))/,
-  /^\s*git\s+branch\s+(-d|-D|--delete)/,
-  /^\s*git\s+worktree\s+(add|remove|move|prune)/,
-  /^\s*git\s+(add|rm|mv|restore)/,
-  /^\s*(rm|mv|cp)\s/,
-  /^\s*echo\b.*>>?\s*\S/,
-  /^\s*(printf|tee)\b/,
-  /(^|\s|;|&&|\|\|)\s*\>\s*\S/,
-];
-
 // Step 2 worktree bootstrap commands. The main session legitimately runs
-// `git worktree add` to create the plan's worktree directory (runner/SKILL.md
-// Core rule 3 + Step 2) and `git worktree remove --force` to wipe a stale
-// worktree before recreating it. The `preparing` matrix row routes its
-// `bashMutating` cell through this helper so only these two narrow shapes
-// pass — anything else mutating in `preparing` stays BLOCKed.
+// `git worktree add` to create the plan's worktree directory and
+// `git worktree remove --force` to wipe a stale one before recreating.
+// Only at `preparing` and only when the command actually mentions
+// `state.worktree_path` (substring match — tolerates quoting differences).
 //
-// Why not add these to SAFE_BASH_PATTERNS:
-//   `classifyBashCommand` returns the same verdict for every status. We only
-//   want this carve-out during `preparing` — once the plan reaches
-//   `dispatching` or later, the main session should never be re-creating or
-//   removing the worktree. Keeping the classifier strict and the matrix
-//   permissive keeps that scope tight.
-//
-// Guard conditions (all must hold):
-//   - command shape is `git worktree add …` OR `git worktree remove … --force …`
-//   - state.worktree_path is a non-empty string AND appears in the command
-//     (substring match — tolerates quoting and shell differences)
 // Other worktree subcommands (`move`, `prune`) and `remove` without --force
 // are intentionally NOT carved out; they should not appear during Step 2.
 export function isWorktreeBootstrapCommand(command, state) {
@@ -142,15 +126,8 @@ export const VERDICT = Object.freeze({
 });
 
 // Strip optional git-level flags (`-C <path>`, `--git-dir=...`,
-// `--work-tree=...`, `--no-pager`, `-c key=value`) that sit between `git` and
-// the actual subcommand. Without this, `git -C "<worktree>" log` falls
-// through to "ambiguous" and the matrix blocks a read-only inspection — the
-// exact shape Claude Code generates when the runner skill asks it to verify
-// commits in another directory. We normalize once instead of duplicating
-// every git regex with an optional flag prefix.
-//
-// Path values may be quoted (single or double) or bare. We greedily consume
-// one or more flag occurrences and leave the subcommand untouched.
+// `--work-tree=...`, `--no-pager`, `-c key=value`) before classifying. Without
+// this, `git -C "<worktree>" log` would not match the read-only git regex.
 function stripGitGlobalFlags(command) {
   return command.replace(
     /^(\s*git\s+)(?:(?:-C\s+(?:"[^"]*"|'[^']*'|\S+)|--git-dir(?:=|\s+)(?:"[^"]*"|'[^']*'|\S+)|--work-tree(?:=|\s+)(?:"[^"]*"|'[^']*'|\S+)|--no-pager|-c\s+\S+)\s+)+/,
@@ -158,30 +135,24 @@ function stripGitGlobalFlags(command) {
   );
 }
 
-// Classify a Bash command into one of three buckets the matrix can switch on.
-//   "safe"          — never blocked.
-//   "mutating"      — gated by status.
-//   "ambiguous"     — anything we cannot classify; gated as "mutating" by the
-//                     matrix to err on the safe side, but tests can assert the
-//                     classifier separately.
+// Classify a Bash command. The new rule has two buckets only — anything not
+// matching SAFE_BASH_PATTERNS is treated as mutating (and gated by status).
+//
+//   "safe"     — never blocked.
+//   "mutating" — gated by status.
+//
+// Empty / whitespace-only commands are classified as safe; nothing to gate.
 export function classifyBashCommand(command) {
   if (typeof command !== "string" || !command.trim()) return "safe";
   const normalized = stripGitGlobalFlags(command);
   for (const re of SAFE_BASH_PATTERNS) {
     if (re.test(normalized)) return "safe";
   }
-  for (const re of MUTATING_BASH_PATTERNS) {
-    if (re.test(normalized)) return "mutating";
-  }
-  return "ambiguous";
+  return "mutating";
 }
 
-// Some tool calls operate on a path argument (Edit/Write/NotebookEdit's
-// `file_path`, certain Bash commands). When the path is fully outside the
-// active plan's worktree directory and outside the plan-state directory, the
-// matrix downgrades a block to a warn — the user is allowed to do unrelated
-// work in the repo while a plan waits for review, but the runner still notes
-// the active plan in case they forgot.
+// Path containment helper. Returns true when `p` lies inside any of `dirs`.
+// Relative paths are treated as ambiguous (inside) on the strict side.
 function isPathInsideAny(p, dirs) {
   if (typeof p !== "string" || !p) return false;
   const abs = path.isAbsolute(p) ? p : null;
@@ -196,19 +167,46 @@ function isPathInsideAny(p, dirs) {
   return false;
 }
 
-// Does this tool input target a path that lies within the active plan's
-// worktree or plan-state directory? Used to scope the warn vs block downgrade.
+// True when the tool call's *target* lies inside the active plan's worktree.
+// This is the predicate that distinguishes "the dispatched sub-agent is
+// editing its files" from "the main session is poking at the worktree":
+//
+//   - For Edit / Write / NotebookEdit, the target is `file_path`.
+//   - For Bash, the target is `cwd`. The plan-dispatch.md prompt instructs
+//     the agent to `cd` into `{{worktree_path}}` before its first command,
+//     so its commits / file mutations land here while main session calls
+//     (run from repo root per runner SKILL.md Core rule 7) do not.
+//
+// Returns false for tools where the convention doesn't apply.
+function toolOriginatesInsideWorktree(toolName, toolInput, worktreePath) {
+  if (typeof worktreePath !== "string" || !worktreePath) return false;
+  if (MUTATING_FILE_TOOLS.has(toolName)) {
+    const fp = toolInput?.file_path ?? toolInput?.path ?? toolInput?.notebook_path;
+    return isPathInsideAny(fp, [worktreePath]);
+  }
+  if (toolName === "Bash") {
+    const cwd = toolInput?.cwd;
+    if (typeof cwd === "string" && isPathInsideAny(cwd, [worktreePath])) {
+      return true;
+    }
+    return false;
+  }
+  return false;
+}
+
+// True when the tool call's target lies inside the plan's worktree OR plan
+// state directory. Used to decide whether an "outside" call should be
+// downgraded from block to warn (the user is allowed to do unrelated work
+// in the repo while a plan waits for review).
 function toolTargetsPlanArea(toolName, toolInput, planAreas) {
-  if (!planAreas?.length) return true; // unknown areas → assume yes (strict).
+  if (!planAreas?.length) return true; // unknown areas → strict.
   if (MUTATING_FILE_TOOLS.has(toolName)) {
     const fp = toolInput?.file_path ?? toolInput?.path ?? toolInput?.notebook_path;
     return isPathInsideAny(fp, planAreas);
   }
   if (toolName === "Bash") {
     const cwd = toolInput?.cwd;
-    // If cwd is set and lies inside the plan area, treat as targeting it.
     if (typeof cwd === "string" && isPathInsideAny(cwd, planAreas)) return true;
-    // Otherwise scan the command for any absolute path within the plan area.
     const cmd = typeof toolInput?.command === "string" ? toolInput.command : "";
     for (const dir of planAreas) {
       if (!dir) continue;
@@ -216,32 +214,21 @@ function toolTargetsPlanArea(toolName, toolInput, planAreas) {
     }
     return false;
   }
-  // Conservative default for unknown tools.
-  return true;
+  return true; // unknown tools: strict.
 }
 
 // Plugin-namespacing-aware equality for agent names.
 //
 // Claude Code routes plugin-shipped subagents through a `<plugin>:<agent>`
 // identifier (e.g. `try-claude-code:frontend-developer`), but plan authors
-// may write `owner_agent` either way — bare (`frontend-developer`) or fully
-// qualified. Strict `===` therefore splits the same logical agent into two
-// non-matching strings and trips the runner gate.
+// may write `owner_agent` either way — bare or fully qualified. Strict
+// `===` would split the same logical agent into two non-matching strings.
 //
 // Rules:
 //   - identical strings always match.
-//   - one side bare + one side namespaced  → match when the namespaced side
-//     ends with `:<bare>`. The bare form encodes "any plugin shipping an
-//     agent of this name", which mirrors how `agents/<name>.md` lookups
-//     resolve on disk (one file per plugin, name is the unique key inside
-//     a plugin).
-//   - both sides namespaced                → strict equality. Two plugins
-//     can ship agents with the same short name; only the prefix
-//     disambiguates them, so we refuse cross-plugin matches.
-//
-// Exported so `pre-tool-use-hook.mjs:maybeAutoArm` uses the same predicate.
-// Drift between the two callers would let a dispatch pass the BLOCK gate
-// without arming the stop-review phase, leaving the plan stuck at `preparing`.
+//   - one side bare + one side namespaced → match when the namespaced side
+//     ends with `:<bare>`.
+//   - both sides namespaced → strict equality (refuse cross-plugin matches).
 export function agentNamesMatch(a, b) {
   if (typeof a !== "string" || typeof b !== "string") return false;
   if (a === b) return true;
@@ -253,116 +240,38 @@ export function agentNamesMatch(a, b) {
   return false;
 }
 
-// Does this Agent / Task dispatch correspond to the active plan's owner_agent
-// and worktree? When yes, the call is part of the runner pipeline and is
-// allowed (subject to status). When no, it's an unrelated Agent call the user
-// or skill made for some other reason — the matrix lets it through.
+// Does this Agent / Task dispatch correspond to the active plan's owner_agent?
 function dispatchMatchesPlan(toolInput, state) {
   if (!state) return false;
   const subagent = toolInput?.subagent_type;
   if (typeof subagent !== "string") return false;
-  // owner_agent is the plan-agent for the main dispatch; rework agents are
-  // selected per-item by the reviewer and may differ. We cannot know the
-  // rework choice from policy alone, so we accept any subagent_type when
-  // dev_review.phase === "rework" and rely on the prose to pick correctly.
   return agentNamesMatch(subagent, state.owner_agent);
 }
 
 // A background Agent dispatch (`run_in_background: true`) returns
 // immediately from the tool call while the agent keeps working asynchronously.
 // The runner skill's Stop-hook contract relies on the foreground default —
-// the dispatch call blocks until the agent finishes, the model writes one
-// closing line, the turn ends, and the Stop hook reviews the agent's commits.
-// When the dispatch is backgrounded the call returns instantly, the model
-// often ends the turn before any commits exist, and the Stop hook ran (pre-
-// fix) on a base-branch commit it mistook for plan work. We now block
-// background dispatches in policy so the contract gap cannot be hit even
-// when the model would otherwise pick that flag.
+// the dispatch call blocks until the agent finishes, so commits are in place
+// when the Stop hook reviews them. Background dispatches risk reviewing
+// zero-commit ranges as if they were plan output.
 function isBackgroundDispatch(toolInput) {
   return toolInput?.run_in_background === true;
 }
 
-// Per-status disposition for each tool family. `allow`, `warn`, `block` are
-// the three terminal verdicts; functions defer the choice to runtime context
-// (e.g. classifying the Bash command, checking dispatch identity, the
-// dev-review sub-state phase).
-//
-// Phase 4 reshape: only 5 rows now. Sub-states (rework vs Q&A inside Step 4,
-// armed vs blocked inside Step 3) are checked through the `state.*.phase`
-// fields inside the agent-dispatch resolver functions, not via separate
-// rows. See state.dev_review.phase / state.stop_review.phase.
-const MATRIX = {
-  preparing: {
-    // Step 1-2: worktree setup. The main session legitimately runs
-    // `git worktree add` here to create the plan's worktree directory, and
-    // `git worktree remove --force` to wipe a stale one before recreating.
-    // `isWorktreeBootstrapCommand` narrows the ALLOW to commands that
-    // touch `state.worktree_path`; every other mutation waits for the
-    // plan-agent dispatch. The PreToolUse hook also auto-arms the gate
-    // when it sees a matching Agent dispatch from this row.
-    bashSafe: VERDICT.ALLOW,
-    bashMutating: ({ toolInput, state }) =>
-      isWorktreeBootstrapCommand(toolInput?.command, state)
-        ? VERDICT.ALLOW
-        : VERDICT.BLOCK,
-    fileMutating: VERDICT.BLOCK,
-    agentDispatch: ({ matchesPlan, toolInput }) => {
-      if (!matchesPlan) return VERDICT.BLOCK;
-      if (isBackgroundDispatch(toolInput)) return VERDICT.BLOCK;
-      return VERDICT.ALLOW;
-    },
-  },
-  dispatching: {
-    // Step 3: stop-review gate active. `stop_review.phase` may be "armed"
-    // (initial fire) or "blocked" (BLOCK feedback received, awaiting
-    // re-dispatch). Both legitimately accept the same plan-agent dispatch.
-    bashSafe: VERDICT.ALLOW,
-    bashMutating: VERDICT.BLOCK,
-    fileMutating: VERDICT.BLOCK,
-    agentDispatch: ({ matchesPlan, toolInput }) => {
-      if (!matchesPlan) return VERDICT.BLOCK;
-      if (isBackgroundDispatch(toolInput)) return VERDICT.BLOCK;
-      return VERDICT.ALLOW;
-    },
-  },
-  dev_reviewing: {
-    // Step 4. Sub-state branches:
-    //   phase "rework"   → reviewer-chosen rework agent allowed (but still
-    //                      foreground-only — rework commits feed the next
-    //                      dev-review round and the skill must wait for
-    //                      completion to call `rework-done`).
-    //   phase "awaiting" → reviewer reading; no dispatches until reply.
-    //   phase "qa"       → main session answers in chat; no dispatches.
-    bashSafe: VERDICT.ALLOW,
-    bashMutating: VERDICT.BLOCK,
-    fileMutating: VERDICT.BLOCK,
-    agentDispatch: ({ state, toolInput }) => {
-      if (state.dev_review?.phase !== "rework") return VERDICT.BLOCK;
-      if (isBackgroundDispatch(toolInput)) return VERDICT.BLOCK;
-      return VERDICT.ALLOW;
-    },
-  },
-  closing: {
-    // Step 5: dev-review approved. Main session runs git merge / branch -d /
-    // worktree remove. Mutating Bash is *expected* here; Edit/Write on the
-    // worktree is unusual but not illegal — downgrade to warn.
-    bashSafe: VERDICT.ALLOW,
-    bashMutating: VERDICT.ALLOW,
-    fileMutating: VERDICT.WARN,
-    agentDispatch: VERDICT.WARN,
-  },
-};
+// True when the Edit/Write target is the plan-state JSON itself. Plan-state
+// edits must go through runner-state-cli.mjs — direct Edit / Write would
+// bypass schema validation and the transition table. Independent of status
+// because the same rule applies whenever a plan is active.
+function isPlanStateEdit(toolName, toolInput) {
+  if (!MUTATING_FILE_TOOLS.has(toolName)) return false;
+  const fp = toolInput?.file_path ?? toolInput?.path ?? toolInput?.notebook_path;
+  return typeof fp === "string" && fp.endsWith(".runner-state.json");
+}
 
-// Build a Korean reason string. Kept inline so test diffs are readable; the
-// runner audience reads Korean and the format roughly mirrors the
-// UserPromptSubmit hook's existing block reasons.
-//
-// The `[runner 정책 ... · 에러 아님]` prefix exists because Claude Code surfaces
-// PreToolUse `decision: "block"` responses with a red "Error:" label in the
-// UI. The block itself is an intended safety guardrail (one-session-one-plan),
-// not a failure — the prefix tells the reader that up front before they parse
-// the message body. WARN uses a softer label since nothing was actually
-// blocked in that case.
+// Build a Korean reason string. The `[runner 정책 ... · 에러 아님]` prefix
+// exists because Claude Code surfaces PreToolUse `decision: "block"` with a
+// red "Error:" label — the prefix tells the reader the block is an intended
+// safety guardrail, not a failure.
 function reasonFor({ verdict, status, planSlug, statePath, hint }) {
   const label = verdict === VERDICT.WARN ? "정책 알림 · 에러 아님" : "정책 차단 · 에러 아님";
   const head = `[runner ${label}] 활성 plan(${planSlug}, status="${status}") 보호 중입니다.`;
@@ -374,16 +283,182 @@ function reasonFor({ verdict, status, planSlug, statePath, hint }) {
   return `${head}\n${body}\n${tail}`;
 }
 
-// Resolve a matrix cell to a final verdict, calling the function form if any.
-function resolveCell(cell, ctx) {
-  if (typeof cell === "function") return cell(ctx);
-  return cell;
+// Decide a file-mutating tool call (Edit / Write / NotebookEdit). The same
+// shape covers preparing / dispatching / dev_reviewing / closing; only the
+// "originates inside worktree" downgrade fires in agent-active phases.
+function decideFileMutating({ state, toolName, toolInput, planAreas }) {
+  // Plan-state JSON is always BLOCK regardless of status — must go through CLI.
+  if (isPlanStateEdit(toolName, toolInput)) {
+    return {
+      verdict: VERDICT.BLOCK,
+      hint:
+        `plan-state JSON 직접 편집은 차단됩니다. ` +
+        `상태 전이는 runner-state-cli.mjs 서브커맨드를 통해서만 수행하세요.`,
+    };
+  }
+
+  const insideWorktree = toolOriginatesInsideWorktree(
+    toolName,
+    toolInput,
+    state.worktree_path,
+  );
+  const insidePlanArea = toolTargetsPlanArea(toolName, toolInput, planAreas);
+
+  // closing: dev-review approved; worktree is being removed. Worktree edits
+  // are unusual but not illegal — downgrade everything to warn.
+  if (state.status === STATUS.CLOSING) {
+    return { verdict: VERDICT.WARN };
+  }
+
+  // Agent-active phases: dispatching, dev_reviewing/rework. Inside-worktree
+  // edits are the agent's work — ALLOW. Outside-plan-area edits warn.
+  // Inside-plan-area-but-not-worktree (e.g. plan dir notes) still block.
+  const agentActive =
+    state.status === STATUS.DISPATCHING ||
+    (state.status === STATUS.DEV_REVIEWING &&
+      state.dev_review?.phase === DEV_REVIEW_PHASE.REWORK);
+
+  if (agentActive && insideWorktree) {
+    return { verdict: VERDICT.ALLOW };
+  }
+
+  // Reviewer-protection phases (dev_reviewing/awaiting, dev_reviewing/qa) and
+  // preparing: worktree edits BLOCK so the reviewer's diff doesn't drift.
+  // Outside-plan-area edits downgrade to warn.
+  if (!insidePlanArea) {
+    return {
+      verdict: VERDICT.WARN,
+      hint:
+        `활성 plan이 진행 중이지만 이 편집은 worktree와 plan 디렉터리 밖이라 ` +
+        `차단하지 않습니다. plan과 무관한 작업을 같은 세션에서 하는 경우 ` +
+        `리뷰 중 컨텍스트가 섞일 수 있으니 주의하세요.`,
+    };
+  }
+  return {
+    verdict: VERDICT.BLOCK,
+    hint:
+      `메인 세션은 ${state.status}${state.dev_review?.phase ? `/${state.dev_review.phase}` : ""} ` +
+      `상태에서 worktree 또는 plan 디렉터리를 직접 수정할 수 없습니다. ` +
+      `해당 작업은 dispatch된 agent가 담당합니다.`,
+  };
+}
+
+// Decide a Bash call. Safe commands ALLOW always; mutating depends on
+// status and whether the call originates inside the worktree.
+function decideBash({ state, toolInput }) {
+  const command = toolInput?.command ?? "";
+  const klass = classifyBashCommand(command);
+  if (klass === "safe") {
+    return { verdict: VERDICT.ALLOW };
+  }
+
+  const insideWorktree = toolOriginatesInsideWorktree(
+    "Bash",
+    toolInput,
+    state.worktree_path,
+  );
+
+  if (state.status === STATUS.CLOSING) {
+    // Step 5: git merge / branch -d / worktree remove are expected.
+    return { verdict: VERDICT.ALLOW };
+  }
+
+  if (state.status === STATUS.PREPARING) {
+    // Step 2 carve-out: worktree bootstrap commands ALLOW.
+    if (isWorktreeBootstrapCommand(command, state)) {
+      return { verdict: VERDICT.ALLOW };
+    }
+    return {
+      verdict: VERDICT.BLOCK,
+      hint:
+        `preparing 단계에서는 \`git worktree add\` / \`git worktree remove --force\` 외의 ` +
+        `mutating Bash가 차단됩니다 (\`${command.slice(0, 80)}\`).`,
+    };
+  }
+
+  // dispatching, dev_reviewing
+  const agentActive =
+    state.status === STATUS.DISPATCHING ||
+    (state.status === STATUS.DEV_REVIEWING &&
+      state.dev_review?.phase === DEV_REVIEW_PHASE.REWORK);
+
+  if (agentActive && insideWorktree) {
+    return { verdict: VERDICT.ALLOW };
+  }
+
+  return {
+    verdict: VERDICT.BLOCK,
+    hint:
+      `Bash 명령이 worktree 또는 git 상태를 변경할 수 있습니다 ` +
+      `(\`${command.slice(0, 80)}\`). 현재 상태(${state.status}` +
+      `${state.dev_review?.phase ? `/${state.dev_review.phase}` : ""})에서는 ` +
+      `메인 세션의 mutating Bash가 차단됩니다.`,
+  };
+}
+
+// Decide an Agent / Task dispatch.
+function decideAgentDispatch({ state, toolInput }) {
+  const status = state.status;
+
+  if (status === STATUS.CLOSING) {
+    return {
+      verdict: VERDICT.WARN,
+      hint:
+        `closing 단계에서 Agent dispatch는 비정상적입니다. plan은 이미 승인되어 ` +
+        `정리 중이므로 새 dispatch가 필요하면 plan을 다시 만드는 게 맞습니다.`,
+    };
+  }
+
+  // dev_reviewing — only phase="rework" permits dispatch; subagent_type is
+  // reviewer-chosen so we don't enforce owner_agent match here.
+  if (status === STATUS.DEV_REVIEWING) {
+    const phase = state.dev_review?.phase ?? null;
+    if (phase !== DEV_REVIEW_PHASE.REWORK) {
+      return {
+        verdict: VERDICT.BLOCK,
+        hint:
+          `dev-review 단계 (phase="${phase}")에서는 Agent dispatch를 차단합니다. ` +
+          `rework가 필요하면 begin-rework CLI를 먼저 호출해 phase를 "rework"로 옮기세요.`,
+      };
+    }
+    if (isBackgroundDispatch(toolInput)) {
+      return {
+        verdict: VERDICT.BLOCK,
+        hint:
+          `rework dispatch를 백그라운드(run_in_background: true)로 호출하면 ` +
+          `tool 호출이 즉시 리턴되어 메인 세션이 commit 없이 턴을 끝낼 위험이 있습니다. ` +
+          `포그라운드(기본값)로 dispatch해서 호출이 agent 완료까지 block되게 하세요.`,
+      };
+    }
+    return { verdict: VERDICT.ALLOW };
+  }
+
+  // preparing, dispatching — must match owner_agent and be foreground.
+  if (!dispatchMatchesPlan(toolInput, state)) {
+    return {
+      verdict: VERDICT.BLOCK,
+      hint:
+        `Agent 호출이 활성 plan의 owner_agent(${state.owner_agent})와 일치하지 않습니다. ` +
+        `현재 status에서는 plan dispatch 외 Agent 호출을 차단합니다.`,
+    };
+  }
+  if (isBackgroundDispatch(toolInput)) {
+    return {
+      verdict: VERDICT.BLOCK,
+      hint:
+        `plan-agent를 백그라운드(run_in_background: true)로 dispatch하면 Agent 호출이 ` +
+        `즉시 리턴되어 메인 세션이 commit 없이 턴을 끝낼 수 있습니다. 그 상태에서 Stop hook이 ` +
+        `발화하면 base 브랜치의 마지막 commit을 plan 작업으로 오인할 수 있어 매우 위험합니다. ` +
+        `포그라운드(기본값)로 dispatch해서 호출이 agent 완료까지 block되게 하세요.`,
+    };
+  }
+  return { verdict: VERDICT.ALLOW };
 }
 
 // Main entry. `state` is the active plan-state (already filtered to the one
 // non-terminal pointer for this session) or null. `toolName` and `toolInput`
 // come straight from the PreToolUse payload. `planAreas` is a list of
-// absolute directories the matrix considers "plan-owned" — typically the
+// absolute directories the rule considers "plan-owned" — typically the
 // worktree path and the plans/{plan_key}/ directory.
 //
 // Returns { decision: VERDICT.*, reason: string|null }.
@@ -391,86 +466,30 @@ export function evaluate({ state, toolName, toolInput, planAreas }) {
   if (!state || TERMINAL_STATUSES.has(state.status)) {
     return { decision: VERDICT.ALLOW, reason: null };
   }
-  const row = MATRIX[state.status];
-  if (!row) {
-    // Unknown status — fail open. A stricter posture would block, but blocking
-    // every tool call when a future status is added is worse than letting it
-    // through; adding the status to MATRIX surfaces in tests.
-    return { decision: VERDICT.ALLOW, reason: null };
-  }
 
-  const ctx = {
-    state,
-    toolInput,
-    matchesPlan: false,
-  };
-
-  let cell;
-  let hint;
-
+  let result;
   if (toolName === "Bash") {
-    const klass = classifyBashCommand(toolInput?.command);
-    if (klass === "safe") {
-      cell = row.bashSafe;
-    } else {
-      cell = row.bashMutating;
-      hint =
-        `Bash 명령이 worktree 또는 git 상태를 변경할 수 있습니다 ` +
-        `(\`${(toolInput?.command ?? "").slice(0, 80)}\`). ` +
-        `runner skill 단계가 아직 이 단계에 오지 않았습니다.`;
-    }
+    result = decideBash({ state, toolInput });
   } else if (MUTATING_FILE_TOOLS.has(toolName)) {
-    cell = row.fileMutating;
-    if (!toolTargetsPlanArea(toolName, toolInput, planAreas)) {
-      // Outside the plan area — downgrade block to warn.
-      if (cell === VERDICT.BLOCK) cell = VERDICT.WARN;
-    }
-    hint =
-      `메인 세션은 ${state.status} 상태에서 worktree를 직접 수정할 수 없습니다. ` +
-      `해당 작업은 dispatch된 agent가 담당합니다.`;
+    result = decideFileMutating({ state, toolName, toolInput, planAreas });
   } else if (toolName === "Task" || toolName === "Agent") {
-    ctx.matchesPlan = dispatchMatchesPlan(toolInput, state);
-    cell = row.agentDispatch;
-    if (state.status === "dev_reviewing") {
-      const phase = state.dev_review?.phase ?? null;
-      if (phase !== "rework") {
-        hint =
-          `dev-review 단계 (phase="${phase}")에서는 Agent dispatch를 차단합니다. ` +
-          `rework가 필요하면 begin-rework CLI를 먼저 호출해 phase를 "rework"로 옮기세요.`;
-      } else if (isBackgroundDispatch(toolInput)) {
-        hint =
-          `rework dispatch를 백그라운드(run_in_background: true)로 호출하면 ` +
-          `tool 호출이 즉시 리턴되어 메인 세션이 commit 없이 턴을 끝낼 위험이 있습니다. ` +
-          `포그라운드(기본값)로 dispatch해서 호출이 agent 완료까지 block되게 하세요.`;
-      }
-    } else if (!ctx.matchesPlan) {
-      hint =
-        `Agent 호출이 활성 plan의 owner_agent(${state.owner_agent})와 일치하지 않습니다. ` +
-        `현재 status에서는 plan dispatch 외 Agent 호출을 차단합니다.`;
-    } else if (isBackgroundDispatch(toolInput)) {
-      hint =
-        `plan-agent를 백그라운드(run_in_background: true)로 dispatch하면 Agent 호출이 ` +
-        `즉시 리턴되어 메인 세션이 commit 없이 턴을 끝낼 수 있습니다. 그 상태에서 Stop hook이 ` +
-        `발화하면 base 브랜치의 마지막 commit을 plan 작업으로 오인할 수 있어 매우 위험합니다. ` +
-        `포그라운드(기본값)로 dispatch해서 호출이 agent 완료까지 block되게 하세요.`;
-    }
+    result = decideAgentDispatch({ state, toolInput });
   } else {
     // Tools we don't gate (Read, Glob, Grep, AskUserQuestion, etc.).
     return { decision: VERDICT.ALLOW, reason: null };
   }
 
-  const verdict = resolveCell(cell, ctx);
-  if (verdict === VERDICT.ALLOW) {
+  if (result.verdict === VERDICT.ALLOW) {
     return { decision: VERDICT.ALLOW, reason: null };
   }
   return {
-    decision: verdict,
+    decision: result.verdict,
     reason: reasonFor({
-      verdict,
+      verdict: result.verdict,
       status: state.status,
       planSlug: state.plan_slug,
       statePath: state.__statePath ?? "(state path unknown)",
-      hint,
+      hint: result.hint,
     }),
   };
 }

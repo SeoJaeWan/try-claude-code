@@ -52,15 +52,23 @@ This SKILL.md is prose Claude reads each turn — the runner has no
 - The Stop hook decides ALLOW / BLOCK / TIMEOUT and writes the verdict
   back through the same library. It cannot know whether *this skill*
   obeyed the prose between turns.
-- The **PreToolUse hook** intercepts every tool call from the main
-  session and consults `lib/pre-tool-use-policy.mjs`. While a plan is
-  mid-flight it blocks tool calls that don't match the current status —
-  e.g. `Edit`/`Write` on the worktree during `dev_reviewing`,
-  mutating Bash before Step 5, or an `Agent` dispatch whose
-  `subagent_type` doesn't match `state.owner_agent`. If you see a
-  `decision: "block"` payload starting with `[runner] 활성 plan`, the
-  reason names the offending status and the recovery path — read it
-  instead of retrying the same call.
+- The **PreToolUse hook** intercepts every tool call and consults
+  `lib/pre-tool-use-policy.mjs`. While a plan is mid-flight it applies
+  a target-location rule: tool calls whose `cwd` (Bash) or `file_path`
+  (Edit/Write) lie inside the active worktree are treated as the
+  dispatched agent's work and ALLOWed during agent-active phases
+  (`dispatching`, `dev_reviewing/rework`). Calls from outside the
+  worktree that try to mutate it, or any worktree edit during
+  `dev_reviewing/awaiting`/`qa` (reviewer drift protection), are
+  BLOCKed. Agent dispatches must match `state.owner_agent` and be
+  foreground. If you see a `decision: "block"` payload starting with
+  `[runner] 활성 plan`, the reason names the offending status and the
+  recovery path — read it instead of retrying the same call.
+
+  **The hook does not mutate plan-state.** All status transitions go
+  through `runner-state-cli.mjs` (arm-for-dispatch, begin-rework,
+  mark-approved, ...). Every transition is a Bash call this skill
+  makes explicitly — you can read the turn log and see the sequence.
 
 To keep the gap small, every status transition in this skill goes through
 **one CLI**:
@@ -79,7 +87,7 @@ calls each, is:
 
 | Subcommand | Called from | Effect |
 |---|---|---|
-| `arm-for-dispatch` | _(deprecated in prose — PreToolUse auto-arms when it sees the plan-agent dispatch; kept for manual recovery)_ | `preparing → dispatching` + `stop_review.phase = "armed"` (or re-arm from `phase = "blocked"`) |
+| `arm-for-dispatch` | Step 3 (before the plan-agent `Agent(...)` call) and Step 3 re-entry (before re-dispatch after BLOCK) | `preparing → dispatching` + `stop_review.phase = "armed"` (or re-arm from `phase = "blocked"`) |
 | `begin-rework` | Step 4 (rework) | phase mutation: `dev_review.phase: awaiting → rework`, bump round, record feedback path. **Status stays `dev_reviewing`.** |
 | `rework-done` | Step 4 (after rework dispatches commit) | phase mutation: `dev_review.phase: rework → awaiting` |
 | `mark-qa-pending` | Step 4 (Q&A round) | phase mutation: `dev_review.phase: awaiting → qa` |
@@ -146,7 +154,7 @@ also calls out a sub-state, read the named phase field to disambiguate.
 
 | status | sub-state to read | action |
 |---|---|---|
-| `preparing` | — | Step 2 hasn't completed. Check `[ -d <state.worktree_path> ]`; if missing, run Step 2. If present, fall straight to Step 3 (PreToolUse auto-arms on the dispatch). |
+| `preparing` | — | Step 2 hasn't completed. Check `[ -d <state.worktree_path> ]`; if missing, run Step 2. If present, fall straight to Step 3 (which calls `arm-for-dispatch` before dispatching the plan agent). |
 | `dispatching` | `state.stop_review.phase` | `phase = "armed"` → previous turn ended with the gate armed; end your turn so the Stop hook can fire. `phase = "blocked"` → Stop hook reported BLOCK; read `state.stop_review.block_history[last].reason_excerpt` and re-dispatch the plan agent — see **Step 3 (re-entry)**. `phase = "passed"` is transient (set right before the flip to `dev_reviewing`); you should not normally observe it. |
 | `dev_reviewing` | `state.dev_review.phase` | `phase = "awaiting"` → Stop-review passed; enter **Step 4 — Dev-review gate**. `phase = "rework"` → Reviewer left needs-change items; read `state.dev_review.last_feedback_path` and dispatch rework agents — see **Step 4 (rework)**. `phase = "qa"` → Reviewer asked questions; answer in chat, then `qa-resolved` and re-enter Step 4 with the same round. |
 | `closing` | — | Dev-review accepted the plan. Go to **Step 5 — Cleanup and ask user**. |
@@ -168,7 +176,11 @@ also calls out a sub-state, read the named phase field to disambiguate.
    and ask the user about merge.
 7. plan-runner runs from the repository root, never from inside `worktrees/**`.
 8. Multiple plans run in separate terminals as independent sessions. Sessions
-   do not coordinate; each plan goes through its own gates.
+   do not coordinate; each plan goes through its own gates. The
+   UserPromptSubmit hook enforces "one /runner per terminal" — if a
+   session already drives a non-terminal plan, a second `/runner` is
+   rejected. This keeps the Stop hook from having to multiplex BLOCK
+   feedback across plans (the first BLOCK would otherwise mask the rest).
 
 ## Branch model
 
@@ -218,10 +230,8 @@ base when the user invoked `/runner`, and the worktree must branch from that
 exact commit. Ask the user before doing anything destructive.
 
 Stale-worktree handling is driven by checking the worktree directory on
-disk yourself (`[ -d <state.worktree_path> ]` via Bash). All four cases
-live under `status: preparing` in v2 — the v1 distinction between
-`validating` and `dispatching` collapsed because both meant "Step 2 has
-not finished":
+disk yourself (`[ -d <state.worktree_path> ]` via Bash). All cases live
+under `status: preparing`:
 
 - **worktree missing** — fresh start. Run
   `git worktree add -b <task_branch> <worktree_path> <base_branch>`.
@@ -231,36 +241,34 @@ not finished":
   what is there using
   `git -C <worktree_path> log --oneline <base_branch>..<task_branch>`
   (cap at 20 lines), then ask whether to resume on top of the existing
-  work or wipe it and restart. The state stays at `preparing` until the
-  PreToolUse hook arms the gate on dispatch.
+  work or wipe it and restart. The state stays at `preparing` until
+  `arm-for-dispatch` is explicitly called in Step 3.
 
-After the worktree is in place, **stop here and proceed to Step 3**. The
-PreToolUse hook arms the gate atomically when it sees the plan-agent
-dispatch (transitioning `preparing → dispatching` + `phase = "armed"`),
-so Step 2 must not transition status itself.
+After the worktree is in place, **stop here and proceed to Step 3**. Step 2
+must not transition status itself — `arm-for-dispatch` in Step 3 is the
+single place that moves `preparing → dispatching`.
 
 ### Step 3. Dispatch the plan agent (single Agent call)
 
 Dispatch exactly one `Agent(...)` call. The agent reads the plan and
-commits phase by phase inside its single turn. The skill's only job in this
-step is to hand the agent the right working directory, plan path, and
-state path — the PreToolUse hook arms the gate as a side-effect of seeing
-the dispatch.
+commits phase by phase inside its single turn. The skill's job in this
+step is twofold:
 
-> **Auto-arm.** When the PreToolUse hook sees an `Agent` (or `Task`) call
-> whose `subagent_type` matches `state.owner_agent`, it arms the gate as
-> a side-effect:
->   - From `status: preparing` → walks to `dispatching` + `stop_review.phase = "armed"`.
->   - From `status: dispatching, stop_review.phase = "blocked"` → flips
->     phase back to `"armed"` for the re-dispatch.
->   - From `status: dispatching, phase = "armed"` → idempotent no-op.
->
-> The skill no longer calls `arm-for-dispatch` itself. If the hook blocks
-> the call, the status was not arm-able (e.g. you are at `dev_reviewing`
-> or `closing`) — read the block reason and investigate.
+1. **Arm the stop-review gate explicitly** — *before* the `Agent(...)`
+   call, run:
 
-Dispatch. The prompt body is **`references/prompts/plan-dispatch.md` —
-read it and substitute the placeholders before sending**:
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" \
+     arm-for-dispatch <state.state_path>
+   ```
+
+   This walks `preparing → dispatching` + `stop_review.phase = "armed"`
+   atomically. If you skip it, the Stop hook won't fire when the agent's
+   turn ends — the gate stays disarmed and the plan never reaches Step 4.
+
+2. **Dispatch the agent foreground.** The prompt body is
+   **`references/prompts/plan-dispatch.md` — read it and substitute the
+   placeholders before sending**:
 
 ```
 Agent(
@@ -315,10 +323,16 @@ Action:
    blindly redispatching — ask the user to intervene per the planner
    directive's choices. The Stop hook already attached the same note to the
    BLOCK reason.
-3. Otherwise, re-run Step 3's `Agent(...)` call directly. BLOCK leaves
-   `stop_review.armed = true` and the phase at `"blocked"`; the PreToolUse
-   hook flips phase back to `"armed"` and lets the dispatch through. The
-   new commits will trigger another stop-review on the next turn-end.
+3. Otherwise, re-arm the gate explicitly:
+
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" \
+     arm-for-dispatch <state.state_path>
+   ```
+
+   This flips `dispatching/blocked → dispatching/armed`. Then re-run Step 3's
+   `Agent(...)` call. The new commits will trigger another stop-review on
+   the next turn-end.
 
 ### Step 4. Developer review gate (browser)
 
