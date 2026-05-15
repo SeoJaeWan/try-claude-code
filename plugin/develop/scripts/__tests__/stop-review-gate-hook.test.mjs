@@ -248,6 +248,80 @@ describe("Stop hook BLOCK-stuck surface", () => {
     assert.equal(finalState.stop_review.last_reviewed_commit, null);
   });
 
+  // Regression for the cookbook silent-stall: the runner's UserPromptSubmit
+  // hook did not fire (plugin re-bind delay between turns), Claude manually
+  // bootstrapped with a placeholder session id, and so the real session's
+  // activePlanStates never got the pointer. Pre-fix, the Stop hook keyed off
+  // activePlanStates and returned silently with disk-armed state never seen.
+  // Post-fix, the hook globs plans/ and discovers the armed plan regardless
+  // of session.json contents.
+  it("finds armed plan via disk glob even when session.json has no pointer", () => {
+    const sessionId = `sess-disk-only-${++counter}`;
+    const { slug } = makeStuckPlan({ sessionId });
+
+    // Overwrite session.json so it is intentionally empty — same shape as
+    // the cookbook regression where addActivePlanState silently failed.
+    const sessionsDir = path.join(pluginDataDir, "sessions");
+    fs.writeFileSync(
+      path.join(sessionsDir, `${sessionId}.json`),
+      JSON.stringify({
+        sessionId,
+        createdAt: new Date().toISOString(),
+        cwd: projectRoot,
+        activePlanStates: [],
+        stopReviewThreadId: null,
+      }, null, 2),
+    );
+
+    const r = runHook({ sessionId });
+    assert.equal(r.status, 0, r.stderr);
+    const lines = r.stdout.split(/\r?\n/).filter(Boolean);
+    const messages = lines
+      .map((l) => { try { return JSON.parse(l); } catch { return null; } })
+      .filter(Boolean);
+    const sysMsg = messages.find((m) => m.systemMessage);
+    assert.ok(sysMsg, `expected systemMessage from disk discovery; got: ${r.stdout}`);
+    assert.match(sysMsg.systemMessage, new RegExp(slug));
+  });
+
+  // The session.json absence case is even harder than the empty-pointer
+  // case: SessionStart hook never fired (fresh plugin install, sandboxed
+  // workspace, etc.). Stop hook should still discover armed plans via the
+  // disk glob and proceed.
+  it("finds armed plan via disk glob even when session.json does not exist", () => {
+    const sessionId = `sess-no-json-${++counter}`;
+    const { slug } = makeStuckPlan({ sessionId });
+
+    // Delete the session.json that makeStuckPlan created for us.
+    const sessionFile = path.join(pluginDataDir, "sessions", `${sessionId}.json`);
+    try { fs.unlinkSync(sessionFile); } catch {}
+
+    const r = runHook({ sessionId });
+    assert.equal(r.status, 0, r.stderr);
+    const lines = r.stdout.split(/\r?\n/).filter(Boolean);
+    const messages = lines
+      .map((l) => { try { return JSON.parse(l); } catch { return null; } })
+      .filter(Boolean);
+    const sysMsg = messages.find((m) => m.systemMessage);
+    assert.ok(sysMsg, `expected systemMessage from disk discovery; got: ${r.stdout}`);
+    assert.match(sysMsg.systemMessage, new RegExp(slug));
+  });
+
+  // Multi-session isolation: a Stop hook firing in session A should not pick
+  // up session B's armed plan. state.session_id filters cross-session.
+  it("filters out armed plans owned by a different session_id", () => {
+    const sessionAId = `sess-A-${++counter}`;
+    const sessionBId = `sess-B-${++counter}`;
+    // Plan owned by session B.
+    makeStuckPlan({ sessionId: sessionBId });
+
+    // Run hook as session A (no plans owned).
+    const r = runHook({ sessionId: sessionAId });
+    assert.equal(r.status, 0, r.stderr);
+    // Should be silent — session B's plan is not session A's concern.
+    assert.equal(r.stdout.trim(), "", `expected silent; got: ${r.stdout}`);
+  });
+
   it("stays silent when the only armed plan is DISPATCHING+ARMED with nothing new", () => {
     // Same shape as above but stop_review.phase is ARMED — the canonical
     // "user sent a non-runner turn while armed" case. Hook should stay quiet.

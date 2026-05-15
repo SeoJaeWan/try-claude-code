@@ -143,7 +143,19 @@ function normalizePtr(p) {
 
 export function addActivePlanState(sessionId, statePath) {
   const session = loadSession(sessionId);
-  if (!session) return;
+  if (!session) {
+    // session.json is now an optional cache — the Stop hook reads armed
+    // plans directly from disk — but a failed registration here used to
+    // silently break activePlanStates pointer tracking. Log so a manual
+    // bootstrap with a placeholder session_id (or any other mismatch) is
+    // visible instead of producing a confusing diagnosis later.
+    process.stderr.write(
+      `[sessions] addActivePlanState: session "${sessionId}" not found; ` +
+      `pointer ${statePath} not registered. The plan-state file on disk is ` +
+      `still authoritative — Stop hook will discover it via plans/ glob.\n`,
+    );
+    return;
+  }
   const ptr = normalizePtr(statePath);
   if (!ptr) return;
   if (!session.activePlanStates.includes(ptr)) {

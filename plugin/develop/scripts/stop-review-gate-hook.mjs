@@ -9,16 +9,18 @@
 // plan-state.
 //
 // Data flow:
-//   sessions/{sid}.json          ← session-scoped (Codex thread reuse +
-//                                  pointers to plan-state files)
-//     stopReviewThreadId
-//     activePlanStates: [...]    ─┐
-//                                 │
-//   plans/{slug}/.runner-state.json   ← plan-scoped SSOT (read+write here)
-//     stop_review.armed
+//   plans/**/.runner-state.json  ← plan-scoped SSOT. Globbed from {repo}/plans
+//     stop_review.armed          ← `arm-for-dispatch` sets this
 //     stop_review.last_reviewed_commit
 //     stop_review.block_history
 //     status                     ← we move this on ALLOW / BLOCK
+//
+//   sessions/{sid}.json          ← optional session-scoped cache. Holds the
+//     stopReviewThreadId            Codex thread id so warm-thread review
+//                                   stays fast across turns. Plan pointers
+//                                   used to live here too but the Stop hook
+//                                   no longer reads them — disk SSOT is the
+//                                   only authoritative source.
 //
 // All Codex operational logic (thread reuse, broker recovery, error
 // diagnosis, confidence parsing, ENOENT→SKIPPED) lives in lib/codex.mjs#review.
@@ -35,9 +37,7 @@ import { review } from "./lib/codex.mjs";
 import { loadPromptTemplate, interpolateTemplate } from "./lib/prompts.mjs";
 import {
   getStopReviewThreadId,
-  listActivePlanStates,
   loadSessionStrict,
-  removeActivePlanState,
   setStopReviewThreadId,
 } from "./lib/sessions.mjs";
 import { resolveWorkspaceRoot } from "./lib/workspace.mjs";
@@ -85,26 +85,64 @@ function isValidCommit(wtPath, sha) {
 // Plan-state loading
 // ---------------------------------------------------------------------------
 
-function loadArmedPlanStates(sessionId) {
-  if (!sessionId) return [];
-  const ptrs = listActivePlanStates(sessionId);
+// Find every armed plan state on disk under {repo}/plans/. Disk is the ground
+// truth — `sessions/{sid}.json.activePlanStates` was previously used here but
+// is now a soft cache that the rest of the runner pipeline maintains for
+// fast-path UX. Reading session.json as the gate caused silent stalls when
+// any link in the hook chain broke (UserPromptSubmit not firing, plugin
+// updates between turns, manual bootstrap with a placeholder session id, ...).
+// Globbing plans/**/.runner-state.json takes well under 10ms even on repos
+// with hundreds of plans, and survives all the failure modes that broke
+// session.json. See docs/runner/enforcement.md "What the runner explicitly
+// does not do" for the design.
+function findArmedPlansOnDisk(cwd, sessionId) {
+  const repoRoot = resolveRepoRoot(cwd);
+  if (!repoRoot) return [];
+  const plansDir = path.join(repoRoot, "plans");
+  if (!fs.existsSync(plansDir)) return [];
+
   const armed = [];
-  for (const ptr of ptrs) {
-    const abs = path.isAbsolute(ptr) ? ptr : path.resolve(process.cwd(), ptr);
-    const state = tryLoadState(abs);
-    if (!state) {
-      removeActivePlanState(sessionId, ptr);
-      continue;
-    }
-    if (state.status === STATUS.MERGED) {
-      removeActivePlanState(sessionId, ptr);
-      continue;
-    }
-    if (state.stop_review?.armed) {
-      armed.push({ statePath: abs, state });
-    }
+  for (const file of walkRunnerStateFiles(plansDir)) {
+    const state = tryLoadState(file);
+    if (!state) continue;
+    if (state.status === STATUS.MERGED) continue;
+    if (!state.stop_review?.armed) continue;
+    // Multi-session isolation: when state.session_id is set, only the owning
+    // session's Stop hook reviews it. Plans authored before session_id was
+    // recorded (or via the manual-bootstrap path that uses a placeholder)
+    // fall through here unconditionally so the gate can still close them.
+    if (state.session_id && sessionId && state.session_id !== sessionId) continue;
+    armed.push({ statePath: file, state });
   }
   return armed;
+}
+
+function resolveRepoRoot(cwd) {
+  const result = spawnSync("git", ["-C", cwd, "rev-parse", "--show-toplevel"], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+  if (result.status !== 0) return null;
+  return result.stdout.trim() || null;
+}
+
+// Walk plans/ recursively yielding every `.runner-state.json` file. Plain
+// recursion avoids pulling in a glob dependency for one call site.
+function* walkRunnerStateFiles(dir) {
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      yield* walkRunnerStateFiles(full);
+    } else if (entry.isFile() && entry.name === ".runner-state.json") {
+      yield full;
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -245,9 +283,12 @@ function emitReviewLog({ outcome, branch, headSha, reason }) {
 async function main() {
   const { cwd, sessionId } = readHookInput({ tag: "stop-gate" });
 
+  // session.json corruption is still a hard stop — a corrupt file likely
+  // indicates a half-written save and we should not silently overwrite it
+  // (the user needs to inspect or delete). Missing is fine now: disk SSOT
+  // (plans/**/.runner-state.json) is what we actually read.
   if (sessionId) {
     const probe = loadSessionStrict(sessionId);
-    if (probe.status === "missing") return;
     if (probe.status === "corrupt") {
       emitDecision({
         decision: "block",
@@ -261,7 +302,7 @@ async function main() {
     }
   }
 
-  const armed = loadArmedPlanStates(sessionId);
+  const armed = findArmedPlansOnDisk(cwd, sessionId);
   if (armed.length === 0) return;
 
   const reviewItems = [];
