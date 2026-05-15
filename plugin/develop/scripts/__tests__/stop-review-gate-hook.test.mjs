@@ -354,9 +354,8 @@ describe("Stop hook BLOCK-stuck surface", () => {
       path.join(sessionsDir, `${sessionId}.json`),
       JSON.stringify({
         sessionId,
-        createdAt: new Date().toISOString(),
         cwd: projectRoot,
-        activePlanStates: [statePath],
+        activePlan: statePath.replace(/\\/g, "/"),
         stopReviewThreadId: null,
       }, null, 2),
     );
@@ -364,5 +363,31 @@ describe("Stop hook BLOCK-stuck surface", () => {
     const r = runHook({ sessionId });
     assert.equal(r.status, 0, r.stderr);
     assert.equal(r.stdout.trim(), "", "expected silent return for non-blocked armed plan");
+  });
+
+  // Pins the early-exit behavior: when no armed plan exists on disk, the
+  // Stop hook does not consult session.json at all. A corrupt session file
+  // from an unrelated cause (manual edit, half-write) must not gate a
+  // runner-unrelated turn.
+  it("stays silent on a corrupt session.json when no armed plans exist", () => {
+    const sessionId = `sess-passthrough-${++counter}`;
+    // Write a corrupt session file (invalid JSON) under the plugin data dir.
+    const sessionsDir = path.join(pluginDataDir, "sessions");
+    fs.mkdirSync(sessionsDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(sessionsDir, `${sessionId}.json`),
+      "{ not valid json",
+      "utf8",
+    );
+    // No armed plans in plans/ — the hook should short-circuit and never
+    // touch the corrupt file.
+
+    const r = runHook({ sessionId });
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(
+      r.stdout.trim(),
+      "",
+      "expected silent return — no armed plan, corrupt session must not gate",
+    );
   });
 });

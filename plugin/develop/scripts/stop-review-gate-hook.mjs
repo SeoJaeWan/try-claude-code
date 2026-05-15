@@ -21,6 +21,10 @@
 //                                   used to live here too but the Stop hook
 //                                   no longer reads them — disk SSOT is the
 //                                   only authoritative source.
+//                                   The session file is only inspected when
+//                                   armed plans exist on disk —
+//                                   runner-unrelated turns short-circuit
+//                                   before touching it.
 //
 // All Codex operational logic (thread reuse, broker recovery, error
 // diagnosis, confidence parsing, ENOENT→SKIPPED) lives in lib/codex.mjs#review.
@@ -283,10 +287,19 @@ function emitReviewLog({ outcome, branch, headSha, reason }) {
 async function main() {
   const { cwd, sessionId } = readHookInput({ tag: "stop-gate" });
 
-  // session.json corruption is still a hard stop — a corrupt file likely
-  // indicates a half-written save and we should not silently overwrite it
-  // (the user needs to inspect or delete). Missing is fine now: disk SSOT
-  // (plans/**/.runner-state.json) is what we actually read.
+  // Short-circuit when there is nothing to gate. Disk SSOT
+  // (plans/**/.runner-state.json) is the authoritative trigger; if no plan
+  // is armed, the Stop hook has no business touching the session cache or
+  // spawning Codex. This keeps runner-unrelated turns silent even when the
+  // session.json file happens to be corrupt or missing.
+  const armed = findArmedPlansOnDisk(cwd, sessionId);
+  if (armed.length === 0) return;
+
+  // session.json corruption is still a hard stop, but only when we actually
+  // need to consult it — a corrupt file likely indicates a half-written save
+  // and we should not silently overwrite it (the user needs to inspect or
+  // delete). Missing is fine: getStopReviewThreadId returns null and Codex
+  // starts cold.
   if (sessionId) {
     const probe = loadSessionStrict(sessionId);
     if (probe.status === "corrupt") {
@@ -301,9 +314,6 @@ async function main() {
       return;
     }
   }
-
-  const armed = findArmedPlansOnDisk(cwd, sessionId);
-  if (armed.length === 0) return;
 
   const reviewItems = [];
   const skipped = [];
