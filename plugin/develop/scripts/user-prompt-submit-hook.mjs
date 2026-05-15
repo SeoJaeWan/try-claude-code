@@ -45,11 +45,13 @@ import {
 } from "./lib/runner-state.mjs";
 import { readHookInput } from "./lib/hook-input.mjs";
 
-// Matches both `/runner` (full skill) and `/mini` (slim variant — same hook
-// contract, same state file shape, just a smaller SKILL.md). Adding /mini here
-// lets the slim skill share the entire validation + state-bootstrap pipeline
-// without duplicating any of it.
-const RUNNER_TRIGGER_RE = /^\s*\/(?:runner|mini)(?:\s|$)/;
+// Hook intentionally fires for `/runner` only. The slim `/mini` variant is
+// excluded so we can isolate "does hook firing itself affect first-turn token
+// pressure?" — when /mini is invoked, no bootstrap context is emitted, no
+// state file is created, and Claude Code never executes any of this hook's
+// code path. The mini SKILL.md still expects a bootstrap header and will
+// halt politely if one is missing.
+const RUNNER_TRIGGER_RE = /^\s*\/runner(?:\s|$)/;
 
 function emitContext(context) {
   process.stdout.write(
