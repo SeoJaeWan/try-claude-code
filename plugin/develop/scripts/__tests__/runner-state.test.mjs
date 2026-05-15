@@ -12,11 +12,9 @@ import {
   TERMINAL_STATUSES,
   assertExpectedStatus,
   bumpDevReviewRound,
-  clearPlanBlockStreak,
   createInitialState,
   deriveStatePathFromPlanPath,
   deriveWorktreePathFromBranch,
-  fingerprintBlockReason,
   loadState,
   recordPlanBlock,
   saveState,
@@ -462,73 +460,19 @@ describe("recordPlanBlock", () => {
     });
   }
 
-  it("appends a new entry on first BLOCK", () => {
+  it("appends a new entry on each BLOCK", () => {
     const s = fresh();
-    const r = recordPlanBlock(s, "ESLint failure on login.tsx:42");
-    assert.equal(s.stop_review.block_history.length, 1);
-    assert.equal(s.stop_review.block_history[0].count, 1);
-    assert.equal(r.count, 1);
-    assert.ok(s.stop_review.block_history[0].reason_excerpt.includes("ESLint"));
-  });
-
-  it("coalesces consecutive identical reasons (intra-line whitespace)", () => {
-    const s = fresh();
-    recordPlanBlock(s, "BLOCK: same  reason  here");
-    const r = recordPlanBlock(s, "BLOCK:   same   reason   here");
-    assert.equal(s.stop_review.block_history.length, 1);
-    assert.equal(r.count, 2);
-  });
-
-  it("coalesces consecutive identical reasons (extra blank lines)", () => {
-    const s = fresh();
-    recordPlanBlock(s, "BLOCK: line1\n\nline2");
-    const r = recordPlanBlock(s, "BLOCK: line1\n\n\n\nline2");
-    assert.equal(s.stop_review.block_history.length, 1);
-    assert.equal(r.count, 2);
-  });
-
-  it("starts a new entry when the fingerprint changes", () => {
-    const s = fresh();
-    recordPlanBlock(s, "reason A");
-    recordPlanBlock(s, "reason B");
+    recordPlanBlock(s, "ESLint failure on login.tsx:42");
+    recordPlanBlock(s, "ESLint failure on login.tsx:42");
     assert.equal(s.stop_review.block_history.length, 2);
+    assert.ok(s.stop_review.block_history[0].reason_excerpt.includes("ESLint"));
+    assert.ok(s.stop_review.block_history[0].at);
   });
 
   it("caps history length at 10", () => {
     const s = fresh();
     for (let i = 0; i < 15; i++) recordPlanBlock(s, `reason ${i}`);
     assert.equal(s.stop_review.block_history.length, 10);
-  });
-});
-
-describe("clearPlanBlockStreak", () => {
-  it("inserts an __allow__ separator so the next BLOCK starts a fresh streak", () => {
-    const s = createInitialState({
-      planSlug: "x",
-      planPath: "/p/x.plan.md",
-      ownerAgent: "a",
-      baseBranch: "main",
-      taskBranch: "feat/x",
-      worktreePath: "/p/worktrees/feat-x",
-    });
-    recordPlanBlock(s, "reason A");
-    recordPlanBlock(s, "reason A");
-    clearPlanBlockStreak(s);
-    const r = recordPlanBlock(s, "reason A");
-    assert.equal(r.count, 1);
-  });
-
-  it("is a no-op when there is no history", () => {
-    const s = createInitialState({
-      planSlug: "x",
-      planPath: "/p/x.plan.md",
-      ownerAgent: "a",
-      baseBranch: "main",
-      taskBranch: "feat/x",
-      worktreePath: "/p/worktrees/feat-x",
-    });
-    clearPlanBlockStreak(s);
-    assert.deepEqual(s.stop_review.block_history, []);
   });
 });
 
@@ -634,27 +578,4 @@ describe("bumpDevReviewRound", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Fingerprint stability
-// ---------------------------------------------------------------------------
-
-describe("fingerprintBlockReason", () => {
-  it("ignores intra-line whitespace differences", () => {
-    const a = fingerprintBlockReason("BLOCK: x  y");
-    const b = fingerprintBlockReason("BLOCK:   x   y");
-    assert.equal(a, b);
-  });
-
-  it("ignores extra blank lines between paragraphs", () => {
-    const a = fingerprintBlockReason("para1\n\npara2");
-    const b = fingerprintBlockReason("para1\n\n\n\npara2");
-    assert.equal(a, b);
-  });
-
-  it("differentiates substantive content", () => {
-    const a = fingerprintBlockReason("BLOCK: x");
-    const b = fingerprintBlockReason("BLOCK: y");
-    assert.notEqual(a, b);
-  });
-});
 

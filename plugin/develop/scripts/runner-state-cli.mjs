@@ -74,7 +74,6 @@ import {
   STOP_REVIEW_PHASE,
   assertExpectedStatus,
   bumpDevReviewRound,
-  clearPlanBlockStreak,
   loadState,
   recordPlanBlock,
   saveState,
@@ -85,9 +84,6 @@ import {
   transitionStatus,
 } from "./lib/runner-state.mjs";
 
-// Same thresholds the in-process verdict library used. Kept inline here
-// because the CLI is now the single owner of verdict mutations.
-const SAME_BLOCK_ESCALATION_THRESHOLD = 3;
 
 const USAGE = `Usage:
   runner-state-cli arm-for-dispatch <state-path>
@@ -341,7 +337,6 @@ function cmdRecordStopReviewAllow(statePath, headSha) {
   const state = loadOrFail(statePath);
   const before = snapshot(state);
   setLastReviewedCommit(state, headSha, "ALLOW");
-  clearPlanBlockStreak(state);
   advanceToDevReview(state);
   saveState(statePath, state);
   logMutation("record-stop-review-allow", before, snapshot(state), statePath);
@@ -352,7 +347,6 @@ function cmdRecordStopReviewDowngrade(statePath, headSha) {
   const state = loadOrFail(statePath);
   const before = snapshot(state);
   setLastReviewedCommit(state, headSha, "ALLOW");
-  clearPlanBlockStreak(state);
   advanceToDevReview(state);
   saveState(statePath, state);
   logMutation("record-stop-review-downgrade", before, snapshot(state), statePath);
@@ -371,7 +365,7 @@ function cmdRecordStopReviewBlock(statePath, headSha, reasonFile) {
   const state = loadOrFail(statePath);
   const before = snapshot(state);
   setLastReviewedCommit(state, headSha, "BLOCK");
-  const { count } = recordPlanBlock(state, reason);
+  recordPlanBlock(state, reason);
   if (
     state.status === STATUS.DISPATCHING &&
     state.stop_review.phase !== STOP_REVIEW_PHASE.BLOCKED
@@ -381,22 +375,11 @@ function cmdRecordStopReviewBlock(statePath, headSha, reasonFile) {
   saveState(statePath, state);
   logMutation("record-stop-review-block", before, snapshot(state), statePath);
 
-  // stdout: planner directive (+ escalation note when applicable). The Stop
-  // hook concatenates this onto the user-visible BLOCK reason so the next
-  // turn can replay against the same state.
-  let out = buildPlannerBlockDirective(statePath);
-  if (count >= SAME_BLOCK_ESCALATION_THRESHOLD) {
-    out += "\n" + [
-      "",
-      "---",
-      `[escalation] 같은 이슈로 ${count}회 연속 BLOCK되었습니다. 자동 재디스패치만으로는 해결되지 않을 가능성이 큽니다.`,
-      "다음 중 하나를 선택하세요:",
-      "  1) 사용자(사람)가 직접 원인을 진단 — 코드/테스트/plan을 재검토",
-      "  2) 해당 phase의 기대 동작(plan 또는 phase 파일)을 수정",
-      "  3) 현재 worktree를 폐기하고 처음부터 다시 시작",
-    ].join("\n");
-  }
-  process.stdout.write(`${out}\n`);
+  // stdout: planner directive. The Stop hook concatenates this onto the
+  // user-visible BLOCK reason so the next turn can replay against the same
+  // state. No automatic escalation — the user sees every BLOCK reason and
+  // interrupts the loop themselves when retries clearly stop helping.
+  process.stdout.write(`${buildPlannerBlockDirective(statePath)}\n`);
 }
 
 // reset is the only subcommand that does not transition status. It runs

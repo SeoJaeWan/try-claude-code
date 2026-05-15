@@ -416,19 +416,6 @@ export function setLastReviewedCommit(state, headSha, result) {
   return state;
 }
 
-// Compute a stable fingerprint for a BLOCK reason so repeated identical BLOCKs
-// can be coalesced into a single block_history entry with a count. Mirrors the
-// previous behaviour of sessions.recordBlock so the escalation threshold (3
-// repeats triggers a human-intervention note) keeps working unchanged.
-export function fingerprintBlockReason(reason) {
-  const normalized = String(reason ?? "")
-    .replace(/\r?\n/g, "\n")
-    .replace(/[ \t]+/g, " ")
-    .replace(/\n{2,}/g, "\n\n")
-    .trim();
-  return crypto.createHash("sha256").update(normalized).digest("hex").slice(0, 16);
-}
-
 // Human-readable excerpt for the block_history entry. Pulled from the first
 // non-empty line of the reason, capped so block_history stays browsable when
 // the user opens the JSON. Hooks store this so a later glance at the file is
@@ -440,54 +427,19 @@ function excerptBlockReason(reason) {
   return firstLine.length > MAX ? `${firstLine.slice(0, MAX - 1)}…` : firstLine;
 }
 
-// Append (or coalesce) a BLOCK record on the plan-state. Returns
-// { fingerprint, count } so the caller can decide whether to escalate.
+// Append a BLOCK record on the plan-state. Each BLOCK is its own entry —
+// there is no longer a fingerprint/count coalescing step or a 3-strike
+// escalation downstream. The history is capped so the file does not grow
+// unbounded across long-running plans.
 export function recordPlanBlock(state, reason) {
-  const fingerprint = fingerprintBlockReason(reason);
   const excerpt = excerptBlockReason(reason);
   const history = state.stop_review.block_history;
-  const last = history[history.length - 1];
-  const now = nowIso();
-  if (last && last.fingerprint === fingerprint) {
-    last.count = (last.count || 1) + 1;
-    last.last_at = now;
-    if (excerpt) last.reason_excerpt = excerpt;
-  } else {
-    history.push({
-      fingerprint,
-      count: 1,
-      first_at: now,
-      last_at: now,
-      reason_excerpt: excerpt,
-    });
-  }
-  // Cap so the file does not grow unbounded across long-running plans.
+  history.push({
+    at: nowIso(),
+    reason_excerpt: excerpt,
+  });
   if (history.length > 10) {
     state.stop_review.block_history = history.slice(-10);
-  }
-  const tail = state.stop_review.block_history[state.stop_review.block_history.length - 1];
-  return { fingerprint: tail.fingerprint, count: tail.count };
-}
-
-// Called when the stop-gate returns ALLOW (or is skipped). Appends a synthetic
-// "__allow__" separator so the next consecutive BLOCK starts a fresh streak —
-// equivalent to the previous sessions.clearRecentBlockStreak behaviour.
-export function clearPlanBlockStreak(state) {
-  const history = state.stop_review.block_history;
-  if (!Array.isArray(history) || history.length === 0) return state;
-  const last = history[history.length - 1];
-  if (last && last.fingerprint !== "__allow__") {
-    const now = nowIso();
-    history.push({
-      fingerprint: "__allow__",
-      count: 1,
-      first_at: now,
-      last_at: now,
-      reason_excerpt: null,
-    });
-    if (history.length > 10) {
-      state.stop_review.block_history = history.slice(-10);
-    }
   }
   return state;
 }

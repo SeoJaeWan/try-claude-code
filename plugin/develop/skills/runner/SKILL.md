@@ -264,14 +264,9 @@ to consult.
 Action:
 
 1. Read the state file. The last entry of
-   `state.stop_review.block_history` carries the BLOCK count and a one-line
-   `reason_excerpt`; the full reason was in the previous turn's
-   `decision: block` payload.
-2. If that last entry's `count >= 3`, surface the escalation note instead of
-   blindly redispatching — ask the user to intervene per the planner
-   directive's choices. The Stop hook already attached the same note to the
-   BLOCK reason.
-3. Otherwise, re-arm the gate explicitly:
+   `state.stop_review.block_history` carries a one-line `reason_excerpt`;
+   the full reason was in the previous turn's `decision: block` payload.
+2. Re-arm the gate explicitly:
 
    ```bash
    node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" \
@@ -281,6 +276,9 @@ Action:
    This flips `dispatching/blocked → dispatching/armed`. Then re-run Step 3's
    `Agent(...)` call. The new commits will trigger another stop-review on
    the next turn-end.
+
+There is no automatic escalation. The user sees every BLOCK reason and
+interrupts the loop themselves when retries clearly stop helping.
 
 ### Step 4. Developer review gate (browser)
 
@@ -395,9 +393,9 @@ thinks is true, then pick the scenario:
   left off — the bootstrap reports the saved status and routing picks the
   right step.
 
-For deeper recovery (corrupted state JSON, BLOCK streak escalation,
-`--force-status` transitions, renamed plan file, re-running a `merged`
-plan), see [`references/plan-state-recovery.md`](references/plan-state-recovery.md).
+For deeper recovery (corrupted state JSON, `--force-status` transitions,
+renamed plan file, re-running a `merged` plan), see
+[`references/plan-state-recovery.md`](references/plan-state-recovery.md).
 
 ---
 

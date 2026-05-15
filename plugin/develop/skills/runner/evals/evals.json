@@ -23,14 +23,13 @@
     {
       "id": 2,
       "prompt": "/runner plans/login-frontend.plan.md 진입 후 stop-review가 BLOCK했어. status는 stop_review_blocked이고 last_block_excerpt도 컨텍스트에 있어. 어떻게 처리해?",
-      "expected_output": "BLOCK 사유 인지 후 plan 에이전트 재디스패치(직접 코드 수정 금지), block_count >= 3이면 사용자 escalation 안내",
+      "expected_output": "BLOCK 사유 인지 후 plan 에이전트 재디스패치(직접 코드 수정 금지). 자동 에스컬레이션은 없고 사용자가 매 BLOCK을 보고 직접 끊는다.",
       "files": ["../../../features/next-app/package.json"],
       "expectations": [
         "Recognizes status=stop_review_blocked from the bootstrap and reads the state JSON",
         "Does NOT attempt to fix the code directly in the main session",
         "Re-dispatches the same plan agent with the BLOCK reason as additional context",
-        "Skips re-arming because state.stop_review.armed already remains true after BLOCK",
-        "When last_block_count >= 3, surfaces the escalation note instead of redispatching blindly"
+        "Skips re-arming because state.stop_review.armed already remains true after BLOCK"
       ]
     },
     {

@@ -116,38 +116,22 @@ describe("record-stop-review-block", () => {
     assert.equal(after.stop_review.last_reviewed_commit, HEAD_SHA);
   });
 
-  it("emits escalation note after 3 consecutive same-fingerprint BLOCKs", () => {
+  it("appends a new block_history entry on each BLOCK (no coalescing)", () => {
     const statePath = makeStateAtArmed();
     const reasonFile = writeReason("BLOCK: same finding text repeated\n[conf 8] x");
-    let last;
     for (let i = 0; i < 3; i += 1) {
-      // Re-arm between BLOCKs so the CLI's invariants stay satisfied (the
-      // hook would spawn arm-for-dispatch between dispatches in production).
       const state = loadState(statePath);
       if (state.stop_review.phase === STOP_REVIEW_PHASE.BLOCKED) {
         setStopReviewPhase(state, STOP_REVIEW_PHASE.ARMED);
         setStopReviewArmed(state, true);
         saveState(statePath, state);
       }
-      last = runCli(["record-stop-review-block", statePath, HEAD_SHA, reasonFile]);
-      assert.equal(last.status, 0, last.stderr);
+      const r = runCli(["record-stop-review-block", statePath, HEAD_SHA, reasonFile]);
+      assert.equal(r.status, 0, r.stderr);
+      assert.doesNotMatch(r.stdout, /escalation|연속/);
     }
-    assert.match(last.stdout, /3회 연속 BLOCK/);
-  });
-
-  it("does not escalate when fingerprints differ", () => {
-    const statePath = makeStateAtArmed();
-    const reason1 = writeReason("BLOCK: first finding");
-    const reason2 = writeReason("BLOCK: completely different finding");
-    runCli(["record-stop-review-block", statePath, HEAD_SHA, reason1]);
-    // Re-arm before the second BLOCK.
-    const s2 = loadState(statePath);
-    setStopReviewPhase(s2, STOP_REVIEW_PHASE.ARMED);
-    setStopReviewArmed(s2, true);
-    saveState(statePath, s2);
-    const r = runCli(["record-stop-review-block", statePath, HEAD_SHA, reason2]);
-    assert.equal(r.status, 0, r.stderr);
-    assert.doesNotMatch(r.stdout, /연속 .*BLOCK/);
+    const after = loadState(statePath);
+    assert.equal(after.stop_review.block_history.length, 3);
   });
 
   it("rejects a missing reason file", () => {

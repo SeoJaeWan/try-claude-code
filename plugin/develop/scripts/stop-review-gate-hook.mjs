@@ -329,10 +329,8 @@ async function main() {
         const history = Array.isArray(state.stop_review?.block_history)
           ? state.stop_review.block_history
           : [];
-        const lastReal = [...history]
-          .reverse()
-          .find((h) => h && h.fingerprint !== "__allow__");
-        const excerpt = lastReal?.reason_excerpt ?? "(사유 기록 없음)";
+        const last = history[history.length - 1];
+        const excerpt = last?.reason_excerpt ?? "(사유 기록 없음)";
         return [
           `[stop-gate] BLOCK 상태 유지 — ${slug}@${branch}@${head}`,
           `  마지막 BLOCK 사유: ${excerpt}`,
@@ -341,8 +339,8 @@ async function main() {
       lines.push(
         "",
         "재디스패치가 새 commit을 만들지 못한 상태입니다. plan 에이전트를",
-        "다시 부르거나, 같은 사유가 3회 누적되었다면 사용자가 직접 개입해야",
-        "합니다. state는 STOP_REVIEW_BLOCKED 그대로 유지됩니다.",
+        "다시 부르거나, 사용자가 직접 개입해야 합니다. state는",
+        "STOP_REVIEW_BLOCKED 그대로 유지됩니다.",
       );
       emitDecision({ systemMessage: lines.join("\n") });
       return;

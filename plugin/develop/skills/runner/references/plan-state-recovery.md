@@ -27,7 +27,7 @@ state file that needs trimming.
 | `stop_review.phase` | `"armed" \| "blocked" \| "passed" \| null` | Stop hook + runner-state-cli | Sub-state of `dispatching`. Set via `setStopReviewPhase` library helper, not by hand. |
 | `stop_review.last_result` | `"ALLOW" \| "BLOCK" \| "skipped" \| null` | runner-state-cli `record-stop-review-*` | Log label only. Editing it does not change behaviour but makes block_history confusing. |
 | `stop_review.last_reviewed_commit` | sha or null | runner-state-cli `record-stop-review-*` | **No.** Stop hook uses this to decide "have I reviewed HEAD already?". Setting it wrong either replays a review or skips an unreviewed sha. |
-| `stop_review.block_history` | array | runner-state-cli `record-stop-review-block` | Use the jq snippet under "Reset BLOCK streak" below to clear an escalation streak. Do not splice manually — entries have a fingerprint that drives the 3-strike escalation. |
+| `stop_review.block_history` | array | runner-state-cli `record-stop-review-block` | Append-only log capped at 10 entries. Each entry is `{at, reason_excerpt}` — no count or escalation logic anymore. Safe to inspect; do not edit by hand. |
 | `dev_review.current_round` | int | runner-state-cli `begin-rework` | **No.** The dev-review helper reads it and writes review-data.json keyed by it. Mismatch means the browser shows the wrong round. |
 | `dev_review.phase` | `"awaiting" \| "rework" \| "qa" \| null` | runner-state-cli phase mutators | Sub-state of `dev_reviewing`. Set via `setDevReviewPhase` library helper, not by hand. |
 | `dev_review.last_feedback_path` | path or null | runner-state-cli `begin-rework` | Yes if you regenerated feedback.json elsewhere. |
@@ -132,28 +132,7 @@ network died).
    ```
    Then `/runner` will redispatch the agent.
 
-### 5. Reset BLOCK streak (after addressing repeated BLOCK)
-
-**Symptom:** `block_history` last entry's `count >= 3`, escalation note
-tells you to stop. You understand the issue and want one more shot.
-
-The fixup CLI no longer carries `--reset-block-history`; use jq to append
-the `__allow__` separator the streak counter looks for:
-
-```bash
-jq '.stop_review.block_history += [{
-      "fingerprint": "__allow__",
-      "count": 1,
-      "first_at": (now | todate),
-      "last_at":  (now | todate),
-      "reason_excerpt": null
-    }]' <state-path> > <state-path>.new && mv <state-path>.new <state-path>
-```
-
-Do not splice or rewrite earlier entries — their fingerprints are what the
-counter compares against.
-
-### 6. Renamed the plan file
+### 5. Renamed the plan file
 
 The fixup CLI no longer carries `--rotate-plan-path` because the
 state-file location is derived from the plan path. The cleanest move
@@ -174,7 +153,7 @@ mkdir -p <new-state-dir>
 mv <old-state-path> <new-state-dir>/.runner-state.json
 ```
 
-### 7. Bump dev-review round manually
+### 6. Bump dev-review round manually
 
 ```bash
 jq '.dev_review.current_round += 1 | .dev_review.last_feedback_path = $p' \
@@ -185,7 +164,7 @@ jq '.dev_review.current_round += 1 | .dev_review.last_feedback_path = $p' \
 The dev-review skill reads `current_round` to find the matching
 `review-data-<n>.json` / `feedback-<n>.json` pair on disk.
 
-### 8. Re-run a plan that was already `merged`
+### 7. Re-run a plan that was already `merged`
 
 State files in `merged` are terminal; UserPromptSubmit refuses to resume
 them. Use the CLI's reset command:
