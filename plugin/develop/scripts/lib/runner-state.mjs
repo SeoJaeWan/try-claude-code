@@ -492,35 +492,6 @@ export function clearPlanBlockStreak(state) {
   return state;
 }
 
-// ALLOW_DOWNGRADED tracking. When the stop-gate's Codex review returns BLOCK
-// but every finding falls under the confidence threshold, the outcome is
-// downgraded to ALLOW so the plan keeps moving — but the BLOCK signal is
-// preserved in `.codex/reviews/`. A high downgrade rate usually means the
-// Codex prompt template drifted (its [conf N] tags shifted), and silently
-// letting that ride is dangerous: real BLOCKs get erased.
-//
-// `consecutive_downgrades` counts how many turns in a row this plan ended in
-// ALLOW_DOWNGRADED. The Stop hook reads it after applying the verdict and
-// surfaces a warning once it crosses a threshold. Any non-downgraded ALLOW
-// or any BLOCK resets to zero.
-//
-// Field is optional in the schema — a state file written before this helper
-// existed simply has no `consecutive_downgrades` and is treated as 0. The
-// helpers always create the field on first write so subsequent reads see a
-// number rather than `undefined`.
-export function bumpConsecutiveDowngrades(state) {
-  const cur = Number.isInteger(state.stop_review.consecutive_downgrades)
-    ? state.stop_review.consecutive_downgrades
-    : 0;
-  state.stop_review.consecutive_downgrades = cur + 1;
-  return state.stop_review.consecutive_downgrades;
-}
-
-export function clearConsecutiveDowngrades(state) {
-  state.stop_review.consecutive_downgrades = 0;
-  return state;
-}
-
 // Dev-review round bookkeeping. Round numbers start at 1 for the first review
 // pass; the runner skill increments via this helper before invoking dev-review
 // so the round visible to the user matches the round persisted to state.

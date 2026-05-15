@@ -73,9 +73,7 @@ import {
   STATUS,
   STOP_REVIEW_PHASE,
   assertExpectedStatus,
-  bumpConsecutiveDowngrades,
   bumpDevReviewRound,
-  clearConsecutiveDowngrades,
   clearPlanBlockStreak,
   loadState,
   recordPlanBlock,
@@ -90,7 +88,6 @@ import {
 // Same thresholds the in-process verdict library used. Kept inline here
 // because the CLI is now the single owner of verdict mutations.
 const SAME_BLOCK_ESCALATION_THRESHOLD = 3;
-const CONSECUTIVE_DOWNGRADE_WARNING_THRESHOLD = 3;
 
 const USAGE = `Usage:
   runner-state-cli arm-for-dispatch <state-path>
@@ -345,7 +342,6 @@ function cmdRecordStopReviewAllow(statePath, headSha) {
   const before = snapshot(state);
   setLastReviewedCommit(state, headSha, "ALLOW");
   clearPlanBlockStreak(state);
-  clearConsecutiveDowngrades(state);
   advanceToDevReview(state);
   saveState(statePath, state);
   logMutation("record-stop-review-allow", before, snapshot(state), statePath);
@@ -357,20 +353,9 @@ function cmdRecordStopReviewDowngrade(statePath, headSha) {
   const before = snapshot(state);
   setLastReviewedCommit(state, headSha, "ALLOW");
   clearPlanBlockStreak(state);
-  const count = bumpConsecutiveDowngrades(state);
   advanceToDevReview(state);
   saveState(statePath, state);
   logMutation("record-stop-review-downgrade", before, snapshot(state), statePath);
-  if (count >= CONSECUTIVE_DOWNGRADE_WARNING_THRESHOLD) {
-    const warning = [
-      "",
-      "---",
-      `[stop-gate] 주의 — 이 plan에서 연속 ${count}회 BLOCK이 저신뢰`,
-      "다운그레이드되었습니다. Codex prompt template 변경이 의심되면",
-      "confidence threshold(7)를 검토하세요.",
-    ].join("\n");
-    process.stdout.write(`${warning}\n`);
-  }
 }
 
 function cmdRecordStopReviewBlock(statePath, headSha, reasonFile) {
@@ -385,7 +370,6 @@ function cmdRecordStopReviewBlock(statePath, headSha, reasonFile) {
   }
   const state = loadOrFail(statePath);
   const before = snapshot(state);
-  clearConsecutiveDowngrades(state);
   setLastReviewedCommit(state, headSha, "BLOCK");
   const { count } = recordPlanBlock(state, reason);
   if (

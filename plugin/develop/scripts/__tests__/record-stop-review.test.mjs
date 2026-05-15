@@ -26,7 +26,6 @@ import {
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CLI = path.resolve(HERE, "..", "runner-state-cli.mjs");
 const HEAD_SHA = "abcdef1234567890";
-const DOWNGRADE_THRESHOLD = 3;
 
 let tmpDir;
 let counter = 0;
@@ -66,9 +65,7 @@ function runCli(args) {
 
 describe("record-stop-review-allow", () => {
   it("advances dispatching/armed → dev_reviewing/awaiting and disarms", () => {
-    const statePath = makeStateAtArmed((s) => {
-      s.stop_review.consecutive_downgrades = 4;
-    });
+    const statePath = makeStateAtArmed();
     const r = runCli(["record-stop-review-allow", statePath, HEAD_SHA]);
     assert.equal(r.status, 0, r.stderr);
     const after = loadState(statePath);
@@ -78,7 +75,6 @@ describe("record-stop-review-allow", () => {
     assert.equal(after.stop_review.armed, false);
     assert.equal(after.stop_review.last_reviewed_commit, HEAD_SHA);
     assert.equal(after.stop_review.last_result, "ALLOW");
-    assert.equal(after.stop_review.consecutive_downgrades, 0);
   });
 
   it("rejects missing head-sha", () => {
@@ -89,25 +85,14 @@ describe("record-stop-review-allow", () => {
 });
 
 describe("record-stop-review-downgrade", () => {
-  it("bumps consecutive_downgrades and stays silent below threshold", () => {
+  it("advances dispatching/armed → dev_reviewing/awaiting (same as allow)", () => {
     const statePath = makeStateAtArmed();
     const r = runCli(["record-stop-review-downgrade", statePath, HEAD_SHA]);
     assert.equal(r.status, 0, r.stderr);
-    assert.equal(r.stdout.trim(), "");
     const after = loadState(statePath);
     assert.equal(after.status, STATUS.DEV_REVIEWING);
-    assert.equal(after.stop_review.consecutive_downgrades, 1);
-  });
-
-  it("prints a warning paragraph to stdout at the threshold", () => {
-    const statePath = makeStateAtArmed((s) => {
-      s.stop_review.consecutive_downgrades = DOWNGRADE_THRESHOLD - 1;
-    });
-    const r = runCli(["record-stop-review-downgrade", statePath, HEAD_SHA]);
-    assert.equal(r.status, 0, r.stderr);
-    assert.match(r.stdout, new RegExp(`연속 ${DOWNGRADE_THRESHOLD}회 BLOCK이 저신뢰`));
-    const after = loadState(statePath);
-    assert.equal(after.stop_review.consecutive_downgrades, DOWNGRADE_THRESHOLD);
+    assert.equal(after.dev_review.phase, DEV_REVIEW_PHASE.AWAITING);
+    assert.equal(after.stop_review.last_result, "ALLOW");
   });
 });
 
@@ -119,9 +104,7 @@ describe("record-stop-review-block", () => {
   }
 
   it("sets phase=BLOCKED, keeps armed=true, prints planner directive", () => {
-    const statePath = makeStateAtArmed((s) => {
-      s.stop_review.consecutive_downgrades = 9;
-    });
+    const statePath = makeStateAtArmed();
     const reasonFile = writeReason("BLOCK: real high-confidence finding\n[conf 9] x");
     const r = runCli(["record-stop-review-block", statePath, HEAD_SHA, reasonFile]);
     assert.equal(r.status, 0, r.stderr);
@@ -129,7 +112,6 @@ describe("record-stop-review-block", () => {
     const after = loadState(statePath);
     assert.equal(after.status, STATUS.DISPATCHING);
     assert.equal(after.stop_review.phase, STOP_REVIEW_PHASE.BLOCKED);
-    assert.equal(after.stop_review.consecutive_downgrades, 0);
     assert.equal(after.stop_review.last_result, "BLOCK");
     assert.equal(after.stop_review.last_reviewed_commit, HEAD_SHA);
   });
