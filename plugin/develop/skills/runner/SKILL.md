@@ -29,30 +29,37 @@ read [`references/glossary.md`](references/glossary.md).
 
 ## Enforcement model
 
-Hard guarantees come from three places: the **PreToolUse hook**
-(target-location ALLOW/BLOCK during agent-active phases), the **Stop hook**
-(ALLOW / BLOCK / TIMEOUT verdict after a plan dispatch), and
-`runner-state.mjs` (schema + `ALLOWED_TRANSITIONS` on every save).
+The runner has no hard tool-call gate. Correctness comes from three layers
+of defense in depth, in order of how soon they catch a mistake:
 
-To keep the prose-vs-enforcement gap small, **every status transition this
-skill performs goes through one CLI**:
+1. **This SKILL prose + the dispatch prompt** — the LLM driving the main
+   session reads SKILL.md each turn and follows the Core rules below.
+   Sub-agents read `references/prompts/plan-dispatch.md` and commit phase
+   by phase inside the worktree.
+2. **`runner-state.mjs` schema + `ALLOWED_TRANSITIONS`** — every plan-state
+   load runs `validateState`, so a hand-edited or partially-written JSON
+   fails loud on the next CLI invocation. Status transitions go through
+   `scripts/runner-state-cli.mjs`, which bundles assertion + transition +
+   atomic save in one place.
+3. **Stop hook + dev-review browser UI** — every plan commit is reviewed
+   by Codex before `dev_reviewing`, and then by the human reviewer in the
+   browser. Any mutation that lands in a commit is visible to both.
 
-```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" \
-  <subcommand> <state-path> [extra-args]
-```
+What this means in practice:
 
-Do **not** edit the JSON with `Edit`/`Write`, and do **not** call
-`runner-state.mjs` helpers from inline `node -e` snippets. The PreToolUse
-hook also blocks direct edits to the state file while a plan is mid-flight
-— the only way through is the CLI.
+- **Plan-state JSON edits**: use `runner-state-cli.mjs` subcommands, never
+  inline `node -e` snippets or `Edit`/`Write` on the file. The reason is
+  ergonomics — the CLI guarantees the assertion + transition + save order
+  that bare helper calls forget. A hand-edit will still surface as a
+  validateState error on the next load, but you waste a turn.
+- **Worktree mutations from the main session**: don't. The agent commits
+  the plan; main session inspects (read-only `git`). If you slip and edit
+  a file inside the worktree, the next agent's `git add -A` may swallow
+  it into a phase commit — visible in dev-review, but the attribution is
+  lost. The cost is a confused review round, not silent corruption.
 
-The full subcommand catalogue (with the canonical step that calls each),
-the PreToolUse target-location rule details, and the rationale for the
-plan-state JSON SSOT all live in
-[`references/enforcement.md`](references/enforcement.md). Read it once when
-you first hit a `decision: "block"` payload starting with `[runner] 활성
-plan`, or whenever a CLI subcommand name in this file is unfamiliar.
+The CLI subcommand catalogue and the rationale for the plan-state JSON
+SSOT live in [`references/enforcement.md`](references/enforcement.md).
 
 ## Bootstrap context
 
@@ -212,12 +219,12 @@ Agent(
 )
 ```
 
-**Foreground only — never pass `run_in_background: true`.** PreToolUse
-refuses the call outright; the underlying reason (background dispatch
-returns before commits exist, Stop hook then reviews a base-branch commit
-and walks state past the agent — deadlock) lives in
-[`references/dev-review-flow.md`](references/dev-review-flow.md) under "Why
-the Step-3 deadlock matters".
+**Foreground only — never pass `run_in_background: true`.** A background
+dispatch returns before commits exist, the model ends its turn, and the
+Stop hook reviews a zero-commit diff (it surfaces "dispatch됐지만 새
+commit 없음" and you waste a turn re-dispatching foreground). The full
+rationale lives in [`references/dev-review-flow.md`](references/dev-review-flow.md)
+under "Why the Step-3 deadlock matters".
 
 The `description` form `Plan: <slug>` is kept for human readability and
 continuity, but the hooks no longer parse them. If you need to vary the

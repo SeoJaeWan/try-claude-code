@@ -1,31 +1,47 @@
 # How this skill is enforced (and how it is not)
 
 `SKILL.md` is prose Claude reads each turn — the runner has no
-"executable controller". Hard guarantees come from three places:
+"executable controller" and no PreToolUse gate. Correctness comes from
+three layers of defense in depth:
 
-- `runner-state.mjs` enforces the plan-state schema and the
-  ALLOWED_TRANSITIONS table on every save. Bypassing it with raw
-  `Edit` / `Write` on the JSON breaks the guarantees silently.
-- The Stop hook decides ALLOW / BLOCK / TIMEOUT and writes the verdict
-  back through the same library. It cannot know whether *this skill*
-  obeyed the prose between turns.
-- The **PreToolUse hook** intercepts every tool call and consults
-  `lib/pre-tool-use-policy.mjs`. While a plan is mid-flight it applies
-  a target-location rule: tool calls whose `cwd` (Bash) or `file_path`
-  (Edit/Write) lie inside the active worktree are treated as the
-  dispatched agent's work and ALLOWed during agent-active phases
-  (`dispatching`, `dev_reviewing/rework`). Calls from outside the
-  worktree that try to mutate it, or any worktree edit during
-  `dev_reviewing/awaiting`/`qa` (reviewer drift protection), are
-  BLOCKed. Agent dispatches must match `state.owner_agent` and be
-  foreground. If you see a `decision: "block"` payload starting with
-  `[runner] 활성 plan`, the reason names the offending status and the
-  recovery path — read it instead of retrying the same call.
+- **This skill's prose + the dispatch prompt.** The LLM driving the
+  main session reads SKILL.md each turn; sub-agents read
+  `references/prompts/plan-dispatch.md`. The Core rules name exactly
+  what the main session may and may not do, and the dispatch prompt
+  tells the agent to commit phase by phase inside the worktree.
+- **`runner-state.mjs` schema + ALLOWED_TRANSITIONS.** Every plan-state
+  load runs `validateState`; hand-edited or partially-written JSON fails
+  loud on the next CLI invocation rather than silently corrupting later
+  transitions. All status transitions go through
+  `scripts/runner-state-cli.mjs`, which bundles assertion + transition +
+  auxiliary updates + atomic save in one place.
+- **Stop hook + dev-review browser UI.** Every plan commit is reviewed
+  by Codex before `dev_reviewing`, then by the human reviewer in the
+  browser. Any mutation that lands in a commit is visible to both
+  reviewers — wrong-attribution slips show up as commits the reviewer
+  can flag.
 
-  **The hook does not mutate plan-state.** All status transitions go
-  through `runner-state-cli.mjs` (arm-for-dispatch, begin-rework,
-  mark-approved, ...). Every transition is a Bash call the skill
-  makes explicitly — you can read the turn log and see the sequence.
+What the runner explicitly does **not** do:
+
+- It does **not** block main-session worktree mutations at the tool
+  boundary. If the main session edits a file inside the worktree by
+  mistake, the next agent's `git add -A` may swallow it into a phase
+  commit. The change is visible in dev-review but attribution is lost.
+  Cost: one confused review round. Not silent corruption.
+- It does **not** block direct `Edit` / `Write` on the plan-state JSON.
+  Doing so still breaks schema, but the next CLI call will fail loudly
+  on `validateState` rather than continuing on a corrupted file. Use
+  the CLI; you save a turn.
+- It does **not** verify that an `Agent(...)` dispatch is foreground or
+  matches `owner_agent`. The skill prose names both as requirements; if
+  you slip, the Stop hook surfaces "dispatch됐지만 새 commit 없음"
+  (background) or you re-dispatch with the right agent (mismatch).
+
+The cost of every "does not" above is one wasted turn that the LLM and
+the user notice immediately. The previous PreToolUse gate tried to
+prevent these turns and instead created a much worse failure mode —
+sub-agent tool calls being false-positive-BLOCKed via a fragile cwd
+heuristic, putting the runner into an unbreakable re-dispatch loop.
 
 To keep the gap small, every status transition in this skill goes through
 **one CLI**:

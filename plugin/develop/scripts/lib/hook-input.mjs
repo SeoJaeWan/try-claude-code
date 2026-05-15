@@ -1,5 +1,5 @@
 // Common entry point for the runner hooks (UserPromptSubmit, Stop,
-// SessionStart/End, PreToolUse).
+// SessionStart/End).
 //
 // `readHookInput` consolidates three things:
 //

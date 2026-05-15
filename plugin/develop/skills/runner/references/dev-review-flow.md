@@ -37,7 +37,7 @@ into Step 4 stays at round 1 because there is no rework yet.
 | `result = "qa_required"` | no change, phase toggles `awaiting → qa → awaiting` (`mark-qa-pending` / `qa-resolved`) |
 | `result = "rework"` | `begin-rework` bumps round + flips phase `awaiting → rework` + records feedback path in one call; after every rework agent commits, `rework-done` flips phase back to `awaiting` |
 
-## Why the Step-3 deadlock matters
+## Why "foreground only" matters
 
 Background for the "**Foreground only — never pass `run_in_background:
 true`**" rule in Step 3.
@@ -45,9 +45,12 @@ true`**" rule in Step 3.
 A foreground Agent call blocks the turn until the agent finishes, so the
 Stop hook only fires once commits are in place. A background dispatch
 returns immediately, the model often ends the turn before commits exist,
-and the Stop hook would review the worktree's *branch-point* commit (= a
-base-branch commit) as if it were plan work. A pre-fix version produced an
-ALLOW and walked the state to `dev_reviewing` with zero agent commits;
-PreToolUse then blocked the late-arriving agent because status had already
-advanced — deadlock. PreToolUse now refuses backgrounded plan dispatches
-outright, but the rationale is why.
+and the Stop hook would see a zero-commit range. The current Stop hook
+catches this — `collectDiffForPlan` returns null and the fallback emits
+"[stop-gate] dispatch됐지만 새 commit 없음", leaving the gate armed for
+the next foreground re-dispatch. Cost of the slip: one wasted turn.
+
+(A previous version of the runner had a PreToolUse gate that refused
+backgrounded Agent dispatches outright. That gate was removed because
+its sub-agent BLOCK false positives caused worse problems than the
+slip it prevented — see `references/enforcement.md`.)

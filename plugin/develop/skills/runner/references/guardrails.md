@@ -28,5 +28,5 @@ surface less often but cause hard-to-debug state corruption when violated.
     write inline `node -e` snippets that import `runner-state.mjs` directly.
     All status transitions go through `scripts/runner-state-cli.mjs` so the
     assertion, transition, auxiliary updates, and atomic save run together.
-    The PreToolUse hook also blocks direct `Edit`/`Write` on the state file
-    while a plan is mid-flight — the only way through is the CLI.
+    A hand-edit will fail loud on the next `validateState` load, but you
+    waste a turn — go through the CLI.

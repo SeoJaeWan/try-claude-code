@@ -2,10 +2,10 @@
 // state phase enums, and the allowed-transition tables.
 //
 // This file is the single contract that the runner skill, the UserPromptSubmit
-// hook, the PreToolUse hook, the Stop hook, and the dev-review skill all
-// share. `runner-state.mjs` re-exports everything from here so existing
-// imports keep working — but new code that only needs the state-machine
-// pieces (no fs / I/O) should import from this module directly.
+// hook, the Stop hook, and the dev-review skill all share. `runner-state.mjs`
+// re-exports everything from here so existing imports keep working — but new
+// code that only needs the state-machine pieces (no fs / I/O) should import
+// from this module directly.
 //
 // Schema_version 2 separates "which Step are we in" (status) from "what
 // sub-state of that Step are we in" (phase). The phase lives on the relevant
