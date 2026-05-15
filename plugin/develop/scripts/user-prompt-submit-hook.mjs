@@ -45,7 +45,11 @@ import {
 } from "./lib/runner-state.mjs";
 import { readHookInput } from "./lib/hook-input.mjs";
 
-const RUNNER_TRIGGER_RE = /^\s*\/runner(?:\s|$)/;
+// Matches both `/runner` (full skill) and `/mini` (slim variant — same hook
+// contract, same state file shape, just a smaller SKILL.md). Adding /mini here
+// lets the slim skill share the entire validation + state-bootstrap pipeline
+// without duplicating any of it.
+const RUNNER_TRIGGER_RE = /^\s*\/(?:runner|mini)(?:\s|$)/;
 
 function emitContext(context) {
   process.stdout.write(
