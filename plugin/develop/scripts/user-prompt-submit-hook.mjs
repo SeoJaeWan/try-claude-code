@@ -9,21 +9,22 @@
 //   1. Locate the plan file from the prompt and validate that its frontmatter
 //      has the three fields the runner depends on (plan_slug, branch,
 //      owner_agent).
-//   2. Verify the named owner_agent exists as `agents/<name>.md` in the
-//      plugin so the dispatch later cannot silently pick a missing agent.
-//   3. Derive the canonical plan-state path
+//   2. Derive the canonical plan-state path
 //      (`plans/<plan_key>/.runner-state.json`) and either:
-//        - create a brand-new state file in `validating`, or
+//        - create a brand-new state file in `preparing`, or
 //        - load the existing state and treat the request as a resume.
-//   4. Detect worktree-path collisions with other in-flight plans so the user
-//      is told before the runner skill blunders into them.
-//   5. Register the state path in the session JSON so the Stop hook can find
-//      it without globbing.
-//   6. Emit `additionalContext` so the runner skill enters the conversation
+//   3. Update the session JSON's `activePlan` slot so the Stop hook (and any
+//      future audit tooling) can see which plan this session is driving.
+//   4. Emit `additionalContext` so the runner skill enters the conversation
 //      already knowing which plan it is on, where the state lives, and
 //      whether it is resuming or starting fresh.
 //
-// Anything that fails any of those checks blocks the prompt with a
+// owner_agent file existence and sibling-plan path collisions used to be
+// checked here but are now the runner skill's responsibility (Step 3 prose
+// verifies the agent file before dispatch). The hook stays a thin bootstrap
+// gate instead of a full validation funnel.
+//
+// Anything that fails any of these checks blocks the prompt with a
 // `decision: "block"` payload and a Korean reason, so the user sees the
 // problem before it can affect a worktree or commit.
 
@@ -110,37 +111,6 @@ function resolvePlanFile(rawPath, cwd) {
   return posix;
 }
 
-// Look up `agents/<name>.md` inside the plugin tree. CLAUDE_PLUGIN_ROOT is
-// the canonical root that hooks.json launches us from; fall back to walking
-// up from this script so the hook still works in unusual layouts.
-function resolveAgentsDir() {
-  const root = process.env.CLAUDE_PLUGIN_ROOT;
-  if (root) return path.join(root, "agents");
-  // Fallback: this file lives at <root>/scripts/user-prompt-submit-hook.mjs.
-  return path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "agents");
-}
-
-function verifyOwnerAgentExists(ownerAgent) {
-  const agentsDir = resolveAgentsDir();
-  // Plan authors may write `owner_agent` either bare (`frontend-developer`)
-  // or plugin-namespaced (`try-claude-code:frontend-developer`). Claude Code
-  // emits the namespaced form when dispatching plugin agents, and `agents/`
-  // on disk only stores the bare form (one file per agent in this plugin).
-  // Strip any `<plugin>:` prefix before the filesystem lookup so both inputs
-  // resolve to the same file — and importantly, so `:` does not leak into a
-  // path on Windows, where it is an invalid filename character.
-  const bareName = ownerAgent.includes(":")
-    ? ownerAgent.slice(ownerAgent.indexOf(":") + 1)
-    : ownerAgent;
-  const candidate = path.join(agentsDir, `${bareName}.md`);
-  if (!fs.existsSync(candidate)) {
-    throw new Error(
-      `owner_agent "${ownerAgent}"에 해당하는 ${candidate} 파일이 없습니다.\n` +
-      `agents/ 아래에 동일한 이름의 .md가 있는지 확인하세요.`,
-    );
-  }
-}
-
 // Determine the base branch to anchor the worktree on. We grab whatever HEAD
 // points at right now, since `/runner` is meant to be invoked from the branch
 // the user wants to merge back into. If the call fails (detached HEAD, bare
@@ -189,7 +159,6 @@ async function main() {
   let planPath;
   let frontmatter;
   let statePath;
-  let stateDir;
   let state = null;
   let resume = false;
 
@@ -207,35 +176,8 @@ async function main() {
     const fm = readPlanFrontmatter(planPath);
     frontmatter = extractRunnerHeaders(planPath, fm.headers);
 
-    verifyOwnerAgentExists(frontmatter.ownerAgent);
-
     const derived = deriveStatePathFromPlanPath(planPath);
     statePath = derived.statePath;
-    stateDir = derived.stateDir;
-
-    // Collision: `plans/foo.plan.md` and `plans/foo/plan.md` both map to the
-    // same `plans/foo/.runner-state.json`. Either alone is fine; together they
-    // would silently share state. Refuse loudly so the user renames one before
-    // anything else touches disk.
-    const planDir = path.dirname(planPath);
-    const planBase = path.basename(planPath);
-    let siblingPlanPath = null;
-    if (planBase === "plan.md") {
-      const candidate = `${planDir}.plan.md`;
-      if (fs.existsSync(candidate)) siblingPlanPath = candidate;
-    } else if (planBase.endsWith(".plan.md")) {
-      const stem = planBase.slice(0, -".plan.md".length);
-      const candidate = path.join(planDir, stem, "plan.md");
-      if (fs.existsSync(candidate)) siblingPlanPath = candidate;
-    }
-    if (siblingPlanPath) {
-      throw new Error(
-        `Plan 경로 충돌: 다음 두 파일이 같은 state 위치(${statePath})를 공유합니다.\n` +
-        `  - ${planPath}\n` +
-        `  - ${siblingPlanPath}\n` +
-        `한 plan_key당 plan 파일은 하나여야 합니다. 둘 중 하나를 다른 이름으로 옮긴 뒤 다시 실행하세요.`,
-      );
-    }
 
     const existing = tryLoadState(statePath);
     if (existing) {

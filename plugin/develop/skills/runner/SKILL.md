@@ -192,9 +192,20 @@ single place that moves `preparing → dispatching`.
 
 Dispatch exactly one `Agent(...)` call. The agent reads the plan and
 commits phase by phase inside its single turn. The skill's job in this
-step is twofold:
+step is threefold:
 
-1. **Arm the stop-review gate explicitly** — _before_ the `Agent(...)`
+1. **Verify the owner agent file exists.** UserPromptSubmit no longer
+   pre-checks this; the runner skill is the gate. Read
+   `state.owner_agent`, strip any `<plugin>:` namespace prefix, and check
+   that `${CLAUDE_PLUGIN_ROOT}/agents/<bare-name>.md` exists with
+   `[ -f ... ]` via Bash. If it does not, **stop immediately** and tell
+   the user to fix the plan's `owner_agent` then delete the state file
+   (`plans/<plan_key>/.runner-state.json`) before re-running `/runner`.
+   Do not arm-for-dispatch, do not call `Agent`. The state file already
+   exists in `preparing` — leaving it untouched is fine because the next
+   `/runner` will treat it as a resume from `preparing`.
+
+2. **Arm the stop-review gate explicitly** — _before_ the `Agent(...)`
    call, run:
 
    ```bash
@@ -206,7 +217,7 @@ step is twofold:
    atomically. If you skip it, the Stop hook won't fire when the agent's
    turn ends — the gate stays disarmed and the plan never reaches Step 4.
 
-2. **Dispatch the agent foreground.** The prompt body is
+3. **Dispatch the agent foreground.** The prompt body is
    **`references/prompts/plan-dispatch.md` — read it and substitute the
    placeholders before sending**:
 

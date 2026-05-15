@@ -264,31 +264,6 @@ describe("UserPromptSubmit active-plan slot behaviour", () => {
     );
   });
 
-  // Plan authors may write owner_agent either bare (`general-developer`) or
-  // plugin-namespaced (`try-claude-code:general-developer`). The hook strips
-  // the `<plugin>:` prefix before the `agents/<name>.md` lookup, both because
-  // only the bare form lives on disk and because `:` is illegal in Windows
-  // filenames.
-  it("accepts a plugin-namespaced owner_agent in plan frontmatter", () => {
-    const sessionId = `sess-${++counter}`;
-    makePlanFile(
-      "plan-namespaced",
-      "feat/plan-namespaced",
-      "try-claude-code:general-developer",
-    );
-    const r = runHook({
-      prompt: "/runner plans/plan-namespaced.plan.md",
-      sessionId,
-    });
-    assert.equal(r.status, 0);
-    const out = JSON.parse(r.stdout);
-    assert.ok(
-      out.hookSpecificOutput,
-      "namespaced owner_agent must pass frontmatter validation",
-    );
-    assert.equal(out.hookSpecificOutput.hookEventName, "UserPromptSubmit");
-  });
-
   // The runner accepts two plan-file shapes — `<name>.plan.md` (named plan,
   // nested under a stem directory) and `<dir>/plan.md` (the directory is the
   // plan_key). These two cases pin the second shape so a regression in path
@@ -323,20 +298,4 @@ describe("UserPromptSubmit active-plan slot behaviour", () => {
     );
   });
 
-  it("rejects a bare plan.md when a sibling <dir>.plan.md exists", () => {
-    const sessionId = `sess-${++counter}`;
-    // Both files would resolve to the same plans/collide/.runner-state.json.
-    // The hook must surface the collision before any state is written.
-    makePlanFile("collide", "feat/collide-a");
-    makeFolderPlanFile("collide", "collide-folder", "feat/collide-b");
-
-    const r = runHook({
-      prompt: "/runner plans/collide/plan.md",
-      sessionId,
-    });
-    assert.equal(r.status, 0);
-    const decision = JSON.parse(r.stdout);
-    assert.equal(decision.decision, "block");
-    assert.match(decision.reason, /Plan 경로 충돌|충돌/);
-  });
 });
