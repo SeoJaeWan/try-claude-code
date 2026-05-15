@@ -21,105 +21,38 @@ keep the on-disk plan-state JSON in sync with reality.
 
 ## Glossary
 
-Terms that look similar but mean different things. Cross-checking these
-when reading a hook log or commit message saves time.
+Plan-runner uses a precise vocabulary (`plan_path`, `plan_key`, `plan_slug`,
+`stem`, `task_branch`). When a hook log or commit message uses a term
+ambiguously — or when prose says `plans/{plan_key}/...` and you are not
+sure whether your case is a flat plan, a folder plan, or a collision —
+read [`references/glossary.md`](references/glossary.md).
 
-| Term | Defined as | Example for `plans/auth/login.plan.md` | Example for `plans/auth/plan.md` |
-|---|---|---|---|
-| `plan_path` | Full path to the plan file (`<name>.plan.md` or a folder's `plan.md`) | `plans/auth/login.plan.md` | `plans/auth/plan.md` |
-| `plan_key` | The plan's directory relative to `plans/`, slashes preserved. Same vocabulary as the dev-review server's URL key. | `auth/login` | `auth` |
-| `stem` | For `<name>.plan.md` it is the filename basename minus `.plan.md`. For a folder's `plan.md` it is the **parent directory's basename** (the folder IS the plan_key). Internal to `deriveStatePathFromPlanPath`; surfaces only in lib code. | `login` | `auth` |
-| `plan_slug` | The `plan_slug:` field from the plan's YAML frontmatter. User-controlled, used in commit messages and dev-review's `task_slug`. **Not** auto-derived from path. | whatever the plan author chose (often `login`, but free) | whatever the plan author chose |
-| `task_branch` | Git branch the worktree lives on. From frontmatter `branch:`. | `feat/auth-login` | `feat/auth` |
+## Enforcement model
 
-For a flat plan (`plans/foo.plan.md`) `plan_key` and `stem` coincide and
-prose that says `plans/{stem}/...` is technically right. For a nested
-plan they diverge — prose throughout this skill uses `plan_key` because
-it always names the right directory. A folder-style plan (`plans/foo/plan.md`)
-also makes them coincide, but at the parent directory instead of the file
-stem — the directory itself is the plan_key, and `plans/foo.plan.md` +
-`plans/foo/plan.md` cannot coexist (the UserPromptSubmit hook rejects the
-collision).
+Hard guarantees come from three places: the **PreToolUse hook**
+(target-location ALLOW/BLOCK during agent-active phases), the **Stop hook**
+(ALLOW / BLOCK / TIMEOUT verdict after a plan dispatch), and
+`runner-state.mjs` (schema + `ALLOWED_TRANSITIONS` on every save).
 
-## How this skill is enforced (and how it is not)
-
-This SKILL.md is prose Claude reads each turn — the runner has no
-"executable controller". Hard guarantees come from three places:
-
-- `runner-state.mjs` enforces the plan-state schema and the
-  ALLOWED_TRANSITIONS table on every save. Bypassing it with raw
-  `Edit` / `Write` on the JSON breaks the guarantees silently.
-- The Stop hook decides ALLOW / BLOCK / TIMEOUT and writes the verdict
-  back through the same library. It cannot know whether *this skill*
-  obeyed the prose between turns.
-- The **PreToolUse hook** intercepts every tool call and consults
-  `lib/pre-tool-use-policy.mjs`. While a plan is mid-flight it applies
-  a target-location rule: tool calls whose `cwd` (Bash) or `file_path`
-  (Edit/Write) lie inside the active worktree are treated as the
-  dispatched agent's work and ALLOWed during agent-active phases
-  (`dispatching`, `dev_reviewing/rework`). Calls from outside the
-  worktree that try to mutate it, or any worktree edit during
-  `dev_reviewing/awaiting`/`qa` (reviewer drift protection), are
-  BLOCKed. Agent dispatches must match `state.owner_agent` and be
-  foreground. If you see a `decision: "block"` payload starting with
-  `[runner] 활성 plan`, the reason names the offending status and the
-  recovery path — read it instead of retrying the same call.
-
-  **The hook does not mutate plan-state.** All status transitions go
-  through `runner-state-cli.mjs` (arm-for-dispatch, begin-rework,
-  mark-approved, ...). Every transition is a Bash call this skill
-  makes explicitly — you can read the turn log and see the sequence.
-
-To keep the gap small, every status transition in this skill goes through
-**one CLI**:
+To keep the prose-vs-enforcement gap small, **every status transition this
+skill performs goes through one CLI**:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" \
   <subcommand> <state-path> [extra-args]
 ```
 
-The CLI bundles `assertExpectedStatus` + `transitionStatus` + the auxiliary
-helpers (`setStopReviewArmed`, `bumpDevReviewRound`) + atomic `saveState`
-for each step the skill needs. Do **not** reach into `runner-state.mjs`
-helpers from inline `node -e` snippets, and do **not** edit the JSON with
-`Edit` / `Write`. The subcommand catalogue, with the canonical step that
-calls each, is:
+Do **not** edit the JSON with `Edit`/`Write`, and do **not** call
+`runner-state.mjs` helpers from inline `node -e` snippets. The PreToolUse
+hook also blocks direct edits to the state file while a plan is mid-flight
+— the only way through is the CLI.
 
-| Subcommand | Called from | Effect |
-|---|---|---|
-| `arm-for-dispatch` | Step 3 (before the plan-agent `Agent(...)` call) and Step 3 re-entry (before re-dispatch after BLOCK) | `preparing → dispatching` + `stop_review.phase = "armed"` (or re-arm from `phase = "blocked"`) |
-| `begin-rework` | Step 4 (rework) | phase mutation: `dev_review.phase: awaiting → rework`, bump round, record feedback path. **Status stays `dev_reviewing`.** |
-| `rework-done` | Step 4 (after rework dispatches commit) | phase mutation: `dev_review.phase: rework → awaiting` |
-| `mark-qa-pending` | Step 4 (Q&A round) | phase mutation: `dev_review.phase: awaiting → qa` |
-| `qa-resolved` | Step 4 (after answering) | phase mutation: `dev_review.phase: qa → awaiting` |
-| `mark-approved` | Step 4 (approval) | `dev_reviewing → closing`, clears `dev_review.phase` |
-| `mark-merged` | Step 5 (after `git merge`) | `closing → merged` |
-| `reset` | Step 5 (post-merge cleanup) | delete the state file + sibling `feedback*.json` (requires `--confirm`) |
-
-Anything **not** about a status transition (reading the state JSON, running
-git commands, dispatching agents) is still on the prose — that is the
-honor-system surface this skill cannot eliminate. Read the state file
-fresh at the top of each turn.
-
-## Why a plan-state JSON SSOT
-
-Every plan owns one file at `plans/{plan_key}/.runner-state.json`. That file
-is the only place the runner records progress, and every hook that the runner
-participates in (UserPromptSubmit, Stop) reads from and writes to it. There is
-no parallel record kept in chat memory, in commit messages, or in regex
-contracts inside agent prompts. The benefits:
-
-- **Resumable from anywhere.** Re-running `/runner plans/<file>.plan.md` in a
-  new session, after a reboot, or even on a different machine will pick the
-  state up exactly where it was left.
-- **Inspectable.** The user can open the JSON to see the current step, the
-  worktree path, the dev-review round, and recent BLOCK history.
-- **No fragile string contract.** The previous runner relied on the agent's
-  `description` and `prompt` matching exact regexes so hooks could find the
-  plan. That contract is gone — hooks now key off the state file directly.
-
-Treat the state file as authoritative. Read it whenever you need to know
-something about the plan; never guess from chat history alone.
+The full subcommand catalogue (with the canonical step that calls each),
+the PreToolUse target-location rule details, and the rationale for the
+plan-state JSON SSOT all live in
+[`references/enforcement.md`](references/enforcement.md). Read it once when
+you first hit a `decision: "block"` payload starting with `[runner] 활성
+plan`, or whenever a CLI subcommand name in this file is unfamiliar.
 
 ## Bootstrap context
 
@@ -279,15 +212,12 @@ Agent(
 )
 ```
 
-**Foreground only — never pass `run_in_background: true`.** PreToolUse will
-refuse the call if you do, but the contract reason matters: a foreground
-Agent call blocks the turn until the agent finishes, so the Stop hook only
-fires once commits are in place. A background dispatch returns immediately,
-the model often ends the turn before commits exist, and the Stop hook would
-review the worktree's *branch-point* commit (= a base-branch commit) as if
-it were plan work. Pre-fix that produced an ALLOW and walked the state to
-`dev_reviewing` with zero agent commits; PreToolUse then blocked the
-late-arriving agent because status had already advanced — deadlock.
+**Foreground only — never pass `run_in_background: true`.** PreToolUse
+refuses the call outright; the underlying reason (background dispatch
+returns before commits exist, Stop hook then reviews a base-branch commit
+and walks state past the agent — deadlock) lives in
+[`references/dev-review-flow.md`](references/dev-review-flow.md) under "Why
+the Step-3 deadlock matters".
 
 The `description` form `Plan: <slug>` is kept for human readability and
 continuity, but the hooks no longer parse them. If you need to vary the
@@ -336,73 +266,42 @@ Action:
 
 ### Step 4. Developer review gate (browser)
 
-Once `status` is `dev_reviewing` with `dev_review.phase = "awaiting"`, invoke the `dev-review` skill to
-collect explicit per-commit reviewer approval. The dev-review skill takes a
-single input — the absolute path to the plan-state JSON — and reads
-everything else (slug, plan path, worktree, branches, iteration) from it:
+Once `status` is `dev_reviewing` with `dev_review.phase = "awaiting"`,
+invoke the `dev-review` skill — it takes a single input (the absolute
+state-path) and reads everything else (slug, plan path, worktree, branches,
+iteration) from the JSON:
 
 ```
 dev-review(state_path: <state.state_path>)
 ```
 
-**Round bookkeeping** — the dev-review server reads `current_round` directly
-as `review_iteration`, so the runner is responsible for keeping it accurate:
-
-| Trigger | Action |
-|---|---|
-| First time entering Step 4 (after Stop-review ALLOW) | round 1. The state arrives at `dev_reviewing` + phase `"awaiting"` with `current_round = 0`; `begin-rework` is the only call that bumps it (see below). For the first round there is no rework yet, so no bump — just invoke `dev-review`. |
-| User replies `리뷰 완료`, result = `approved` | no round change. Move to Step 5 via `mark-approved` (status flips `dev_reviewing → closing`). |
-| User replies `리뷰 완료`, result = `qa_required` | no round change. Use `mark-qa-pending` (phase `awaiting → qa`); after answering, `qa-resolved` flips back. Re-invoke `dev-review` with the same round. |
-| User replies `리뷰 완료`, result = `rework` | round bumps. `begin-rework` bumps round + flips phase `awaiting → rework` + records the feedback path in one call. After every rework agent commits, `rework-done` flips phase back to `awaiting` for the next review pass. |
-
 The dev-review skill prints a server URL and ends its turn so the user can
-review in the browser and reply `리뷰 완료`.
+review in the browser and reply `리뷰 완료`. When the user replies, re-enter
+the dev-review skill; it returns a terminal summary based on `feedback.json`.
 
-When the user replies `리뷰 완료`, re-enter the dev-review skill; it returns
-a terminal summary based on `feedback.json`:
+Route the result through the right CLI subcommand:
 
-- `result = "approved"` →
-    `node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" mark-approved <state.state_path>`.
-    Go to Step 5.
-- `result = "rework"` →
-    `node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" begin-rework <state.state_path> <feedback.json absolute path>`.
-    This bumps `dev_review.current_round`, records the feedback path, and
-    flips `dev_review.phase` to `"rework"` atomically. Then for each item in
-    `rework_items[]`, dispatch `Agent(subagent_type: item.dispatch_agent,
-    ...)` with the prompt body from
-    **`references/prompts/rework-dispatch.md`** — substitute
-    `{{worktree_path}}`, `{{commit_short_sha}}`, `{{commit_subject}}`, and
-    render `{{comments_block}}` from `item.comments[]` per the format
-    documented in that file.
+| `result` from dev-review | CLI sequence | Next action |
+|---|---|---|
+| `approved` | `mark-approved <state-path>` | go to Step 5 |
+| `rework` | `begin-rework <state-path> <feedback.json absolute path>` | dispatch rework agents per `rework_items[]`, then `rework-done <state-path>`, then re-invoke `dev-review` |
+| `qa_required` | `mark-qa-pending <state-path>` | answer in chat, then `qa-resolved <state-path>`, then re-invoke `dev-review` (same round) |
 
-    Rework is **per-commit**: one `rework_items[i]` covers one flagged
-    commit and aggregates every `needs-change` line comment on it. Multiple
-    rework items may be dispatched sequentially (safe default) or in
-    parallel when they target different commits whose files do not overlap.
-    The rework dispatch's description is whatever the runtime produces; it
-    is not a `Plan: ...` dispatch. Like the plan dispatch in Step 3, rework
-    dispatches must be foreground (no `run_in_background: true`) — the
-    runner has to wait for completion before calling `rework-done` and
-    re-entering dev-review.
+All commands are `node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs"
+<subcommand> ...`. `begin-rework` is the only call that bumps
+`dev_review.current_round`; the first Step 4 entry stays at round 1.
 
-    Rework intentionally **does not** call `arm-for-dispatch`. Stop-review
-    is bypassed for rework commits because the reviewer sees them directly
-    in the next dev-review round; routing them through stop-review would
-    decouple round counts from review results and create BLOCK ↔ rework
-    cycles that the UI cannot represent. After all rework agents commit:
+For each `rework_items[i]`, dispatch
+`Agent(subagent_type: item.dispatch_agent, ...)` with the prompt body from
+**`references/prompts/rework-dispatch.md`** — substitute `{{worktree_path}}`,
+`{{commit_short_sha}}`, `{{commit_subject}}`, and render `{{comments_block}}`
+from `item.comments[]` per the format documented in that file. Rework
+dispatches must be **foreground**.
 
-    ```bash
-    node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" \
-      rework-done <state.state_path>
-    ```
-
-    Then re-invoke `dev-review` with the bumped round.
-
-- `result = "qa_required"` →
-    `node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" mark-qa-pending <state.state_path>`.
-    Answer the questions in chat, then run
-    `node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" qa-resolved <state.state_path>`
-    and re-invoke `dev-review` with the same round.
+Rework intentionally does **not** call `arm-for-dispatch`. The per-commit
+semantics, the parallel-vs-sequential rule, and the round-bookkeeping
+invariants live in [`references/dev-review-flow.md`](references/dev-review-flow.md);
+read it the first time a rework branch fires.
 
 Do not advance past this gate on anything except `result = "approved"`. Do
 not remove the worktree, do not merge, do not ask about merge until approval.
@@ -459,32 +358,25 @@ git log --oneline "<base>..<task_branch>"
 
 ## Error recovery
 
-### Bootstrap missing or malformed
+If something looks off, read the state JSON first to see what the runner
+thinks is true, then pick the scenario:
 
-If the `[runner-skill bootstrap]` block is absent, the UserPromptSubmit hook
-either did not fire or ran into an error. Tell the user to enter through
-`/runner <plan-path>` and stop. Do not synthesize state from chat.
+- **Bootstrap missing.** No `[runner-skill bootstrap]` block. UserPromptSubmit
+  hook did not fire or errored. Tell the user to enter through
+  `/runner <plan-path>`; do not synthesize state from chat.
+- **Stale worktree.** Handled in Step 2 by checking the worktree path on
+  disk yourself. Always ask before destroying existing work.
+- **Plan agent failed / committed less than expected.** Run
+  `git -C "<state.worktree_path>" status`, report what was committed vs.
+  missing, and decide with the user: re-dispatch, repair manually, or abort
+  (remove worktree + state file). Worktree stays intact for inspection.
+- **Crashed mid-run.** Re-invoking `/runner <plan>` picks up where things
+  left off — the bootstrap reports the saved status and routing picks the
+  right step.
 
-### Stale worktree from a previous run
-
-Handled in Step 2 by checking the worktree path on disk yourself. The user
-is always asked before existing work is destroyed.
-
-### Plan agent failure
-
-If the plan agent fails or commits less than the plan expects:
-1. Inspect `git -C "<state.worktree_path>" status` for partial changes.
-2. Report what was committed vs. what is missing as plain text.
-3. Decide with the user: re-dispatch the plan agent, repair manually, or
-   abort by removing the worktree and the state file. The worktree stays
-   intact for inspection.
-
-### Resuming after a crash
-
-The whole point of the state JSON is that re-running `/runner <plan>` picks
-up where things left off. If the user reports the runner went down
-mid-execution, just have them re-invoke `/runner` — the bootstrap will
-report the saved status and routing will pick the right step.
+For deeper recovery (corrupted state JSON, BLOCK streak escalation,
+`--force-status` transitions, renamed plan file, re-running a `merged`
+plan), see [`references/plan-state-recovery.md`](references/plan-state-recovery.md).
 
 ---
 
@@ -505,31 +397,13 @@ git rev-parse --abbrev-ref HEAD
 
 ## Guardrails
 
-1. Never pass `isolation: "worktree"` to Agent — it does not support nested
-   Agent calls and prevents merge.
-2. Never call `EnterWorktree` — it lacks mid-session exit, making merge
-   impossible.
-3. Never run plan-runner from inside `worktrees/**` — always from the
-   repository root.
-4. Never delete the task branch on your own — the user decides when to merge
-   and clean up.
-5. Always verify the plan dispatch produced commits before relying on the
-   stop-gate to do anything useful.
-6. Always remove the worktree before asking the user about merge, and never
-   `checkout` the task branch — HEAD must stay on the base branch.
-7. Never reinterpret one request as multiple plan files or extra workstreams.
-8. Never bypass Step 4 dev-review. The worktree stays alive until dev-review
-   returns `approved`; rework commits and Q&A both happen inside that gate.
-9. Never re-dispatch rework commits to a different `dispatch_agent` than the
-   reviewer selected in the UI. The reviewer's choice is authoritative.
-10. Never split one plan across multiple plan-agent dispatches. One plan =
-    one Agent call. Rework dispatches are separate and narrower.
-11. Never edit the plan-state JSON ad hoc with `Edit`/`Write`, and never
-    write inline `node -e` snippets that import `runner-state.mjs` directly.
-    All status transitions go through `scripts/runner-state-cli.mjs` so the
-    assertion, transition, auxiliary updates, and atomic save run together.
-    The PreToolUse hook also blocks direct `Edit`/`Write` on the state file
-    while a plan is mid-flight — the only way through is the CLI.
+The **Core rules** above enforce the operationally critical guardrails
+(HEAD stays on base, one worktree per plan, one Agent call per plan,
+foreground only, etc.). Failure-mode-specific guardrails (never use
+`isolation: "worktree"`, never call `EnterWorktree`, never edit state JSON
+ad hoc, reviewer-chosen `dispatch_agent` is authoritative, etc.) live in
+[`references/guardrails.md`](references/guardrails.md). Read it once at
+the start of a new plan; the rules are stable.
 
 </Instructions>
 </Skill_Guide>
