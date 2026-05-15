@@ -49,9 +49,7 @@
 // `state.{stop_review,dev_review}.phase`.
 //
 //   preparing      — fresh plan; worktree may not exist yet. Step 1-2.
-//                    Main session legitimately runs `git worktree add`
-//                    (carved out by isWorktreeBootstrapCommand). All other
-//                    mutations wait for Step 3's plan-agent dispatch.
+//                    No agent is running yet, so Bash is unrestricted.
 //   dispatching    — Step 3. Plan-agent dispatched; its commits inside the
 //                    worktree are ALLOWed. Main session mutations from
 //                    outside the worktree are BLOCKed.
@@ -101,23 +99,6 @@ const SAFE_BASH_PATTERNS = [
   /^\s*pnpm\s+(exec|test|run\s+test)\b/,
 ];
 
-// Step 2 worktree bootstrap commands. The main session legitimately runs
-// `git worktree add` to create the plan's worktree directory and
-// `git worktree remove --force` to wipe a stale one before recreating.
-// Only at `preparing` and only when the command actually mentions
-// `state.worktree_path` (substring match — tolerates quoting differences).
-//
-// Other worktree subcommands (`move`, `prune`) and `remove` without --force
-// are intentionally NOT carved out; they should not appear during Step 2.
-export function isWorktreeBootstrapCommand(command, state) {
-  if (typeof command !== "string" || !command.trim()) return false;
-  const worktreePath = state?.worktree_path;
-  if (typeof worktreePath !== "string" || !worktreePath) return false;
-  if (!command.includes(worktreePath)) return false;
-  if (/^\s*git\s+worktree\s+add\b/.test(command)) return true;
-  if (/^\s*git\s+worktree\s+remove\b[^\n]*--force\b/.test(command)) return true;
-  return false;
-}
 
 export const VERDICT = Object.freeze({
   ALLOW: "allow",
@@ -358,22 +339,10 @@ function decideBash({ state, toolInput }) {
     state.worktree_path,
   );
 
-  if (state.status === STATUS.CLOSING) {
-    // Step 5: git merge / branch -d / worktree remove are expected.
+  if (state.status === STATUS.CLOSING || state.status === STATUS.PREPARING) {
+    // preparing: no agent running yet, nothing to protect. Allow freely.
+    // closing (Step 5): git merge / branch -d / worktree remove are expected.
     return { verdict: VERDICT.ALLOW };
-  }
-
-  if (state.status === STATUS.PREPARING) {
-    // Step 2 carve-out: worktree bootstrap commands ALLOW.
-    if (isWorktreeBootstrapCommand(command, state)) {
-      return { verdict: VERDICT.ALLOW };
-    }
-    return {
-      verdict: VERDICT.BLOCK,
-      hint:
-        `preparing 단계에서는 \`git worktree add\` / \`git worktree remove --force\` 외의 ` +
-        `mutating Bash가 차단됩니다 (\`${command.slice(0, 80)}\`).`,
-    };
   }
 
   // dispatching, dev_reviewing

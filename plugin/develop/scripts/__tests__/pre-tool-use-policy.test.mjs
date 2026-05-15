@@ -191,12 +191,18 @@ describe("evaluate — Bash gating", () => {
     }
   });
 
+  it("ALLOWs mutating Bash at status=preparing (no agent running yet)", () => {
+    const r = evaluate({
+      state: stateAt(STATUS.PREPARING),
+      toolName: "Bash",
+      toolInput: { command: "git commit -m oops" },
+      planAreas: [PLAN_AREA, PLAN_DIR],
+    });
+    assert.equal(r.decision, VERDICT.ALLOW);
+  });
+
   it("blocks mutating Bash mid-flight when called from outside the worktree", () => {
-    for (const status of [
-      STATUS.PREPARING,
-      STATUS.DISPATCHING,
-      STATUS.DEV_REVIEWING,
-    ]) {
+    for (const status of [STATUS.DISPATCHING, STATUS.DEV_REVIEWING]) {
       const r = evaluate({
         state: stateAt(status),
         toolName: "Bash",
@@ -270,14 +276,10 @@ describe("evaluate — Bash gating", () => {
   });
 });
 
-describe("evaluate — Step 2 worktree bootstrap carve-out", () => {
-  // Step 2 of runner/SKILL.md requires the main session to run
-  // `git worktree add` while status="preparing" — the worktree directory has
-  // to exist before the plan agent is dispatched in Step 3. The rule
-  // narrows this carve-out via `isWorktreeBootstrapCommand` so only commands
-  // touching `state.worktree_path` are allowed, and only at `preparing`.
+describe("evaluate — worktree commands at preparing / dispatching", () => {
+  // preparing: all Bash is ALLOWed — no agent is running yet, nothing to protect.
 
-  it("ALLOWs `git worktree add` at preparing when targeting state.worktree_path", () => {
+  it("ALLOWs `git worktree add` at preparing", () => {
     const r = evaluate({
       state: stateAt(STATUS.PREPARING),
       toolName: "Bash",
@@ -289,7 +291,7 @@ describe("evaluate — Step 2 worktree bootstrap carve-out", () => {
     assert.equal(r.decision, VERDICT.ALLOW);
   });
 
-  it("BLOCKs `git worktree add` at preparing when path is unrelated", () => {
+  it("ALLOWs `git worktree add` with unrelated path at preparing", () => {
     const r = evaluate({
       state: stateAt(STATUS.PREPARING),
       toolName: "Bash",
@@ -298,35 +300,25 @@ describe("evaluate — Step 2 worktree bootstrap carve-out", () => {
       },
       planAreas: [PLAN_AREA, PLAN_DIR],
     });
-    assert.equal(r.decision, VERDICT.BLOCK);
-    assert.match(r.reason, /활성 plan/);
-  });
-
-  it("ALLOWs `git worktree remove --force` at preparing (stale-wipe path)", () => {
-    const r = evaluate({
-      state: stateAt(STATUS.PREPARING),
-      toolName: "Bash",
-      toolInput: {
-        command: `git worktree remove --force "${PLAN_AREA}"`,
-      },
-      planAreas: [PLAN_AREA, PLAN_DIR],
-    });
     assert.equal(r.decision, VERDICT.ALLOW);
   });
 
-  it("BLOCKs `git worktree remove` without --force at preparing", () => {
-    const r = evaluate({
-      state: stateAt(STATUS.PREPARING),
-      toolName: "Bash",
-      toolInput: {
-        command: `git worktree remove "${PLAN_AREA}"`,
-      },
-      planAreas: [PLAN_AREA, PLAN_DIR],
-    });
-    assert.equal(r.decision, VERDICT.BLOCK);
+  it("ALLOWs `git worktree remove` (with or without --force) at preparing", () => {
+    for (const cmd of [
+      `git worktree remove --force "${PLAN_AREA}"`,
+      `git worktree remove "${PLAN_AREA}"`,
+    ]) {
+      const r = evaluate({
+        state: stateAt(STATUS.PREPARING),
+        toolName: "Bash",
+        toolInput: { command: cmd },
+        planAreas: [PLAN_AREA, PLAN_DIR],
+      });
+      assert.equal(r.decision, VERDICT.ALLOW);
+    }
   });
 
-  it("BLOCKs `git worktree add` at dispatching from outside (carve-out is preparing-only)", () => {
+  it("BLOCKs `git worktree add` at dispatching from outside the worktree", () => {
     const r = evaluate({
       state: stateAt(STATUS.DISPATCHING),
       toolName: "Bash",
