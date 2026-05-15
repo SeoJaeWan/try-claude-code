@@ -45,12 +45,6 @@ import {
 } from "./lib/runner-state.mjs";
 import { readHookInput } from "./lib/hook-input.mjs";
 
-// Hook intentionally fires for `/runner` only. The slim `/mini` variant is
-// excluded so we can isolate "does hook firing itself affect first-turn token
-// pressure?" — when /mini is invoked, no bootstrap context is emitted, no
-// state file is created, and Claude Code never executes any of this hook's
-// code path. The mini SKILL.md still expects a bootstrap header and will
-// halt politely if one is missing.
 const RUNNER_TRIGGER_RE = /^\s*\/runner(?:\s|$)/;
 
 function emitContext(context) {
