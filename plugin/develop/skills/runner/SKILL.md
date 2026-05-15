@@ -342,10 +342,13 @@ After cleanup, output as plain text (do NOT use AskUserQuestion):
 Do not merge, checkout, or delete the task branch without explicit user
 approval. HEAD must remain on `state.base_branch` at all times.
 
-After the user merges, the Stop hook removes the active-plan pointer for
-this state from the session automatically — the next time `/runner` is
-invoked on this plan it is rejected as `merged` until the state file is
-deleted (e.g. via `reset --confirm`).
+After the user merges, the plan-state's `status` is `merged` and that is
+the terminal record. The next time `/runner` is invoked on this plan the
+UserPromptSubmit hook reads the state, sees it is in `TERMINAL_STATUSES`,
+and rejects entry until the state file is deleted (e.g. via `reset
+--confirm`). The Stop hook discovers armed plans by globbing
+`plans/**/.runner-state.json` on disk — it does not maintain a session
+pointer list, so there is nothing to prune.
 
 ### Step 6. Verify completion
 

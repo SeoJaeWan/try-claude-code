@@ -5,14 +5,14 @@ import os from "node:os";
 import path from "node:path";
 
 import {
-  addActivePlanState,
+  clearActivePlan,
   createSession,
   deleteSession,
+  getActivePlan,
   getStopReviewThreadId,
-  listActivePlanStates,
   loadSession,
-  removeActivePlanState,
   resolveSessionFile,
+  setActivePlan,
   setStopReviewThreadId,
 } from "../lib/sessions.mjs";
 
@@ -50,9 +50,9 @@ beforeEach(() => {
 });
 
 describe("createSession / loadSession", () => {
-  it("starts with empty activePlanStates and null thread id", () => {
+  it("starts with null activePlan and null thread id", () => {
     const s = loadSession(SESSION_ID);
-    assert.deepEqual(s.activePlanStates, []);
+    assert.equal(s.activePlan, null);
     assert.equal(s.stopReviewThreadId, null);
   });
 
@@ -64,7 +64,6 @@ describe("createSession / loadSession", () => {
       file,
       JSON.stringify({
         sessionId: SESSION_ID,
-        createdAt: new Date().toISOString(),
         cwd: "/repo",
         stopReviewThreadId: "thread-123",
         somethingElse: { foo: 1 },
@@ -76,41 +75,61 @@ describe("createSession / loadSession", () => {
     assert.equal(s.somethingElse, undefined);
     assert.equal(s.anotherUnknown, undefined);
     assert.equal(s.stopReviewThreadId, "thread-123");
-    assert.deepEqual(s.activePlanStates, []);
+    assert.equal(s.activePlan, null);
   });
 });
 
-describe("addActivePlanState / removeActivePlanState / listActivePlanStates", () => {
-  it("adds and lists pointers", () => {
-    addActivePlanState(SESSION_ID, "plans/login/.runner-state.json");
-    addActivePlanState(SESSION_ID, "plans/auth/.runner-state.json");
-    const list = listActivePlanStates(SESSION_ID);
-    assert.equal(list.length, 2);
-    assert.ok(list.some((p) => p.endsWith("plans/login/.runner-state.json")));
+describe("setActivePlan / getActivePlan / clearActivePlan", () => {
+  it("sets and reads back the slot", () => {
+    setActivePlan(SESSION_ID, "plans/login/.runner-state.json");
+    assert.equal(
+      getActivePlan(SESSION_ID),
+      "plans/login/.runner-state.json",
+    );
   });
 
-  it("is idempotent — adding the same pointer twice is a no-op", () => {
-    addActivePlanState(SESSION_ID, "plans/login/.runner-state.json");
-    addActivePlanState(SESSION_ID, "plans/login/.runner-state.json");
-    assert.equal(listActivePlanStates(SESSION_ID).length, 1);
+  it("is idempotent — setting the same pointer twice is a no-op", () => {
+    setActivePlan(SESSION_ID, "plans/login/.runner-state.json");
+    const before = fs.readFileSync(resolveSessionFile(SESSION_ID), "utf8");
+    setActivePlan(SESSION_ID, "plans/login/.runner-state.json");
+    const after = fs.readFileSync(resolveSessionFile(SESSION_ID), "utf8");
+    assert.equal(before, after);
   });
 
-  it("removes pointers regardless of separator style", () => {
-    addActivePlanState(SESSION_ID, "plans/login/.runner-state.json");
-    removeActivePlanState(SESSION_ID, "plans\\login\\.runner-state.json");
-    assert.deepEqual(listActivePlanStates(SESSION_ID), []);
+  it("overwrites when given a different pointer (and the value flips)", () => {
+    setActivePlan(SESSION_ID, "plans/login/.runner-state.json");
+    setActivePlan(SESSION_ID, "plans/auth/.runner-state.json");
+    assert.equal(
+      getActivePlan(SESSION_ID),
+      "plans/auth/.runner-state.json",
+    );
+  });
+
+  it("normalizes separator style before comparing and storing", () => {
+    setActivePlan(SESSION_ID, "plans\\login\\.runner-state.json");
+    assert.equal(
+      getActivePlan(SESSION_ID),
+      "plans/login/.runner-state.json",
+    );
+  });
+
+  it("clears the slot back to null", () => {
+    setActivePlan(SESSION_ID, "plans/login/.runner-state.json");
+    clearActivePlan(SESSION_ID);
+    assert.equal(getActivePlan(SESSION_ID), null);
   });
 
   it("ignores empty / falsy pointers", () => {
-    addActivePlanState(SESSION_ID, "");
-    addActivePlanState(SESSION_ID, null);
-    assert.deepEqual(listActivePlanStates(SESSION_ID), []);
+    setActivePlan(SESSION_ID, "");
+    setActivePlan(SESSION_ID, null);
+    assert.equal(getActivePlan(SESSION_ID), null);
   });
 
   it("is a no-op for an unknown sessionId", () => {
     assert.doesNotThrow(() => {
-      addActivePlanState("no-such-session", "plans/x/.runner-state.json");
+      setActivePlan("no-such-session", "plans/x/.runner-state.json");
     });
+    assert.equal(getActivePlan("no-such-session"), null);
   });
 });
 

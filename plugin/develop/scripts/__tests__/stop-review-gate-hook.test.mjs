@@ -129,9 +129,8 @@ function makeStuckPlan({ sessionId }) {
     path.join(sessionsDir, `${sessionId}.json`),
     JSON.stringify({
       sessionId,
-      createdAt: new Date().toISOString(),
       cwd: projectRoot,
-      activePlanStates: [statePath],
+      activePlan: statePath.replace(/\\/g, "/"),
       stopReviewThreadId: null,
     }, null, 2),
   );
@@ -259,16 +258,16 @@ describe("Stop hook BLOCK-stuck surface", () => {
     const sessionId = `sess-disk-only-${++counter}`;
     const { slug } = makeStuckPlan({ sessionId });
 
-    // Overwrite session.json so it is intentionally empty — same shape as
-    // the cookbook regression where addActivePlanState silently failed.
+    // Overwrite session.json so its activePlan slot is intentionally empty —
+    // same shape as the cookbook regression where setActivePlan silently
+    // failed.
     const sessionsDir = path.join(pluginDataDir, "sessions");
     fs.writeFileSync(
       path.join(sessionsDir, `${sessionId}.json`),
       JSON.stringify({
         sessionId,
-        createdAt: new Date().toISOString(),
         cwd: projectRoot,
-        activePlanStates: [],
+        activePlan: null,
         stopReviewThreadId: null,
       }, null, 2),
     );

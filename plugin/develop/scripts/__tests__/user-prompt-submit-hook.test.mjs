@@ -14,9 +14,12 @@ import {
 } from "../lib/runner-state.mjs";
 
 // UserPromptSubmit hook is integration-tested by spawning the hook script
-// against a synthetic plugin/project layout. The change under test is the
-// "single active plan per session" rule: a fresh /runner invocation must
-// reject when another non-terminal plan is registered to the same session.
+// against a synthetic plugin/project layout. The fresh-start branch no
+// longer enforces "one /runner per terminal" — the session slot is
+// informational, and setActivePlan overwrites with a stderr warning when
+// the pointer changes. These tests pin the new behaviour: a second
+// /runner in the same session passes through to a bootstrap, and the
+// session.json's activePlan slot reflects the latest plan.
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const HOOK = path.resolve(SCRIPT_DIR, "..", "user-prompt-submit-hook.mjs");
@@ -130,7 +133,7 @@ function runHook({ prompt, sessionId }) {
 
 function makeSessionWithActivePlan(sessionId, planSlug, branch, status) {
   // Create a state file for the "other" plan on disk and register it in the
-  // session's activePlanStates pointer list.
+  // session's activePlan slot.
   const stateDir = path.join(projectRoot, "plans", planSlug);
   fs.mkdirSync(stateDir, { recursive: true });
   const statePath = path.join(stateDir, ".runner-state.json");
@@ -159,26 +162,31 @@ function makeSessionWithActivePlan(sessionId, planSlug, branch, status) {
   }
   saveState(statePath, state);
 
-  // Write a session JSON that already points at it.
+  // Write a session JSON that already points at it via the single slot.
   const sessionsDir = path.join(pluginDataDir, "sessions");
   fs.mkdirSync(sessionsDir, { recursive: true });
   fs.writeFileSync(
     path.join(sessionsDir, `${sessionId}.json`),
     JSON.stringify({
       sessionId,
-      createdAt: new Date().toISOString(),
       cwd: projectRoot,
-      activePlanStates: [statePath],
+      activePlan: statePath.replace(/\\/g, "/"),
       stopReviewThreadId: null,
     }, null, 2),
   );
   return statePath;
 }
 
+function readSessionJson(sessionId) {
+  const file = path.join(pluginDataDir, "sessions", `${sessionId}.json`);
+  if (!fs.existsSync(file)) return null;
+  return JSON.parse(fs.readFileSync(file, "utf8"));
+}
+
 // ---------------------------------------------------------------------------
 
-describe("UserPromptSubmit single-active-plan rule", () => {
-  it("rejects a new /runner when another plan is mid-flight in the same session", () => {
+describe("UserPromptSubmit active-plan slot behaviour", () => {
+  it("allows a second /runner in the same session and overwrites the slot", () => {
     const sessionId = `sess-${++counter}`;
     makeSessionWithActivePlan(
       sessionId,
@@ -192,14 +200,21 @@ describe("UserPromptSubmit single-active-plan rule", () => {
       prompt: "/runner plans/plan-b.plan.md",
       sessionId,
     });
-    assert.equal(r.status, 0, "hook itself exits 0 even when blocking");
-    const decision = JSON.parse(r.stdout);
-    assert.equal(decision.decision, "block");
-    assert.match(decision.reason, /이미 진행 중인 plan/);
-    assert.match(decision.reason, /plan-a/);
+    assert.equal(r.status, 0, "hook itself exits 0");
+    const out = JSON.parse(r.stdout);
+    // No more block — the second /runner passes through to a bootstrap.
+    assert.ok(out.hookSpecificOutput, "expected additionalContext payload");
+    assert.match(
+      out.hookSpecificOutput.additionalContext,
+      /\[runner-skill bootstrap\]/,
+    );
+    // The session's activePlan slot now points at plan-b's state file.
+    const session = readSessionJson(sessionId);
+    assert.ok(session, "session.json must exist");
+    assert.match(session.activePlan, /plan-b\/\.runner-state\.json$/);
   });
 
-  it("ignores terminal (merged) plans when checking for collisions", () => {
+  it("passes through when the prior slot points at a merged plan", () => {
     const sessionId = `sess-${++counter}`;
     makeSessionWithActivePlan(
       sessionId,
@@ -215,7 +230,7 @@ describe("UserPromptSubmit single-active-plan rule", () => {
     });
     assert.equal(r.status, 0);
     const out = JSON.parse(r.stdout);
-    // additionalContext, not block — the merged sibling should not gate us.
+    // additionalContext, not block — there is no collision check anymore.
     assert.ok(out.hookSpecificOutput, "expected additionalContext payload");
     assert.equal(out.hookSpecificOutput.hookEventName, "UserPromptSubmit");
     assert.match(

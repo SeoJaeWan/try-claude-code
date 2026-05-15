@@ -7,11 +7,11 @@
 //      thread across stop-review passes avoids cold-start latency, so the
 //      thread id outlives any individual plan and stays here.
 //
-//   2. Active plan-state pointers — `activePlanStates`. The Stop hook needs
-//      to know which plan-state files this session is currently driving.
-//      Keeping a small list of paths (not the plan state itself) lets the
-//      Stop hook open the relevant `.runner-state.json` files without
-//      globbing the entire `plans/` tree.
+//   2. Active plan-state pointer — `activePlan`. A single string slot that
+//      records the .runner-state.json this session is currently driving.
+//      The slot is informational: UserPromptSubmit overwrites it and emits a
+//      stderr warning when the value changes. The Stop hook does not read it
+//      (it globs `plans/**/.runner-state.json` directly).
 //
 // Per-plan state (worktree path, status, BLOCK history) lives in the
 // runner-state SSOT (`plans/{plan_key}/.runner-state.json`), not here.
@@ -24,10 +24,6 @@ import { normalizePath, writeJsonAtomic } from "./fs.mjs";
 
 const PLUGIN_DATA_ENV = "CLAUDE_PLUGIN_DATA";
 const FALLBACK_SESSIONS_DIR = path.join(os.tmpdir(), "codex-companion", "sessions");
-
-function nowIso() {
-  return new Date().toISOString();
-}
 
 export function resolveSessionsDir() {
   const pluginDataDir = process.env[PLUGIN_DATA_ENV];
@@ -46,14 +42,13 @@ export function createSession(sessionId, cwd) {
   ensureSessionsDir();
   const session = {
     sessionId,
-    createdAt: nowIso(),
     cwd: normalizePath(cwd),
-    activePlanStates: [],
+    activePlan: null,
     stopReviewThreadId: null,
   };
   // Atomic write: a process kill or OS crash mid-write would otherwise leave
   // a half-written JSON that loadSession swallows as `null`, silently losing
-  // the session's plan-state pointers and Codex thread id.
+  // the session's plan pointer and Codex thread id.
   writeJsonAtomic(resolveSessionFile(sessionId), session);
   return session;
 }
@@ -65,11 +60,11 @@ export function createSession(sessionId, cwd) {
 function parseSessionShape(parsed, sessionId) {
   return {
     sessionId: parsed.sessionId ?? sessionId,
-    createdAt: parsed.createdAt ?? nowIso(),
     cwd: parsed.cwd ?? "",
-    activePlanStates: Array.isArray(parsed.activePlanStates)
-      ? parsed.activePlanStates.filter((p) => typeof p === "string" && p.length > 0)
-      : [],
+    activePlan:
+      typeof parsed.activePlan === "string" && parsed.activePlan.length > 0
+        ? parsed.activePlan
+        : null,
     stopReviewThreadId: parsed.stopReviewThreadId ?? null,
   };
 }
@@ -129,56 +124,51 @@ export function deleteSession(sessionId) {
 
 
 // ---------------------------------------------------------------------------
-// Active plan-state pointers
+// Active plan-state pointer (single slot)
 // ---------------------------------------------------------------------------
 //
-// The runner pipeline registers each plan it starts here so the Stop hook
-// can find the relevant plan-state files without globbing. Pointers are
-// normalized POSIX paths so comparisons are stable across the Bash and PWSH
-// callers that hand them in.
+// The runner pipeline records the plan it is currently driving here. Only one
+// slot per session — overwriting an existing value emits a stderr warning so
+// surprising replacements are visible during debugging. The Stop hook does
+// not read this slot; it discovers armed plans by globbing the plans/ tree.
 
-function normalizePtr(p) {
-  return normalizePath(p);
-}
-
-export function addActivePlanState(sessionId, statePath) {
+export function setActivePlan(sessionId, statePath) {
   const session = loadSession(sessionId);
   if (!session) {
-    // session.json is now an optional cache — the Stop hook reads armed
-    // plans directly from disk — but a failed registration here used to
-    // silently break activePlanStates pointer tracking. Log so a manual
-    // bootstrap with a placeholder session_id (or any other mismatch) is
-    // visible instead of producing a confusing diagnosis later.
+    // session.json is optional cache — the Stop hook reads armed plans
+    // directly from disk — but a failed registration here used to silently
+    // break activePlan tracking. Log so a manual bootstrap with a placeholder
+    // session_id (or any other mismatch) is visible instead of producing a
+    // confusing diagnosis later.
     process.stderr.write(
-      `[sessions] addActivePlanState: session "${sessionId}" not found; ` +
-      `pointer ${statePath} not registered. The plan-state file on disk is ` +
-      `still authoritative — Stop hook will discover it via plans/ glob.\n`,
+      `[sessions] setActivePlan: session "${sessionId}" not found; ` +
+      `slot not updated. plan-state on disk is still authoritative — Stop ` +
+      `hook will discover it via plans/ glob.\n`,
     );
     return;
   }
-  const ptr = normalizePtr(statePath);
+  const ptr = normalizePath(statePath);
   if (!ptr) return;
-  if (!session.activePlanStates.includes(ptr)) {
-    session.activePlanStates.push(ptr);
-    saveSession(session);
+  if (session.activePlan && session.activePlan !== ptr) {
+    process.stderr.write(
+      `[sessions] setActivePlan: overwriting "${session.activePlan}" with "${ptr}".\n`,
+    );
   }
+  if (session.activePlan === ptr) return;
+  session.activePlan = ptr;
+  saveSession(session);
 }
 
-export function removeActivePlanState(sessionId, statePath) {
+export function getActivePlan(sessionId) {
   const session = loadSession(sessionId);
-  if (!session) return;
-  const ptr = normalizePtr(statePath);
-  if (!ptr) return;
-  const before = session.activePlanStates.length;
-  session.activePlanStates = session.activePlanStates.filter((p) => p !== ptr);
-  if (session.activePlanStates.length !== before) {
-    saveSession(session);
-  }
+  return session?.activePlan ?? null;
 }
 
-export function listActivePlanStates(sessionId) {
+export function clearActivePlan(sessionId) {
   const session = loadSession(sessionId);
-  return session ? [...session.activePlanStates] : [];
+  if (!session || !session.activePlan) return;
+  session.activePlan = null;
+  saveSession(session);
 }
 
 // ---------------------------------------------------------------------------
