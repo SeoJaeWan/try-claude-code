@@ -23,19 +23,20 @@ directly in the next dev-review round; routing them through stop-review
 would decouple round counts from review results and create BLOCK ↔ rework
 cycles that the UI cannot represent.
 
-## Round bookkeeping invariants
+## Feedback file bookkeeping
 
-The dev-review server reads `dev_review.current_round` directly as
-`review_iteration`, so the runner is responsible for keeping it accurate.
-`begin-rework` is the only call that bumps the round — the first entry
-into Step 4 stays at round 1 because there is no rework yet.
+There is no round counter. Each invocation of dev-review writes the
+current state into `feedback.json` and the prior round's data into
+`review-history.json` (see dev-review SKILL.md Step 3). The runner's only
+bookkeeping responsibility is recording the feedback path in
+`state.dev_review.last_feedback_path` so rework dispatches can find it.
 
-| Trigger | Effect on round |
+| Trigger | Effect |
 |---|---|
-| First Step 4 entry (after Stop-review ALLOW) | stays at round 1, no bump |
-| `result = "approved"` | no change, move to Step 5 via `mark-approved` |
-| `result = "qa_required"` | no change, phase toggles `awaiting → qa → awaiting` (`mark-qa-pending` / `qa-resolved`) |
-| `result = "rework"` | `begin-rework` bumps round + flips phase `awaiting → rework` + records feedback path in one call; after every rework agent commits, `rework-done` flips phase back to `awaiting` |
+| First Step 4 entry (after Stop-review ALLOW) | dev-review skill writes a fresh `feedback.json`; runner has nothing to do until the result comes back |
+| `result = "approved"` | move to Step 5 via `mark-approved` |
+| `result = "qa_required"` | phase toggles `awaiting → qa → awaiting` (`mark-qa-pending` / `qa-resolved`) |
+| `result = "rework"` | `begin-rework` flips phase `awaiting → rework` and records the feedback path in one call; after every rework agent commits, `rework-done` flips phase back to `awaiting` |
 
 ## Why "foreground only" matters
 

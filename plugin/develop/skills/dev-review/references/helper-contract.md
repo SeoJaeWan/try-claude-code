@@ -19,26 +19,25 @@ node {CLAUDE_PLUGIN_ROOT}/develop/skills/dev-review/scripts/generate-review-data
 All paths may be absolute or relative to `process.cwd()`. The script resolves them internally and prints the resolved paths to stderr at `info` level.
 
 Per-plan fields the helper used to take as flags (`--task-slug`,
-`--plan-path`, `--worktree`, `--base`, `--task-branch`, `--iteration`) are
-now read from the plan-state JSON:
+`--plan-path`, `--worktree`, `--base`, `--task-branch`) are now read from
+the plan-state JSON:
 
 | Helper field         | State source                          |
 |----------------------|---------------------------------------|
 | `task_slug`          | `state.plan_slug`                     |
 | `plan_path`          | `state.plan_path`                     |
-| `worktree_path`      | `state.worktree_path`                 |
+| `worktree_path`     | `state.worktree_path`                 |
 | `base_branch`        | `state.base_branch`                   |
 | `task_branch`        | `state.task_branch`                   |
-| `review_iteration`   | `state.dev_review.current_round`      |
 
-`current_round` must be `>= 1` when the helper runs — the runner skill is
-responsible for bumping it via `runner-state.bumpDevReviewRound` before
-invoking the helper. A `0` value exits with code `2`.
+Rounds are identified by `task_head_sha` rather than a counter — the
+helper writes the current worktree HEAD into `review-data.json` and the
+UI labels rounds by short SHA.
 
 Exit codes:
 
 - `0` — `review-data.json` written, all deterministic fields populated
-- `2` — invalid arguments (missing `--state-path`, state load failure, `current_round < 1`)
+- `2` — invalid arguments (missing `--state-path`, state load failure)
 - `3` — git invocation failed (worktree missing, branch missing, no commits in range)
 - `4` — plan parsing failed (file missing — only used for signature)
 - `5` — I/O failure (cannot write output, cannot read asset)

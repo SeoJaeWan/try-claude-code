@@ -31,27 +31,27 @@ The runner passes a single absolute path:
 - `state_path` — `plans/{plan_key}/.runner-state.json` (`plan_key` is the plan dir's relative path under `plans/`; `auth/login` for a nested plan, just the filename stem for a flat one)
 
 Everything the skill used to receive as separate flags (`task_slug`,
-`plan_path`, `worktree_path`, `base_branch`, `task_branch`, `review_iteration`)
-is read from that state file via the runner-state library. The skill
-therefore does not negotiate identity with the caller — there is one source
-of truth and it lives on disk.
+`plan_path`, `worktree_path`, `base_branch`, `task_branch`) is read from
+that state file via the runner-state library. The skill therefore does
+not negotiate identity with the caller — there is one source of truth
+and it lives on disk.
 
 The skill infers `task_head_sha` from the worktree the state points at,
 derives `plan_signature` via the helper, and reads prior `feedback.json` /
 `review-history.json` when they exist.
 
-### Round bookkeeping is the runner's job
+### Rounds are identified by task_head_sha, not a counter
 
-Before invoking this skill for a new round, the runner bumps
-`state.dev_review.current_round` (using the `bumpDevReviewRound` helper from
-`runner-state.mjs`). When this skill or the helper script reads
-`state.dev_review.current_round`, that value is used **as-is** for the
-`review_iteration` field — no in-skill increment.
+There is no `current_round` integer in plan-state. The "current" review is
+always the one matching the worktree's live `task_head_sha`, and the UI
+labels rounds by the short SHA instead of a sequential index. Past rounds'
+data is snapshotted into `review-history.json` on re-entry — see Step 3.
 
-When the skill is re-entered after the user replies `리뷰 완료` for the
-same round (e.g. answering `qa_required` questions), the runner does NOT
-bump the round; the skill picks up the existing value and re-reads
-`feedback.json` against the same iteration.
+`feedback.json` is a single live working file that the server overwrites
+on each reviewer action. When the runner re-invokes this skill after
+rework lands new commits, Step 2 below snapshots the soon-to-be-replaced
+`feedback.json` into `review-history.json` and then resets the live file
+for the new HEAD.
 
 ## Artifacts the skill owns
 
@@ -63,8 +63,8 @@ plans/{key}/dev-review/              ← data-root; `key` is the plan dir's
                                        plan `plans/foo/plan.md` it is `foo`
                                        (the directory IS the plan_key).
 ├── review-data.json                # written by helper; deterministic; regenerated each round
-├── feedback.json                   # written by server on each reviewer action
-├── review-history.json             # append-only record of prior rounds
+├── feedback.json                   # live working file; overwritten by server on each reviewer action
+├── review-history.json             # append-only record of prior rounds (snapshot taken at re-entry)
 └── assets/
     └── diffs/                      # raw-diff .diff files keyed by short_sha
 
@@ -89,8 +89,6 @@ plugin/develop/skills/dev-review/    ← html-root (one global copy)
   out. `task_head_sha = git -C {state.worktree_path} rev-parse HEAD`.
 - There is at least one commit in `state.base_branch..task_head_sha`. An
   empty range is a caller bug — stop and report.
-- `state.dev_review.current_round >= 1`. The runner bumps it before calling;
-  a value of `0` means the runner skipped the bump and we cannot proceed.
 - The plugin's dev-review server `${CLAUDE_PLUGIN_ROOT}/skills/dev-review/scripts/server.mjs` exists. This server is plugin-internal — do not reference the orchestrator's server.
 - The plugin html-root is readable: `${CLAUDE_PLUGIN_ROOT}/skills/dev-review/assets/index.html` AND the diff2html / highlight.js bundles under `assets/vendor/`. If any vendor file is missing, stop — the plugin install is broken.
 
@@ -99,7 +97,7 @@ If validation fails, do not write partial artifacts. Report the exact blocker.
 ### Step 1. Run the deterministic generator
 
 Call the helper with the state path. Every per-plan field (slug, plan path,
-worktree, branches, iteration) is read from the state JSON inside the helper:
+worktree, branches) is read from the state JSON inside the helper:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/dev-review/scripts/generate-review-data.mjs" \
@@ -123,9 +121,12 @@ See `references/helper-contract.md` for the full CLI and exit-code contract.
 
 ### Step 2. Initialize or migrate `feedback.json`
 
-There is no interpretation agent in v2. After the helper writes `review-data.json`, the skill prepares `feedback.json` for the new round:
+There is no interpretation agent in v2. After the helper writes
+`review-data.json`, the skill prepares the live `feedback.json` for the
+new round. The previous round's data lives in `review-history.json` (see
+Step 3) so the live file can be safely overwritten or carried forward.
 
-- **Round 1 (no prior `feedback.json`)** → write a fresh skeleton:
+- **First round (no prior `feedback.json`)** → write a fresh skeleton:
 
   ```json
   {
@@ -140,9 +141,9 @@ There is no interpretation agent in v2. After the helper writes `review-data.jso
   }
   ```
 
-- **Round N+1 (prior `feedback.json` exists, `plan_signature` matches)** → carry over what's still relevant:
+- **Subsequent round (prior `feedback.json` exists, `plan_signature` matches)** → carry over what's still relevant:
 
-  - Read prior `feedback.json` and prior `review-history.json` (if any).
+  - Read the prior `feedback.json` (its absolute path is in `state.dev_review.last_feedback_path`) and prior `review-history.json` (if any).
   - Compute the set of "new commits in this round": `commits[].sha` in the new `review-data.json` whose sha is **not** in the most-recent history round's `commits_snapshot`.
   - For each prior comment with `type === "needs-change"`:
     - If the comment's `commit_sha` matches a commit that has any new follow-up commit (i.e., a new commit appears after it chronologically AND touches the same file), treat it as **resolved by rework** → push to history (Step 5) and drop from live `comments[]`.
@@ -155,7 +156,7 @@ There is no interpretation agent in v2. After the helper writes `review-data.jso
     - Otherwise → preserve as-is.
   - Update `task_head_sha` to the new head; bump `updated_at`.
 
-- **`plan_signature` mismatch** → discard prior `feedback.json` entirely; write the round-1 skeleton.
+- **`plan_signature` mismatch** → discard prior `feedback.json` entirely; write the first-round skeleton.
 
 Write `feedback.json` atomically.
 
@@ -163,14 +164,14 @@ Write `feedback.json` atomically.
 
 ### Step 3. Append to review history (round skeleton)
 
-On the very first call (`review_iteration == 1`), create `review-history.json` with an empty `rounds[]` array.
+On the very first call (no prior feedback file), create `review-history.json` with an empty `rounds[]` array.
 
-On re-entry (`review_iteration > 1`), append a new round entry capturing what closed in Step 2:
+On re-entry (prior feedback file exists), append a new round entry capturing what closed in Step 2:
 
 ```jsonc
 {
-  "id": "R{review_iteration - 1}",        // the round that just closed (resolved by this regeneration)
-  "submitted_at": "<prior feedback.json updated_at, or now>",
+  "id": "R-<prior task_head_sha short>",  // the round that just closed (resolved by this regeneration)
+  "submitted_at": "<prior feedback file updated_at, or now>",
   "source_task_head_sha": "<prior task_head_sha>",
   "source_plan_signature": "<prior plan_signature>",
   "resulting_task_head_sha": "<current task_head_sha>",
@@ -186,7 +187,7 @@ On re-entry (`review_iteration > 1`), append a new round entry capturing what cl
 
 See `references/review-data-schema.md` for the full history shape.
 
-### Step 3.5. Record the round in plan-state
+### Step 3.5. Record the feedback file in plan-state
 
 After Steps 1–3 produce the round's artifacts, write the feedback file path
 back into the plan-state so the runner skill (and the next `/runner` resume)
@@ -196,9 +197,6 @@ can find it without re-deriving the location:
 - Set `state.dev_review.last_feedback_path` to the absolute path of the
   freshly initialized `feedback.json`.
 - Save with `runner-state.saveState`. This bumps `updated_at` automatically.
-
-The `current_round` value is **not** changed here — the runner already bumped
-it before calling.
 
 ### Step 4. Auto-start the server and hand off to the user
 

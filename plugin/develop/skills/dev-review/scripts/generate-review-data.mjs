@@ -11,7 +11,7 @@
 // CLI shape:
 //   --state-path <abs path>     required. The plan-state JSON; supplies
 //                               plan_slug / plan_path / worktree_path /
-//                               base_branch / task_branch / iteration.
+//                               base_branch / task_branch.
 //   --out <abs path>            optional. Defaults to
 //                               `{state-dir}/dev-review/review-data.json`.
 //   --diffs-dir <abs path>      optional. Defaults to `{out-dir}/assets/diffs/`.
@@ -63,10 +63,7 @@ function main() {
 function run(args, logger) {
   const workspaceRoot = process.env.CLAUDE_WORKSPACE_ROOT || process.cwd();
 
-  // Resolve every per-plan input from the plan-state JSON. The runner skill
-  // is responsible for bumping `dev_review.current_round` *before* calling
-  // the helper, so whatever value lives there is also the iteration we use
-  // for this round — the helper does not recompute it.
+  // Resolve every per-plan input from the plan-state JSON.
   const statePathAbs = path.resolve(args.statePath);
   ensurePathExists(statePathAbs, "--state-path", 2);
 
@@ -93,15 +90,6 @@ function run(args, logger) {
   const taskSlug = state.plan_slug;
   const baseBranch = state.base_branch;
   const taskBranch = state.task_branch;
-  const iteration = state.dev_review?.current_round ?? 0;
-  if (iteration < 1) {
-    const err = new Error(
-      `plan-state.dev_review.current_round must be >= 1 before invoking dev-review ` +
-      `(was ${iteration}). The runner skill bumps this before calling the helper.`,
-    );
-    err.exitCode = 2;
-    throw err;
-  }
 
   ensurePathExists(planAbs, "state.plan_path", 4);
   ensurePathExists(worktreeAbs, "state.worktree_path", 3);
@@ -211,7 +199,6 @@ function run(args, logger) {
     task_branch: taskBranch,
     task_head_sha: taskHeadSha,
     worktree_path: worktreeAbs,
-    review_iteration: iteration,
     state_path: toPosix(path.relative(workspaceRoot, statePathAbs)),
     generated_at: generatedAt,
     available_agents: availableAgents,

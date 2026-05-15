@@ -97,7 +97,7 @@ The reviewer finishes by saying `리뷰 완료` in chat. The UI does not signal 
 
 ### Sidebar
 
-- **Task header** at top: `task_slug`, `R{review_iteration}` badge.
+- **Task header** at top: `task_slug`, `@{short_task_head_sha}` badge.
 - **Commits list** (scrollable):
   - Order = `review-data.json.commits[]` order (oldest first, matches `git log --reverse`).
   - Each item: viewed checkbox · short_sha · subject (line-clamped to 2 lines) · status badge.

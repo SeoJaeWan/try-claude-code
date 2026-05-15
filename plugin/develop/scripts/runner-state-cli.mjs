@@ -29,9 +29,9 @@
 //
 //   begin-rework <state> <feedback-path>
 //     Assert status = dev_reviewing && dev_review.phase = "awaiting".
-//     Phase mutation → "rework". bumpDevReviewRound(state, feedback-path)
-//     so the round number visible to the reviewer matches the persisted
-//     round.
+//     Phase mutation → "rework". Records the feedback path so the runner
+//     skill can find rework_items[] when dispatching rework agents. No
+//     round counter is persisted — feedback files are named by timestamp.
 //
 //   rework-done <state>
 //     Assert status = dev_reviewing && dev_review.phase = "rework".
@@ -73,10 +73,10 @@ import {
   STATUS,
   STOP_REVIEW_PHASE,
   assertExpectedStatus,
-  bumpDevReviewRound,
   loadState,
   recordPlanBlock,
   saveState,
+  setDevReviewFeedbackPath,
   setDevReviewPhase,
   setLastReviewedCommit,
   setStopReviewArmed,
@@ -218,7 +218,7 @@ function cmdArmForDispatch(statePath) {
 // feedback path, then move phase → `to`. Pulling the spec into one table
 // keeps the per-command boilerplate down to a single dispatch function.
 const PHASE_MUTATIONS = {
-  "begin-rework":    { from: DEV_REVIEW_PHASE.AWAITING, to: DEV_REVIEW_PHASE.REWORK,   bumpRound: true, needsFeedback: true },
+  "begin-rework":    { from: DEV_REVIEW_PHASE.AWAITING, to: DEV_REVIEW_PHASE.REWORK,   needsFeedback: true },
   "rework-done":     { from: DEV_REVIEW_PHASE.REWORK,   to: DEV_REVIEW_PHASE.AWAITING },
   "mark-qa-pending": { from: DEV_REVIEW_PHASE.AWAITING, to: DEV_REVIEW_PHASE.QA },
   "qa-resolved":     { from: DEV_REVIEW_PHASE.QA,       to: DEV_REVIEW_PHASE.AWAITING },
@@ -242,7 +242,7 @@ function cmdPhaseMutation(subcommand, statePath, args) {
           `"${state.dev_review.phase}").`,
         );
       }
-      if (spec.bumpRound) bumpDevReviewRound(state, feedbackPath);
+      if (spec.needsFeedback) setDevReviewFeedbackPath(state, feedbackPath);
       setDevReviewPhase(state, spec.to);
     },
   });

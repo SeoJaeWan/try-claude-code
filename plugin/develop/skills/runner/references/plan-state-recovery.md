@@ -28,7 +28,6 @@ state file that needs trimming.
 | `stop_review.last_result` | `"ALLOW" \| "BLOCK" \| "skipped" \| null` | runner-state-cli `record-stop-review-*` | Log label only. Editing it does not change behaviour but makes block_history confusing. |
 | `stop_review.last_reviewed_commit` | sha or null | runner-state-cli `record-stop-review-*` | **No.** Stop hook uses this to decide "have I reviewed HEAD already?". Setting it wrong either replays a review or skips an unreviewed sha. |
 | `stop_review.block_history` | array | runner-state-cli `record-stop-review-block` | Append-only log capped at 10 entries. Each entry is `{at, reason_excerpt}` — no count or escalation logic anymore. Safe to inspect; do not edit by hand. |
-| `dev_review.current_round` | int | runner-state-cli `begin-rework` | **No.** The dev-review helper reads it and writes review-data.json keyed by it. Mismatch means the browser shows the wrong round. |
 | `dev_review.phase` | `"awaiting" \| "rework" \| "qa" \| null` | runner-state-cli phase mutators | Sub-state of `dev_reviewing`. Set via `setDevReviewPhase` library helper, not by hand. |
 | `dev_review.last_feedback_path` | path or null | runner-state-cli `begin-rework` | Yes if you regenerated feedback.json elsewhere. |
 | `session_id` | string or null | UserPromptSubmit hook | Usually no. Only when manually re-attaching to a session. |
@@ -138,8 +137,8 @@ The fixup CLI no longer carries `--rotate-plan-path` because the
 state-file location is derived from the plan path. The cleanest move
 is to drop the old state and re-run `/runner` against the new plan path —
 the hook will create a fresh state at the new canonical location. If you
-need to preserve `block_history` / `dev_review.current_round` across the
-rename:
+need to preserve `block_history` / `dev_review.last_feedback_path` across
+the rename:
 
 ```bash
 # 1. Update plan_path inside the JSON.
@@ -153,18 +152,7 @@ mkdir -p <new-state-dir>
 mv <old-state-path> <new-state-dir>/.runner-state.json
 ```
 
-### 6. Bump dev-review round manually
-
-```bash
-jq '.dev_review.current_round += 1 | .dev_review.last_feedback_path = $p' \
-  --arg p "<absolute/path/to/feedback.json>" \
-  <state-path> > <state-path>.new && mv <state-path>.new <state-path>
-```
-
-The dev-review skill reads `current_round` to find the matching
-`review-data-<n>.json` / `feedback-<n>.json` pair on disk.
-
-### 7. Re-run a plan that was already `merged`
+### 6. Re-run a plan that was already `merged`
 
 State files in `merged` are terminal; UserPromptSubmit refuses to resume
 them. Use the CLI's reset command:

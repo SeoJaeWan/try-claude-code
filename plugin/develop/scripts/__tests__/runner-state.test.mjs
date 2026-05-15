@@ -11,13 +11,13 @@ import {
   STOP_REVIEW_PHASE,
   TERMINAL_STATUSES,
   assertExpectedStatus,
-  bumpDevReviewRound,
   createInitialState,
   deriveStatePathFromPlanPath,
   deriveWorktreePathFromBranch,
   loadState,
   recordPlanBlock,
   saveState,
+  setDevReviewFeedbackPath,
   setDevReviewPhase,
   setLastReviewedCommit,
   setStopReviewArmed,
@@ -141,7 +141,6 @@ describe("createInitialState", () => {
     assert.equal(state.stop_review.phase, null);
     assert.equal(state.dev_review.phase, null);
     assert.deepEqual(state.stop_review.block_history, []);
-    assert.equal(state.dev_review.current_round, 0);
     assert.equal(state.session_id, "sess-1");
     // Timestamps populated.
     assert.ok(state.created_at);
@@ -560,8 +559,8 @@ describe("setStopReviewPhase / setDevReviewPhase", () => {
   });
 });
 
-describe("bumpDevReviewRound", () => {
-  it("increments and stores feedback path", () => {
+describe("setDevReviewFeedbackPath", () => {
+  it("stores feedback path on the state", () => {
     const s = createInitialState({
       planSlug: "x",
       planPath: "/p/x.plan.md",
@@ -570,11 +569,12 @@ describe("bumpDevReviewRound", () => {
       taskBranch: "feat/x",
       worktreePath: "/p/worktrees/feat-x",
     });
-    bumpDevReviewRound(s, "/p/x/dev-review/r1/feedback.json");
-    assert.equal(s.dev_review.current_round, 1);
-    assert.equal(s.dev_review.last_feedback_path, "/p/x/dev-review/r1/feedback.json");
-    bumpDevReviewRound(s, "/p/x/dev-review/r2/feedback.json");
-    assert.equal(s.dev_review.current_round, 2);
+    setDevReviewFeedbackPath(s, "/p/x/dev-review/feedback.json");
+    assert.equal(s.dev_review.last_feedback_path, "/p/x/dev-review/feedback.json");
+    setDevReviewFeedbackPath(s, "/p/x/dev-review/feedback.json");
+    assert.equal(s.dev_review.last_feedback_path, "/p/x/dev-review/feedback.json");
+    setDevReviewFeedbackPath(s, null);
+    assert.equal(s.dev_review.last_feedback_path, null);
   });
 });
 

@@ -304,10 +304,13 @@
       document.querySelector("#sb-task").textContent = state.model.task_slug;
       const meta = document.querySelector("#sb-meta");
       meta.innerHTML = "";
-      const round = document.createElement("span");
-      round.className = "sb-round-badge";
-      round.textContent = `Round ${state.model.review_iteration}`;
-      meta.appendChild(round);
+      const head = document.createElement("span");
+      head.className = "sb-round-badge";
+      const sha = typeof state.model.task_head_sha === "string"
+        ? state.model.task_head_sha.slice(0, 7)
+        : "—";
+      head.textContent = `@${sha}`;
+      meta.appendChild(head);
       const totals = document.createElement("span");
       const t = state.model.totals || {};
       totals.textContent = `${t.total_commits ?? 0} commits · ${t.total_files_changed ?? 0} files · +${t.additions ?? 0}/-${t.deletions ?? 0}`;

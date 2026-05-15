@@ -148,17 +148,16 @@ describe("runner-state-cli arm-for-dispatch", () => {
 // ---------------------------------------------------------------------------
 
 describe("runner-state-cli begin-rework + rework-done", () => {
-  it("begin-rework bumps round, records feedback path, sets phase=rework", () => {
+  it("begin-rework records feedback path and sets phase=rework", () => {
     const file = makeStateFile({ status: STATUS.DEV_REVIEWING });
-    const feedback = path.join(path.dirname(file), "feedback-round-2.json");
+    const feedback = path.join(path.dirname(file), "feedback.json");
     const r = runCli("begin-rework", file, feedback);
     assert.equal(r.status, 0, r.stderr);
     const after = loadState(file);
     // Status stays at DEV_REVIEWING — only the phase moves.
     assert.equal(after.status, STATUS.DEV_REVIEWING);
     assert.equal(after.dev_review.phase, DEV_REVIEW_PHASE.REWORK);
-    assert.equal(after.dev_review.current_round, 1);
-    assert.match(after.dev_review.last_feedback_path, /feedback-round-2\.json$/);
+    assert.match(after.dev_review.last_feedback_path, /feedback\.json$/);
   });
 
   it("begin-rework requires a feedback path", () => {

@@ -75,7 +75,7 @@ state file, and injects an `additionalContext` block that begins with
 ```
 
 That is the entire contract. Everything else — `status`, `plan_slug`,
-`plan_path`, `worktree_path`, `dev_review.current_round`,
+`plan_path`, `worktree_path`,
 `stop_review.block_history` — lives in the JSON at `state_path`. **Open it
 and read it as your first action every turn**; do not try to remember fields
 from a previous turn.
@@ -304,8 +304,9 @@ Route the result through the right CLI subcommand:
 | `qa_required`            | `mark-qa-pending <state-path>`                            | answer in chat, then `qa-resolved <state-path>`, then re-invoke `dev-review` (same round)                 |
 
 All commands are `node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs"
-<subcommand> ...`. `begin-rework` is the only call that bumps
-`dev_review.current_round`; the first Step 4 entry stays at round 1.
+<subcommand> ...`. `begin-rework` records the feedback.json path; rounds
+themselves are identified by the worktree HEAD's short SHA in the UI, not
+by a counter.
 
 For each `rework_items[i]`, dispatch
 `Agent(subagent_type: item.dispatch_agent, ...)` with the prompt body from
@@ -315,7 +316,7 @@ from `item.comments[]` per the format documented in that file. Rework
 dispatches must be **foreground**.
 
 Rework intentionally does **not** call `arm-for-dispatch`. The per-commit
-semantics, the parallel-vs-sequential rule, and the round-bookkeeping
+semantics, the parallel-vs-sequential rule, and the feedback-file
 invariants live in [`references/dev-review-flow.md`](references/dev-review-flow.md);
 read it the first time a rework branch fires.
 

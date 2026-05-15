@@ -52,7 +52,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" \
 ```
 
 The CLI bundles `assertExpectedStatus` + `transitionStatus` + the auxiliary
-helpers (`setStopReviewArmed`, `bumpDevReviewRound`) + atomic `saveState`
+helpers (`setStopReviewArmed`, `setDevReviewFeedbackPath`) + atomic `saveState`
 for each step the skill needs. Do **not** reach into `runner-state.mjs`
 helpers from inline `node -e` snippets, and do **not** edit the JSON with
 `Edit` / `Write`. The subcommand catalogue, with the canonical step that
@@ -61,7 +61,7 @@ calls each, is:
 | Subcommand | Called from | Effect |
 |---|---|---|
 | `arm-for-dispatch` | Step 3 (before the plan-agent `Agent(...)` call) and Step 3 re-entry (before re-dispatch after BLOCK) | `preparing → dispatching` + `stop_review.phase = "armed"` (or re-arm from `phase = "blocked"`) |
-| `begin-rework` | Step 4 (rework) | phase mutation: `dev_review.phase: awaiting → rework`, bump round, record feedback path. **Status stays `dev_reviewing`.** |
+| `begin-rework` | Step 4 (rework) | phase mutation: `dev_review.phase: awaiting → rework`, record feedback path. **Status stays `dev_reviewing`.** |
 | `rework-done` | Step 4 (after rework dispatches commit) | phase mutation: `dev_review.phase: rework → awaiting` |
 | `mark-qa-pending` | Step 4 (Q&A round) | phase mutation: `dev_review.phase: awaiting → qa` |
 | `qa-resolved` | Step 4 (after answering) | phase mutation: `dev_review.phase: qa → awaiting` |

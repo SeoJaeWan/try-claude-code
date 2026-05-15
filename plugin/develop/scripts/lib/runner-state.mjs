@@ -161,7 +161,6 @@ export function createInitialState({
       block_history: [],
     },
     dev_review: {
-      current_round: 0,
       phase: null,
       last_feedback_path: null,
     },
@@ -444,15 +443,13 @@ export function recordPlanBlock(state, reason) {
   return state;
 }
 
-// Dev-review round bookkeeping. Round numbers start at 1 for the first review
-// pass; the runner skill increments via this helper before invoking dev-review
-// so the round visible to the user matches the round persisted to state.
-export function bumpDevReviewRound(state, feedbackPath = null) {
-  state.dev_review.current_round = (state.dev_review.current_round || 0) + 1;
-  if (feedbackPath !== undefined) {
-    state.dev_review.last_feedback_path = feedbackPath
-      ? toPosixPath(feedbackPath)
-      : null;
-  }
+// Record the absolute path to the latest dev-review feedback.json. Called by
+// `begin-rework` so the runner skill can find the file when dispatching rework
+// agents. Round numbers are no longer tracked — feedback files are named by
+// timestamp so each round has its own artifact without an explicit counter.
+export function setDevReviewFeedbackPath(state, feedbackPath) {
+  state.dev_review.last_feedback_path = feedbackPath
+    ? toPosixPath(feedbackPath)
+    : null;
   return state;
 }

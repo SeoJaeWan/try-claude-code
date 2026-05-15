@@ -23,9 +23,8 @@ A `schema_version < 2` artifact found at regeneration time is treated as stale: 
   "plan_signature": "a3f1c...",                // short hash of plan.md + phase files
   "base_branch": "main",
   "task_branch": "task-auth-login",
-  "task_head_sha": "def4569...",               // full 40-char sha
+  "task_head_sha": "def4569...",               // full 40-char sha; the round identifier
   "worktree_path": "/abs/path/worktrees/task-auth-login", // local-machine only
-  "review_iteration": 2,
   "generated_at": "2026-04-24T10:30:00Z",
 
   "available_agents": [                        // for needs-change dropdown
@@ -152,7 +151,7 @@ The gate passes iff every commit's verdict is `approved` or `out-of-scope`.
 
 ### Round boundary
 
-On re-entry with `review_iteration > 1` and matching `plan_signature`:
+On re-entry with a prior `feedback.json` present and matching `plan_signature`:
 
 - **Comments** — all `needs-change` comments on commits that received any new follow-up commit are auto-marked `resolved` (moved to `review-history.json`'s round entry, removed from `feedback.json.comments`). `question` comments stay if the reviewer hasn't reset them. `out-of-scope` comments are recorded in history and removed from live feedback.
 - **commit_status[sha].viewed** — preserved for commits that haven't received new follow-up commits in this round; reset to `false` for any commit that did.
@@ -224,7 +223,7 @@ When `plan_signature` differs, `feedback.json` is discarded entirely and a fresh
 
 | Field | Owner | Failure behavior |
 |---|---|---|
-| `task_slug`, `plan_path`, `plan_signature`, `base_branch`, `task_branch`, `task_head_sha`, `review_iteration`, `generated_at` | helper | fatal if missing |
+| `task_slug`, `plan_path`, `plan_signature`, `base_branch`, `task_branch`, `task_head_sha`, `generated_at` | helper | fatal if missing |
 | `available_agents` | helper | empty array if no agent files found; UI shows "no agents discovered" warning and disables needs-change submit |
 | `totals.*` | helper | fatal if git parsing fails |
 | `commits[].sha`, `short_sha`, `message_subject`, `message_body`, `author*`, `timestamp`, `additions`, `deletions`, `files_changed`, `raw_diff_path` | helper | fatal if git parsing fails for a non-empty range |

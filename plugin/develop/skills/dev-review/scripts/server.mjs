@@ -237,7 +237,6 @@ function summarizeReview(review) {
   return {
     key: review.key,
     plan_slug: model?.plan_slug ?? null,
-    review_iteration: model?.review_iteration ?? null,
     task_head_sha: typeof model?.task_head_sha === "string"
       ? model.task_head_sha.slice(0, 7)
       : null,
@@ -279,15 +278,13 @@ function urlEncodeKey(key) {
 
 function renderPicker(reviews) {
   const rows = reviews.length === 0
-    ? `<tr><td colspan="4" class="empty">No reviews under <code>${htmlEscape(plansRoot)}</code> yet — generate one with the dev-review helper and refresh.</td></tr>`
+    ? `<tr><td colspan="3" class="empty">No reviews under <code>${htmlEscape(plansRoot)}</code> yet — generate one with the dev-review helper and refresh.</td></tr>`
     : reviews.map((r) => {
         const href = `/review/${urlEncodeKey(r.key)}/`;
-        const round = r.review_iteration != null ? `#${r.review_iteration}` : "—";
         const head = r.task_head_sha ?? "—";
         const when = r.mtimeMs ? new Date(r.mtimeMs).toISOString().replace("T", " ").slice(0, 19) + " UTC" : "—";
         return `<tr>
           <td><a href="${htmlEscape(href)}"><code>${htmlEscape(r.key)}</code></a>${r.plan_slug && r.plan_slug !== r.key ? `<div class="sub">plan_slug: <code>${htmlEscape(r.plan_slug)}</code></div>` : ""}</td>
-          <td>${htmlEscape(round)}</td>
           <td><code>${htmlEscape(head)}</code></td>
           <td class="when">${htmlEscape(when)}</td>
         </tr>`;
@@ -318,7 +315,7 @@ function renderPicker(reviews) {
   <div class="root">Plans root: <code>${htmlEscape(plansRoot)}</code></div>
   <table>
     <thead>
-      <tr><th>Review</th><th>Round</th><th>HEAD</th><th>Updated</th></tr>
+      <tr><th>Review</th><th>HEAD</th><th>Updated</th></tr>
     </thead>
     <tbody>
 ${rows}
@@ -457,7 +454,7 @@ async function handleReviewApi(req, res, review, endpoint) {
       data_root: dataRoot,
       schema_version: model?.schema_version ?? null,
       plan_signature: model?.plan_signature ?? null,
-      review_iteration: model?.review_iteration ?? null,
+      task_head_sha: model?.task_head_sha ?? null,
     });
   }
 
