@@ -91,6 +91,7 @@ Required top-level fields:
 ```json
 {
   "schema_version": 2,
+  "generator_contract_version": 1,
   "task_slug": "task-slug",
   "plan_path": "plans/task-slug/plan.md",
   "plan_signature": "abc123",
@@ -130,8 +131,45 @@ Overview and every required phase item must have a stable `review_item_signature
 
 - Prefer generating `review_item_signature` from deterministic canonical JSON of user-visible review item content plus the global scope/contract context that changes the meaning of that item.
 - Include current Overview scope/contract fields in phase signatures so a scope change invalidates phase approvals even when phase prose did not change.
+- Include phase-linked structured contracts, topology, evidence, and developer-review feedback handling in phase signatures.
 - Do not include volatile fields such as timestamps, history, current feedback, or `review_item_signature` itself.
 - Treat target ids as routing ids only. Do not carry approval forward by `P2` alone.
+
+Phase objects may include structured review sections when the plan contains them:
+
+```json
+{
+  "id": "P2",
+  "goal": "이 phase에서 검토자가 판단해야 할 요약입니다.",
+  "changes": ["짧은 변경 요약"],
+  "structured_contracts": [
+    {
+      "kind": "db-schema",
+      "title": "DB schema 계약",
+      "rows": [
+        {
+          "table": "public.profiles",
+          "columns": "id uuid primary key ...",
+          "policy": "TO authenticated owner row only",
+          "excluded": "결제 정보 저장 없음"
+        }
+      ]
+    }
+  ],
+  "review_feedback": [
+    {
+      "round": "R1",
+      "type": "needs-change",
+      "target_id": "P2",
+      "anchor_id": "contracts",
+      "user_comment": "요청 요약",
+      "resolution_summary": "처리 요약"
+    }
+  ]
+}
+```
+
+Use structured contracts for dense schema, RLS, API, function, state-machine, or validation matrices. Do not split comma-separated field lists into separate `changes[]` bullets.
 
 ## Feedback model
 
@@ -186,6 +224,11 @@ Approval evidence rules:
 - When carrying approval forward from a previous plan signature, rewrite `approved_against.plan_signature` to the current plan signature and set `carried_from_plan_signature` to the prior signature.
 - Non-approved comments do not carry forward across regenerated packages; preserve their submitted round in `review-history.json` instead.
 - When a non-approved comment is added to a target, clear that target's approval.
+- The left sidebar checkbox is an approval shortcut. Checking it sends `approved: true`, not `viewed: true`.
+- The detail pane may still expose separate `Viewed` and `Approved` controls for explicit review state, but approval remains the gate.
+- Adding or editing a `needs-change` or `question` comment sets the target `viewed: true`, clears approval, and removes `approved_against`.
+- Adding an `out-of-scope` comment may set `viewed: true`, but does not create approval evidence.
+- Disable or reject approval while active `needs-change` or `question` comments remain on that target.
 
 The gate is approved only when `review_status = submitted`, every required `review_items[]` entry is approved with current evidence, and no active `needs-change` or `question` comments remain.
 
@@ -200,7 +243,27 @@ Keep the existing history shape:
   "schema_version": 2,
   "task_slug": "task-slug",
   "current_plan_signature": "abc123",
-  "rounds": []
+  "rounds": [
+    {
+      "id": "R1",
+      "submitted_at": "2026-04-23T00:00:00.000Z",
+      "source_plan_signature": "abc123",
+      "resulting_plan_signature": "def456",
+      "summary": "한국어 round 요약",
+      "items": [
+        {
+          "target_id": "P2",
+          "anchor_id": "contracts",
+          "type": "needs-change",
+          "user_comment": "검토자가 요청한 내용 요약",
+          "triage_route": "plan_revision",
+          "action_summary": ["controller 또는 sub-agent 처리 요약"],
+          "resolution_summary": "phase에 반영된 방식 요약",
+          "phase_id": "P2"
+        }
+      ]
+    }
+  ]
 }
 ```
 
@@ -208,6 +271,7 @@ Rules:
 
 - Keep current editable review state in `feedback.json`.
 - Append or update `review-history.json` before resetting same-signature feedback or regenerating the package after a revision.
+- Do not reset live `needs-change` or `question` comments until their submitted round is represented in `review-history.json`.
 - Preserve prior rounds when `plan_signature` changes.
 - Browser-visible history prose fields must be Korean summaries. Preserve paths, globs, package names, code identifiers, schema keys, enum values, branch names, and signatures in their original spelling.
 
@@ -225,11 +289,15 @@ Read `feedback.json`.
 
 Any change to `plan_signature` invalidates package-level approval, but not every item-level approval. Regenerate the review data package, carry forward only prior approved items whose current `review_item_signature` is identical, and require browser re-submit. If an item's signature is missing, changed, or unverifiable, clear that item's approval and require fresh review.
 
+Any change to `generator_contract_version` invalidates generated review data even when `plan_signature` is unchanged. Regenerate the package before asking the user to approve.
+
 ## Guardrails
 
 - Do not show raw `plan.md` or phase markdown as the default view.
 - Do not hide `plan-review` findings.
 - Do not treat evidence previews as implemented behavior.
+- Do not render dense schema/RLS/API/function details only as `changes[]` bullets when the plan provides a structured contract section.
+- Do not treat a sidebar check as a viewed-only signal; it is an approval shortcut and must create or clear approval evidence.
 - Do not let `architect` reinterpret approved feedback. If feedback changes scope or direction, revise the plan and require fresh developer review.
 - Do not strip `owner_agent` routing from phase data when the reviewed plan defines it.
 - Do not route non-approved feedback directly to `architect` from `question` or `needs-change` labels alone.

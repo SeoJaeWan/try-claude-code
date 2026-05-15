@@ -22,9 +22,13 @@ At the gate:
 - Create or refresh `review-history.json` for current `task-slug` and `plan_signature`.
 - Ensure `review-data.json.review_items[]` contains `overview` and every required Phase target with a stable `review_item_signature`; include global scope/contract context in phase signatures so scope changes invalidate affected approvals.
 - Include topology and evidence metadata in review item signatures so changes to phase-linked paths, responsibilities, input/output harnesses, or evidence content invalidate stale approval.
+- Include a `generator_contract_version` in `review-data.json`. When the generator/UI contract changes, stale packages with an older or missing version must be regenerated even if `plan_signature` is unchanged.
 - Ensure `review-data.json` is user-readable and not a raw markdown dump:
   - Overview shows the user's request, planner understanding, included scope, excluded scope, change shape, major changes, risks, and review findings.
-  - Each phase step shows only that phase's goal, changes, contracts, file impact, topology, evidence artifacts, validation, risks, UI plan preview when applicable, and phase `owner_agent` when known.
+  - Each phase step shows only that phase's goal, changes, contracts, structured contracts, file impact, topology, evidence artifacts, validation, risks, developer-review feedback handling, UI plan preview when applicable, and phase `owner_agent` when known.
+  - Keep phase `goal` as a readable judgment summary, not a long list of fields or paths. Dense schema, RLS, API, function, or state-machine details must be promoted into a structured phase section instead of being split into one-line `changes[]` items.
+  - Parse known structured plan sections such as `## DB schema 계약` into phase-linked structured data when present. The browser review should render these as tables, not as a flat bullet list.
+  - Parse `## 개발자 리뷰 반영 내역` into phase-linked feedback handling data when present. Include it in phase signatures so changes to how review feedback was handled invalidate stale approval.
   - Preserve `owner_agent` from the phase detail artifact.
   - UI preview and evidence artifacts are plan-level judgment material only; do not imply functional implementation exists.
   - Evidence artifacts are planning-only HTML/CSS/JS projections. Do not imply real API, DB, filesystem, live dev-server, React build, or production stack execution exists.
@@ -37,6 +41,11 @@ At the gate:
   - on later reviews, preserve only prior approved `item_status[target_id]` entries whose `approved_against.review_item_signature` matches the current `review_item_signature`
   - clear prior `needs-change`, `question`, and `out-of-scope` live comments after preserving the submitted round in `review-history.json`
   - do not carry approval forward when item signature evidence is missing or mismatched
+- Use approval-centered target status semantics:
+  - The left sidebar checkbox is an approval control, not a viewed-only control. Checking it must set `approved: true`; the server then sets `viewed: true` and `approved_against`.
+  - Adding or editing a `needs-change` or `question` comment means the target was reviewed; set that target to `viewed: true`, `approved: false`, and remove `approved_against`.
+  - Adding an `out-of-scope` comment may set `viewed: true`, but it must not by itself create approval evidence.
+  - Do not allow a target with active `needs-change` or `question` comments to be approved until those comments are deleted, resolved into history, or otherwise removed from live feedback.
 - Auto-start the shared server through the platform-neutral Node launcher; do not ask the user to run a `node` command:
   1. Run `node .codex/tools/start-developer-review-server.mjs --task-slug {task-slug} --plan-signature {plan_signature}` from the repository root.
   2. The launcher must health-check existing compatible servers, start `.codex/tools/developer-review-server.mjs` as a detached background process when needed, skip foreign processes on occupied ports, choose an alternate port when needed, and print `developer_review_url=...`.
@@ -56,7 +65,9 @@ When the user says `review complete`, read `feedback.json`:
 - Treat `approved` vs `not approved` as the approval gate. Raw comment types such as `needs-change`, `question`, and `out-of-scope` are routing hints only.
 - Collect every unapproved required review item and every active comment with its `type`, `body`, `target_id`, `anchor_id`, and whether it conflicts with current locked request, scope, public contract, or UI direction.
 - Before resetting `feedback.json`, regenerating the package, or changing `plan_signature`, append or update a round in `review-history.json`.
-- Each history round must record submitted feedback per step/card, chosen triage route, controller or sub-agent action summary, and whether the result was same-signature re-review or a new plan signature.
+- Each history round must record submitted feedback per review target and anchor, chosen triage route, controller or sub-agent action summary, resolution summary, and whether the result was same-signature re-review or a new plan signature.
+- Each history item must preserve `target_id`, `anchor_id`, `type`, reviewer comment summary, selected route, action summary, resolution summary, and any phase id that now owns the change.
+- If submitted `needs-change` or `question` comments exist and the active round has not been preserved in `review-history.json`, do not reset `feedback.json` or regenerate the package.
 - For browser-visible history prose (`round.summary`, `items[].user_comment`, `items[].action_summary[]`, `items[].resolution_summary`), write Korean summaries even when the original browser feedback, prior chat, or sub-agent output is English. Do not copy English source prose verbatim into those fields.
 - Preserve paths, globs, package names, code identifiers, schema keys, enum values, branch names, and signatures in their original spelling inside Korean prose.
 - Preserve previous rounds when a new plan signature is produced.
@@ -85,7 +96,7 @@ Route by triage result:
 - `answer_only`: answer in chat from current plan/review/package, update active history round with answer summary and same-signature re-review outcome, refresh `feedback.json` for the same signature while preserving only unchanged approved items, require browser re-submit, and do not invoke `architect`.
 - `scope_decision` or `request_lock`: ask direct questions first when underspecified, then run or reuse the request-scope locking capability with exact task, plan, `plan_wiki_root`, current `plan_signature`, latest `feedback.json`, locked request summary when available, verified inputs, and chat-only output contract unless the user asked for an artifact.
 - `ui_direction`: ask for request-scope clarification first if product framing or scope is unstable; otherwise run or reuse the UI-spec capability with exact task, plan, current signature, latest `feedback.json`, locked request summary when available, verified inputs, and chat-only output contract unless the user asked for an artifact.
-- `plan_revision`: record the revision route in `review-history.json`, run Step 7, route exact feedback path plus affected `target_id`/`anchor_id` values to `architect`, rerun `plan-review`, regenerate the review data package, carry forward only approvals whose item signatures still match, and require browser re-submit.
+- `plan_revision`: record the revision route in `review-history.json`, run Step 7, route exact feedback path plus affected `target_id`/`anchor_id` values to `architect`, require the revised plan to include `## 개발자 리뷰 반영 내역` entries for the handled feedback, rerun `plan-review`, regenerate the review data package, carry forward only approvals whose item signatures still match, and require browser re-submit.
 
 Required sub-agent terminal results:
 

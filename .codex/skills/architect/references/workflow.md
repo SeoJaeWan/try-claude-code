@@ -84,6 +84,8 @@ Do not deep-dive into implementation details or write source-tree tests.
 - Make each plan file self-contained for exactly one `owner_agent`.
 - For implementation-scope plans, write a `## 실행 흐름` section with reviewable Phase rows inside the same plan file. Each Phase row must include purpose, major changes, completion signal, validation, and commit boundary.
 - For implementation-scope plans, write a `## 파일/폴더 구조 계약` section that locks the source/test/fixture/artifact topology derived from actual repo inspection. Include create/modify/keep/forbidden/remove paths, owning phase, responsibility, and the local evidence for each placement.
+- Keep each Phase `목적` and `주요 변경` readable for browser developer review. Use `목적` for a 1-3 sentence judgment summary and `주요 변경` for short scan-friendly change bullets, not exhaustive comma-separated field lists.
+- When a phase has dense schema, RLS, API, function, state-machine, or validation-matrix details, promote them into a structured contract section such as `## 구조화 세부 계약` / `### DB schema 계약` with a `phase` column. Do not rely on a long `실행 흐름` table cell as the only source of meaning.
 - When UI, API, backend boundary, utility function, or complex state behavior would be easier to misunderstand from prose alone, write a `## 체험 산출물` section and create planning-only HTML/CSS/JS evidence under `plans/{task_slug}/evidence/**`.
 - UI evidence는 browser developer review 검토자가 직접 판단하는 자료이며, 승인 대체물이 아니다. For user-visible UI, make the HTML/CSS preview show the planned screen or component structure, important controls, realistic content density, relevant states, and material responsive breakpoints so the browser reviewer can approve or reject the direction directly. API/backend/utility evidence should let a reviewer choose sample body/query/params/auth/context inputs and inspect representative output/status/effects. Do not require real API calls, DB access, filesystem writes, live dev servers, React builds, or production stack execution.
 - Keep Phase content self-contained in the plan body. Do not create linked phase detail files for new plans unless explicitly performing legacy migration or review.
@@ -92,6 +94,8 @@ Do not deep-dive into implementation details or write source-tree tests.
 - Put all contracts needed by the executing agent into that plan file's body; do not rely on `shared-contract.md`, linked phase detail files, or external planning notes for execution meaning.
 - Record provenance paths only as evidence, not as required reading for the executing agent.
 - Treat concrete future source paths, route paths, test paths, and spec roots as committed topology only when the plan intentionally uses them as the execution contract.
+- When revising from browser developer review feedback, read the provided `feedback.json` / `review-history.json` context and write a `## 개발자 리뷰 반영 내역` section that records each handled `target_id` / `anchor_id`, request type, reviewer request summary, handling summary, and phase or section where it was applied.
+- Do not drop, paraphrase away, or silently satisfy `needs-change` / `question` feedback without leaving a review-handling trace in the plan body.
 - After drafting plan files, run the active `용어-정책.md` writing pass on all human-readable prose. Translate avoidable English shorthand outside code spans, and keep English only when it has a literal identifier reason.
 
 ### Step 6. Choose plan count
@@ -124,6 +128,8 @@ If the plan includes implementation scope beyond documentation-only or structura
 - Run the active plan wiki quality gate checklist before finalizing.
 - Re-check selected patterns, terminology policy compliance, plan self-containment, request traceability, public contracts, verification ownership, related-plan lineage, authority artifacts, and execution handoff requirements.
 - Re-check that implementation-scope plans expose reviewable Phase rows and commit boundaries that developer review can present without inventing phase meaning.
+- Re-check that dense contracts are visible as structured tables and not only as fragmented `changes[]` bullets in developer review.
+- Re-check that plans revised from developer review feedback contain `개발자 리뷰 반영 내역` entries for each handled non-approved comment.
 - Re-check that implementation-scope topology was derived from actual repo structure, not invented paths, and that topology rows do not duplicate existing UI/API/utility surfaces.
 - Re-check that every evidence row points under `evidence/**`, matches the plan's phase/input/output/state contract, is clearly planning-only, and gives the browser reviewer the concrete judgment material it claims to provide.
 - Fix critical self-review findings before handoff.
