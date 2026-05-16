@@ -502,11 +502,30 @@ async function main() {
     return;
   }
 
+  // ALLOW path uses decision:block to auto-chain into Step 4 (dev-review
+  // gate) without waiting for the user to retype `/runner`. The reason here
+  // is read by the main session on automatic re-entry — it is not a refusal,
+  // it is the only signal Claude Code's hook protocol offers for "continue
+  // into the next turn". The BLOCK path above uses the same mechanism for
+  // its actual refusal semantics, so both verdicts now resume the runner
+  // skill on the same channel.
   const last = reviewItems[reviewItems.length - 1];
   const shortSha = last.headSha ? String(last.headSha).slice(0, 7) : "?";
-  const parts = [`[stop-gate] ALLOW — ${last.branch ?? "?"}@${shortSha}`];
-  if (downgradeWarnings.length > 0) parts.push(downgradeWarnings.join("\n"));
-  emitDecision({ systemMessage: parts.join("\n") });
+  const lines = [
+    `[stop-gate] ALLOW — ${last.branch ?? "?"}@${shortSha}`,
+    "",
+    "Stop-review가 통과되었습니다. runner skill: state.json을 다시 읽어 Step 4 (dev-review 게이트)로 진입하세요.",
+    `  state_path: ${last.statePath}`,
+    "",
+    "다음을 순서대로 수행하세요:",
+    "1. dev-review skill 호출 (state_path 인자만)",
+    "2. dev-review가 출력하는 서버 URL을 사용자에게 안내",
+    "3. 사용자가 `리뷰 완료`라고 답하면 dev-review skill 재진입",
+    "",
+    "(이 메시지는 차단이 아니라 흐름 연결을 위한 자동 재진입 시그널입니다 — `decision: block`은 Claude Code hook이 다음 턴을 강제할 때 쓰는 유일한 채널이라 ALLOW 체인에도 사용됩니다.)",
+  ];
+  if (downgradeWarnings.length > 0) lines.push("", downgradeWarnings.join("\n"));
+  emitDecision({ decision: "block", reason: lines.join("\n") });
 }
 
 const invokedAsScript =

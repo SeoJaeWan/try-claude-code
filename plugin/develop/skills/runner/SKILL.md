@@ -284,12 +284,20 @@ interrupts the loop themselves when retries clearly stop helping.
 
 Once `status` is `dev_reviewing` with `dev_review.phase = "awaiting"`,
 invoke the `dev-review` skill — it takes a single input (the absolute
-state-path) and reads everything else (slug, plan path, worktree, branches,
-iteration) from the JSON:
+state-path) and reads everything else (slug, plan path, worktree, branches)
+from the JSON:
 
 ```
 dev-review(state_path: <state.state_path>)
 ```
+
+**Entry into Step 4 is normally automatic.** When Stop hook returns ALLOW
+after the plan-agent's commits, it emits `decision: block` (the only hook
+signal that forces another turn) carrying a Step-4 directive — so the
+runner skill re-enters the next turn without the user having to retype
+`/runner`. The reason payload there is not a refusal; it is a flow-chain
+signal. Read the state file again as your first action, confirm the
+status is now `dev_reviewing/awaiting`, and call `dev-review` immediately.
 
 The dev-review skill prints a server URL and ends its turn so the user can
 review in the browser and reply `리뷰 완료`. When the user replies, re-enter
