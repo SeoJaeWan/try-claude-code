@@ -9,11 +9,9 @@ import {
   createSession,
   deleteSession,
   getActivePlan,
-  getStopReviewThreadId,
   loadSession,
   resolveSessionFile,
   setActivePlan,
-  setStopReviewThreadId,
 } from "../lib/sessions.mjs";
 
 const SESSION_ID = "sessions-test-session";
@@ -50,10 +48,9 @@ beforeEach(() => {
 });
 
 describe("createSession / loadSession", () => {
-  it("starts with null activePlan and null thread id", () => {
+  it("starts with null activePlan", () => {
     const s = loadSession(SESSION_ID);
     assert.equal(s.activePlan, null);
-    assert.equal(s.stopReviewThreadId, null);
   });
 
   it("ignores unknown top-level keys on disk", () => {
@@ -65,16 +62,18 @@ describe("createSession / loadSession", () => {
       JSON.stringify({
         sessionId: SESSION_ID,
         cwd: "/repo",
-        stopReviewThreadId: "thread-123",
         somethingElse: { foo: 1 },
         anotherUnknown: [1, 2, 3],
+        stopReviewThreadId: "legacy-thread-id",
       }),
       "utf8",
     );
     const s = loadSession(SESSION_ID);
     assert.equal(s.somethingElse, undefined);
     assert.equal(s.anotherUnknown, undefined);
-    assert.equal(s.stopReviewThreadId, "thread-123");
+    // stopReviewThreadId was removed when broker daemon went away; legacy
+    // values on disk are silently dropped by parseSessionShape.
+    assert.equal(s.stopReviewThreadId, undefined);
     assert.equal(s.activePlan, null);
   });
 });
@@ -130,17 +129,6 @@ describe("setActivePlan / getActivePlan / clearActivePlan", () => {
       setActivePlan("no-such-session", "plans/x/.runner-state.json");
     });
     assert.equal(getActivePlan("no-such-session"), null);
-  });
-});
-
-describe("stopReviewThreadId reuse", () => {
-  it("round-trips a thread id within the same session", () => {
-    setStopReviewThreadId(SESSION_ID, "thread-xyz");
-    assert.equal(getStopReviewThreadId(SESSION_ID), "thread-xyz");
-  });
-
-  it("returns null for unknown sessions", () => {
-    assert.equal(getStopReviewThreadId("nope"), null);
   });
 });
 

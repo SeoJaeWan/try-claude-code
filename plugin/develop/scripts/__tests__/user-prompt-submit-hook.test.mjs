@@ -171,7 +171,6 @@ function makeSessionWithActivePlan(sessionId, planSlug, branch, status) {
       sessionId,
       cwd: projectRoot,
       activePlan: statePath.replace(/\\/g, "/"),
-      stopReviewThreadId: null,
     }, null, 2),
   );
   return statePath;

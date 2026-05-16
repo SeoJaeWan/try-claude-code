@@ -1,17 +1,17 @@
 // Session-scoped state for the runner pipeline.
 //
-// One file per Claude Code session, written by SessionStart and consumed by
-// the Stop hook. The session file holds two kinds of information:
+// One file per Claude Code session, written by SessionStart. The session
+// file now holds a single informational field:
 //
-//   1. Codex thread reuse — `stopReviewThreadId`. Reusing a single Codex
-//      thread across stop-review passes avoids cold-start latency, so the
-//      thread id outlives any individual plan and stays here.
+//   `activePlan` — a string slot that records the .runner-state.json this
+//   session is currently driving. UserPromptSubmit overwrites it and emits
+//   a stderr warning when the value changes. The Stop hook does not read
+//   it (it globs `plans/**/.runner-state.json` directly).
 //
-//   2. Active plan-state pointer — `activePlan`. A single string slot that
-//      records the .runner-state.json this session is currently driving.
-//      The slot is informational: UserPromptSubmit overwrites it and emits a
-//      stderr warning when the value changes. The Stop hook does not read it
-//      (it globs `plans/**/.runner-state.json` directly).
+// `stopReviewThreadId` lived here when Codex ran through a long-lived
+// broker daemon and could resume a warm thread across stop-review passes.
+// Codex now runs as a single-shot subprocess on every call (no daemon, no
+// thread reuse), so the field has been removed.
 //
 // Per-plan state (worktree path, status, BLOCK history) lives in the
 // runner-state SSOT (`plans/{plan_key}/.runner-state.json`), not here.
@@ -44,11 +44,10 @@ export function createSession(sessionId, cwd) {
     sessionId,
     cwd: normalizePath(cwd),
     activePlan: null,
-    stopReviewThreadId: null,
   };
   // Atomic write: a process kill or OS crash mid-write would otherwise leave
   // a half-written JSON that loadSession swallows as `null`, silently losing
-  // the session's plan pointer and Codex thread id.
+  // the session's plan pointer.
   writeJsonAtomic(resolveSessionFile(sessionId), session);
   return session;
 }
@@ -65,7 +64,6 @@ function parseSessionShape(parsed, sessionId) {
       typeof parsed.activePlan === "string" && parsed.activePlan.length > 0
         ? parsed.activePlan
         : null,
-    stopReviewThreadId: parsed.stopReviewThreadId ?? null,
   };
 }
 
@@ -171,23 +169,3 @@ export function clearActivePlan(sessionId) {
   saveSession(session);
 }
 
-// ---------------------------------------------------------------------------
-// Codex thread reuse
-// ---------------------------------------------------------------------------
-//
-// The Stop hook stores the Codex thread id here after the first review pass
-// in a session. Subsequent passes resume the same thread to skip cold start.
-// Plan-scoped, per-plan thread isolation was considered and explicitly
-// declined: the latency win of reuse outweighs the noise of a shared thread.
-
-export function getStopReviewThreadId(sessionId) {
-  const session = loadSession(sessionId);
-  return session?.stopReviewThreadId ?? null;
-}
-
-export function setStopReviewThreadId(sessionId, threadId) {
-  const session = loadSession(sessionId);
-  if (!session) return;
-  session.stopReviewThreadId = threadId;
-  saveSession(session);
-}

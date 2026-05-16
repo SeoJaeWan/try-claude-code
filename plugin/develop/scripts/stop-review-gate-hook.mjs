@@ -15,20 +15,16 @@
 //     stop_review.block_history
 //     status                     ← we move this on ALLOW / BLOCK
 //
-//   sessions/{sid}.json          ← optional session-scoped cache. Holds the
-//     stopReviewThreadId            Codex thread id so warm-thread review
-//                                   stays fast across turns. Plan pointers
-//                                   used to live here too but the Stop hook
-//                                   no longer reads them — disk SSOT is the
-//                                   only authoritative source.
-//                                   The session file is only inspected when
-//                                   armed plans exist on disk —
-//                                   runner-unrelated turns short-circuit
-//                                   before touching it.
+//   sessions/{sid}.json          ← optional session-scoped cache. Only the
+//                                   informational `activePlan` slot remains;
+//                                   the Stop hook reads this file purely to
+//                                   detect corruption when an armed plan is
+//                                   present (runner-unrelated turns
+//                                   short-circuit before touching it).
 //
-// All Codex operational logic (thread reuse, broker recovery, error
-// diagnosis, confidence parsing, ENOENT→SKIPPED) lives in lib/codex.mjs#review.
-// The hook only chooses between the returned outcomes.
+// All Codex operational logic (fresh-spawn turn, error diagnosis, confidence
+// parsing, ENOENT→SKIPPED) lives in lib/codex.mjs#review. The hook only
+// chooses between the returned outcomes.
 
 import fs from "node:fs";
 import os from "node:os";
@@ -39,11 +35,7 @@ import { fileURLToPath } from "node:url";
 
 import { review } from "./lib/codex.mjs";
 import { loadPromptTemplate, interpolateTemplate } from "./lib/prompts.mjs";
-import {
-  getStopReviewThreadId,
-  loadSessionStrict,
-  setStopReviewThreadId,
-} from "./lib/sessions.mjs";
+import { loadSessionStrict } from "./lib/sessions.mjs";
 import { resolveWorkspaceRoot } from "./lib/workspace.mjs";
 import { readHookInput } from "./lib/hook-input.mjs";
 import { STOP_REVIEW_OUTCOME } from "./lib/stop-review-outcome.mjs";
@@ -298,8 +290,7 @@ async function main() {
   // session.json corruption is still a hard stop, but only when we actually
   // need to consult it — a corrupt file likely indicates a half-written save
   // and we should not silently overwrite it (the user needs to inspect or
-  // delete). Missing is fine: getStopReviewThreadId returns null and Codex
-  // starts cold.
+  // delete). Missing is fine.
   if (sessionId) {
     const probe = loadSessionStrict(sessionId);
     if (probe.status === "corrupt") {
@@ -390,13 +381,8 @@ async function main() {
   for (const item of reviewItems) {
     const result = await review({
       prompt: buildStopReviewPrompt(item),
-      threadId: sessionId ? getStopReviewThreadId(sessionId) : null,
       cwd: workspaceRoot,
     });
-
-    if (sessionId && result.threadId) {
-      setStopReviewThreadId(sessionId, result.threadId);
-    }
 
     // Apply the verdict by spawning runner-state-cli. All plan-state mutation
     // lives in the CLI now — the hook never calls saveState directly.

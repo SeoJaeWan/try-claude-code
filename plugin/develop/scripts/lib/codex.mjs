@@ -21,8 +21,7 @@
  */
 import process from "node:process";
 
-import { BROKER_BUSY_RPC_CODE, BROKER_ENDPOINT_ENV, CodexAppServerClient } from "./app-server.mjs";
-import { restartBrokerSession } from "./broker-lifecycle.mjs";
+import { CodexAppServerClient } from "./app-server.mjs";
 import { terminateProcessTree } from "./process.mjs";
 import { STOP_REVIEW_OUTCOME } from "./stop-review-outcome.mjs";
 
@@ -124,31 +123,11 @@ async function captureTurn(client, threadId, startRequest) {
 }
 
 async function withAppServer(cwd, fn) {
-  let client = null;
+  const client = await CodexAppServerClient.connect(cwd);
   try {
-    client = await CodexAppServerClient.connect(cwd);
-    const result = await fn(client);
-    await client.close();
-    return result;
-  } catch (error) {
-    const brokerRequested = client?.transport === "broker" || Boolean(process.env[BROKER_ENDPOINT_ENV]);
-    const shouldRetryDirect =
-      (client?.transport === "broker" && error?.rpcCode === BROKER_BUSY_RPC_CODE) ||
-      (brokerRequested && (error?.code === "ENOENT" || error?.code === "ECONNREFUSED"));
-
-    if (client) {
-      await client.close().catch(() => {});
-      client = null;
-    }
-
-    if (!shouldRetryDirect) throw error;
-
-    const directClient = await CodexAppServerClient.connect(cwd, { disableBroker: true });
-    try {
-      return await fn(directClient);
-    } finally {
-      await directClient.close();
-    }
+    return await fn(client);
+  } finally {
+    await client.close().catch(() => {});
   }
 }
 
@@ -211,10 +190,11 @@ export async function runAppServerTurn(cwd, options = {}) {
 // Stop-review entry point — used by stop-review-gate-hook.mjs
 // ---------------------------------------------------------------------------
 //
-// `review` is the single function the Stop hook calls. Everything that used
-// to live in the hook itself — thread resume/fresh fallback, broker stale
-// recovery, error diagnosis, confidence-threshold parsing, ENOENT→SKIPPED —
-// now lives here. The hook only chooses between the returned outcomes.
+// `review` is the single function the Stop hook calls. Each invocation spawns
+// a fresh Codex CLI subprocess via CodexAppServerClient (no broker daemon, no
+// warm-thread reuse across calls). Encapsulates timeout, parsing,
+// confidence-threshold parsing, and ENOENT→SKIPPED. The hook only chooses
+// between the returned outcomes.
 
 const DEFAULT_REVIEW_TIMEOUT_MS = 15 * 60 * 1000;
 const CONFIDENCE_THRESHOLD = 7;
@@ -239,42 +219,6 @@ function withTimeout(promise, ms) {
 function extractModelSlugFromError(text) {
   const match = String(text ?? "").match(/['"]([^'"]+)['"]\s+model/i);
   return match ? match[1] : null;
-}
-
-// Match the failure signature that indicates the broker's long-lived codex
-// child is operating on a stale models snapshot.
-export function matchesBrokerStaleModelSignature(result) {
-  const finalText = String(result?.finalMessage ?? "").trim();
-  if (finalText) return false;
-  const errorMessage = String(result?.error?.message ?? result?.error ?? "").trim();
-  const stderrText = String(result?.stderr ?? "").trim();
-  const combined = `${errorMessage}\n${stderrText}`;
-  if (!/invalid_request_error/i.test(combined)) return false;
-  if (!/newer version of (?:the )?(?:Codex|app|CLI)/i.test(combined)) return false;
-  return true;
-}
-
-// Confirm broker-codex staleness by asking the broker which models it
-// currently knows about. The rejected model being absent from `model/list`
-// is direct evidence that the broker's child is stale.
-async function confirmStaleBroker(cwd, result) {
-  if (!matchesBrokerStaleModelSignature(result)) {
-    return { confirmed: false, reason: "signature_mismatch" };
-  }
-  const errorMessage = String(result?.error?.message ?? result?.error ?? "");
-  const stderrText = String(result?.stderr ?? "");
-  const rejectedModel = extractModelSlugFromError(errorMessage) || extractModelSlugFromError(stderrText);
-  if (!rejectedModel) return { confirmed: false, reason: "no_model_slug" };
-  let knownModels;
-  try {
-    knownModels = await listAvailableModels(cwd);
-  } catch (err) {
-    return { confirmed: false, reason: `model_list_failed:${err?.message ?? err}` };
-  }
-  if (knownModels.has(rejectedModel)) {
-    return { confirmed: false, reason: "model_present_in_list", rejectedModel, knownModels };
-  }
-  return { confirmed: true, rejectedModel, knownModels };
 }
 
 function diagnoseCodexFailure(result) {
@@ -381,58 +325,25 @@ function parseFinalMessage(raw) {
   };
 }
 
-// Single entry point for stop-review. Encapsulates thread reuse, broker
-// recovery, timeout, parsing, and ENOENT→SKIPPED. Returns:
+// Single entry point for stop-review. Encapsulates fresh-spawn Codex turn,
+// timeout, parsing, and ENOENT→SKIPPED. Returns:
 //
 //   {
 //     outcome: 'allow' | 'allow_downgraded' | 'block' | 'timeout' | 'skipped',
 //     reason: string | null,        // BLOCK/TIMEOUT body
 //     suppressedNote: string | null,// downgrade source / low-conf body
 //     raw: string | null,           // raw final-message for record-CLI
-//     threadId: string | null,      // for thread reuse on next call
 //   }
-export async function review({ prompt, threadId = null, cwd = null, timeoutMs = DEFAULT_REVIEW_TIMEOUT_MS } = {}) {
+export async function review({ prompt, cwd = null, timeoutMs = DEFAULT_REVIEW_TIMEOUT_MS } = {}) {
   if (!prompt || !String(prompt).trim()) {
     throw new Error("codex.review: prompt is required");
   }
   const turnCwd = cwd || process.cwd();
-  const turnOptions = { prompt, sandbox: "read-only", persistThread: true };
+  const turnOptions = { prompt, sandbox: "read-only", persistThread: false };
 
   let result = null;
   try {
-    if (threadId) {
-      try {
-        result = await withTimeout(
-          runAppServerTurn(turnCwd, { ...turnOptions, resumeThreadId: threadId }),
-          timeoutMs,
-        );
-      } catch (err) {
-        if (err?.code === "ETIMEDOUT") throw err;
-        process.stderr.write(
-          `[codex.review] resume failed (${err?.code ?? "unknown"}): ${err?.message ?? err}. Falling back to fresh thread.\n`,
-        );
-        result = await withTimeout(runAppServerTurn(turnCwd, turnOptions), timeoutMs);
-      }
-    } else {
-      result = await withTimeout(runAppServerTurn(turnCwd, turnOptions), timeoutMs);
-    }
-
-    // Broker-staleness attribution + recovery. On confirmation we restart the
-    // broker (its next spawn reads the fresh models cache) and retry once.
-    const stale = await confirmStaleBroker(turnCwd, result);
-    if (stale.confirmed) {
-      const restart = restartBrokerSession(turnCwd, {
-        killProcess: (pid) => terminateProcessTree(pid),
-      });
-      if (restart.restarted) {
-        try {
-          result = await withTimeout(runAppServerTurn(turnCwd, turnOptions), timeoutMs);
-        } catch (retryErr) {
-          if (retryErr?.code === "ETIMEDOUT") throw retryErr;
-          // Fall through with the original (stale) result.
-        }
-      }
-    }
+    result = await withTimeout(runAppServerTurn(turnCwd, turnOptions), timeoutMs);
 
     // Empty final message + a diagnostic-worthy error → BLOCK with the
     // human-readable diagnostic as the reason.
@@ -445,7 +356,6 @@ export async function review({ prompt, threadId = null, cwd = null, timeoutMs = 
           reason: diagnosed,
           suppressedNote: null,
           raw: null,
-          threadId: result.threadId ?? null,
         };
       }
     }
@@ -456,7 +366,6 @@ export async function review({ prompt, threadId = null, cwd = null, timeoutMs = 
       reason: parsed.reason,
       suppressedNote: parsed.suppressedNote,
       raw: result.finalMessage ?? null,
-      threadId: result.threadId ?? null,
     };
   } catch (error) {
     if (error.code === "ETIMEDOUT") {
@@ -465,7 +374,6 @@ export async function review({ prompt, threadId = null, cwd = null, timeoutMs = 
         reason: "The stop-time Codex review task timed out after 15 minutes.",
         suppressedNote: null,
         raw: null,
-        threadId: null,
       };
     }
     const errText = error instanceof Error ? error.message : String(error);
@@ -474,7 +382,7 @@ export async function review({ prompt, threadId = null, cwd = null, timeoutMs = 
       /\bcodex\b.*not (?:recognized|found)|command not found.*codex|ENOENT/i.test(errText);
     if (isMissingCodex) {
       process.stderr.write("[codex.review] Codex CLI unavailable — skipping stop-time review.\n");
-      return { outcome: STOP_REVIEW_OUTCOME.SKIPPED, reason: null, suppressedNote: null, raw: null, threadId: null };
+      return { outcome: STOP_REVIEW_OUTCOME.SKIPPED, reason: null, suppressedNote: null, raw: null };
     }
     return {
       outcome: STOP_REVIEW_OUTCOME.BLOCK,
@@ -483,31 +391,7 @@ export async function review({ prompt, threadId = null, cwd = null, timeoutMs = 
         : "The stop-time Codex review task failed.",
       suppressedNote: null,
       raw: null,
-      threadId: null,
     };
   }
 }
 
-// Ask the live codex app-server which models it currently considers available.
-// Used by stop-review-gate-hook's broker-staleness attribution path: when a
-// turn fails with the "newer version of Codex" wording, we cross-check the
-// rejected model slug against this list. If it is absent, the broker's
-// long-lived codex child is operating on a stale models snapshot and must be
-// restarted; if present, the failure has a different cause and falls through
-// to the existing diagnostic message.
-//
-// Returns a Set<string> of model ids the local codex knows about. Empty Set
-// on unexpected response shape — callers should treat empty as "unknown" and
-// skip attribution rather than misclassify.
-export async function listAvailableModels(cwd) {
-  return withAppServer(cwd, async (client) => {
-    const response = await client.request("model/list", {});
-    const data = Array.isArray(response?.data) ? response.data : [];
-    const ids = new Set();
-    for (const entry of data) {
-      const id = entry?.id ?? entry?.model;
-      if (typeof id === "string" && id) ids.add(id);
-    }
-    return ids;
-  });
-}

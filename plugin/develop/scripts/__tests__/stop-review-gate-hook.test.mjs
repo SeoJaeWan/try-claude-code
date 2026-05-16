@@ -131,7 +131,6 @@ function makeStuckPlan({ sessionId }) {
       sessionId,
       cwd: projectRoot,
       activePlan: statePath.replace(/\\/g, "/"),
-      stopReviewThreadId: null,
     }, null, 2),
   );
 
@@ -218,10 +217,8 @@ describe("Stop hook BLOCK-stuck surface", () => {
       path.join(sessionsDir, `${sessionId}.json`),
       JSON.stringify({
         sessionId,
-        createdAt: new Date().toISOString(),
         cwd: projectRoot,
-        activePlanStates: [statePath],
-        stopReviewThreadId: null,
+        activePlan: statePath.replace(/\\/g, "/"),
       }, null, 2),
     );
 
@@ -268,7 +265,7 @@ describe("Stop hook BLOCK-stuck surface", () => {
         sessionId,
         cwd: projectRoot,
         activePlan: null,
-        stopReviewThreadId: null,
+
       }, null, 2),
     );
 
@@ -356,7 +353,7 @@ describe("Stop hook BLOCK-stuck surface", () => {
         sessionId,
         cwd: projectRoot,
         activePlan: statePath.replace(/\\/g, "/"),
-        stopReviewThreadId: null,
+
       }, null, 2),
     );
 
