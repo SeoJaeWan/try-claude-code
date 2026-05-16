@@ -199,6 +199,17 @@ async function main() {
           `둘 중 어느 쪽을 정답으로 삼을지 결정한 뒤 다시 시도하세요.`,
         );
       }
+      // Hand ownership to the current session. The Stop hook's
+      // multi-session isolation filter skips any plan whose recorded
+      // session_id differs from the live sessionId — without this update,
+      // a state file created in a previous session (terminal closed and
+      // reopened, machine reboot, cross-machine resume) would be invisible
+      // to the new session's Stop hook even though the new session is the
+      // one actively driving the plan.
+      if (sessionId && existing.session_id !== sessionId) {
+        existing.session_id = sessionId;
+        saveState(statePath, existing);
+      }
       state = existing;
       resume = true;
     } else {

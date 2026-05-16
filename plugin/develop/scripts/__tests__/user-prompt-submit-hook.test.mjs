@@ -297,4 +297,42 @@ describe("UserPromptSubmit active-plan slot behaviour", () => {
     );
   });
 
+  // Cross-session resume — a state file created by session A must be
+  // resumable by session B. The Stop hook's multi-session isolation filter
+  // skips plans whose state.session_id differs from the live sessionId, so
+  // UserPromptSubmit hands ownership to the resuming session by overwriting
+  // the field. Without this the new session's Stop hook would silently
+  // ignore the armed plan and the runner would appear to hang after the
+  // plan-agent commits.
+  it("rewrites state.session_id when a different session resumes the plan", () => {
+    const originalSessionId = `sess-original-${++counter}`;
+    const resumingSessionId = `sess-resuming-${++counter}`;
+    const statePath = makeSessionWithActivePlan(
+      originalSessionId,
+      "plan-handoff",
+      "feat/plan-handoff",
+      STATUS.DISPATCHING,
+    );
+    // Confirm the seed state recorded the original session as owner.
+    const before = JSON.parse(fs.readFileSync(statePath, "utf8"));
+    assert.equal(before.session_id, originalSessionId);
+
+    // Plan file must exist for frontmatter validation on resume.
+    makePlanFile("plan-handoff", "feat/plan-handoff");
+
+    const r = runHook({
+      prompt: "/runner plans/plan-handoff.plan.md",
+      sessionId: resumingSessionId,
+    });
+    assert.equal(r.status, 0, r.stderr);
+    const out = JSON.parse(r.stdout);
+    assert.ok(out.hookSpecificOutput, "resume should pass through");
+    assert.match(out.hookSpecificOutput.additionalContext, /mode: resume/);
+
+    // Ownership has been handed to the resuming session — the Stop hook
+    // will now recognize this plan as belonging to the live session.
+    const after = JSON.parse(fs.readFileSync(statePath, "utf8"));
+    assert.equal(after.session_id, resumingSessionId);
+  });
+
 });
