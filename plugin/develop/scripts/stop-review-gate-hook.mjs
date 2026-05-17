@@ -34,6 +34,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { review } from "./lib/codex.mjs";
+import { logStopHookEvent } from "./lib/diagnostics.mjs";
 import { loadPromptTemplate, interpolateTemplate } from "./lib/prompts.mjs";
 import { loadSessionStrict } from "./lib/sessions.mjs";
 import { resolveWorkspaceRoot } from "./lib/workspace.mjs";
@@ -279,13 +280,28 @@ function emitReviewLog({ outcome, branch, headSha, reason }) {
 async function main() {
   const { cwd, sessionId } = readHookInput({ tag: "stop-gate" });
 
+  // Diagnostics breadcrumb: the presence of this log line is positive proof
+  // the Claude Code runtime triggered the Stop event for this turn. Absence
+  // (no `invoked` for a turn that should have fired Stop) is a positive
+  // signal that the runtime never triggered the hook — a different problem
+  // class from the hook firing and exiting early.
+  logStopHookEvent("invoked", { sessionId, cwd });
+
   // Short-circuit when there is nothing to gate. Disk SSOT
   // (plans/**/.runner-state.json) is the authoritative trigger; if no plan
   // is armed, the Stop hook has no business touching the session cache or
   // spawning Codex. This keeps runner-unrelated turns silent even when the
   // session.json file happens to be corrupt or missing.
   const armed = findArmedPlansOnDisk(cwd, sessionId);
-  if (armed.length === 0) return;
+  logStopHookEvent("armed_scan", {
+    sessionId,
+    found_count: armed.length,
+    plan_slugs: armed.map(({ state }) => state.plan_slug ?? null),
+  });
+  if (armed.length === 0) {
+    logStopHookEvent("early_return", { sessionId, reason: "no_armed" });
+    return;
+  }
 
   // session.json corruption is still a hard stop, but only when we actually
   // need to consult it — a corrupt file likely indicates a half-written save
@@ -294,6 +310,7 @@ async function main() {
   if (sessionId) {
     const probe = loadSessionStrict(sessionId);
     if (probe.status === "corrupt") {
+      logStopHookEvent("early_return", { sessionId, reason: "session_corrupt", file: probe.file });
       emitDecision({
         decision: "block",
         reason:
@@ -302,6 +319,7 @@ async function main() {
           "Stop-review가 실행될 수 없으므로 게이트를 닫습니다. " +
           "세션 파일을 점검하거나 삭제 후 다시 시도해주세요.",
       });
+      logStopHookEvent("emitted", { sessionId, kind: "decision_block", trigger: "session_corrupt" });
       return;
     }
   }
@@ -310,8 +328,25 @@ async function main() {
   const skipped = [];
   for (const item of armed) {
     const r = collectDiffForPlan(item);
-    if (r) reviewItems.push(r);
-    else skipped.push(item);
+    if (r) {
+      reviewItems.push(r);
+      logStopHookEvent("diff_collected", {
+        sessionId,
+        plan_slug: item.state.plan_slug ?? null,
+        head_sha: r.headSha,
+        last_reviewed: item.state.stop_review?.last_reviewed_commit ?? null,
+        diff_bytes: r.diff?.length ?? 0,
+      });
+    } else {
+      skipped.push(item);
+      logStopHookEvent("diff_skipped", {
+        sessionId,
+        plan_slug: item.state.plan_slug ?? null,
+        status: item.state.status,
+        phase: item.state.stop_review?.phase ?? null,
+        last_reviewed: item.state.stop_review?.last_reviewed_commit ?? null,
+      });
+    }
   }
 
   if (reviewItems.length === 0) {
@@ -321,6 +356,11 @@ async function main() {
         state.stop_review?.phase === "blocked",
     );
     if (stuck.length > 0) {
+      logStopHookEvent("early_return", {
+        sessionId,
+        reason: "block_stuck",
+        plan_slugs: stuck.map(({ state }) => state.plan_slug ?? null),
+      });
       const lines = stuck.map(({ state }) => {
         const slug = state.plan_slug ?? "?";
         const branch = state.task_branch ?? "?";
@@ -344,6 +384,7 @@ async function main() {
         "STOP_REVIEW_BLOCKED 그대로 유지됩니다.",
       );
       emitDecision({ systemMessage: lines.join("\n") });
+      logStopHookEvent("emitted", { sessionId, kind: "system_message", trigger: "block_stuck" });
       return;
     }
 
@@ -354,6 +395,11 @@ async function main() {
         !state.stop_review?.last_reviewed_commit,
     );
     if (empty.length > 0) {
+      logStopHookEvent("early_return", {
+        sessionId,
+        reason: "armed_empty",
+        plan_slugs: empty.map(({ state }) => state.plan_slug ?? null),
+      });
       const lines = empty.map(({ state }) => {
         const slug = state.plan_slug ?? "?";
         const branch = state.task_branch ?? "?";
@@ -366,6 +412,9 @@ async function main() {
         "dispatching/armed 그대로 유지됩니다.",
       );
       emitDecision({ systemMessage: lines.join("\n") });
+      logStopHookEvent("emitted", { sessionId, kind: "system_message", trigger: "armed_empty" });
+    } else {
+      logStopHookEvent("early_return", { sessionId, reason: "no_diff_no_stuck_no_empty" });
     }
     return;
   }
@@ -379,51 +428,70 @@ async function main() {
   const recordFailures = [];
 
   for (const item of reviewItems) {
+    const codexStart = Date.now();
+    logStopHookEvent("codex_start", {
+      sessionId,
+      plan_slug: item.state.plan_slug ?? null,
+      head_sha: item.headSha,
+    });
     const result = await review({
       prompt: buildStopReviewPrompt(item),
       cwd: workspaceRoot,
+    });
+    logStopHookEvent("codex_done", {
+      sessionId,
+      plan_slug: item.state.plan_slug ?? null,
+      head_sha: item.headSha,
+      outcome: result.outcome,
+      duration_ms: Date.now() - codexStart,
+      reason_excerpt: typeof result.reason === "string"
+        ? result.reason.split(/\r?\n/, 1)[0]?.slice(0, 240) ?? null
+        : null,
     });
 
     // Apply the verdict by spawning runner-state-cli. All plan-state mutation
     // lives in the CLI now — the hook never calls saveState directly.
     let cliRun = { ok: true, stdout: "" };
+    let cliSubcommand = null;
     if (
       result.outcome === STOP_REVIEW_OUTCOME.ALLOW ||
       result.outcome === STOP_REVIEW_OUTCOME.SKIPPED
     ) {
-      cliRun = runRecordCli([
-        "record-stop-review-allow",
-        item.statePath,
-        item.headSha,
-      ]);
+      cliSubcommand = "record-stop-review-allow";
+      cliRun = runRecordCli([cliSubcommand, item.statePath, item.headSha]);
     } else if (result.outcome === STOP_REVIEW_OUTCOME.ALLOW_DOWNGRADED) {
-      cliRun = runRecordCli([
-        "record-stop-review-downgrade",
-        item.statePath,
-        item.headSha,
-      ]);
+      cliSubcommand = "record-stop-review-downgrade";
+      cliRun = runRecordCli([cliSubcommand, item.statePath, item.headSha]);
       if (cliRun.ok && cliRun.stdout.trim()) {
         downgradeWarnings.push(cliRun.stdout.trim());
       }
     } else if (result.outcome === STOP_REVIEW_OUTCOME.BLOCK) {
+      cliSubcommand = "record-stop-review-block";
       const reasonFile = path.join(
         os.tmpdir(),
         `stop-review-reason-${Date.now()}-${process.pid}.txt`,
       );
       try {
         fs.writeFileSync(reasonFile, result.reason ?? "", "utf8");
-        cliRun = runRecordCli([
-          "record-stop-review-block",
-          item.statePath,
-          item.headSha,
-          reasonFile,
-        ]);
+        cliRun = runRecordCli([cliSubcommand, item.statePath, item.headSha, reasonFile]);
       } finally {
         try { fs.unlinkSync(reasonFile); } catch { /* best-effort cleanup */ }
       }
     } else if (result.outcome === STOP_REVIEW_OUTCOME.TIMEOUT) {
       // No state mutation for TIMEOUT — the gate stays armed and we retry.
       timedOutItems.push({ item, reason: result.reason });
+    }
+    if (cliSubcommand) {
+      logStopHookEvent("record_cli", {
+        sessionId,
+        plan_slug: item.state.plan_slug ?? null,
+        subcommand: cliSubcommand,
+        ok: cliRun.ok,
+        exit: cliRun.status ?? null,
+        stderr_excerpt: cliRun.stderr
+          ? cliRun.stderr.split(/\r?\n/, 1)[0]?.slice(0, 240) ?? null
+          : null,
+      });
     }
 
     if (!cliRun.ok) {
@@ -466,11 +534,18 @@ async function main() {
       "위 stderr 출력을 확인하고 runner-state-cli가 정상 실행되는지 점검해주세요.",
     );
     emitDecision({ systemMessage: lines.join("\n") });
+    logStopHookEvent("emitted", { sessionId, kind: "system_message", trigger: "record_failures" });
     return;
   }
 
   if (blockedReviewItem) {
     emitDecision({ decision: "block", reason: blockedReason });
+    logStopHookEvent("emitted", {
+      sessionId,
+      kind: "decision_block",
+      trigger: "block",
+      plan_slug: blockedReviewItem.state?.plan_slug ?? null,
+    });
     return;
   }
 
@@ -485,6 +560,12 @@ async function main() {
       "게이트는 armed 상태로 유지되며 다음 턴 종료 시 같은 diff를 다시 리뷰합니다.",
     );
     emitDecision({ systemMessage: lines.join("\n") });
+    logStopHookEvent("emitted", {
+      sessionId,
+      kind: "system_message",
+      trigger: "timeout",
+      plan_slugs: timedOutItems.map(({ item }) => item.state?.plan_slug ?? null),
+    });
     return;
   }
 
@@ -512,6 +593,13 @@ async function main() {
   ];
   if (downgradeWarnings.length > 0) lines.push("", downgradeWarnings.join("\n"));
   emitDecision({ decision: "block", reason: lines.join("\n") });
+  logStopHookEvent("emitted", {
+    sessionId,
+    kind: "decision_block",
+    trigger: "allow_chain",
+    plan_slug: last.state?.plan_slug ?? null,
+    head_sha: last.headSha,
+  });
 }
 
 const invokedAsScript =
