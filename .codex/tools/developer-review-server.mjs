@@ -154,6 +154,7 @@ function reviewGlobalContext(model) {
   const overview = model?.overview || {};
   return {
     task_slug: model?.task_slug || "",
+    generator_contract_version: model?.generator_contract_version || 0,
     title: model?.title || "",
     review_outcome: model?.review_outcome || "",
     review_findings: asArray(model?.review_findings),
@@ -175,6 +176,7 @@ function overviewSignaturePayload(model) {
   return {
     kind: "overview",
     id: "overview",
+    generator_contract_version: model?.generator_contract_version || 0,
     title: model?.title || "",
     review_outcome: model?.review_outcome || "",
     review_findings: asArray(model?.review_findings),
@@ -427,8 +429,16 @@ function ensureV2Feedback(feedback, model, taskSlug) {
       review_status: sameTask && samePlan && feedback.review_status === "submitted" ? "submitted" : "in_progress",
       updated_at: feedback.updated_at || new Date().toISOString(),
       comments: sameTask && samePlan && Array.isArray(feedback.comments) ? feedback.comments : [],
-      item_status: sameTask && samePlan && feedback.item_status && typeof feedback.item_status === "object" ? feedback.item_status : {}
+      item_status: {}
     };
+    if (sameTask && samePlan && feedback.item_status && typeof feedback.item_status === "object") {
+      for (const [itemId, status] of Object.entries(feedback.item_status)) {
+        if (!status || typeof status !== "object") continue;
+        next.item_status[itemId] = status.approved
+          ? { approved: true, approved_against: status.approved_against }
+          : { approved: false };
+      }
+    }
     ensureItemStatus(next, model);
     return next;
   }
@@ -447,12 +457,11 @@ function ensureV2Feedback(feedback, model, taskSlug) {
     const prior = feedback?.steps?.[itemId];
     if (prior?.status === "approved" && prior?.approved_against?.review_item_signature === signature) {
       next.item_status[itemId] = {
-        viewed: true,
         approved: true,
         approved_against: approvalEvidence(model, itemId, prior.approved_against?.approved_at, prior.approved_against?.carried_from_plan_signature)
       };
     } else {
-      next.item_status[itemId] = { viewed: false, approved: false };
+      next.item_status[itemId] = { approved: false };
     }
   }
   return next;
@@ -461,7 +470,7 @@ function ensureV2Feedback(feedback, model, taskSlug) {
 function ensureItemStatus(feedback, model) {
   for (const itemId of currentReviewItemSignatures(model).keys()) {
     if (!feedback.item_status[itemId] || typeof feedback.item_status[itemId] !== "object") {
-      feedback.item_status[itemId] = { viewed: false, approved: false };
+      feedback.item_status[itemId] = { approved: false };
     }
   }
 }
@@ -489,6 +498,12 @@ function nextCommentId(feedback) {
 
 function assertEditable(feedback) {
   return feedback.review_status === "submitted" ? "review already submitted" : null;
+}
+
+function hasBlockingComments(feedback, itemId) {
+  return asArray(feedback.comments).some((comment) =>
+    comment.target_id === itemId && (comment.type === "needs-change" || comment.type === "question")
+  );
 }
 
 async function saveFeedback(reviewRoot, feedback) {
@@ -622,7 +637,7 @@ async function handleCommentCreate(req, res, taskSlug, reviewRoot) {
     feedback.comments.push(comment);
     if (comment.type !== "out-of-scope") {
       feedback.item_status[comment.target_id] = {
-        ...(feedback.item_status[comment.target_id] || { viewed: false, approved: false }),
+        ...(feedback.item_status[comment.target_id] || { approved: false }),
         approved: false
       };
       delete feedback.item_status[comment.target_id].approved_against;
@@ -652,6 +667,13 @@ async function handleCommentPatch(req, res, taskSlug, reviewRoot, id) {
     if (inputError) return sendJson(res, 400, { error: inputError });
     next.updated_at = new Date().toISOString();
     feedback.comments[index] = next;
+    if (next.type !== "out-of-scope") {
+      feedback.item_status[next.target_id] = {
+        ...(feedback.item_status[next.target_id] || { approved: false }),
+        approved: false
+      };
+      delete feedback.item_status[next.target_id].approved_against;
+    }
     await saveFeedback(reviewRoot, feedback);
     return sendJson(res, 200, { ok: true, comment: next, feedback });
   } catch (error) {
@@ -686,13 +708,14 @@ async function handleItemStatus(req, res, taskSlug, reviewRoot) {
     if (!currentReviewItemSignatures(model).has(itemId)) {
       return sendJson(res, 400, { error: "target_id is not present in current review-data" });
     }
-    const current = feedback.item_status[itemId] || { viewed: false, approved: false };
+    const current = feedback.item_status[itemId] || { approved: false };
     const next = { ...current };
-    if (typeof body.viewed === "boolean") next.viewed = body.viewed;
     if (typeof body.approved === "boolean") {
+      if (body.approved && hasBlockingComments(feedback, itemId)) {
+        return sendJson(res, 409, { error: "cannot approve target with active needs-change or question comments" });
+      }
       next.approved = body.approved;
       if (body.approved) {
-        next.viewed = true;
         next.approved_against = approvalEvidence(model, itemId, current.approved_against?.approved_at, current.approved_against?.carried_from_plan_signature);
       } else {
         delete next.approved_against;

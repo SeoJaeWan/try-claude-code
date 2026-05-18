@@ -7,6 +7,7 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 
 const SCHEMA_VERSION = 2;
+const GENERATOR_CONTRACT_VERSION = 2;
 
 function main() {
   try {
@@ -240,6 +241,7 @@ function buildReviewData({ repoRoot, taskSlug, outDir, planPath, planText, phase
 
   const reviewData = {
     schema_version: SCHEMA_VERSION,
+    generator_contract_version: GENERATOR_CONTRACT_VERSION,
     task_slug: taskSlug,
     plan_path: toPosix(path.relative(repoRoot, planPath)),
     plan_signature: planSignature,
@@ -431,6 +433,12 @@ function buildEvidenceArtifacts({ planText, planDir, outDir }) {
         asset: copiedRelative,
         content_hash: contentHash,
         purpose: stripMarkdown(row["목적"] || row["purpose"] || row["Purpose"] || ""),
+        target_unit: stripMarkdown(row["대상 단위"] || row["target unit"] || row["Target unit"] || ""),
+        covered_units: stripMarkdown(row["대상 수 / covered units"] || row["대상 수"] || row["covered units"] || row["Covered units"] || ""),
+        input: stripMarkdown(row["input"] || row["Input"] || ""),
+        function_adapter: stripMarkdown(row["function / adapter"] || row["function"] || row["adapter"] || row["Function / adapter"] || ""),
+        output_recipient: stripMarkdown(row["output recipient"] || row["Output recipient"] || ""),
+        negative_noop: stripMarkdown(row["negative/no-op"] || row["negative"] || row["no-op"] || row["negative/noop"] || ""),
         review_points: listFromCell(row["검토 포인트"] || row["covers"] || row["Covers"] || "")
       };
     })
@@ -830,6 +838,7 @@ function reviewGlobalContext(model) {
   const overview = model?.overview || {};
   return {
     task_slug: model?.task_slug || "",
+    generator_contract_version: model?.generator_contract_version || 0,
     title: model?.title || "",
     review_outcome: model?.review_outcome || "",
     review_findings: asArray(model?.review_findings),
@@ -851,6 +860,7 @@ function overviewSignaturePayload(model) {
   return {
     kind: "overview",
     id: "overview",
+    generator_contract_version: model?.generator_contract_version || 0,
     title: model?.title || "",
     review_outcome: model?.review_outcome || "",
     review_findings: asArray(model?.review_findings),
@@ -916,7 +926,6 @@ function buildFeedback(reviewData, existingFeedback, now) {
         ? prior.approved_against.carried_from_plan_signature || null
         : prior.approved_against.plan_signature || existingFeedback?.plan_signature || null;
       feedback.item_status[item.id] = {
-        viewed: true,
         approved: true,
         approved_against: {
           plan_signature: reviewData.plan_signature,
@@ -926,7 +935,7 @@ function buildFeedback(reviewData, existingFeedback, now) {
         }
       };
     } else {
-      feedback.item_status[item.id] = { viewed: false, approved: false };
+      feedback.item_status[item.id] = { approved: false };
     }
   }
 

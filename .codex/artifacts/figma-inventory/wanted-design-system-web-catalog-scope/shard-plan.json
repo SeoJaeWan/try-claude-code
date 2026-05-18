@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "taskSlug": "wanted-design-system-web-catalog-scope",
+  "fileKey": "ZDmoC6xJxG2FCWIAZLmaWg",
+  "sourceUrl": "https://www.figma.com/design/ZDmoC6xJxG2FCWIAZLmaWg/Wanted-Design-System--Community-?node-id=0-1&p=f&t=E5ngG7Y83Cuy54BS-0",
+  "generatedAt": "2026-05-17T21:51:15.4360031+09:00",
+  "discovery": {
+    "rootNodeId": "0:1",
+    "rootName": "Wanted Design System Community",
+    "method": "direct_children_read_only_figma_script_plus_bounded_metadata",
+    "truncated": false
+  },
+  "excluded": [
+    {
+      "rootNodeId": "16222:137703",
+      "expectedName": "1 Theme",
+      "reason": "Icon과 Logo 제외 결정"
+    }
+  ],
+  "shards": [
+    {
+      "shardId": "0-1-overview",
+      "rootNodeId": "0:1",
+      "expectedName": "Overview",
+      "outputDir": ".codex/artifacts/figma-inventory/wanted-design-system-web-catalog-scope/shards/0-1-overview",
+      "reason": "웹 카탈로그 소개와 목차 기준",
+      "requiredPaths": [],
+      "requiredMarkers": []
+    },
+    {
+      "shardId": "16215-17304-basic",
+      "rootNodeId": "16215:17304",
+      "expectedName": "1 Basic",
+      "outputDir": ".codex/artifacts/figma-inventory/wanted-design-system-web-catalog-scope/shards/16215-17304-basic",
+      "reason": "Element Basic 상세 값 수집",
+      "requiredPaths": ["Ratio"],
+      "requiredMarkers": ["variant"]
+    },
+    {
+      "shardId": "16215-17271-spacing",
+      "rootNodeId": "16215:17271",
+      "expectedName": "2 Spacing",
+      "outputDir": ".codex/artifacts/figma-inventory/wanted-design-system-web-catalog-scope/shards/16215-17271-spacing",
+      "reason": "Element Spacing 상세 값 수집",
+      "requiredPaths": ["Safe Area"],
+      "requiredMarkers": ["iOS", "Android", "Web", "variant"]
+    },
+    {
+      "shardId": "16215-17090-decorate",
+      "rootNodeId": "16215:17090",
+      "expectedName": "3 Decorate",
+      "outputDir": ".codex/artifacts/figma-inventory/wanted-design-system-web-catalog-scope/shards/16215-17090-decorate",
+      "reason": "Element Decorate 상세 값 수집",
+      "requiredPaths": ["Gradient", "Interaction"],
+      "requiredMarkers": ["variant", "Resource"]
+    },
+    {
+      "shardId": "16215-43042-layout",
+      "rootNodeId": "16215:43042",
+      "expectedName": "1 Layout",
+      "outputDir": ".codex/artifacts/figma-inventory/wanted-design-system-web-catalog-scope/shards/16215-43042-layout",
+      "reason": "Component Layout 상세 값 수집",
+      "requiredPaths": ["Essential", "Divider"],
+      "requiredMarkers": ["variant"]
+    },
+    {
+      "shardId": "16215-35516-action",
+      "rootNodeId": "16215:35516",
+      "expectedName": "2 Action",
+      "outputDir": ".codex/artifacts/figma-inventory/wanted-design-system-web-catalog-scope/shards/16215-35516-action",
+      "reason": "Component Action 상세 값 수집",
+      "requiredPaths": ["Action Area", "Button", "Text Button", "Icon Button", "Chip", "Toggle Icon"],
+      "requiredMarkers": ["variant"]
+    },
+    {
+      "shardId": "16215-30100-selection-and-input",
+      "rootNodeId": "16215:30100",
+      "expectedName": "3 Selection and Input",
+      "outputDir": ".codex/artifacts/figma-inventory/wanted-design-system-web-catalog-scope/shards/16215-30100-selection-and-input",
+      "reason": "Component Selection and Input 상세 값 수집",
+      "requiredPaths": ["Textinput", "Select", "Control", "Segmented Control", "Framed Style"],
+      "requiredMarkers": ["variant"]
+    },
+    {
+      "shardId": "16215-25192-content",
+      "rootNodeId": "16215:25192",
+      "expectedName": "4 Content",
+      "outputDir": ".codex/artifacts/figma-inventory/wanted-design-system-web-catalog-scope/shards/16215-25192-content",
+      "reason": "Component Content 상세 값 수집",
+      "requiredPaths": ["Icon", "Content Badge", "Thumbnail", "Avatar", "List Cell", "Card"],
+      "requiredMarkers": ["variant"]
+    },
+    {
+      "shardId": "16215-24867-loading",
+      "rootNodeId": "16215:24867",
+      "expectedName": "5 Loading",
+      "outputDir": ".codex/artifacts/figma-inventory/wanted-design-system-web-catalog-scope/shards/16215-24867-loading",
+      "reason": "Component Loading 상세 값 수집",
+      "requiredPaths": ["Loading", "Skeleton"],
+      "requiredMarkers": ["variant"]
+    },
+    {
+      "shardId": "16215-20255-navigation",
+      "rootNodeId": "16215:20255",
+      "expectedName": "6 Navigation",
+      "outputDir": ".codex/artifacts/figma-inventory/wanted-design-system-web-catalog-scope/shards/16215-20255-navigation",
+      "reason": "Component Navigation 상세 값 수집",
+      "requiredPaths": ["Tab", "Category", "Page Indicator", "Pagination"],
+      "requiredMarkers": ["variant"]
+    },
+    {
+      "shardId": "16215-19283-feedback",
+      "rootNodeId": "16215:19283",
+      "expectedName": "7 Feedback",
+      "outputDir": ".codex/artifacts/figma-inventory/wanted-design-system-web-catalog-scope/shards/16215-19283-feedback",
+      "reason": "Component Feedback 상세 값 수집",
+      "requiredPaths": ["Toast", "Snackbar", "Alert"],
+      "requiredMarkers": ["variant"]
+    },
+    {
+      "shardId": "16215-17599-presentation",
+      "rootNodeId": "16215:17599",
+      "expectedName": "8 Presentation",
+      "outputDir": ".codex/artifacts/figma-inventory/wanted-design-system-web-catalog-scope/shards/16215-17599-presentation",
+      "reason": "Component Presentation 상세 값 수집",
+      "requiredPaths": ["Tooltip", "Menu"],
+      "requiredMarkers": ["variant", "Resource"]
+    },
+    {
+      "shardId": "1173-12995-resource",
+      "rootNodeId": "1173:12995",
+      "expectedName": "Resource",
+      "outputDir": ".codex/artifacts/figma-inventory/wanted-design-system-web-catalog-scope/shards/1173-12995-resource",
+      "reason": "Resource 상세 값 수집",
+      "requiredPaths": ["Badge", "Inspect"],
+      "requiredMarkers": ["Resource", "variant"]
+    }
+  ]
+}

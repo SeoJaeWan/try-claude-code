@@ -42,9 +42,10 @@ At the gate:
   - clear prior `needs-change`, `question`, and `out-of-scope` live comments after preserving the submitted round in `review-history.json`
   - do not carry approval forward when item signature evidence is missing or mismatched
 - Use approval-centered target status semantics:
-  - The left sidebar checkbox is an approval control, not a viewed-only control. Checking it must set `approved: true`; the server then sets `viewed: true` and `approved_against`.
-  - Adding or editing a `needs-change` or `question` comment means the target was reviewed; set that target to `viewed: true`, `approved: false`, and remove `approved_against`.
-  - Adding an `out-of-scope` comment may set `viewed: true`, but it must not by itself create approval evidence.
+  - The left sidebar checkbox is an approval control, not a read-check control. Checking it must set `approved: true` and create `approved_against`.
+  - Adding or editing a `needs-change` or `question` comment means the target was reviewed; set that target to `approved: false` and remove `approved_against`.
+  - Adding an `out-of-scope` comment marks the target as reviewed by comment, but it must not by itself create approval evidence.
+  - Do not expose a separate manual read-check control or require read confirmation before submit.
   - Do not allow a target with active `needs-change` or `question` comments to be approved until those comments are deleted, resolved into history, or otherwise removed from live feedback.
 - Auto-start the shared server through the platform-neutral Node launcher; do not ask the user to run a `node` command:
   1. Run `node .codex/tools/start-developer-review-server.mjs --task-slug {task-slug} --plan-signature {plan_signature}` from the repository root.

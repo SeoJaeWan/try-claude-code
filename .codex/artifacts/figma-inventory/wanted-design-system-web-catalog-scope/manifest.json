@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "taskSlug": "wanted-design-system-web-catalog-scope",
+  "fileKey": "ZDmoC6xJxG2FCWIAZLmaWg",
+  "generatedAt": "2026-05-17T21:51:15.4360031+09:00",
+  "sourceUrl": "https://www.figma.com/design/ZDmoC6xJxG2FCWIAZLmaWg/Wanted-Design-System--Community-?node-id=0-1&p=f&t=E5ngG7Y83Cuy54BS-0",
+  "shardPlanPath": "shard-plan.json",
+  "roots": [
+    {
+      "nodeId": "0:1",
+      "expectedName": "Overview",
+      "actualName": "Overview",
+      "snapshotPath": "snapshots/0-1-overview-scope.json",
+      "status": "partial_names_only",
+      "fidelity": "direct_children",
+      "truncated": false,
+      "coverageComplete": true,
+      "parentRootId": null,
+      "shards": [],
+      "incompleteReasons": []
+    },
+    {
+      "nodeId": "16222:137704",
+      "expectedName": "2 Element",
+      "actualName": "2 Element",
+      "snapshotPath": "snapshots/16222-137704-element-scope.json",
+      "status": "partial_names_only",
+      "fidelity": "direct_children",
+      "truncated": false,
+      "coverageComplete": true,
+      "parentRootId": null,
+      "shards": [],
+      "incompleteReasons": []
+    },
+    {
+      "nodeId": "16222:137705",
+      "expectedName": "3 Component",
+      "actualName": "3 Component",
+      "snapshotPath": "snapshots/16222-137705-component-scope.json",
+      "status": "partial_names_only",
+      "fidelity": "direct_children",
+      "truncated": false,
+      "coverageComplete": true,
+      "parentRootId": null,
+      "shards": [],
+      "incompleteReasons": []
+    },
+    {
+      "nodeId": "1173:12995",
+      "expectedName": "Resource",
+      "actualName": "Resource",
+      "snapshotPath": "snapshots/1173-12995-resource-scope.json",
+      "status": "partial_names_only",
+      "fidelity": "direct_children",
+      "truncated": false,
+      "coverageComplete": true,
+      "parentRootId": null,
+      "shards": [],
+      "incompleteReasons": []
+    }
+  ],
+  "excludedRoots": [
+    {
+      "nodeId": "16222:137703",
+      "name": "1 Theme",
+      "reason": "사용자가 Icon과 Logo를 초기 웹 카탈로그 범위에서 제외했다."
+    }
+  ],
+  "coverage": {
+    "requiredRootsRead": true,
+    "requiredPaths": [
+      "Overview",
+      "2 Element",
+      "3 Component",
+      "Resource"
+    ],
+    "requiredPathsSeen": [
+      "Overview",
+      "2 Element",
+      "3 Component",
+      "Resource"
+    ],
+    "requiredPathsMissing": [],
+    "requiredMarkersSeen": [
+      "iOS",
+      "Android",
+      "Web",
+      "Resource",
+      "variant-candidate"
+    ],
+    "truncated": false,
+    "coverageComplete": true,
+    "incompleteReasons": []
+  },
+  "scopeLimits": [
+    "이 snapshot은 범위 파악용 names-only/direct-children 기준선이다.",
+    "정확한 variant 축, token 값, padding, radius, state, component-set leaf 목록은 구현 계획 전에 별도 exact snapshot이 필요하다.",
+    "Content > Icon 항목은 Figma의 Component 영역에서 발견되었으나, 사용자 제외 의도와 충돌할 수 있어 후속 범위 확인이 필요하다."
+  ]
+}

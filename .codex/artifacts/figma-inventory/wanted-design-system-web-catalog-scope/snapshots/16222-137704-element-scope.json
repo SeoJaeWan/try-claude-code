@@ -1,0 +1,56 @@
+{
+  "id": "16222:137704",
+  "name": "2 Element",
+  "type": "PAGE",
+  "path": "2 Element",
+  "markers": ["variant", "Resource", "iOS", "Android", "Web"],
+  "children": [
+    {
+      "id": "16215:17304",
+      "name": "1 Basic",
+      "type": "SECTION",
+      "path": "2 Element / 1 Basic",
+      "catalogItems": [
+        {
+          "id": "16215:17305",
+          "title": "Ratio",
+          "textCandidates": ["Vertical", "Horizontal", "1/1", "default"]
+        }
+      ],
+      "children": []
+    },
+    {
+      "id": "16215:17271",
+      "name": "2 Spacing",
+      "type": "SECTION",
+      "path": "2 Element / 2 Spacing",
+      "catalogItems": [
+        {
+          "id": "16215:17275",
+          "title": "Safe Area",
+          "textCandidates": ["Status", "Bottom", "iOS", "Android", "Web"]
+        }
+      ],
+      "children": []
+    },
+    {
+      "id": "16215:17090",
+      "name": "3 Decorate",
+      "type": "SECTION",
+      "path": "2 Element / 3 Decorate",
+      "catalogItems": [
+        {
+          "id": "16215:17094",
+          "title": "Gradient",
+          "textCandidates": ["Solid", "Multiple", "Mask"]
+        },
+        {
+          "id": "16215:17209",
+          "title": "Interaction",
+          "textCandidates": ["normal", "light", "strong"]
+        }
+      ],
+      "children": []
+    }
+  ]
+}

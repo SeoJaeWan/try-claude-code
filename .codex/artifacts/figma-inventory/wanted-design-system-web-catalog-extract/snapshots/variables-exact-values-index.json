@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "source": "figma.variables",
+  "collectionCount": 4,
+  "variableCount": 271,
+  "chunks": [
+    { "collection": "Component, Frame", "variableCount": 9, "snapshotPath": "snapshots/variables-component-frame.json" },
+    { "collection": "Theme", "variableCount": 55, "snapshotPath": "snapshots/variables-theme.json" },
+    { "collection": "Atomic", "groups": ["Common", "Neutral", "Cool Neutral"], "variableCount": 41, "snapshotPath": "snapshots/variables-atomic-neutral.json" },
+    { "collection": "Atomic", "groups": ["Blue", "Red", "Green"], "variableCount": 42, "snapshotPath": "snapshots/variables-atomic-blue-red-green.json" },
+    { "collection": "Atomic", "groups": ["Orange", "Red Orange", "Lime"], "variableCount": 42, "snapshotPath": "snapshots/variables-atomic-orange-redorange-lime.json" },
+    { "collection": "Atomic", "groups": ["Cyan", "Light Blue", "Violet"], "variableCount": 40, "snapshotPath": "snapshots/variables-atomic-cyan-lightblue-violet.json" },
+    { "collection": "Atomic", "groups": ["Pink", "Purple", "Opacity"], "variableCount": 42, "snapshotPath": "snapshots/variables-atomic-pink-purple-opacity.json" }
+  ]
+}

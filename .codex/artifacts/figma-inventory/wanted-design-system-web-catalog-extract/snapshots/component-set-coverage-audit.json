@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "source": "figma.componentSets",
+  "method": "read-only component-set child inspection",
+  "setCount": 62,
+  "leafCount": 718,
+  "cartesianCompleteSetCount": 56,
+  "incompleteSetCount": 6,
+  "incompleteSets": [
+    { "id": "16215:43086", "name": "Divider/Divider", "leafCount": 3, "axisProduct": 4 },
+    { "id": "16215:42078", "name": "Chip/Chip", "leafCount": 24, "axisProduct": 32 },
+    { "id": "16215:31385", "name": "Textinput/Textfield", "leafCount": 26, "axisProduct": 48 },
+    { "id": "16215:32165", "name": "Textinput/Textarea", "leafCount": 30, "axisProduct": 48 },
+    { "id": "16215:33116", "name": "Select/Select", "leafCount": 30, "axisProduct": 64 },
+    { "id": "16736:173366", "name": "Framed Style/Framed Style", "leafCount": 6, "axisProduct": 8 }
+  ],
+  "excludedFromInitialCatalog": [
+    "16215:38424",
+    "16215:41807",
+    "16215:41871",
+    "16215:41931",
+    "16215:25199",
+    "16215:25203",
+    "16215:34872"
+  ],
+  "largeSetCoverage": [
+    {
+      "id": "16215:26404",
+      "name": "List Cell/List Cell",
+      "leafCount": 128,
+      "axisProduct": 128,
+      "cartesianComplete": true,
+      "axisValues": {
+        "Vertical Padding": ["Large", "Medium", "None", "Small"],
+        "Vertical Align": ["Center", "Top"],
+        "Fill Width": ["False", "True"],
+        "Text Ellipsis": ["False", "True"],
+        "Selected": ["False", "True"],
+        "Disable": ["False", "True"]
+      }
+    },
+    {
+      "id": "16215:18569",
+      "name": "Menu/Resource/Item/Cell",
+      "leafCount": 48,
+      "axisProduct": 48,
+      "cartesianComplete": true,
+      "axisValues": {
+        "Variant": ["Checkbox", "Normal", "Radio"],
+        "Vertical Padding": ["12px", "8px"],
+        "Active": ["False", "True"],
+        "Caption": ["False", "True"],
+        "Disable": ["False", "True"]
+      }
+    }
+  ],
+  "notes": [
+    "56개 component set은 Figma leafCount와 axis product가 일치해 axis cartesian 조합으로 안전하게 표현할 수 있다.",
+    "6개 component set은 axis product보다 실제 leafCount가 작으므로 snapshots/component-set-incomplete-leaves.json의 allowedVariantProps만 허용 조합으로 사용한다.",
+    "Icon Button, Content Icon, Toggle Icon 관련 7개 component set은 Figma inventory에는 남기되 초기 웹 카탈로그에서는 planning override로 제외한다."
+  ]
+}

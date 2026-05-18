@@ -54,11 +54,13 @@ owner_agent: {owner-agent}
 
 ## 체험 산출물
 
-| id | phase | kind | 경로 | 목적 | 검토 포인트 |
-| --- | --- | --- | --- | --- | --- |
-| `{artifact-id}` | `P1` | `ui-preview` / `api-contract` / `function-contract` / `backend-contract` / `fixture-view` | `evidence/{artifact}.html` | {HTML/JS로 체험할 계약} | {empty, loading, success, validation-error, forbidden 등} |
+| id | phase | kind | 대상 단위 | 대상 수 / covered units | 경로 | input | function / adapter | output recipient | negative/no-op | 목적 | 검토 포인트 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `{artifact-id}` | `P1` | `shell-preview` / `screen-preview` / `component-preview` / `state-variant-preview` / `function-contract` / `api-contract` / `backend-contract` / `fixture-view` | {shell, route, component, state matrix, mapper 등} | {예: 27개 중 27개, 또는 none} | `evidence/{artifact}.html` | {입력/선택값} | {함수, mapper, adapter, serializer. 없으면 `none`} | {화면, CSS var, payload, renderer 등} | {금지 출력 또는 no-op} | {왜 이 산출물이 필요한지} | {empty, loading, success, validation-error, forbidden 등} |
 
-`ui-preview`는 검토자가 직접 승인 여부를 판단할 수 있는 HTML/CSS preview evidence다. 최종 구현 코드는 아니지만, 계획한 화면 또는 component의 구조, 주요 control, 실제에 가까운 내용 밀도, 중요한 상태, 필요한 viewport 단서를 보여준다. `검토 포인트`에는 검토자가 봐야 할 화면 영역, 상태, viewport, 핵심 UI 요소를 적는다.
+UI evidence는 검토자가 직접 승인 여부를 판단할 수 있는 HTML/CSS preview evidence다. 최종 구현 코드는 아니지만, 계획한 화면 또는 component의 구조, 주요 control, 실제에 가까운 내용 밀도, 중요한 상태, 필요한 viewport 단서를 보여준다. shell, screen, component, state/variant가 서로 다른 구현 판단 단위이면 하나의 큰 preview에 섞지 말고 별도 evidence로 나눈다. 만들 대상 수가 있는 component나 반복 UI는 `대상 수 / covered units`에 전체 수와 실제 preview coverage를 적는다.
+
+`function-contract`는 token, schema, registry, variant, form state, adapter input처럼 함수나 mapper를 거쳐 최종 UI/runtime recipient에 도달하는 계약을 보여주는 HTML/JS input-output harness다. `input`, `function / adapter`, `output recipient`, `negative/no-op`을 비워 두지 않는다. 예: Figma token record -> `resolveTokenValue` -> CSS variable/theme field, variant metadata -> `buildVariantMatrix` -> preview renderer 후보.
 
 ## 실행 흐름
 
@@ -101,6 +103,9 @@ owner_agent: {owner-agent}
 - [ ] 기능 계약에 영향받는 공개 경계, `input`, `output`, 소유권/no-op, 검증 위치가 보인다.
 - [ ] 관련 프로젝트 구조를 실제 확인했고, 생성/수정/유지/금지 경로를 `파일/폴더 구조 계약`에 확정했다.
 - [ ] UI/API/function/backend 계약이 문장만으로 다르게 해석될 수 있으면 `체험 산출물`에 HTML/CSS/JS preview 또는 harness를 연결했다.
+- [ ] UI evidence는 shell, screen, component, state/variant 판단 단위가 섞이지 않고 필요한 경우 별도 artifact로 분리되어 있다.
+- [ ] component나 반복 UI 대상 수가 있으면 `대상 수 / covered units`가 전체 대상과 preview coverage를 설명한다.
+- [ ] token/schema/registry/variant처럼 함수, mapper, adapter, serializer를 거치는 값은 `function-contract` evidence로 input -> function/adapter -> output recipient -> negative/no-op이 보인다.
 - [ ] schema/RLS/API/function/state-machine처럼 dense한 계약은 `실행 흐름`의 긴 문장 대신 구조화 표로 분리했다.
 - [ ] developer review feedback으로 개정한 plan이면 `개발자 리뷰 반영 내역`에 요청과 처리 방식이 phase별로 남아 있다.
 - [ ] UI preview evidence는 검토자가 직접 판단할 수 있도록 계획한 화면 또는 component의 구조, 상태, 내용 밀도, 필요한 viewport 단서를 보여준다.

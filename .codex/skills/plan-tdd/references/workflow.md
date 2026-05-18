@@ -67,6 +67,7 @@ For each clause, record:
 - whether the clause is directly test-expressible or requires an execution command
 
 Then extract each phase-local boundary from the detail file `boundary`, `input`, `output`, and task description only to the extent needed to close those selected clauses.
+Also extract plan-level `## 체험 산출물` rows. Treat `function-contract` rows as source contracts for input -> function/adapter -> output recipient -> negative/no-op tests when they map to selected plan clauses. Do not treat UI preview, shell preview, or component preview as source code, but use their stated covered units and review points to identify the UI/component owner tests that must observe the same contract.
 For each `시나리오 / 계약` row, treat the row's `input`, `output`, `negative/no-op`, `owner`, `검증 단위`, `관찰 지점`, `식별자 정책`, and `E2E 선택 이유` as the canonical test contract. Do not replace a scenario row with a looser summary from `검증`.
 
 For every behavior-changing boundary, derive a stable scenario contract first:
@@ -348,6 +349,7 @@ Frontmatter rules:
 - Every selected test-expressible clause has explicit source-tree test coverage or an explicit blocker
 - Every new or updated source-tree test has a behavior-example name that exposes the condition/action/result without relying on `tdd.md`
 - Every selected execution clause has an explicit narrow command or an explicit blocker
+- Every selected `function-contract` evidence row that belongs to the plan scope has a unit or Component Test owner for its input, function/adapter, output recipient, and negative/no-op case, or an explicit blocker
 - Every behavior-changing selected scenario has explicit `must happen` coverage, important `must not happen` coverage, or an explicit blocker
 - Every user-facing interaction clause drives the selected user interaction and asserts all selected output recipients, or has an explicit blocker
 - Every behavior-changing selected scenario with competing completion paths has explicit winner/loser-path coverage or an explicit blocker

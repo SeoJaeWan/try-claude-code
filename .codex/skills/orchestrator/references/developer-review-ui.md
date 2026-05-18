@@ -76,7 +76,7 @@ Topology, evidence artifacts, review findings, contracts, file impacts, validati
 Each target shows:
 
 - target kind, id, title, owner agent when present, and signature state
-- `Viewed` and `Approved` controls
+- `Approved` control and derived review status badges
 - section cards for relevant anchors
 - `needs-change`, `question`, and `out-of-scope` comments attached to a target section
 - prior round summaries from `review-history.json`
@@ -197,7 +197,6 @@ Expected shape:
   ],
   "item_status": {
     "overview": {
-      "viewed": true,
       "approved": true,
       "approved_against": {
         "plan_signature": "abc123",
@@ -224,10 +223,10 @@ Approval evidence rules:
 - When carrying approval forward from a previous plan signature, rewrite `approved_against.plan_signature` to the current plan signature and set `carried_from_plan_signature` to the prior signature.
 - Non-approved comments do not carry forward across regenerated packages; preserve their submitted round in `review-history.json` instead.
 - When a non-approved comment is added to a target, clear that target's approval.
-- The left sidebar checkbox is an approval shortcut. Checking it sends `approved: true`, not `viewed: true`.
-- The detail pane may still expose separate `Viewed` and `Approved` controls for explicit review state, but approval remains the gate.
-- Adding or editing a `needs-change` or `question` comment sets the target `viewed: true`, clears approval, and removes `approved_against`.
-- Adding an `out-of-scope` comment may set `viewed: true`, but does not create approval evidence.
+- The left sidebar checkbox is an approval shortcut. Checking it sends `approved: true`.
+- Do not expose or require a separate manual read-check control. A target is considered reviewed when it is approved or has a `needs-change`, `question`, or `out-of-scope` comment.
+- Adding or editing a `needs-change` or `question` comment clears approval and removes `approved_against`.
+- Adding an `out-of-scope` comment does not create approval evidence.
 - Disable or reject approval while active `needs-change` or `question` comments remain on that target.
 
 The gate is approved only when `review_status = submitted`, every required `review_items[]` entry is approved with current evidence, and no active `needs-change` or `question` comments remain.
@@ -297,7 +296,8 @@ Any change to `generator_contract_version` invalidates generated review data eve
 - Do not hide `plan-review` findings.
 - Do not treat evidence previews as implemented behavior.
 - Do not render dense schema/RLS/API/function details only as `changes[]` bullets when the plan provides a structured contract section.
-- Do not treat a sidebar check as a viewed-only signal; it is an approval shortcut and must create or clear approval evidence.
+- Do not treat a sidebar check as a generic read-check signal; it is an approval shortcut and must create or clear approval evidence.
+- Do not reintroduce a manual read-check gate. Use approval evidence and section comments as the review state.
 - Do not let `architect` reinterpret approved feedback. If feedback changes scope or direction, revise the plan and require fresh developer review.
 - Do not strip `owner_agent` routing from phase data when the reviewed plan defines it.
 - Do not route non-approved feedback directly to `architect` from `question` or `needs-change` labels alone.

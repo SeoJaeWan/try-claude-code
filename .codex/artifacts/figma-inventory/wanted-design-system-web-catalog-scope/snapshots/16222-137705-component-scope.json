@@ -1,0 +1,111 @@
+{
+  "id": "16222:137705",
+  "name": "3 Component",
+  "type": "PAGE",
+  "path": "3 Component",
+  "markers": ["variant", "Resource", "iOS", "Android", "Web"],
+  "children": [
+    {
+      "id": "16215:43042",
+      "name": "1 Layout",
+      "type": "SECTION",
+      "path": "3 Component / 1 Layout",
+      "catalogItems": [
+        { "id": "16215:43043", "title": "Essential" },
+        { "id": "16215:43063", "title": "Divider" }
+      ],
+      "children": []
+    },
+    {
+      "id": "16215:35516",
+      "name": "2 Action",
+      "type": "SECTION",
+      "path": "3 Component / 2 Action",
+      "catalogItems": [
+        { "id": "16215:35517", "title": "Action Area" },
+        { "id": "16215:35809", "title": "Button" },
+        { "id": "16693:152042", "title": "Text Button" },
+        { "id": "16215:38360", "title": "Icon Button" },
+        { "id": "16215:41950", "title": "Chip" },
+        { "id": "16702:139221", "title": "Toggle Icon" }
+      ],
+      "children": []
+    },
+    {
+      "id": "16215:30100",
+      "name": "3 Selection and Input",
+      "type": "SECTION",
+      "path": "3 Component / 3 Selection and Input",
+      "catalogItems": [
+        { "id": "16215:31109", "title": "Textinput" },
+        { "id": "16215:32967", "title": "Select" },
+        { "id": "16215:33806", "title": "Control" },
+        { "id": "16215:35044", "title": "Segmented Control" },
+        { "id": "16736:173258", "title": "Framed Style" }
+      ],
+      "children": []
+    },
+    {
+      "id": "16215:25192",
+      "name": "4 Content",
+      "type": "SECTION",
+      "path": "3 Component / 4 Content",
+      "catalogItems": [
+        { "id": "16215:25193", "title": "Icon", "scopeNote": "사용자 제외 의도와 이름이 겹쳐 후속 확인 필요" },
+        { "id": "16215:25294", "title": "Content Badge" },
+        { "id": "16215:25438", "title": "Thumbnail" },
+        { "id": "16215:25543", "title": "Avatar" },
+        { "id": "16215:26212", "title": "List Cell" },
+        { "id": "16215:29155", "title": "Card" }
+      ],
+      "children": []
+    },
+    {
+      "id": "16215:24867",
+      "name": "5 Loading",
+      "type": "SECTION",
+      "path": "3 Component / 5 Loading",
+      "catalogItems": [
+        { "id": "16215:24868", "title": "Loading" },
+        { "id": "16215:24971", "title": "Skeleton" }
+      ],
+      "children": []
+    },
+    {
+      "id": "16215:20255",
+      "name": "6 Navigation",
+      "type": "SECTION",
+      "path": "3 Component / 6 Navigation",
+      "catalogItems": [
+        { "id": "16215:21685", "title": "Tab" },
+        { "id": "16215:22015", "title": "Category" },
+        { "id": "16215:22728", "title": "Page Indicator" },
+        { "id": "16771:165770", "title": "Pagination" }
+      ],
+      "children": []
+    },
+    {
+      "id": "16215:19283",
+      "name": "7 Feedback",
+      "type": "SECTION",
+      "path": "3 Component / 7 Feedback",
+      "catalogItems": [
+        { "id": "16215:19414", "title": "Toast" },
+        { "id": "16215:19528", "title": "Snackbar" },
+        { "id": "16215:20040", "title": "Alert" }
+      ],
+      "children": []
+    },
+    {
+      "id": "16215:17599",
+      "name": "8 Presentation",
+      "type": "SECTION",
+      "path": "3 Component / 8 Presentation",
+      "catalogItems": [
+        { "id": "16764:137643", "title": "Tooltip" },
+        { "id": "16215:18387", "title": "Menu" }
+      ],
+      "children": []
+    }
+  ]
+}

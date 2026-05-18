@@ -1,0 +1,28 @@
+{
+  "id": "1173:12995",
+  "name": "Resource",
+  "type": "PAGE",
+  "path": "Resource",
+  "markers": ["Resource", "variant"],
+  "children": [
+    {
+      "id": "16215:43095",
+      "name": "Resource",
+      "type": "SECTION",
+      "path": "Resource / Resource",
+      "catalogItems": [
+        {
+          "id": "16215:43099",
+          "title": "Badge",
+          "textCandidates": ["Status", "Value", "platform"]
+        },
+        {
+          "id": "16266:140641",
+          "title": "Inspect",
+          "textCandidates": ["Measure"]
+        }
+      ],
+      "children": []
+    }
+  ]
+}

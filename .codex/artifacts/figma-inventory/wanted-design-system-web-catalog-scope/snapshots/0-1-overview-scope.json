@@ -1,0 +1,32 @@
+{
+  "id": "0:1",
+  "name": "Overview",
+  "type": "PAGE",
+  "path": "Overview",
+  "markers": [],
+  "children": [
+    {
+      "id": "15890:96252",
+      "name": "Thumbnail",
+      "type": "SECTION",
+      "path": "Overview / Thumbnail",
+      "children": []
+    },
+    {
+      "id": "15890:96254",
+      "name": "Overview",
+      "type": "SECTION",
+      "path": "Overview / Overview",
+      "textCandidates": [
+        "Design System",
+        "Beta",
+        "Foundation",
+        "Component",
+        "Work",
+        "Color - Atomic Color - Semantic Typography Grid",
+        "1 Theme 2 Element 3 Component Resource"
+      ],
+      "children": []
+    }
+  ]
+}

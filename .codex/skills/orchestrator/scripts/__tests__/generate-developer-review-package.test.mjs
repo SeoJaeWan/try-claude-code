@@ -157,6 +157,7 @@ affected_phase_paths: []
   assert.ok(raw.includes(Buffer.from("한글 리뷰 패키지", "utf8")));
 
   const reviewData = JSON.parse(raw.toString("utf8"));
+  assert.equal(reviewData.generator_contract_version, 2);
   assert.equal(reviewData.title, "한글 리뷰 패키지");
   assert.equal(reviewData.post_approval_next_action, "plan-tdd");
   assert.equal(reviewData.post_approval_next_label, "다음 단계: $plan-tdd");
@@ -172,6 +173,8 @@ affected_phase_paths: []
   const feedback = JSON.parse(fs.readFileSync(path.join(planDir, "developer-review", "feedback.json"), "utf8"));
   assert.equal(feedback.schema_version, 2);
   assert.deepEqual(Object.keys(feedback.item_status), ["overview", "P1"]);
+  assert.deepEqual(feedback.item_status.overview, { approved: false });
+  assert.deepEqual(feedback.item_status.P1, { approved: false });
   assert.deepEqual(feedback.comments, []);
   assert.equal(feedback.review_status, "in_progress");
 });
@@ -329,9 +332,9 @@ test("includes topology and safely copied evidence artifacts", () => {
 
 ## 체험 산출물
 
-| id | phase | kind | 경로 | 목적 | 검토 포인트 |
-| --- | --- | --- | --- | --- | --- |
-| UI-P1-empty | P1 | ui-preview | \`evidence/ui/P1-empty.html\` | empty 상태 UI 확인 | empty; CTA; mobile |
+| id | phase | kind | 대상 단위 | 대상 수 / covered units | 경로 | input | function / adapter | output recipient | negative/no-op | 목적 | 검토 포인트 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| UI-P1-empty | P1 | screen-preview | users empty route | 1/1 | \`evidence/ui/P1-empty.html\` | empty user list | none | users route screen | 실제 API 호출 없음 | empty 상태 UI 확인 | empty; CTA; mobile |
 
 ## 실행 흐름
 
@@ -372,6 +375,13 @@ affected_plan_paths: []
   assert.equal(reviewData.phases[0].topology_contract.length, 2);
   assert.equal(reviewData.evidence_artifacts[0].asset, "assets/evidence/ui/P1-empty.html");
   assert.equal(reviewData.phases[0].evidence_artifacts[0].id, "UI-P1-empty");
+  assert.equal(reviewData.evidence_artifacts[0].kind, "screen-preview");
+  assert.equal(reviewData.evidence_artifacts[0].target_unit, "users empty route");
+  assert.equal(reviewData.evidence_artifacts[0].covered_units, "1/1");
+  assert.equal(reviewData.evidence_artifacts[0].input, "empty user list");
+  assert.equal(reviewData.evidence_artifacts[0].function_adapter, "none");
+  assert.equal(reviewData.evidence_artifacts[0].output_recipient, "users route screen");
+  assert.equal(reviewData.evidence_artifacts[0].negative_noop, "실제 API 호출 없음");
   assert.deepEqual(reviewData.evidence_artifacts[0].review_points, ["empty", "CTA", "mobile"]);
   assert.match(reviewData.evidence_artifacts[0].content_hash, /^[a-f0-9]{12}$/);
   assert.equal(

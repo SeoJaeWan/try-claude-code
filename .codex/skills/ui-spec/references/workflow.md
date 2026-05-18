@@ -32,12 +32,15 @@ Lock the direction in words before generating variants:
 - reuse vs new-pattern expectations
 - design-system, tone, or visual constraints that artifact consumers must preserve
 - 나중 계획이 browser developer review에서 검토자 판단 자료를 요구할 때의 HTML/CSS preview evidence 기대치
+- preview evidence 분해 방식: `shell-preview`, `screen-preview`, `component-preview`, `state-variant-preview`, `function-contract` 중 무엇이 필요한지와 각각의 검토 대상 수
 
 Rules:
 
 - Ask only high-impact questions that materially change the plan.
 - Prefer concrete UI outcomes over abstract design jargon.
 - Keep the result tight enough that artifact consumers can use it without adding a recap section.
+- Do not collapse shell, screen, component, state/variant, and function transformation evidence into one large preview when those are separate implementation judgment units.
+- Treat token, schema, registry, variant, or design-system value transformation as `function-contract` guidance, not as a visual-only UI preview.
 
 ### 3. Decide whether shotgun mode is needed
 
@@ -92,9 +95,16 @@ Apply the active plan wiki `core/common/용어-정책.md` to all human-readable 
    - `이유`
    - `적용 범위`
 
+4. `체험 산출물 분해 표`
+   - `산출물 종류`
+   - `대상 단위`
+   - `대상 수`
+   - `검토자가 볼 것`
+   - `계획에 반영할 규칙`
+
 Optional when shotgun mode ran:
 
-4. `변형 비교 표`
+5. `변형 비교 표`
    - `방향`
    - `핵심 차이`
    - `장점`
@@ -117,6 +127,7 @@ Include:
 - `UI 방향 요약 표`
 - `상태/표현 규칙 표`
 - `디자인 시스템/제약 표`
+- `체험 산출물 분해 표`
 - `변형 비교 표` when shotgun mode ran
 - approved visual references or notes when present
 - `남은 질문 / 가정`
@@ -131,7 +142,8 @@ When producing the final handoff, provide a `locked_ui_direction` packet contain
 3. state-presentation expectations for empty / loading / error / success flows
 4. responsive, accessibility, and reuse constraints that materially affect planning
 5. approved visual references or variant notes when present
-6. HTML/CSS preview evidence guidance when the UI direction needs reviewer approval in browser developer review
-7. explicit low-risk defaults vs still-blocking UI questions
+6. preview evidence breakdown when the UI direction needs reviewer approval in browser developer review
+7. `function-contract` harness guidance when token/schema/registry/variant input must pass through a function, mapper, adapter, or serializer before reaching UI or runtime recipients
+8. explicit low-risk defaults vs still-blocking UI questions
 
 Do not present `locked_ui_direction` while blocking UI-direction ambiguity remains.

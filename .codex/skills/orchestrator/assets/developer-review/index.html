@@ -104,7 +104,7 @@
       border-color: rgba(9, 105, 218, 0.3);
     }
 
-    .target-viewed {
+    .target-approved {
       margin-top: 3px;
       cursor: pointer;
     }
@@ -145,7 +145,6 @@
     .badge.needs-change { background: rgba(207, 34, 46, 0.1); color: var(--danger); }
     .badge.question { background: rgba(154, 103, 0, 0.1); color: var(--warn); }
     .badge.out-of-scope { background: rgba(87, 96, 106, 0.1); color: var(--muted); }
-    .badge.viewed { background: rgba(9, 105, 218, 0.1); color: var(--accent); }
 
     .history {
       border-top: 1px solid var(--line-soft);
@@ -352,6 +351,26 @@
       border: 1px solid var(--line-soft);
       border-radius: 6px;
       background: var(--bg);
+    }
+    .kv-list {
+      display: grid;
+      gap: 4px;
+      margin: 8px 0 10px;
+      font-size: 12px;
+    }
+    .kv-list div {
+      display: grid;
+      grid-template-columns: 124px minmax(0, 1fr);
+      gap: 8px;
+    }
+    .kv-list dt {
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .kv-list dd {
+      margin: 0;
+      color: var(--ink);
+      overflow-wrap: anywhere;
     }
     .evidence-frame {
       display: block;
@@ -654,7 +673,7 @@
         item_status: {}
       };
       for (const item of state.items) {
-        base.item_status[item.id] = { viewed: false, approved: false };
+        base.item_status[item.id] = { approved: false };
       }
       if (!existing || typeof existing !== "object") return base;
       if (existing.task_slug && existing.task_slug !== state.model.task_slug) return base;
@@ -666,8 +685,8 @@
         for (const item of state.items) {
           const prior = existing.item_status?.[item.id];
           base.item_status[item.id] = prior && typeof prior === "object"
-            ? { viewed: !!prior.viewed, approved: !!prior.approved, approved_against: prior.approved_against || undefined }
-            : { viewed: false, approved: false };
+            ? (prior.approved ? { approved: true, approved_against: prior.approved_against || undefined } : { approved: false })
+            : { approved: false };
         }
         return base;
       }
@@ -678,12 +697,11 @@
         if (!prior || typeof prior !== "object") continue;
         if (prior.status === "approved") {
           base.item_status[item.id] = {
-            viewed: true,
             approved: true,
             approved_against: prior.approved_against
           };
         } else if (COMMENT_TYPES.includes(prior.status)) {
-          base.item_status[item.id] = { viewed: true, approved: false };
+          base.item_status[item.id] = { approved: false };
           base.comments.push({
             id: `cm_${String(counter++).padStart(3, "0")}`,
             target_id: item.id,
@@ -699,7 +717,7 @@
     }
 
     function itemStatus(itemId) {
-      return state.feedback.item_status[itemId] || { viewed: false, approved: false };
+      return state.feedback.item_status[itemId] || { approved: false };
     }
 
     function itemComments(itemId) {
@@ -726,7 +744,6 @@
       if (counts.question) return "question";
       if (counts.outOfScope) return "out-of-scope";
       if (itemStatus(itemId).approved) return "approved";
-      if (itemStatus(itemId).viewed) return "viewed";
       return "";
     }
 
@@ -736,7 +753,6 @@
         "needs-change": "needs-change",
         question: "question",
         "out-of-scope": "out-of-scope",
-        viewed: "viewed",
         answer_only: "answer-only",
         request_lock: "request-lock",
         scope_decision: "scope-decision",
@@ -766,15 +782,15 @@
         const status = itemStatus(item.id);
         const currentVerdict = verdict(item.id);
         const counts = commentCounts(item.id);
+        const canApprove = !state.submitted && !counts.needsChange && !counts.question;
         const badges = [];
         if (currentVerdict === "needs-change") badges.push(`<span class="badge needs-change">needs-change (${counts.needsChange})</span>`);
         else if (currentVerdict === "question") badges.push(`<span class="badge question">question (${counts.question})</span>`);
         else if (currentVerdict === "out-of-scope") badges.push(`<span class="badge out-of-scope">out-of-scope</span>`);
         else if (currentVerdict === "approved") badges.push(`<span class="badge approved">approved</span>`);
-        else if (currentVerdict === "viewed") badges.push(`<span class="badge viewed">viewed</span>`);
         return `
           <button class="target-button ${item.id === state.activeId ? "active" : ""}" data-id="${esc(item.id)}">
-            <input class="target-viewed" type="checkbox" data-viewed="${esc(item.id)}" ${status.viewed ? "checked" : ""} ${state.submitted ? "disabled" : ""} title="Mark viewed">
+            <input class="target-approved" type="checkbox" data-approved="${esc(item.id)}" ${status.approved ? "checked" : ""} ${canApprove ? "" : "disabled"} title="Approve target">
             <span class="target-body">
               <span class="target-kind">${esc(item.kind || "item")}</span>
               <span class="target-label">${esc(item.label || item.id)}</span>
@@ -791,10 +807,10 @@
           window.scrollTo({ top: 0, behavior: "smooth" });
         });
       });
-      $("targets").querySelectorAll("[data-viewed]").forEach((checkbox) => {
+      $("targets").querySelectorAll("[data-approved]").forEach((checkbox) => {
         checkbox.addEventListener("change", async (event) => {
           event.stopPropagation();
-          await updateItemStatus(checkbox.dataset.viewed, { viewed: checkbox.checked });
+          await updateItemStatus(checkbox.dataset.approved, { approved: checkbox.checked });
         });
       });
     }
@@ -815,10 +831,9 @@
       const required = state.items.filter((item) => item.required !== false);
       const unapproved = required.filter((item) => !itemStatus(item.id).approved);
       const unresolved = asArray(state.feedback.comments).filter((comment) => comment.type !== "out-of-scope");
-      const unviewed = required.filter((item) => !itemStatus(item.id).viewed);
       const hint = state.submitted
         ? "제출되었습니다. 채팅에 'review complete'라고 알려주세요."
-        : `${unapproved.length}개 target 미승인 · ${unresolved.length}개 active comment · ${unviewed.length}개 미확인`;
+        : `${unapproved.length}개 target 미승인 · ${unresolved.length}개 active comment`;
       $("submit-hint").textContent = hint;
       $("submit-btn").textContent = state.submitted ? "Submitted" : "Submit review";
       $("submit-btn").disabled = state.submitted;
@@ -835,6 +850,8 @@
         return;
       }
       const status = itemStatus(item.id);
+      const counts = commentCounts(item.id);
+      const canApprove = !state.submitted && !counts.needsChange && !counts.question;
       $("main").innerHTML = `
         ${state.submitted ? `<div class="submitted-banner">리뷰가 제출되었습니다. 채팅에 <strong>review complete</strong>라고 입력해주세요. 이 화면은 다음 라운드까지 read-only입니다.</div>` : ""}
         <section class="target-header">
@@ -848,8 +865,7 @@
           ${item.summary ? `<p class="target-summary">${esc(item.summary)}</p>` : ""}
         </section>
         <section class="toolbar">
-          <label><input id="viewed-toggle" type="checkbox" ${status.viewed ? "checked" : ""} ${state.submitted ? "disabled" : ""}> Viewed</label>
-          <label><input id="approved-toggle" type="checkbox" ${status.approved ? "checked" : ""} ${state.submitted ? "disabled" : ""}> Approved</label>
+          <label><input id="approved-toggle" type="checkbox" ${status.approved ? "checked" : ""} ${canApprove ? "" : "disabled"}> Approved</label>
           <span class="toolbar-spacer"></span>
           ${verdict(item.id) ? `<span class="badge ${esc(verdict(item.id))}">${esc(historyLabel(verdict(item.id)))}</span>` : `<span class="badge">not reviewed</span>`}
         </section>
@@ -857,7 +873,6 @@
           ${renderSections(item)}
         </section>
       `;
-      $("viewed-toggle")?.addEventListener("change", (event) => updateItemStatus(item.id, { viewed: event.target.checked }));
       $("approved-toggle")?.addEventListener("change", (event) => updateItemStatus(item.id, { approved: event.target.checked }));
       $("main").querySelectorAll("[data-add-comment]").forEach((button) => {
         button.addEventListener("click", () => openCommentPopup({ target_id: item.id, anchor_id: button.dataset.addComment }));
@@ -976,6 +991,7 @@
                   ${item.phase ? `<span class="pill">${esc(item.phase)}</span>` : ""}
                 </div>
                 <p><strong>${esc(item.purpose || "체험 산출물")}</strong></p>
+                ${evidenceDetails(item)}
                 ${list(item.review_points)}
                 ${src ? `<p><a href="${esc(src)}" target="_blank" rel="noopener">새 창으로 열기</a></p>` : ""}
                 ${src && canFrame ? `<iframe class="evidence-frame" sandbox="allow-scripts" src="${esc(src)}" title="${esc(item.id || "evidence")}"></iframe>` : ""}
@@ -984,6 +1000,19 @@
           }).join("")}
         </div>
       `;
+    }
+
+    function evidenceDetails(item) {
+      const rows = [
+        ["대상 단위", item.target_unit],
+        ["대상 수", item.covered_units],
+        ["input", item.input],
+        ["function / adapter", item.function_adapter],
+        ["output recipient", item.output_recipient],
+        ["negative/no-op", item.negative_noop]
+      ].filter(([, value]) => value);
+      if (!rows.length) return "";
+      return `<dl class="kv-list">${rows.map(([key, value]) => `<div><dt>${esc(key)}</dt><dd>${esc(value)}</dd></div>`).join("")}</dl>`;
     }
 
     function renderComments(itemId, anchorId) {
@@ -1081,9 +1110,6 @@
     }
 
     async function submitReview() {
-      const required = state.items.filter((item) => item.required !== false);
-      const unviewed = required.filter((item) => !itemStatus(item.id).viewed);
-      if (unviewed.length && !window.confirm(`미확인 target ${unviewed.length}개가 있습니다. 그래도 제출할까요?`)) return;
       try {
         const data = await apiSend("POST", "submit");
         state.feedback = data.feedback || state.feedback;

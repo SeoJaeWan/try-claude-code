@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "scope": "initial-web-catalog",
+  "excludedFromInitialCatalog": [
+    {
+      "title": "Icon Button",
+      "nodeId": "16215:38360",
+      "sourcePath": "3 Component / 2 Action / Icon Button",
+      "componentSetIds": [
+        "16215:38424",
+        "16215:41807",
+        "16215:41871",
+        "16215:41931"
+      ],
+      "reason": "사용자가 초기 웹 카탈로그에서 제외하기로 결정했다.",
+      "decisionSource": "사용자: \"우선 icon button은 빼자\""
+    },
+    {
+      "title": "Content Icon",
+      "nodeId": "16215:25193",
+      "sourcePath": "3 Component / 4 Content / Icon",
+      "componentSetIds": [
+        "16215:25199",
+        "16215:25203"
+      ],
+      "reason": "사용자가 아이콘류 전체를 초기 웹 카탈로그에서 제외하기로 결정했다.",
+      "decisionSource": "사용자: \"아이콘류 전부 제외\""
+    },
+    {
+      "title": "Toggle Icon",
+      "nodeId": "16702:139221",
+      "sourcePath": "3 Component / 2 Action / Toggle Icon",
+      "componentSetIds": [
+        "16215:34872"
+      ],
+      "reason": "사용자가 아이콘류 전체를 초기 웹 카탈로그에서 제외하기로 결정했다.",
+      "decisionSource": "사용자: \"아이콘류 전부 제외\""
+    }
+  ],
+  "excludedVariantValuesFromInitialCatalog": [
+    {
+      "componentSetId": "16215:37602",
+      "componentSetName": "Button/Button",
+      "property": "Icon Only",
+      "values": ["True"],
+      "reason": "아이콘류 전체 제외 결정에 따라 Button의 icon-only variant는 초기 variant matrix에서 제외한다."
+    },
+    {
+      "componentSetId": "16215:35115",
+      "componentSetName": "Segmented Control/Segmented Control",
+      "property": "Icon",
+      "values": ["True"],
+      "reason": "아이콘류 전체 제외 결정에 따라 icon 포함 variant는 초기 variant matrix에서 제외한다."
+    }
+  ],
+  "excludedAxisValuesFromInitialCatalog": [
+    {
+      "sourcePath": "3 Component / 3 Selection and Input / Textinput",
+      "axis": "Variant",
+      "values": ["Icon", "Icon Button", "Normal Icon Button", "Primary Icon Button"],
+      "reason": "아이콘류 전체 제외 결정에 따라 resource/axis 후보에서 제외한다."
+    },
+    {
+      "sourcePath": "3 Component / 3 Selection and Input / Select",
+      "axis": "Variant",
+      "values": ["Icon", "Icon Button"],
+      "reason": "아이콘류 전체 제외 결정에 따라 resource/axis 후보에서 제외한다."
+    }
+  ],
+  "stillInFigmaInventory": true,
+  "notes": [
+    "이 파일은 Figma에서 발견된 항목을 삭제하지 않고 계획/구현 대상에서 제외하기 위한 override다."
+  ]
+}

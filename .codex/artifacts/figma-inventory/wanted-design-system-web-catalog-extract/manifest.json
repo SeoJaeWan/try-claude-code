@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 1,
+  "taskSlug": "wanted-design-system-web-catalog-extract",
+  "fileKey": "ZDmoC6xJxG2FCWIAZLmaWg",
+  "generatedAt": "2026-05-18T10:44:22.6570254+09:00",
+  "sourceUrl": "https://www.figma.com/design/ZDmoC6xJxG2FCWIAZLmaWg/Wanted-Design-System--Community-?node-id=0-1&p=f&t=E5ngG7Y83Cuy54BS-0",
+  "sourceScopeManifest": "../wanted-design-system-web-catalog-scope/manifest.json",
+  "shardPlanPath": null,
+  "roots": [
+    {
+      "nodeId": "figma:variables",
+      "expectedName": "Variables and styles",
+      "actualName": "Variables and styles",
+      "snapshotPath": "snapshots/tokens-summary.json",
+      "status": "ok",
+      "fidelity": "full",
+      "truncated": false,
+      "coverageComplete": true,
+      "parentRootId": null,
+      "shards": [],
+      "incompleteReasons": []
+    },
+    {
+      "nodeId": "16222:137704",
+      "expectedName": "2 Element",
+      "actualName": "2 Element",
+      "snapshotPath": "snapshots/catalog-variant-extract.json",
+      "status": "ok",
+      "fidelity": "full",
+      "truncated": false,
+      "coverageComplete": true,
+      "parentRootId": null,
+      "shards": [],
+      "incompleteReasons": []
+    },
+    {
+      "nodeId": "16222:137705",
+      "expectedName": "3 Component",
+      "actualName": "3 Component",
+      "snapshotPath": "snapshots/catalog-variant-extract.json",
+      "status": "ok",
+      "fidelity": "full",
+      "truncated": false,
+      "coverageComplete": true,
+      "parentRootId": null,
+      "shards": [],
+      "incompleteReasons": [
+        "일부 큰 섹션은 section scan cap에 닿았으나, 대표 component set direct leaf 검증으로 주요 variant 축과 leaf 수를 보강했다."
+      ]
+    },
+    {
+      "nodeId": "1173:12995",
+      "expectedName": "Resource",
+      "actualName": "Resource",
+      "snapshotPath": "snapshots/catalog-variant-extract.json",
+      "status": "ok",
+      "fidelity": "full",
+      "truncated": false,
+      "coverageComplete": true,
+      "parentRootId": null,
+      "shards": [],
+      "incompleteReasons": []
+    },
+    {
+      "nodeId": "planning:overrides",
+      "expectedName": "Planning overrides",
+      "actualName": "Planning overrides",
+      "snapshotPath": "snapshots/planning-overrides.json",
+      "status": "ok",
+      "fidelity": "full",
+      "truncated": false,
+      "coverageComplete": true,
+      "parentRootId": null,
+      "shards": [],
+      "incompleteReasons": []
+    },
+    {
+      "nodeId": "figma:variables:exact-values",
+      "expectedName": "Exact variable values",
+      "actualName": "Exact variable values",
+      "snapshotPath": "snapshots/variables-exact-values-index.json",
+      "status": "ok",
+      "fidelity": "full",
+      "truncated": false,
+      "coverageComplete": true,
+      "parentRootId": null,
+      "shards": [],
+      "incompleteReasons": []
+    },
+    {
+      "nodeId": "figma:styles:text-effect-grid",
+      "expectedName": "Text, effect, and grid style exact values",
+      "actualName": "Text, effect, and grid style exact values",
+      "snapshotPath": "snapshots/styles-text-effect-grid-exact.json",
+      "status": "ok",
+      "fidelity": "full",
+      "truncated": false,
+      "coverageComplete": true,
+      "parentRootId": null,
+      "shards": [],
+      "incompleteReasons": []
+    },
+    {
+      "nodeId": "figma:component-sets:coverage",
+      "expectedName": "Component set coverage audit",
+      "actualName": "Component set coverage audit",
+      "snapshotPath": "snapshots/component-set-coverage-audit.json",
+      "status": "ok",
+      "fidelity": "full",
+      "truncated": false,
+      "coverageComplete": true,
+      "parentRootId": null,
+      "shards": [],
+      "incompleteReasons": []
+    },
+    {
+      "nodeId": "figma:component-sets:incomplete-leaves",
+      "expectedName": "Incomplete component set allowed leaves",
+      "actualName": "Incomplete component set allowed leaves",
+      "snapshotPath": "snapshots/component-set-incomplete-leaves.json",
+      "status": "ok",
+      "fidelity": "full",
+      "truncated": false,
+      "coverageComplete": true,
+      "parentRootId": "figma:component-sets:coverage",
+      "shards": [],
+      "incompleteReasons": []
+    }
+  ],
+  "coverage": {
+    "requiredRootsRead": true,
+    "requiredPaths": [
+      "Variables and styles",
+      "2 Element",
+      "3 Component",
+      "Resource"
+    ],
+    "requiredPathsSeen": [
+      "Variables and styles",
+      "2 Element",
+      "3 Component",
+      "Resource"
+    ],
+    "requiredPathsMissing": [],
+    "requiredMarkersSeen": [
+      "variant",
+      "component-set",
+      "Resource",
+      "iOS",
+      "Android",
+      "Web",
+      "token",
+      "exact-token-values",
+      "typography-style-values",
+      "effect-style-values",
+      "grid-style-values",
+      "component-set-coverage"
+    ],
+    "truncated": false,
+    "coverageComplete": true,
+    "incompleteReasons": []
+  },
+  "excludedRoots": [
+    {
+      "nodeId": "16222:137703",
+      "name": "1 Theme",
+      "reason": "사용자가 Icon과 Logo를 초기 웹 카탈로그 범위에서 제외했다."
+    }
+  ],
+  "planningExclusions": [
+    {
+      "nodeId": "16215:38360",
+      "title": "Icon Button",
+      "sourcePath": "3 Component / 2 Action / Icon Button",
+      "componentSetIds": [
+        "16215:38424",
+        "16215:41807",
+        "16215:41871",
+        "16215:41931"
+      ],
+      "reason": "사용자가 Icon Button을 초기 웹 카탈로그 범위에서 제외했다.",
+      "stillInFigmaInventory": true
+    },
+    {
+      "nodeId": "16215:25193",
+      "title": "Content Icon",
+      "sourcePath": "3 Component / 4 Content / Icon",
+      "componentSetIds": [
+        "16215:25199",
+        "16215:25203"
+      ],
+      "reason": "사용자가 아이콘류 전체를 초기 웹 카탈로그 범위에서 제외했다.",
+      "stillInFigmaInventory": true
+    },
+    {
+      "nodeId": "16702:139221",
+      "title": "Toggle Icon",
+      "sourcePath": "3 Component / 2 Action / Toggle Icon",
+      "componentSetIds": [
+        "16215:34872"
+      ],
+      "reason": "사용자가 아이콘류 전체를 초기 웹 카탈로그 범위에서 제외했다.",
+      "stillInFigmaInventory": true
+    }
+  ],
+  "notes": [
+    "이 산출물은 계획 전 추출용 compact inventory다.",
+    "웹 구현용 최종 데이터 파일은 이 산출물을 근거로 별도 설계한다.",
+    "Icon Button, Content Icon, Toggle Icon은 Figma inventory에는 유지하되 초기 웹 카탈로그 계획/구현 대상에서는 제외한다.",
+    "planning-overrides.json은 Button Icon Only=True, Segmented Control Icon=True, Textinput/Select의 Icon 계열 axis 값도 초기 카탈로그에서 제외하도록 고정한다.",
+    "Exact variable snapshot은 Component 6개, Frame 3개, Theme 55개, Atomic 207개를 모두 포함한다.",
+    "Text/effect/grid style exact snapshot은 각각 57개, 7개, 5개를 포함한다.",
+    "Component set coverage audit은 62개 set, 718개 leaf를 검증했고, 6개 incomplete cartesian set은 allowedVariantProps snapshot으로 보강했다."
+  ]
+}
