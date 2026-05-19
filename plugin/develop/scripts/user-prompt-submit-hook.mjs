@@ -9,13 +9,14 @@
 //   1. Locate the plan file from the prompt and validate that its frontmatter
 //      has the three fields the runner depends on (plan_slug, branch,
 //      owner_agent).
-//   2. Derive the canonical plan-state path
+//   2. Refuse re-entry if the plan has already been merged (a sibling
+//      `.merged` marker exists alongside the state file).
+//   3. Derive the canonical plan-state path
 //      (`plans/<plan_key>/.runner-state.json`) and either:
-//        - create a brand-new state file in `preparing`, or
+//        - create a brand-new state file with identity fields populated, or
 //        - load the existing state and treat the request as a resume.
-//   3. Update the session JSON's `activePlan` slot so the Stop hook (and any
-//      future audit tooling) can see which plan this session is driving.
-//   4. Emit `additionalContext` so the runner skill enters the conversation
+//   4. Update the session JSON's `activePlan` slot for diagnostics tooling.
+//   5. Emit `additionalContext` so the runner skill enters the conversation
 //      already knowing which plan it is on, where the state lives, and
 //      whether it is resuming or starting fresh.
 //
@@ -37,7 +38,6 @@ import { toPosixPath } from "./lib/fs.mjs";
 import { setActivePlan } from "./lib/sessions.mjs";
 import { extractRunnerHeaders, readPlanFrontmatter } from "./lib/plan-frontmatter.mjs";
 import {
-  TERMINAL_STATUSES,
   createInitialState,
   deriveStatePathFromPlanPath,
   deriveWorktreePathFromBranch,
@@ -130,17 +130,13 @@ function detectBaseBranch(cwd) {
 
 // Build the additionalContext payload. The skill keys off the
 // "[runner-skill bootstrap]" header and then reads the JSON at `state_path`
-// directly — every other field (status, worktree_path, dev_review round,
-// block history) lives in that file and was previously duplicated into prose
-// here. The duplication created a second string contract; the bootstrap is
-// now reduced to two fields:
+// directly. The runner skill infers what Step it is on from disk (worktree
+// presence, commits, feedback.json) rather than a `status` field; the
+// bootstrap only needs to point at the state file and tell the skill whether
+// this is a fresh start or a resume.
 //
 //   state_path  — absolute POSIX path to the canonical .runner-state.json
 //   mode        — "fresh" for a brand-new plan, "resume" otherwise
-//
-// Per-status guidance is the runner SKILL.md's responsibility (its routing
-// table reads `status` from the JSON). Anything that needs to grow lives in
-// the JSON, not here.
 function buildBootstrapContext({ statePath, resume }) {
   return [
     "[runner-skill bootstrap]",
@@ -179,17 +175,22 @@ async function main() {
     const derived = deriveStatePathFromPlanPath(planPath);
     statePath = derived.statePath;
 
+    // Terminal check: a sibling `.merged` marker means this plan has already
+    // been merged. The runner skill `touch`es this file at Step 5 when the
+    // user picks "merge into base". Refuse re-entry until the user deletes
+    // it explicitly — re-running a merged plan would create a stale worktree
+    // off a base that already contains the plan's commits.
+    const mergedMarker = path.join(derived.stateDir, ".merged");
+    if (fs.existsSync(mergedMarker)) {
+      throw new Error(
+        `이 plan은 이미 머지 완료되었습니다 (.merged 마커 존재).\n` +
+        `마커 파일: ${toPosixPath(mergedMarker)}\n` +
+        `다시 처음부터 실행하려면 위 마커와 state 파일(${statePath})을 삭제한 뒤 /runner를 다시 실행하세요.`,
+      );
+    }
+
     const existing = tryLoadState(statePath);
     if (existing) {
-      // Resume path. Reject only if the plan has already finished — every
-      // other status is a legitimate place to pick the work back up from.
-      if (TERMINAL_STATUSES.has(existing.status)) {
-        throw new Error(
-          `이 plan은 이미 "${existing.status}" 상태로 종료되었습니다.\n` +
-          `state 파일: ${statePath}\n` +
-          `다시 처음부터 실행하려면 위 파일과 워크트리(${existing.worktree_path})를 삭제한 뒤 /runner를 다시 실행하세요.`,
-        );
-      }
       // Sanity check: the plan file's frontmatter should still match the
       // identity recorded in state. Mismatches usually mean the user renamed
       // the slug or branch — surface it instead of silently overwriting.
@@ -199,28 +200,9 @@ async function main() {
           `둘 중 어느 쪽을 정답으로 삼을지 결정한 뒤 다시 시도하세요.`,
         );
       }
-      // Hand ownership to the current session. The Stop hook's
-      // multi-session isolation filter skips any plan whose recorded
-      // session_id differs from the live sessionId — without this update,
-      // a state file created in a previous session (terminal closed and
-      // reopened, machine reboot, cross-machine resume) would be invisible
-      // to the new session's Stop hook even though the new session is the
-      // one actively driving the plan.
-      if (sessionId && existing.session_id !== sessionId) {
-        existing.session_id = sessionId;
-        saveState(statePath, existing);
-      }
       state = existing;
       resume = true;
     } else {
-      // Fresh start. We previously enforced a "one /runner per terminal"
-      // rule here by scanning the session's activePlanStates list and
-      // rejecting if another non-terminal plan was registered. That rule
-      // exists to prevent the Stop hook from surfacing only the first BLOCK
-      // when multiple armed plans collide on the same turn-end, but the
-      // enforcement was costing more (confused users, manual session
-      // resets) than the UX hazard it prevented. The session slot is now
-      // informational — setActivePlan overwrites and warns to stderr.
       const wtPath = deriveWorktreePathFromBranch(cwd, frontmatter.branch);
       const baseBranch = detectBaseBranch(cwd);
       state = createInitialState({
@@ -230,7 +212,6 @@ async function main() {
         baseBranch,
         taskBranch: frontmatter.branch,
         worktreePath: wtPath,
-        sessionId,
       });
       saveState(statePath, state);
     }

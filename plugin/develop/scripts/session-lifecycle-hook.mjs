@@ -3,14 +3,14 @@
 // Session lifecycle hook — SessionStart and SessionEnd.
 //
 // What stays here:
-//   - SessionStart: create the session JSON (tracking Codex thread reuse and
-//     active plan-state pointers).
+//   - SessionStart: create the session JSON (tracking the active
+//     plan-state pointer for diagnostics).
 //   - SessionEnd: remove the session JSON.
 //
 // The Codex CLI probe and SessionEnd stale-session sweep that used to live
-// here have been removed: Codex absence surfaces naturally when stop-review
-// fires (and is handled by the Codex client wrapper), and stale session
-// JSONs from killed Claude processes are tiny and irrelevant.
+// here have been removed: the automatic stop-review gate is gone (dev-review
+// is the sole gate), and stale session JSONs from killed Claude processes
+// are tiny and irrelevant.
 
 import process from "node:process";
 

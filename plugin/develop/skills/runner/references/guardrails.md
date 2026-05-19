@@ -24,9 +24,9 @@ surface less often but cause hard-to-debug state corruption when violated.
    reviewer selected in the UI. The reviewer's choice is authoritative.
 10. Never split one plan across multiple plan-agent dispatches. One plan =
     one Agent call. Rework dispatches are separate and narrower.
-11. Never edit the plan-state JSON ad hoc with `Edit`/`Write`, and never
-    write inline `node -e` snippets that import `runner-state.mjs` directly.
-    All status transitions go through `scripts/runner-state-cli.mjs` so the
-    assertion, transition, auxiliary updates, and atomic save run together.
-    A hand-edit will fail loud on the next `validateState` load, but you
-    waste a turn — go through the CLI.
+11. For `dev_review.phase` changes, prefer the `runner-state-cli.mjs`
+    subcommands over inline `Edit`/`Write` on the JSON. The CLI bundles
+    load + mutate + atomic save and avoids racing with a concurrent
+    `/runner` resume in another terminal. Identity fields (plan_path,
+    task_branch, base_branch, …) are written once by the UserPromptSubmit
+    hook and should not be touched mid-plan.

@@ -16,42 +16,38 @@ dispatches must be foreground (no `run_in_background: true`) — the runner
 has to wait for completion before calling `rework-done` and re-entering
 dev-review.
 
-## Rework intentionally does not call `arm-for-dispatch`
-
-Stop-review is bypassed for rework commits because the reviewer sees them
-directly in the next dev-review round; routing them through stop-review
-would decouple round counts from review results and create BLOCK ↔ rework
-cycles that the UI cannot represent.
-
 ## Feedback file bookkeeping
 
 There is no round counter. Each invocation of dev-review writes the
 current state into `feedback.json` and the prior round's data into
 `review-history.json` (see dev-review SKILL.md Step 3). The runner's only
 bookkeeping responsibility is recording the feedback path in
-`state.dev_review.last_feedback_path` so rework dispatches can find it.
+`state.dev_review.last_feedback_path` via `begin-rework` so rework
+dispatches can find it.
 
 | Trigger | Effect |
 |---|---|
-| First Step 4 entry (after Stop-review ALLOW) | dev-review skill writes a fresh `feedback.json`; runner has nothing to do until the result comes back |
-| `result = "approved"` | move to Step 5 via `mark-approved` |
+| First Step 4 entry (right after the plan-agent returns in Step 3) | dev-review skill writes a fresh `feedback.json`; runner has nothing to do until the result comes back |
+| `result = "approved"` | move to Step 5 (no CLI call needed — state file stays until cleanup) |
 | `result = "qa_required"` | phase toggles `awaiting → qa → awaiting` (`mark-qa-pending` / `qa-resolved`) |
 | `result = "rework"` | `begin-rework` flips phase `awaiting → rework` and records the feedback path in one call; after every rework agent commits, `rework-done` flips phase back to `awaiting` |
 
-## Why "foreground only" matters
+## Why foreground matters
 
 Background for the "**Foreground only — never pass `run_in_background:
 true`**" rule in Step 3.
 
 A foreground Agent call blocks the turn until the agent finishes, so the
-Stop hook only fires once commits are in place. A background dispatch
-returns immediately, the model often ends the turn before commits exist,
-and the Stop hook would see a zero-commit range. The current Stop hook
-catches this — `collectDiffForPlan` returns null and the fallback emits
-"[stop-gate] dispatch됐지만 새 commit 없음", leaving the gate armed for
-the next foreground re-dispatch. Cost of the slip: one wasted turn.
+runner can move directly into Step 4 (dev-review) in the same turn once
+the commits are in place. A background dispatch returns immediately, the
+model often ends the turn before commits exist, and the next `/runner`
+resume mis-routes to Step 3 again (the routing table sees worktree present
++ zero commits and picks "dispatch the plan agent" — looping you back).
 
-(A previous version of the runner had a PreToolUse gate that refused
-backgrounded Agent dispatches outright. That gate was removed because
-its sub-agent BLOCK false positives caused worse problems than the
-slip it prevented — see `references/enforcement.md`.)
+Cost of the slip: one wasted turn re-dispatching foreground.
+
+(A previous version of the runner used a Stop hook + Codex auto-review to
+gate dispatches, and a PreToolUse gate that refused backgrounded Agent
+dispatches outright. Both layers were removed because their false
+positives caused worse problems than the slip they prevented — the human
+reviewer in dev-review catches every issue the gates were meant to catch.)
