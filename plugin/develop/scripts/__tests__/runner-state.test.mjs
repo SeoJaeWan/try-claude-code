@@ -1,4 +1,4 @@
-import { describe, it, before, after, beforeEach } from "node:test";
+import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -6,26 +6,15 @@ import path from "node:path";
 
 import {
   DEV_REVIEW_PHASE,
-  SCHEMA_VERSION,
-  STATUS,
-  STOP_REVIEW_PHASE,
-  TERMINAL_STATUSES,
-  assertExpectedStatus,
   createInitialState,
   deriveStatePathFromPlanPath,
   deriveWorktreePathFromBranch,
   loadState,
-  recordPlanBlock,
   saveState,
   setDevReviewFeedbackPath,
   setDevReviewPhase,
-  setLastReviewedCommit,
-  setStopReviewArmed,
-  setStopReviewPhase,
   stateFileExists,
-  transitionStatus,
   tryLoadState,
-  validateState,
 } from "../lib/runner-state.mjs";
 
 // ---------------------------------------------------------------------------
@@ -33,23 +22,13 @@ import {
 // ---------------------------------------------------------------------------
 
 describe("deriveStatePathFromPlanPath", () => {
-  // We compare with endsWith so the tests work on both POSIX (where absolute
-  // paths start with "/") and Windows (where absoluteNormalizePath prefixes
-  // the drive letter, e.g. "C:/repo/...").
-
   it("strips .plan.md and mirrors the plan directory", () => {
     const { stateDir, statePath, stem } = deriveStatePathFromPlanPath(
       "/repo/plans/login-frontend.plan.md",
     );
     assert.equal(stem, "login-frontend");
-    assert.ok(
-      stateDir.endsWith("/repo/plans/login-frontend"),
-      `stateDir was: ${stateDir}`,
-    );
-    assert.ok(
-      statePath.endsWith("/repo/plans/login-frontend/.runner-state.json"),
-      `statePath was: ${statePath}`,
-    );
+    assert.ok(stateDir.endsWith("/repo/plans/login-frontend"));
+    assert.ok(statePath.endsWith("/repo/plans/login-frontend/.runner-state.json"));
   });
 
   it("preserves nested plan directories so siblings do not collide", () => {
@@ -61,44 +40,25 @@ describe("deriveStatePathFromPlanPath", () => {
   });
 
   it("treats a bare plan.md as the directory's canonical plan", () => {
-    // plans/wanted-design-system-mvp/plan.md → state at
-    // plans/wanted-design-system-mvp/.runner-state.json (plan_key = directory).
     const { stateDir, statePath, stem } = deriveStatePathFromPlanPath(
       "/repo/plans/wanted-design-system-mvp/plan.md",
     );
     assert.equal(stem, "wanted-design-system-mvp");
-    assert.ok(
-      stateDir.endsWith("/repo/plans/wanted-design-system-mvp"),
-      `stateDir was: ${stateDir}`,
-    );
-    assert.ok(
-      statePath.endsWith("/repo/plans/wanted-design-system-mvp/.runner-state.json"),
-      `statePath was: ${statePath}`,
-    );
+    assert.ok(stateDir.endsWith("/repo/plans/wanted-design-system-mvp"));
+    assert.ok(statePath.endsWith("/repo/plans/wanted-design-system-mvp/.runner-state.json"));
   });
 
   it("keeps plan.md and front.plan.md as siblings under the same parent", () => {
-    // The point: a folder may hold both its canonical plan.md *and* one or
-    // more named <slug>.plan.md children, each with its own state path.
-    const main = deriveStatePathFromPlanPath(
-      "/repo/plans/wanted-design-system-mvp/plan.md",
-    );
-    const front = deriveStatePathFromPlanPath(
-      "/repo/plans/wanted-design-system-mvp/front.plan.md",
-    );
+    const main = deriveStatePathFromPlanPath("/repo/plans/wanted-design-system-mvp/plan.md");
+    const front = deriveStatePathFromPlanPath("/repo/plans/wanted-design-system-mvp/front.plan.md");
     assert.notEqual(main.statePath, front.statePath);
-    assert.ok(
-      main.statePath.endsWith("/repo/plans/wanted-design-system-mvp/.runner-state.json"),
-    );
-    assert.ok(
-      front.statePath.endsWith("/repo/plans/wanted-design-system-mvp/front/.runner-state.json"),
-    );
+    assert.ok(main.statePath.endsWith("/repo/plans/wanted-design-system-mvp/.runner-state.json"));
+    assert.ok(front.statePath.endsWith("/repo/plans/wanted-design-system-mvp/front/.runner-state.json"));
   });
 
   it("falls back to the plain filename stem when not .plan.md", () => {
     const { stem } = deriveStatePathFromPlanPath("/repo/plans/notes.md");
     assert.equal(stem, "notes");
-    // And plan.md must NOT take this fallback — stem comes from the parent dir.
     const planMd = deriveStatePathFromPlanPath("/repo/plans/foo/plan.md");
     assert.equal(planMd.stem, "foo");
   });
@@ -121,11 +81,11 @@ describe("deriveWorktreePathFromBranch", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Initial state + validation
+// createInitialState — slim 7-field schema
 // ---------------------------------------------------------------------------
 
 describe("createInitialState", () => {
-  it("produces a fresh state in PREPARING with armed=false and no phases", () => {
+  it("produces a state with the 7 identity fields and null dev_review.phase", () => {
     const state = createInitialState({
       planSlug: "login-frontend",
       planPath: "/repo/plans/login-frontend.plan.md",
@@ -133,58 +93,32 @@ describe("createInitialState", () => {
       baseBranch: "main",
       taskBranch: "feat/login-frontend",
       worktreePath: "/repo/worktrees/feat-login-frontend",
-      sessionId: "sess-1",
     });
-    assert.equal(state.schema_version, SCHEMA_VERSION);
-    assert.equal(state.status, STATUS.PREPARING);
-    assert.equal(state.stop_review.armed, false);
-    assert.equal(state.stop_review.phase, null);
+    assert.equal(state.plan_slug, "login-frontend");
+    assert.equal(state.owner_agent, "frontend-developer");
+    assert.equal(state.base_branch, "main");
+    assert.equal(state.task_branch, "feat/login-frontend");
     assert.equal(state.dev_review.phase, null);
-    assert.deepEqual(state.stop_review.block_history, []);
-    assert.equal(state.session_id, "sess-1");
-    // Timestamps populated.
-    assert.ok(state.created_at);
-    assert.ok(state.updated_at);
+    assert.equal(state.dev_review.last_feedback_path, null);
+    // Stop-review and status fields must NOT be present in the slim schema.
+    assert.equal(state.status, undefined);
+    assert.equal(state.stop_review, undefined);
+    assert.equal(state.schema_version, undefined);
+    assert.equal(state.session_id, undefined);
+    assert.equal(state.created_at, undefined);
+    assert.equal(state.updated_at, undefined);
   });
 
   it("requires every identity field", () => {
     assert.throws(() => createInitialState({}));
-  });
-});
-
-describe("validateState", () => {
-  function freshState() {
-    return createInitialState({
+    assert.throws(() => createInitialState({
       planSlug: "x",
       planPath: "/p/x.plan.md",
       ownerAgent: "a",
-      baseBranch: "main",
+      // baseBranch missing
       taskBranch: "feat/x",
       worktreePath: "/p/worktrees/feat-x",
-    });
-  }
-
-  it("accepts a freshly-created state", () => {
-    const s = freshState();
-    assert.equal(validateState(s), s);
-  });
-
-  it("rejects unknown schema_version (forces explicit migration)", () => {
-    const s = freshState();
-    s.schema_version = 99;
-    assert.throws(() => validateState(s), /schema_version 99/);
-  });
-
-  it("rejects unknown status", () => {
-    const s = freshState();
-    s.status = "halfway";
-    assert.throws(() => validateState(s), /unknown status/);
-  });
-
-  it("rejects missing stop_review block", () => {
-    const s = freshState();
-    delete s.stop_review;
-    assert.throws(() => validateState(s));
+    }));
   });
 });
 
@@ -216,7 +150,8 @@ describe("saveState / loadState", () => {
 
     const loaded = loadState(file);
     assert.equal(loaded.plan_slug, "rt");
-    assert.equal(loaded.status, STATUS.PREPARING);
+    assert.equal(loaded.task_branch, "feat/rt");
+    assert.equal(loaded.dev_review.phase, null);
   });
 
   it("creates parent directories on first save", () => {
@@ -233,59 +168,12 @@ describe("saveState / loadState", () => {
     assert.equal(fs.existsSync(file), true);
   });
 
-  it("bumps updated_at on every save", async () => {
-    const state = createInitialState({
-      planSlug: "bump",
-      planPath: "/p/bump.plan.md",
-      ownerAgent: "a",
-      baseBranch: "main",
-      taskBranch: "feat/bump",
-      worktreePath: "/p/worktrees/feat-bump",
-    });
-    const file = path.join(tmpDir, "bump", ".runner-state.json");
-    saveState(file, state);
-    const before = state.updated_at;
-    // Force a measurable gap so the ISO timestamps differ.
-    await new Promise((r) => setTimeout(r, 5));
-    saveState(file, state);
-    assert.notEqual(state.updated_at, before);
-  });
-
   it("tryLoadState returns null when file is missing", () => {
     const file = path.join(tmpDir, "missing", ".runner-state.json");
     assert.equal(tryLoadState(file), null);
   });
 
-  it("does not leave a half-written file when validation fails", () => {
-    const broken = createInitialState({
-      planSlug: "x",
-      planPath: "/p/x.plan.md",
-      ownerAgent: "a",
-      baseBranch: "main",
-      taskBranch: "feat/x",
-      worktreePath: "/p/worktrees/feat-x",
-    });
-    broken.status = "totally-bogus";
-    const file = path.join(tmpDir, "broken", ".runner-state.json");
-    assert.throws(() => saveState(file, broken));
-    assert.equal(fs.existsSync(file), false);
-  });
-
-  it("does not leave a stale .bak sidecar after save (backup removed)", () => {
-    const state = createInitialState({
-      planSlug: "nobak",
-      planPath: "/p/nobak.plan.md",
-      ownerAgent: "a",
-      baseBranch: "main",
-      taskBranch: "feat/nobak",
-      worktreePath: "/p/worktrees/feat-nobak",
-    });
-    const file = path.join(tmpDir, "nobak", ".runner-state.json");
-    saveState(file, state);
-    assert.equal(fs.existsSync(`${file}.bak`), false, ".bak sidecar must not be created");
-  });
-
-  it("loadState throws on corrupt JSON (no .bak fallback)", () => {
+  it("loadState throws on corrupt JSON", () => {
     const state = createInitialState({
       planSlug: "corrupt",
       planPath: "/p/corrupt.plan.md",
@@ -299,214 +187,35 @@ describe("saveState / loadState", () => {
     fs.writeFileSync(file, "{ corrupt", "utf8");
     assert.throws(() => loadState(file), /failed to parse JSON/);
   });
-});
 
-// ---------------------------------------------------------------------------
-// Status transitions
-// ---------------------------------------------------------------------------
-
-describe("transitionStatus", () => {
-  function fresh() {
-    return createInitialState({
-      planSlug: "x",
-      planPath: "/p/x.plan.md",
-      ownerAgent: "a",
-      baseBranch: "main",
-      taskBranch: "feat/x",
-      worktreePath: "/p/worktrees/feat-x",
-    });
-  }
-
-  it("walks the canonical happy path", () => {
-    const s = fresh();
-    transitionStatus(s, STATUS.DISPATCHING);
-    transitionStatus(s, STATUS.DEV_REVIEWING);
-    transitionStatus(s, STATUS.CLOSING);
-    transitionStatus(s, STATUS.MERGED);
-    assert.equal(s.status, STATUS.MERGED);
-  });
-
-  // The dev-review sub-states (rework / Q&A / awaiting) are no longer
-  // separate statuses in v2 — they are phase mutations on DEV_REVIEWING.
-  // transitionStatus only handles top-level Step boundaries.
-  it("DEV_REVIEWING self-edge is allowed (re-entry on round bump)", () => {
-    const s = fresh();
-    s.status = STATUS.DEV_REVIEWING;
-    transitionStatus(s, STATUS.DEV_REVIEWING);
-    assert.equal(s.status, STATUS.DEV_REVIEWING);
-  });
-
-  // Regression: after a BLOCK, the gate stays armed via stop_review.phase
-  // (BLOCKED → ARMED → BLOCKED). The status stays at DISPATCHING the entire
-  // time and only flips to DEV_REVIEWING once the Stop hook ALLOWs.
-  it("DISPATCHING self-edge is allowed (gate cycles via phase)", () => {
-    const s = fresh();
-    s.status = STATUS.DISPATCHING;
-    transitionStatus(s, STATUS.DISPATCHING);
-    transitionStatus(s, STATUS.DEV_REVIEWING);
-    assert.equal(s.status, STATUS.DEV_REVIEWING);
-  });
-
-  it("rejects illegal jumps (e.g. preparing → closing)", () => {
-    const s = fresh();
-    assert.throws(() => transitionStatus(s, STATUS.CLOSING));
-  });
-
-  it("rejects unknown statuses", () => {
-    const s = fresh();
-    assert.throws(() => transitionStatus(s, "running"));
-  });
-
-  it("MERGED is terminal — no transitions out", () => {
-    const s = fresh();
-    s.status = STATUS.MERGED;
-    assert.throws(() => transitionStatus(s, STATUS.CLOSING));
-    assert.throws(() => transitionStatus(s, STATUS.PREPARING));
-  });
-
-  it("MERGED is the only terminal status", () => {
-    assert.equal(TERMINAL_STATUSES.has(STATUS.MERGED), true);
-    assert.equal(TERMINAL_STATUSES.has(STATUS.CLOSING), false);
-  });
-});
-
-describe("assertExpectedStatus", () => {
-  function fresh() {
-    return createInitialState({
-      planSlug: "x",
-      planPath: "/p/x.plan.md",
-      ownerAgent: "a",
-      baseBranch: "main",
-      taskBranch: "feat/x",
-      worktreePath: "/p/worktrees/feat-x",
-    });
-  }
-
-  it("returns state when status matches a single expectation", () => {
-    const s = fresh();
-    assert.equal(assertExpectedStatus(s, STATUS.PREPARING), s);
-  });
-
-  it("accepts an array of expected statuses", () => {
-    const s = fresh();
-    s.status = STATUS.DEV_REVIEWING;
-    assertExpectedStatus(s, [STATUS.DEV_REVIEWING, STATUS.CLOSING]);
-  });
-
-  it("throws with a useful message when status mismatches", () => {
-    const s = fresh();
-    s.status = STATUS.DISPATCHING;
-    assert.throws(
-      () => assertExpectedStatus(s, STATUS.DEV_REVIEWING, "Step 4"),
-      /dispatching.*expected "dev_reviewing".*Step 4/s,
-    );
-  });
-
-  it("rejects unknown expected statuses", () => {
-    const s = fresh();
-    assert.throws(() => assertExpectedStatus(s, "running"), /unknown expected status/);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Stop-review helpers
-// ---------------------------------------------------------------------------
-
-describe("setStopReviewArmed / setLastReviewedCommit", () => {
-  it("toggles armed coercing truthy/falsy", () => {
-    const s = createInitialState({
-      planSlug: "x",
-      planPath: "/p/x.plan.md",
-      ownerAgent: "a",
-      baseBranch: "main",
-      taskBranch: "feat/x",
-      worktreePath: "/p/worktrees/feat-x",
-    });
-    setStopReviewArmed(s, 1);
-    assert.equal(s.stop_review.armed, true);
-    setStopReviewArmed(s, 0);
-    assert.equal(s.stop_review.armed, false);
-  });
-
-  it("records the reviewed SHA and outcome", () => {
-    const s = createInitialState({
-      planSlug: "x",
-      planPath: "/p/x.plan.md",
-      ownerAgent: "a",
-      baseBranch: "main",
-      taskBranch: "feat/x",
-      worktreePath: "/p/worktrees/feat-x",
-    });
-    setLastReviewedCommit(s, "abcdef0", "ALLOW");
-    assert.equal(s.stop_review.last_reviewed_commit, "abcdef0");
-    assert.equal(s.stop_review.last_result, "ALLOW");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Block history
-// ---------------------------------------------------------------------------
-
-describe("recordPlanBlock", () => {
-  function fresh() {
-    return createInitialState({
-      planSlug: "x",
-      planPath: "/p/x.plan.md",
-      ownerAgent: "a",
-      baseBranch: "main",
-      taskBranch: "feat/x",
-      worktreePath: "/p/worktrees/feat-x",
-    });
-  }
-
-  it("appends a new entry on each BLOCK", () => {
-    const s = fresh();
-    recordPlanBlock(s, "ESLint failure on login.tsx:42");
-    recordPlanBlock(s, "ESLint failure on login.tsx:42");
-    assert.equal(s.stop_review.block_history.length, 2);
-    assert.ok(s.stop_review.block_history[0].reason_excerpt.includes("ESLint"));
-    assert.ok(s.stop_review.block_history[0].at);
-  });
-
-  it("caps history length at 10", () => {
-    const s = fresh();
-    for (let i = 0; i < 15; i++) recordPlanBlock(s, `reason ${i}`);
-    assert.equal(s.stop_review.block_history.length, 10);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Dev-review round bookkeeping
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// v1 schema rejection (auto-migration was removed in runner-hook-cleanup)
-// ---------------------------------------------------------------------------
-
-describe("validateState (v1 rejection)", () => {
-  it("rejects a v1 state with a Korean message asking the user to delete it", () => {
-    const v1 = {
-      schema_version: 1,
-      plan_slug: "x",
-      plan_path: "/p/x.plan.md",
+  it("tolerates loading legacy schema files (extra fields ignored)", () => {
+    // A pre-removal state file with status/stop_review/etc still parses; the
+    // slim runner-state.mjs just ignores the extra fields.
+    const file = path.join(tmpDir, "legacy", ".runner-state.json");
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, JSON.stringify({
+      schema_version: 2,
+      plan_slug: "legacy",
+      plan_path: "/p/legacy.plan.md",
       owner_agent: "a",
       base_branch: "main",
-      task_branch: "feat/x",
-      worktree_path: "/p/worktrees/feat-x",
-      status: "validating",
-      stop_review: { armed: false, last_result: null, last_reviewed_commit: null, block_history: [] },
-      dev_review: { current_round: 0, last_feedback_path: null },
-    };
-    assert.throws(() => validateState(v1), /schema_version=1/);
-  });
-
-  it("rejects any unknown schema_version with a generic message", () => {
-    const s = { schema_version: 99, plan_slug: "x", plan_path: "/p", owner_agent: "a", base_branch: "main", task_branch: "x", worktree_path: "/p/w", status: "preparing", stop_review: { armed: false, block_history: [] }, dev_review: {} };
-    assert.throws(() => validateState(s), /unsupported schema_version 99/);
+      task_branch: "feat/legacy",
+      worktree_path: "/p/worktrees/feat-legacy",
+      status: "dev_reviewing",
+      stop_review: { armed: false, phase: null, block_history: [] },
+      dev_review: { phase: "awaiting", last_feedback_path: null },
+    }, null, 2));
+    const loaded = loadState(file);
+    assert.equal(loaded.plan_slug, "legacy");
+    assert.equal(loaded.dev_review.phase, "awaiting");
   });
 });
 
-describe("setStopReviewPhase / setDevReviewPhase", () => {
+// ---------------------------------------------------------------------------
+// dev_review.phase mutators
+// ---------------------------------------------------------------------------
+
+describe("setDevReviewPhase", () => {
   function fresh() {
     return createInitialState({
       planSlug: "x",
@@ -518,44 +227,33 @@ describe("setStopReviewPhase / setDevReviewPhase", () => {
     });
   }
 
-  it("walks stop-review phase: null → ARMED → BLOCKED → ARMED → PASSED", () => {
+  it("walks dev-review phase through every value", () => {
     const s = fresh();
-    setStopReviewPhase(s, STOP_REVIEW_PHASE.ARMED);
-    setStopReviewPhase(s, STOP_REVIEW_PHASE.BLOCKED);
-    setStopReviewPhase(s, STOP_REVIEW_PHASE.ARMED);
-    setStopReviewPhase(s, STOP_REVIEW_PHASE.PASSED);
-    assert.equal(s.stop_review.phase, STOP_REVIEW_PHASE.PASSED);
-  });
-
-  it("walks dev-review phase: null → AWAITING → REWORK → AWAITING → QA → AWAITING", () => {
-    const s = fresh();
-    setDevReviewPhase(s, DEV_REVIEW_PHASE.AWAITING);
-    setDevReviewPhase(s, DEV_REVIEW_PHASE.REWORK);
-    setDevReviewPhase(s, DEV_REVIEW_PHASE.AWAITING);
-    setDevReviewPhase(s, DEV_REVIEW_PHASE.QA);
     setDevReviewPhase(s, DEV_REVIEW_PHASE.AWAITING);
     assert.equal(s.dev_review.phase, DEV_REVIEW_PHASE.AWAITING);
-  });
-
-  it("rejects illegal phase jumps", () => {
-    const s = fresh();
-    setDevReviewPhase(s, DEV_REVIEW_PHASE.AWAITING);
     setDevReviewPhase(s, DEV_REVIEW_PHASE.REWORK);
-    // REWORK → QA is not allowed (must go through AWAITING).
-    assert.throws(() => setDevReviewPhase(s, DEV_REVIEW_PHASE.QA));
-  });
-
-  it("setting phase to null is always allowed (status leaving the block)", () => {
-    const s = fresh();
-    setStopReviewPhase(s, STOP_REVIEW_PHASE.ARMED);
-    setStopReviewPhase(s, null);
-    assert.equal(s.stop_review.phase, null);
+    assert.equal(s.dev_review.phase, DEV_REVIEW_PHASE.REWORK);
+    setDevReviewPhase(s, DEV_REVIEW_PHASE.AWAITING);
+    setDevReviewPhase(s, DEV_REVIEW_PHASE.QA);
+    assert.equal(s.dev_review.phase, DEV_REVIEW_PHASE.QA);
+    setDevReviewPhase(s, null);
+    assert.equal(s.dev_review.phase, null);
   });
 
   it("rejects unknown phase values", () => {
     const s = fresh();
-    assert.throws(() => setStopReviewPhase(s, "frozen"));
     assert.throws(() => setDevReviewPhase(s, "thinking"));
+    assert.throws(() => setDevReviewPhase(s, "rework_pending"));
+  });
+
+  it("allows arbitrary direction (no transition table — Stop hook race is gone)", () => {
+    const s = fresh();
+    setDevReviewPhase(s, DEV_REVIEW_PHASE.AWAITING);
+    setDevReviewPhase(s, DEV_REVIEW_PHASE.REWORK);
+    // REWORK → QA directly. The previous v2 transition table forbade this; the
+    // slim schema only validates the value, not the edge.
+    setDevReviewPhase(s, DEV_REVIEW_PHASE.QA);
+    assert.equal(s.dev_review.phase, DEV_REVIEW_PHASE.QA);
   });
 });
 
@@ -571,11 +269,7 @@ describe("setDevReviewFeedbackPath", () => {
     });
     setDevReviewFeedbackPath(s, "/p/x/dev-review/feedback.json");
     assert.equal(s.dev_review.last_feedback_path, "/p/x/dev-review/feedback.json");
-    setDevReviewFeedbackPath(s, "/p/x/dev-review/feedback.json");
-    assert.equal(s.dev_review.last_feedback_path, "/p/x/dev-review/feedback.json");
     setDevReviewFeedbackPath(s, null);
     assert.equal(s.dev_review.last_feedback_path, null);
   });
 });
-
-

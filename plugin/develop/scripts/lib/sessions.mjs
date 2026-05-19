@@ -8,13 +8,12 @@
 //   a stderr warning when the value changes. The Stop hook does not read
 //   it (it globs `plans/**/.runner-state.json` directly).
 //
-// `stopReviewThreadId` lived here when Codex ran through a long-lived
-// broker daemon and could resume a warm thread across stop-review passes.
-// Codex now runs as a single-shot subprocess on every call (no daemon, no
-// thread reuse), so the field has been removed.
+// `stopReviewThreadId` lived here when an automatic Codex review gate ran
+// at every turn end. That gate has been removed (dev-review is the sole
+// review surface now), so the field is gone with it.
 //
-// Per-plan state (worktree path, status, BLOCK history) lives in the
-// runner-state SSOT (`plans/{plan_key}/.runner-state.json`), not here.
+// Per-plan state (worktree path, dev_review.phase, base_branch) lives in
+// `plans/{plan_key}/.runner-state.json`, not here.
 
 import fs from "node:fs";
 import os from "node:os";

@@ -7,19 +7,14 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 import {
-  STATUS,
   createInitialState,
   saveState,
-  transitionStatus,
 } from "../lib/runner-state.mjs";
 
 // UserPromptSubmit hook is integration-tested by spawning the hook script
-// against a synthetic plugin/project layout. The fresh-start branch no
-// longer enforces "one /runner per terminal" — the session slot is
-// informational, and setActivePlan overwrites with a stderr warning when
-// the pointer changes. These tests pin the new behaviour: a second
-// /runner in the same session passes through to a bootstrap, and the
-// session.json's activePlan slot reflects the latest plan.
+// against a synthetic plugin/project layout. The hook now performs three
+// jobs: validate plan + frontmatter, refuse re-entry if `.merged` marker
+// exists, create or load state and emit the bootstrap context.
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const HOOK = path.resolve(SCRIPT_DIR, "..", "user-prompt-submit-hook.mjs");
@@ -28,11 +23,11 @@ let tmpRoot;
 let pluginRoot;
 let projectRoot;
 let pluginDataDir;
+let counter = 0;
 
 before(() => {
   tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "ups-hook-test-"));
 
-  // Synthetic plugin root with one agent file the plan can name.
   pluginRoot = path.join(tmpRoot, "plugin");
   fs.mkdirSync(path.join(pluginRoot, "agents"), { recursive: true });
   fs.writeFileSync(
@@ -40,27 +35,15 @@ before(() => {
     "# stub\n",
   );
 
-  // Synthetic project root that hosts plans/ and (later) plan-state files.
   projectRoot = path.join(tmpRoot, "project");
   fs.mkdirSync(path.join(projectRoot, "plans"), { recursive: true });
 
-  // Initialize a git repo so detectBaseBranch(cwd) returns something stable.
-  spawnSync("git", ["-C", projectRoot, "init", "-q", "-b", "main"], {
-    stdio: "ignore",
-  });
-  spawnSync("git", ["-C", projectRoot, "config", "user.email", "t@t"], {
-    stdio: "ignore",
-  });
-  spawnSync("git", ["-C", projectRoot, "config", "user.name", "t"], {
-    stdio: "ignore",
-  });
+  spawnSync("git", ["-C", projectRoot, "init", "-q", "-b", "main"], { stdio: "ignore" });
+  spawnSync("git", ["-C", projectRoot, "config", "user.email", "t@t"], { stdio: "ignore" });
+  spawnSync("git", ["-C", projectRoot, "config", "user.name", "t"], { stdio: "ignore" });
   fs.writeFileSync(path.join(projectRoot, "README.md"), "x");
   spawnSync("git", ["-C", projectRoot, "add", "-A"], { stdio: "ignore" });
-  spawnSync(
-    "git",
-    ["-C", projectRoot, "commit", "-q", "-m", "init"],
-    { stdio: "ignore" },
-  );
+  spawnSync("git", ["-C", projectRoot, "commit", "-q", "-m", "init"], { stdio: "ignore" });
 
   pluginDataDir = path.join(tmpRoot, "plugin-data");
   fs.mkdirSync(pluginDataDir, { recursive: true });
@@ -69,8 +52,6 @@ before(() => {
 after(() => {
   try { fs.rmSync(tmpRoot, { recursive: true, force: true }); } catch {}
 });
-
-let counter = 0;
 
 function makePlanFile(slug, branch, ownerAgent = "general-developer") {
   counter += 1;
@@ -90,8 +71,6 @@ function makePlanFile(slug, branch, ownerAgent = "general-developer") {
   return file;
 }
 
-// Write a bare `plan.md` inside `plans/<dir>/`. State will live at
-// `plans/<dir>/.runner-state.json` because the directory itself is plan_key.
 function makeFolderPlanFile(dir, planSlug, branch, ownerAgent = "general-developer") {
   counter += 1;
   const planDir = path.join(projectRoot, "plans", dir);
@@ -113,11 +92,7 @@ function makeFolderPlanFile(dir, planSlug, branch, ownerAgent = "general-develop
 }
 
 function runHook({ prompt, sessionId }) {
-  const stdin = JSON.stringify({
-    prompt,
-    cwd: projectRoot,
-    session_id: sessionId,
-  });
+  const stdin = JSON.stringify({ prompt, cwd: projectRoot, session_id: sessionId });
   return spawnSync(process.execPath, [HOOK], {
     input: stdin,
     encoding: "utf8",
@@ -126,14 +101,11 @@ function runHook({ prompt, sessionId }) {
       CLAUDE_PLUGIN_ROOT: pluginRoot,
       CLAUDE_PROJECT_DIR: projectRoot,
       CLAUDE_PLUGIN_DATA: pluginDataDir,
-      // Force a known sessions location even when the env above misses.
     },
   });
 }
 
-function makeSessionWithActivePlan(sessionId, planSlug, branch, status) {
-  // Create a state file for the "other" plan on disk and register it in the
-  // session's activePlan slot.
+function seedStateFile(planSlug, branch, devPhase = null) {
   const stateDir = path.join(projectRoot, "plans", planSlug);
   fs.mkdirSync(stateDir, { recursive: true });
   const statePath = path.join(stateDir, ".runner-state.json");
@@ -144,195 +116,122 @@ function makeSessionWithActivePlan(sessionId, planSlug, branch, status) {
     baseBranch: "main",
     taskBranch: branch,
     worktreePath: path.join(projectRoot, "worktrees", branch.replace(/\//g, "-")),
-    sessionId,
   });
-  // Walk to the requested status (v2 enum). The five-status graph means each
-  // step is a single transitionStatus + an optional phase set; we don't care
-  // about phase here because UserPromptSubmit only checks TERMINAL_STATUSES.
-  const path1 = [
-    STATUS.PREPARING,
-    STATUS.DISPATCHING,
-    STATUS.DEV_REVIEWING,
-    STATUS.CLOSING,
-    STATUS.MERGED,
-  ];
-  const idx = path1.indexOf(status);
-  if (idx > 0) {
-    for (let i = 1; i <= idx; i += 1) transitionStatus(state, path1[i]);
-  }
+  if (devPhase) state.dev_review.phase = devPhase;
   saveState(statePath, state);
-
-  // Write a session JSON that already points at it via the single slot.
-  const sessionsDir = path.join(pluginDataDir, "sessions");
-  fs.mkdirSync(sessionsDir, { recursive: true });
-  fs.writeFileSync(
-    path.join(sessionsDir, `${sessionId}.json`),
-    JSON.stringify({
-      sessionId,
-      cwd: projectRoot,
-      activePlan: statePath.replace(/\\/g, "/"),
-    }, null, 2),
-  );
   return statePath;
-}
-
-function readSessionJson(sessionId) {
-  const file = path.join(pluginDataDir, "sessions", `${sessionId}.json`);
-  if (!fs.existsSync(file)) return null;
-  return JSON.parse(fs.readFileSync(file, "utf8"));
 }
 
 // ---------------------------------------------------------------------------
 
-describe("UserPromptSubmit active-plan slot behaviour", () => {
-  it("allows a second /runner in the same session and overwrites the slot", () => {
-    const sessionId = `sess-${++counter}`;
-    makeSessionWithActivePlan(
-      sessionId,
-      "plan-a",
-      "feat/plan-a",
-      STATUS.DEV_REVIEWING,
-    );
-    makePlanFile("plan-b", "feat/plan-b");
-
-    const r = runHook({
-      prompt: "/runner plans/plan-b.plan.md",
-      sessionId,
-    });
-    assert.equal(r.status, 0, "hook itself exits 0");
+describe("UserPromptSubmit /runner bootstrap", () => {
+  it("emits bootstrap context for a fresh /runner invocation", () => {
+    counter += 1;
+    const slug = `plan-fresh-${counter}`;
+    makePlanFile(slug, `feat/${slug}`);
+    const r = runHook({ prompt: `/runner plans/${slug}.plan.md`, sessionId: "sess-1" });
+    assert.equal(r.status, 0, r.stderr);
     const out = JSON.parse(r.stdout);
-    // No more block — the second /runner passes through to a bootstrap.
     assert.ok(out.hookSpecificOutput, "expected additionalContext payload");
-    assert.match(
-      out.hookSpecificOutput.additionalContext,
-      /\[runner-skill bootstrap\]/,
-    );
-    // The session's activePlan slot now points at plan-b's state file.
-    const session = readSessionJson(sessionId);
-    assert.ok(session, "session.json must exist");
-    assert.match(session.activePlan, /plan-b\/\.runner-state\.json$/);
+    assert.match(out.hookSpecificOutput.additionalContext, /\[runner-skill bootstrap\]/);
+    assert.match(out.hookSpecificOutput.additionalContext, /mode: fresh/);
   });
 
-  it("passes through when the prior slot points at a merged plan", () => {
-    const sessionId = `sess-${++counter}`;
-    makeSessionWithActivePlan(
-      sessionId,
-      "plan-merged",
-      "feat/plan-merged",
-      STATUS.MERGED,
-    );
-    makePlanFile("plan-fresh", "feat/plan-fresh");
+  it("emits bootstrap with mode=resume when a state file already exists", () => {
+    counter += 1;
+    const slug = `plan-resume-${counter}`;
+    makePlanFile(slug, `feat/${slug}`);
+    seedStateFile(slug, `feat/${slug}`, "awaiting");
+    const r = runHook({ prompt: `/runner plans/${slug}.plan.md`, sessionId: "sess-2" });
+    assert.equal(r.status, 0, r.stderr);
+    const out = JSON.parse(r.stdout);
+    assert.ok(out.hookSpecificOutput);
+    assert.match(out.hookSpecificOutput.additionalContext, /mode: resume/);
+  });
 
+  it("rejects /runner when .merged marker exists in the plan dir", () => {
+    counter += 1;
+    const slug = `plan-merged-${counter}`;
+    makePlanFile(slug, `feat/${slug}`);
+    const stateDir = path.join(projectRoot, "plans", slug);
+    fs.mkdirSync(stateDir, { recursive: true });
+    fs.writeFileSync(path.join(stateDir, ".merged"), "");
+
+    const r = runHook({ prompt: `/runner plans/${slug}.plan.md`, sessionId: "sess-merged" });
+    assert.equal(r.status, 0, r.stderr);
+    const out = JSON.parse(r.stdout);
+    assert.equal(out.decision, "block", "merged plan must be rejected");
+    assert.match(out.reason, /이미 머지 완료/);
+    assert.match(out.reason, /\.merged/);
+  });
+
+  it("rejects /runner with no plan path argument", () => {
+    const r = runHook({ prompt: "/runner", sessionId: "sess-noarg" });
+    assert.equal(r.status, 0);
+    const out = JSON.parse(r.stdout);
+    assert.equal(out.decision, "block");
+    assert.match(out.reason, /plan 파일 경로 인자가 없습니다/);
+  });
+
+  it("rejects /runner when plan file does not exist", () => {
     const r = runHook({
-      prompt: "/runner plans/plan-fresh.plan.md",
-      sessionId,
+      prompt: "/runner plans/does-not-exist.plan.md",
+      sessionId: "sess-missing",
     });
     assert.equal(r.status, 0);
     const out = JSON.parse(r.stdout);
-    // additionalContext, not block — there is no collision check anymore.
-    assert.ok(out.hookSpecificOutput, "expected additionalContext payload");
-    assert.equal(out.hookSpecificOutput.hookEventName, "UserPromptSubmit");
-    assert.match(
-      out.hookSpecificOutput.additionalContext,
-      /\[runner-skill bootstrap\]/,
-    );
+    assert.equal(out.decision, "block");
+    assert.match(out.reason, /찾을 수 없습니다/);
   });
 
-  it("allows resume of the same plan in a session where it is the only active record", () => {
-    const sessionId = `sess-${++counter}`;
-    makeSessionWithActivePlan(
-      sessionId,
-      "plan-resume",
-      "feat/plan-resume",
-      STATUS.DEV_REVIEWING,
-    );
-    // The plan file must exist for the hook to validate frontmatter on resume.
-    makePlanFile("plan-resume", "feat/plan-resume");
-
-    const r = runHook({
-      prompt: "/runner plans/plan-resume.plan.md",
-      sessionId,
+  it("rejects plan slug mismatch on resume", () => {
+    counter += 1;
+    const slug = `plan-mismatch-${counter}`;
+    makePlanFile(slug, `feat/${slug}`);
+    // Seed state with a different plan_slug to simulate the user renaming.
+    const stateDir = path.join(projectRoot, "plans", slug);
+    fs.mkdirSync(stateDir, { recursive: true });
+    const statePath = path.join(stateDir, ".runner-state.json");
+    const state = createInitialState({
+      planSlug: `old-${slug}`,
+      planPath: path.join(projectRoot, "plans", `${slug}.plan.md`),
+      ownerAgent: "general-developer",
+      baseBranch: "main",
+      taskBranch: `feat/${slug}`,
+      worktreePath: path.join(projectRoot, "worktrees", `feat-${slug}`),
     });
+    saveState(statePath, state);
+
+    const r = runHook({ prompt: `/runner plans/${slug}.plan.md`, sessionId: "sess-mismatch" });
     assert.equal(r.status, 0);
     const out = JSON.parse(r.stdout);
-    // Resume returns additionalContext, not a block.
-    assert.ok(out.hookSpecificOutput, "resume should pass through");
-    assert.match(
-      out.hookSpecificOutput.additionalContext,
-      /mode: resume/,
-    );
+    assert.equal(out.decision, "block");
+    assert.match(out.reason, /plan_slug 불일치/);
   });
 
-  // The runner accepts two plan-file shapes — `<name>.plan.md` (named plan,
-  // nested under a stem directory) and `<dir>/plan.md` (the directory is the
-  // plan_key). These two cases pin the second shape so a regression in path
-  // derivation shows up here, not at first dispatch.
   it("accepts a bare plan.md inside a named directory", () => {
-    const sessionId = `sess-${++counter}`;
-    makeFolderPlanFile(
-      "wanted-design-system-mvp",
-      "wanted-design-system-mvp",
-      "feat/wanted-mvp",
-    );
+    counter += 1;
+    const dir = `wanted-design-${counter}`;
+    makeFolderPlanFile(dir, dir, `feat/${dir}`);
     const r = runHook({
-      prompt: "/runner plans/wanted-design-system-mvp/plan.md",
-      sessionId,
-    });
-    assert.equal(r.status, 0);
-    const out = JSON.parse(r.stdout);
-    assert.ok(
-      out.hookSpecificOutput,
-      "plan.md form should pass validation and produce a bootstrap",
-    );
-    // The bootstrap names the state file — folder-as-key means it lives at
-    // `plans/wanted-design-system-mvp/.runner-state.json`, NOT inside a
-    // nested `plan/` subdirectory.
-    assert.match(
-      out.hookSpecificOutput.additionalContext,
-      /wanted-design-system-mvp\/.runner-state\.json/,
-    );
-    assert.doesNotMatch(
-      out.hookSpecificOutput.additionalContext,
-      /wanted-design-system-mvp\/plan\/.runner-state\.json/,
-    );
-  });
-
-  // Cross-session resume — a state file created by session A must be
-  // resumable by session B. The Stop hook's multi-session isolation filter
-  // skips plans whose state.session_id differs from the live sessionId, so
-  // UserPromptSubmit hands ownership to the resuming session by overwriting
-  // the field. Without this the new session's Stop hook would silently
-  // ignore the armed plan and the runner would appear to hang after the
-  // plan-agent commits.
-  it("rewrites state.session_id when a different session resumes the plan", () => {
-    const originalSessionId = `sess-original-${++counter}`;
-    const resumingSessionId = `sess-resuming-${++counter}`;
-    const statePath = makeSessionWithActivePlan(
-      originalSessionId,
-      "plan-handoff",
-      "feat/plan-handoff",
-      STATUS.DISPATCHING,
-    );
-    // Confirm the seed state recorded the original session as owner.
-    const before = JSON.parse(fs.readFileSync(statePath, "utf8"));
-    assert.equal(before.session_id, originalSessionId);
-
-    // Plan file must exist for frontmatter validation on resume.
-    makePlanFile("plan-handoff", "feat/plan-handoff");
-
-    const r = runHook({
-      prompt: "/runner plans/plan-handoff.plan.md",
-      sessionId: resumingSessionId,
+      prompt: `/runner plans/${dir}/plan.md`,
+      sessionId: `sess-folder-${counter}`,
     });
     assert.equal(r.status, 0, r.stderr);
     const out = JSON.parse(r.stdout);
-    assert.ok(out.hookSpecificOutput, "resume should pass through");
-    assert.match(out.hookSpecificOutput.additionalContext, /mode: resume/);
-
-    // Ownership has been handed to the resuming session — the Stop hook
-    // will now recognize this plan as belonging to the live session.
-    const after = JSON.parse(fs.readFileSync(statePath, "utf8"));
-    assert.equal(after.session_id, resumingSessionId);
+    assert.ok(out.hookSpecificOutput);
+    // The state file lives at plans/<dir>/.runner-state.json, NOT inside a
+    // nested plan/ subdirectory.
+    assert.match(
+      out.hookSpecificOutput.additionalContext,
+      new RegExp(`${dir}/\\.runner-state\\.json`),
+    );
   });
 
+  it("ignores prompts that are not /runner", () => {
+    const r = runHook({ prompt: "hello, claude", sessionId: "sess-ignore" });
+    assert.equal(r.status, 0);
+    // No stdout payload — hook stays silent for unrelated prompts.
+    assert.equal(r.stdout.trim(), "");
+  });
 });
