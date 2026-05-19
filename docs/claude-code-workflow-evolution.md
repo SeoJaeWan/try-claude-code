@@ -506,10 +506,9 @@ flowchart TD
     WT["task worktree<br/>phase commits + approvals"]
     EXEC["frontend-dev / backend-dev / general-dev / doc / guard-e2e-test"]
     IMPDEVREV["implementation dev-review<br/>commit cards + live preview"]
-    STOP["stop-review gate"]
     MERGE["user merge decision"]
 
-    U --> LOCK --> ARCH --> REVIEW --> ORCH --> PLANDEVREV --> MAT --> RUN --> WT --> EXEC --> IMPDEVREV --> STOP --> MERGE
+    U --> LOCK --> ARCH --> REVIEW --> ORCH --> PLANDEVREV --> MAT --> RUN --> WT --> EXEC --> IMPDEVREV --> MERGE
 ```
 
 ### 현재 요청 처리의 실제 단계
@@ -525,7 +524,7 @@ flowchart TD
 7. `frontend-dev`나 `backend-dev`는 더 이상 CLI scaffold를 호출하지 않고, 기존 코드에서 convention을 발견한 뒤 구현한다.
 8. 모든 phase commit 뒤 `runner`가 `dev-review`를 호출해 commit card, diff, live preview 기반 구현 리뷰를 연다.
 9. reviewer가 `needs-change`를 남기면 선택한 `dispatch_agent` 기준으로 같은 worktree에서 재작업 round가 돈다.
-10. 구현 리뷰가 승인된 뒤 세션 stop 시점에는 stop-review gate가 현재 worktree diff를 점검하고, 마지막 merge 여부는 사용자가 결정한다.
+10. 구현 리뷰가 승인되면 runner가 worktree를 정리하고 사용자에게 merge / PR / 나중에 선택지를 묻는다. 머지를 선택하면 plan 디렉터리에 `.merged` 마커가 생기고 같은 plan에 대한 재진입은 그 마커로 차단된다.
 
 ### 현재 구현 리뷰 단계
 
@@ -563,7 +562,7 @@ commit step에서는 오른쪽 sticky panel에 live preview iframe이 붙는다.
 | 실행 계층 | worktree 기반 구현/문서화/검증 실행 | `plugin/develop/skills/runner/SKILL.md`, `plugin/develop/skills/frontend-dev/SKILL.md`, `plugin/develop/skills/backend-dev/SKILL.md`, `plugin/develop/skills/general-dev/SKILL.md` |
 | 구현 리뷰 계층 | commit 기반 구현 리뷰, feedback routing, live preview | `plugin/develop/skills/dev-review/SKILL.md`, `plugin/develop/skills/dev-review/scripts/server.mjs`, `plugin/develop/skills/dev-review/scripts/lib/preview-pool.mjs` |
 | 역할 프롬프트 | 도메인별 agent 책임 정의 | `plugin/develop/agents/frontend-developer.md`, `plugin/develop/agents/backend-developer.md`, `plugin/develop/agents/general-developer.md` |
-| runtime hook 계층 | 세션 추적, worktree 추적, stop-review gate | `plugin/develop/hooks/hooks.json`, `plugin/develop/scripts/session-lifecycle-hook.mjs`, `plugin/develop/scripts/stop-review-gate-hook.mjs`, `plugin/develop/scripts/session-restore.mjs` |
+| runtime hook 계층 | 세션 추적, /runner 부트스트랩 | `plugin/develop/hooks/hooks.json`, `plugin/develop/scripts/session-lifecycle-hook.mjs`, `plugin/develop/scripts/user-prompt-submit-hook.mjs` |
 | planning review / knowledge 계층 | planning developer review UI와 plan wiki 관리 | `.codex/tools/developer-review-server.mjs`, `.codex/tools/plan-wiki-docs-server.mjs`, `.codex/skills/plan-wiki-setup/SKILL.md`, `.codex/skills/plan-wiki-ingest/SKILL.md`, `.codex/skills/plan-wiki-lint/SKILL.md`, `.codex/skills/plan-wiki-apply-feedback/SKILL.md` |
 | verification 계층 | visual parity, full-flow E2E | `plugin/develop/skills/figma-parity/SKILL.md`, `plugin/develop/skills/visual-compare/SKILL.md`, `plugin/develop/skills/guard-e2e-test/SKILL.md` |
 | statusline 계층 | 상태줄 bootstrap / sync / mode 전환 | `plugin/statusline/skills/statusline/SKILL.md`, `plugin/statusline/hooks/hooks.json` |
@@ -576,7 +575,7 @@ Stage 7까지는 "규칙을 실행 가능한 recipe로 옮기는 것"이 핵심�
 
 - 워크플로 규칙은 여전히 `SKILL.md`에 있다.
 - 하지만 구현 규칙은 더 이상 별도 scaffold CLI가 아니라, **기존 코드베이스 convention + plan artifact**에서 읽어 온다.
-- 실행 강제는 CLI runtime이 아니라 **worktree, hook, stop-review gate, planning/implementation developer review artifact**가 맡는다.
+- 실행 강제는 CLI runtime이 아니라 **worktree, hook, implementation dev-review artifact**가 맡는다. (자동 stop-review gate는 dev-review와 중복이라 제거됐다 — `2026-05` 정리.)
 - 공통 지식은 큰 coding-rules 문서 대신 **plan wiki + plan/review artifact**에 축적된다.
 
 즉 현재는 "설명 문서 -> recipe engine"에서 멈추지 않고, "artifact + runtime guard + convention discovery" 구조로 다시 재편된 상태다.
@@ -741,7 +740,7 @@ Stage 7까지는 "규칙을 실행 가능한 recipe로 옮기는 것"이 핵심�
 - planning 판단: `.codex/skills/*` + `plans/*` artifacts
 - review 지식: plan wiki
 - 구현 convention: repo-local examples
-- 실행 가드: `runner`, hooks, stop-review gate
+- 실행 가드: `runner`, hooks, dev-review (사람 게이트)
 
 그래서 지금도 문서 중복은 줄어든다.
 
@@ -835,14 +834,13 @@ flowchart LR
     RUN["runner + worktree"]
     FE["frontend-dev<br/>convention discovery"]
     IMPREV["dev-review<br/>commit cards + live preview"]
-    STOP["stop-review gate"]
 
-    U --> ARCH --> PLAN --> COLD --> PLANREV --> RUN --> FE --> IMPREV --> STOP
+    U --> ARCH --> PLAN --> COLD --> PLANREV --> RUN --> FE --> IMPREV
 ```
 
 특징:
 
-- 계획, review, 구현, stop gate가 artifact로 연결된다.
+- 계획, review, 구현, dev-review가 artifact로 연결된다.
 - 생성기보다 plan artifact와 repo-local convention이 더 중요하다.
 - 구현 결과도 commit 단위 browser review와 live preview를 거쳐 merge decision으로 넘어간다.
 - 같은 종류의 요청을 반복할수록 결과가 더 안정적이다.
@@ -871,7 +869,7 @@ flowchart LR
 워크플로 규칙 = SKILL.md
 계획/리뷰 규칙 = .codex/skills/* + plans/* artifacts
 구현 규칙 = 기존 코드베이스 convention
-실행 가드 = hooks + runner + stop-review gate
+실행 가드 = hooks + runner + dev-review (사람 게이트)
 배포 규칙 = .claude-plugin/marketplace.json + sub-plugin metadata
 ```
 

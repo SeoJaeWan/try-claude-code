@@ -4,46 +4,45 @@
     {
       "id": 1,
       "prompt": "/runner plans/login-frontend.plan.md 진입 후 새 plan을 처음부터 끝까지 실행해줘. plan은 3개 phase로 구성돼 있어.",
-      "expected_output": "Bootstrap 컨텍스트 인식, status 분기, worktree 생성, 단일 Agent 디스패치, stop-review와 dev-review 통과 후 사용자에게 병합 옵션 제시",
+      "expected_output": "Bootstrap 컨텍스트 인식, 디스크+phase 라우팅, worktree 생성, 단일 Agent 디스패치, dev-review 통과 후 사용자에게 병합 옵션 제시",
       "files": ["../../../features/next-app/package.json"],
       "expectations": [
         "Reads SKILL.md via Read tool when needed",
         "Recognizes the [runner-skill bootstrap] context block emitted by UserPromptSubmit",
         "Reads state JSON at plans/{plan_key}/.runner-state.json before acting",
-        "Routes to Step 2 when status=validating",
+        "Infers Step 2 (create worktree) from absent worktree + dev_review.phase=null",
         "Creates exactly one git worktree at state.worktree_path",
-        "Dispatches exactly one Agent call with subagent_type = state.owner_agent",
-        "Updates state.stop_review.armed=true and status=awaiting_stop_review before the dispatch",
-        "Ends turn after the agent returns so the Stop hook can fire",
-        "Invokes dev-review skill once status=awaiting_dev_review",
+        "Dispatches exactly one Agent call with subagent_type = state.owner_agent (foreground)",
+        "Invokes dev-review skill in the same turn after the plan agent returns",
         "Removes the worktree only after dev-review returns approved",
-        "Keeps HEAD on state.base_branch throughout the run"
+        "Keeps HEAD on state.base_branch throughout the run",
+        "Creates plans/{plan_key}/.merged after the user picks the merge option"
       ]
     },
     {
       "id": 2,
-      "prompt": "/runner plans/login-frontend.plan.md 진입 후 stop-review가 BLOCK했어. status는 stop_review_blocked이고 last_block_excerpt도 컨텍스트에 있어. 어떻게 처리해?",
-      "expected_output": "BLOCK 사유 인지 후 plan 에이전트 재디스패치(직접 코드 수정 금지). 자동 에스컬레이션은 없고 사용자가 매 BLOCK을 보고 직접 끊는다.",
+      "prompt": "/runner plans/login-frontend.plan.md 다시 입력. 이전에 dev-review에서 needs-change 2건이 나와서 멈췄어. state.dev_review.phase는 'rework'이고 last_feedback_path도 state에 있어.",
+      "expected_output": "feedback.json에서 rework_items[] 읽고 commit별로 reviewer가 지정한 dispatch_agent로 Agent를 디스패치, 완료 후 rework-done CLI 호출 + dev-review 재진입",
       "files": ["../../../features/next-app/package.json"],
       "expectations": [
-        "Recognizes status=stop_review_blocked from the bootstrap and reads the state JSON",
-        "Does NOT attempt to fix the code directly in the main session",
-        "Re-dispatches the same plan agent with the BLOCK reason as additional context",
-        "Skips re-arming because state.stop_review.armed already remains true after BLOCK"
+        "Recognizes dev_review.phase=rework from the state JSON",
+        "Reads last_feedback_path and parses rework_items[]",
+        "Dispatches one Agent call per rework_item using item.dispatch_agent (not the plan owner_agent)",
+        "Each rework dispatch is foreground",
+        "Calls runner-state-cli rework-done after all rework agents finish",
+        "Re-invokes dev-review skill so the package regenerates against the new HEAD",
+        "Does NOT delete the worktree at this stage"
       ]
     },
     {
       "id": 3,
-      "prompt": "/runner plans/login-frontend.plan.md 다시 입력. 이전에 dev-review에서 needs-change 2건이 나와서 멈췄어. status는 rework_in_progress, last_feedback_path도 컨텍스트에 있어.",
-      "expected_output": "feedback.json에서 rework_items[] 읽고 commit별로 reviewer가 지정한 dispatch_agent로 Agent를 디스패치, 완료 후 round 증가하여 dev-review 재진입",
-      "files": ["../../../features/next-app/package.json"],
+      "prompt": "/runner plans/login-frontend.plan.md 진입. 이미 머지된 plan이라 .merged 마커가 있어. 어떻게 처리해?",
+      "expected_output": "UserPromptSubmit hook이 .merged 마커를 감지하고 decision: block + 한국어 안내를 emit. skill은 도달하지 않음.",
+      "files": [],
       "expectations": [
-        "Recognizes status=rework_in_progress from the bootstrap",
-        "Reads last_feedback_path and parses rework_items[]",
-        "Dispatches one Agent call per rework_item using item.dispatch_agent (not the plan owner_agent)",
-        "Records the new feedback.json path via begin-rework before re-invoking dev-review skill",
-        "Re-enters dev-review with review_iteration matching the bumped round",
-        "Does NOT delete the worktree at this stage"
+        "UserPromptSubmit hook reads plans/{plan_key}/.merged before creating state",
+        "If marker exists, hook emits decision: block with Korean instructions",
+        "The runner skill never enters this turn"
       ]
     },
     {
