@@ -8,12 +8,14 @@ model: sonnet
 <Purpose>
 Execute a single plan artifact end-to-end — either `*.plan.md` or a folder's
 canonical `plan.md` — in one worktree, one plan-agent dispatch, gated by
-dev-review (browser). The runner does not parse the plan's body and does not
-pick the entry point on its own — the UserPromptSubmit hook reads the plan
-and emits a `[runner-skill bootstrap]` context block telling the skill which
-plan file and state path to use. The skill's job is to act on that bootstrap,
-infer the current Step from disk (worktree presence, commits, feedback.json),
-and keep `dev_review.phase` in sync with where the dev-review loop sits.
+dev-review (browser). The UserPromptSubmit hook does a thin sanity check on
+the plan path before this skill is engaged (file exists, name matches
+`*.plan.md` or `plan.md`) and emits a `[runner-skill bootstrap]` line
+carrying just `plan_path`. Everything else — frontmatter parsing, state
+derivation, base-branch capture, routing — is the skill's job. Step 1 below
+validates the plan, builds the state record, and persists it to disk;
+subsequent Steps infer where to go from disk (worktree presence, commits,
+feedback.json) and keep `dev_review.phase` in sync with the dev-review loop.
 </Purpose>
 
 <Instructions>
@@ -43,10 +45,12 @@ of defense in depth, in order of how soon they catch a mistake:
 
 What this means in practice:
 
-- **Plan-state JSON edits**: use `runner-state-cli.mjs` subcommands for
-  `dev_review.phase` mutations, never inline `node -e` snippets or
-  `Edit`/`Write` on the file. The CLI bundles load + mutate + atomic save
-  in one place; a hand-edit may silently lose the dev-review feedback path.
+- **Plan-state JSON edits**: the initial create happens once in Step 1
+  (via `Write` on a freshly built record). After that, any `dev_review.phase`
+  mutation must go through a `runner-state-cli.mjs` subcommand — never inline
+  `node -e` snippets or `Edit`/`Write` on the file. The CLI bundles load +
+  mutate + atomic save in one place; a hand-edit may silently lose the
+  dev-review feedback path.
 - **Worktree mutations from the main session**: don't. The agent commits
   the plan; main session inspects (read-only `git`). If you slip and edit
   a file inside the worktree, the next agent's `git add -A` may swallow
@@ -59,29 +63,22 @@ live in [`references/enforcement.md`](references/enforcement.md).
 ## Bootstrap context
 
 When the user invokes `/runner <plan-path>` the UserPromptSubmit hook fires
-**before** this skill is engaged. It validates the plan, refuses re-entry if
-the plan has a `.merged` marker file, creates or loads the state file, and
-injects an `additionalContext` block that begins with `[runner-skill
-bootstrap]` and carries exactly two fields:
+**before** this skill is engaged. The hook performs **only** a thin sanity
+check (the path resolves to a real file whose name is `*.plan.md` or
+`plan.md`) and emits a single context line:
 
 ```
 [runner-skill bootstrap]
-  state_path: <abs path to .runner-state.json>
-  mode: fresh | resume
+  plan_path: <abs path to the plan file>
 ```
 
-That is the entire contract. Everything else — `plan_slug`, `plan_path`,
+That is the entire contract. Every other field — `plan_slug`, `branch`,
 `owner_agent`, `task_branch`, `worktree_path`, `base_branch`,
-`dev_review.phase` — lives in the JSON at `state_path`. **Open it and read it
-as your first action every turn**; do not try to remember fields from a
-previous turn.
+`dev_review.phase` — is derived by Step 1 below from the plan file's
+frontmatter, git state, and the on-disk state JSON if one exists.
 
-If the bootstrap block is missing, the user did not enter through `/runner`.
-Tell them so and stop — do not try to drive a plan without state.
-
-`mode: fresh` means the hook just created the state file (worktree does not
-exist yet — go to Step 2). `mode: resume` means an existing state file was
-loaded — infer the current Step from disk per the routing table below.
+If the bootstrap line is missing, the user did not enter through `/runner`.
+Tell them so and stop — do not synthesize a plan from chat.
 
 ## Step routing (disk + dev_review.phase)
 
@@ -145,30 +142,90 @@ deleted without explicit user approval.
 
 ## Execution workflow
 
-### Step 1. Validate (handled by the UserPromptSubmit hook)
+### Step 1. Validate & build state
 
-Plan validation, frontmatter parsing, `.merged` marker check, and state-file
-creation all happen in the hook before the skill runs. If the bootstrap
-context arrived, validation passed. Skip directly to the action implied by
-the routing table.
+The hook handed off `plan_path` only. Step 1 produces the state record on
+disk — loaded from `state_path` (resume) or freshly built and written
+(fresh) — so every subsequent Step (including a future resume) sees the
+same identity fields. Do this **before any other action this turn**.
 
-If the user invoked the skill some other way and there is no bootstrap, do
-not try to validate manually — tell them to enter through `/runner
-<plan-path>` so the hook can do its job.
+1. **Capture `base_branch`** — the very first thing, before any user
+   exchange or other git command. From the repo root:
+
+   ```bash
+   git rev-parse --abbrev-ref HEAD
+   ```
+
+   If HEAD is detached or the command fails, ask the user to check out the
+   intended base branch first; do not guess. The captured value is the
+   `base_branch` for this plan — losing it later (user switches branches)
+   is the reason this step runs first.
+
+2. **Derive `state_path`** from `plan_path`:
+
+   - `<dir>/plan.md` → `<dir>/.runner-state.json`; `plan_key = basename(dir)`.
+   - `<dir>/<name>.plan.md` → `<dir>/<name>/.runner-state.json`;
+     `plan_key = basename(dir) + "/" + name`.
+
+   See [`references/glossary.md`](references/glossary.md) for nested-plan
+   edge cases.
+
+3. **Load or build state**:
+
+   - **If `state_path` exists** (resume): read it with
+     `cat <state_path>` (or `runner-state.loadState` via `node -e` if you
+     need typed parsing). Then read the plan's frontmatter once and verify
+     `state.plan_slug === frontmatter.plan_slug` and
+     `state.base_branch === <captured HEAD>`. Either mismatch is an error —
+     stop and tell the user before doing anything destructive (typical
+     cause: plan was renamed or the user checked out a different branch
+     after `/runner`).
+
+   - **If `state_path` does not exist** (fresh): read the plan's
+     frontmatter. Require three fields:
+     - `plan_slug` — must match `[A-Za-z0-9._-]+` (it becomes part of the
+       state file path).
+     - `branch` — the task branch.
+     - `owner_agent` — agent dispatched in Step 3.
+
+     Any missing or malformed field is an error — stop and tell the user
+     what to fix. Then build the state record:
+
+     ```
+     plan_slug     = frontmatter.plan_slug
+     plan_path     = <abs plan path from bootstrap>
+     owner_agent   = frontmatter.owner_agent
+     base_branch   = <captured HEAD>
+     task_branch   = frontmatter.branch
+     worktree_path = <repo_root>/worktrees/<branch with "/" → "-">
+     dev_review    = { phase: null, last_feedback_path: null }
+     ```
+
+     **Persist the record to `state_path` now**, after validation has
+     succeeded (use the `Write` tool — the file is small and atomicity is
+     not critical here). Writing here, not later, makes the file the source
+     of truth from this point on — so if the turn is interrupted between
+     Steps 2 and 4 (agent dispatch fails, user aborts, etc.) the next
+     `/runner` invocation finds the state on disk and resumes with the
+     original `base_branch`, not whatever HEAD the user happens to be on.
+
+4. **Continue to the action implied by the routing table.** Use
+   `state.dev_review.phase` (always `null` for a freshly written record) and
+   the disk inspection columns to choose Step 2, 3, or 4.
 
 ### Step 2. Set up the worktree
 
-Read the state JSON. You need: `plan_path`, `task_branch`, `worktree_path`,
-`base_branch`.
+Use the state record from Step 1. You need: `plan_path`, `task_branch`,
+`worktree_path`, `base_branch`.
 
 ```bash
-# Confirm HEAD is on the base branch the hook recorded.
+# Confirm HEAD is still on the base branch Step 1 captured.
 git rev-parse --abbrev-ref HEAD
 ```
 
-If HEAD is not on `state.base_branch`, do not proceed — the hook captured the
-base when the user invoked `/runner`, and the worktree must branch from that
-exact commit. Ask the user before doing anything destructive.
+If HEAD is not on `state.base_branch`, do not proceed — Step 1 captured the
+base at the start of this turn, and the worktree must branch from that exact
+commit. Ask the user before doing anything destructive.
 
 Stale-worktree handling is driven by checking the worktree directory on
 disk yourself (`[ -d <state.worktree_path> ]` via Bash):
@@ -196,9 +253,10 @@ step is twofold:
    any `<plugin>:` namespace prefix, and check that
    `${CLAUDE_PLUGIN_ROOT}/agents/<bare-name>.md` exists with `[ -f ... ]`
    via Bash. If it does not, **stop immediately** and tell the user to fix
-   the plan's `owner_agent` then delete the state file
-   (`plans/<plan_key>/.runner-state.json`) before re-running `/runner`. Do
-   not call `Agent`.
+   the plan's `owner_agent` before re-running `/runner`. If a state file
+   already exists at `state.state_path` (resume case), delete it first so
+   the corrected frontmatter is re-read on the next run. Do not call
+   `Agent`.
 
 2. **Dispatch the agent foreground.** The prompt body is
    **`references/prompts/plan-dispatch.md` — read it and substitute the
@@ -231,8 +289,8 @@ Step 4.
 
 ### Step 4. Developer review gate (browser)
 
-When the plan-agent returns (Step 3) or the bootstrap routes here from a
-resume, invoke the `dev-review` skill with the state path:
+When the plan-agent returns (Step 3) or the routing table sends you back
+here from a resume, invoke the `dev-review` skill with the state path:
 
 ```
 dev-review(state_path: <state.state_path>)
@@ -294,19 +352,26 @@ After cleanup, output as plain text (do NOT use AskUserQuestion):
   - **"base 브랜치(<base>)에 병합"** —
     1. `git merge <task_branch> --no-ff -m "merge: <task_branch> into <base>"`
     2. `git branch -d <task_branch>`
-    3. `touch plans/<plan_key>/.merged` — this is the terminal marker the
-       UserPromptSubmit hook reads on the next `/runner` to refuse re-entry.
-    4. (optional) `node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" reset <state.state_path> --confirm` — removes the state file and any sibling `feedback*.json` so the plan directory is empty. Skip if the user wants to keep the audit trail.
-  - **"PR 생성"** — leave the task branch in place and invoke the `/pr` skill so it can `git push` the branch and open the PR. Do **not** touch `.merged` — the user may come back later to merge locally. The state file stays so a future `/runner` resume is clean.
-  - **"나중에 처리"** — leave the task branch, do nothing. Same as PR: no `.merged` marker, state file stays.
+    3. (optional) `node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs" reset <state.state_path> --confirm` — removes the state file and any sibling `feedback*.json` so the plan directory is empty. Skip if the user wants to keep the audit trail.
+  - **"PR 생성"** — leave the task branch in place and invoke the `/pr` skill so it can `git push` the branch and open the PR. The state file stays so a future `/runner` resume is clean.
+  - **"나중에 처리"** — leave the task branch, do nothing. The state file stays.
 
 Do not merge, checkout, or delete the task branch without explicit user
 approval. HEAD must remain on `state.base_branch` at all times.
 
-After merge, the `.merged` marker is the terminal record. The next time
-`/runner` is invoked on this plan the UserPromptSubmit hook reads the
-marker first, blocks entry, and tells the user to delete the marker if
-they really want to re-run.
+If the user later re-runs `/runner` on the same plan, behaviour depends on
+which option they picked:
+
+- **Merged + reset state**: the next `/runner` is a fresh start. Step 1
+  writes a new state file; Step 2 tries `git worktree add -b <task_branch>
+  ...` and fails with "branch already exists" because the merged task
+  branch is still around. That git error is the natural signal that this
+  plan is already complete — the user can delete the branch and start a
+  genuinely fresh run, or pick a different plan.
+- **Merged, state kept** / **PR** / **나중에**: the state file still
+  exists. The routing table's "Post-Step-5 re-entry" row handles it — the
+  skill asks the user whether to re-create the worktree, abandon the plan
+  (`rm <state-path>`), or merge from the existing task branch.
 
 ### Step 6. Verify completion
 
@@ -330,8 +395,9 @@ If something looks off, read the state JSON first to see what the runner
 thinks is true, then check disk to see what is actually there:
 
 - **Bootstrap missing.** No `[runner-skill bootstrap]` block. UserPromptSubmit
-  hook did not fire or errored. Tell the user to enter through
-  `/runner <plan-path>`; do not synthesize state from chat.
+  hook did not fire, errored, or the user invoked the skill some other way.
+  Tell them to enter through `/runner <plan-path>`; do not synthesize state
+  from chat.
 - **Stale worktree.** Handled in Step 2 by checking the worktree path on
   disk yourself. Always ask before destroying existing work.
 - **Plan agent failed / committed less than expected.** Run
@@ -358,9 +424,6 @@ git worktree list --porcelain
 
 # Verify HEAD hasn't drifted
 git rev-parse --abbrev-ref HEAD
-
-# Check if this plan is already merged
-[ -f plans/<plan_key>/.merged ] && echo "merged" || echo "not merged"
 ```
 
 ---

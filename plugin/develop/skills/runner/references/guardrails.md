@@ -28,5 +28,5 @@ surface less often but cause hard-to-debug state corruption when violated.
     subcommands over inline `Edit`/`Write` on the JSON. The CLI bundles
     load + mutate + atomic save and avoids racing with a concurrent
     `/runner` resume in another terminal. Identity fields (plan_path,
-    task_branch, base_branch, …) are written once by the UserPromptSubmit
-    hook and should not be touched mid-plan.
+    task_branch, base_branch, …) are written once by Step 1 of the runner
+    skill and should not be touched mid-plan.

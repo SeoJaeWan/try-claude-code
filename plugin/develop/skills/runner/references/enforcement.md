@@ -51,9 +51,10 @@ The CLI subcommand catalogue:
 | `reset` | Step 5 (post-merge cleanup) | delete the state file + sibling `feedback*.json` (requires `--confirm`) |
 
 Anything **not** about a `dev_review.phase` transition (reading the state
-JSON, running git commands, dispatching agents, touching the `.merged`
-marker file) is still on the prose — that is the honor-system surface this
-skill cannot eliminate. Read the state file fresh at the top of each turn.
+JSON, running git commands, dispatching agents, the Step 1 initial write
+of the state file via `Write`) is still on the prose — that is the
+honor-system surface this skill cannot eliminate. Read the state file
+fresh at the top of each turn.
 
 # Why a plan-state JSON
 
@@ -86,8 +87,10 @@ field — so the JSON is intentionally small.
   state up exactly where it was left.
 - **Inspectable.** The user can open the JSON to see the plan identity and
   the current dev-review phase. Step-level state lives in git and on disk.
-- **No fragile string contract.** Hooks key off the state file directly;
-  there is no parallel record in chat memory or in commit messages.
+- **No fragile string contract.** The skill keys off the state file
+  directly; there is no parallel record in chat memory or in commit
+  messages. The UserPromptSubmit hook is a thin path-sanity gate and does
+  not read or write state.
 
 Treat the state file as authoritative for identity. Read it whenever you
 need to know `worktree_path`, `task_branch`, `base_branch`, or

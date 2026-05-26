@@ -8,7 +8,6 @@ import { spawnSync } from "node:child_process";
 
 import {
   DEV_REVIEW_PHASE,
-  createInitialState,
   loadState,
   saveState,
   setDevReviewPhase,
@@ -33,14 +32,15 @@ function makeStateFile({ phase = null } = {}) {
   const dir = path.join(tmpDir, `plan-${counter}`);
   fs.mkdirSync(dir, { recursive: true });
   const statePath = path.join(dir, ".runner-state.json");
-  const state = createInitialState({
-    planSlug: `plan-${counter}`,
-    planPath: `/repo/plans/plan-${counter}.plan.md`,
-    ownerAgent: "general-developer",
-    baseBranch: "main",
-    taskBranch: `feat/plan-${counter}`,
-    worktreePath: `/repo/worktrees/feat-plan-${counter}`,
-  });
+  const state = {
+    plan_slug: `plan-${counter}`,
+    plan_path: `/repo/plans/plan-${counter}.plan.md`,
+    owner_agent: "general-developer",
+    base_branch: "main",
+    task_branch: `feat/plan-${counter}`,
+    worktree_path: `/repo/worktrees/feat-plan-${counter}`,
+    dev_review: { phase: null, last_feedback_path: null },
+  };
   if (phase) setDevReviewPhase(state, phase);
   saveState(statePath, state);
   return statePath;

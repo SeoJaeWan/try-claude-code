@@ -14,12 +14,12 @@ trimming.
 
 | Field | Type | Owner | Safe to hand-edit? |
 |---|---|---|---|
-| `plan_slug` | string | UserPromptSubmit hook | Rarely. Only if you renamed the plan and `plan_path` no longer matches. Update both together. |
-| `plan_path` | POSIX path | UserPromptSubmit hook | Yes when you move the `.plan.md`. See "Renamed the plan file" below. |
-| `owner_agent` | string | UserPromptSubmit hook | Rarely. Changing mid-plan means the next dispatch goes to a different agent — usually you want a fresh plan instead. |
-| `base_branch` | string | UserPromptSubmit hook | **No** mid-plan. dev-review uses this for diff range; changing it post-hoc breaks the review package. |
-| `task_branch` | string | UserPromptSubmit hook | **No** mid-plan. `worktree_path` is derived from this. |
-| `worktree_path` | POSIX path | UserPromptSubmit hook | Yes when you moved the worktree on disk. Update before the next `/runner`. |
+| `plan_slug` | string | Step 1 of runner skill | Rarely. Only if you renamed the plan and `plan_path` no longer matches. Update both together. |
+| `plan_path` | POSIX path | Step 1 of runner skill | Yes when you move the `.plan.md`. See "Renamed the plan file" below. |
+| `owner_agent` | string | Step 1 of runner skill | Rarely. Changing mid-plan means the next dispatch goes to a different agent — usually you want a fresh plan instead. |
+| `base_branch` | string | Step 1 of runner skill | **No** mid-plan. dev-review uses this for diff range; changing it post-hoc breaks the review package. |
+| `task_branch` | string | Step 1 of runner skill | **No** mid-plan. `worktree_path` is derived from this. |
+| `worktree_path` | POSIX path | Step 1 of runner skill | Yes when you moved the worktree on disk. Update before the next `/runner`. |
 | `dev_review.phase` | `"awaiting" \| "rework" \| "qa" \| null` | runner-state-cli phase mutators | Prefer the CLI subcommands; jq edit is acceptable when no concurrent /runner. |
 | `dev_review.last_feedback_path` | path or null | runner-state-cli `begin-rework` | Yes if you regenerated feedback.json elsewhere. |
 
@@ -33,7 +33,6 @@ matrix. Quick mental model:
 worktree absent              → Step 2 (or post-Step-5 if state file exists)
 worktree present, 0 commits  → Step 3 (dispatch plan agent)
 worktree present, ≥1 commits → Step 4 (dev-review; sub-state from dev_review.phase)
-.merged marker exists        → terminal, /runner refuses re-entry
 ```
 
 ## Recovery scenarios
@@ -52,7 +51,7 @@ deleted by something outside the runner.
    rm <state-path>          # state file
    git worktree prune
    ```
-   Then `/runner <plan>` again. The hook recreates everything from
+   Then `/runner <plan>` again. Step 1 recreates the state file from
    scratch.
 
 ### 2. Plan agent dispatched but committed less than expected
@@ -91,7 +90,7 @@ jq '.dev_review.phase = "awaiting"' <state-path> > <state-path>.new && \
 
 The state-file location is derived from the plan path. The cleanest move
 is to drop the old state and re-run `/runner` against the new plan path —
-the hook will create a fresh state at the new canonical location. If you
+Step 1 will create a fresh state at the new canonical location. If you
 need to preserve `dev_review.last_feedback_path` across the rename:
 
 ```bash
@@ -108,22 +107,28 @@ mv <old-state-path> <new-state-dir>/.runner-state.json
 
 ### 5. Re-run a plan that was already merged
 
-The `.merged` marker file is the terminal signal. UserPromptSubmit
-refuses to resume any plan whose state directory contains it. Use the
-CLI's reset command or delete by hand:
+There is no terminal marker. The natural signals are:
+
+- **State file deleted** at Step 5 (you ran `runner-state-cli reset`) +
+  task branch still in place: the next `/runner` is a fresh Step 1, but
+  Step 2's `git worktree add -b <task_branch>` fails with "branch already
+  exists" — that's the cue this plan is already complete.
+- **State file kept** (PR / 나중에 option, or you skipped `reset` on
+  merge): the routing table picks "Post-Step-5 re-entry" (worktree absent
+  + non-null `dev_review.phase`) and the skill asks what to do.
+
+To genuinely redo a merged plan, drop the branch and any leftover state,
+then re-invoke `/runner`:
 
 ```bash
-node plugin/develop/scripts/runner-state-cli.mjs reset <state-path> --confirm
-# This removes the state file and feedback*.json but leaves .merged.
-# To allow re-entry, also delete the marker:
-rm plans/<plan_key>/.merged
-
-# Plus the usual git cleanup if you really want to redo it:
-git branch -D <task_branch>           # only if you really want to redo it
+git branch -D <task_branch>
 git worktree remove <worktree_path>   # if it survived merge
+rm <state-path>                       # if it still exists
+# Optional: remove feedback*.json sitting next to the state file
 ```
 
-Then `/runner <plan>` again.
+Then `/runner <plan>` again — Step 1 starts from scratch with the current
+HEAD as the new `base_branch`.
 
 ### 6. Stale state file from a previous schema
 
