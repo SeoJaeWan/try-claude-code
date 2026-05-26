@@ -100,21 +100,6 @@ export function colorPct(pct, text) {
   return green(text);
 }
 
-/**
- * 카운트 값에 따라 색을 다르게 입힌다.
- * 0 회색 / 30↑ 빨강 / 10↑ 노랑 / 그 외 흰색.
- *
- * @param {number} count
- * @param {string} text
- * @returns {string}
- */
-export function colorCount(count, text) {
-  if (count === 0) return gray(text);
-  if (count >= 30) return red(text);
-  if (count >= 10) return yellow(text);
-  return white(text);
-}
-
 // ---------------------------------------------------------------------------
 // 박스 빌더
 // ---------------------------------------------------------------------------

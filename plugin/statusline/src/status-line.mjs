@@ -5,16 +5,16 @@
  *
  * Claude Code 의 상태줄 — 박스 모드 또는 인라인 모드.
  *
- * Claude Code 가 주는 stdin JSON, 외부 캐시, git 상태를 읽어 박스형
- * 대시보드(기본) 또는 1줄 압축 문자열을 출력한다.
+ * Claude Code 가 주는 stdin JSON 과 git 상태를 읽어 박스형 대시보드(기본)
+ * 또는 1줄 압축 문자열을 출력한다.
  *
  * 박스 모드(기본):
  * ┌─ CORE ──────────────────────┬─ SUPPLY ──────────────────────┐
  * │ opus-4-6[1m]   ⏱ 8m 41s     │ CTX 11%   ~$1.90             │
  * │ week 3%(2d14h↓) session 22%(3h12m↓) │ 캐시 110kr 488w 적중 99% │
- * ├─ GIT ───────────────────────┼─ PLUGIN ──────────────────────┤
- * │ main | task-A               │ gmail 7                       │
- * └─────────────────────────────┴───────────────────────────────┘
+ * ├─ GIT ─────────────────────────────────────────────────────┤
+ * │ main | task-A                                              │
+ * └────────────────────────────────────────────────────────────┘
  *
  * 인라인 모드(~/.claude/statusline/config.json → {"mode":"inline"}):
  * sonnet-4-6 │ ⏱50m │ CTX:13% ~$1.14 │ 5h:17%(3h12m↓) │ 7d:17%(2d14h↓) │ main
@@ -27,7 +27,6 @@ import { execFileSync } from "node:child_process";
 import {
   buildBox,
   colorPct,
-  colorCount,
   gray,
   white,
   yellow,
@@ -36,7 +35,6 @@ import {
   red,
   stripAnsi,
 } from "./lib/box-renderer.mjs";
-import { readCache, isFresh, triggerRefreshIfStale } from "./lib/status-cache.mjs";
 import { readPermissionMode } from "./lib/permission-mode.mjs";
 
 // ---------------------------------------------------------------------------
@@ -49,11 +47,6 @@ const PLUGIN_DATA = path.join(
   "plugins",
   "data",
   "try-claude-code-try-claude"
-);
-
-const COLLECT_SCRIPT = path.join(
-  path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/i, "$1")),
-  "gmail-collect.mjs"
 );
 
 const STATUSLINE_DATA = path.join(os.homedir(), ".claude", "statusline");
@@ -315,35 +308,6 @@ function renderGit(sessionId) {
   return [parts.join(` ${gray("|")} `)];
 }
 
-/**
- * 박스 모드의 PLUGIN 섹션 라인을 만든다. 캐시가 비어있거나 에러면 해당
- * 세그먼트를 숨긴다(`!` 같은 표시는 하지 않는다). 표시할 게 하나도 없으면
- * null 을 반환해 호출자가 섹션 자체를 숨길 수 있게 한다.
- *
- * @returns {string[]|null}
- */
-function renderPlugin() {
-  const segments = [];
-
-  // Gmail
-  const gmailCache = readCache("gmail");
-  triggerRefreshIfStale("gmail", COLLECT_SCRIPT);
-
-  if (gmailCache && gmailCache.status === "ok" && gmailCache.value != null) {
-    const countStr = String(gmailCache.value);
-    segments.push(`${gray("gmail")} ${colorCount(gmailCache.value, countStr)}`);
-  }
-  // 에러 또는 캐시 없음 → 숨김(! 표기 안 함)
-
-  // 같은 패턴으로 미래에 다른 서비스를 추가할 수 있다:
-  // const tasksCache = readCache("tasks");
-  // triggerRefreshIfStale("tasks", tasksCollectScript);
-  // if (tasksCache && tasksCache.status === "ok" && tasksCache.value != null) { ... }
-
-  if (segments.length === 0) return null;
-  return [segments.join(` ${gray("|")} `)];
-}
-
 // ---------------------------------------------------------------------------
 // 인라인(단일 라인 압축) 렌더러
 // ---------------------------------------------------------------------------
@@ -409,12 +373,6 @@ function renderInline(input) {
     parts.push(`${gray("cache:")}${hitColor(hitRate + "%")}`);
   }
 
-  // 8. 플러그인
-  const plugin = renderPlugin();
-  if (plugin && plugin.length > 0) {
-    parts.push(plugin[0]);
-  }
-
   return parts.join(gray(" │ "));
 }
 
@@ -459,8 +417,7 @@ function main() {
       const core = renderCore(input);
       const supply = renderSupply(input);
       const git = renderGit(input.session_id);
-      const plugin = renderPlugin();
-      output = buildBox({ core, supply, git, plugin });
+      output = buildBox({ core, supply, git, plugin: null });
     }
 
     process.stdout.write(output + "\n");
