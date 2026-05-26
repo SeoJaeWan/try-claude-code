@@ -34,13 +34,13 @@ The shared browser app lives at:
 Start or reuse it through:
 
 ```text
-node .codex/tools/start-developer-review-server.mjs --task-slug {task-slug} --plan-signature {plan_signature}
+node .codex/tools/start-plan-review-browser-server.mjs --task-slug {task-slug} --plan-signature {plan_signature}
 ```
 
 The launcher prints:
 
 ```text
-developer_review_url=http://localhost:{port}/review/{task-slug}
+plan_review_browser_url=http://localhost:{port}/review/{task-slug}
 ```
 
 The server supports multiple task reviews at the same time. Task-specific data is served through:

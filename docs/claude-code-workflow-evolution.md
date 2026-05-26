@@ -518,7 +518,7 @@ flowchart TD
 1. 요청이 모호하면 request-scope나 UI direction 선결정을 먼저 잠근다.
 2. `architect`가 `plans/{task}/plan.md`와 phase detail 아티팩트를 만든다.
 3. `plan-review`가 plan-only cold review를 수행한다.
-4. `orchestrator`가 planning developer review 패키지를 만들고, `.codex/tools/developer-review-server.mjs`로 로컬 review UI를 서빙한다.
+4. `orchestrator`가 planning developer review 패키지를 만들고, `.codex/tools/plan-review-browser-server.mjs`로 로컬 review UI를 서빙한다.
 5. 피드백이 승인되면 `plan-tdd`가 실제 테스트 파일을 source tree에 배치한다.
 6. `runner`가 task별 worktree를 만들고 phase별 agent를 순차 실행한다.
 7. `frontend-dev`나 `backend-dev`는 더 이상 CLI scaffold를 호출하지 않고, 기존 코드에서 convention을 발견한 뒤 구현한다.
@@ -534,7 +534,7 @@ flowchart TD
 |---|---|---|
 | 소유자 | `.codex/skills/orchestrator` | `plugin/develop/skills/dev-review` |
 | 검토 대상 | `plan.md`와 phase detail | runner가 만든 실제 commit, diff, test, merge impact |
-| 서버 | `.codex/tools/developer-review-server.mjs` | `plugin/develop/skills/dev-review/scripts/server.mjs` |
+| 서버 | `.codex/tools/plan-review-browser-server.mjs` | `plugin/develop/skills/dev-review/scripts/server.mjs` |
 | URL 성격 | planning review package | `http://localhost:9797/review/{task_slug}` multi-review |
 | 아티팩트 | `plans/*/developer-review/*` | `plans/*/dev-review/review-data.json`, `feedback.json`, `review-history.json`, `assets/diffs/*` |
 
@@ -563,7 +563,7 @@ commit step에서는 오른쪽 sticky panel에 live preview iframe이 붙는다.
 | 구현 리뷰 계층 | commit 기반 구현 리뷰, feedback routing, live preview | `plugin/develop/skills/dev-review/SKILL.md`, `plugin/develop/skills/dev-review/scripts/server.mjs`, `plugin/develop/skills/dev-review/scripts/lib/preview-pool.mjs` |
 | 역할 프롬프트 | 도메인별 agent 책임 정의 | `plugin/develop/agents/frontend-developer.md`, `plugin/develop/agents/backend-developer.md`, `plugin/develop/agents/general-developer.md` |
 | runtime hook 계층 | 세션 추적, /runner 부트스트랩 | `plugin/develop/hooks/hooks.json`, `plugin/develop/scripts/session-lifecycle-hook.mjs`, `plugin/develop/scripts/user-prompt-submit-hook.mjs` |
-| planning review / knowledge 계층 | planning developer review UI와 plan wiki 관리 | `.codex/tools/developer-review-server.mjs`, `.codex/tools/plan-wiki-docs-server.mjs`, `.codex/skills/plan-wiki-setup/SKILL.md`, `.codex/skills/plan-wiki-ingest/SKILL.md`, `.codex/skills/plan-wiki-lint/SKILL.md`, `.codex/skills/plan-wiki-apply-feedback/SKILL.md` |
+| planning review / knowledge 계층 | planning developer review UI와 plan wiki 관리 | `.codex/tools/plan-review-browser-server.mjs`, `.codex/tools/plan-wiki-docs-server.mjs`, `.codex/skills/plan-wiki-setup/SKILL.md`, `.codex/skills/plan-wiki-ingest/SKILL.md`, `.codex/skills/plan-wiki-lint/SKILL.md`, `.codex/skills/plan-wiki-apply-feedback/SKILL.md` |
 | verification 계층 | visual parity, full-flow E2E | `plugin/develop/skills/figma-parity/SKILL.md`, `plugin/develop/skills/visual-compare/SKILL.md`, `plugin/develop/skills/guard-e2e-test/SKILL.md` |
 | statusline 계층 | 상태줄 bootstrap / sync / mode 전환 | `plugin/statusline/skills/statusline/SKILL.md`, `plugin/statusline/hooks/hooks.json` |
 
@@ -880,7 +880,7 @@ flowchart LR
 | 작업 종류 | 진입점 | 실행 스킬/도구 | 규칙 소스 | 대표 산출물 |
 |---|---|---|---|---|
 | 요청 잠금 / 기획 | `brainstorm`, `ui-spec`, `architect` | `.codex/skills/*` | plan wiki + planning references | `plans/*`, phase detail, 결정 기록 |
-| cold review / planning developer review | `plan-review`, `orchestrator`, `developer-review-server` | `.codex/skills/plan-review/SKILL.md`, `.codex/skills/orchestrator/SKILL.md`, `.codex/tools/developer-review-server.mjs` | review policy + browser feedback + plan signature | `plans/_orchestrator/review/*`, `plans/*/developer-review/*` |
+| cold review / planning developer review | `plan-review`, `orchestrator`, `plan-review-browser-server` | `.codex/skills/plan-review/SKILL.md`, `.codex/skills/orchestrator/SKILL.md`, `.codex/tools/plan-review-browser-server.mjs` | review policy + browser feedback + plan signature | `plans/_orchestrator/review/*`, `plans/*/developer-review/*` |
 | 프론트엔드 구현 | `runner` 후 `frontend-dev` | `plugin/develop/skills/frontend-dev/SKILL.md`, `plugin/develop/agents/frontend-developer.md` | `plan.md` + 기존 UI code conventions | 실제 소스 변경, 필요 시 test/E2E 복사 |
 | 백엔드 구현 | `runner` 후 `backend-dev` | `plugin/develop/skills/backend-dev/SKILL.md`, `plugin/develop/agents/backend-developer.md` | `plan.md` + 기존 backend/database conventions | 실제 소스 변경, 필요 시 test/E2E 복사 |
 | infra / general | `runner` 후 `general-dev` | `plugin/develop/skills/general-dev/SKILL.md` | `plan.md` + infra config examples | CI/CD, Docker, env, deploy 변경 |
@@ -940,4 +940,4 @@ flowchart LR
 - `.codex/skills/orchestrator/SKILL.md`
 - `.codex/skills/plan-review/SKILL.md`
 - `.codex/skills/plan-wiki-setup/SKILL.md`
-- `.codex/tools/developer-review-server.mjs`
+- `.codex/tools/plan-review-browser-server.mjs`

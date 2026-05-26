@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..", "..");
-const serverPath = path.join(repoRoot, ".codex", "tools", "developer-review-server.mjs");
+const serverPath = path.join(repoRoot, ".codex", "tools", "plan-review-browser-server.mjs");
 const argv = process.argv.slice(2);
 
 function takeFlag(name) {
@@ -23,9 +23,9 @@ function hasFlag(name) {
 }
 
 if (hasFlag("--help") || hasFlag("-h")) {
-  console.log("Usage: node .codex/tools/start-developer-review-server.mjs --task-slug <task-slug> [--plan-signature <signature>] [--port 8787] [--max-port 8797]");
+  console.log("Usage: node .codex/tools/start-plan-review-browser-server.mjs --task-slug <task-slug> [--plan-signature <signature>] [--port 8787] [--max-port 8797]");
   console.log("");
-  console.log("Starts or reuses the platform-neutral developer review server.");
+  console.log("Starts or reuses the platform-neutral plan review browser server.");
   process.exit(0);
 }
 
@@ -103,7 +103,7 @@ function startServer(port) {
 
 function printResult(port, reused, health) {
   const url = `http://localhost:${port}/review/${taskSlug}`;
-  console.log(`developer_review_url=${url}`);
+  console.log(`plan_review_browser_url=${url}`);
   console.log(`port=${port}`);
   console.log(`server=${reused ? "reused" : "started"}`);
   console.log(`task_slug=${taskSlug}`);
@@ -139,5 +139,5 @@ for (let port = startPort; port <= maxPort; port += 1) {
   process.exit(0);
 }
 
-console.error(`Could not start or reuse a compatible developer review server on ports ${startPort}-${maxPort}.`);
+console.error(`Could not start or reuse a compatible plan review browser server on ports ${startPort}-${maxPort}.`);
 process.exit(1);

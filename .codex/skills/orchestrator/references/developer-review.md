@@ -48,10 +48,10 @@ At the gate:
   - Do not expose a separate manual read-check control or require read confirmation before submit.
   - Do not allow a target with active `needs-change` or `question` comments to be approved until those comments are deleted, resolved into history, or otherwise removed from live feedback.
 - Auto-start the shared server through the platform-neutral Node launcher; do not ask the user to run a `node` command:
-  1. Run `node .codex/tools/start-developer-review-server.mjs --task-slug {task-slug} --plan-signature {plan_signature}` from the repository root.
-  2. The launcher must health-check existing compatible servers, start `.codex/tools/developer-review-server.mjs` as a detached background process when needed, skip foreign processes on occupied ports, choose an alternate port when needed, and print `developer_review_url=...`.
+  1. Run `node .codex/tools/start-plan-review-browser-server.mjs --task-slug {task-slug} --plan-signature {plan_signature}` from the repository root.
+  2. The launcher must health-check existing compatible servers, start `.codex/tools/plan-review-browser-server.mjs` as a detached background process when needed, skip foreign processes on occupied ports, choose an alternate port when needed, and print `plan_review_browser_url=...`.
   3. Treat a non-zero launcher exit as a developer-review gate blocker and report the exact command output.
-- Tell the user in Korean: the server is running in the background, open the printed `developer_review_url`, review the left-sidebar targets, add section comments if needed, press Submit, then say `review complete` in chat. Also say the browser review shows the next gate after approval.
+- Tell the user in Korean: the server is running in the background, open the printed `plan_review_browser_url`, review the left-sidebar targets, add section comments if needed, press Submit, then say `review complete` in chat. Also say the browser review shows the next gate after approval.
 - Do not create `user-gate.md`.
 
 When the user says `review complete`, read `feedback.json`:

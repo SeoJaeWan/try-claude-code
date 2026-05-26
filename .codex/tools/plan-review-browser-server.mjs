@@ -21,7 +21,7 @@ const sharedIndexPath = path.join(
 const argv = process.argv.slice(2);
 
 if (argv.includes("--help") || argv.includes("-h")) {
-  console.log("Usage: node .codex/tools/developer-review-server.mjs [review-dir] [--port 8787]");
+  console.log("Usage: node .codex/tools/plan-review-browser-server.mjs [review-dir] [--port 8787]");
   console.log("");
   console.log("Open reviews at /review/{task-slug}.");
   console.log("When [review-dir] is passed, / redirects to the matching /review/{task-slug} URL.");

@@ -100,7 +100,7 @@ SessionStart 훅이 `~/.claude/statusline/` 아래 파일을 자동 동기화하
 
 - hidden state보다 `plan.md`, `review.md`, `developer-review/*`, `tdd.md` 같은 아티팩트를 source of truth로 사용
 - browser 기반 planning developer review를 강제하고, 승인되지 않은 피드백은 triage 후 다음 planning 단계로 되돌림
-- `.codex/tools/developer-review-server.mjs`로 planning review UI를 서빙
+- `.codex/tools/plan-review-browser-server.mjs`로 planning review UI를 서빙
 - planning 하위 역할은 named agent 고정보다 skill-driven sub-agent 재사용 쪽으로 정리
 
 ## 구현 리뷰와 live preview

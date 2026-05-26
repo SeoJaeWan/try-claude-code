@@ -87,7 +87,7 @@ Controller requirements:
 - Follow `references/developer-review.md` Step 5.
 - Generate or refresh `./plans/{task-slug}/developer-review/` for the current `plan_signature`.
 - The package must expose `review_items[]` for Overview and every required Phase target. If the plan has implementation scope but does not provide reviewable Phase targets, route to `architect` for plan revision instead of presenting a flattened review.
-- Start or reuse the shared developer review server through the documented launcher and report the printed `developer_review_url` to the user.
+- Start or reuse the shared plan review browser server through the documented launcher and report the printed `plan_review_browser_url` to the user.
 - Stop with `developer_review_gate_blocker` while waiting for the user to submit the browser review and say `review complete`.
 - When the user says `review complete`, read `feedback.json` and continue only if the submitted feedback matches the current `task_slug`, `plan_signature`, and review item signatures.
 
