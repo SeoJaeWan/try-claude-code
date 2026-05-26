@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 
+/**
+ * plan wiki source repository를 사람이 읽는 로컬 문서 사이트로 보여주는 HTTP 서버.
+ *
+ * `wiki/core`, `wiki/patterns`, `wiki/tags`, `raw`, `history`, `feedback`을 읽어
+ * 문서 페이지, 검색 API, 선택 영역 feedback inbox 저장 API를 제공한다.
+ */
+
 import { createServer } from "node:http";
 import { createHash, randomBytes } from "node:crypto";
 import { createReadStream } from "node:fs";
@@ -11,6 +18,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..", "..");
 const argv = process.argv.slice(2);
 
+/**
+ * CLI 인자 목록에서 값이 필요한 flag의 값을 읽는다.
+ *
+ * @param {string} name 찾을 flag 이름.
+ * @returns {string | null} flag 다음 값이 있으면 그 값, 없으면 `null`.
+ */
 function takeFlag(name) {
   const idx = argv.indexOf(name);
   if (idx < 0) return null;
@@ -39,6 +52,11 @@ const wikiRoot = path.resolve(
 const requestedPort = Number(takeFlag("--port") || process.env.PLAN_WIKI_DOCS_PORT || 9788);
 const port = Number.isFinite(requestedPort) ? requestedPort : 9788;
 
+/**
+ * 문서 사이트에서 수집하고 라우팅할 plan wiki 문서 root 목록.
+ *
+ * @type {{ kind: string, label: string, root: string, routePrefix: string, nested?: boolean }[]}
+ */
 const documentRoots = [
   { kind: "core", label: "핵심 정책", root: "wiki/core", routePrefix: "/core" },
   { kind: "pattern", label: "패턴", root: "wiki/patterns", routePrefix: "/patterns" },
@@ -47,8 +65,21 @@ const documentRoots = [
   { kind: "meta", label: "메타", root: "wiki/_meta", routePrefix: "/meta" }
 ];
 
+/**
+ * feedback maintenance workflow에서 사용하는 feedback 상태 디렉터리 목록.
+ *
+ * @type {string[]}
+ */
 const feedbackStatuses = ["inbox", "applied", "needs-decision", "stale", "rejected"];
 
+/**
+ * JSON 응답을 UTF-8 본문으로 보낸다.
+ *
+ * @param {import("node:http").ServerResponse} res HTTP 응답 객체.
+ * @param {number} status HTTP status code.
+ * @param {unknown} value JSON으로 직렬화할 값.
+ * @returns {void}
+ */
 function sendJson(res, status, value) {
   const body = `${JSON.stringify(value, null, 2)}\n`;
   res.writeHead(status, {
@@ -58,16 +89,38 @@ function sendJson(res, status, value) {
   res.end(body);
 }
 
+/**
+ * HTML 응답을 UTF-8 본문으로 보낸다.
+ *
+ * @param {import("node:http").ServerResponse} res HTTP 응답 객체.
+ * @param {number} status HTTP status code.
+ * @param {string} value HTML 본문.
+ * @returns {void}
+ */
 function sendHtml(res, status, value) {
   res.writeHead(status, { "content-type": "text/html; charset=utf-8" });
   res.end(value);
 }
 
+/**
+ * plain text 응답을 UTF-8 본문으로 보낸다.
+ *
+ * @param {import("node:http").ServerResponse} res HTTP 응답 객체.
+ * @param {number} status HTTP status code.
+ * @param {string} value 응답 본문.
+ * @returns {void}
+ */
 function sendText(res, status, value) {
   res.writeHead(status, { "content-type": "text/plain; charset=utf-8" });
   res.end(value);
 }
 
+/**
+ * 파일 확장자에 맞는 HTTP content-type을 반환한다.
+ *
+ * @param {string} filePath 파일 경로.
+ * @returns {string} content-type 헤더 값.
+ */
 function contentType(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   return {
@@ -82,6 +135,13 @@ function contentType(filePath) {
   }[ext] || "application/octet-stream";
 }
 
+/**
+ * 정적 파일을 stream으로 응답한다.
+ *
+ * @param {import("node:http").ServerResponse} res HTTP 응답 객체.
+ * @param {string} filePath 전송할 파일 경로.
+ * @returns {Promise<void>}
+ */
 async function sendFile(res, filePath) {
   try {
     const info = await stat(filePath);
@@ -95,6 +155,13 @@ async function sendFile(res, filePath) {
   }
 }
 
+/**
+ * HTTP 요청 본문을 문자열로 읽고 크기를 제한한다.
+ *
+ * @param {import("node:http").IncomingMessage} req HTTP 요청 객체.
+ * @returns {Promise<string>} UTF-8 요청 본문.
+ * @throws {Error} 본문이 128KiB를 넘는 경우.
+ */
 async function readBody(req) {
   const chunks = [];
   let size = 0;
@@ -108,6 +175,12 @@ async function readBody(req) {
   return Buffer.concat(chunks).toString("utf8");
 }
 
+/**
+ * 경로 존재 여부를 비동기로 확인한다.
+ *
+ * @param {string} filePath 확인할 파일 또는 디렉터리 경로.
+ * @returns {Promise<boolean>} 존재하면 `true`.
+ */
 async function pathExists(filePath) {
   try {
     await stat(filePath);
@@ -117,6 +190,14 @@ async function pathExists(filePath) {
   }
 }
 
+/**
+ * JSON 파일을 읽고 실패하면 fallback을 반환한다.
+ *
+ * @template T
+ * @param {string} filePath 읽을 JSON 파일 경로.
+ * @param {T} [fallback=null] 실패 시 반환할 값.
+ * @returns {Promise<T | unknown>} 파싱된 JSON 값 또는 fallback.
+ */
 async function readJson(filePath, fallback = null) {
   try {
     const raw = await readFile(filePath, "utf8");
@@ -126,12 +207,27 @@ async function readJson(filePath, fallback = null) {
   }
 }
 
+/**
+ * JSON 파일을 임시 파일에 먼저 쓴 뒤 rename으로 원자적으로 교체한다.
+ *
+ * @param {string} filePath 저장할 JSON 파일 경로.
+ * @param {unknown} value 직렬화할 값.
+ * @returns {Promise<void>}
+ */
 async function writeJsonAtomic(filePath, value) {
   const tmp = `${filePath}.${process.pid}.${Date.now()}.tmp`;
   await writeFile(tmp, `${JSON.stringify(value, null, 2)}\n`, "utf8");
   await rename(tmp, filePath);
 }
 
+/**
+ * rootDir 아래 모든 파일을 재귀적으로 나열한다.
+ *
+ * 없는 root는 빈 목록으로 취급한다.
+ *
+ * @param {string} rootDir 검색할 디렉터리.
+ * @returns {Promise<string[]>} 정렬된 파일 절대 경로 목록.
+ */
 async function listFiles(rootDir) {
   const files = [];
   async function walk(dir) {
@@ -156,14 +252,32 @@ async function listFiles(rootDir) {
   return files.sort((a, b) => a.localeCompare(b));
 }
 
+/**
+ * 운영체제별 path separator를 POSIX slash로 바꾼다.
+ *
+ * @param {string} value 변환할 경로 문자열.
+ * @returns {string} slash 기반 경로.
+ */
 function toPosix(value) {
   return value.split(path.sep).join("/");
 }
 
+/**
+ * plan wiki source root 기준 상대 source path를 만든다.
+ *
+ * @param {string} filePath 절대 파일 경로.
+ * @returns {string} wiki root 기준 POSIX 상대 경로.
+ */
 function sourcePathFor(filePath) {
   return toPosix(path.relative(wikiRoot, filePath));
 }
 
+/**
+ * HTML text node에 안전하게 넣을 수 있도록 문자열을 escape한다.
+ *
+ * @param {unknown} value escape할 값.
+ * @returns {string} HTML escape된 문자열.
+ */
 function escapeHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -172,10 +286,22 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;");
 }
 
+/**
+ * HTML attribute 값에 안전하게 넣을 수 있도록 문자열을 escape한다.
+ *
+ * @param {unknown} value escape할 값.
+ * @returns {string} attribute-safe 문자열.
+ */
 function escapeAttr(value) {
   return escapeHtml(value).replace(/'/g, "&#39;");
 }
 
+/**
+ * Markdown 문법을 제거하고 검색/요약에 쓸 plain text를 만든다.
+ *
+ * @param {string} markdown Markdown 원문.
+ * @returns {string} 공백이 정규화된 plain text.
+ */
 function stripMarkdown(markdown) {
   return markdown
     .replace(/```[\s\S]*?```/g, " ")
@@ -187,6 +313,12 @@ function stripMarkdown(markdown) {
     .trim();
 }
 
+/**
+ * 제한된 YAML frontmatter scalar 값을 파싱한다.
+ *
+ * @param {string} value frontmatter 값 문자열.
+ * @returns {string | string[]} scalar 또는 inline 배열 값.
+ */
 function parseScalar(value) {
   const trimmed = value.trim();
   if (!trimmed) return "";
@@ -203,6 +335,12 @@ function parseScalar(value) {
   return trimmed;
 }
 
+/**
+ * Markdown 문서의 YAML frontmatter와 본문을 분리한다.
+ *
+ * @param {string} markdown Markdown 원문.
+ * @returns {{ data: Record<string, unknown>, content: string }} frontmatter 객체와 본문.
+ */
 function parseFrontmatter(markdown) {
   if (!markdown.startsWith("---\n") && !markdown.startsWith("---\r\n")) {
     return { data: {}, content: markdown };
@@ -235,11 +373,23 @@ function parseFrontmatter(markdown) {
   return { data, content: normalized.slice(end + 5) };
 }
 
+/**
+ * Markdown 본문에서 첫 번째 H1 제목을 추출한다.
+ *
+ * @param {string} markdown Markdown 본문.
+ * @returns {string | null} 첫 H1 제목 또는 없으면 `null`.
+ */
 function firstHeading(markdown) {
   const match = markdown.match(/^#\s+(.+)$/m);
   return match ? match[1].trim() : null;
 }
 
+/**
+ * Markdown 본문에서 제목을 제외한 첫 문단 요약을 추출한다.
+ *
+ * @param {string} markdown Markdown 본문.
+ * @returns {string} plain text 첫 문단.
+ */
 function firstParagraph(markdown) {
   const body = markdown
     .replace(/^#.*$/gm, "")
@@ -249,20 +399,45 @@ function firstParagraph(markdown) {
   return body || "";
 }
 
+/**
+ * 긴 요약 문장을 지정 길이로 줄인다.
+ *
+ * @param {unknown} value 요약 후보 값.
+ * @param {number} [max=180] 최대 길이.
+ * @returns {string} 줄인 요약.
+ */
 function trimSummary(value, max = 180) {
   const text = String(value || "").replace(/\s+/g, " ").trim();
   if (text.length <= max) return text;
   return `${text.slice(0, max - 1).trim()}...`;
 }
 
+/**
+ * 문자열을 RegExp literal로 안전하게 사용할 수 있게 escape한다.
+ *
+ * @param {unknown} value escape할 값.
+ * @returns {string} RegExp escape된 문자열.
+ */
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/**
+ * 문서 본문 비교를 위해 Markdown을 plain text로 정규화한다.
+ *
+ * @param {string} value 비교할 Markdown 또는 text.
+ * @returns {string} 공백 정규화된 비교 문자열.
+ */
 function comparableText(value) {
   return stripMarkdown(value).replace(/\s+/g, " ").trim();
 }
 
+/**
+ * 렌더링용 문서 본문에서 중복 H1과 frontmatter summary와 같은 개요 문단을 제거한다.
+ *
+ * @param {{ title: string, summary?: string, content: string }} doc 렌더링 대상 문서.
+ * @returns {string} 문서 화면에 표시할 Markdown 본문.
+ */
 function documentBodyMarkdown(doc) {
   let markdown = doc.content.replace(/\r\n/g, "\n").replace(/^\s+/, "");
   const titlePattern = new RegExp(`^#\\s+${escapeRegExp(doc.title)}\\s*\\n+`);
@@ -281,10 +456,23 @@ function documentBodyMarkdown(doc) {
   return markdown;
 }
 
+/**
+ * 파일명에서 확장자를 제외한 slug를 추출한다.
+ *
+ * @param {string} filePath 파일 경로.
+ * @returns {string} basename slug.
+ */
 function slugFromPath(filePath) {
   return path.basename(filePath, path.extname(filePath));
 }
 
+/**
+ * source path와 문서 root 설정으로 사이트 route를 만든다.
+ *
+ * @param {{ root: string, routePrefix: string }} rootConfig 문서 root 설정.
+ * @param {string} sourcePath wiki root 기준 source path.
+ * @returns {string} 사이트 route.
+ */
 function routeFor(rootConfig, sourcePath) {
   const root = rootConfig.root.replace(/\\/g, "/");
   const withoutRoot = sourcePath.slice(root.length).replace(/^\/+/, "").replace(/\.md$/i, "");
@@ -292,6 +480,13 @@ function routeFor(rootConfig, sourcePath) {
   return `${rootConfig.routePrefix}/${withoutRoot}`;
 }
 
+/**
+ * 문서 목록 정렬 순서를 계산한다.
+ *
+ * @param {{ kind: string, title: string }} a 첫 문서.
+ * @param {{ kind: string, title: string }} b 두 번째 문서.
+ * @returns {number} sort comparator 결과.
+ */
 function routeSort(a, b) {
   const order = { core: 0, pattern: 1, tag: 2, raw: 3, meta: 4 };
   const kindDiff = (order[a.kind] ?? 9) - (order[b.kind] ?? 9);
@@ -299,6 +494,12 @@ function routeSort(a, b) {
   return a.title.localeCompare(b.title, "ko");
 }
 
+/**
+ * 문서 kind를 화면 표시용 한글 label로 바꾼다.
+ *
+ * @param {string} kind 문서 kind.
+ * @returns {string} 한글 label.
+ */
 function docKindLabel(kind) {
   return {
     core: "핵심",
@@ -310,6 +511,12 @@ function docKindLabel(kind) {
   }[kind] || kind;
 }
 
+/**
+ * frontmatter 또는 inline tag 값을 정규화한다.
+ *
+ * @param {unknown} value tag 후보 값.
+ * @returns {string} 정규화된 tag 문자열.
+ */
 function normalizeTag(value) {
   return String(value || "")
     .replace(/^#/, "")
@@ -317,6 +524,12 @@ function normalizeTag(value) {
     .trim();
 }
 
+/**
+ * Obsidian wikilink로 표현된 tag link를 본문에서 추출한다.
+ *
+ * @param {string} markdown Markdown 본문.
+ * @returns {string[]} 정렬된 inline tag 목록.
+ */
 function extractInlineTags(markdown) {
   const tags = new Set();
   for (const match of markdown.matchAll(/\[\[wiki\/tags\/([^\]|#]+)(?:#[^\]|]+)?(?:\|([^\]]+))?\]\]/g)) {
@@ -326,12 +539,23 @@ function extractInlineTags(markdown) {
   return [...tags].sort();
 }
 
+/**
+ * frontmatter `tags` 값을 문자열 배열로 정규화한다.
+ *
+ * @param {unknown} value frontmatter tags 값.
+ * @returns {string[]} 정규화된 tag 목록.
+ */
 function frontmatterTags(value) {
   if (Array.isArray(value)) return value.map(normalizeTag).filter(Boolean);
   if (typeof value === "string" && value.trim()) return [normalizeTag(value)];
   return [];
 }
 
+/**
+ * plan wiki의 Markdown 문서들을 읽어 사이트 렌더링 모델로 변환한다.
+ *
+ * @returns {Promise<object[]>} 문서 metadata와 본문을 담은 정렬된 문서 배열.
+ */
 async function loadMarkdownDocs() {
   const docs = [];
 
@@ -371,6 +595,12 @@ async function loadMarkdownDocs() {
   return docs.sort(routeSort);
 }
 
+/**
+ * 문서 하나가 받을 수 있는 wikilink/route alias 후보를 만든다.
+ *
+ * @param {{ source_path: string, route: string }} doc 문서 모델.
+ * @returns {string[]} alias 후보 목록.
+ */
 function routeAliasesForDoc(doc) {
   const withoutExt = doc.source_path.replace(/\.md$/i, "");
   const basename = withoutExt.split("/").pop();
@@ -382,6 +612,14 @@ function routeAliasesForDoc(doc) {
   ].filter(Boolean);
 }
 
+/**
+ * wikilink target을 사이트 route로 바꾸기 위한 alias map을 만든다.
+ *
+ * basename이 중복되는 경우 basename alias는 제외한다.
+ *
+ * @param {object[]} docs 문서 모델 배열.
+ * @returns {Map<string, string>} alias와 route의 map.
+ */
 function buildRouteMap(docs) {
   const routeMap = new Map();
   const basenameCounts = new Map();
@@ -401,6 +639,11 @@ function buildRouteMap(docs) {
   return routeMap;
 }
 
+/**
+ * history JSON record를 읽어 사이트 목록 모델로 변환한다.
+ *
+ * @returns {Promise<object[]>} 최신순 history record 배열.
+ */
 async function loadHistory() {
   const historyRoot = path.join(wikiRoot, "history");
   const files = (await listFiles(historyRoot)).filter((file) => file.toLowerCase().endsWith(".json"));
@@ -425,6 +668,11 @@ async function loadHistory() {
   return records.sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
 }
 
+/**
+ * feedback outcome 디렉터리의 JSON record를 읽는다.
+ *
+ * @returns {Promise<object[]>} 생성 시각 역순 feedback record 배열.
+ */
 async function loadFeedback() {
   const root = path.join(wikiRoot, "feedback");
   const records = [];
@@ -446,6 +694,11 @@ async function loadFeedback() {
   return records.sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
 }
 
+/**
+ * 현재 요청 처리에 필요한 plan wiki 문서 사이트 모델을 로드한다.
+ *
+ * @returns {Promise<object>} 문서, route map, history, feedback, 오류 상태를 담은 모델.
+ */
 async function loadModel() {
   const exists = await pathExists(wikiRoot);
   if (!exists) {
@@ -462,6 +715,13 @@ async function loadModel() {
   return { ok: true, wikiRoot, docs, history, feedback, routeMap, byRoute, bySourcePath, errors: [] };
 }
 
+/**
+ * Obsidian wikilink target을 현재 사이트 route로 해석한다.
+ *
+ * @param {string} target wikilink target.
+ * @param {Map<string, string>} routeMap alias와 route의 map.
+ * @returns {string | null} 해석된 route 또는 없으면 `null`.
+ */
 function resolveWikiLink(target, routeMap) {
   const [pathPart, hashPart] = String(target || "").split("#");
   const normalized = pathPart.replace(/\\/g, "/").replace(/^\//, "").replace(/\.md$/i, "");
@@ -483,6 +743,12 @@ function resolveWikiLink(target, routeMap) {
   return null;
 }
 
+/**
+ * link href로 허용할 수 있는 안전한 URL만 반환한다.
+ *
+ * @param {unknown} value URL 후보.
+ * @returns {string} 허용된 URL 또는 `#`.
+ */
 function safeUrl(value) {
   const url = String(value || "").trim();
   if (/^(https?:|mailto:)/i.test(url)) return url;
@@ -491,6 +757,11 @@ function safeUrl(value) {
   return "#";
 }
 
+/**
+ * Markdown inline 변환 중 HTML token을 임시 보관하는 작은 factory.
+ *
+ * @returns {{ put(html: string): string, restore(html: string): string }} token 저장/복원 API.
+ */
 function tokenFactory() {
   const tokens = [];
   return {
@@ -505,6 +776,13 @@ function tokenFactory() {
   };
 }
 
+/**
+ * 제한된 Markdown inline 문법을 HTML로 변환한다.
+ *
+ * @param {string} text inline Markdown text.
+ * @param {Map<string, string>} routeMap wikilink route map.
+ * @returns {string} HTML inline fragment.
+ */
 function inlineMarkdown(text, routeMap) {
   const tokens = tokenFactory();
   let value = String(text || "");
@@ -533,6 +811,12 @@ function inlineMarkdown(text, routeMap) {
   return tokens.restore(html);
 }
 
+/**
+ * heading text를 anchor id로 사용할 수 있는 안정적인 문자열로 바꾼다.
+ *
+ * @param {string} text heading text.
+ * @returns {string} HTML id.
+ */
 function headingId(text) {
   const base = String(text || "")
     .toLowerCase()
@@ -543,6 +827,13 @@ function headingId(text) {
   return `heading-${createHash("sha1").update(String(text)).digest("hex").slice(0, 8)}`;
 }
 
+/**
+ * GitHub-flavored Markdown 표 블록을 HTML table로 변환한다.
+ *
+ * @param {string[]} lines table markdown lines.
+ * @param {Map<string, string>} routeMap wikilink route map.
+ * @returns {string} HTML table fragment.
+ */
 function renderTable(lines, routeMap) {
   const rows = lines.map((line) =>
     line
@@ -560,6 +851,13 @@ function renderTable(lines, routeMap) {
     .join("")}</tbody></table></div>`;
 }
 
+/**
+ * 제한된 Markdown block 문법을 문서 화면용 HTML로 변환한다.
+ *
+ * @param {string} markdown Markdown 본문.
+ * @param {Map<string, string>} routeMap wikilink route map.
+ * @returns {string} HTML fragment.
+ */
 function markdownToHtml(markdown, routeMap) {
   const lines = markdown.replace(/\r\n/g, "\n").split("\n");
   const out = [];
@@ -678,6 +976,12 @@ function markdownToHtml(markdown, routeMap) {
   return out.join("\n");
 }
 
+/**
+ * 문서 배열을 kind별 그룹으로 묶는다.
+ *
+ * @param {object[]} docs 문서 모델 배열.
+ * @returns {Map<string, object[]>} kind별 문서 그룹.
+ */
 function groupByKind(docs) {
   const groups = new Map();
   for (const doc of docs) {
@@ -687,11 +991,26 @@ function groupByKind(docs) {
   return groups;
 }
 
+/**
+ * 현재 route와 비교해 active class가 붙은 sidebar navigation link를 만든다.
+ *
+ * @param {string} href link href.
+ * @param {string} label link label.
+ * @param {string} currentPath 현재 요청 pathname.
+ * @returns {string} HTML anchor fragment.
+ */
 function navLink(href, label, currentPath) {
   const active = href === currentPath || (href !== "/" && currentPath.startsWith(`${href}/`));
   return `<a class="${active ? "active" : ""}" href="${escapeAttr(href)}">${escapeHtml(label)}</a>`;
 }
 
+/**
+ * 문서 kind별 navigation sidebar를 렌더링한다.
+ *
+ * @param {object} model 사이트 모델.
+ * @param {string} currentPath 현재 요청 pathname.
+ * @returns {string} sidebar HTML.
+ */
 function renderSidebar(model, currentPath) {
   const groups = groupByKind(model.docs);
   const core = groups.get("core") || [];
@@ -730,6 +1049,12 @@ function renderSidebar(model, currentPath) {
   </aside>`;
 }
 
+/**
+ * 상단 bar와 문서 통계를 렌더링한다.
+ *
+ * @param {object} model 사이트 모델.
+ * @returns {string} topbar HTML.
+ */
 function renderTopbar(model) {
   const patternCount = model.docs.filter((doc) => doc.kind === "pattern").length;
   const rawCount = model.docs.filter((doc) => doc.kind === "raw").length;
@@ -745,6 +1070,17 @@ function renderTopbar(model) {
   </header>`;
 }
 
+/**
+ * 공통 HTML shell을 렌더링한다.
+ *
+ * @param {object} options layout 입력.
+ * @param {object} options.model 사이트 모델.
+ * @param {string} options.currentPath 현재 요청 pathname.
+ * @param {string} options.title 문서 제목.
+ * @param {string} options.content main content HTML.
+ * @param {object | null} [options.document=null] feedback 대상 문서 metadata.
+ * @returns {string} 완성된 HTML 문서.
+ */
 function renderLayout({ model, currentPath, title, content, document = null }) {
   const documentAttrs = document
     ? ` data-document="true" data-source-path="${escapeAttr(document.source_path)}" data-title="${escapeAttr(document.title)}" data-kind="${escapeAttr(document.kind)}"`
@@ -801,6 +1137,12 @@ function renderLayout({ model, currentPath, title, content, document = null }) {
 </html>`;
 }
 
+/**
+ * 홈 화면을 렌더링한다.
+ *
+ * @param {object} model 사이트 모델.
+ * @returns {string} 홈 HTML 문서.
+ */
 function renderHome(model) {
   const core = model.docs.filter((doc) => doc.kind === "core");
   const patterns = model.docs.filter((doc) => doc.kind === "pattern");
@@ -846,6 +1188,14 @@ function renderHome(model) {
   return renderLayout({ model, currentPath: "/", title: "홈", content });
 }
 
+/**
+ * 개별 Markdown 문서 화면을 렌더링한다.
+ *
+ * @param {object} model 사이트 모델.
+ * @param {object} doc 문서 모델.
+ * @param {string} currentPath 현재 요청 pathname.
+ * @returns {string} 문서 HTML.
+ */
 function renderDocument(model, doc, currentPath) {
   const tagLinks = doc.tags
     .map((tag) => {
@@ -865,6 +1215,12 @@ function renderDocument(model, doc, currentPath) {
   return renderLayout({ model, currentPath, title: doc.title, content, document: doc });
 }
 
+/**
+ * history record의 changes 요약 문자열을 만든다.
+ *
+ * @param {object | null | undefined} changes history changes 객체.
+ * @returns {string} 생성/수정/삭제/registry 변경 요약.
+ */
 function summarizeChanges(changes) {
   if (!changes || typeof changes !== "object") return "";
   const parts = [];
@@ -876,6 +1232,14 @@ function summarizeChanges(changes) {
   return parts.join(" · ");
 }
 
+/**
+ * history 목록 화면을 렌더링한다.
+ *
+ * @param {object} model 사이트 모델.
+ * @param {string} currentPath 현재 요청 pathname.
+ * @param {string | null} [filterType=null] `ingest` 또는 `feedback` filter.
+ * @returns {string} history 목록 HTML.
+ */
 function renderHistoryIndex(model, currentPath, filterType = null) {
   const records = filterType ? model.history.filter((item) => item.type === filterType) : model.history;
   const title = filterType ? `${filterType} 히스토리` : "히스토리";
@@ -908,6 +1272,14 @@ function renderHistoryIndex(model, currentPath, filterType = null) {
   return renderLayout({ model, currentPath, title, content });
 }
 
+/**
+ * history record 상세 화면을 렌더링한다.
+ *
+ * @param {object} model 사이트 모델.
+ * @param {object} record history record.
+ * @param {string} currentPath 현재 요청 pathname.
+ * @returns {string} history 상세 HTML.
+ */
 function renderHistoryDetail(model, record, currentPath) {
   const changes = record.changes || {};
   const list = (title, values) => {
@@ -940,6 +1312,13 @@ function renderHistoryDetail(model, record, currentPath) {
   return renderLayout({ model, currentPath, title: record.id, content });
 }
 
+/**
+ * feedback 목록과 상태별 개수를 렌더링한다.
+ *
+ * @param {object} model 사이트 모델.
+ * @param {string} currentPath 현재 요청 pathname.
+ * @returns {string} feedback 목록 HTML.
+ */
 function renderFeedbackIndex(model, currentPath) {
   const counts = new Map(feedbackStatuses.map((status) => [status, 0]));
   for (const item of model.feedback) {
@@ -973,6 +1352,13 @@ function renderFeedbackIndex(model, currentPath) {
   return renderLayout({ model, currentPath, title: "피드백", content });
 }
 
+/**
+ * 404 화면을 렌더링한다.
+ *
+ * @param {object} model 사이트 모델.
+ * @param {string} currentPath 현재 요청 pathname.
+ * @returns {string} 404 HTML.
+ */
 function renderNotFound(model, currentPath) {
   return renderLayout({
     model,
@@ -982,6 +1368,12 @@ function renderNotFound(model, currentPath) {
   });
 }
 
+/**
+ * plan wiki source root가 없을 때 보여줄 오류 화면을 렌더링한다.
+ *
+ * @param {object} model 실패 상태의 사이트 모델.
+ * @returns {string} 오류 HTML.
+ */
 function renderMissingWiki(model) {
   const content = `<header class="doc-head">
     <p class="eyebrow">configuration</p>
@@ -991,6 +1383,12 @@ function renderMissingWiki(model) {
   return renderLayout({ model: { ...model, docs: [], history: [], feedback: [] }, currentPath: "/", title: "Missing wiki", content });
 }
 
+/**
+ * 클라이언트 검색 UI가 사용할 search index payload를 만든다.
+ *
+ * @param {object} model 사이트 모델.
+ * @returns {object[]} 검색 대상 문서 배열.
+ */
 function searchPayload(model) {
   return model.docs.map((doc) => ({
     kind: doc.kind,
@@ -1004,19 +1402,44 @@ function searchPayload(model) {
   }));
 }
 
+/**
+ * feedback이 가리키는 source path가 현재 로드된 문서인지 확인한다.
+ *
+ * @param {object} model 사이트 모델.
+ * @param {unknown} sourcePath feedback source path 후보.
+ * @returns {boolean} 현재 문서 목록에 있으면 `true`.
+ */
 function isKnownSourcePath(model, sourcePath) {
   return typeof sourcePath === "string" && model.bySourcePath?.has(sourcePath);
 }
 
+/**
+ * feedback type을 안전한 machine-readable 값으로 정규화한다.
+ *
+ * @param {unknown} value feedback type 후보.
+ * @returns {string} 안전한 type 값.
+ */
 function sanitizeFeedbackType(value) {
   const text = String(value || "wording").trim();
   return /^[a-z0-9-]{2,40}$/.test(text) ? text : "wording";
 }
 
+/**
+ * feedback comment의 trailing whitespace와 최대 길이를 제한한다.
+ *
+ * @param {unknown} value comment 후보.
+ * @returns {string} 저장 가능한 comment.
+ */
 function sanitizeComment(value) {
   return String(value || "").replace(/\s+$/g, "").slice(0, 4000);
 }
 
+/**
+ * 지정 Date를 Asia/Seoul 기준 날짜/시간 part로 분해한다.
+ *
+ * @param {Date} [date=new Date()] 변환할 Date.
+ * @returns {Record<string, string>} Intl part type별 값.
+ */
 function kstParts(date = new Date()) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Seoul",
@@ -1032,16 +1455,32 @@ function kstParts(date = new Date()) {
   return byType;
 }
 
+/**
+ * 현재 시각을 KST ISO 유사 문자열로 반환한다.
+ *
+ * @returns {string} `YYYY-MM-DDTHH:mm:ss+09:00` 형식 문자열.
+ */
 function nowKstIso() {
   const p = kstParts();
   return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}+09:00`;
 }
 
+/**
+ * 현재 시각을 파일명에 넣기 좋은 KST stamp로 반환한다.
+ *
+ * @returns {string} `YYYYMMDD-HHMMSS` 형식 문자열.
+ */
 function nowKstStamp() {
   const p = kstParts();
   return `${p.year}${p.month}${p.day}-${p.hour}${p.minute}${p.second}`;
 }
 
+/**
+ * source path를 feedback 파일명에 넣을 안전한 slug로 바꾼다.
+ *
+ * @param {unknown} value source path 또는 제목 후보.
+ * @returns {string} 파일명 slug.
+ */
 function slugifyForFile(value) {
   const slug = String(value || "")
     .toLowerCase()
@@ -1054,6 +1493,14 @@ function slugifyForFile(value) {
   return slug || "feedback";
 }
 
+/**
+ * 선택 영역 feedback POST 요청을 검증하고 `feedback/inbox` JSON record로 저장한다.
+ *
+ * @param {import("node:http").IncomingMessage} req HTTP 요청 객체.
+ * @param {import("node:http").ServerResponse} res HTTP 응답 객체.
+ * @param {object} model 사이트 모델.
+ * @returns {Promise<void>}
+ */
 async function handleFeedbackPost(req, res, model) {
   let payload = null;
   try {
@@ -1109,6 +1556,11 @@ async function handleFeedbackPost(req, res, model) {
   return sendJson(res, 201, { ok: true, id, path: sourcePathFor(filePath) });
 }
 
+/**
+ * 문서 사이트의 CSS를 문자열로 반환한다.
+ *
+ * @returns {string} `<style>`에 삽입할 CSS.
+ */
 function styles() {
   return `
 :root {
@@ -1507,6 +1959,13 @@ th {
 `;
 }
 
+/**
+ * 문서 검색과 선택 영역 feedback popover를 처리하는 client-side script를 반환한다.
+ *
+ * 반환값은 HTML `<script>` 태그 안에 직접 삽입된다.
+ *
+ * @returns {string} browser에서 실행할 JavaScript 문자열.
+ */
 function clientScript() {
   return `
 const searchInput = document.getElementById("site-search");
@@ -1667,6 +2126,15 @@ if (form) {
 `;
 }
 
+/**
+ * plan wiki docs 서버의 모든 HTTP 요청을 라우팅한다.
+ *
+ * API endpoint, 정적 asset, 문서 route, history/feedback 화면, 404를 처리한다.
+ *
+ * @param {import("node:http").IncomingMessage} req HTTP 요청 객체.
+ * @param {import("node:http").ServerResponse} res HTTP 응답 객체.
+ * @returns {Promise<void>}
+ */
 async function handleRequest(req, res) {
   const url = new URL(req.url, "http://localhost");
   const pathname = decodeURIComponent(url.pathname.replace(/\/+$/, "") || "/");
@@ -1741,6 +2209,11 @@ async function handleRequest(req, res) {
   return sendHtml(res, 404, renderNotFound(model, pathname));
 }
 
+/**
+ * plan wiki docs HTTP server instance.
+ *
+ * @type {import("node:http").Server}
+ */
 const server = createServer((req, res) => {
   handleRequest(req, res).catch((error) => {
     console.error(error);

@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 
+/**
+ * plan developer review 브라우저 서버를 시작하거나 기존 호환 서버를 재사용하는 CLI 스크립트.
+ *
+ * 지정된 task slug의 review package가 현재 plan signature와 맞는지 확인한 뒤,
+ * Codex가 사용자에게 전달할 `plan_review_browser_url`을 출력한다.
+ */
+
 import { spawn } from "node:child_process";
 import net from "node:net";
 import path from "node:path";
@@ -10,6 +17,12 @@ const repoRoot = path.resolve(__dirname, "..", "..");
 const serverPath = path.join(repoRoot, ".codex", "tools", "plan-review-browser-server.mjs");
 const argv = process.argv.slice(2);
 
+/**
+ * CLI 인자 목록에서 값이 필요한 flag의 값을 읽는다.
+ *
+ * @param {string} name 찾을 flag 이름.
+ * @returns {string | null} flag 다음 값이 있으면 그 값, 없으면 `null`.
+ */
 function takeFlag(name) {
   const idx = argv.indexOf(name);
   if (idx < 0) return null;
@@ -18,6 +31,12 @@ function takeFlag(name) {
   return value;
 }
 
+/**
+ * CLI 인자 목록에 boolean flag가 있는지 확인한다.
+ *
+ * @param {string} name 찾을 flag 이름.
+ * @returns {boolean} flag가 존재하면 `true`.
+ */
 function hasFlag(name) {
   return argv.includes(name);
 }
@@ -44,10 +63,22 @@ if (!Number.isInteger(startPort) || !Number.isInteger(maxPort) || startPort < 1 
   process.exit(2);
 }
 
+/**
+ * 지정한 시간만큼 비동기로 대기한다.
+ *
+ * @param {number} ms 대기할 밀리초.
+ * @returns {Promise<void>} 대기 완료 Promise.
+ */
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * URL에서 JSON 응답을 읽되 실패하면 `null`을 반환한다.
+ *
+ * @param {string} url 요청할 URL.
+ * @returns {Promise<object | null>} 파싱된 JSON 객체 또는 실패 시 `null`.
+ */
 async function fetchJson(url) {
   try {
     const response = await fetch(url);
@@ -58,6 +89,12 @@ async function fetchJson(url) {
   }
 }
 
+/**
+ * localhost의 특정 port가 이미 열려 있는지 확인한다.
+ *
+ * @param {number} port 확인할 TCP port.
+ * @returns {Promise<boolean>} 연결 가능하면 `true`.
+ */
 async function isPortOpen(port) {
   return new Promise((resolve) => {
     const socket = net.createConnection({ host: "127.0.0.1", port });
@@ -74,15 +111,33 @@ async function isPortOpen(port) {
   });
 }
 
+/**
+ * 지정 port의 서버가 multi-review 모드의 review 서버인지 확인한다.
+ *
+ * @param {number} port 확인할 port.
+ * @returns {Promise<boolean>} 호환 서버이면 `true`.
+ */
 async function isCompatibleServer(port) {
   const health = await fetchJson(`http://localhost:${port}/api/health`);
   return health?.ok === true && health?.mode === "multi-review";
 }
 
+/**
+ * 현재 task slug에 대한 review package health 정보를 읽는다.
+ *
+ * @param {number} port review 서버 port.
+ * @returns {Promise<object | null>} task health JSON 또는 실패 시 `null`.
+ */
 async function taskHealth(port) {
   return fetchJson(`http://localhost:${port}/api/reviews/${taskSlug}/health`);
 }
 
+/**
+ * 새로 시작한 서버가 health endpoint를 열 때까지 짧게 대기한다.
+ *
+ * @param {number} port 대기할 서버 port.
+ * @returns {Promise<boolean>} 제한 시간 안에 호환 서버가 확인되면 `true`.
+ */
 async function waitForCompatibleServer(port) {
   for (let i = 0; i < 30; i += 1) {
     if (await isCompatibleServer(port)) return true;
@@ -91,6 +146,12 @@ async function waitForCompatibleServer(port) {
   return false;
 }
 
+/**
+ * review 서버 프로세스를 백그라운드로 시작한다.
+ *
+ * @param {number} port 서버가 listen할 port.
+ * @returns {void}
+ */
 function startServer(port) {
   const child = spawn(process.execPath, [serverPath, "--port", String(port)], {
     cwd: repoRoot,
@@ -101,6 +162,14 @@ function startServer(port) {
   child.unref();
 }
 
+/**
+ * Codex orchestration이 읽을 수 있는 key=value 결과를 출력한다.
+ *
+ * @param {number} port 사용 중인 서버 port.
+ * @param {boolean} reused 기존 서버를 재사용했으면 `true`.
+ * @param {object | null} health task health 응답.
+ * @returns {void}
+ */
 function printResult(port, reused, health) {
   const url = `http://localhost:${port}/review/${taskSlug}`;
   console.log(`plan_review_browser_url=${url}`);

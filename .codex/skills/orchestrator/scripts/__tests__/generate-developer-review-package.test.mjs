@@ -6,9 +6,18 @@ import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
+/**
+ * developer review package 생성기의 CLI 동작을 검증하는 Node test suite.
+ *
+ * 임시 repository를 만들고 plan/review/evidence 파일을 직접 구성해,
+ * 생성기가 UTF-8 보존, signature 유지, evidence 복사, 경로 방어를 지키는지 확인한다.
+ */
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const scriptPath = path.resolve(__dirname, "..", "generate-developer-review-package.mjs");
 
+/**
+ * 한글 plan/review source를 UTF-8로 읽고 review-data/feedback/history를 생성하는 기본 성공 경로를 검증한다.
+ */
 test("writes developer review package as UTF-8 and preserves Korean text", () => {
   const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "orchestrator-review-"));
   const taskSlug = "korean-review";
@@ -179,6 +188,9 @@ affected_phase_paths: []
   assert.equal(feedback.review_status, "in_progress");
 });
 
+/**
+ * source artifact에 이미 손상 의심 물음표가 있으면 출력 파일을 쓰기 전에 실패하는지 검증한다.
+ */
 test("fails before writing when source prose already contains lossy question marks", () => {
   const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "orchestrator-review-lossy-"));
   const taskSlug = "lossy-review";
@@ -205,6 +217,9 @@ test("fails before writing when source prose already contains lossy question mar
   assert.equal(fs.existsSync(path.join(planDir, "developer-review", "review-data.json")), false);
 });
 
+/**
+ * 별도 phase detail 파일 없이 plan.md 안의 inline phase section을 읽어 review phase로 변환하는지 검증한다.
+ */
 test("reads inline phase detail sections from a self-contained plan", () => {
   const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "orchestrator-review-inline-"));
   const taskSlug = "inline-review";
@@ -290,6 +305,9 @@ affected_plan_paths: []
   assert.ok(reviewData.phases[0].risks[0].includes("stale registry"));
 });
 
+/**
+ * 파일/폴더 구조 계약과 `evidence/**` asset을 review-data에 포함하고 안전한 asset 위치로 복사하는지 검증한다.
+ */
 test("includes topology and safely copied evidence artifacts", () => {
   const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "orchestrator-review-evidence-"));
   const taskSlug = "evidence-review";
@@ -390,6 +408,9 @@ affected_plan_paths: []
   );
 });
 
+/**
+ * plan의 체험 산출물 경로가 `evidence/**` 밖으로 빠져나가면 생성기가 거부하는지 검증한다.
+ */
 test("rejects evidence paths outside evidence root", () => {
   const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "orchestrator-review-evidence-bad-"));
   const taskSlug = "bad-evidence-review";
