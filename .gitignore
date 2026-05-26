@@ -1,6 +1,7 @@
 
 node_modules/
-.codex/plan-wiki/
+.codex/plan-wiki/source
+.codex/plan-wiki/source/
 .claude/*
 !.claude/CLAUDE.md
 test/**/workspace/
@@ -12,4 +13,3 @@ test/**/origin-workspace/tsconfig.tsbuildinfo
 
 # runner skill plan-state SSOT — local progress, not part of the plan itself.
 plans/**/.runner-state.json
-

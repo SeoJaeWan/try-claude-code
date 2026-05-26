@@ -48,8 +48,8 @@ Read only what is needed:
 - Existing `./plans/**`, `./.codex/artifacts/brainstorm/**`, and `./.codex/artifacts/ui-spec/**` artifacts when nearby prior work may answer the same question or reduce repeated clarification
 - Legacy `./.codex/artifacts/design-discovery/**` artifacts only as read-only compatibility input when directly relevant
 - `./.codex/` references only when they directly constrain this workflow
-- `./.codex/plan-wiki/sync/current/core/common/용어-정책.md` when producing request-lock or artifact handoff text
-- `./.codex/plan-wiki/sync/current/core/common/실행-라우팅.md` when the request needs execution-area locking
+- `./.codex/plan-wiki/source/wiki/core/common/용어-정책.md` when producing request-lock or artifact handoff text
+- `./.codex/plan-wiki/source/wiki/core/common/실행-라우팅.md` when the request needs execution-area locking
 
 Do not assume or depend on `./.ai/` or any other external AI metadata directory.
 Prefer related-artifact lookup before asking the user to restate a prior decision.
@@ -67,7 +67,7 @@ For diagnostic-lock path:
 
 If artifact handoff is plausible, inspect the staged plan wiki before asking the user to confirm scope:
 
-- resolve `plan_wiki_root` to `./.codex/plan-wiki/sync/current`
+- resolve `plan_wiki_root` to `./.codex/plan-wiki/source/wiki`
 - if the planning root exists:
   - read `{plan_wiki_root}/registry.json`
   - read every path in `stage_core.brainstorm` when present; otherwise fall back to the registry `core` array and state that the wiki does not yet expose a brainstorm-specific core list
@@ -343,6 +343,6 @@ When planning is needed and scope is decision-complete enough for planning, prov
 9. Plan wiki preflight findings that subsequent planning input should treat as already surfaced, or an explicit note that the preflight could not run because the plan wiki root was missing
 10. Context7-confirmed external facts that subsequent planning input should treat as already resolved, plus any still-risky assumptions that may require fallback verification
 
-If planning is needed but `./.codex/plan-wiki/sync/current` is missing or unreadable, state that plan wiki setup is required before planning.
+If planning is needed but `./.codex/plan-wiki/source/wiki` is missing or unreadable, state that plan wiki setup is required before planning.
 
 Do not present the request as planning-ready while blocking ambiguity remains for a touched public boundary, exclusion boundary, or user-visible UI direction that would force design guessing.

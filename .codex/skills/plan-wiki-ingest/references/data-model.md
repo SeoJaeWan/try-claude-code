@@ -4,7 +4,7 @@
 
 - Review inbox root: main repository root `.codex/reviews/`
 - Review inbox file pattern: `.codex/reviews/**/*.md`
-- Plan wiki root: `~/.codex/planWiki`
+- Plan wiki root: `./.codex/plan-wiki/source`
 - Required directories:
   - `raw/`
   - `wiki/`
@@ -16,7 +16,7 @@
 - Required control file:
   - `wiki/registry.json`
 
-Use the `~/.codex/planWiki` link as the only stable entrypoint. Do not hardcode the underlying vault path into other skills.
+Use `./.codex/plan-wiki/source` as the only stable source entrypoint. Do not hardcode an external vault path into other skills.
 
 If execution begins inside a linked worktree or nested workspace, resolve the main repository root before scanning `.codex/reviews/`.
 

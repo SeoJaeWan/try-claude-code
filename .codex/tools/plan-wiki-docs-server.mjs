@@ -4,7 +4,6 @@ import { createServer } from "node:http";
 import { createHash, randomBytes } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { mkdir, readdir, readFile, rename, stat, writeFile } from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -21,15 +20,22 @@ function takeFlag(name) {
 }
 
 if (argv.includes("--help") || argv.includes("-h")) {
-  console.log("Usage: node .codex/tools/plan-wiki-docs-server.mjs [--port 9788] [--wiki-root PATH]");
+  console.log("Usage: node .codex/tools/plan-wiki-docs-server.mjs [--port 9788] [--source-root PATH]");
   console.log("");
-  console.log("Default wiki root: %USERPROFILE%/.codex/planWiki or $HOME/.codex/planWiki");
+  console.log("Default source root: ./.codex/plan-wiki/source");
+  console.log("--wiki-root is kept as a compatibility alias for --source-root.");
   console.log("Open docs at: http://localhost:9788");
   process.exit(0);
 }
 
-const defaultWikiRoot = path.join(os.homedir(), ".codex", "planWiki");
-const wikiRoot = path.resolve(takeFlag("--wiki-root") || process.env.PLAN_WIKI_ROOT || defaultWikiRoot);
+const defaultWikiRoot = path.join(repoRoot, ".codex", "plan-wiki", "source");
+const wikiRoot = path.resolve(
+  takeFlag("--source-root") ||
+    takeFlag("--wiki-root") ||
+    process.env.PLAN_WIKI_SOURCE_ROOT ||
+    process.env.PLAN_WIKI_ROOT ||
+    defaultWikiRoot
+);
 const requestedPort = Number(takeFlag("--port") || process.env.PLAN_WIKI_DOCS_PORT || 9788);
 const port = Number.isFinite(requestedPort) ? requestedPort : 9788;
 
@@ -443,7 +449,7 @@ async function loadFeedback() {
 async function loadModel() {
   const exists = await pathExists(wikiRoot);
   if (!exists) {
-    return { ok: false, wikiRoot, docs: [], history: [], feedback: [], routeMap: new Map(), errors: ["wiki root not found"] };
+    return { ok: false, wikiRoot, docs: [], history: [], feedback: [], routeMap: new Map(), errors: ["source root not found"] };
   }
 
   const docs = await loadMarkdownDocs();
@@ -980,7 +986,7 @@ function renderMissingWiki(model) {
   const content = `<header class="doc-head">
     <p class="eyebrow">configuration</p>
     <h1>Plan wiki root를 찾을 수 없습니다</h1>
-    <p class="lead"><code>${escapeHtml(model.wikiRoot)}</code> 경로가 없습니다. <code>--wiki-root</code> 또는 <code>PLAN_WIKI_ROOT</code>로 경로를 지정하세요.</p>
+    <p class="lead"><code>${escapeHtml(model.wikiRoot)}</code> 경로가 없습니다. <code>--source-root</code> 또는 <code>PLAN_WIKI_SOURCE_ROOT</code>로 경로를 지정하세요.</p>
   </header>`;
   return renderLayout({ model: { ...model, docs: [], history: [], feedback: [] }, currentPath: "/", title: "Missing wiki", content });
 }
@@ -1746,6 +1752,6 @@ server.listen(port, () => {
   const address = server.address();
   const actualPort = typeof address === "object" && address ? address.port : port;
   console.log(`Plan wiki docs: http://localhost:${actualPort}`);
-  console.log(`Wiki root: ${wikiRoot}`);
+  console.log(`Plan wiki source root: ${wikiRoot}`);
   console.log("Feedback inbox: feedback/inbox/*.json");
 });

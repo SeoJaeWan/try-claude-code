@@ -19,7 +19,7 @@ Before writing any plan artifact:
 - In direct mode:
   - read `../plan-wiki-setup/references/staging-contract.md`.
   - read `../plan-wiki-setup/references/platform-commands.md`.
-  - resolve `plan_wiki_root` to `./.codex/plan-wiki/sync/current`.
+  - resolve `plan_wiki_root` to `./.codex/plan-wiki/source/wiki`.
   - if missing, repair with `plan-wiki-setup` when available or stop with the missing dependency.
 - Read `{plan_wiki_root}/registry.json`.
 - Read every core document listed in `stage_core.architect`; if absent, read the registry `core` array.

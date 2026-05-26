@@ -7,7 +7,7 @@
 - Do not silently fix or rewrite the plan inside the review.
 - Do not downgrade blockers to preserve momentum.
 - Do not treat partial notes, briefs, legacy phase details, or non-executable artifacts as execution-ready plans.
-- Do not bypass the resolved `plan_wiki_root` with hardcoded external paths after the workspace sync path is available.
+- Do not bypass the resolved `plan_wiki_root` with hardcoded external paths after the project-local source path is available.
 - In orchestrated mode, do not redo plan wiki bootstrap already owned by the orchestrator.
 - In orchestrated mode, do not invent alternate `plan_path`, `task_slug`, `plan_wiki_root`, or `plan_signature` metadata.
 - In reused reviewer sessions, re-read the current plan file from disk and treat old findings as untrusted history.

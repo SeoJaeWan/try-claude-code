@@ -17,8 +17,8 @@ Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output ru
 ## Step 0. Normalize Target and Verify Prerequisites
 
 - Derive one canonical `task-slug`.
-- Resolve the planning `plan_wiki_root` to `./.codex/plan-wiki/sync/current`.
-- If `./.codex/plan-wiki/sync/current` is missing, stop and route to `plan-wiki-setup` instead of attempting per-run staging inside this skill.
+- Resolve the planning `plan_wiki_root` to `./.codex/plan-wiki/source/wiki`.
+- If `./.codex/plan-wiki/source/wiki` is missing, stop and route to `plan-wiki-setup` instead of attempting per-run staging inside this skill.
 - Confirm the linked local `architect` and `plan-review` capabilities are present before routing to them.
 - Do not invoke `brainstorm`. If the latest context or referenced artifacts do not lock request scope, UI direction when relevant, and required/excluded execution areas, stop with `missing_upstream_lock`.
 - If a directly referenced or latest relevant brainstorm artifact exists, read its `artifact_status` before invoking `architect`.

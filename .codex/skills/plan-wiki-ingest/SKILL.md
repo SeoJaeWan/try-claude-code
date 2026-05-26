@@ -5,18 +5,18 @@ description: Ingest Codex review files from the main repository root under `.cod
 
 # Plan Wiki Ingest
 
-Use this skill to process review inbox files into the plan wiki. Resolve the plan wiki root from `~/.codex/planWiki`, then read [references/data-model.md](references/data-model.md) and [references/history-model.md](references/history-model.md) before editing raw or wiki files.
+Use this skill to process review inbox files into the plan wiki. Resolve the plan wiki root from `./.codex/plan-wiki/source`, then read [references/data-model.md](references/data-model.md) and [references/history-model.md](references/history-model.md) before editing raw or wiki files.
 
 ## Workflow
 
 1. Verify the path contract.
    - Input inbox root: main repository root `.codex/reviews/`
    - Input file pattern: `.codex/reviews/**/*.md`
-   - Plan wiki root: `~/.codex/planWiki`
+   - Plan wiki root: `./.codex/plan-wiki/source`
    - Required output directories: `raw/`, `wiki/`, `wiki/core/`, `wiki/patterns/`, `wiki/tags/`, `wiki/_meta/`
    - Required operation history root: `history/`
    - Required control file: `wiki/registry.json`
-   - If the link is missing or broken, stop and use `plan-wiki-setup`.
+   - If the source repo is missing or broken, stop and use `plan-wiki-setup`.
    - If running from a worktree or nested workspace, resolve the main repository root first.
    - Read `wiki/registry.json` before touching pattern files.
 
@@ -68,6 +68,8 @@ Use this skill to process review inbox files into the plan wiki. Resolve the pla
    - If the ingest batch succeeds, remove the remaining source review files from the inbox.
    - Do not continue with partial cleanup after a failed batch.
    - Write one operation history record under `history/YYYY/MM/` with `type: ingest`, input reviews, changed files, validation status, and source review cleanup outcome.
+   - Run `git status --short` inside `./.codex/plan-wiki/source` and report the changed plan wiki files.
+   - Commit and push the plan wiki source repo only after explicit user approval.
 
 ## Promotion Rules
 

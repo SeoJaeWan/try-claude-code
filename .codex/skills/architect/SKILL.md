@@ -14,7 +14,7 @@ Read these references in order whenever this skill runs:
 1. [references/contracts.md](references/contracts.md) for purpose, inputs, output contract, execution modes, and Korean-first output requirements.
 2. [references/workflow.md](references/workflow.md) for the full planning workflow.
 3. [references/guardrails.md](references/guardrails.md) for non-negotiable planning constraints.
-4. [../../plan-wiki/sync/current/core/common/용어-정책.md](../../plan-wiki/sync/current/core/common/용어-정책.md) before drafting visible plan prose.
+4. [../../plan-wiki/source/wiki/core/common/용어-정책.md](../../plan-wiki/source/wiki/core/common/용어-정책.md) before drafting visible plan prose.
 5. [references/plan-template-sequential.md](references/plan-template-sequential.md) before writing new plan artifacts.
 
 Read these references only when the corresponding scope is active:

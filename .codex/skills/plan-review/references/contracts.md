@@ -11,7 +11,7 @@ Provide an independent, read-only review of an executable plan file before execu
 3. Optional locked request, UI direction, or orchestrator handoff from the latest conversation.
 4. Resolved planning plan wiki root:
    - orchestrated mode: use the provided `plan_wiki_root`.
-   - direct mode: use `./.codex/plan-wiki/sync/current`.
+   - direct mode: use `./.codex/plan-wiki/source/wiki`.
 5. `registry.json`, stage core docs for `review`, and selected pattern files whose `적용 조건` match the reviewed plan.
 6. Architect templates and local references only as needed to verify the plan contract.
 7. Repo-local execution contracts only when the plan makes a concrete routing, command, validation, or placement claim.

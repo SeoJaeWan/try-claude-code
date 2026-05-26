@@ -12,7 +12,7 @@ Read only what is needed:
 - Existing design-system or brand constraints when present
 - Existing screenshots, referenced mockups, or directly relevant prior `./.codex/artifacts/ui-spec/**` artifacts when they reduce repeated specification work
 - Legacy `./.codex/artifacts/design-discovery/**` artifacts only as read-only compatibility input when directly relevant
-- `./.codex/plan-wiki/sync/current/core/common/용어-정책.md` when producing UI direction snapshots or artifact handoff text
+- `./.codex/plan-wiki/source/wiki/core/common/용어-정책.md` when producing UI direction snapshots or artifact handoff text
 
 Rules:
 

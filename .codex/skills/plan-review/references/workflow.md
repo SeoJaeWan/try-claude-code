@@ -13,7 +13,7 @@
 - In direct mode:
   - read `../plan-wiki-setup/references/staging-contract.md`.
   - read `../plan-wiki-setup/references/platform-commands.md`.
-  - resolve `plan_wiki_root` to `./.codex/plan-wiki/sync/current`.
+  - resolve `plan_wiki_root` to `./.codex/plan-wiki/source/wiki`.
   - stop if the workspace sync path is missing.
 - Read `{plan_wiki_root}/registry.json`.
 - Read every core document listed in `stage_core.review`; if absent, read the registry `core` array.

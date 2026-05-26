@@ -2,7 +2,7 @@
 
 ## Path Contract
 
-- Plan wiki root: `~/.codex/planWiki`
+- Plan wiki root: `./.codex/plan-wiki/source`
 - Feedback inbox: `feedback/inbox/`
 - Feedback outcome roots:
   - `feedback/applied/`
@@ -15,7 +15,7 @@
   - `wiki/tags/`
   - `raw/`
 
-Use `~/.codex/planWiki` as the only stable entrypoint. Do not hardcode the underlying vault path.
+Use `./.codex/plan-wiki/source` as the only stable source entrypoint. Do not hardcode an external vault path.
 
 ## Feedback JSON Schema
 

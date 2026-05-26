@@ -15,7 +15,7 @@ Read these references in order whenever this skill runs:
 2. [references/workflow.md](references/workflow.md) for plan wiki routing, plan loading, finding classification, artifact writing, and response flow.
 3. [references/guardrails.md](references/guardrails.md) for non-negotiable review constraints.
 4. [references/review-policy.md](references/review-policy.md) for severity mapping, outcome states, and review artifact shape.
-5. [../../plan-wiki/sync/current/core/common/용어-정책.md](../../plan-wiki/sync/current/core/common/용어-정책.md) before writing human-readable findings.
+5. [../../plan-wiki/source/wiki/core/common/용어-정책.md](../../plan-wiki/source/wiki/core/common/용어-정책.md) before writing human-readable findings.
 
 Read repo-local execution contracts only when the reviewed plan makes concrete routing, validation, comparison, or placement claims that depend on them.
 

@@ -1,22 +1,22 @@
 ---
 name: plan-wiki-apply-feedback
-description: Apply plan wiki docs feedback JSON files from `~/.codex/planWiki/feedback/inbox/*.json` into the user-level plan wiki source documents by re-locating selected text, updating `wiki/core/**`, `wiki/patterns/**`, or `raw/**`, refreshing affected tag/raw/pattern graph links, moving feedback records to an outcome folder, and writing operation history. Use when Codex needs to turn human docs annotations into durable plan wiki source updates without treating rendered docs as the source of truth.
+description: Apply plan wiki docs feedback JSON files from `./.codex/plan-wiki/source/feedback/inbox/*.json` into the user-level plan wiki source documents by re-locating selected text, updating `wiki/core/**`, `wiki/patterns/**`, or `raw/**`, refreshing affected tag/raw/pattern graph links, moving feedback records to an outcome folder, and writing operation history. Use when Codex needs to turn human docs annotations into durable plan wiki source updates without treating rendered docs as the source of truth.
 ---
 
 # Plan Wiki Apply Feedback
 
-Use this skill to process feedback captured from the plan wiki docs UI. Resolve the plan wiki root from `~/.codex/planWiki`, then read [references/feedback-model.md](references/feedback-model.md) and [references/history-model.md](references/history-model.md) before editing wiki files.
+Use this skill to process feedback captured from the plan wiki docs UI. Resolve the plan wiki root from `./.codex/plan-wiki/source`, then read [references/feedback-model.md](references/feedback-model.md) and [references/history-model.md](references/history-model.md) before editing wiki files.
 
 ## Workflow
 
 1. Verify the path contract.
-   - Plan wiki root: `~/.codex/planWiki`
+   - Plan wiki root: `./.codex/plan-wiki/source`
    - Feedback inbox: `feedback/inbox/*.json`
    - Feedback outcome folders: `feedback/applied/`, `feedback/rejected/`, `feedback/needs-decision/`, `feedback/stale/`
    - Operation history root: `history/`
    - Source document roots: `wiki/core/`, `wiki/patterns/`, `wiki/tags/`, and `raw/`
    - Required control file: `wiki/registry.json`
-   - If the link is missing or broken, stop and use `plan-wiki-setup`.
+   - If the source repo is missing or broken, stop and use `plan-wiki-setup`.
 
 2. Load feedback records one by one.
    - Treat feedback as human annotation input, not as raw review evidence.
@@ -58,6 +58,8 @@ Use this skill to process feedback captured from the plan wiki docs UI. Resolve 
 7. Finalize the feedback record.
    - Move or rewrite the feedback JSON into the correct outcome folder.
    - Use `applied` when wiki source files changed successfully.
+   - Run `git status --short` inside `./.codex/plan-wiki/source` and report the changed plan wiki files.
+   - Commit and push the plan wiki source repo only after explicit user approval.
    - Use `needs-decision` when user approval is required before changing source files.
    - Use `stale` when the selected text no longer maps to the source document.
    - Use `rejected` only when the feedback is invalid or contradicts source evidence.

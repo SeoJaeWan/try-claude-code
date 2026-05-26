@@ -5,14 +5,14 @@ description: Audit the plan wiki for registry drift, broken raw backlinks, dupli
 
 # Plan Wiki Lint
 
-Use this skill to inspect the plan wiki without silently rewriting it. Resolve the wiki root from `~/.codex/planWiki`, then read [references/checklist.md](references/checklist.md) before drafting the cleanup report.
+Use this skill to inspect the plan wiki without silently rewriting it. Resolve the wiki root from `./.codex/plan-wiki/source`, then read [references/checklist.md](references/checklist.md) before drafting the cleanup report.
 
 ## Workflow
 
 1. Verify the target.
-   - Plan wiki root: `~/.codex/planWiki`
+   - Plan wiki root: `./.codex/plan-wiki/source`
    - Required working files: `wiki/registry.json` and `wiki/_meta/점검-보고서.md`
-   - If the link is missing or broken, stop and use `plan-wiki-setup`.
+   - If the source repo is missing or broken, stop and use `plan-wiki-setup`.
 
 2. Read the current routing and graph surface first.
    - Read `wiki/registry.json`.
@@ -34,6 +34,8 @@ Use this skill to inspect the plan wiki without silently rewriting it. Resolve t
    - If the user approves, apply only the approved subset of changes.
    - Refresh `wiki/_meta/점검-보고서.md` to reflect what was actually changed and what remains deferred.
    - If approval is partial, keep the rest as pending or deferred.
+   - After approved changes, run `git status --short` inside `./.codex/plan-wiki/source` and report the changed plan wiki files.
+   - Commit and push the plan wiki source repo only after explicit user approval.
 
 ## Lint Focus
 
