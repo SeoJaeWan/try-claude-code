@@ -3,20 +3,12 @@
 /**
  * status-line.mjs
  *
- * Claude Code 의 상태줄 — 박스 모드 또는 인라인 모드.
+ * Claude Code 의 상태줄 — 1줄 인라인 출력.
  *
- * Claude Code 가 주는 stdin JSON 과 git 상태를 읽어 박스형 대시보드(기본)
- * 또는 1줄 압축 문자열을 출력한다.
+ * Claude Code 가 주는 stdin JSON 과 git 상태를 읽어 핵심 지표를 한 줄로
+ * 압축해 출력한다.
  *
- * 박스 모드(기본):
- * ┌─ CORE ──────────────────────┬─ SUPPLY ──────────────────────┐
- * │ opus-4-6[1m]   ⏱ 8m 41s     │ CTX 11%   ~$1.90             │
- * │ week 3%(2d14h↓) session 22%(3h12m↓) │ 캐시 110kr 488w 적중 99% │
- * ├─ GIT ─────────────────────────────────────────────────────┤
- * │ main | task-A                                              │
- * └────────────────────────────────────────────────────────────┘
- *
- * 인라인 모드(~/.claude/statusline/config.json → {"mode":"inline"}):
+ * 예시 출력:
  * sonnet-4-6 │ ⏱50m │ CTX:13% ~$1.14 │ 5h:17%(3h12m↓) │ 7d:17%(2d14h↓) │ main
  */
 
@@ -25,7 +17,6 @@ import path from "node:path";
 import os from "node:os";
 import { execFileSync } from "node:child_process";
 import {
-  buildBox,
   colorPct,
   gray,
   white,
@@ -34,7 +25,7 @@ import {
   green,
   red,
   stripAnsi,
-} from "./lib/box-renderer.mjs";
+} from "./lib/format.mjs";
 import { readPermissionMode } from "./lib/permission-mode.mjs";
 
 // ---------------------------------------------------------------------------
@@ -127,19 +118,6 @@ function formatTimeRemaining(resetsAtSec) {
 }
 
 /**
- * 토큰 수를 짧게 표현한다. 1M 이상은 "1.2M", 1k 이상은 "12k", 그 외 그대로.
- *
- * @param {number|null|undefined} n
- * @returns {string}
- */
-function formatTokens(n) {
-  if (n == null) return gray("—");
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
-  if (n >= 1_000) return Math.round(n / 1_000) + "k";
-  return String(n);
-}
-
-/**
  * 밀리초 길이를 "Xh Ym" 또는 "Ym" 형태로 표현한다.
  *
  * @param {number|null|undefined} ms
@@ -193,82 +171,7 @@ function formatPermissionMode(mode) {
 // ---------------------------------------------------------------------------
 
 /**
- * 박스 모드의 CORE 섹션 라인을 만든다.
- * Line 1: 모델 ID + permission mode 배지 + 누적 시간.
- * Line 2: 7일/5시간 rate limit 사용률과 리셋까지 남은 시간.
- *
- * @param {object} input
- * @returns {string[]}
- */
-function renderCore(input) {
-  const lines = [];
-
-  const modelId = input.model?.id ?? "unknown";
-  const modeBadge = formatPermissionMode(readPermissionMode(input.transcript_path));
-  const duration = formatDuration(input.cost?.total_duration_ms);
-  const modelStr = modeBadge ? `${white(modelId)} ${modeBadge}` : white(modelId);
-  lines.push(`${modelStr}   ${gray("⏱")} ${duration}`);
-
-  const weekPct = input.rate_limits?.seven_day?.used_percentage;
-  const sessPct = input.rate_limits?.five_hour?.used_percentage;
-  const weekLeft = formatTimeRemaining(input.rate_limits?.seven_day?.resets_at);
-  const sessLeft = formatTimeRemaining(input.rate_limits?.five_hour?.resets_at);
-
-  const weekStr = weekPct != null
-    ? colorPct(weekPct, Math.round(weekPct) + "%") + (weekLeft ? gray(`(${weekLeft}↓)`) : "")
-    : gray("—");
-  const sessStr = sessPct != null
-    ? colorPct(sessPct, Math.round(sessPct) + "%") + (sessLeft ? gray(`(${sessLeft}↓)`) : "")
-    : gray("—");
-  lines.push(`${gray("week")} ${weekStr}   ${gray("session")} ${sessStr}`);
-
-  return lines;
-}
-
-/**
- * 박스 모드의 SUPPLY 섹션 라인을 만든다.
- * Line 1: 컨텍스트 사용률 + 누적 비용.
- * Line 2: 캐시 read/write 토큰 + hit rate.
- *
- * @param {object} input
- * @returns {string[]}
- */
-function renderSupply(input) {
-  const lines = [];
-  const ctx = input.context_window;
-  const cost = input.cost;
-
-  const ctxPct = ctx?.used_percentage;
-  const costUsd = cost?.total_cost_usd;
-  const ctxStr = ctxPct != null ? colorPct(ctxPct, ctxPct + "%") : gray("—");
-  const costStr = costUsd != null ? `${gray("~")}${white(formatCost(costUsd))}` : `${gray("~")}${gray("—")}`;
-  lines.push(`${gray("CTX")} ${ctxStr}   ${costStr}`);
-
-  const usage = ctx?.current_usage;
-  if (usage) {
-    const cacheRead = usage.cache_read_input_tokens ?? 0;
-    const cacheWrite = usage.cache_creation_input_tokens ?? 0;
-    const inputTk = usage.input_tokens ?? 0;
-    const total = cacheRead + cacheWrite + inputTk;
-    const hitRate = total > 0 ? Math.round((cacheRead / total) * 100) : 0;
-
-    const readStr = formatTokens(cacheRead);
-    const writeStr = formatTokens(cacheWrite);
-    const hitColor = hitRate >= 90 ? green : hitRate >= 50 ? yellow : red;
-
-    lines.push(
-      `${gray("캐시")} ${cyan(readStr + "r")} ${gray(writeStr + "w")}  ${gray("적중")} ${hitColor(hitRate + "%")}`
-    );
-  } else {
-    lines.push(`${gray("캐시")} ${gray("—")}`);
-  }
-
-  return lines;
-}
-
-/**
- * 박스 모드의 GIT 섹션 라인을 만든다.
- * 현재 브랜치와, 세션 파일에서 발견되는 워크트리 브랜치들을 나열한다.
+ * 현재 git 브랜치와 세션 파일에 기록된 워크트리 브랜치들을 한 줄로 반환한다.
  *
  * @param {string|undefined} sessionId
  * @returns {string[]}
@@ -377,29 +280,11 @@ function renderInline(input) {
 }
 
 // ---------------------------------------------------------------------------
-// 설정
-// ---------------------------------------------------------------------------
-
-/**
- * ~/.claude/statusline/config.json 을 읽는다. 없거나 파싱 실패면 빈 객체.
- *
- * @returns {object}
- */
-function readConfig() {
-  try {
-    const configPath = path.join(STATUSLINE_DATA, "config.json");
-    return JSON.parse(fs.readFileSync(configPath, "utf8"));
-  } catch {
-    return {};
-  }
-}
-
-// ---------------------------------------------------------------------------
 // 진입점
 // ---------------------------------------------------------------------------
 
 /**
- * stdin 을 읽고 설정에 따라 박스 모드 또는 인라인 모드로 stdout 출력한다.
+ * stdin 을 읽고 인라인 한 줄을 stdout 으로 출력한다.
  * 어떤 에러도 statusline 을 죽이지 않는다 — stderr 로 메시지를 남기고
  * "status: error" 한 줄을 출력해 Claude Code 가 정상적으로 화면을 갱신할 수
  * 있게 한다.
@@ -408,19 +293,7 @@ function main() {
   try {
     const rawInput = readStdin();
     const input = mergeWithCache(rawInput);
-    const config = readConfig();
-
-    let output;
-    if (config.mode === "inline") {
-      output = renderInline(input);
-    } else {
-      const core = renderCore(input);
-      const supply = renderSupply(input);
-      const git = renderGit(input.session_id);
-      output = buildBox({ core, supply, git, plugin: null });
-    }
-
-    process.stdout.write(output + "\n");
+    process.stdout.write(renderInline(input) + "\n");
   } catch (err) {
     process.stderr.write(`[status-line] ERROR: ${err?.message ?? err}\n`);
     process.stdout.write("status: error\n");

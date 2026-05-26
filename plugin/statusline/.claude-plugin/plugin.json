@@ -1,5 +1,5 @@
 {
   "name": "try-claude-code-statusline",
-  "version": "1.1.1",
-  "description": "Multi-line box UI status line for Claude Code"
+  "version": "1.2.0",
+  "description": "Inline status line for Claude Code"
 }
