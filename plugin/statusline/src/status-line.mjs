@@ -3,12 +3,12 @@
 /**
  * status-line.mjs
  *
- * Status line for Claude Code — box or inline mode.
+ * Claude Code 의 상태줄 — 박스 모드 또는 인라인 모드.
  *
- * Reads stdin JSON from Claude Code, external caches, and git state.
- * Outputs a box-drawn dashboard (default) or a compact 1-line string.
+ * Claude Code 가 주는 stdin JSON, 외부 캐시, git 상태를 읽어 박스형
+ * 대시보드(기본) 또는 1줄 압축 문자열을 출력한다.
  *
- * Box mode (default):
+ * 박스 모드(기본):
  * ┌─ CORE ──────────────────────┬─ SUPPLY ──────────────────────┐
  * │ opus-4-6[1m]   ⏱ 8m 41s     │ CTX 11%   ~$1.90             │
  * │ week 3%(2d14h↓) session 22%(3h12m↓) │ 캐시 110kr 488w 적중 99% │
@@ -16,7 +16,7 @@
  * │ main | task-A               │ gmail 7                       │
  * └─────────────────────────────┴───────────────────────────────┘
  *
- * Inline mode (~/.claude/statusline/config.json → {"mode":"inline"}):
+ * 인라인 모드(~/.claude/statusline/config.json → {"mode":"inline"}):
  * sonnet-4-6 │ ⏱50m │ CTX:13% ~$1.14 │ 5h:17%(3h12m↓) │ 7d:17%(2d14h↓) │ main
  */
 
@@ -40,7 +40,7 @@ import { readCache, isFresh, triggerRefreshIfStale } from "./lib/status-cache.mj
 import { readPermissionMode } from "./lib/permission-mode.mjs";
 
 // ---------------------------------------------------------------------------
-// Paths
+// 경로
 // ---------------------------------------------------------------------------
 
 const PLUGIN_DATA = path.join(
@@ -56,17 +56,18 @@ const COLLECT_SCRIPT = path.join(
   "gmail-collect.mjs"
 );
 
-// ---------------------------------------------------------------------------
-// Paths
-// ---------------------------------------------------------------------------
-
 const STATUSLINE_DATA = path.join(os.homedir(), ".claude", "statusline");
 const LAST_INPUT_CACHE = path.join(STATUSLINE_DATA, "cache", "_last_input.json");
 
 // ---------------------------------------------------------------------------
-// stdin + fallback cache
+// stdin + fallback 캐시
 // ---------------------------------------------------------------------------
 
+/**
+ * stdin 으로 들어온 JSON 을 파싱한다. 실패 시 빈 객체를 반환한다.
+ *
+ * @returns {object}
+ */
 function readStdin() {
   try {
     const raw = fs.readFileSync(0, "utf8").trim();
@@ -77,15 +78,18 @@ function readStdin() {
 }
 
 /**
- * Merge current stdin with cached previous input.
- * If rate_limits/context_window/cost are missing from current input,
- * fall back to the last known values.
+ * 현재 stdin 입력과 직전 캐시를 병합한다.
+ * 현재 입력에 rate_limits/context_window/cost 가 없으면 마지막으로 알려진
+ * 값으로 fallback 한다. 실제 데이터가 들어있는 경우에만 캐시를 갱신한다.
+ *
+ * @param {object} input - 이번에 받은 stdin 객체.
+ * @returns {object} 캐시와 병합된 입력 객체.
  */
 function mergeWithCache(input) {
   let cached = {};
   try {
     cached = JSON.parse(fs.readFileSync(LAST_INPUT_CACHE, "utf8"));
-  } catch { /* no cache yet */ }
+  } catch { /* 아직 캐시 없음 */ }
 
   const merged = { ...input };
   if (!merged.rate_limits && cached.rate_limits) merged.rate_limits = cached.rate_limits;
@@ -93,21 +97,28 @@ function mergeWithCache(input) {
   if (!merged.cost && cached.cost) merged.cost = cached.cost;
   if (!merged.model && cached.model) merged.model = cached.model;
 
-  // Save current input for next time (only if it has real data)
+  // 다음 호출을 위해 현재 입력을 저장한다(실제 데이터가 들어있을 때만).
   if (input.rate_limits || input.context_window) {
     try {
       fs.mkdirSync(path.dirname(LAST_INPUT_CACHE), { recursive: true });
       fs.writeFileSync(LAST_INPUT_CACHE, JSON.stringify(input), "utf8");
-    } catch { /* ignore */ }
+    } catch { /* 무시 */ }
   }
 
   return merged;
 }
 
 // ---------------------------------------------------------------------------
-// Format helpers
+// 포맷 헬퍼
 // ---------------------------------------------------------------------------
 
+/**
+ * Epoch(초) 시각까지 남은 시간을 사람이 읽기 좋은 문자열로 표시한다.
+ * 60분 미만은 "5m", 24시간 미만은 "3h12m", 그 이상은 "2d14h" 형태.
+ *
+ * @param {number|null|undefined} resetsAtSec - 리셋 시각(Unix epoch, 초).
+ * @returns {string|null}
+ */
 function formatTimeRemaining(resetsAtSec) {
   if (resetsAtSec == null) return null;
   const remainMs = resetsAtSec * 1000 - Date.now();
@@ -122,6 +133,12 @@ function formatTimeRemaining(resetsAtSec) {
   return h > 0 ? `${d}d${h}h` : `${d}d`;
 }
 
+/**
+ * 토큰 수를 짧게 표현한다. 1M 이상은 "1.2M", 1k 이상은 "12k", 그 외 그대로.
+ *
+ * @param {number|null|undefined} n
+ * @returns {string}
+ */
 function formatTokens(n) {
   if (n == null) return gray("—");
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
@@ -129,6 +146,12 @@ function formatTokens(n) {
   return String(n);
 }
 
+/**
+ * 밀리초 길이를 "Xh Ym" 또는 "Ym" 형태로 표현한다.
+ *
+ * @param {number|null|undefined} ms
+ * @returns {string}
+ */
 function formatDuration(ms) {
   if (ms == null) return gray("—");
   const totalMin = Math.floor(ms / 60_000);
@@ -140,6 +163,12 @@ function formatDuration(ms) {
   return `${totalMin}m`;
 }
 
+/**
+ * USD 비용을 짧게 표현한다. $10 이상은 1자리, 미만은 2자리 소수.
+ *
+ * @param {number|null|undefined} usd
+ * @returns {string}
+ */
 function formatCost(usd) {
   if (usd == null) return gray("—");
   if (usd >= 10) return `$${usd.toFixed(1)}`;
@@ -147,9 +176,12 @@ function formatCost(usd) {
 }
 
 /**
- * Color a permission mode label. Returns null when mode is unknown so
- * callers can skip rendering. `default` is greyed-out; other modes get a
- * color matching their risk profile.
+ * permission mode 레이블을 위험도에 따라 색상화한다. 알 수 없는 모드는
+ * null 을 반환해 호출자가 렌더링을 건너뛸 수 있게 한다. `default` 는
+ * 회색 처리한다.
+ *
+ * @param {string|null} mode
+ * @returns {string|null}
  */
 function formatPermissionMode(mode) {
   if (!mode) return null;
@@ -164,20 +196,26 @@ function formatPermissionMode(mode) {
 }
 
 // ---------------------------------------------------------------------------
-// Section renderers
+// 섹션 렌더러
 // ---------------------------------------------------------------------------
 
+/**
+ * 박스 모드의 CORE 섹션 라인을 만든다.
+ * Line 1: 모델 ID + permission mode 배지 + 누적 시간.
+ * Line 2: 7일/5시간 rate limit 사용률과 리셋까지 남은 시간.
+ *
+ * @param {object} input
+ * @returns {string[]}
+ */
 function renderCore(input) {
   const lines = [];
 
-  // Line 1: model [mode] + duration
   const modelId = input.model?.id ?? "unknown";
   const modeBadge = formatPermissionMode(readPermissionMode(input.transcript_path));
   const duration = formatDuration(input.cost?.total_duration_ms);
   const modelStr = modeBadge ? `${white(modelId)} ${modeBadge}` : white(modelId);
   lines.push(`${modelStr}   ${gray("⏱")} ${duration}`);
 
-  // Line 2: week% + session% with time-to-reset (always show, placeholder if missing)
   const weekPct = input.rate_limits?.seven_day?.used_percentage;
   const sessPct = input.rate_limits?.five_hour?.used_percentage;
   const weekLeft = formatTimeRemaining(input.rate_limits?.seven_day?.resets_at);
@@ -194,19 +232,25 @@ function renderCore(input) {
   return lines;
 }
 
+/**
+ * 박스 모드의 SUPPLY 섹션 라인을 만든다.
+ * Line 1: 컨텍스트 사용률 + 누적 비용.
+ * Line 2: 캐시 read/write 토큰 + hit rate.
+ *
+ * @param {object} input
+ * @returns {string[]}
+ */
 function renderSupply(input) {
   const lines = [];
   const ctx = input.context_window;
   const cost = input.cost;
 
-  // Line 1: CTX% + cost (always show)
   const ctxPct = ctx?.used_percentage;
   const costUsd = cost?.total_cost_usd;
   const ctxStr = ctxPct != null ? colorPct(ctxPct, ctxPct + "%") : gray("—");
   const costStr = costUsd != null ? `${gray("~")}${white(formatCost(costUsd))}` : `${gray("~")}${gray("—")}`;
   lines.push(`${gray("CTX")} ${ctxStr}   ${costStr}`);
 
-  // Line 2: cache tokens + hit rate (always show)
   const usage = ctx?.current_usage;
   if (usage) {
     const cacheRead = usage.cache_read_input_tokens ?? 0;
@@ -229,10 +273,17 @@ function renderSupply(input) {
   return lines;
 }
 
+/**
+ * 박스 모드의 GIT 섹션 라인을 만든다.
+ * 현재 브랜치와, 세션 파일에서 발견되는 워크트리 브랜치들을 나열한다.
+ *
+ * @param {string|undefined} sessionId
+ * @returns {string[]}
+ */
 function renderGit(sessionId) {
   const parts = [];
 
-  // Current branch
+  // 현재 브랜치
   try {
     const branch = execFileSync("git", ["branch", "--show-current"], {
       encoding: "utf8",
@@ -245,7 +296,7 @@ function renderGit(sessionId) {
     parts.push(gray("?"));
   }
 
-  // Worktree branches from session file
+  // 세션 파일의 워크트리 브랜치
   if (sessionId) {
     try {
       const sessFile = path.join(PLUGIN_DATA, "sessions", sessionId + ".json");
@@ -257,13 +308,20 @@ function renderGit(sessionId) {
         parts.push(cyan(b));
       }
     } catch {
-      // No session file or parse error — ignore
+      // 세션 파일이 없거나 파싱 실패 — 무시
     }
   }
 
   return [parts.join(` ${gray("|")} `)];
 }
 
+/**
+ * 박스 모드의 PLUGIN 섹션 라인을 만든다. 캐시가 비어있거나 에러면 해당
+ * 세그먼트를 숨긴다(`!` 같은 표시는 하지 않는다). 표시할 게 하나도 없으면
+ * null 을 반환해 호출자가 섹션 자체를 숨길 수 있게 한다.
+ *
+ * @returns {string[]|null}
+ */
 function renderPlugin() {
   const segments = [];
 
@@ -275,9 +333,9 @@ function renderPlugin() {
     const countStr = String(gmailCache.value);
     segments.push(`${gray("gmail")} ${colorCount(gmailCache.value, countStr)}`);
   }
-  // Error or no cache → hide (don't show !)
+  // 에러 또는 캐시 없음 → 숨김(! 표기 안 함)
 
-  // Future services can be added here in the same pattern:
+  // 같은 패턴으로 미래에 다른 서비스를 추가할 수 있다:
   // const tasksCache = readCache("tasks");
   // triggerRefreshIfStale("tasks", tasksCollectScript);
   // if (tasksCache && tasksCache.status === "ok" && tasksCache.value != null) { ... }
@@ -287,19 +345,25 @@ function renderPlugin() {
 }
 
 // ---------------------------------------------------------------------------
-// Inline (compact single-line) renderer
+// 인라인(단일 라인 압축) 렌더러
 // ---------------------------------------------------------------------------
 
+/**
+ * 인라인 모드의 1줄 출력을 만든다. 박스 모드의 핵심 지표만 순서대로 나열한다.
+ *
+ * @param {object} input
+ * @returns {string}
+ */
 function renderInline(input) {
   const parts = [];
 
-  // 1. Git branch / worktree (most important context)
+  // 1. Git branch / worktree (가장 중요한 컨텍스트)
   const gitLines = renderGit(input.session_id);
   if (gitLines.length > 0 && stripAnsi(gitLines[0]).trim()) {
     parts.push(gitLines[0]);
   }
 
-  // 2. 5h rate limit with time remaining
+  // 2. 5시간 rate limit + 남은 시간
   const sessPct = input.rate_limits?.five_hour?.used_percentage;
   const sessLeft = formatTimeRemaining(input.rate_limits?.five_hour?.resets_at);
   if (sessPct != null) {
@@ -308,7 +372,7 @@ function renderInline(input) {
     parts.push(`${gray("5h:")}${pctStr}${leftStr}`);
   }
 
-  // 3. 7d rate limit with time remaining
+  // 3. 7일 rate limit + 남은 시간
   const weekPct = input.rate_limits?.seven_day?.used_percentage;
   const weekLeft = formatTimeRemaining(input.rate_limits?.seven_day?.resets_at);
   if (weekPct != null) {
@@ -317,23 +381,23 @@ function renderInline(input) {
     parts.push(`${gray("7d:")}${pctStr}${leftStr}`);
   }
 
-  // 4. Model [mode]
+  // 4. 모델 + mode 배지
   const modelId = input.model?.id ?? "unknown";
   const modeBadge = formatPermissionMode(readPermissionMode(input.transcript_path));
   parts.push(modeBadge ? `${white(modelId)} ${modeBadge}` : white(modelId));
 
-  // 5. Duration
+  // 5. 누적 시간
   const duration = formatDuration(input.cost?.total_duration_ms);
   parts.push(`${gray("⏱")}${duration}`);
 
-  // 6. CTX + cost
+  // 6. 컨텍스트 사용률 + 누적 비용
   const ctxPct = input.context_window?.used_percentage;
   const costUsd = input.cost?.total_cost_usd;
   const ctxStr = ctxPct != null ? `${gray("CTX:")}${colorPct(ctxPct, ctxPct + "%")}` : `${gray("CTX:")}${gray("—")}`;
   const costStr = costUsd != null ? `${gray("~")}${white(formatCost(costUsd))}` : `${gray("~")}${gray("—")}`;
   parts.push(`${ctxStr} ${costStr}`);
 
-  // 7. Cache hit rate
+  // 7. 캐시 hit rate
   const usage = input.context_window?.current_usage;
   if (usage) {
     const cacheRead = usage.cache_read_input_tokens ?? 0;
@@ -345,7 +409,7 @@ function renderInline(input) {
     parts.push(`${gray("cache:")}${hitColor(hitRate + "%")}`);
   }
 
-  // 8. Plugin
+  // 8. 플러그인
   const plugin = renderPlugin();
   if (plugin && plugin.length > 0) {
     parts.push(plugin[0]);
@@ -355,9 +419,14 @@ function renderInline(input) {
 }
 
 // ---------------------------------------------------------------------------
-// Config
+// 설정
 // ---------------------------------------------------------------------------
 
+/**
+ * ~/.claude/statusline/config.json 을 읽는다. 없거나 파싱 실패면 빈 객체.
+ *
+ * @returns {object}
+ */
 function readConfig() {
   try {
     const configPath = path.join(STATUSLINE_DATA, "config.json");
@@ -368,9 +437,15 @@ function readConfig() {
 }
 
 // ---------------------------------------------------------------------------
-// Main
+// 진입점
 // ---------------------------------------------------------------------------
 
+/**
+ * stdin 을 읽고 설정에 따라 박스 모드 또는 인라인 모드로 stdout 출력한다.
+ * 어떤 에러도 statusline 을 죽이지 않는다 — stderr 로 메시지를 남기고
+ * "status: error" 한 줄을 출력해 Claude Code 가 정상적으로 화면을 갱신할 수
+ * 있게 한다.
+ */
 function main() {
   try {
     const rawInput = readStdin();

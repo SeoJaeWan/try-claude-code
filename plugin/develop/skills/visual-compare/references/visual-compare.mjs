@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 /**
- * visual-compare.mjs — Pixel-level image comparison using pixelmatch
+ * visual-compare.mjs — pixelmatch 를 이용한 픽셀 단위 이미지 비교.
  *
- * Usage: node visual-compare.mjs <reference.png> <current.png> [diff.png] [threshold]
+ * 사용법: node visual-compare.mjs <reference.png> <current.png> [diff.png] [threshold]
  *
- * threshold: 0-1 color sensitivity (lower = stricter). Default: 0.1
- * Output: JSON with mismatch stats + diff image file
+ * threshold: 0-1 색상 민감도(낮을수록 엄격). 기본값: 0.1
+ * 출력: mismatch 통계 JSON + diff 이미지 파일
  */
 
 import fs from "fs";
@@ -30,8 +30,13 @@ const width = Math.max(ref.width, cur.width);
 const height = Math.max(ref.height, cur.height);
 
 /**
- * Pad image to target dimensions with white background.
- * Allows comparison even when reference and current have different sizes.
+ * 이미지를 흰색 배경으로 패딩해 목표 크기에 맞춘다.
+ * reference 와 current 의 크기가 다를 때도 비교가 가능하게 한다.
+ *
+ * @param {PNG} img - 원본 이미지.
+ * @param {number} w - 목표 너비(픽셀).
+ * @param {number} h - 목표 높이(픽셀).
+ * @returns {PNG} 패딩된 이미지(크기가 같으면 원본을 그대로 반환).
  */
 function padImage(img, w, h) {
   if (img.width === w && img.height === h) return img;

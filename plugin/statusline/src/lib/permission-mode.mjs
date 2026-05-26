@@ -1,16 +1,16 @@
 /**
  * permission-mode.mjs
  *
- * Read the current session's permission mode from a transcript jsonl file.
+ * 트랜스크립트 jsonl 파일에서 현재 세션의 permission mode 를 읽는다.
  *
- * Claude Code does NOT expose the active permission mode through statusline
- * stdin. However, every transcript entry carries a `"permissionMode":"…"` key
- * with one of: "default", "plan", "auto" (acceptEdits), "bypassPermissions".
+ * Claude Code 는 statusline stdin 으로 활성 permission mode 를 노출하지
+ * 않는다. 다만 모든 트랜스크립트 엔트리는 `"permissionMode":"…"` 키를 가지며,
+ * 값은 "default", "plan", "auto"(acceptEdits), "bypassPermissions" 중 하나다.
  *
- * We tail the last ~32 KB of the transcript and pick the most recent value.
- * This avoids loading large jsonl files while remaining accurate — statusline
- * is re-triggered on permission mode changes, so the tail will already contain
- * the new value by the time we read.
+ * 트랜스크립트의 마지막 ~32 KB 만 tail 해서 가장 최근 값을 골라낸다. 큰
+ * jsonl 파일을 통째로 로드하지 않으면서도 정확도를 유지한다 — permission
+ * mode 가 바뀌면 statusline 이 재트리거되므로, 읽는 시점에 tail 영역에는
+ * 이미 새 값이 들어와 있다.
  */
 
 import fs from "node:fs";
@@ -19,10 +19,11 @@ const TAIL_BYTES = 32 * 1024;
 const MODE_REGEX = /"permissionMode"\s*:\s*"([^"]+)"/g;
 
 /**
- * Read the most recent permissionMode from a transcript jsonl file.
- * Returns null if the file is missing, empty, or contains no permissionMode entries.
+ * 트랜스크립트 jsonl 파일에서 가장 최근의 permissionMode 값을 읽는다.
+ * 파일이 없거나 비어 있거나 permissionMode 엔트리가 하나도 없으면 null 을
+ * 반환한다.
  *
- * @param {string|undefined} transcriptPath - absolute path to the .jsonl transcript
+ * @param {string|undefined} transcriptPath - .jsonl 트랜스크립트의 절대 경로.
  * @returns {string|null}
  */
 export function readPermissionMode(transcriptPath) {
@@ -52,7 +53,7 @@ export function readPermissionMode(transcriptPath) {
     return null;
   } finally {
     if (fd !== undefined) {
-      try { fs.closeSync(fd); } catch { /* ignore */ }
+      try { fs.closeSync(fd); } catch { /* 무시 */ }
     }
   }
 }

@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * extract_structure.mjs - Next.js routes and Prisma schema pre-extraction.
+ * extract_structure.mjs - Next.js 라우트와 Prisma 스키마 사전 추출.
  *
- * Reads changes.json (from output directory, default: codemaps/) and for each
- * changed/added file:
- *   - Detects Next.js page/layout/route files and extracts route from path
- *   - Detects Prisma schema files and parses model names and fields
+ * changes.json(출력 디렉터리, 기본값: codemaps/)을 읽어 변경/추가된 각 파일에
+ * 대해 다음을 수행한다:
+ *   - Next.js page/layout/route 파일 감지 + 경로에서 라우트 추출
+ *   - Prisma 스키마 파일 감지 + 모델명/필드 파싱
  *
- * Outputs extracted_structure.json to the output directory.
+ * 출력: 출력 디렉터리의 extracted_structure.json.
  *
- * Usage: node extract_structure.mjs [--output-dir <path>]
+ * 사용법: node extract_structure.mjs [--output-dir <path>]
  */
 
 import fs from "fs";
@@ -19,6 +19,12 @@ import { fileURLToPath } from "url";
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = process.cwd();
 
+/**
+ * CLI 인자 `--output-dir <path>` 를 파싱해 출력 디렉터리 절대 경로를 반환한다.
+ * 지정이 없으면 `${PROJECT_ROOT}/codemaps` 를 사용한다.
+ *
+ * @returns {string}
+ */
 function resolveOutputDir() {
   const idx = process.argv.indexOf("--output-dir");
   if (idx !== -1 && process.argv[idx + 1]) {
@@ -43,6 +49,11 @@ const NEXTJS_ROUTE_FILES = new Set([
   "route.js",
 ]);
 
+/**
+ * 현재 시각을 `YYYY-MM-DDTHH:MM:SS` 형식 문자열로 반환한다(로컬 시간).
+ *
+ * @returns {string}
+ */
 function nowTimestamp() {
   const d = new Date();
   const pad = (n) => String(n).padStart(2, "0");
@@ -51,6 +62,9 @@ function nowTimestamp() {
   )}:${pad(d.getSeconds())}`;
 }
 
+/**
+ * 입력이 없거나 에러로 중단된 경우의 fallback extracted_structure.json 을 기록한다.
+ */
 function writeEmptyStructure() {
   const empty = {
     nextjs_routes: [],
@@ -61,6 +75,11 @@ function writeEmptyStructure() {
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(empty, null, 2), "utf8");
 }
 
+/**
+ * detect_changes 가 생성한 changes.json 을 읽는다. 없거나 깨졌으면 null.
+ *
+ * @returns {object|null}
+ */
 function loadChanges() {
   if (!fs.existsSync(CHANGES_FILE)) {
     return null;
@@ -73,6 +92,13 @@ function loadChanges() {
   }
 }
 
+/**
+ * 파일 경로가 Next.js 라우트 파일인지(`app/` 또는 `pages/` 하위의
+ * page/layout/route 파일) 판정한다.
+ *
+ * @param {string} filePath
+ * @returns {boolean}
+ */
 function isNextjsFile(filePath) {
   const posixPath = filePath.split(path.sep).join("/");
   const parts = posixPath.split("/");
@@ -83,11 +109,26 @@ function isNextjsFile(filePath) {
   return parts.includes("app") || parts.includes("pages");
 }
 
+/**
+ * 파일이 Prisma 스키마(`schema.prisma`)인지 판정한다.
+ *
+ * @param {string} filePath
+ * @returns {boolean}
+ */
 function isPrismaSchema(filePath) {
   const filename = filePath.split(path.sep).join("/").split("/").pop() || "";
   return filename === "schema.prisma";
 }
 
+/**
+ * Next.js 파일 경로에서 라우트 문자열·타입(page/layout/route)을 추출한다.
+ * app/ 하위에서는 group(()로 감싸진 세그먼트)을 제거한다.
+ * pages/ 하위에서는 파일명 stem 을 라우트의 마지막 세그먼트로 사용하며,
+ * index 면 라우트에 포함하지 않는다.
+ *
+ * @param {string} filePath
+ * @returns {{route: string, file: string, type: string}|null}
+ */
 function extractNextjsRoute(filePath) {
   const posixPath = filePath.split(path.sep).join("/");
   const parts = posixPath.split("/");
@@ -126,6 +167,14 @@ function extractNextjsRoute(filePath) {
   return { route, file: posixPath, type: routeType };
 }
 
+/**
+ * Prisma 스키마 문자열에서 model 정의들을 파싱해 각 모델의 필드 이름 배열과
+ * 함께 반환한다. 주석/`@@` 블록/`@` 디렉티브는 필드로 취급하지 않는다.
+ *
+ * @param {string} content - schema.prisma 파일 내용.
+ * @param {string} filePath - 원본 경로(결과의 file 필드에 보존).
+ * @returns {Array<{model: string, fields: string[], file: string}>}
+ */
 function parsePrismaSchema(content, filePath) {
   const models = [];
   const lines = content.split(/\r?\n/);
@@ -173,6 +222,15 @@ function parsePrismaSchema(content, filePath) {
   return models;
 }
 
+/**
+ * 단일 파일을 처리한다. Next.js/Prisma 어느 카테고리에도 속하지 않으면
+ * 세 값 모두 null 을 반환한다. 처리 도중 예외가 발생하면 fallback 으로
+ * 분류한다.
+ *
+ * @param {string} filePath - PROJECT_ROOT 기준 상대 경로.
+ * @param {string} projectRoot
+ * @returns {[object|null, Array<object>|null, string|null]} [nextjsEntry, prismaEntries, fallback]
+ */
 function processFile(filePath, projectRoot) {
   if (isNextjsFile(filePath)) {
     try {
@@ -196,6 +254,10 @@ function processFile(filePath, projectRoot) {
   return [null, null, null];
 }
 
+/**
+ * 진입점. changes.json 을 읽어 변경/추가 파일을 처리한 뒤
+ * extracted_structure.json 을 기록한다.
+ */
 function main() {
   const changes = loadChanges();
   if (!changes) {
@@ -249,8 +311,7 @@ try {
   try {
     writeEmptyStructure();
   } catch {
-    // keep silent fallback behavior.
+    // silent fallback 유지.
   }
   process.exit(0);
 }
-

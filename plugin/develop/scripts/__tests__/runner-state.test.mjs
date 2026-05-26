@@ -12,9 +12,14 @@ import {
   setDevReviewPhase,
 } from "../lib/runner-state.mjs";
 
-// Plain-object fixture matching the slim plan-state schema. The runner skill
-// builds this in its Step 1 (no library helper anymore); these tests do the
-// same shape inline.
+/**
+ * 슬림 plan-state 스키마에 맞춘 평면 객체 픽스처. runner 스킬은 Step 1에서
+ * 같은 형태를 인라인으로 구성하므로(라이브러리 헬퍼 없음), 테스트도 같은
+ * 방식으로 만든다.
+ *
+ * @param {string} [slug="x"] - 픽스처에 사용할 plan_slug.
+ * @returns {object} plan-state 객체.
+ */
 function makeState(slug = "x") {
   return {
     plan_slug: slug,
@@ -28,7 +33,7 @@ function makeState(slug = "x") {
 }
 
 // ---------------------------------------------------------------------------
-// Persistence (atomic write round-trip)
+// 영속화 (원자적 쓰기 라운드트립)
 // ---------------------------------------------------------------------------
 
 describe("saveState / loadState", () => {
@@ -40,7 +45,7 @@ describe("saveState / loadState", () => {
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
   });
 
-  it("round-trips a state through disk", () => {
+  it("디스크 라운드트립이 정상 동작한다", () => {
     const state = makeState("rt");
     const file = path.join(tmpDir, "rt", ".runner-state.json");
     saveState(file, state);
@@ -52,14 +57,14 @@ describe("saveState / loadState", () => {
     assert.equal(loaded.dev_review.phase, null);
   });
 
-  it("creates parent directories on first save", () => {
+  it("최초 저장 시 부모 디렉터리를 생성한다", () => {
     const state = makeState("deep");
     const file = path.join(tmpDir, "a", "b", "c", "deep", ".runner-state.json");
     saveState(file, state);
     assert.equal(fs.existsSync(file), true);
   });
 
-  it("loadState throws on corrupt JSON", () => {
+  it("JSON이 손상된 경우 loadState가 예외를 던진다", () => {
     const state = makeState("corrupt");
     const file = path.join(tmpDir, "corrupt", ".runner-state.json");
     saveState(file, state);
@@ -67,9 +72,9 @@ describe("saveState / loadState", () => {
     assert.throws(() => loadState(file), /failed to parse JSON/);
   });
 
-  it("tolerates loading legacy schema files (extra fields ignored)", () => {
-    // A pre-removal state file with status/stop_review/etc still parses; the
-    // slim runner-state.mjs just ignores the extra fields.
+  it("레거시 스키마 파일을 로드해도 추가 필드는 무시한다", () => {
+    // status/stop_review 등이 남아 있던 옛 state 파일도 그대로 파싱된다.
+    // 슬림 runner-state.mjs 는 추가 필드를 단순히 무시한다.
     const file = path.join(tmpDir, "legacy", ".runner-state.json");
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, JSON.stringify({
@@ -91,11 +96,11 @@ describe("saveState / loadState", () => {
 });
 
 // ---------------------------------------------------------------------------
-// dev_review.phase mutators
+// dev_review.phase 변경자
 // ---------------------------------------------------------------------------
 
 describe("setDevReviewPhase", () => {
-  it("walks dev-review phase through every value", () => {
+  it("모든 phase 값을 차례로 적용한다", () => {
     const s = makeState();
     setDevReviewPhase(s, DEV_REVIEW_PHASE.AWAITING);
     assert.equal(s.dev_review.phase, DEV_REVIEW_PHASE.AWAITING);
@@ -108,25 +113,25 @@ describe("setDevReviewPhase", () => {
     assert.equal(s.dev_review.phase, null);
   });
 
-  it("rejects unknown phase values", () => {
+  it("알 수 없는 phase 값을 거부한다", () => {
     const s = makeState();
     assert.throws(() => setDevReviewPhase(s, "thinking"));
     assert.throws(() => setDevReviewPhase(s, "rework_pending"));
   });
 
-  it("allows arbitrary direction (no transition table — Stop hook race is gone)", () => {
+  it("전이 방향을 제한하지 않는다 (Stop 훅 경쟁 상태가 사라졌으므로 전이표 없음)", () => {
     const s = makeState();
     setDevReviewPhase(s, DEV_REVIEW_PHASE.AWAITING);
     setDevReviewPhase(s, DEV_REVIEW_PHASE.REWORK);
-    // REWORK → QA directly. The previous v2 transition table forbade this; the
-    // slim schema only validates the value, not the edge.
+    // REWORK → QA 직접 전이. 이전 v2 전이표에서는 금지였지만, 슬림 스키마는
+    // 값만 검증할 뿐 엣지를 검증하지 않는다.
     setDevReviewPhase(s, DEV_REVIEW_PHASE.QA);
     assert.equal(s.dev_review.phase, DEV_REVIEW_PHASE.QA);
   });
 });
 
 describe("setDevReviewFeedbackPath", () => {
-  it("stores feedback path on the state", () => {
+  it("state에 feedback 경로를 저장한다", () => {
     const s = makeState();
     setDevReviewFeedbackPath(s, "/p/x/dev-review/feedback.json");
     assert.equal(s.dev_review.last_feedback_path, "/p/x/dev-review/feedback.json");

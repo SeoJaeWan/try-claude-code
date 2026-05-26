@@ -20,6 +20,13 @@ after(() => {
   try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
 });
 
+/**
+ * 훅 스크립트를 자식 프로세스로 실행하고 stdin 으로 prompt/cwd JSON 을
+ * 전달한다. stdout 은 JSON 으로 파싱해 함께 반환한다.
+ *
+ * @param {{prompt: string, cwd?: string}} opts - 훅에 전달할 입력.
+ * @returns {{status: number, stdout: string, stderr: string, json: object|null}}
+ */
 function runHook({ prompt, cwd = tmpDir }) {
   const r = spawnSync(process.execPath, [HOOK], {
     input: JSON.stringify({ prompt, cwd }),
@@ -33,10 +40,22 @@ function runHook({ prompt, cwd = tmpDir }) {
   };
 }
 
+/**
+ * 문자열을 JSON 으로 안전하게 파싱한다. 실패하면 null 을 반환한다.
+ *
+ * @param {string} s - 파싱할 문자열.
+ * @returns {object|null}
+ */
 function safeJson(s) {
   try { return JSON.parse(s); } catch { return null; }
 }
 
+/**
+ * tmpDir 하위 상대 경로에 더미 plan 파일을 만들어 절대 경로를 반환한다.
+ *
+ * @param {string} rel - tmpDir 기준 상대 경로.
+ * @returns {string} 생성된 파일의 절대 경로.
+ */
 function writePlan(rel) {
   const abs = path.join(tmpDir, rel);
   fs.mkdirSync(path.dirname(abs), { recursive: true });
@@ -45,17 +64,17 @@ function writePlan(rel) {
 }
 
 // ---------------------------------------------------------------------------
-// trigger detection
+// 트리거 감지
 // ---------------------------------------------------------------------------
 
-describe("trigger detection", () => {
-  it("passes through silently when prompt is not /runner", () => {
+describe("트리거 감지", () => {
+  it("/runner 가 아닌 프롬프트는 조용히 통과시킨다", () => {
     const r = runHook({ prompt: "hello, please review my PR" });
     assert.equal(r.status, 0);
     assert.equal(r.stdout, "");
   });
 
-  it("passes through silently when prompt is empty", () => {
+  it("빈 프롬프트는 조용히 통과시킨다", () => {
     const r = runHook({ prompt: "" });
     assert.equal(r.status, 0);
     assert.equal(r.stdout, "");
@@ -63,23 +82,23 @@ describe("trigger detection", () => {
 });
 
 // ---------------------------------------------------------------------------
-// block on bad input
+// 잘못된 입력 차단
 // ---------------------------------------------------------------------------
 
-describe("block on bad input", () => {
-  it("blocks when /runner has no plan path argument", () => {
+describe("잘못된 입력 차단", () => {
+  it("/runner 에 plan 경로 인자가 없으면 차단한다", () => {
     const r = runHook({ prompt: "/runner" });
     assert.equal(r.json?.decision, "block");
     assert.match(r.json.reason, /경로 인자가 없습니다/);
   });
 
-  it("blocks when the plan file does not exist", () => {
+  it("plan 파일이 존재하지 않으면 차단한다", () => {
     const r = runHook({ prompt: "/runner plans/does-not-exist.plan.md" });
     assert.equal(r.json?.decision, "block");
     assert.match(r.json.reason, /찾을 수 없습니다/);
   });
 
-  it("blocks when the file name does not match .plan.md or plan.md", () => {
+  it("파일명이 .plan.md 또는 plan.md 가 아니면 차단한다", () => {
     counter += 1;
     const file = path.join(tmpDir, `notes-${counter}.md`);
     fs.writeFileSync(file, "not a plan");
@@ -90,11 +109,11 @@ describe("block on bad input", () => {
 });
 
 // ---------------------------------------------------------------------------
-// emit bootstrap context
+// 부트스트랩 컨텍스트 emit
 // ---------------------------------------------------------------------------
 
-describe("bootstrap context", () => {
-  it("emits plan_path for a valid <name>.plan.md", () => {
+describe("부트스트랩 컨텍스트", () => {
+  it("유효한 <name>.plan.md 경로에 대해 plan_path 를 emit 한다", () => {
     counter += 1;
     const abs = writePlan(`plans/p${counter}/login.plan.md`);
     const r = runHook({ prompt: `/runner plans/p${counter}/login.plan.md` });
@@ -104,7 +123,7 @@ describe("bootstrap context", () => {
     assert.match(ctx, new RegExp(`plan_path: ${abs.replace(/\\/g, "/")}$`));
   });
 
-  it("emits plan_path for a folder's plan.md", () => {
+  it("폴더의 plan.md 경로에 대해 plan_path 를 emit 한다", () => {
     counter += 1;
     const abs = writePlan(`plans/p${counter}/plan.md`);
     const r = runHook({ prompt: `/runner plans/p${counter}/plan.md` });
@@ -114,7 +133,7 @@ describe("bootstrap context", () => {
     assert.match(ctx, new RegExp(`plan_path: ${abs.replace(/\\/g, "/")}$`));
   });
 
-  it("handles a quoted plan path", () => {
+  it("따옴표로 감싼 plan 경로를 처리한다", () => {
     counter += 1;
     const abs = writePlan(`plans/p${counter}/quoted.plan.md`);
     const r = runHook({ prompt: `/runner "plans/p${counter}/quoted.plan.md"` });
@@ -123,7 +142,7 @@ describe("bootstrap context", () => {
     assert.match(ctx, new RegExp(`plan_path: ${abs.replace(/\\/g, "/")}$`));
   });
 
-  it("accepts an absolute plan path", () => {
+  it("절대 경로 plan 도 수용한다", () => {
     counter += 1;
     const abs = writePlan(`plans/p${counter}/abs.plan.md`);
     const r = runHook({ prompt: `/runner ${abs}` });
