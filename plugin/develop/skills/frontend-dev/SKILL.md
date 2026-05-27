@@ -65,7 +65,7 @@ This ensures you and the project are aligned. If you cannot find enough examples
 
 ## Implementation Steps
 
-1. Read plan from `plans/{task-name}/plan.md` (if present)
+1. Read plan from `plans/<slug>.plan.md` or `plans/<slug>/plan.md` (if present)
 2. Read `codemaps/frontend.md` (if present)
 3. **If the task references a Figma URL** — run the Figma integration workflow (see section below) before Convention Discovery
 4. **Run Convention Discovery** (above) — scan existing code for patterns

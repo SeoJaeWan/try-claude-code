@@ -40,7 +40,7 @@ Own work that does NOT belong to frontend-dev or backend-dev:
 
 ## Implementation Steps
 
-1. Read plan from `plans/{task-name}/plan.md`
+1. Read plan from `plans/<slug>.plan.md` or `plans/<slug>/plan.md`
 2. Read `codemaps/infra.md` (if present)
 3. Implement the required infrastructure changes
 4. Validate configuration syntax where possible (e.g., `docker compose config`, `nginx -t`, YAML lint)

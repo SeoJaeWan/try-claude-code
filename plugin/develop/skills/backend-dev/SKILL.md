@@ -64,7 +64,7 @@ error response format. If no pattern exists, use this as a baseline:
 
 ## Implementation Steps
 
-1. Read plan from `plans/{task-name}/plan.md` (if present)
+1. Read plan from `plans/<slug>.plan.md` or `plans/<slug>/plan.md` (if present)
 2. Read `codemaps/backend.md`, `codemaps/database.md` (if present)
 3. **Run Convention Discovery** (above) — scan existing code for patterns
 4. Implement the required logic, following discovered conventions exactly

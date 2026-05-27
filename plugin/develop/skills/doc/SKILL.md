@@ -10,7 +10,7 @@ CODEMAPS and HUMANMAPS auto-generation. Scans service code structure and generat
 </Purpose>
 
 <Instructions>
-# doc-update
+# doc
 
 Service code structure documentation (CODEMAPS + HUMANMAPS auto-generation).
 
@@ -104,7 +104,7 @@ codemaps/
 # Project Structure
 
 Generated: {Date}
-By: doc-update skill
+By: doc skill
 
 ## Overview
 - Stack: {Tech stack}
@@ -174,7 +174,7 @@ SHA256 hash-based change detection script.
 
 **Run:**
 ```bash
-node <plugin-root>/skills/doc-update/detect_changes.mjs
+node ${CLAUDE_SKILL_DIR}/detect_changes.mjs
 ```
 
 **Output:** `codemaps/changes.json`
@@ -203,7 +203,7 @@ Pre-extraction script for Next.js routes + Prisma schema.
 
 **Run:**
 ```bash
-node <plugin-root>/skills/doc-update/extract_structure.mjs
+node ${CLAUDE_SKILL_DIR}/extract_structure.mjs
 ```
 
 **Prerequisite:** `changes.json` must be generated first
