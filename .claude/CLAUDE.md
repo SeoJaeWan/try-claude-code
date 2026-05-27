@@ -5,7 +5,7 @@
 - 스킬 개발, 테스트, 실험을 위한 프로젝트
 
 ## 디렉토리 구조
-- `plugin/skills/` — 실행 가능한 스킬 (commit, pr, init-memory, backend-dev 등)
+- `plugin/skills/` — 실행 가능한 스킬 (commit, pr, backend-dev 등)
 - `.codex/skills/` — 계획/설계 스킬 (architect, brainstorm, plan-runner 등)
 
 ## 컨벤션

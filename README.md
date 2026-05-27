@@ -12,8 +12,6 @@ Claude Code용 실행 플러그인과 Codex용 planning stack을 함께 실험�
 - 구현 완료 후에는 `runner`가 `dev-review`를 호출해 commit 기반 구현 리뷰를 수행합니다. 이 리뷰의 아티팩트는 `plans/{task}/dev-review/`에 데이터만 저장하고, HTML/UI는 플러그인 내부에서 직접 서빙합니다.
 - `dev-review`는 `http://localhost:9797/review/{task}` 형태의 multi-review 서버를 재사용하며, commit step에서는 지원 가능한 앱에 대해 live preview iframe과 commit별 route override를 제공합니다.
 - plan wiki staging이 copy 방식이 아니라 link-only 방식으로 고정되었고, workspace planning root는 `./.codex/plan-wiki/sync/current`를 기준으로 잡습니다.
-- 실행 플러그인에 `session-restore`, `figma-parity`, `visual-compare`가 추가되거나 분리되었습니다.
-- Figma URL 비교는 structured parity audit로, 외부 이미지/URL 비교는 pixel diff로 명확히 역할을 나눴습니다.
 
 ## 현재 저장소 구조
 
@@ -47,9 +45,8 @@ scripts/                             # workspace/운영 보조 스크립트
 
 - 실행 오케스트레이션: `runner`, `session-restore`
 - 개발 도메인: `frontend-dev`, `backend-dev`, `general-dev`
-- 검증/리뷰: `dev-review`, `guard-e2e-test`, `figma-parity`, `visual-compare`
+- 검증/리뷰: `dev-review`
 - 작업 마감: `commit`, `pr`, `doc`
-- 환경 연결: `init-memory`
 
 여기에 대응하는 실행 agent도 같이 포함됩니다.
 
@@ -57,9 +54,6 @@ scripts/                             # workspace/운영 보조 스크립트
 - `backend-developer`
 - `general-developer`
 - `doc-updater`
-- `playwright-guard`
-- `figma-parity-auditor`
-- `visual-comparator`
 
 훅은 `plugin/develop/hooks/hooks.json`에 정의되어 있으며, 현재 다음 이벤트를 사용합니다.
 
@@ -129,17 +123,6 @@ SessionStart 훅이 `~/.claude/statusline/` 아래 파일을 자동 동기화하
 
 세션이 중간에 끊겨도 `session-restore`가 기존 git worktree를 현재 세션에 다시 등록할 수 있습니다.
 
-## 시각 검증 규칙
-
-README에 남겨둘 만한 현재 규칙은 이 정도입니다.
-
-- Figma URL 기반 비교: `figma-parity`
-  - Figma MCP에서 토큰, 컴포넌트 매핑, 구조, 타이포, spacing을 읽어 structured parity audit 수행
-  - PNG export나 pixelmatch를 쓰지 않음
-- 외부 이미지/URL 기반 비교: `visual-compare`
-  - `agent-browser` + `pixelmatch`로 스크린샷 diff 수행
-  - Figma URL은 여기로 보내지 않음
-
 ## 플랫폼 요구사항
 
 ### 공통
@@ -147,8 +130,6 @@ README에 남겨둘 만한 현재 규칙은 이 정도입니다.
 - Node.js 20 이상
 - Git 2.20 이상
 - Codex CLI 설치는 선택 사항이지만, stop-review gate와 일부 planning 흐름에서는 있으면 더 좋습니다.
-- `figma-parity`를 쓰려면 Figma MCP가 필요합니다.
-- UI 기반 QA/비교를 쓰려면 `agent-browser`가 필요합니다.
 
 ### Windows
 

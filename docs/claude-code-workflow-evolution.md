@@ -504,7 +504,7 @@ flowchart TD
     MAT["plan-tdd"]
     RUN["runner"]
     WT["task worktree<br/>phase commits + approvals"]
-    EXEC["frontend-dev / backend-dev / general-dev / doc / guard-e2e-test"]
+    EXEC["frontend-dev / backend-dev / general-dev / doc"]
     IMPDEVREV["implementation dev-review<br/>commit cards + live preview"]
     MERGE["user merge decision"]
 
@@ -542,17 +542,6 @@ flowchart TD
 
 commit step에서는 오른쪽 sticky panel에 live preview iframe이 붙는다. browser가 `GET /review/{slug}/api/preview/status`를 처음 polling할 때 dev-review server가 worktree의 package를 탐지하고, `scripts.dev`가 있으면 free port에 dev server를 lazy spawn한다. reviewer가 commit별 route input을 바꾸면 `feedback.json.preview_routes[short_sha]`에 저장되어 같은 round에서 유지된다.
 
-### 현재 시각 비교 요청 처리 단계
-
-시각 비교는 이제 한 가지가 아니라 두 가지로 분기된다.
-
-- Figma URL 기준 비교: `figma-parity`
-  - Figma MCP에서 토큰, 구조, 타이포, spacing을 읽어 structured parity audit 수행
-- 외부 이미지/URL 기준 비교: `visual-compare`
-  - `agent-browser`와 `pixelmatch`로 screenshot diff 수행
-
-즉 "디자인 비교"도 현재는 하나의 거친 skill이 아니라, reference source에 따라 서로 다른 계약을 가진 검증 스킬로 나뉜다.
-
 ### 현재 구조에서 문서와 코드의 역할 분리
 
 | 계층 | 역할 | 대표 파일 |
@@ -564,7 +553,6 @@ commit step에서는 오른쪽 sticky panel에 live preview iframe이 붙는다.
 | 역할 프롬프트 | 도메인별 agent 책임 정의 | `plugin/develop/agents/frontend-developer.md`, `plugin/develop/agents/backend-developer.md`, `plugin/develop/agents/general-developer.md` |
 | runtime hook 계층 | 세션 추적, /runner 부트스트랩 | `plugin/develop/hooks/hooks.json`, `plugin/develop/scripts/session-lifecycle-hook.mjs`, `plugin/develop/scripts/user-prompt-submit-hook.mjs` |
 | planning review / knowledge 계층 | planning developer review UI와 plan wiki 관리 | `.codex/tools/plan-review-browser-server.mjs`, `.codex/tools/plan-wiki-docs-server.mjs`, `.codex/skills/plan-wiki-setup/SKILL.md`, `.codex/skills/plan-wiki-ingest/SKILL.md`, `.codex/skills/plan-wiki-lint/SKILL.md`, `.codex/skills/plan-wiki-apply-feedback/SKILL.md` |
-| verification 계층 | visual parity, full-flow E2E | `plugin/develop/skills/figma-parity/SKILL.md`, `plugin/develop/skills/visual-compare/SKILL.md`, `plugin/develop/skills/guard-e2e-test/SKILL.md` |
 | statusline 계층 | 상태줄 bootstrap / sync / mode 전환 | `plugin/statusline/skills/statusline/SKILL.md`, `plugin/statusline/hooks/hooks.json` |
 
 ### 현재 구조의 가장 큰 차이
@@ -885,8 +873,6 @@ flowchart LR
 | 백엔드 구현 | `runner` 후 `backend-dev` | `plugin/develop/skills/backend-dev/SKILL.md`, `plugin/develop/agents/backend-developer.md` | `plan.md` + 기존 backend/database conventions | 실제 소스 변경, 필요 시 test/E2E 복사 |
 | infra / general | `runner` 후 `general-dev` | `plugin/develop/skills/general-dev/SKILL.md` | `plan.md` + infra config examples | CI/CD, Docker, env, deploy 변경 |
 | implementation review | `runner` Step 4 후 `dev-review` | `plugin/develop/skills/dev-review/SKILL.md`, `plugin/develop/skills/dev-review/scripts/server.mjs`, `plugin/develop/skills/dev-review/scripts/generate-review-data.mjs` | commit log + diff + plan signature + reviewer feedback + optional live preview | `plans/*/dev-review/review-data.json`, `feedback.json`, `review-history.json`, raw diffs |
-| full-flow E2E guard | plan phase 또는 구현 후 검증 | `plugin/develop/skills/guard-e2e-test/SKILL.md` | E2E conventions + user journey contract | Playwright guard spec |
-| visual parity | 시각 비교 요청 | `plugin/develop/skills/figma-parity/SKILL.md`, `plugin/develop/skills/visual-compare/SKILL.md` | Figma MCP 또는 external reference | parity report / diff artifacts |
 | 세션 / runtime 보조 | 세션 시작/종료, 복구 | `plugin/develop/hooks/hooks.json`, `plugin/develop/skills/session-restore/SKILL.md`, `plugin/statusline/skills/statusline/SKILL.md` | hook contract + local runtime state | restored worktree context, statusline sync |
 
 ---
@@ -931,8 +917,6 @@ flowchart LR
 - `plugin/develop/skills/backend-dev/SKILL.md`
 - `plugin/develop/skills/runner/SKILL.md`
 - `plugin/develop/skills/dev-review/SKILL.md`
-- `plugin/develop/skills/figma-parity/SKILL.md`
-- `plugin/develop/skills/visual-compare/SKILL.md`
 - `plugin/develop/skills/dev-review/references/ui-contract.md`
 - `plugin/develop/skills/dev-review/references/review-data-schema.md`
 - `plugin/develop/hooks/hooks.json`
