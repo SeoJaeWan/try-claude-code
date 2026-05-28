@@ -30,7 +30,8 @@ If the planning root is missing, stop and route to `plan-wiki-setup` instead of 
 ## Freshness Policy
 
 - `plan-wiki-setup` prepares or verifies `./.codex/plan-wiki/source`.
-- `orchestrator`, `plan-maker`, `brainstorm`, and `plan-review` consume `./.codex/plan-wiki/source/wiki` directly and do not perform per-run clone or fetch inside the planning workflow.
+- `orchestrator` may run one fast-forward pull preflight with `git -C .codex/plan-wiki/source pull --ff-only` before routing planning roles.
+- `plan-maker`, `brainstorm`, `plan-tdd`, and `plan-review` consume `./.codex/plan-wiki/source/wiki` directly and do not perform per-run clone, fetch, or pull inside the planning workflow.
 - Plan wiki maintenance skills may edit `./.codex/plan-wiki/source` and then report the nested repo Git status.
 - Commit and push are allowed only after explicit user approval.
 - Plan wiki commits must include only files changed by the current operation and must not absorb unrelated dirty files in `./.codex/plan-wiki/source`.
