@@ -31,7 +31,11 @@ Typical blocker signals:
 - UI-facing plans collapse separate shell, screen, component, or state/variant implementation judgment units into one broad preview in a way that would force implementation agents to infer component quality, route composition, or responsive behavior from unrelated context.
 - plans that name a finite component/repeated-UI target count do not expose matching component-preview coverage or an explicit excluded-unit rationale.
 - plans that introduce token, schema, registry, variant, or design-system value transformation through a function, mapper, adapter, or serializer do not provide a `function-contract` input/output harness or equivalent structured contract showing input, function/adapter, output recipient, and negative/no-op cases.
-- missing test-strategy decisions required by the active plan wiki decision policy when later verification would otherwise choose the gate.
+- missing current `tdd.md` for an implementation-scope plan, or `tdd.md` whose `plan_signature` does not match the reviewed plan.
+- missing plan row/scenario to test mapping in `tdd.md` for selected behavior, runtime lifecycle, policy, failure UI, no-op, recipient, or final-interpretation clauses.
+- missing manual smoke gate in `tdd.md` for selected plan clauses that are explicitly not automatable before implementation.
+- TDD reports `blocker_type = plan_contract` for a selected clause, or hides a TDD blocker behind a ready plan review.
+- missing test-strategy decisions required by the active plan wiki decision policy when TDD authoring would otherwise choose the gate.
 - missing first-time test runner, command, spec root or test-owner placement, source/test topology, mock/API fixture policy, browser storage/auth state policy, or expected red reason when the plan expects contract tests before the test environment exists.
 - plan count, local prerequisite relationship, authority artifact, reference-comparison, Figma parity, or Figma inventory provenance contradicts the active plan wiki contract.
 - Figma-first, external-reference, inventory, classification, or fixture authority is required for implementation or validation, but the plan moves that authority creation into an implementation phase instead of consuming a verified planning input artifact.
@@ -46,6 +50,7 @@ Use `major` when the plan is probably executable but materially raises rework ri
 Typical major signals:
 
 - validation exists but is too weak for the claimed boundary.
+- TDD mapping exists but the expected red reason, actual red result, or completion gate is too thin to tell valid red contract failure from malformed test/setup failure.
 - verification unit choice is plausible but thin or poorly justified.
 - UI-facing observability or identifier detail is likely derivable but not clearly locked.
 - UI preview evidence exists but its review points, phase mapping, or covered states are too thin for the reviewer to know what judgment the preview is meant to support.
@@ -78,7 +83,8 @@ Check the plan against:
 2. active plan wiki plan artifact contract.
 3. terminology policy for visible prose.
 4. repo-local execution contracts only when the plan makes concrete claims that depend on them.
-5. directly referenced local prerequisite plans only for one-hop parity.
+5. current `tdd.md` mapping completeness and blocker/manual smoke visibility.
+6. directly referenced local prerequisite plans only for one-hop parity.
 
 ## Review Artifact
 

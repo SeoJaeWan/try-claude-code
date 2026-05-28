@@ -1,11 +1,11 @@
 ---
 name: orchestrator
-description: Explicit planning orchestrator for requests that already have locked upstream scope and should run through the repository's architect/review loop. Use only when the user explicitly invokes `$orchestrator` or explicitly asks for automated planning orchestration after brainstorm/request-lock work is done; Codex should coordinate `architect` and fresh `plan-review` passes through skill-driven sub-agents until plans are planning-complete or blocked.
+description: Explicit planning orchestrator for requests that already have locked upstream scope and should run through the repository's architect/TDD/review loop. Use only when the user explicitly invokes `$orchestrator` or explicitly asks for automated planning orchestration after brainstorm/request-lock work is done; Codex should coordinate `architect`, `plan-tdd`, and fresh `plan-review` passes through skill-driven sub-agents until plans are planning-complete or blocked.
 ---
 
 # Orchestrator
 
-Run the repository's planning loop as a stateless, artifact-driven workflow with skill-driven `architect`, fresh `plan-review` passes, and explicit browser-based developer review before planning is complete. For implementation-scope plans, report `$plan-tdd` as the next required gate after approval.
+Run the repository's planning loop as a stateless, artifact-driven workflow with skill-driven `architect`, `plan-tdd`, fresh `plan-review` passes, and explicit browser-based developer review before planning is complete. For implementation-scope plans, TDD contract authoring happens before `plan-review`, so the reviewer and browser gate can judge `plan.md` and `tdd.md` together.
 
 Use this skill only for explicit planning orchestration requests after the user or prior context has locked request scope enough for planning. Do not use it as a replacement for `brainstorm`, request-scope locking, or UI direction locking.
 
@@ -26,9 +26,10 @@ Read these references in order for every orchestration run:
 - Recompute orchestration state from artifacts on every re-entry; do not rely on hidden state files or stale chat memory.
 - Keep orchestration helper state current-turn only and safely discardable.
 - Do not run or substitute for `brainstorm`; stop with a missing-decision blocker when the request is not locked enough for `architect`.
-- Always require fresh `plan-review` after architect revisions.
+- Always require fresh `plan-tdd` after architect revisions before `plan-review`.
+- Always require fresh `plan-review` after the current plan and TDD artifacts are available.
 - Always require explicit developer review approval after fresh `plan-review` and before reporting `planning_complete`.
-- When reporting `planning_complete` for implementation-scope plans, also state the next required gate is `$plan-tdd` against the approved plan.
+- When reporting `planning_complete` for implementation-scope plans, state that `tdd.md` has already been reviewed and the next step is implementation against the approved plan/TDD contract.
 - Treat blocked review findings as input to the next `architect` pass.
 - Orchestrate role sub-agents through concise handoff packets; do not ask them to rediscover controller-owned paths or signatures.
 - Report precise failure classifications from `references/contracts.md`.

@@ -1,10 +1,10 @@
 # Developer Review UI Contract
 
-Use this reference when `orchestrator` has a reviewed plan and must collect explicit developer approval before `plan-tdd`.
+Use this reference when `orchestrator` has a reviewed plan/TDD pair and must collect explicit developer approval before implementation.
 
 ## When to create
 
-Create or refresh the review data package after `plan-review` produces a fresh `ready` or `ready-with-findings` review for the current `plan_signature`, and before TDD.
+Create or refresh the review data package after `plan-tdd` writes current `tdd.md` and `plan-review` produces a fresh `ready` or `ready-with-findings` review for the current `plan_signature`.
 
 Do not create it for `blocked` reviews. Route blockers back to `architect`.
 
@@ -71,7 +71,7 @@ Required review targets are:
 - `overview`
 - every phase item, normally `P1`, `P2`, ...
 
-Topology, evidence artifacts, review findings, contracts, file impacts, validation, risks, and scope are **comment anchors** inside those targets. They are not separate required approval gates unless a future contract explicitly promotes them.
+Topology, evidence artifacts, review findings, file impacts, TDD mappings, manual smoke gates, TDD blockers, feedback handling, and scope are **comment anchors** inside those targets. They are not separate required approval gates unless a future contract explicitly promotes them.
 
 Each target shows:
 
@@ -83,25 +83,26 @@ Each target shows:
 
 ## review-data.json
 
-`review-data.json` is generated from `plan.md`, linked phase files, and `review.md`.
-It retains the user-readable `overview`, `phases`, topology, evidence, and review finding fields, and adds a flat `review_items[]` list for the browser.
+`review-data.json` is generated from `plan.md`, linked phase files, `tdd.md`, and `review.md`.
+It retains the user-readable `overview`, `phases`, topology, evidence, TDD summary, TDD mapping, and review finding fields, and adds a flat `review_items[]` list for the browser.
 
 Required top-level fields:
 
 ```json
 {
   "schema_version": 2,
-  "generator_contract_version": 1,
+  "generator_contract_version": 3,
   "task_slug": "task-slug",
   "plan_path": "plans/task-slug/plan.md",
   "plan_signature": "abc123",
   "review_outcome": "ready",
-  "post_approval_next_action": "plan-tdd",
-  "post_approval_next_label": "다음 단계: $plan-tdd",
-  "post_approval_next_summary": "리뷰가 승인되면 production code 구현 전에 승인된 plan.md 기준으로 source-tree TDD 계약 테스트와 tdd.md를 작성합니다.",
+  "post_approval_next_action": "implementation",
+  "post_approval_next_label": "다음 단계: 구현 실행",
+  "post_approval_next_summary": "리뷰가 승인되면 현재 plan.md와 tdd.md 검증 계약을 기준으로 production code 구현을 시작합니다.",
   "title": "Task title",
   "overview": {},
   "phases": [],
+  "tdd_summary": {},
   "topology_contract": [],
   "evidence_artifacts": [],
   "review_findings": [],
@@ -121,8 +122,9 @@ Review item shape:
   "review_item_signature": "rvw-1234abcd",
   "summary": "이 phase의 목표입니다.",
   "anchors": [
-    { "id": "contracts", "label": "계약", "kind": "contract" },
-    { "id": "file-impacts", "label": "파일 영향", "kind": "file-impact" }
+    { "id": "file-impacts", "label": "파일 영향", "kind": "file-impact" },
+    { "id": "test-mappings", "label": "Test 매핑", "kind": "test-mapping" },
+    { "id": "manual-smoke", "label": "Manual smoke", "kind": "manual-smoke" }
   ]
 }
 ```
@@ -131,37 +133,38 @@ Overview and every required phase item must have a stable `review_item_signature
 
 - Prefer generating `review_item_signature` from deterministic canonical JSON of user-visible review item content plus the global scope/contract context that changes the meaning of that item.
 - Include current Overview scope/contract fields in phase signatures so a scope change invalidates phase approvals even when phase prose did not change.
-- Include phase-linked structured contracts, topology, evidence, and developer-review feedback handling in phase signatures.
+- Include phase-linked topology, evidence, TDD mappings, manual smoke gates, TDD blockers, and developer-review feedback handling in phase signatures.
 - Do not include volatile fields such as timestamps, history, current feedback, or `review_item_signature` itself.
 - Treat target ids as routing ids only. Do not carry approval forward by `P2` alone.
 
-Phase objects may include structured review sections when the plan contains them:
+Phase objects expose compact plan/TDD review sections:
 
 ```json
 {
   "id": "P2",
   "goal": "이 phase에서 검토자가 판단해야 할 요약입니다.",
-  "changes": ["짧은 변경 요약"],
-  "structured_contracts": [
+  "file_impacts": ["파일 영향 요약"],
+  "test_mappings": [
     {
-      "kind": "db-schema",
-      "title": "DB schema 계약",
-      "rows": [
-        {
-          "table": "public.profiles",
-          "columns": "id uuid primary key ...",
-          "policy": "TO authenticated owner row only",
-          "excluded": "결제 정보 저장 없음"
-        }
-      ]
+      "id": "TM1",
+      "phase": "P2",
+      "plan_row": "P2-S1",
+      "scenario_id": "AUTH-401",
+      "test_id": "401이면 실패 안내와 retry가 보인다",
+      "test_file": "src/auth/AuthPanel.test.tsx",
+      "command": "npm test -- src/auth/AuthPanel.test.tsx",
+      "status": "expected-red",
+      "result": "구현 전 실패"
     }
   ],
+  "manual_smoke": [],
+  "tdd_blockers": [],
   "review_feedback": [
     {
       "round": "R1",
       "type": "needs-change",
       "target_id": "P2",
-      "anchor_id": "contracts",
+      "anchor_id": "test-mappings",
       "user_comment": "요청 요약",
       "resolution_summary": "처리 요약"
     }
@@ -169,7 +172,7 @@ Phase objects may include structured review sections when the plan contains them
 }
 ```
 
-Use structured contracts for dense schema, RLS, API, function, state-machine, or validation matrices. Do not split comma-separated field lists into separate `changes[]` bullets.
+Dense schema, RLS, API, function, state-machine, or validation details should appear only when they help explain the test mapping, manual smoke gate, or TDD blocker. Do not re-expand the browser phase view into the full plan document.
 
 ## Feedback model
 
@@ -188,9 +191,9 @@ Expected shape:
     {
       "id": "cm_001",
       "target_id": "P1",
-      "anchor_id": "contracts",
+      "anchor_id": "test-mappings",
       "type": "needs-change",
-      "body": "계약의 no-op 조건을 더 명확히 써주세요.",
+      "body": "실패 UI 계획 항목에 대응하는 test id가 빠졌습니다.",
       "created_at": "2026-04-23T00:00:00.000Z",
       "updated_at": "2026-04-23T00:00:00.000Z"
     }
@@ -252,7 +255,7 @@ Keep the existing history shape:
       "items": [
         {
           "target_id": "P2",
-          "anchor_id": "contracts",
+          "anchor_id": "test-mappings",
           "type": "needs-change",
           "user_comment": "검토자가 요청한 내용 요약",
           "triage_route": "plan_revision",
@@ -280,7 +283,7 @@ Read `feedback.json`.
 
 - If `plan_signature` differs from current plan signature, discard feedback and regenerate the package.
 - If `review_status` is not `submitted`, ask the user to submit the browser review first.
-- If every required review item is approved with matching `approved_against` evidence and there are no active `needs-change` or `question` comments, treat current `plan_signature` as explicitly approved and continue to `plan-tdd`.
+- If every required review item is approved with matching `approved_against` evidence and there are no active `needs-change` or `question` comments, treat current `plan_signature` and `tdd.md` as explicitly approved and continue toward implementation readiness.
 - If any required item is unapproved or any active non-approved comment exists, developer approval is absent and feedback triage is required.
 - Triage from the comment body, target id, anchor id, status type, and conflict with the locked request. Do not route from the raw type label alone.
 
@@ -295,7 +298,7 @@ Any change to `generator_contract_version` invalidates generated review data eve
 - Do not show raw `plan.md` or phase markdown as the default view.
 - Do not hide `plan-review` findings.
 - Do not treat evidence previews as implemented behavior.
-- Do not render dense schema/RLS/API/function details only as `changes[]` bullets when the plan provides a structured contract section.
+- Do not re-expand dense schema/RLS/API/function details unless they explain a visible test mapping, manual smoke gate, TDD blocker, or evidence artifact.
 - Do not treat a sidebar check as a generic read-check signal; it is an approval shortcut and must create or clear approval evidence.
 - Do not reintroduce a manual read-check gate. Use approval evidence and section comments as the review state.
 - Do not let `architect` reinterpret approved feedback. If feedback changes scope or direction, revise the plan and require fresh developer review.

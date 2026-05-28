@@ -166,16 +166,17 @@ affected_phase_paths: []
   assert.ok(raw.includes(Buffer.from("한글 리뷰 패키지", "utf8")));
 
   const reviewData = JSON.parse(raw.toString("utf8"));
-  assert.equal(reviewData.generator_contract_version, 2);
+  assert.equal(reviewData.generator_contract_version, 3);
   assert.equal(reviewData.title, "한글 리뷰 패키지");
-  assert.equal(reviewData.post_approval_next_action, "plan-tdd");
-  assert.equal(reviewData.post_approval_next_label, "다음 단계: $plan-tdd");
-  assert.match(reviewData.post_approval_next_summary, /TDD 계약 테스트/);
+  assert.equal(reviewData.post_approval_next_action, "implementation");
+  assert.equal(reviewData.post_approval_next_label, "다음 단계: 구현 실행");
+  assert.match(reviewData.post_approval_next_summary, /tdd\.md/);
   assert.equal(reviewData.overview.user_request[0], "한글이 깨지지 않는 review-data.json 생성");
   assert.equal(reviewData.phases[0].owner_agent, "general-developer");
   assert.ok(reviewData.phases[0].validation.includes("JSON 파싱으로 한글 문자열을 확인한다"));
   assert.ok(reviewData.phases[0].file_impacts.includes("커밋 경계: phase 1: generate review package"));
   assert.match(reviewData.phases[0].review_item_signature, /^rvw-/);
+  assert.equal(reviewData.tdd_summary.status, "missing");
   assert.deepEqual(reviewData.review_items.map((item) => item.id), ["overview", "P1"]);
   assert.ok(reviewData.review_items[0].anchors.some((anchor) => anchor.id === "scope"));
 
@@ -186,6 +187,149 @@ affected_phase_paths: []
   assert.deepEqual(feedback.item_status.P1, { approved: false });
   assert.deepEqual(feedback.comments, []);
   assert.equal(feedback.review_status, "in_progress");
+});
+
+/**
+ * tdd.md의 review용 표를 읽어 phase별 test/manual/blocker 검증 데이터를 생성하는지 확인한다.
+ */
+test("includes phase TDD mappings for compact plan review", () => {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "orchestrator-review-tdd-"));
+  const taskSlug = "tdd-review";
+  const planDir = path.join(repoRoot, "plans", taskSlug);
+  const phaseDir = path.join(planDir, "phases");
+  const reviewDir = path.join(repoRoot, "plans", "_orchestrator", "review", taskSlug);
+  fs.mkdirSync(phaseDir, { recursive: true });
+  fs.mkdirSync(reviewDir, { recursive: true });
+
+  fs.writeFileSync(path.join(planDir, "plan.md"), `# TDD review package
+
+## 요청과 범위
+
+| 항목 | 내용 |
+| --- | --- |
+| 사용자 요청 | plan row가 TDD 검증으로 번역됐는지 review에서 확인 |
+| 포함 범위 | tdd.md 검증 매핑 |
+| 제외 범위 | 구현 diff |
+| 완료 기준 | phase 화면에 test/manual/blocker가 보인다 |
+
+## 파일/폴더 구조 계약
+
+| 경로 | 종류 | 상태 | 소유 phase | 책임 | 근거 |
+| --- | --- | --- | --- | --- | --- |
+| \`src/scan.ts\` | source | create | P1 | scan 진입점 | plan row P1-SCAN |
+
+## 실행 흐름
+
+| Phase | 목적 | 주요 변경 | 완료 신호 | 검증 | 커밋 경계 | 상세 문서 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Phase 1 | scan lifecycle을 고정한다 | dynamic-page load 계약 | TDD red 계약 작성 | unit과 manual smoke | phase 1: scan | \`./phases/01-scan.md\` |
+
+## 개발자 리뷰 반영 내역
+
+| id | phase | round | type | target_id | user_comment | resolution_summary |
+| --- | --- | --- | --- | --- | --- | --- |
+| FB1 | P1 | R1 | needs-change | P1 | 실패 UI test가 필요하다 | TDD 매핑에 실패 UI test를 추가했다 |
+`, "utf8");
+
+  fs.writeFileSync(path.join(phaseDir, "01-scan.md"), `# Phase 1 - scan lifecycle
+
+- owner_agent: \`frontend-developer\`
+
+## 목표와 완료 신호
+
+| 항목 | 내용 |
+| --- | --- |
+| 목표 | dynamic-page page load와 실패 UI를 검증 계약으로 고정한다 |
+| 완료 신호 | TDD report가 plan row와 test를 연결한다 |
+
+## 파일 영향
+
+| 파일 | 작업 방식 | 완료 조건 |
+| --- | --- | --- |
+| \`src/scan.ts\` | 생성 | loadAsync 검증 owner |
+`, "utf8");
+
+  fs.writeFileSync(path.join(planDir, "tdd.md"), `---
+plan_path: plans/${taskSlug}/plan.md
+task_slug: ${taskSlug}
+plan_signature: tdd123
+outcome: completed
+gate_status: failed
+blocker_type: none
+blocker_code: none
+next_action: done
+resume_from: none
+tdd_signature: tddsig123
+requires_user_decision: false
+blocked_clause_ids: []
+affected_phase_paths: []
+---
+
+# TDD report
+
+## Plan review 검증 매핑
+
+| id | phase | plan row | phase 목적 | scenario_id | test id | test file | command | status | result | reason |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| TM1 | P1 | P1-SCAN | scan lifecycle | SCAN-LOAD | page.loadAsync 호출 전 children 접근은 실패한다 | tests/scan.test.ts | npm test -- tests/scan.test.ts | expected-red | loadAsync 미구현으로 실패 | runtime lifecycle 고정 |
+| TM2 | P1 | P1-FAIL-UI | 실패 UI | GITHUB-401 | 401이면 실패 박스와 retry가 보인다 | tests/AuthPanel.test.tsx | npm test -- tests/AuthPanel.test.tsx | expected-red | 실패 UI 미구현으로 실패 | 실패 분기 고정 |
+
+## Manual smoke 필요 항목
+
+| id | phase | plan row | 항목 | 확인 방식 | required | status | result | reason |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| MS1 | P1 | P1-FIGMA-RUNTIME | Figma desktop scan 클릭 | plugin sandbox에서 scan 버튼 클릭 | required | pending | 구현 전 확인 불가 | Figma desktop 런타임 필요 |
+
+## TDD blocker
+
+| id | phase | plan row | blocker_type | blocker_code | 설명 | next_action |
+| --- | --- | --- | --- | --- | --- | --- |
+| TB1 | P1 | P1-NETWORK | plan_contract | network_access_missing | networkAccess 정책이 plan에 명시되지 않았다 | plan_revision |
+`, "utf8");
+
+  fs.writeFileSync(path.join(reviewDir, "review.md"), `---
+plan_path: plans/${taskSlug}/plan.md
+task_slug: ${taskSlug}
+plan_signature: tdd123
+outcome: ready
+next_action: developer_review
+finding_signature: none
+requires_user_decision: false
+issue_codes: []
+affected_phase_paths: []
+---
+
+# plan-review
+
+## Findings
+`, "utf8");
+
+  const result = spawnSync(process.execPath, [
+    scriptPath,
+    "--task-slug", taskSlug,
+    "--plan-signature", "tdd123",
+    "--now", "2026-05-28T00:00:00.000Z"
+  ], {
+    cwd: repoRoot,
+    encoding: "utf8"
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  const reviewData = JSON.parse(fs.readFileSync(path.join(planDir, "developer-review", "review-data.json"), "utf8"));
+  assert.equal(reviewData.tdd_summary.available, true);
+  assert.equal(reviewData.tdd_summary.gate_status, "failed");
+  assert.equal(reviewData.tdd_summary.tdd_signature, "tddsig123");
+  assert.equal(reviewData.phases[0].test_mappings.length, 2);
+  assert.equal(reviewData.phases[0].manual_smoke[0].id, "MS1");
+  assert.equal(reviewData.phases[0].tdd_blockers[0].blocker_code, "network_access_missing");
+  assert.equal(reviewData.phases[0].review_feedback[0].resolution_summary, "TDD 매핑에 실패 UI test를 추가했다");
+
+  const phaseAnchors = reviewData.review_items.find((item) => item.id === "P1").anchors.map((anchor) => anchor.id);
+  assert.ok(phaseAnchors.includes("test-mappings"));
+  assert.ok(phaseAnchors.includes("manual-smoke"));
+  assert.ok(phaseAnchors.includes("tdd-blockers"));
+  assert.equal(phaseAnchors.includes("contracts"), false);
+  assert.equal(phaseAnchors.includes("validation"), false);
 });
 
 /**

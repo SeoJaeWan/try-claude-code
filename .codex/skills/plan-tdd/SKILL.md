@@ -5,7 +5,7 @@ description: Create or update source-tree TDD contract tests across unit, Compon
 
 # Plan TDD
 
-Turn an executable plan artifact into source-tree tests and a plan-local TDD report without touching production code.
+Turn an executable plan artifact into source-tree tests and a plan-local TDD report without touching production code. The report must be readable by `plan-review`, including fixed sections that map plan rows/scenarios to tests, manual smoke gates, and blockers.
 
 ## Required Reading
 

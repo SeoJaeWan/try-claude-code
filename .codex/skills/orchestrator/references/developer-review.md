@@ -8,33 +8,35 @@
 
 ## Step 5. Developer Review Gate
 
-Always require explicit browser-based developer review before TDD.
+Always require explicit browser-based developer review after `plan-tdd` and fresh `plan-review`.
 
 At the gate:
 
 - Read `./references/developer-review-ui.md`.
 - Create or refresh `./plans/{task-slug}/developer-review/` for current `plan_signature`.
 - Do not copy `./assets/developer-review/index.html` into the plan folder; the shared server serves the fixed HTML app from `.codex`.
-- Generate `review-data.json` from current `plan.md`, linked phase detail files, and fresh `review.md`.
+- Generate `review-data.json` from current `plan.md`, linked phase detail files, current `tdd.md`, and fresh `review.md`.
 - Parse `plan.md` `## 파일/폴더 구조 계약` and `## 체험 산출물` tables into `review-data.json.topology_contract` and `review-data.json.evidence_artifacts`.
+- Parse `tdd.md` plan-review sections into `review-data.json.tdd_summary`, phase `test_mappings`, `manual_smoke`, and `tdd_blockers`.
 - Validate every evidence `경로` as a relative `evidence/**` path under the plan folder, copy it to `plans/{task-slug}/developer-review/assets/evidence/**`, and expose only the copied asset path in review data.
 - Treat `ui-preview` evidence as browser developer review 검토자의 판단 자료. The package must expose the copied HTML/CSS preview and its review points, but must not decide whether the reviewer should approve the preview.
 - Create or refresh `review-history.json` for current `task-slug` and `plan_signature`.
 - Ensure `review-data.json.review_items[]` contains `overview` and every required Phase target with a stable `review_item_signature`; include global scope/contract context in phase signatures so scope changes invalidate affected approvals.
-- Include topology and evidence metadata in review item signatures so changes to phase-linked paths, responsibilities, input/output harnesses, or evidence content invalidate stale approval.
+- Include topology, evidence, and TDD mapping metadata in review item signatures so changes to phase-linked paths, responsibilities, input/output harnesses, evidence content, test mappings, manual smoke gates, or TDD blockers invalidate stale approval.
 - Include a `generator_contract_version` in `review-data.json`. When the generator/UI contract changes, stale packages with an older or missing version must be regenerated even if `plan_signature` is unchanged.
 - Ensure `review-data.json` is user-readable and not a raw markdown dump:
   - Overview shows the user's request, planner understanding, included scope, excluded scope, change shape, major changes, risks, and review findings.
-  - Each phase step shows only that phase's goal, changes, contracts, structured contracts, file impact, topology, evidence artifacts, validation, risks, developer-review feedback handling, UI plan preview when applicable, and phase `owner_agent` when known.
-  - Keep phase `goal` as a readable judgment summary, not a long list of fields or paths. Dense schema, RLS, API, function, or state-machine details must be promoted into a structured phase section instead of being split into one-line `changes[]` items.
-  - Parse known structured plan sections such as `## DB schema 계약` into phase-linked structured data when present. The browser review should render these as tables, not as a flat bullet list.
+  - Each phase step shows only that phase's goal, file impact, topology, plan row/scenario to test mapping, TDD execution state, manual smoke gates, TDD blockers, evidence artifacts, developer-review feedback handling, UI plan preview when applicable, and phase `owner_agent` when known.
+  - Keep phase `goal` as a readable judgment summary, not a long list of fields or paths.
+  - Dense schema, RLS, API, function, or state-machine details should remain in the plan unless they explain a visible test mapping, manual smoke gate, TDD blocker, or evidence artifact.
   - Parse `## 개발자 리뷰 반영 내역` into phase-linked feedback handling data when present. Include it in phase signatures so changes to how review feedback was handled invalidate stale approval.
   - Preserve `owner_agent` from the phase detail artifact.
   - UI preview and evidence artifacts are plan-level judgment material only; do not imply functional implementation exists.
   - Evidence artifacts are planning-only HTML/CSS/JS projections. Do not imply real API, DB, filesystem, live dev-server, React build, or production stack execution exists.
   - Surface `ui-preview` evidence prominently enough that the browser reviewer can inspect it before approving or requesting plan revision.
+  - Surface TDD mappings prominently enough that the reviewer can see which plan rows were converted into source-tree tests, narrow execution commands, expected red results, or manual smoke gates.
   - `Previous`, `Next`, and direct step navigation reset visible review content to the top of the current step.
-- Ensure `review-data.json` includes the post-approval next gate fields so the browser review can tell the user that approved implementation-scope plans proceed to `$plan-tdd` before production implementation.
+- Ensure `review-data.json` includes the post-approval next action fields so the browser review can tell the user that approved implementation-scope plans proceed to implementation against the approved `plan.md` and `tdd.md`.
 - Ensure the developer review package exposes historical rounds and controller action summaries from `review-history.json`.
 - Initialize or refresh `feedback.json` for current `plan_signature` with schema v2 and `review_status = in_progress`:
   - on the first review, initialize `comments: []` and `item_status` entries for every required review item
@@ -51,14 +53,14 @@ At the gate:
   1. Run `node .codex/tools/start-plan-review-browser-server.mjs --task-slug {task-slug} --plan-signature {plan_signature}` from the repository root.
   2. The launcher must health-check existing compatible servers, start `.codex/tools/plan-review-browser-server.mjs` as a detached background process when needed, skip foreign processes on occupied ports, choose an alternate port when needed, and print `plan_review_browser_url=...`.
   3. Treat a non-zero launcher exit as a developer-review gate blocker and report the exact command output.
-- Tell the user in Korean: the server is running in the background, open the printed `plan_review_browser_url`, review the left-sidebar targets, add section comments if needed, press Submit, then say `review complete` in chat. Also say the browser review shows the next gate after approval.
+- Tell the user in Korean: the server is running in the background, open the printed `plan_review_browser_url`, review the left-sidebar targets, add section comments if needed, press Submit, then say `review complete` in chat. Also say the browser review shows the next implementation action after approval.
 - Do not create `user-gate.md`.
 
 When the user says `review complete`, read `feedback.json`:
 
 - if `task_slug` or `plan_signature` differs from current plan state, regenerate the package and require review again
 - if `review_status` is not `submitted`, ask the user to submit the browser review first
-- if every required review item is approved with current `approved_against` evidence and there are no active `needs-change` or `question` comments, treat current `plan_signature` as explicitly approved and continue to Step 7 before TDD
+- if every required review item is approved with current `approved_against` evidence and there are no active `needs-change` or `question` comments, treat current `plan_signature` and `tdd.md` as explicitly approved and continue to Step 7
 - if any required review item is not approved or any active non-approved comment exists, run Step 6 before choosing the next role pass
 
 ## Step 6. Triage Developer Review Feedback
@@ -112,4 +114,4 @@ Follow `./references/developer-review-learning.md`.
 
 - Run after a submitted browser review round has been preserved in `review-history.json` and either approved or triaged.
 - Treat learning capture as non-blocking unless it corrupts authoritative developer review artifacts.
-- Do not block developer review approval, TDD, or plan revision only because learning capture cannot be promoted into plan wiki rules.
+- Do not block developer review approval, implementation readiness, or plan revision only because learning capture cannot be promoted into plan wiki rules.

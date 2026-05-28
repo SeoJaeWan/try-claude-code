@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * plan.md와 plan-review 산출물을 browser developer review package로 변환하는 생성기.
+ * plan.md, tdd.md, plan-review 산출물을 browser developer review package로 변환하는 생성기.
  *
  * 출력은 `review-data.json`, `feedback.json`, `review-history.json`이며,
  * orchestrator의 developer review 서버가 이 파일들을 그대로 읽는다.
@@ -24,7 +24,7 @@ const SCHEMA_VERSION = 2;
  *
  * @type {number}
  */
-const GENERATOR_CONTRACT_VERSION = 2;
+const GENERATOR_CONTRACT_VERSION = 3;
 
 /**
  * CLI 진입점.
@@ -84,11 +84,14 @@ export function generateDeveloperReviewPackage(options) {
     .filter((filePath, index, all) => all.indexOf(filePath) === index);
   const phaseTexts = new Map(phaseFiles.map((filePath) => [filePath, readRequiredUtf8(filePath, "phase detail")]));
   const reviewText = readRequiredUtf8(reviewPath, "review");
+  const tddPath = path.join(path.dirname(planPath), "tdd.md");
+  const tddText = fs.existsSync(tddPath) ? readRequiredUtf8(tddPath, "tdd") : "";
 
   const sourceTexts = [
     { filePath: planPath, label: "plan", text: planText },
     ...Array.from(phaseTexts.entries()).map(([filePath, text]) => ({ filePath, label: "phase detail", text })),
-    { filePath: reviewPath, label: "review", text: reviewText }
+    { filePath: reviewPath, label: "review", text: reviewText },
+    ...(tddText ? [{ filePath: tddPath, label: "tdd", text: tddText }] : [])
   ];
   assertNoLossySourceText(sourceTexts, options.allowLossyQuestionMarks);
 
@@ -105,6 +108,7 @@ export function generateDeveloperReviewPackage(options) {
     error.exitCode = 3;
     throw error;
   }
+  const tddData = parseTddReport({ repoRoot, planPath, tddPath, tddText, planSignature });
 
   ensureDir(outDir);
   const reviewData = buildReviewData({
@@ -116,6 +120,7 @@ export function generateDeveloperReviewPackage(options) {
     phaseRefs,
     phaseTexts,
     reviewMeta,
+    tddData,
     planSignature
   });
 
@@ -278,10 +283,11 @@ function suspiciousQuestionMarkLines(text) {
  * @param {object[]} input.phaseRefs phase 참조 목록.
  * @param {Map<string, string>} input.phaseTexts phase detail 경로와 내용 map.
  * @param {object} input.reviewMeta review.md metadata.
+ * @param {object} input.tddData tdd.md에서 추출한 review용 검증 데이터.
  * @param {string} input.planSignature 현재 plan signature.
  * @returns {object} review-data.json에 기록할 모델.
  */
-function buildReviewData({ repoRoot, taskSlug, outDir, planPath, planText, phaseRefs, phaseTexts, reviewMeta, planSignature }) {
+function buildReviewData({ repoRoot, taskSlug, outDir, planPath, planText, phaseRefs, phaseTexts, reviewMeta, tddData, planSignature }) {
   const title = firstHeading(planText) || taskSlug;
   const requestScope = parseKeyValueTable(section(planText, "요청과 범위"));
   const changeShapeSection = section(planText, "변경 형상");
@@ -324,7 +330,9 @@ function buildReviewData({ repoRoot, taskSlug, outDir, planPath, planText, phase
     flowRow: executionRows[index] || {},
     planDir: path.dirname(planPath),
     topologyContract,
-    evidenceArtifacts
+    evidenceArtifacts,
+    tddData,
+    reviewFeedbackRows: buildReviewFeedbackRows(planText)
   }));
 
   const reviewData = {
@@ -334,12 +342,13 @@ function buildReviewData({ repoRoot, taskSlug, outDir, planPath, planText, phase
     plan_path: toPosix(path.relative(repoRoot, planPath)),
     plan_signature: planSignature,
     review_outcome: reviewMeta.outcome || "ready",
-    post_approval_next_action: "plan-tdd",
-    post_approval_next_label: "다음 단계: $plan-tdd",
-    post_approval_next_summary: "리뷰가 승인되면 production code 구현 전에 승인된 plan.md 기준으로 source-tree TDD 계약 테스트와 tdd.md를 작성합니다.",
+    post_approval_next_action: "implementation",
+    post_approval_next_label: "다음 단계: 구현 실행",
+    post_approval_next_summary: "리뷰가 승인되면 현재 plan.md와 tdd.md 검증 계약을 기준으로 production code 구현을 시작합니다.",
     title,
     overview,
     phases,
+    tdd_summary: tddData.summary,
     topology_contract: topologyContract,
     evidence_artifacts: evidenceArtifacts,
     review_findings: reviewMeta.findings
@@ -379,6 +388,7 @@ function buildReviewItems(reviewData) {
         anchor("change-flow", "실행 흐름", "section", reviewData.overview.change_flow),
         anchor("major-changes", "주요 변경점", "section", reviewData.overview.major_changes),
         anchor("risks", "핵심 리스크", "section", reviewData.overview.risks),
+        anchor("tdd-summary", "TDD 검증 요약", "tdd-summary", reviewData.tdd_summary),
         anchor("topology", "파일/폴더 구조 계약", "topology", reviewData.topology_contract),
         anchor("evidence", "체험 산출물", "evidence", reviewData.evidence_artifacts),
         anchor("findings", "Plan review findings", "finding", reviewData.review_findings)
@@ -394,13 +404,14 @@ function buildReviewItems(reviewData) {
       summary: phase.goal || "",
       anchors: compactAnchors([
         anchor("goal", "목표", "section", phase.goal),
-        anchor("changes", "변경 내용", "section", phase.changes),
-        anchor("contracts", "계약", "contract", phase.contracts),
         anchor("file-impacts", "파일 영향", "file-impact", phase.file_impacts),
-        anchor("validation", "검증", "validation", phase.validation),
-        anchor("risks", "리스크 / 주의점", "risk", phase.risks),
         anchor("topology", "파일/폴더 구조 계약", "topology", phase.topology_contract),
-        anchor("evidence", "체험 산출물", "evidence", phase.evidence_artifacts)
+        anchor("test-mappings", "Test 매핑", "test-mapping", phase.test_mappings),
+        anchor("tdd-status", "TDD 실행 상태", "tdd-status", phase.tdd_status),
+        anchor("manual-smoke", "Manual smoke", "manual-smoke", phase.manual_smoke),
+        anchor("tdd-blockers", "TDD blocker", "tdd-blocker", phase.tdd_blockers),
+        anchor("evidence", "체험 산출물", "evidence", phase.evidence_artifacts),
+        anchor("review-feedback", "피드백 반영 내역", "review-feedback", phase.review_feedback)
       ])
     }))
   ];
@@ -456,9 +467,11 @@ function hasReviewContent(value) {
  * @param {object} input.flowRow plan 실행 흐름 표의 해당 행.
  * @param {object[]} [input.topologyContract=[]] 전체 topology contract 목록.
  * @param {object[]} [input.evidenceArtifacts=[]] 전체 evidence artifact 목록.
+ * @param {object} [input.tddData] tdd.md에서 추출한 검증 데이터.
+ * @param {object[]} [input.reviewFeedbackRows=[]] developer review feedback 처리 행.
  * @returns {object} review-data의 phase 모델.
  */
-function buildPhase({ ref, index, phaseText, flowRow, topologyContract = [], evidenceArtifacts = [] }) {
+function buildPhase({ ref, index, phaseText, flowRow, topologyContract = [], evidenceArtifacts = [], tddData = null, reviewFeedbackRows = [] }) {
   const id = `P${index + 1}`;
   const detailTitle = phaseText ? firstHeading(phaseText) : "";
   const title = stripPhasePrefix(detailTitle || ref.title || flowRow["Phase"] || `Phase ${index + 1}`);
@@ -489,6 +502,11 @@ function buildPhase({ ref, index, phaseText, flowRow, topologyContract = [], evi
     ...fileRows.map((row) => tableRowSummary(row, ["파일", "작업 방식", "완료 조건"]))
   ].filter(Boolean);
 
+  const phaseId = id;
+  const testMappings = phaseItems(tddData?.test_mappings, phaseId);
+  const manualSmoke = phaseItems(tddData?.manual_smoke, phaseId);
+  const tddBlockers = phaseItems(tddData?.blockers, phaseId);
+
   return {
     id,
     title,
@@ -500,9 +518,230 @@ function buildPhase({ ref, index, phaseText, flowRow, topologyContract = [], evi
     validation,
     risks: riskRows.map((row) => tableRowSummary(row, ["리스크", "failure/validation", "대응"])),
     ui_previews: [],
+    tdd_status: buildPhaseTddStatus(tddData?.summary, testMappings, manualSmoke, tddBlockers),
+    test_mappings: testMappings,
+    manual_smoke: manualSmoke,
+    tdd_blockers: tddBlockers,
     topology_contract: topologyContract.filter((item) => itemMatchesPhase(item.phase, id)),
-    evidence_artifacts: evidenceArtifacts.filter((item) => itemMatchesPhase(item.phase, id))
+    evidence_artifacts: evidenceArtifacts.filter((item) => itemMatchesPhase(item.phase, id)),
+    review_feedback: phaseItems(reviewFeedbackRows, phaseId)
   };
+}
+
+/**
+ * tdd.md의 review용 고정 표를 읽어 phase별 검증 데이터로 변환한다.
+ *
+ * @param {object} input TDD report 입력.
+ * @param {string} input.repoRoot repository root.
+ * @param {string} input.planPath plan.md 절대 경로.
+ * @param {string} input.tddPath tdd.md 절대 경로.
+ * @param {string} input.tddText tdd.md 내용. 없으면 빈 문자열.
+ * @param {string} input.planSignature 현재 plan signature.
+ * @returns {{ summary: object, test_mappings: object[], manual_smoke: object[], blockers: object[] }} review용 TDD 데이터.
+ */
+function parseTddReport({ repoRoot, planPath, tddPath, tddText, planSignature }) {
+  if (!tddText) {
+    return {
+      summary: {
+        available: false,
+        path: toPosix(path.relative(repoRoot, tddPath)),
+        status: "missing",
+        note: "plan review 전에 tdd.md가 아직 생성되지 않았습니다."
+      },
+      test_mappings: [],
+      manual_smoke: [],
+      blockers: []
+    };
+  }
+
+  const frontmatter = parseFrontmatter(tddText);
+  const tddPlanSignature = stringValue(frontmatter.get("plan_signature"));
+  if (tddPlanSignature && tddPlanSignature !== planSignature) {
+    const error = new Error(
+      `tdd.md plan_signature ${tddPlanSignature} does not match current plan_signature ${planSignature}`
+    );
+    error.exitCode = 3;
+    throw error;
+  }
+
+  const tddSignature = stringValue(frontmatter.get("tdd_signature")) || computeTextSignature(tddPath, tddText);
+  const summary = {
+    available: true,
+    path: toPosix(path.relative(repoRoot, tddPath)),
+    plan_path: toPosix(path.relative(repoRoot, planPath)),
+    plan_signature: tddPlanSignature || planSignature,
+    tdd_signature: tddSignature,
+    outcome: stringValue(frontmatter.get("outcome")) || "unknown",
+    gate_status: stringValue(frontmatter.get("gate_status")) || "unknown",
+    blocker_type: stringValue(frontmatter.get("blocker_type")) || "none",
+    blocker_code: stringValue(frontmatter.get("blocker_code")) || "none",
+    next_action: stringValue(frontmatter.get("next_action")) || "",
+    resume_from: stringValue(frontmatter.get("resume_from")) || "",
+    requires_user_decision: frontmatter.get("requires_user_decision") === true,
+    blocked_clause_ids: asArray(frontmatter.get("blocked_clause_ids")).map(stripMarkdown)
+  };
+
+  return {
+    summary,
+    test_mappings: parseTddTestMappings(tddText),
+    manual_smoke: parseTddManualSmoke(tddText),
+    blockers: parseTddBlockers(tddText, summary)
+  };
+}
+
+/**
+ * tdd.md의 plan row -> test 매핑 표를 읽는다.
+ *
+ * @param {string} tddText tdd.md 내용.
+ * @returns {object[]} test mapping 행.
+ */
+function parseTddTestMappings(tddText) {
+  return parseFirstTable(firstSectionByHeadings(tddText, [
+    "Plan review 검증 매핑",
+    "plan review 검증 매핑",
+    "검증 매핑",
+    "테스트 매핑"
+  ])).rows.map((row, index) => ({
+    id: stripMarkdown(row["id"] || row["ID"] || `TM${index + 1}`),
+    phase: normalizePhaseRef(row["phase"] || row["Phase"] || row["단계"] || ""),
+    plan_row: stripMarkdown(row["plan row"] || row["plan_row"] || row["계획 행"] || row["계획 항목"] || ""),
+    phase_purpose: stripMarkdown(row["phase 목적"] || row["phase purpose"] || row["목적"] || ""),
+    scenario_id: stripMarkdown(row["scenario_id"] || row["scenario id"] || row["시나리오 id"] || ""),
+    test_id: stripMarkdown(row["test id"] || row["test_id"] || row["테스트 id"] || ""),
+    test_file: stripMarkdown(row["test file"] || row["test_file"] || row["대상 파일"] || row["파일"] || ""),
+    command: stripMarkdown(row["command"] || row["명령"] || ""),
+    status: stripMarkdown(row["status"] || row["상태"] || ""),
+    result: stripMarkdown(row["result"] || row["결과"] || ""),
+    reason: stripMarkdown(row["reason"] || row["이유"] || "")
+  })).filter((row) => row.test_id || row.test_file || row.plan_row || row.scenario_id);
+}
+
+/**
+ * tdd.md의 manual smoke 표를 읽는다.
+ *
+ * @param {string} tddText tdd.md 내용.
+ * @returns {object[]} manual smoke 행.
+ */
+function parseTddManualSmoke(tddText) {
+  return parseFirstTable(firstSectionByHeadings(tddText, [
+    "Manual smoke 필요 항목",
+    "manual smoke 필요 항목",
+    "수동 확인 항목",
+    "수동 smoke 항목"
+  ])).rows.map((row, index) => ({
+    id: stripMarkdown(row["id"] || row["ID"] || `MS${index + 1}`),
+    phase: normalizePhaseRef(row["phase"] || row["Phase"] || row["단계"] || ""),
+    plan_row: stripMarkdown(row["plan row"] || row["plan_row"] || row["계획 행"] || row["계획 항목"] || ""),
+    item: stripMarkdown(row["항목"] || row["item"] || ""),
+    method: stripMarkdown(row["확인 방식"] || row["method"] || ""),
+    required: stripMarkdown(row["required"] || row["필수 여부"] || "required"),
+    status: stripMarkdown(row["status"] || row["상태"] || ""),
+    result: stripMarkdown(row["result"] || row["결과"] || ""),
+    reason: stripMarkdown(row["reason"] || row["이유"] || "")
+  })).filter((row) => row.item || row.method || row.plan_row);
+}
+
+/**
+ * tdd.md의 blocker 표를 읽는다.
+ *
+ * @param {string} tddText tdd.md 내용.
+ * @param {object} summary TDD summary frontmatter.
+ * @returns {object[]} blocker 행.
+ */
+function parseTddBlockers(tddText, summary) {
+  const rows = parseFirstTable(firstSectionByHeadings(tddText, [
+    "TDD blocker",
+    "TDD blockers",
+    "TDD 차단 항목",
+    "차단 항목"
+  ])).rows.map((row, index) => ({
+    id: stripMarkdown(row["id"] || row["ID"] || `TB${index + 1}`),
+    phase: normalizePhaseRef(row["phase"] || row["Phase"] || row["단계"] || ""),
+    plan_row: stripMarkdown(row["plan row"] || row["plan_row"] || row["계획 행"] || row["계획 항목"] || ""),
+    blocker_type: stripMarkdown(row["blocker_type"] || row["blocker type"] || row["유형"] || summary.blocker_type || ""),
+    blocker_code: stripMarkdown(row["blocker_code"] || row["blocker code"] || row["코드"] || summary.blocker_code || ""),
+    description: stripMarkdown(row["설명"] || row["description"] || row["내용"] || ""),
+    next_action: stripMarkdown(row["next_action"] || row["next action"] || row["다음 조치"] || summary.next_action || "")
+  })).filter((row) => row.description || row.plan_row || row.blocker_type);
+
+  if (rows.length || summary.blocker_type === "none") return rows;
+  return [{
+    id: "TB1",
+    phase: "",
+    plan_row: "",
+    blocker_type: summary.blocker_type,
+    blocker_code: summary.blocker_code,
+    description: "tdd.md frontmatter가 차단 상태를 보고했지만 상세 표가 없습니다.",
+    next_action: summary.next_action
+  }];
+}
+
+/**
+ * plan.md의 developer review feedback 처리 표를 phase별 review 데이터로 변환한다.
+ *
+ * @param {string} planText plan.md 내용.
+ * @returns {object[]} feedback handling 행.
+ */
+function buildReviewFeedbackRows(planText) {
+  return parseFirstTable(section(planText, "개발자 리뷰 반영 내역")).rows
+    .map((row, index) => ({
+      id: stripMarkdown(row["id"] || row["ID"] || `FB${index + 1}`),
+      phase: normalizePhaseRef(row["phase"] || row["Phase"] || row["단계"] || ""),
+      round: stripMarkdown(row["round"] || row["라운드"] || ""),
+      type: stripMarkdown(row["type"] || row["유형"] || ""),
+      target_id: stripMarkdown(row["target_id"] || row["target id"] || row["대상"] || ""),
+      user_comment: stripMarkdown(row["user_comment"] || row["user comment"] || row["요청"] || row["피드백"] || ""),
+      resolution_summary: stripMarkdown(row["resolution_summary"] || row["resolution summary"] || row["반영 결과"] || "")
+    }))
+    .filter((row) => row.user_comment || row.resolution_summary || row.target_id);
+}
+
+/**
+ * phase id가 일치하거나 전체 대상인 행만 고른다.
+ *
+ * @param {object[] | undefined} rows 후보 행.
+ * @param {string} phaseId phase id.
+ * @returns {object[]} phase에 속한 행.
+ */
+function phaseItems(rows, phaseId) {
+  return asArray(rows).filter((row) => itemMatchesPhase(row?.phase || "", phaseId));
+}
+
+/**
+ * phase TDD 상태 요약을 만든다.
+ *
+ * @param {object | undefined} summary TDD summary.
+ * @param {object[]} testMappings phase test mapping.
+ * @param {object[]} manualSmoke phase manual smoke.
+ * @param {object[]} blockers phase blockers.
+ * @returns {object} phase TDD 상태.
+ */
+function buildPhaseTddStatus(summary = {}, testMappings = [], manualSmoke = [], blockers = []) {
+  return {
+    available: summary.available === true,
+    outcome: summary.outcome || summary.status || "missing",
+    gate_status: summary.gate_status || "unknown",
+    blocker_type: summary.blocker_type || "none",
+    blocker_code: summary.blocker_code || "none",
+    test_count: testMappings.length,
+    manual_smoke_count: manualSmoke.length,
+    blocker_count: blockers.length
+  };
+}
+
+/**
+ * 여러 heading 후보 중 첫 번째로 발견되는 section 본문을 반환한다.
+ *
+ * @param {string} text Markdown text.
+ * @param {string[]} headings heading 후보.
+ * @returns {string} section 본문 또는 빈 문자열.
+ */
+function firstSectionByHeadings(text, headings) {
+  for (const heading of headings) {
+    const found = sectionAtAnyLevel(text, heading);
+    if (found) return found;
+  }
+  return "";
 }
 
 /**
@@ -1156,6 +1395,21 @@ function computePlanSignature(inputs) {
 }
 
 /**
+ * 단일 text artifact의 signature를 계산한다.
+ *
+ * @param {string} filePath artifact 경로.
+ * @param {string} text artifact 내용.
+ * @returns {string} 12자리 SHA-256 prefix.
+ */
+function computeTextSignature(filePath, text) {
+  const hash = crypto.createHash("sha256");
+  hash.update(toPosix(filePath));
+  hash.update("\n");
+  hash.update(text || "");
+  return hash.digest("hex").slice(0, 12);
+}
+
+/**
  * 값을 배열로 정규화한다.
  *
  * @param {unknown} value 배열 또는 단일 값.
@@ -1227,6 +1481,7 @@ function reviewGlobalContext(model) {
       change_shape: overview.change_shape || "",
       change_flow: asArray(overview.change_flow),
       major_changes: asArray(overview.major_changes),
+      tdd_summary: model?.tdd_summary || {},
       topology_contract: asArray(model?.topology_contract),
       evidence_artifacts: asArray(model?.evidence_artifacts)
     }
@@ -1258,6 +1513,7 @@ function overviewSignaturePayload(model) {
       major_changes: asArray(overview.major_changes),
       risks: asArray(overview.risks),
       ui_previews: asArray(overview.ui_previews),
+      tdd_summary: model?.tdd_summary || {},
       topology_contract: asArray(overview.topology_contract),
       evidence_artifacts: asArray(overview.evidence_artifacts)
     }
@@ -1288,8 +1544,13 @@ function phaseSignaturePayload(model, phase, index) {
       validation: asArray(phase?.validation),
       risks: asArray(phase?.risks),
       ui_previews: asArray(phase?.ui_previews),
+      tdd_status: phase?.tdd_status || {},
+      test_mappings: asArray(phase?.test_mappings),
+      manual_smoke: asArray(phase?.manual_smoke),
+      tdd_blockers: asArray(phase?.tdd_blockers),
       topology_contract: asArray(phase?.topology_contract),
-      evidence_artifacts: asArray(phase?.evidence_artifacts)
+      evidence_artifacts: asArray(phase?.evidence_artifacts),
+      review_feedback: asArray(phase?.review_feedback)
     }
   };
 }

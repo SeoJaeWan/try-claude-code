@@ -324,6 +324,47 @@ Include:
 - whether the actual red result matches the expected red reason
 - completion gate: the exact test, command, or execution check that must pass when the plan is complete
 
+Also include these fixed sections for plan review and browser review. Keep the headings literal so tooling can parse them:
+
+```markdown
+## Plan review 검증 매핑
+
+| id | phase | plan row | phase 목적 | scenario_id | test id | test file | command | status | result | reason |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+```
+
+- `phase`: `P1`, `P2`, or `all`.
+- `plan row`: the plan row, clause id, or concise row label being covered.
+- `phase 목적`: why this row belongs to the phase.
+- `scenario_id`: preserve the exact scenario id when present.
+- `test id`: behavior-example test name or execution check label.
+- `test file`: source-tree test file or `n/a` for a pure execution command.
+- `command`: targeted run command or completion gate command.
+- `status`: `expected-red`, `passed`, `failed`, `not-run`, `blocked`, or `skip`.
+- `result`: actual red/green/not-run result when known.
+- `reason`: why this test/check is the right owner for the plan row.
+
+```markdown
+## Manual smoke 필요 항목
+
+| id | phase | plan row | 항목 | 확인 방식 | required | status | result | reason |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+```
+
+- Use this only when a selected plan clause cannot be automated realistically before implementation.
+- `status` should be `pending`, `confirmed`, `not-run`, or `blocked`.
+- A manual row must still name the plan row and the concrete observation the reviewer or implementer must perform.
+
+```markdown
+## TDD blocker
+
+| id | phase | plan row | blocker_type | blocker_code | 설명 | next_action |
+| --- | --- | --- | --- | --- | --- | --- |
+```
+
+- Include every selected clause that could not be mapped to a source-tree test, narrow command, or manual smoke gate.
+- If no blockers remain, write the heading and table header with no data rows.
+
 Frontmatter rules:
 
 - `outcome`: `completed` | `blocked`
@@ -345,6 +386,7 @@ Frontmatter rules:
 ### Step 11. Verify before completion
 
 - Every selected clause from `output`, `constraint`, `failure-validation`, and `validation` has an owner test, an execution command, or an explicit blocker
+- Every selected clause from `output`, `constraint`, `failure-validation`, and `validation` appears in `## Plan review 검증 매핑`, `## Manual smoke 필요 항목`, or `## TDD blocker`
 - Every selected `시나리오 / 계약` row has an owner test, an execution command, or an explicit blocker, and the report preserves its `scenario_id`
 - Every selected test-expressible clause has explicit source-tree test coverage or an explicit blocker
 - Every new or updated source-tree test has a behavior-example name that exposes the condition/action/result without relying on `tdd.md`

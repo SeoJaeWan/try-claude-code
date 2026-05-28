@@ -21,10 +21,13 @@
 - Read only selected pattern files whose `적용 조건` actually match the reviewed plan file.
 - Read the active plan wiki `core/common/용어-정책.md` before drafting findings.
 
-### Step 1. Load the plan
+### Step 1. Load the plan and TDD report
 
 - Review one executable plan file at a time.
 - Load the target plan file from disk and parse only its YAML frontmatter enough to confirm `plan_slug`, `branch`, and `owner_agent` are present.
+- When implementation scope applies, load adjacent `tdd.md` or the orchestrator-provided `tdd_path` before judging readiness.
+- Confirm `tdd.md` frontmatter `plan_path` and `plan_signature` match the reviewed plan when those keys are present.
+- Treat missing, stale, or contradictory `tdd.md` as a review blocker for implementation-scope plans because browser review must see plan row to test/manual/blocker mapping.
 - Do not load linked phase detail files as part of the current contract. Legacy phase detail paths are evidence only when the task explicitly targets legacy migration or review.
 - Derive user-request items from the latest user request, upstream request-lock handoff, and the reviewed plan.
 - Treat the plan file, active plan wiki guidance, and user request as the source of truth.
@@ -49,6 +52,7 @@ Judge the plan against:
 
 - active plan wiki core docs and selected patterns.
 - active plan wiki plan artifact contract.
+- current `tdd.md` plan row/scenario to test mapping, manual smoke gates, TDD blockers, expected red reasons, actual red results when validation was attempted, and completion gates.
 - required YAML frontmatter and valid `owner_agent` routing.
 - plan self-containment for one execution agent.
 - implementation-scope phase readiness: a `## 실행 흐름` section with reviewable Phase entries, completion signals, validation, and commit boundaries when the work is not a trivial single-step change.
@@ -61,6 +65,8 @@ Judge the plan against:
 - planning-only evidence artifacts: UI/API/backend/utility/function evidence referenced by the plan should live under `evidence/**`, map to the stated phase and input/output/state/function/recipient contract, and avoid production-code or live-server implications. For UI scope, check that HTML/CSS preview evidence is present and connected when the plan relies on browser developer review judgment; do not approve or reject the preview on behalf of the reviewer. Also check whether shell, screen, component, and state/variant evidence are separated when they are separate implementation judgment units, whether finite component/repeated-UI target counts have matching preview coverage or explicit exclusions, and whether token/schema/registry/variant transformations have `function-contract` input-output harnesses instead of only visual preview.
 - first-time test runner, command, spec root, source/test topology, mock/API fixture policy, storage/auth state policy, and expected red reason when implementation-first setup does not already exist.
 - verification realism and readiness.
+- plan/TDD traceability: every selected plan row or scenario that changes behavior, runtime lifecycle, policy, UI failure state, no-op rule, recipient, or final interpretation has a source-tree test, a narrow execution command, an explicit TDD blocker, or a manual smoke gate when automation is not realistic.
+- TDD subset loss: rows that remain only in plan prose but are absent from `tdd.md` mapping or manual smoke must be treated as findings rather than silently accepted.
 - UI direction completeness when UI scope exists.
 - reference-based visual comparison, Figma parity, or Figma inventory provenance when in scope.
 
@@ -103,7 +109,7 @@ Rules:
 - compute signatures from the current plan and finding set when not provided.
 - set `requires_user_decision: true` only when a fresh user decision is required.
 - set `next_action: plan_revision` for `blocked`; otherwise `planning_complete`.
-- `planning_complete` here means cold-review complete. The orchestrator must still require developer review approval for implementation-scope plans before final orchestration completion.
+- `planning_complete` here means cold-review complete for the current plan/TDD pair. The orchestrator must still require browser developer review approval for implementation-scope plans before final orchestration completion.
 
 ### Step 7. Respond in chat
 

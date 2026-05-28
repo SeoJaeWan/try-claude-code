@@ -921,6 +921,7 @@
         { id: "change-shape", label: "변경 형상", html: `<p>${esc(overview.change_shape || "")}</p>${smallList("실행 흐름", overview.change_flow)}` },
         { id: "major-changes", label: "주요 변경점", html: list(overview.major_changes) },
         { id: "risks", label: "핵심 리스크", html: list(overview.risks) },
+        { id: "tdd-summary", label: "TDD 검증 요약", html: tddSummaryBlock(state.model.tdd_summary) },
         { id: "topology", label: "파일/폴더 구조 계약", html: topologyTable(overview.topology_contract || state.model.topology_contract) },
         { id: "evidence", label: "체험 산출물", html: evidenceBlock(overview.evidence_artifacts || state.model.evidence_artifacts) },
         { id: "findings", label: "Plan review findings", html: list(state.model.review_findings) }
@@ -932,13 +933,14 @@
       const phase = asArray(state.model.phases).find((item) => item.id === id) || {};
       const sections = [
         { id: "goal", label: "목표", html: `<p>${esc(phase.goal || "")}</p>` },
-        { id: "changes", label: "변경 내용", html: list(phase.changes) },
-        { id: "contracts", label: "계약", html: list(phase.contracts) },
         { id: "file-impacts", label: "파일 영향", html: list(phase.file_impacts) },
-        { id: "validation", label: "검증", html: list(phase.validation) },
-        { id: "risks", label: "리스크 / 주의점", html: list(phase.risks) },
         { id: "topology", label: "파일/폴더 구조 계약", html: topologyTable(phase.topology_contract) },
-        { id: "evidence", label: "체험 산출물", html: evidenceBlock(phase.evidence_artifacts) }
+        { id: "test-mappings", label: "Test 매핑", html: testMappingTable(phase.test_mappings) },
+        { id: "tdd-status", label: "TDD 실행 상태", html: tddStatusBlock(phase.tdd_status) },
+        { id: "manual-smoke", label: "Manual smoke", html: manualSmokeTable(phase.manual_smoke) },
+        { id: "tdd-blockers", label: "TDD blocker", html: tddBlockerTable(phase.tdd_blockers) },
+        { id: "evidence", label: "체험 산출물", html: evidenceBlock(phase.evidence_artifacts) },
+        { id: "review-feedback", label: "피드백 반영 내역", html: reviewFeedbackTable(phase.review_feedback) }
       ];
       return sections.filter((section) => section.html && !/class="empty"/.test(section.html));
     }
@@ -968,6 +970,118 @@
                 <td>${esc(row.status || "")}</td>
                 <td>${esc(row.phase || "")}</td>
                 <td>${esc(row.responsibility || "")}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function tddSummaryBlock(summary) {
+      if (!summary || !Object.keys(summary).length) return `<p class="empty">없음</p>`;
+      const rows = [
+        ["상태", summary.available ? "tdd.md 연결됨" : "tdd.md 없음"],
+        ["outcome", summary.outcome || summary.status],
+        ["gate_status", summary.gate_status],
+        ["blocker_type", summary.blocker_type],
+        ["blocker_code", summary.blocker_code],
+        ["next_action", summary.next_action],
+        ["tdd_signature", summary.tdd_signature],
+        ["경로", summary.path]
+      ].filter(([, value]) => value);
+      return `<dl class="kv-list">${rows.map(([key, value]) => `<div><dt>${esc(key)}</dt><dd>${esc(value)}</dd></div>`).join("")}</dl>`;
+    }
+
+    function tddStatusBlock(status) {
+      if (!status || !Object.keys(status).length) return `<p class="empty">없음</p>`;
+      const rows = [
+        ["상태", status.available ? "tdd.md 연결됨" : "tdd.md 없음"],
+        ["outcome", status.outcome],
+        ["gate_status", status.gate_status],
+        ["test", status.test_count],
+        ["manual smoke", status.manual_smoke_count],
+        ["blocker", status.blocker_count],
+        ["blocker_type", status.blocker_type],
+        ["blocker_code", status.blocker_code]
+      ].filter(([, value]) => value !== undefined && value !== "");
+      return `<dl class="kv-list">${rows.map(([key, value]) => `<div><dt>${esc(key)}</dt><dd>${esc(value)}</dd></div>`).join("")}</dl>`;
+    }
+
+    function testMappingTable(values) {
+      const rows = asArray(values).filter(Boolean);
+      if (!rows.length) return `<p class="empty">없음</p>`;
+      return `
+        <table class="data-table">
+          <thead><tr><th>계획 항목</th><th>scenario_id</th><th>test id</th><th>파일</th><th>상태</th><th>결과</th></tr></thead>
+          <tbody>
+            ${rows.map((row) => `
+              <tr>
+                <td>${esc(row.plan_row || row.phase_purpose || "")}</td>
+                <td><code>${esc(row.scenario_id || "")}</code></td>
+                <td><code>${esc(row.test_id || "")}</code></td>
+                <td><code>${esc(row.test_file || "")}</code></td>
+                <td>${esc(row.status || "")}</td>
+                <td>${esc(row.result || row.reason || "")}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function manualSmokeTable(values) {
+      const rows = asArray(values).filter(Boolean);
+      if (!rows.length) return `<p class="empty">없음</p>`;
+      return `
+        <table class="data-table">
+          <thead><tr><th>항목</th><th>확인 방식</th><th>상태</th><th>결과</th></tr></thead>
+          <tbody>
+            ${rows.map((row) => `
+              <tr>
+                <td>${esc(row.item || row.plan_row || "")}</td>
+                <td>${esc(row.method || "")}</td>
+                <td>${esc(row.status || row.required || "")}</td>
+                <td>${esc(row.result || row.reason || "")}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function tddBlockerTable(values) {
+      const rows = asArray(values).filter(Boolean);
+      if (!rows.length) return `<p class="empty">없음</p>`;
+      return `
+        <table class="data-table">
+          <thead><tr><th>계획 항목</th><th>유형</th><th>코드</th><th>설명</th><th>다음 조치</th></tr></thead>
+          <tbody>
+            ${rows.map((row) => `
+              <tr>
+                <td>${esc(row.plan_row || "")}</td>
+                <td>${esc(row.blocker_type || "")}</td>
+                <td><code>${esc(row.blocker_code || "")}</code></td>
+                <td>${esc(row.description || "")}</td>
+                <td>${esc(row.next_action || "")}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function reviewFeedbackTable(values) {
+      const rows = asArray(values).filter(Boolean);
+      if (!rows.length) return `<p class="empty">없음</p>`;
+      return `
+        <table class="data-table">
+          <thead><tr><th>round</th><th>요청</th><th>반영 결과</th></tr></thead>
+          <tbody>
+            ${rows.map((row) => `
+              <tr>
+                <td>${esc(row.round || row.id || "")}</td>
+                <td>${esc(row.user_comment || row.target_id || "")}</td>
+                <td>${esc(row.resolution_summary || "")}</td>
               </tr>
             `).join("")}
           </tbody>

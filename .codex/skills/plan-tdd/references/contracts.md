@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Turn an executable plan artifact into source-tree TDD contract tests and a trustworthy gate report that close the full selected plan contract without touching production code, using plan-clause and `scenario_id` traceability, owner-test impact scanning, the plan's locked verification units, and local or planned test conventions before selecting concrete owners. Missing first-time app/test harness setup does not by itself excuse weak tests: author completion-blocking TDD contract tests from the plan's locked runner, command, spec-root, and topology contract when possible, mark validation as not run/failed until the harness exists, and block only when the plan does not define enough test environment or scenario contract to author executable tests.
+Turn an executable plan artifact into source-tree TDD contract tests and a trustworthy gate report that close the full selected plan contract without touching production code, using plan-clause and `scenario_id` traceability, owner-test impact scanning, the plan's locked verification units, and local or planned test conventions before selecting concrete owners. Missing first-time app/test harness setup does not by itself excuse weak tests: author completion-blocking TDD contract tests from the plan's locked runner, command, spec-root, and topology contract when possible, mark validation as not run/failed until the harness exists, and block only when the plan does not define enough test environment or scenario contract to author executable tests. The report must also expose a browser-review-readable mapping from plan row/scenario to test, command, expected red/result, manual smoke gate, or blocker so `plan-review` can detect plan-to-test subset loss before implementation.
 
 ## Entry Notes
 
@@ -48,6 +48,7 @@ Author TDD contract tests after planning, not during implementation.
 
 - Plan-local report:
     - `tdd.md` adjacent to the selected executable plan
+    - fixed review sections in `tdd.md`: `## Plan review 검증 매핑`, `## Manual smoke 필요 항목`, and `## TDD blocker`
 - Source-tree test changes:
     - updated or created `*.test.*`, `*.spec.*`, page objects, fixtures, and split UI-area registries when needed
 - Red contract status:

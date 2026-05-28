@@ -1,6 +1,6 @@
 # Orchestrator Guardrails
 
-- Orchestrate only: do not substitute for request-scope locking, UI direction locking, `architect`, or `plan-review`.
+- Orchestrate only: do not substitute for request-scope locking, UI direction locking, `architect`, `plan-tdd`, or `plan-review`.
 - Do not invoke `brainstorm`; require the user or upstream context to provide the locked scope before this workflow starts.
 - Do not implement production code.
 - Do not create or rely on `state.json`, `clarification.md`, or `user-gate.md`.
@@ -12,11 +12,12 @@
 - Do not let `orchestrator` classify Figma component families; it may only pass through controller-verified snapshot artifacts when already available.
 - Do not route missing Figma tool data as a user decision unless the user must choose the root nodes or inventory scope.
 - Do not trust stale review artifacts after `plan_signature` changes.
-- Do not let the `plan-review` reviewer edit plans or write any file except the required `review.md` artifact.
+- Do not let the `plan-review` reviewer edit plans, tests, `tdd.md`, or write any file except the required `review.md` artifact.
+- Do not bypass `plan-tdd` before `plan-review` for implementation-scope plans.
 - Do not abandon a still-progressing role pass just because an initial short wait expired.
 - Do not respawn duplicate planning sub-agents for the same unchanged handoff when the earlier pass is still running and making recent progress.
 - Do not bypass review after architect revisions.
-- Do not report `planning_complete` for an implementation-scope plan before current-signature developer review approval exists.
+- Do not report `planning_complete` for an implementation-scope plan before current-signature `tdd.md`, fresh `plan-review`, and developer review approval exist.
 - Do not present a developer review package that collapses a large implementation plan into only Overview and Final when reviewable Phase entries are missing; route the plan back to `architect`.
 - Do not treat `question` as automatically meaning `architect`.
 - Do not respawn `architect` by reflex when a compatible live role agent already exists.
