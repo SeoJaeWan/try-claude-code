@@ -372,7 +372,7 @@ export const workflowScenario: WorkflowScenario = {
     {
       id: "S12-final-main-merge",
       title: "task branch → main 최종 merge",
-      summary: "task branch가 main에 merge되어 전체 흐름이 완료된다.",
+      summary: "사용자가 merge를 선택하여 task branch가 main에 merge되고 전체 흐름이 완료된다.",
       dialogue: [
         {
           id: "codex-s12-1",
