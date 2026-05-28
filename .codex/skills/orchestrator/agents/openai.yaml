@@ -1,4 +1,4 @@
 interface:
   display_name: "Orchestrator"
   short_description: "Coordinate planning, review, approval, learning."
-  default_prompt: "Use $orchestrator to run the stateless artifact-driven planning workflow after upstream scope is locked: architect planning, fresh cold review, blocked-plan revision routing, and planning-complete reporting."
+  default_prompt: "Use $orchestrator to run the stateless artifact-driven planning workflow after upstream scope is locked: plan-maker planning, fresh cold review, blocked-plan revision routing, and planning-complete reporting."

@@ -14,7 +14,7 @@ Provide an independent, read-only review of an executable plan file and its curr
    - orchestrated mode: use the provided `plan_wiki_root`.
    - direct mode: use `./.codex/plan-wiki/source/wiki`.
 6. `registry.json`, stage core docs for `review`, and selected pattern files whose `적용 조건` match the reviewed plan.
-7. Architect templates and local references only as needed to verify the plan contract.
+7. Plan Maker templates and local references only as needed to verify the plan contract.
 8. Repo-local execution contracts only when the plan makes a concrete routing, command, validation, or placement claim.
 9. Directly referenced local prerequisite plans only for one-hop prerequisite parity.
 10. Controller-verified Figma inventory manifest and snapshot artifacts only when the plan depends on Figma inventory, classification, or plan-local `figma-contract` artifacts.

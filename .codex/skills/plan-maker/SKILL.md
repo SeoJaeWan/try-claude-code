@@ -1,9 +1,9 @@
 ---
-name: architect
+name: plan-maker
 description: Codex entry skill for request-traceable implementation planning. Use when a request has already locked blocking product policy, UX, contract, schema, validation, state, permission, UI-direction, and required execution-agent boundaries, and Codex must produce one or more self-contained executable plan files under `./plans` following the active plan wiki plan artifact contract.
 ---
 
-# Architect
+# Plan Maker
 
 Create decision-complete implementation plans as self-contained executable plan files under `./plans`. Keep `SKILL.md` as the entrypoint and load detailed policy from references and the active plan wiki.
 

@@ -5,8 +5,8 @@
 1. Latest user request and latest conversation context.
 2. Existing executable plan files under `./plans/**` relevant to the task.
 3. Existing review artifact under `./plans/_orchestrator/review/{task-slug}/review.md` when present.
-4. Existing `./.codex/artifacts/brainstorm/**` or `./.codex/artifacts/ui-spec/**` artifacts when directly referenced, latest relevant to the task, or needed to prove the next architect pass is planning-ready.
-5. `../architect/SKILL.md`.
+4. Existing `./.codex/artifacts/brainstorm/**` or `./.codex/artifacts/ui-spec/**` artifacts when directly referenced, latest relevant to the task, or needed to prove the next plan-maker pass is planning-ready.
+5. `../plan-maker/SKILL.md`.
 6. `../plan-tdd/SKILL.md`.
 7. `../plan-review/SKILL.md`.
 8. `../plan-wiki-setup/references/staging-contract.md`.
@@ -14,15 +14,15 @@
 
 ## Runtime Expectations
 
-- Assume the runtime can invoke generic planning sub-agents and attach the local `architect`, `plan-tdd`, or `plan-review` skill for the active pass.
+- Assume the runtime can invoke generic planning sub-agents and attach the local `plan-maker`, `plan-tdd`, or `plan-review` skill for the active pass.
 - If a required local skill is missing, unreadable, or cannot be attached to a sub-agent, stop and report the blocker.
-- Do not silently inline architect, TDD, or reviewer work when the sub-agent path is available.
+- Do not silently inline plan-maker, TDD, or reviewer work when the sub-agent path is available.
 - Do not run `brainstorm`, request-scope locking, or UI-spec locking from this orchestrator contract unless the user explicitly invoked that separate skill or explicitly asked to continue beyond planning.
-- For implementation-scope plans, run `plan-tdd` after every current architect pass and before `plan-review`; do not report browser approval or planning completion from a plan-only review.
+- For implementation-scope plans, run `plan-tdd` after every current plan-maker pass and before `plan-review`; do not report browser approval or planning completion from a plan-only review.
 - Run planning docs only through `references/planning-docs.md` after a fresh `plan-review` has accepted the current plan signature and matching `tdd.md`.
 - Do not create, mutate, or rely on `state.json`, `clarification.md`, or `user-gate.md`.
 - Treat orchestration helper state as current-turn only. It may be recomputed from artifacts on every re-entry.
-- Prefer role-pinned live-agent reuse for `architect` when the same `task_slug`, role contract, and handoff authority still apply.
+- Prefer role-pinned live-agent reuse for `plan-maker` when the same `task_slug`, role contract, and handoff authority still apply.
 - Always use a fresh reviewer pass for `plan-review`; do not reuse a prior reviewer agent by default.
 - If a planning sub-agent invocation fails, report the exact target role and exact tool error.
 
@@ -49,7 +49,7 @@ The orchestrator may keep only current-turn helper state such as:
 - current `plan_signature`
 - `current_handoff_signature`
 - `active_role_agent_id` for the currently running role pass when available
-- `live_role_agents` keyed by role for reusable `architect` passes when available
+- `live_role_agents` keyed by role for reusable `plan-maker` passes when available
 - whether the current review artifact is fresh
 - whether the current planning docs package and approval evidence match the current `plan_signature`
 - the latest user question still awaiting an answer
@@ -72,11 +72,11 @@ This helper state must be safely discardable between turns.
 ## Wait Policy
 
 - When a role pass is on the critical path, prefer a long wait over repeated short polling.
-- For architect, TDD, and reviewer passes, the first bounded wait should normally be at least 3 minutes, and 5 minutes is preferred when the workflow is otherwise blocked on that pass.
+- For plan-maker, TDD, and reviewer passes, the first bounded wait should normally be at least 3 minutes, and 5 minutes is preferred when the workflow is otherwise blocked on that pass.
 - If the sub-agent emits meaningful progress, or if the required artifact path or reviewed plan file changes on disk during the wait window, refresh `last_meaningful_progress_at` and allow another bounded wait before intervening.
 - Do not treat slow analysis alone as `agent_protocol_failure` while there is fresh evidence of progress.
-- Only switch to a narrowed fallback such as `write now or block` after sustained idle time: normally at least 5 minutes for reviewer and at least 8 minutes for architect.
-- For `architect`, prefer reusing a compatible live role agent before spawning a replacement.
+- Only switch to a narrowed fallback such as `write now or block` after sustained idle time: normally at least 5 minutes for reviewer and at least 8 minutes for plan-maker.
+- For `plan-maker`, prefer reusing a compatible live role agent before spawning a replacement.
 - For `plan-review`, prefer a fresh reviewer even when a prior reviewer agent still exists.
 - A timed-out `wait_agent` call with empty status is not evidence that the sub-agent is idle, stuck, or finished.
 
@@ -96,7 +96,7 @@ Include only the minimum fields needed for the role:
 - `authoritative_existing_inputs` containing only controller-verified literal paths
 - controller-verified Figma inventory `manifest.json` and snapshot paths when Figma inventory is required for the next role
 - `known_missing_inputs` containing referenced but missing literal paths only as non-authoritative context
-- latest review artifact path when the next `architect` pass is revising from review findings
+- latest review artifact path when the next `plan-maker` pass is revising from review findings
 - latest `tdd.md` path when the next `plan-review` pass must review plan/TDD alignment
 - explicit output path requirements for the role
 
@@ -104,7 +104,7 @@ Do not force planning sub-agents to rediscover orchestrator-owned metadata. Do n
 
 ## Failure Taxonomy
 
-- `missing_upstream_lock`: request scope, UI direction, test strategy, execution-agent boundary, planning-ready artifact status, or latest relevant request-lock artifact is not locked enough for `architect`
+- `missing_upstream_lock`: request scope, UI direction, test strategy, execution-agent boundary, planning-ready artifact status, or latest relevant request-lock artifact is not locked enough for `plan-maker`
 - `invocation_failure`: the runtime could not invoke or reuse the planning sub-agent
 - `agent_protocol_failure`: the agent replied or streamed progress, but did not provide a usable terminal result for the requested role before the bounded wait ended
 - `artifact_writeback_failure`: the agent claimed success but the required artifact is still missing or stale on disk

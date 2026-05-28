@@ -6,7 +6,7 @@ Use this reference when `orchestrator` has a reviewed plan/TDD pair and must col
 
 Create or refresh the review data package after `plan-tdd` writes current `tdd.md` and `plan-review` produces a fresh `ready` or `ready-with-findings` review for the current `plan_signature`.
 
-Do not create it for `blocked` reviews. Route blockers back to `architect`.
+Do not create it for `blocked` reviews. Route blockers back to `plan-maker`.
 
 ## Paths
 
@@ -301,8 +301,8 @@ Any change to `generator_contract_version` invalidates generated review data eve
 - Do not re-expand dense schema/RLS/API/function details unless they explain a visible test mapping, manual smoke gate, TDD blocker, or evidence artifact.
 - Do not treat a sidebar check as a generic read-check signal; it is an approval shortcut and must create or clear approval evidence.
 - Do not reintroduce a manual read-check gate. Use approval evidence and section comments as the review state.
-- Do not let `architect` reinterpret approved feedback. If feedback changes scope or direction, revise the plan and require fresh planning docs.
+- Do not let `plan-maker` reinterpret approved feedback. If feedback changes scope or direction, revise the plan and require fresh planning docs.
 - Do not strip `owner_agent` routing from phase data when the reviewed plan defines it.
-- Do not route non-approved feedback directly to `architect` from `question` or `needs-change` labels alone.
+- Do not route non-approved feedback directly to `plan-maker` from `question` or `needs-change` labels alone.
 - Do not drop previous review rounds when resetting `feedback.json` or regenerating the package.
 - Do not carry forward approval by target id alone; require matching item approval evidence.

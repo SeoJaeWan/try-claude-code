@@ -194,7 +194,7 @@ Every promoted pattern file body should use this docs-first heading order:
 - `판단 근거`
 - `관련 문서`
 
-Use imperative language in `해야 할 것` and `피해야 할 것`. Keep the file short enough that `architect` can scan it while planning.
+Use imperative language in `해야 할 것` and `피해야 할 것`. Keep the file short enough that `plan-maker` can scan it while planning.
 
 In `## 관련 문서`, include:
 

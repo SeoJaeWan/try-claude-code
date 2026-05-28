@@ -1,6 +1,6 @@
 ---
 name: plan-wiki-ingest
-description: Ingest Codex review files from the main repository root under `.codex/reviews/**/*.md` into the user-level plan wiki by reading the source reviews, matching them to plans by branch, normalizing them into integrated raw evidence records, promoting planning-relevant feedback into registry-backed pattern rule files, updating `wiki/registry.json`, writing operation history, and deleting source review files only after batch success. Use when Codex needs to convert collected BLOCK review output into durable planning knowledge for future `architect` and `plan-review` runs.
+description: Ingest Codex review files from the main repository root under `.codex/reviews/**/*.md` into the user-level plan wiki by reading the source reviews, matching them to plans by branch, normalizing them into integrated raw evidence records, promoting planning-relevant feedback into registry-backed pattern rule files, updating `wiki/registry.json`, writing operation history, and deleting source review files only after batch success. Use when Codex needs to convert collected BLOCK review output into durable planning knowledge for future `plan-maker` and `plan-review` runs.
 ---
 
 # Plan Wiki Ingest
@@ -86,7 +86,7 @@ Use this skill to process review inbox files into the plan wiki. Resolve the pla
 - Do create one markdown file per promoted rule.
 - Do not force raw to mirror source review files one-to-one.
 - Do not store unredacted sensitive values in raw.
-- Do not let wiki guidance override repo-local truth when a later `architect` run consumes the wiki.
+- Do not let wiki guidance override repo-local truth when a later `plan-maker` run consumes the wiki.
 - Do not invent evidence. Every promoted rule must link back to one or more raw documents.
 
 ## Reference

@@ -96,10 +96,10 @@ After the triage route is selected and the active history round is updated, run 
 
 Route by triage result:
 
-- `answer_only`: answer in chat from current plan/review/package, update active history round with answer summary and same-signature re-review outcome, refresh `feedback.json` for the same signature while preserving only unchanged approved items, require browser re-submit, and do not invoke `architect`.
+- `answer_only`: answer in chat from current plan/review/package, update active history round with answer summary and same-signature re-review outcome, refresh `feedback.json` for the same signature while preserving only unchanged approved items, require browser re-submit, and do not invoke `plan-maker`.
 - `scope_decision` or `request_lock`: ask direct questions first when underspecified, then run or reuse the request-scope locking capability with exact task, plan, `plan_wiki_root`, current `plan_signature`, latest `feedback.json`, locked request summary when available, verified inputs, and chat-only output contract unless the user asked for an artifact.
 - `ui_direction`: ask for request-scope clarification first if product framing or scope is unstable; otherwise run or reuse the UI-spec capability with exact task, plan, current signature, latest `feedback.json`, locked request summary when available, verified inputs, and chat-only output contract unless the user asked for an artifact.
-- `plan_revision`: record the revision route in `review-history.json`, run Step 7, route exact feedback path plus affected `target_id`/`anchor_id` values to `architect`, require the revised plan to include `## planning docs 피드백 반영 내역` entries for the handled feedback, rerun `plan-review`, regenerate the review data package, carry forward only approvals whose item signatures still match, and require browser re-submit.
+- `plan_revision`: record the revision route in `review-history.json`, run Step 7, route exact feedback path plus affected `target_id`/`anchor_id` values to `plan-maker`, require the revised plan to include `## planning docs 피드백 반영 내역` entries for the handled feedback, rerun `plan-review`, regenerate the review data package, carry forward only approvals whose item signatures still match, and require browser re-submit.
 
 Required sub-agent terminal results:
 

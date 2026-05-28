@@ -1,4 +1,4 @@
-# Architect Contracts
+# Plan Maker Contracts
 
 ## Purpose
 
@@ -25,7 +25,7 @@ Use this as the preferred planning entrypoint after upstream decisions have lock
 5. Active plan wiki `core/common/실행-라우팅.md` - canonical `owner_agent` catalog and routing rules.
 6. `../plan-wiki-setup/references/staging-contract.md` and `../plan-wiki-setup/references/platform-commands.md` in direct mode.
 7. Resolved planning `plan_wiki_root` containing `registry.json`, `core/`, `patterns/`, `tags/`, and domain-first selection policy.
-8. Stage core documents and matching pattern files selected by the registry for `architect`.
+8. Stage core documents and matching pattern files selected by the registry for `plan-maker`.
 9. `./references/git.md` - branch naming rules when needed.
 10. `./references/plan-template-sequential.md` - self-contained plan file template.
 11. Active plan wiki `core/common/용어-정책.md` - Korean-first visible prose and allowed English identifier rules.

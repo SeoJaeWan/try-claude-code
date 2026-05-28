@@ -54,9 +54,9 @@ flowchart LR
 | Stage 0 | 2025-12-29 ~ 2026-01-10 | `ask`, `dev`, `commit`, `pr` | `ask/skill.md`, `dev/skill.md`, `.claude/coding-rules.md` | 스킬 단독 실행 | 설명형 규칙 | 직접 코드 수정 |
 | Stage 1 | 2026-01-11 ~ 2026-02-10 | `.claude` 시스템 + 에이전트 | `.claude/architecture.md`, `.claude/planning.md`, 에이전트 문서 | 에이전트 + 문서 기반 협업 | 설명형 규칙 + 구조 정리 | 구조화된 `.claude` 운영 |
 | Stage 2 | 2026-02-11 ~ 2026-02-17 | skills/agents 기반 실행 | `.claude/CLAUDE.md`, `.claude/skills/*`, `.codex/skills/*` | 스킬 + 에이전트 | 문서 중심 운영 계약 | plan / docs / reviews |
-| Stage 3 | 2026-02-18 ~ 2026-02-23 | architect 주도 + worktree | `.claude/CLAUDE.md`, architect, worktree 정책 | worktree 격리된 phase 실행 | 강한 운영 계약 | phase별 실행, review, log |
+| Stage 3 | 2026-02-18 ~ 2026-02-23 | plan-maker 주도 + worktree | `.claude/CLAUDE.md`, plan-maker, worktree 정책 | worktree 격리된 phase 실행 | 강한 운영 계약 | phase별 실행, review, log |
 | Stage 4 | 2026-02-24 ~ 2026-03-02 | artifact-first Claude/Codex 흐름 | `.claude/CLAUDE.md`, `.ai/*`, `.codex/skills/*` | artifact 기반 실행 | 문서 계약 강화 | `.ai/plans`, `.ai/requirements`, `.ai/logs` |
-| Stage 5 | 2026-03-03 ~ 2026-03-05 | skill dispatch + planner-lite | `planner-lite`, `architect`, `init-agent`, `jira` | 계획 스킬 + 실행 스킬 | 문서 계약 + 부분 자동화 | `plan.md`, 테스트 아티팩트, Jira 산출물 |
+| Stage 5 | 2026-03-03 ~ 2026-03-05 | skill dispatch + planner-lite | `planner-lite`, `plan-maker`, `init-agent`, `jira` | 계획 스킬 + 실행 스킬 | 문서 계약 + 부분 자동화 | `plan.md`, 테스트 아티팩트, Jira 산출물 |
 | Stage 6 | 2026-03-06 | pluginization 전환 | `try-claude-plugin` 관련 계약 문서 | 플러그인 패키징 | 배포/마이그레이션 계약 | plugin seed/bootstrap/migration |
 | Stage 7 | 2026-03-06 ~ 2026-03-31 | plugin + dev-cli 실험 | `marketplace.json`, historical `plugin/skills/*`, `docs/dev-cli-design.md`, `.codex/skills/*` | 계획 스킬 + 플러그인 스킬 + CLI | 실행 강제 규칙 | preview/apply scaffold, tests/evals |
 | Stage 8 | 2026-04-01 ~ 현재 | plugin split + artifact-driven planning | `.claude-plugin/marketplace.json`, `plugin/develop/*`, `plugin/statusline/*`, `.codex/skills/*`, `.codex/tools/*` | planning artifact + runtime hook + worktree 실행 | 아티팩트/훅 기반 실행 계약 | `plans/*`, `planning-docs/*`, `dev-review/*`, `qa/*`, plan wiki 연동 |
@@ -182,7 +182,7 @@ flowchart TD
 - `.claude/skills/frontend-dev/SKILL.md`
 - `.claude/skills/backend-dev/SKILL.md`
 - `.claude/skills/ui-publish/SKILL.md`
-- `.codex/skills/architect/SKILL.md`
+- `.codex/skills/plan-maker/SKILL.md`
 
 ### 요청이 들어왔을 때의 전체 플로우
 
@@ -190,7 +190,7 @@ flowchart TD
 flowchart TD
     U["User request"]
     CLAUDE[".claude/CLAUDE.md"]
-    A["architect / asker"]
+    A["plan-maker / asker"]
     PLAN["plan.md"]
     EXEC["execution skill or agent"]
     REFS["domain / CODEMAPS / design / coding-rules"]
@@ -253,7 +253,7 @@ flowchart TD
 
 - `.claude/CLAUDE.md`
 - worktree 관련 정책 문서
-- architect / planner 계열 문서
+- plan-maker / planner 계열 문서
 
 ### 요청 처리 흐름
 
@@ -261,7 +261,7 @@ flowchart TD
 flowchart TD
     U["User request"]
     CLAUDE[".claude/CLAUDE.md"]
-    ARCH["architect"]
+    ARCH["plan-maker"]
     PLAN["plan.md"]
     WT["EnterWorktree / worktree contract"]
     P1["frontend / tests"]
@@ -308,7 +308,7 @@ flowchart TD
 대표 문서:
 
 - `.claude/CLAUDE.md`
-- `.codex/skills/architect/SKILL.md`
+- `.codex/skills/plan-maker/SKILL.md`
 - `.codex/skills/brainstorm/SKILL.md`
 - `.ai/plans/*`
 - `.ai/requirements/*`
@@ -319,7 +319,7 @@ flowchart TD
 flowchart TD
     U["User request"]
     ENTRY["CLAUDE.md routing"]
-    BRAIN["brainstorm or architect"]
+    BRAIN["brainstorm or plan-maker"]
     ART[".ai/requirements or .ai/plans"]
     EXEC["execution skills"]
     REVIEW["codex-review / web-quality / accessibility"]
@@ -341,7 +341,7 @@ flowchart TD
 
 ### 규칙과 연결 방식
 
-- 계획 규칙: `architect`
+- 계획 규칙: `plan-maker`
 - 요구사항 정리 규칙: `brainstorm`
 - 실행 규칙: `.claude/skills/*`
 - 운영 산출물 규칙: `.ai/*` 폴더 계약
@@ -370,7 +370,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     U["User request"]
-    ARCH["architect"]
+    ARCH["plan-maker"]
     PLAN["plan.md"]
     ORCH["planner-lite"]
     PHASE["phase agent / skill execution"]
@@ -393,7 +393,7 @@ flowchart TD
 
 ### 규칙과 연결 방식
 
-- `architect`는 계획 생성
+- `plan-maker`는 계획 생성
 - `planner-lite`는 계획 실행 orchestration
 - 각 실행 스킬은 자기 영역의 구현 수행
 - `Jira`는 산출물 검증 후 외부 시스템 등록
@@ -452,7 +452,7 @@ flowchart LR
 ```mermaid
 flowchart TD
     U["User request"]
-    PLAN[".codex skills<br/>architect / plan-tdd"]
+    PLAN[".codex skills<br/>plan-maker / plan-tdd"]
     PSK["plugin skills<br/>frontend-dev / backend-dev"]
     CLI["frontend / backend CLI"]
     MANIFEST["package manifest recipe"]
@@ -498,7 +498,7 @@ flowchart TD
     U["User request"]
     LOCK["request-scope / UI direction lock"]
     ORCH["orchestrator"]
-    ARCH["architect"]
+    ARCH["plan-maker"]
     MAT["plan-tdd"]
     REVIEW["plan-review"]
     PLANDOCS["planning docs<br/>plan.md + tdd.md + local server"]
@@ -516,7 +516,7 @@ flowchart TD
 예시: "대시보드 알림 필터 로직을 추가해줘"
 
 1. 요청이 모호하면 request-scope나 UI direction 선결정을 먼저 잠근다.
-2. `orchestrator`가 `architect`를 호출해 `plans/{task}/plan.md`와 phase detail 아티팩트를 만든다.
+2. `orchestrator`가 `plan-maker`를 호출해 `plans/{task}/plan.md`와 phase detail 아티팩트를 만든다.
 3. `plan-tdd`가 계획 행/시나리오를 실제 테스트와 manual smoke 항목으로 옮긴다.
 4. `plan-review`가 현재 `plan.md`와 `tdd.md`를 함께 cold review한다.
 5. `orchestrator`가 planning docs 패키지를 만들고, `.codex/tools/planning-docs-browser-server.mjs`로 로컬 review UI를 서빙한다.
@@ -547,7 +547,7 @@ commit step에서는 오른쪽 sticky panel에 live preview iframe이 붙는다.
 | 계층 | 역할 | 대표 파일 |
 |---|---|---|
 | 배포 메타 | 로컬 plugin bundle 공개 | `.claude-plugin/marketplace.json`, `.agents/plugins/marketplace.json` |
-| planning 계층 | 요청 잠금, 계획 생성, cold review, TDD contract test 작성, plan wiki 연동 | `.codex/skills/brainstorm/SKILL.md`, `.codex/skills/architect/SKILL.md`, `.codex/skills/orchestrator/SKILL.md`, `.codex/skills/plan-review/SKILL.md`, `.codex/skills/plan-tdd/SKILL.md` |
+| planning 계층 | 요청 잠금, 계획 생성, cold review, TDD contract test 작성, plan wiki 연동 | `.codex/skills/brainstorm/SKILL.md`, `.codex/skills/plan-maker/SKILL.md`, `.codex/skills/orchestrator/SKILL.md`, `.codex/skills/plan-review/SKILL.md`, `.codex/skills/plan-tdd/SKILL.md` |
 | 실행 계층 | worktree 기반 구현/문서화/검증 실행 | `plugin/develop/skills/runner/SKILL.md`, `plugin/develop/skills/frontend-dev/SKILL.md`, `plugin/develop/skills/backend-dev/SKILL.md`, `plugin/develop/skills/general-dev/SKILL.md` |
 | 구현 리뷰 계층 | commit 기반 구현 리뷰, feedback routing, live preview | `plugin/develop/skills/dev-review/SKILL.md`, `plugin/develop/skills/dev-review/scripts/server.mjs`, `plugin/develop/skills/dev-review/scripts/lib/preview-pool.mjs` |
 | 역할 프롬프트 | 도메인별 agent 책임 정의 | `plugin/develop/agents/frontend-developer.md`, `plugin/develop/agents/backend-developer.md`, `plugin/develop/agents/general-developer.md` |
@@ -601,7 +601,7 @@ Stage 7까지는 "규칙을 실행 가능한 recipe로 옮기는 것"이 핵심�
 | 2026-02-13 | `ed40bb6` | `CLAUDE.md`를 per-folder README로 분리해 한 번에 읽는 문맥 축소 |
 | 2026-02-19 | `1552e88` | 7개 대형 스킬에 `references/` 분리 적용 |
 | 2026-02-24 | `27e7b61` | verify-skills 생태계, settings duplication, workflow position 중복 제거 |
-| 2026-03-03 | `cfc8e9d` | architect/worktree가 legacy agent references에 덜 의존하도록 분리 |
+| 2026-03-03 | `cfc8e9d` | plan-maker/worktree가 legacy agent references에 덜 의존하도록 분리 |
 | 2026-03-05 | `95f810a` | 대형 인라인 템플릿을 `references/`로 추출해 progressive disclosure 강화 |
 | 2026-03-14 | `97af75e`, `5accc71` | `frontend-dev`, `ui-publish`에서 redundant section 제거 |
 | 2026-03-15 | `bd6bc9c` | references 통합, design refs 제거, typecheck/lint 문맥 제거 |
@@ -762,7 +762,7 @@ flowchart LR
 
 | 관점 | 초기 | 중기 | 현재 |
 |---|---|---|---|
-| 라우팅 | trigger 문구 중심 | CLAUDE + architect 중심 | planning skill + plugin skill + review gate |
+| 라우팅 | trigger 문구 중심 | CLAUDE + plan-maker 중심 | planning skill + plugin skill + review gate |
 | 규칙 저장 위치 | markdown 문서 | markdown + references + plan contract | `SKILL.md` + plan/review artifacts + repo-local conventions + hook/runtime scripts |
 | 스킬 독립성 | 낮음 | 중간 | 높음 |
 | 공통 문서 참조량 | 많음 | 분리되지만 여전히 큼 | 크게 줄어듦 |
@@ -797,7 +797,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     U["요청"]
-    ARCH["architect"]
+    ARCH["plan-maker"]
     PLAN["plan.md"]
     WT["worktree"]
     FE["frontend-dev"]
@@ -815,7 +815,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     U["요청"]
-    ARCH["architect"]
+    ARCH["plan-maker"]
     PLAN["plans/*"]
     MAT["plan-tdd"]
     COLD["plan-review"]
@@ -868,7 +868,7 @@ flowchart LR
 
 | 작업 종류 | 진입점 | 실행 스킬/도구 | 규칙 소스 | 대표 산출물 |
 |---|---|---|---|---|
-| 요청 잠금 / 기획 | `brainstorm`, `ui-spec`, `architect` | `.codex/skills/*` | plan wiki + planning references | `plans/*`, phase detail, 결정 기록 |
+| 요청 잠금 / 기획 | `brainstorm`, `ui-spec`, `plan-maker` | `.codex/skills/*` | plan wiki + planning references | `plans/*`, phase detail, 결정 기록 |
 | cold review / planning docs | `plan-review`, `orchestrator`, `planning-docs-browser-server` | `.codex/skills/plan-review/SKILL.md`, `.codex/skills/orchestrator/SKILL.md`, `.codex/tools/planning-docs-browser-server.mjs` | review policy + browser feedback + plan signature | `plans/_orchestrator/review/*`, `plans/*/planning-docs/*` |
 | 프론트엔드 구현 | `runner` 후 `frontend-dev` | `plugin/develop/skills/frontend-dev/SKILL.md`, `plugin/develop/agents/frontend-developer.md` | `plan.md` + 기존 UI code conventions | 실제 소스 변경, 필요 시 test/E2E 복사 |
 | 백엔드 구현 | `runner` 후 `backend-dev` | `plugin/develop/skills/backend-dev/SKILL.md`, `plugin/develop/agents/backend-developer.md` | `plan.md` + 기존 backend/database conventions | 실제 소스 변경, 필요 시 test/E2E 복사 |
@@ -907,7 +907,7 @@ flowchart LR
 - `claude-code-skills/.claude/CHANGELOG.md`
 - `claude-code-skills/.claude/VERSION`
 - `claude-code-skills/.claude/skills/frontend-dev/SKILL.md`
-- `claude-code-skills/.codex/skills/architect/SKILL.md`
+- `claude-code-skills/.codex/skills/plan-maker/SKILL.md`
 - `docs/dev-cli-design.md`
 
 ### 현재 구조 확인용

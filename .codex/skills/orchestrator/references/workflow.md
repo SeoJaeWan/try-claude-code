@@ -4,7 +4,7 @@
 
 - Step 0. Normalize target and verify prerequisites
 - Step 1. Build the current orchestration picture
-- Step 2. Run architect draft or revision
+- Step 2. Run plan-maker draft or revision
 - Step 3. Run TDD contract authoring
 - Step 4. Run cold review
 - Step 5. Route review findings
@@ -20,51 +20,51 @@ Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output ru
 - Derive one canonical `task-slug`.
 - Resolve the planning `plan_wiki_root` to `./.codex/plan-wiki/source/wiki`.
 - If `./.codex/plan-wiki/source/wiki` is missing, stop and route to `plan-wiki-setup` instead of attempting per-run staging inside this skill.
-- Confirm the linked local `architect`, `plan-tdd`, and `plan-review` capabilities are present before routing to them.
+- Confirm the linked local `plan-maker`, `plan-tdd`, and `plan-review` capabilities are present before routing to them.
 - Do not invoke `brainstorm`. If the latest context or referenced artifacts do not lock request scope, UI direction when relevant, and required/excluded execution areas, stop with `missing_upstream_lock`.
-- If a directly referenced or latest relevant brainstorm artifact exists, read its `artifact_status` before invoking `architect`.
+- If a directly referenced or latest relevant brainstorm artifact exists, read its `artifact_status` before invoking `plan-maker`.
   - Continue only when the artifact is `ready_for_planning` or the current user request explicitly targets an already-approved executable plan.
   - Stop with `missing_upstream_lock` when the artifact is `needs_diagnostic_inventory`, `needs_locked_ui_direction`, `needs_test_strategy_lock`, `needs_execution_environment_lock`, `needs_scope_lock`, or another non-ready `needs_*` state.
   - Stop with `missing_upstream_lock` when the artifact is `superseded` and no verified successor artifact is present.
-  - When the artifact's `planning-ready 판정표` has any `blocking` row, use that row's `다음 조치` as the next safe route instead of invoking `architect`.
+  - When the artifact's `planning-ready 판정표` has any `blocking` row, use that row's `다음 조치` as the next safe route instead of invoking `plan-maker`.
 - Derive the default plan directory as `./plans/{task-slug}/`.
 - If the current run explicitly targets an existing executable plan file, resolve that file as `plan_path`.
 - Collect task-local plan or prerequisite paths referenced by the user request, current selected plan, latest fresh review artifact, or directly referenced upstream decision artifact when they affect the next role pass.
 - Resolve each referenced path literally before spawning a planning sub-agent.
 - Build `authoritative_existing_inputs` from verified present paths only.
-- If a verified upstream decision artifact already locks ambiguity for the next architect pass, treat that artifact as authoritative upstream input.
+- If a verified upstream decision artifact already locks ambiguity for the next plan-maker pass, treat that artifact as authoritative upstream input.
 - If the locked upstream input makes Figma or another external source the authority for implementation or validation, verify the named inventory manifest and snapshot files exist before adding them to `authoritative_existing_inputs`; otherwise stop with `tool_data_blocker`.
 - Build `known_missing_inputs` from referenced but missing paths only as controller-owned notes.
-- If the next architect pass depends on local upstream plan artifacts and no authoritative input remains after verification, stop and report the blocker.
+- If the next plan-maker pass depends on local upstream plan artifacts and no authoritative input remains after verification, stop and report the blocker.
 
 ## Step 1. Build the Current Orchestration Picture
 
-- If no executable plan file exists for the selected `task-slug`, route first to an `architect` pass.
+- If no executable plan file exists for the selected `task-slug`, route first to a `plan-maker` pass.
 - If one or more executable plan files exist, select the target `plan_path` from the current request, latest artifact, or deterministic path order. Review one plan file at a time.
 - Compute current `plan_signature` for the selected plan file and determine whether `tdd.md` and `review.md` are fresh.
 - Do not reconstruct hidden stage from old chat text when artifacts disagree.
 - If multiple plan files were just written, run Step 3 for each file that lacks a fresh TDD artifact.
 - If all selected plan files have fresh acceptable review artifacts, inspect planning docs artifacts for the current `plan_signature` before deciding completion.
 
-## Step 2. Run Architect Draft or Revision
+## Step 2. Run Plan Maker Draft or Revision
 
-Invoke `architect` when:
+Invoke `plan-maker` when:
 
 - no executable plan file exists for the selected `task-slug`
-- latest fresh `review.md` routes back to `architect`
+- latest fresh `review.md` routes back to `plan-maker`
 - user requested plan changes or answered a question that changes the plan contract
 
 Controller requirements:
 
-- Reuse the live `architect` role agent for the same `task_slug` when compatible; otherwise start a new generic planning sub-agent and attach `architect`.
+- Reuse the live `plan-maker` role agent for the same `task_slug` when compatible; otherwise start a new generic planning sub-agent and attach `plan-maker`.
 - Pass a handoff packet with exact `task-slug`, optional `plan_path`, `plan_wiki_root`, verified inputs, missing-input notes, latest review path when revising, locked request summary when available, and write scope under `./plans/{task-slug}/`.
 - When Figma inventory is required, include only controller-verified `figma-inventory` manifest and snapshot paths in `authoritative_existing_inputs`.
 - Require exactly one result: `result = wrote_plan` with `written_paths`, or `result = blocking_packet` with user-input fields.
-- After every architect pass, re-check written plan files and recompute `plan_signature` for each selected review target.
-- If the architect returned a blocking packet with `needs_user_input = true`, ask the user directly in chat and stop. The user's answer should be handled upstream or by a later architect pass.
-- If the architect returned `needs_user_input = false` for missing tool data, stop with `tool_data_blocker`.
+- After every plan-maker pass, re-check written plan files and recompute `plan_signature` for each selected review target.
+- If the plan-maker returned a blocking packet with `needs_user_input = true`, ask the user directly in chat and stop. The user's answer should be handled upstream or by a later plan-maker pass.
+- If the plan-maker returned `needs_user_input = false` for missing tool data, stop with `tool_data_blocker`.
 - Apply the wait policy and classify failures with `contracts.md`.
-- Allow one safe retry only when the controller materially changed the handoff. Do not retry unchanged handoffs or retry while a previous architect pass is still progressing.
+- Allow one safe retry only when the controller materially changed the handoff. Do not retry unchanged handoffs or retry while a previous plan-maker pass is still progressing.
 
 ## Step 3. Run TDD Contract Authoring
 
@@ -73,7 +73,7 @@ Controller requirements:
 - Limit the TDD pass to source-tree tests and `tdd.md`; it must not edit production code.
 - Require `tdd.md` YAML frontmatter with at least `plan_path`, `task_slug`, `plan_signature`, `outcome`, `gate_status`, `blocker_type`, `blocker_code`, `next_action`, `resume_from`, `tdd_signature`, `requires_user_decision`, `blocked_clause_ids`, and `affected_phase_paths`.
 - Require the TDD report to expose plan-review-readable rows for plan row/scenario to test mapping, manual smoke gates, and TDD blockers. These rows are what the planning docs UI uses to show whether a phase's plan clauses became verifiable contracts.
-- If `plan-tdd` returns `blocker_type = plan_contract`, route the blocker to the next `architect` pass before `plan-review`.
+- If `plan-tdd` returns `blocker_type = plan_contract`, route the blocker to the next `plan-maker` pass before `plan-review`.
 - If `plan-tdd` returns `blocker_type = external_setup`, stop with `tdd_gate_blocker` and report the missing setup or runner contract; do not hide it behind browser approval.
 - If `plan-tdd` completes with `gate_status = failed` because newly written red contracts fail as expected before implementation, continue to Step 4. Red contracts are valid planning evidence when expected red reasons are recorded.
 - Apply the wait policy and classify failures with `contracts.md`.
@@ -90,16 +90,16 @@ Controller requirements:
 
 ## Step 5. Route Review Findings
 
-- If fresh review outcome is `blocked`, send findings to the next `architect` pass.
+- If fresh review outcome is `blocked`, send findings to the next `plan-maker` pass.
 - If outcome is `ready-with-findings`, route to Step 6 with noted non-blocking findings.
 - If outcome is `ready`, route to Step 6.
-- If the same `finding_signature` repeats against the same `plan_signature` after one architect revision attempt, stop and report `no_progress`.
+- If the same `finding_signature` repeats against the same `plan_signature` after one plan-maker revision attempt, stop and report `no_progress`.
 
 ## Step 6. Planning Docs Gate
 
 - Follow `references/planning-docs.md` Step 5.
 - Generate or refresh `./plans/{task-slug}/planning-docs/` for the current `plan_signature`.
-- The package must expose `review_items[]` for Overview and every required Phase target. If the plan has implementation scope but does not provide reviewable Phase targets, route to `architect` for plan revision instead of presenting a flattened review.
+- The package must expose `review_items[]` for Overview and every required Phase target. If the plan has implementation scope but does not provide reviewable Phase targets, route to `plan-maker` for plan revision instead of presenting a flattened review.
 - Start or reuse the shared planning docs browser server through the documented launcher and report the printed `planning_docs_url` to the user.
 - Stop with `planning_docs_gate_blocker` while waiting for the user to submit the planning docs and say `review complete`.
 - When the user says `review complete`, read `feedback.json` and continue only if the submitted feedback matches the current `task_slug`, `plan_signature`, and review item signatures.
@@ -109,7 +109,7 @@ Controller requirements:
 - Follow `references/planning-docs.md` Step 6.
 - If every required review item is approved with current signature evidence and no active `needs-change` or `question` comment remains, continue to Step 8.
 - If any required review item is not approved or any active non-approved comment remains, preserve or update `review-history.json`, classify the feedback, and route according to `references/planning-docs.md`.
-- Feedback that changes plan meaning routes to `architect`; after revision, rerun Step 3, Step 4, and Step 6 for the new `plan_signature`.
+- Feedback that changes plan meaning routes to `plan-maker`; after revision, rerun Step 3, Step 4, and Step 6 for the new `plan_signature`.
 - Feedback that only needs an answer must be answered in chat, then the same-signature review package must require browser re-submit.
 
 ## Step 8. Capture Planning Docs Learning

@@ -30,7 +30,7 @@ Use this skill to connect a workspace to the shared plan wiki Git repository and
    - Treat `./.codex/plan-wiki/source/wiki` as the planning root.
    - Confirm `./.codex/plan-wiki/source/wiki/registry.json` exists.
    - Confirm `core/`, `patterns/`, `tags/`, and `_meta/` exist under the planning root.
-   - Confirm `architect`, `plan-review`, and `orchestrator` can target the same planning root path.
+   - Confirm `plan-maker`, `plan-review`, and `orchestrator` can target the same planning root path.
 
 5. Report Git sync state.
    - After setup or bootstrap writes, run `git status --short` inside `./.codex/plan-wiki/source`.

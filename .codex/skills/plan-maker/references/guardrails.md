@@ -1,4 +1,4 @@
-# Architect Guardrails
+# Plan Maker Guardrails
 
 ## Guardrails
 

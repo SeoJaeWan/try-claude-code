@@ -43,7 +43,7 @@ Do not create a default `wiki/index.md`. Obsidian graph navigation is built from
 - define the domain taxonomy with top-level `common`, `frontend`, `backend`, and `infra` domains plus domain-local tags
 - define `document_model` as `docs-first-source`
 - define `graph_notes_root`, normally `tags`
-- define selection policy for `brainstorm`, `architect`, and `review`
+- define selection policy for `brainstorm`, `plan-maker`, and `review`
 - define adjacency and lint policy
 - define ingest create-vs-update policy
 
