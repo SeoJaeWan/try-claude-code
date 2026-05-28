@@ -22,8 +22,8 @@ Before writing any plan artifact:
   - resolve `plan_wiki_root` to `./.codex/plan-wiki/source/wiki`.
   - if missing, repair with `plan-wiki-setup` when available or stop with the missing dependency.
 - Read `{plan_wiki_root}/registry.json`.
-- Read every core document listed in `stage_core["plan-maker"]`. Until the plan wiki taxonomy migration lands, fall back to the legacy `stage_core.architect`; if both are absent, read the registry `core` array.
-- Select candidate patterns using registry `selection["plan-maker"]` and `adjacency_rules`. Until the plan wiki taxonomy migration lands, fall back to the legacy `selection.architect`; always include `common`, then add touched domains only.
+- Read every core document listed in `stage_core["plan-maker"]`; if absent, read the registry `core` array.
+- Select candidate patterns using registry `selection["plan-maker"]` and `adjacency_rules`; always include `common`, then add touched domains only.
 - Read only selected pattern files whose `적용 조건` match the request, repo-local context, or authoritative upstream inputs.
 - Read the active plan wiki `core/common/용어-정책.md` before drafting visible prose.
 
