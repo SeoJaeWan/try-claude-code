@@ -21,7 +21,7 @@ interface FlowNodeMeshProps {
 export function FlowNodeMesh({ position, status = "pending", isHub = false, motionMode }: FlowNodeMeshProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const color = STATUS_COLORS[status];
-  const size = isHub ? 0.6 : 0.35;
+  const size = isHub ? 0.9 : 0.55;
 
   useFrame((_, delta) => {
     if (meshRef.current && motionMode === "full" && status === "active") {

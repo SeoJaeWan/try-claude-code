@@ -24,23 +24,23 @@ interface FlowCanvasProps {
 /** Maps node id to a 3D position based on scene topology */
 function getNodePosition(nodeId: string, index: number): [number, number, number] {
   const positionMap: Record<string, [number, number, number]> = {
-    "user-request":        [-3, 0, 0],
-    "brainstorm":          [-1.5, 0, 0],
+    "user-request":        [-4, 0, 2],
+    "brainstorm":          [-2, 0, 1],
     "ui-spec":             [0, 0, 0],
-    "orchestrator":        [0, 1.5, 0],
-    "plan-maker":          [-1.5, 0.5, -1],
-    "plan-tdd":            [0, 0.5, -1],
-    "plan-review":         [1.5, 0.5, -1],
+    "orchestrator":        [0, 2, -1],
+    "plan-maker":          [-2, 1, -2],
+    "plan-tdd":            [0, 1, -2],
+    "plan-review":         [2, 1, -2],
     "docs-gate":           [0, -0.5, -1],
-    "runner":              [1.5, 0, 0],
-    "main-branch":         [-2, -1.5, 0],
-    "task-worktree":       [0, -1, 1],
-    "frontend-developer":  [1.5, -1, 1],
-    "dev-review":          [2.5, 0, 0],
-    "merge-gate":          [1, -0.5, 0],
-    "main-end":            [3, 0, 0],
+    "runner":              [2, 0, 1],
+    "main-branch":         [-3, -0.5, 0],
+    "task-worktree":       [0, -0.5, 2],
+    "frontend-developer":  [2, -0.5, 2],
+    "dev-review":          [3, 1, 0],
+    "merge-gate":          [1.5, 0.5, 1],
+    "main-end":            [4, 0, 0],
   };
-  return positionMap[nodeId] ?? [(index - 2) * 1.5, 0, 0];
+  return positionMap[nodeId] ?? [(index - 2) * 2, 0, 0];
 }
 
 function getNodePosition2(nodeId: string, nodes: WorkflowScene["nodes"], index: number): [number, number, number] {
@@ -160,7 +160,7 @@ export function FlowCanvas({ currentScene, motionMode, cameraMode, sceneIndex }:
   });
 
   const cameraPosition: [number, number, number] =
-    cameraMode === "whole-map" ? [0, 8, 12] : [0, 3, 6];
+    cameraMode === "whole-map" ? [0, 10, 15] : [0, 4, 8];
 
   return (
     <div
@@ -171,8 +171,12 @@ export function FlowCanvas({ currentScene, motionMode, cameraMode, sceneIndex }:
       <Canvas
         camera={{ position: cameraPosition, fov: 60, near: 0.1, far: 200 }}
         shadows
-        gl={{ antialias: true, alpha: false }}
-        style={{ background: "#0a0a0f" }}
+        gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
+        onCreated={({ gl }) => {
+          // Set clear color to a dark near-black to ensure WebGL renders
+          gl.setClearColor(0x0a0a1a, 1);
+        }}
+        style={{ position: "absolute", inset: 0 }}
       >
         <Suspense fallback={null}>
           <CanvasEnvironment darkTextureUrl={assetRegistry.darkCanvasTexture.src} />

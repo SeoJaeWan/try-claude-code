@@ -16,14 +16,26 @@ const AUTOPLAY_INTERVAL_MS = 6000;
 const scenes = workflowScenario.scenes;
 const store = getAppStore(scenes.length);
 
-/** Check URL param for forced fallback (used by E2E tests) */
+/** Check URL param for forced fallback (used by E2E tests) — read synchronously on first render */
 function useForcedFallback() {
-  const [forceFallback, setForceFallback] = useState<string | null>(null);
-  useEffect(() => {
-    const param = new URLSearchParams(window.location.search).get("forceFallback");
-    setForceFallback(param);
-  }, []);
+  const [forceFallback] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return new URLSearchParams(window.location.search).get("forceFallback");
+  });
   return forceFallback;
+}
+
+/** Detect mobile breakpoint reactively */
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 768 : false,
+  );
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
 }
 
 export function App() {
@@ -33,6 +45,7 @@ export function App() {
   const cameraMode = useStore(store, (s) => s.cameraMode);
 
   const forceFallback = useForcedFallback();
+  const isMobile = useIsMobile();
   const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Autoplay scheduler
@@ -54,7 +67,8 @@ export function App() {
   const canGoNext = sceneIndex < scenes.length - 1;
 
   const progressScenes = scenes.map((s) => ({ id: s.id, label: s.title }));
-  const progressLabel = `${sceneIndex + 1} / ${scenes.length}`;
+  // progressLabel used by fallback path (not currently active)
+  // const progressLabel = `${sceneIndex + 1} / ${scenes.length}`;
 
   const handleSelectScene = (id: string) => {
     const idx = scenes.findIndex((s) => s.id === id);
@@ -65,67 +79,47 @@ export function App() {
 
   if (webglFallback) {
     return (
-      <div
-        style={{ display: "flex", flexDirection: "column", height: "100%" }}
-      >
-        <FallbackView
-          reason="webgl-unavailable"
-          currentSceneLabel={currentScene.title}
-          progressLabel={progressLabel}
-        />
+      <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+        <FallbackView reason="webgl-unavailable" />
       </div>
     );
   }
 
-  const controls = (
-    <TopControls
-      playback={playback}
-      cameraMode={cameraMode}
-      motionMode={motionMode}
-      canGoPrevious={canGoPrevious}
-      canGoNext={canGoNext}
-      onPrevious={() => store.getState().previousScene()}
-      onNext={() => store.getState().nextScene()}
-      onReplay={() => store.getState().replayScene()}
-      onTogglePlayback={() => store.getState().togglePlayback()}
-      onToggleWholeMap={() => store.getState().toggleCameraMode()}
-      onToggleMotionMode={() => store.getState().toggleMotionMode()}
-    />
-  );
-
-  const progress = (
-    <ProgressStrip
-      scenes={progressScenes}
-      currentSceneId={currentScene.id}
-      onSelectScene={handleSelectScene}
-    />
-  );
-
-  const canvas = (
-    <WebGLErrorBoundary>
-      <FlowCanvas
-        currentScene={currentScene}
-        motionMode={motionMode}
-        cameraMode={cameraMode}
-        sceneIndex={sceneIndex}
-      />
-    </WebGLErrorBoundary>
-  );
-
   return (
-    <>
-      {/* Desktop layout: full-bleed canvas + right panel + top controls + bottom progress */}
-      <div
-        className="hidden md:flex flex-col h-full overflow-hidden"
-        aria-label="Codex workflow 3D 흐름 앱"
-      >
-        {controls}
-        <div className="flex flex-1 min-h-0 relative">
-          {/* 3D Canvas — full bleed */}
-          <div className="flex-1 relative min-w-0">
-            {canvas}
-          </div>
-          {/* Right inspector */}
+    <div
+      style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}
+    >
+      {/* Top controls */}
+      <TopControls
+        playback={playback}
+        cameraMode={cameraMode}
+        motionMode={motionMode}
+        canGoPrevious={canGoPrevious}
+        canGoNext={canGoNext}
+        onPrevious={() => store.getState().previousScene()}
+        onNext={() => store.getState().nextScene()}
+        onReplay={() => store.getState().replayScene()}
+        onTogglePlayback={() => store.getState().togglePlayback()}
+        onToggleWholeMap={() => store.getState().toggleCameraMode()}
+        onToggleMotionMode={() => store.getState().toggleMotionMode()}
+      />
+
+      {/* Content: canvas + inspector */}
+      <div style={{ display: "flex", flex: 1, minHeight: 0, position: "relative" }}>
+        {/* Canvas fills the left area */}
+        <div style={{ flex: 1, position: "relative", minWidth: 0 }}>
+          <WebGLErrorBoundary>
+            <FlowCanvas
+              currentScene={currentScene}
+              motionMode={motionMode}
+              cameraMode={cameraMode}
+              sceneIndex={sceneIndex}
+            />
+          </WebGLErrorBoundary>
+        </div>
+
+        {/* Desktop right inspector panel — hidden on mobile via inline style */}
+        {!isMobile && (
           <div
             style={{
               width: "320px",
@@ -142,29 +136,24 @@ export function App() {
               variant="desktop"
             />
           </div>
-        </div>
-        {progress}
+        )}
       </div>
 
-      {/* Mobile layout: full-bleed canvas, compact controls, progress strip above bottom sheet */}
-      <div
-        className="flex md:hidden flex-col h-full overflow-hidden relative"
-        aria-label="Codex workflow 3D 흐름 앱"
-      >
-        {controls}
-        {/* Canvas fills remaining space */}
-        <div className="flex-1 relative min-h-0">
-          {canvas}
-        </div>
-        {/* Progress strip sits above the inspector sheet */}
-        {progress}
-        {/* Mobile bottom sheet inspector */}
+      {/* Progress strip */}
+      <ProgressStrip
+        scenes={progressScenes}
+        currentSceneId={currentScene.id}
+        onSelectScene={handleSelectScene}
+      />
+
+      {/* Mobile bottom sheet inspector — only rendered on mobile */}
+      {isMobile && (
         <InspectorPanel
           currentScene={currentScene}
           allScenes={scenes}
           variant="mobile"
         />
-      </div>
-    </>
+      )}
+    </div>
   );
 }

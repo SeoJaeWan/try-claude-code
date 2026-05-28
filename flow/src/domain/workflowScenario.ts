@@ -393,6 +393,20 @@ export const workflowScenario: WorkflowScenario = {
           userNavigation: false,
         },
       ],
+      commits: [
+        { id: "phase-1-commit-final", phase: 1, message: "feat(flow): Vite app foundation", active: false },
+        { id: "phase-2-commit-final", phase: 2, message: "feat(flow): scenario data", active: false },
+        { id: "phase-3-commit-final", phase: 3, message: "feat(flow): playback state", active: false },
+        { id: "phase-4-commit-final", phase: 4, message: "feat(flow): narrative shell", active: false },
+        { id: "phase-5-commit-final", phase: 5, message: "feat(flow): 3D graph", active: false },
+        { id: "phase-6-commit-final", phase: 6, message: "feat(flow): fallback a11y", active: false },
+        { id: "phase-7-commit-final", phase: 7, message: "feat(flow): verify end to end", active: false },
+      ],
+      review: {
+        feedbackReturnArc: true,
+        reworkCommit: true,
+        qaConfirmed: true,
+      },
       merge: {
         target: "main",
         selectedChoice: "merge",
