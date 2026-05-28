@@ -59,6 +59,8 @@ Use this skill to process feedback captured from the plan wiki docs UI. Resolve 
    - Move or rewrite the feedback JSON into the correct outcome folder.
    - Use `applied` when wiki source files changed successfully.
    - Run `git status --short` inside `./.codex/plan-wiki/source` and report the changed plan wiki files.
+   - If a commit is requested, include only plan wiki files changed by the current feedback batch.
+   - Do not include unrelated dirty files already present in the plan wiki source repo.
    - Commit and push the plan wiki source repo only after explicit user approval.
    - Use `needs-decision` when user approval is required before changing source files.
    - Use `stale` when the selected text no longer maps to the source document.

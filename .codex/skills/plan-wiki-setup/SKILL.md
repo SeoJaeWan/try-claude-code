@@ -34,12 +34,14 @@ Use this skill to connect a workspace to the shared plan wiki Git repository and
 
 5. Report Git sync state.
    - After setup or bootstrap writes, run `git status --short` inside `./.codex/plan-wiki/source`.
+   - If a commit is requested, include only plan wiki files changed by the current setup/bootstrap operation.
+   - Do not include unrelated dirty files already present in the plan wiki source repo.
    - Commit and push only after explicit user approval.
    - The commit target is the plan wiki source repo, not the current project repo.
 
 ## Guardrails
 
-- Do not recreate `sync/current`; planning agents read `./.codex/plan-wiki/source/wiki` directly.
+- Do not recreate legacy sync-link directories; planning agents read `./.codex/plan-wiki/source/wiki` directly.
 - Do not point planning skills at `raw/`, `feedback/`, or `history/`; those are source-maintenance roots.
 - Do not overwrite existing wiki documents just to match a new template.
 - Do not scatter environment-specific absolute paths throughout other skills.

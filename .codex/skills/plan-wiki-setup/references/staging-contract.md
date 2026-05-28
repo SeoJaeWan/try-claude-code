@@ -7,7 +7,7 @@ Use this contract whenever planning agents need a workspace-local planning root 
 - Source Git repository clone: `./.codex/plan-wiki/source`
 - Workspace planning root: `./.codex/plan-wiki/source/wiki`
 
-The planning root is a normal directory inside the project-local source clone. Do not create or depend on `sync/current`.
+The planning root is a normal directory inside the project-local source clone. Do not create or depend on legacy sync-link directories.
 
 Planning agents should find:
 
@@ -33,3 +33,4 @@ If the planning root is missing, stop and route to `plan-wiki-setup` instead of 
 - `orchestrator`, `architect`, `brainstorm`, and `plan-review` consume `./.codex/plan-wiki/source/wiki` directly and do not perform per-run clone or fetch inside the planning workflow.
 - Plan wiki maintenance skills may edit `./.codex/plan-wiki/source` and then report the nested repo Git status.
 - Commit and push are allowed only after explicit user approval.
+- Plan wiki commits must include only files changed by the current operation and must not absorb unrelated dirty files in `./.codex/plan-wiki/source`.

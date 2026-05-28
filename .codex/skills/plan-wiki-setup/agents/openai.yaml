@@ -1,4 +1,4 @@
 interface:
   display_name: "Plan Wiki Setup"
-  short_description: "Create the plan wiki link and prepare the workspace planning root."
+  short_description: "Create the plan wiki source clone and prepare the planning root."
   default_prompt: "Use this skill when Codex needs to clone or verify ./.codex/plan-wiki/source, bootstrap the plan wiki registry/core/pattern layout, or verify ./.codex/plan-wiki/source/wiki as the planning root for planning agents."

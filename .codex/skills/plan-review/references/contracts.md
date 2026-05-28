@@ -22,7 +22,7 @@ Provide an independent, read-only review of an executable plan file and its curr
 ## Execution modes
 
 - `orchestrated`: an orchestrator handoff provides `task_slug`, `plan_path`, and `plan_wiki_root`.
-- `direct`: no orchestrator handoff exists; resolve the plan wiki root through the workspace sync path.
+- `direct`: no orchestrator handoff exists; resolve the plan wiki root through the project-local source clone at `./.codex/plan-wiki/source/wiki`.
 
 In orchestrated mode, treat provided `task_slug`, `plan_path`, `plan_wiki_root`, optional `plan_signature`, and optional `tdd_path` as authoritative. If they are missing or contradictory, block instead of inventing replacements.
 

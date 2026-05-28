@@ -11,7 +11,7 @@ Claude Code용 실행 플러그인과 Codex용 planning stack을 함께 실험�
 - planning docs gate와 feedback triage가 추가되어, 승인/수정 이력이 `plans/{task}/planning-docs/` 아래 아티팩트로 남습니다.
 - 구현 완료 후에는 `runner`가 `dev-review`를 호출해 commit 기반 구현 리뷰를 수행합니다. 이 리뷰의 아티팩트는 `plans/{task}/dev-review/`에 데이터만 저장하고, HTML/UI는 플러그인 내부에서 직접 서빙합니다.
 - `dev-review`는 `http://localhost:9797/review/{task}` 형태의 multi-review 서버를 재사용하며, commit step에서는 지원 가능한 앱에 대해 live preview iframe과 commit별 route override를 제공합니다.
-- plan wiki staging이 copy 방식이 아니라 link-only 방식으로 고정되었고, workspace planning root는 `./.codex/plan-wiki/sync/current`를 기준으로 잡습니다.
+- plan wiki는 project-local source clone인 `./.codex/plan-wiki/source`로 관리되고, planning root는 `./.codex/plan-wiki/source/wiki`를 기준으로 잡습니다.
 
 ## 현재 저장소 구조
 
@@ -86,7 +86,7 @@ SessionStart 훅이 `~/.claude/statusline/` 아래 파일을 자동 동기화하
 | `plan-review` | 계획 아티팩트만 읽고 cold review 수행 |
 | `orchestrator` | stateless, artifact-driven planning loop 전체를 조율 |
 | `plan-tdd` | 계획에서 실제 source-tree TDD contract test를 작성 |
-| `plan-wiki-setup` | 외부 plan wiki link와 workspace planning root 준비 |
+| `plan-wiki-setup` | 외부 plan wiki source clone과 planning root 준비 |
 | `plan-wiki-lint` | plan wiki 품질 점검 |
 | `plan-wiki-ingest` | 수집된 리뷰를 plan wiki 지식으로 흡수 |
 

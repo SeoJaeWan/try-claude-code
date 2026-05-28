@@ -69,6 +69,8 @@ Use this skill to process review inbox files into the plan wiki. Resolve the pla
    - Do not continue with partial cleanup after a failed batch.
    - Write one operation history record under `history/YYYY/MM/` with `type: ingest`, input reviews, changed files, validation status, and source review cleanup outcome.
    - Run `git status --short` inside `./.codex/plan-wiki/source` and report the changed plan wiki files.
+   - If a commit is requested, include only plan wiki files changed by the current ingest batch.
+   - Do not include unrelated dirty files already present in the plan wiki source repo.
    - Commit and push the plan wiki source repo only after explicit user approval.
 
 ## Promotion Rules
