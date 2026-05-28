@@ -56,7 +56,7 @@ function DecisionBadges({ decision }: { decision: MergeDecision }) {
 export function InspectorPanel({ currentScene, variant }: InspectorPanelProps) {
   const containerClass =
     variant === "mobile"
-      ? "flex flex-col gap-3 p-4 overflow-y-auto max-h-full"
+      ? "flex flex-col gap-3 p-4 overflow-y-auto"
       : "flex flex-col gap-3 p-4 overflow-y-auto h-full";
 
   return (
@@ -64,7 +64,16 @@ export function InspectorPanel({ currentScene, variant }: InspectorPanelProps) {
       role="complementary"
       aria-label="현재 workflow 설명"
       data-testid={variant === "mobile" ? "mobile-inspector-sheet" : undefined}
-      className={`bg-[var(--color-panel-bg)] border-l border-[var(--color-panel-border)] ${containerClass}`}
+      style={
+        variant === "mobile"
+          ? {
+              maxHeight: "220px",
+              borderTop: "1px solid rgba(255,255,255,0.08)",
+              borderLeft: "none",
+            }
+          : undefined
+      }
+      className={`bg-[var(--color-panel-bg)] ${variant === "desktop" ? "border-l border-[var(--color-panel-border)]" : ""} ${containerClass}`}
     >
       {/* Scene title */}
       <div>
