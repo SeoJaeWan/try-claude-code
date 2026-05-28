@@ -1,7 +1,6 @@
 ---
 name: frontend-dev
 description: "React/Next.js/Expo development with UI components, custom hooks, and state management. Use for frontend UI, API integration, and mobile app development. Use this skill for any task that involves creating or modifying React components, pages, hooks, styles, or frontend routing — even when the user just says 'add this to the UI', 'make this screen look like X', or 'wire up the API on the frontend'. Run inside the `frontend-developer` agent."
-model: sonnet
 ---
 
 <Skill_Guide>
