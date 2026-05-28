@@ -28,7 +28,7 @@ Single source of truth for commit rules used by every skill and agent in `plugin
 
 ### Do NOT
 
-- Do NOT include phase identity in the subject or body — no `phase 2 — ...`, no `[Phase 2] ...`, no `2단계: ...`. The runner hook tracks phase from `Agent.description`, never from commit messages, so a phase prefix in the commit message only adds noise and confuses the developer-review UI.
+- Do NOT include phase identity in the subject or body — no `phase 2 — ...`, no `[Phase 2] ...`, no `2단계: ...`. The runner hook tracks phase from `Agent.description`, never from commit messages, so a phase prefix in the commit message only adds noise and confuses the dev-review UI.
 - Do NOT use `git commit --amend` or `git rebase` to rewrite commits already on a task branch. Each phase ends with a fresh commit so the stop-gate and dev-review can reason about a stable history.
 - Do NOT skip hooks (`--no-verify`, `--no-gpg-sign`, etc.). A failing hook is signal — fix the underlying issue.
 
@@ -36,7 +36,7 @@ Single source of truth for commit rules used by every skill and agent in `plugin
 
 ## Body
 
-The body is optional in general but **required** for runner phase agents and dev-review rework agents — it is surfaced verbatim in the developer-review UI, so reviewers read it as the rationale for the change.
+The body is optional in general but **required** for runner phase agents and dev-review rework agents — it is surfaced verbatim in the dev-review UI, so reviewers read it as the rationale for the change.
 
 - **Language: Korean.** Subject stays English (Conventional Commits + tooling compatibility); body is written in Korean so the dev-review UI is scannable for the Korean-speaking reviewer.
 - **Default shape: exactly 2 lines.**

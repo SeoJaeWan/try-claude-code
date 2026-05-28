@@ -7,18 +7,18 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 /**
- * developer review package 생성기의 CLI 동작을 검증하는 Node test suite.
+ * planning docs package 생성기의 CLI 동작을 검증하는 Node test suite.
  *
  * 임시 repository를 만들고 plan/review/evidence 파일을 직접 구성해,
  * 생성기가 UTF-8 보존, signature 유지, evidence 복사, 경로 방어를 지키는지 확인한다.
  */
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const scriptPath = path.resolve(__dirname, "..", "generate-developer-review-package.mjs");
+const scriptPath = path.resolve(__dirname, "..", "generate-planning-docs-package.mjs");
 
 /**
  * 한글 plan/review source를 UTF-8로 읽고 review-data/feedback/history를 생성하는 기본 성공 경로를 검증한다.
  */
-test("writes developer review package as UTF-8 and preserves Korean text", () => {
+test("writes planning docs package as UTF-8 and preserves Korean text", () => {
   const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "orchestrator-review-"));
   const taskSlug = "korean-review";
   const planDir = path.join(repoRoot, "plans", taskSlug);
@@ -98,7 +98,7 @@ test("writes developer review package as UTF-8 and preserves Korean text", () =>
 
 | \`boundary\` (변경 경계) | 변경 내용 | 유지할 것 | 제약 |
 | --- | --- | --- | --- |
-| \`developer-review\` | 패키지 생성 | UI 계약 | UTF-8 |
+| \`planning-docs\` | 패키지 생성 | UI 계약 | UTF-8 |
 
 ## 시나리오 / 계약
 
@@ -130,7 +130,7 @@ plan_path: plans/${taskSlug}/plan.md
 task_slug: ${taskSlug}
 plan_signature: fixed123
 outcome: ready
-next_action: developer_review
+next_action: planning_docs
 finding_signature: none
 requires_user_decision: false
 issue_codes: []
@@ -161,7 +161,7 @@ affected_phase_paths: []
   });
 
   assert.equal(result.status, 0, result.stderr);
-  const reviewDataPath = path.join(planDir, "developer-review", "review-data.json");
+  const reviewDataPath = path.join(planDir, "planning-docs", "review-data.json");
   const raw = fs.readFileSync(reviewDataPath);
   assert.ok(raw.includes(Buffer.from("한글 리뷰 패키지", "utf8")));
 
@@ -180,7 +180,7 @@ affected_phase_paths: []
   assert.deepEqual(reviewData.review_items.map((item) => item.id), ["overview", "P1"]);
   assert.ok(reviewData.review_items[0].anchors.some((anchor) => anchor.id === "scope"));
 
-  const feedback = JSON.parse(fs.readFileSync(path.join(planDir, "developer-review", "feedback.json"), "utf8"));
+  const feedback = JSON.parse(fs.readFileSync(path.join(planDir, "planning-docs", "feedback.json"), "utf8"));
   assert.equal(feedback.schema_version, 2);
   assert.deepEqual(Object.keys(feedback.item_status), ["overview", "P1"]);
   assert.deepEqual(feedback.item_status.overview, { approved: false });
@@ -224,7 +224,7 @@ test("includes phase TDD mappings for compact plan review", () => {
 | --- | --- | --- | --- | --- | --- | --- |
 | Phase 1 | scan lifecycle을 고정한다 | dynamic-page load 계약 | TDD red 계약 작성 | unit과 manual smoke | phase 1: scan | \`./phases/01-scan.md\` |
 
-## 개발자 리뷰 반영 내역
+## planning docs 피드백 반영 내역
 
 | id | phase | round | type | target_id | user_comment | resolution_summary |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -292,7 +292,7 @@ plan_path: plans/${taskSlug}/plan.md
 task_slug: ${taskSlug}
 plan_signature: tdd123
 outcome: ready
-next_action: developer_review
+next_action: planning_docs
 finding_signature: none
 requires_user_decision: false
 issue_codes: []
@@ -315,7 +315,7 @@ affected_phase_paths: []
   });
 
   assert.equal(result.status, 0, result.stderr);
-  const reviewData = JSON.parse(fs.readFileSync(path.join(planDir, "developer-review", "review-data.json"), "utf8"));
+  const reviewData = JSON.parse(fs.readFileSync(path.join(planDir, "planning-docs", "review-data.json"), "utf8"));
   assert.equal(reviewData.tdd_summary.available, true);
   assert.equal(reviewData.tdd_summary.gate_status, "failed");
   assert.equal(reviewData.tdd_summary.tdd_signature, "tddsig123");
@@ -358,7 +358,7 @@ test("fails before writing when source prose already contains lossy question mar
 
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /encoding-damaged/);
-  assert.equal(fs.existsSync(path.join(planDir, "developer-review", "review-data.json")), false);
+  assert.equal(fs.existsSync(path.join(planDir, "planning-docs", "review-data.json")), false);
 });
 
 /**
@@ -440,7 +440,7 @@ affected_plan_paths: []
   });
 
   assert.equal(result.status, 0, result.stderr);
-  const reviewData = JSON.parse(fs.readFileSync(path.join(planDir, "developer-review", "review-data.json"), "utf8"));
+  const reviewData = JSON.parse(fs.readFileSync(path.join(planDir, "planning-docs", "review-data.json"), "utf8"));
   assert.equal(reviewData.phases.length, 1);
   assert.equal(reviewData.phases[0].title, "Phase 1 - registry source");
   assert.ok(reviewData.phases[0].contracts[0].includes("registry 생성"));
@@ -532,7 +532,7 @@ affected_plan_paths: []
   });
 
   assert.equal(result.status, 0, result.stderr);
-  const reviewData = JSON.parse(fs.readFileSync(path.join(planDir, "developer-review", "review-data.json"), "utf8"));
+  const reviewData = JSON.parse(fs.readFileSync(path.join(planDir, "planning-docs", "review-data.json"), "utf8"));
   assert.equal(reviewData.topology_contract.length, 2);
   assert.equal(reviewData.phases[0].topology_contract.length, 2);
   assert.equal(reviewData.evidence_artifacts[0].asset, "assets/evidence/ui/P1-empty.html");
@@ -547,7 +547,7 @@ affected_plan_paths: []
   assert.deepEqual(reviewData.evidence_artifacts[0].review_points, ["empty", "CTA", "mobile"]);
   assert.match(reviewData.evidence_artifacts[0].content_hash, /^[a-f0-9]{12}$/);
   assert.equal(
-    fs.existsSync(path.join(planDir, "developer-review", "assets", "evidence", "ui", "P1-empty.html")),
+    fs.existsSync(path.join(planDir, "planning-docs", "assets", "evidence", "ui", "P1-empty.html")),
     true
   );
 });
@@ -589,5 +589,5 @@ test("rejects evidence paths outside evidence root", () => {
 
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Evidence path must be under evidence/);
-  assert.equal(fs.existsSync(path.join(planDir, "developer-review", "review-data.json")), false);
+  assert.equal(fs.existsSync(path.join(planDir, "planning-docs", "review-data.json")), false);
 });

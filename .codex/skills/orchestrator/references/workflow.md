@@ -8,9 +8,9 @@
 - Step 3. Run TDD contract authoring
 - Step 4. Run cold review
 - Step 5. Route review findings
-- Step 6. Developer review gate
-- Step 7. Triage developer review feedback
-- Step 8. Capture developer review learning
+- Step 6. Planning docs gate
+- Step 7. Triage planning docs feedback
+- Step 8. Capture planning docs learning
 - Step 9. Completion
 
 Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output rules.
@@ -44,7 +44,7 @@ Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output ru
 - Compute current `plan_signature` for the selected plan file and determine whether `tdd.md` and `review.md` are fresh.
 - Do not reconstruct hidden stage from old chat text when artifacts disagree.
 - If multiple plan files were just written, run Step 3 for each file that lacks a fresh TDD artifact.
-- If all selected plan files have fresh acceptable review artifacts, inspect developer review artifacts for the current `plan_signature` before deciding completion.
+- If all selected plan files have fresh acceptable review artifacts, inspect planning docs artifacts for the current `plan_signature` before deciding completion.
 
 ## Step 2. Run Architect Draft or Revision
 
@@ -72,7 +72,7 @@ Controller requirements:
 - Pass exact `task-slug`, `plan_path`, `plan_wiki_root`, current `plan_signature`, and required output path `./plans/{task-slug}/tdd.md`.
 - Limit the TDD pass to source-tree tests and `tdd.md`; it must not edit production code.
 - Require `tdd.md` YAML frontmatter with at least `plan_path`, `task_slug`, `plan_signature`, `outcome`, `gate_status`, `blocker_type`, `blocker_code`, `next_action`, `resume_from`, `tdd_signature`, `requires_user_decision`, `blocked_clause_ids`, and `affected_phase_paths`.
-- Require the TDD report to expose plan-review-readable rows for plan row/scenario to test mapping, manual smoke gates, and TDD blockers. These rows are what browser developer review uses to show whether a phase's plan clauses became verifiable contracts.
+- Require the TDD report to expose plan-review-readable rows for plan row/scenario to test mapping, manual smoke gates, and TDD blockers. These rows are what the planning docs UI uses to show whether a phase's plan clauses became verifiable contracts.
 - If `plan-tdd` returns `blocker_type = plan_contract`, route the blocker to the next `architect` pass before `plan-review`.
 - If `plan-tdd` returns `blocker_type = external_setup`, stop with `tdd_gate_blocker` and report the missing setup or runner contract; do not hide it behind browser approval.
 - If `plan-tdd` completes with `gate_status = failed` because newly written red contracts fail as expected before implementation, continue to Step 4. Red contracts are valid planning evidence when expected red reasons are recorded.
@@ -95,32 +95,32 @@ Controller requirements:
 - If outcome is `ready`, route to Step 6.
 - If the same `finding_signature` repeats against the same `plan_signature` after one architect revision attempt, stop and report `no_progress`.
 
-## Step 6. Developer Review Gate
+## Step 6. Planning Docs Gate
 
-- Follow `references/developer-review.md` Step 5.
-- Generate or refresh `./plans/{task-slug}/developer-review/` for the current `plan_signature`.
+- Follow `references/planning-docs.md` Step 5.
+- Generate or refresh `./plans/{task-slug}/planning-docs/` for the current `plan_signature`.
 - The package must expose `review_items[]` for Overview and every required Phase target. If the plan has implementation scope but does not provide reviewable Phase targets, route to `architect` for plan revision instead of presenting a flattened review.
-- Start or reuse the shared plan review browser server through the documented launcher and report the printed `plan_review_browser_url` to the user.
-- Stop with `developer_review_gate_blocker` while waiting for the user to submit the browser review and say `review complete`.
+- Start or reuse the shared planning docs browser server through the documented launcher and report the printed `planning_docs_url` to the user.
+- Stop with `planning_docs_gate_blocker` while waiting for the user to submit the planning docs and say `review complete`.
 - When the user says `review complete`, read `feedback.json` and continue only if the submitted feedback matches the current `task_slug`, `plan_signature`, and review item signatures.
 
-## Step 7. Triage Developer Review Feedback
+## Step 7. Triage Planning Docs Feedback
 
-- Follow `references/developer-review.md` Step 6.
+- Follow `references/planning-docs.md` Step 6.
 - If every required review item is approved with current signature evidence and no active `needs-change` or `question` comment remains, continue to Step 8.
-- If any required review item is not approved or any active non-approved comment remains, preserve or update `review-history.json`, classify the feedback, and route according to `references/developer-review.md`.
+- If any required review item is not approved or any active non-approved comment remains, preserve or update `review-history.json`, classify the feedback, and route according to `references/planning-docs.md`.
 - Feedback that changes plan meaning routes to `architect`; after revision, rerun Step 3, Step 4, and Step 6 for the new `plan_signature`.
 - Feedback that only needs an answer must be answered in chat, then the same-signature review package must require browser re-submit.
 
-## Step 8. Capture Developer Review Learning
+## Step 8. Capture Planning Docs Learning
 
-- Follow `references/developer-review-learning.md` after a submitted browser review round has been preserved and either approved or triaged.
-- Treat learning capture as non-blocking unless it corrupts authoritative developer review artifacts.
+- Follow `references/planning-docs-learning.md` after a submitted planning docs round has been preserved and either approved or triaged.
+- Treat learning capture as non-blocking unless it corrupts authoritative planning docs artifacts.
 - Run this step before resetting `feedback.json`, regenerating the package, changing `plan_signature`, or invoking the next role when feasible.
 
 ## Step 9. Completion
 
-The orchestration is `planning_complete` only when all selected executable plan files have fresh `tdd.md` and `review.md` artifacts whose outcomes are acceptable for the current `plan_signature`, and each implementation-scope plan has explicit current developer review approval.
+The orchestration is `planning_complete` only when all selected executable plan files have fresh `tdd.md` and `review.md` artifacts whose outcomes are acceptable for the current `plan_signature`, and each implementation-scope plan has explicit current planning docs approval.
 
 For implementation-scope plans, `planning_complete` means the plan and TDD contract were approved together. The final report must explicitly state that implementation should follow the approved `plan.md` and `tdd.md`, including any manual smoke gates that cannot be automated.
 
@@ -130,6 +130,6 @@ Report:
 - TDD artifact path and gate status
 - review artifact path
 - final review outcome for each plan
-- developer review artifact path and approval state for each implementation-scope plan
+- planning docs artifact path and approval state for each implementation-scope plan
 - implementation readiness for each implementation-scope plan
 - any remaining non-blocking findings

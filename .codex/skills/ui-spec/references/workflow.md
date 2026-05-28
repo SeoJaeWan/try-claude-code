@@ -31,7 +31,7 @@ Lock the direction in words before generating variants:
 - responsive and accessibility expectations that materially affect planning
 - reuse vs new-pattern expectations
 - design-system, tone, or visual constraints that artifact consumers must preserve
-- 나중 계획이 browser developer review에서 검토자 판단 자료를 요구할 때의 HTML/CSS preview evidence 기대치
+- 나중 계획이 planning docs에서 검토자 판단 자료를 요구할 때의 HTML/CSS preview evidence 기대치
 - preview evidence 분해 방식: `shell-preview`, `screen-preview`, `component-preview`, `state-variant-preview`, `function-contract` 중 무엇이 필요한지와 각각의 검토 대상 수
 
 Rules:
@@ -142,7 +142,7 @@ When producing the final handoff, provide a `locked_ui_direction` packet contain
 3. state-presentation expectations for empty / loading / error / success flows
 4. responsive, accessibility, and reuse constraints that materially affect planning
 5. approved visual references or variant notes when present
-6. preview evidence breakdown when the UI direction needs reviewer approval in browser developer review
+6. preview evidence breakdown when the UI direction needs reviewer approval in planning docs
 7. `function-contract` harness guidance when token/schema/registry/variant input must pass through a function, mapper, adapter, or serializer before reaching UI or runtime recipients
 8. explicit low-risk defaults vs still-blocking UI questions
 

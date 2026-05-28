@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * 계획 developer review UI를 제공하는 로컬 HTTP 서버.
+ * planning docs UI를 제공하는 로컬 HTTP 서버.
  *
- * `plans/{task-slug}/developer-review` 아래의 review package를 읽고,
+ * `plans/{task-slug}/planning-docs` 아래의 planning docs package를 읽고,
  * 브라우저에서 feedback/comment/approval 상태를 편집할 수 있는 API와 정적 asset 라우트를 제공한다.
  */
 
@@ -22,13 +22,13 @@ const sharedIndexPath = path.join(
   "skills",
   "orchestrator",
   "assets",
-  "developer-review",
+  "planning-docs",
   "index.html"
 );
 const argv = process.argv.slice(2);
 
 if (argv.includes("--help") || argv.includes("-h")) {
-  console.log("Usage: node .codex/tools/plan-review-browser-server.mjs [review-dir] [--port 8787]");
+  console.log("Usage: node .codex/tools/planning-docs-browser-server.mjs [review-dir] [--port 8787]");
   console.log("");
   console.log("Open reviews at /review/{task-slug}.");
   console.log("When [review-dir] is passed, / redirects to the matching /review/{task-slug} URL.");
@@ -536,7 +536,7 @@ function isSafeTaskSlug(taskSlug) {
 }
 
 /**
- * task slug에 대응하는 developer-review root를 안전하게 계산한다.
+ * task slug에 대응하는 planning-docs root를 안전하게 계산한다.
  *
  * @param {string} taskSlug task slug.
  * @returns {string | null} review root 절대 경로, 안전하지 않으면 `null`.
@@ -546,7 +546,7 @@ function reviewRootForTask(taskSlug) {
     return null;
   }
 
-  const reviewRoot = path.resolve(plansRoot, taskSlug, "developer-review");
+  const reviewRoot = path.resolve(plansRoot, taskSlug, "planning-docs");
   const plansPrefix = `${path.resolve(plansRoot)}${path.sep}`;
   if (!reviewRoot.startsWith(plansPrefix)) {
     return null;
@@ -581,7 +581,7 @@ function parseTaskPath(pathname, prefix) {
 }
 
 /**
- * review asset 요청을 developer-review/assets 하위 실제 파일 경로로 안전하게 해석한다.
+ * review asset 요청을 planning-docs/assets 하위 실제 파일 경로로 안전하게 해석한다.
  *
  * @param {string} taskSlug task slug.
  * @param {string[]} segments asset path segment 목록.
@@ -624,7 +624,7 @@ async function sendFile(res, filePath) {
 /**
  * review root의 현재 review-data model을 읽는다.
  *
- * @param {string} reviewRoot developer-review root 경로.
+ * @param {string} reviewRoot planning-docs root 경로.
  * @returns {Promise<object | null>} review-data model 또는 없으면 `null`.
  */
 async function currentReviewModel(reviewRoot) {
@@ -634,7 +634,7 @@ async function currentReviewModel(reviewRoot) {
 /**
  * feedback.json을 읽고 현재 model 기준 v2 feedback shape로 정규화한다.
  *
- * @param {string} reviewRoot developer-review root 경로.
+ * @param {string} reviewRoot planning-docs root 경로.
  * @param {object | null | undefined} model review-data model.
  * @param {string} taskSlug task slug.
  * @returns {Promise<object>} v2 feedback 객체.
@@ -778,7 +778,7 @@ function hasBlockingComments(feedback, itemId) {
 /**
  * feedback 객체의 수정 시각을 갱신하고 디스크에 저장한다.
  *
- * @param {string} reviewRoot developer-review root 경로.
+ * @param {string} reviewRoot planning-docs root 경로.
  * @param {object} feedback 저장할 feedback 객체.
  * @returns {Promise<void>}
  */
@@ -803,6 +803,7 @@ async function handleApi(req, res, pathname) {
     const legacyModel = legacyReviewRoot ? await currentReviewModel(legacyReviewRoot) : null;
     return sendJson(res, 200, {
       ok: true,
+      kind: "planning-docs",
       mode: "multi-review",
       legacy_review_root: legacyReviewRoot,
       legacy_task_slug: legacyTaskSlug,
@@ -906,7 +907,7 @@ async function handleApi(req, res, pathname) {
  * @param {import("node:http").IncomingMessage} req HTTP 요청 객체.
  * @param {import("node:http").ServerResponse} res HTTP 응답 객체.
  * @param {string} taskSlug task slug.
- * @param {string} reviewRoot developer-review root 경로.
+ * @param {string} reviewRoot planning-docs root 경로.
  * @returns {Promise<void>}
  */
 async function handleCommentCreate(req, res, taskSlug, reviewRoot) {
@@ -950,7 +951,7 @@ async function handleCommentCreate(req, res, taskSlug, reviewRoot) {
  * @param {import("node:http").IncomingMessage} req HTTP 요청 객체.
  * @param {import("node:http").ServerResponse} res HTTP 응답 객체.
  * @param {string} taskSlug task slug.
- * @param {string} reviewRoot developer-review root 경로.
+ * @param {string} reviewRoot planning-docs root 경로.
  * @param {string} id 수정할 comment id.
  * @returns {Promise<void>}
  */
@@ -992,7 +993,7 @@ async function handleCommentPatch(req, res, taskSlug, reviewRoot, id) {
  * @param {import("node:http").IncomingMessage} req HTTP 요청 객체.
  * @param {import("node:http").ServerResponse} res HTTP 응답 객체.
  * @param {string} taskSlug task slug.
- * @param {string} reviewRoot developer-review root 경로.
+ * @param {string} reviewRoot planning-docs root 경로.
  * @param {string} id 삭제할 comment id.
  * @returns {Promise<void>}
  */
@@ -1019,7 +1020,7 @@ async function handleCommentDelete(req, res, taskSlug, reviewRoot, id) {
  * @param {import("node:http").IncomingMessage} req HTTP 요청 객체.
  * @param {import("node:http").ServerResponse} res HTTP 응답 객체.
  * @param {string} taskSlug task slug.
- * @param {string} reviewRoot developer-review root 경로.
+ * @param {string} reviewRoot planning-docs root 경로.
  * @returns {Promise<void>}
  */
 async function handleItemStatus(req, res, taskSlug, reviewRoot) {
@@ -1061,7 +1062,7 @@ async function handleItemStatus(req, res, taskSlug, reviewRoot) {
  * @param {import("node:http").IncomingMessage} req HTTP 요청 객체.
  * @param {import("node:http").ServerResponse} res HTTP 응답 객체.
  * @param {string} taskSlug task slug.
- * @param {string} reviewRoot developer-review root 경로.
+ * @param {string} reviewRoot planning-docs root 경로.
  * @returns {Promise<void>}
  */
 async function handleSubmit(req, res, taskSlug, reviewRoot) {
@@ -1152,7 +1153,7 @@ const server = createServer(async (req, res) => {
 server.listen(port, async () => {
   const address = server.address();
   const actualPort = typeof address === "object" && address ? address.port : port;
-  console.log(`Developer review server: http://localhost:${actualPort}`);
+  console.log(`Planning docs server: http://localhost:${actualPort}`);
   console.log("Open reviews at: /review/{task-slug}");
   if (legacyReviewRoot) {
     console.log(`Legacy review directory: ${path.relative(repoRoot, legacyReviewRoot) || legacyReviewRoot}`);

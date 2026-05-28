@@ -18,6 +18,6 @@
 - Do not approve a plan whose file/folder topology, phase rows, feature contracts, and evidence artifacts point to different paths, phases, inputs, outputs, or states.
 - Do not approve a plan that presents HTML/JS evidence as production code or requires real API calls, DB access, filesystem writes, live dev servers, React builds, or production stack execution for planning review.
 - Do not approve a UI plan that leaves critical user-visible hierarchy, state coverage, responsive behavior, or accessibility implications unresolved.
-- Do not approve a non-trivial implementation plan that lacks reviewable Phase entries, completion signals, validation, and commit boundaries for developer review.
+- Do not approve a non-trivial implementation plan that lacks reviewable Phase entries, completion signals, validation, and commit boundaries for planning docs.
 - Do not approve a plan that requires a separate shared contract, linked phase detail file, or unstated note to understand execution meaning.
 - Do not approve Figma-derived plan artifacts that lack manifest-backed provenance when the plan depends on Figma inventory or classification.

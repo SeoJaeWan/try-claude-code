@@ -7,8 +7,8 @@ Claude Code용 실행 플러그인과 Codex용 planning stack을 함께 실험�
 ## 최근 커밋 기준으로 반영된 변화
 
 - planning 흐름이 예전 named planning agent 중심에서, generic skill sub-agent + artifact-driven orchestrator 중심으로 이동했습니다.
-- `brainstorm -> ui-spec -> architect -> plan-review -> browser planning review -> plan-tdd` 루프가 현재 기본 planning 경로입니다.
-- planning developer review gate와 feedback triage가 추가되어, 리뷰 승인/수정 이력이 `plans/{task}/developer-review/` 아래 아티팩트로 남습니다.
+- `brainstorm -> ui-spec -> architect -> plan-tdd -> plan-review -> planning docs` 루프가 현재 기본 planning 경로입니다.
+- planning docs gate와 feedback triage가 추가되어, 승인/수정 이력이 `plans/{task}/planning-docs/` 아래 아티팩트로 남습니다.
 - 구현 완료 후에는 `runner`가 `dev-review`를 호출해 commit 기반 구현 리뷰를 수행합니다. 이 리뷰의 아티팩트는 `plans/{task}/dev-review/`에 데이터만 저장하고, HTML/UI는 플러그인 내부에서 직접 서빙합니다.
 - `dev-review`는 `http://localhost:9797/review/{task}` 형태의 multi-review 서버를 재사용하며, commit step에서는 지원 가능한 앱에 대해 live preview iframe과 commit별 route override를 제공합니다.
 - plan wiki staging이 copy 방식이 아니라 link-only 방식으로 고정되었고, workspace planning root는 `./.codex/plan-wiki/sync/current`를 기준으로 잡습니다.
@@ -92,9 +92,9 @@ SessionStart 훅이 `~/.claude/statusline/` 아래 파일을 자동 동기화하
 
 현재 orchestrator의 핵심은 다음과 같습니다.
 
-- hidden state보다 `plan.md`, `review.md`, `developer-review/*`, `tdd.md` 같은 아티팩트를 source of truth로 사용
-- browser 기반 planning developer review를 강제하고, 승인되지 않은 피드백은 triage 후 다음 planning 단계로 되돌림
-- `.codex/tools/plan-review-browser-server.mjs`로 planning review UI를 서빙
+- hidden state보다 `plan.md`, `tdd.md`, `review.md`, `planning-docs/*` 같은 아티팩트를 source of truth로 사용
+- browser 기반 planning docs approval을 강제하고, 승인되지 않은 피드백은 triage 후 다음 planning 단계로 되돌림
+- `.codex/tools/planning-docs-browser-server.mjs`로 planning docs UI를 서빙
 - planning 하위 역할은 named agent 고정보다 skill-driven sub-agent 재사용 쪽으로 정리
 
 ## 구현 리뷰와 live preview
@@ -114,9 +114,9 @@ SessionStart 훅이 `~/.claude/statusline/` 아래 파일을 자동 동기화하
 
 1. 복잡한 요청은 request-scope 또는 UI direction 선결정을 잠급니다.
 2. `architect`가 실행 가능한 계획 아티팩트를 `plans/{task}/`에 씁니다.
-3. `plan-review`가 plan-only cold review를 수행합니다.
-4. `orchestrator`가 browser planning review gate와 feedback triage를 관리합니다.
-5. `plan-tdd`가 실제 테스트 파일을 소스 트리에 생성합니다.
+3. `plan-tdd`가 실제 테스트 파일을 소스 트리에 생성하고 plan row/test/manual smoke 매핑을 남깁니다.
+4. `plan-review`가 현재 `plan.md`와 `tdd.md`를 함께 cold review합니다.
+5. `orchestrator`가 planning docs gate와 feedback triage를 관리합니다.
 6. 구현 실행은 `plugin/develop`의 `runner`가 task 단위 worktree에서 수행하고, phase별 commit을 만듭니다.
 7. `runner`가 `dev-review`를 열어 commit card, diff, live preview 기반 구현 리뷰를 받고, `needs-change` 피드백은 같은 worktree에서 재작업 라운드로 돌립니다.
 8. 구현 리뷰가 승인된 뒤 stop-review gate와 merge/PR/later 결정을 거칩니다.

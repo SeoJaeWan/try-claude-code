@@ -59,7 +59,7 @@ flowchart LR
 | Stage 5 | 2026-03-03 ~ 2026-03-05 | skill dispatch + planner-lite | `planner-lite`, `architect`, `init-agent`, `jira` | 계획 스킬 + 실행 스킬 | 문서 계약 + 부분 자동화 | `plan.md`, 테스트 아티팩트, Jira 산출물 |
 | Stage 6 | 2026-03-06 | pluginization 전환 | `try-claude-plugin` 관련 계약 문서 | 플러그인 패키징 | 배포/마이그레이션 계약 | plugin seed/bootstrap/migration |
 | Stage 7 | 2026-03-06 ~ 2026-03-31 | plugin + dev-cli 실험 | `marketplace.json`, historical `plugin/skills/*`, `docs/dev-cli-design.md`, `.codex/skills/*` | 계획 스킬 + 플러그인 스킬 + CLI | 실행 강제 규칙 | preview/apply scaffold, tests/evals |
-| Stage 8 | 2026-04-01 ~ 현재 | plugin split + artifact-driven planning | `.claude-plugin/marketplace.json`, `plugin/develop/*`, `plugin/statusline/*`, `.codex/skills/*`, `.codex/tools/*` | planning artifact + runtime hook + worktree 실행 | 아티팩트/훅 기반 실행 계약 | `plans/*`, `developer-review/*`, `dev-review/*`, `qa/*`, plan wiki 연동 |
+| Stage 8 | 2026-04-01 ~ 현재 | plugin split + artifact-driven planning | `.claude-plugin/marketplace.json`, `plugin/develop/*`, `plugin/statusline/*`, `.codex/skills/*`, `.codex/tools/*` | planning artifact + runtime hook + worktree 실행 | 아티팩트/훅 기반 실행 계약 | `plans/*`, `planning-docs/*`, `dev-review/*`, `qa/*`, plan wiki 연동 |
 
 ---
 
@@ -486,7 +486,7 @@ flowchart TD
 - `.codex/skills/*`를 로컬 planning stack으로 정리
 - plan wiki staging, 이후 link-only planning root로 고정
 - orchestrator를 stateless, artifact-driven 흐름으로 재구성
-- browser developer review gate, feedback triage, QA verification, visual parity 스킬 분리 추가
+- planning docs gate, feedback triage, QA verification, visual parity 스킬 분리 추가
 - 구현 완료 후 merge 전 단계에 `plugin/develop/skills/dev-review` 기반 implementation review gate 추가
 - `dev-review`는 plugin-internal multi-review server, data-only task artifacts, commit별 live preview iframe, route override를 갖는 구조로 발전
 - 메인 develop 플러그인은 이 흐름을 포함해 `2.5.0`으로 갱신
@@ -497,18 +497,18 @@ flowchart TD
 flowchart TD
     U["User request"]
     LOCK["request-scope / UI direction lock"]
-    ARCH["architect"]
-    REVIEW["plan-review"]
     ORCH["orchestrator"]
-    PLANDEVREV["browser planning review<br/>review artifacts + local server"]
+    ARCH["architect"]
     MAT["plan-tdd"]
+    REVIEW["plan-review"]
+    PLANDOCS["planning docs<br/>plan.md + tdd.md + local server"]
     RUN["runner"]
     WT["task worktree<br/>phase commits + approvals"]
     EXEC["frontend-dev / backend-dev / general-dev / doc"]
     IMPDEVREV["implementation dev-review<br/>commit cards + live preview"]
     MERGE["user merge decision"]
 
-    U --> LOCK --> ARCH --> REVIEW --> ORCH --> PLANDEVREV --> MAT --> RUN --> WT --> EXEC --> IMPDEVREV --> MERGE
+    U --> LOCK --> ORCH --> ARCH --> MAT --> REVIEW --> PLANDOCS --> RUN --> WT --> EXEC --> IMPDEVREV --> MERGE
 ```
 
 ### 현재 요청 처리의 실제 단계
@@ -516,10 +516,10 @@ flowchart TD
 예시: "대시보드 알림 필터 로직을 추가해줘"
 
 1. 요청이 모호하면 request-scope나 UI direction 선결정을 먼저 잠근다.
-2. `architect`가 `plans/{task}/plan.md`와 phase detail 아티팩트를 만든다.
-3. `plan-review`가 plan-only cold review를 수행한다.
-4. `orchestrator`가 planning developer review 패키지를 만들고, `.codex/tools/plan-review-browser-server.mjs`로 로컬 review UI를 서빙한다.
-5. 피드백이 승인되면 `plan-tdd`가 실제 테스트 파일을 source tree에 배치한다.
+2. `orchestrator`가 `architect`를 호출해 `plans/{task}/plan.md`와 phase detail 아티팩트를 만든다.
+3. `plan-tdd`가 계획 행/시나리오를 실제 테스트와 manual smoke 항목으로 옮긴다.
+4. `plan-review`가 현재 `plan.md`와 `tdd.md`를 함께 cold review한다.
+5. `orchestrator`가 planning docs 패키지를 만들고, `.codex/tools/planning-docs-browser-server.mjs`로 로컬 review UI를 서빙한다.
 6. `runner`가 task별 worktree를 만들고 phase별 agent를 순차 실행한다.
 7. `frontend-dev`나 `backend-dev`는 더 이상 CLI scaffold를 호출하지 않고, 기존 코드에서 convention을 발견한 뒤 구현한다.
 8. 모든 phase commit 뒤 `runner`가 `dev-review`를 호출해 commit card, diff, live preview 기반 구현 리뷰를 연다.
@@ -534,9 +534,9 @@ flowchart TD
 |---|---|---|
 | 소유자 | `.codex/skills/orchestrator` | `plugin/develop/skills/dev-review` |
 | 검토 대상 | `plan.md`와 phase detail | runner가 만든 실제 commit, diff, test, merge impact |
-| 서버 | `.codex/tools/plan-review-browser-server.mjs` | `plugin/develop/skills/dev-review/scripts/server.mjs` |
-| URL 성격 | planning review package | `http://localhost:9797/review/{task_slug}` multi-review |
-| 아티팩트 | `plans/*/developer-review/*` | `plans/*/dev-review/review-data.json`, `feedback.json`, `review-history.json`, `assets/diffs/*` |
+| 서버 | `.codex/tools/planning-docs-browser-server.mjs` | `plugin/develop/skills/dev-review/scripts/server.mjs` |
+| URL 성격 | planning docs package | `http://localhost:9797/review/{task_slug}` multi-review |
+| 아티팩트 | `plans/*/planning-docs/*` | `plans/*/dev-review/review-data.json`, `feedback.json`, `review-history.json`, `assets/diffs/*` |
 
 `dev-review`는 task별 폴더에 HTML을 복사하지 않는다. task 폴더는 data-only로 유지하고, UI shell과 vendor asset은 plugin 내부 copy를 직접 서빙한다. 그래서 UI 버그 수정이 기존 review data에도 즉시 적용되고, review artifact diff가 불필요하게 커지지 않는다.
 
@@ -552,7 +552,7 @@ commit step에서는 오른쪽 sticky panel에 live preview iframe이 붙는다.
 | 구현 리뷰 계층 | commit 기반 구현 리뷰, feedback routing, live preview | `plugin/develop/skills/dev-review/SKILL.md`, `plugin/develop/skills/dev-review/scripts/server.mjs`, `plugin/develop/skills/dev-review/scripts/lib/preview-pool.mjs` |
 | 역할 프롬프트 | 도메인별 agent 책임 정의 | `plugin/develop/agents/frontend-developer.md`, `plugin/develop/agents/backend-developer.md`, `plugin/develop/agents/general-developer.md` |
 | runtime hook 계층 | 세션 추적, /runner 부트스트랩 | `plugin/develop/hooks/hooks.json`, `plugin/develop/scripts/session-lifecycle-hook.mjs`, `plugin/develop/scripts/user-prompt-submit-hook.mjs` |
-| planning review / knowledge 계층 | planning developer review UI와 plan wiki 관리 | `.codex/tools/plan-review-browser-server.mjs`, `.codex/tools/plan-wiki-docs-server.mjs`, `.codex/skills/plan-wiki-setup/SKILL.md`, `.codex/skills/plan-wiki-ingest/SKILL.md`, `.codex/skills/plan-wiki-lint/SKILL.md`, `.codex/skills/plan-wiki-apply-feedback/SKILL.md` |
+| planning review / knowledge 계층 | planning docs UI와 plan wiki 관리 | `.codex/tools/planning-docs-browser-server.mjs`, `.codex/tools/plan-wiki-docs-server.mjs`, `.codex/skills/plan-wiki-setup/SKILL.md`, `.codex/skills/plan-wiki-ingest/SKILL.md`, `.codex/skills/plan-wiki-lint/SKILL.md`, `.codex/skills/plan-wiki-apply-feedback/SKILL.md` |
 | statusline 계층 | 상태줄 bootstrap / sync / mode 전환 | `plugin/statusline/skills/statusline/SKILL.md`, `plugin/statusline/hooks/hooks.json` |
 
 ### 현재 구조의 가장 큰 차이
@@ -611,7 +611,7 @@ Stage 7까지는 "규칙을 실행 가능한 recipe로 옮기는 것"이 핵심�
 | 2026-04-10 | `856d24b`, `ac63606` | `plugin/develop`, `plugin/statusline` 분리와 skill 명칭 정리 |
 | 2026-04-20 | `2b7e237`, `b44b996` | QA verification 추가, orchestrator의 stateless artifact-driven 정리 |
 | 2026-04-22 | `28f8671`, `71ad200` | generic skill subagent 전환, plan wiki link-only 고정 |
-| 2026-04-23 | `c81b67b` | browser developer review gate 추가 |
+| 2026-04-23 | `c81b67b` | planning docs gate 추가 |
 | 2026-04-24 | `9d8604e`, `6eadc7c` | review feedback triage와 overview/detail split 도입 |
 | 2026-04-24 | `792897c` | runner 완료 후 merge 전 implementation review gate 추가 |
 | 2026-04-27 | `0f98597`, `12808df` | plugin-internal dev-review server, multi-session review URL, card id/agent discovery 계약 보강 |
@@ -817,20 +817,21 @@ flowchart LR
     U["요청"]
     ARCH["architect"]
     PLAN["plans/*"]
+    MAT["plan-tdd"]
     COLD["plan-review"]
-    PLANREV["planning developer review"]
+    PLANREV["planning docs"]
     RUN["runner + worktree"]
     FE["frontend-dev<br/>convention discovery"]
     IMPREV["dev-review<br/>commit cards + live preview"]
 
-    U --> ARCH --> PLAN --> COLD --> PLANREV --> RUN --> FE --> IMPREV
+    U --> ARCH --> PLAN --> MAT --> COLD --> PLANREV --> RUN --> FE --> IMPREV
 ```
 
 특징:
 
-- 계획, review, 구현, dev-review가 artifact로 연결된다.
+- 계획, TDD, review, 구현, dev-review가 artifact로 연결된다.
 - 생성기보다 plan artifact와 repo-local convention이 더 중요하다.
-- 구현 결과도 commit 단위 browser review와 live preview를 거쳐 merge decision으로 넘어간다.
+- 구현 결과도 commit 단위 dev-review와 live preview를 거쳐 merge decision으로 넘어간다.
 - 같은 종류의 요청을 반복할수록 결과가 더 안정적이다.
 
 ---
@@ -868,7 +869,7 @@ flowchart LR
 | 작업 종류 | 진입점 | 실행 스킬/도구 | 규칙 소스 | 대표 산출물 |
 |---|---|---|---|---|
 | 요청 잠금 / 기획 | `brainstorm`, `ui-spec`, `architect` | `.codex/skills/*` | plan wiki + planning references | `plans/*`, phase detail, 결정 기록 |
-| cold review / planning developer review | `plan-review`, `orchestrator`, `plan-review-browser-server` | `.codex/skills/plan-review/SKILL.md`, `.codex/skills/orchestrator/SKILL.md`, `.codex/tools/plan-review-browser-server.mjs` | review policy + browser feedback + plan signature | `plans/_orchestrator/review/*`, `plans/*/developer-review/*` |
+| cold review / planning docs | `plan-review`, `orchestrator`, `planning-docs-browser-server` | `.codex/skills/plan-review/SKILL.md`, `.codex/skills/orchestrator/SKILL.md`, `.codex/tools/planning-docs-browser-server.mjs` | review policy + browser feedback + plan signature | `plans/_orchestrator/review/*`, `plans/*/planning-docs/*` |
 | 프론트엔드 구현 | `runner` 후 `frontend-dev` | `plugin/develop/skills/frontend-dev/SKILL.md`, `plugin/develop/agents/frontend-developer.md` | `plan.md` + 기존 UI code conventions | 실제 소스 변경, 필요 시 test/E2E 복사 |
 | 백엔드 구현 | `runner` 후 `backend-dev` | `plugin/develop/skills/backend-dev/SKILL.md`, `plugin/develop/agents/backend-developer.md` | `plan.md` + 기존 backend/database conventions | 실제 소스 변경, 필요 시 test/E2E 복사 |
 | infra / general | `runner` 후 `general-dev` | `plugin/develop/skills/general-dev/SKILL.md` | `plan.md` + infra config examples | CI/CD, Docker, env, deploy 변경 |
@@ -924,4 +925,4 @@ flowchart LR
 - `.codex/skills/orchestrator/SKILL.md`
 - `.codex/skills/plan-review/SKILL.md`
 - `.codex/skills/plan-wiki-setup/SKILL.md`
-- `.codex/tools/plan-review-browser-server.mjs`
+- `.codex/tools/planning-docs-browser-server.mjs`

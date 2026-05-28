@@ -27,7 +27,7 @@ Typical blocker signals:
 - implementation-scope topology is committed without repo-local inspection evidence, or it duplicates/contradicts existing local surfaces the plan should have reused.
 - file/folder topology, phase rows, feature contracts, and evidence artifacts contradict each other on phase, path, input, output, state, or ownership.
 - evidence artifacts are presented as production code or require real API calls, DB access, filesystem writes, live dev servers, React builds, or production stack execution for planning review.
-- UI-facing plans rely on browser developer review approval but do not provide any connected HTML/CSS preview evidence for the user-visible UI direction the reviewer must judge.
+- UI-facing plans rely on planning docs approval but do not provide any connected HTML/CSS preview evidence for the user-visible UI direction the reviewer must judge.
 - UI-facing plans collapse separate shell, screen, component, or state/variant implementation judgment units into one broad preview in a way that would force implementation agents to infer component quality, route composition, or responsive behavior from unrelated context.
 - plans that name a finite component/repeated-UI target count do not expose matching component-preview coverage or an explicit excluded-unit rationale.
 - plans that introduce token, schema, registry, variant, or design-system value transformation through a function, mapper, adapter, or serializer do not provide a `function-contract` input/output harness or equivalent structured contract showing input, function/adapter, output recipient, and negative/no-op cases.
@@ -39,7 +39,7 @@ Typical blocker signals:
 - missing first-time test runner, command, spec root or test-owner placement, source/test topology, mock/API fixture policy, browser storage/auth state policy, or expected red reason when the plan expects contract tests before the test environment exists.
 - plan count, local prerequisite relationship, authority artifact, reference-comparison, Figma parity, or Figma inventory provenance contradicts the active plan wiki contract.
 - Figma-first, external-reference, inventory, classification, or fixture authority is required for implementation or validation, but the plan moves that authority creation into an implementation phase instead of consuming a verified planning input artifact.
-- implementation scope is large enough to require staged execution or developer review, but the plan has no reviewable `## 실행 흐름` Phase entries, so later tooling or the user would have to infer phase boundaries.
+- implementation scope is large enough to require staged execution or planning docs, but the plan has no reviewable `## 실행 흐름` Phase entries, so later tooling or the user would have to infer phase boundaries.
 - visible prose terminology violates the active terminology policy in a way that hides scope, ownership, completion criteria, validation meaning, or required user-visible behavior.
 - selected pattern guidance reveals a direct contradiction that the plan leaves unresolved.
 
@@ -59,7 +59,7 @@ Typical major signals:
 - expected red reason is present but too thin to distinguish valid completion-blocking failure from malformed test/setup failure.
 - plan-file split is defensible but hides important sequencing or ownership assumptions.
 - implementation scope has Phase entries, but one or more phases lacks a meaningful completion signal, validation owner, or commit boundary.
-- developer review readiness is thin because phase labels are present but do not expose what the user should approve or what would trigger plan revision.
+- planning docs readiness is thin because phase labels are present but do not expose what the user should approve or what would trigger plan revision.
 - user-request traceability, public contract scanability, local prerequisite parity, topology evidence, or repo-fit evidence is thinner than it should be.
 - visible prose terminology drift reduces scanability or leaves repeated non-literal English shorthand, without making the contract ambiguous enough for a blocker.
 

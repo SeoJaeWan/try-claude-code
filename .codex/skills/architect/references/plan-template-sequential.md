@@ -72,9 +72,9 @@ UI evidence는 검토자가 직접 승인 여부를 판단할 수 있는 HTML/CS
 > 구현 범위가 작아 하나의 phase로 충분하면 `Phase 1`만 둔다. 구현 범위가 여러 공개 경계, runner, registry, UI, migration, 비교, 또는 E2E를 건드리면 phase를 나누고 각 phase가 독립적인 검토와 커밋 경계를 갖게 한다.
 > `주요 변경`은 검토자가 훑을 수 있는 짧은 요약이다. 긴 column list, RLS matrix, route schema, state table은 `구조화 세부 계약` 또는 별도 계약 표로 올리고, `주요 변경`에 comma-separated field list를 길게 넣지 않는다.
 
-## 개발자 리뷰 반영 내역
+## planning docs 피드백 반영 내역
 
-첫 draft에서는 `없음`으로 둔다. Browser developer review에서 `needs-change` 또는 `question`이 제출된 뒤 plan을 개정할 때는 해당 feedback이 어떤 phase에 반영됐고 어떻게 처리됐는지 기록한다.
+첫 draft에서는 `없음`으로 둔다. Planning docs에서 `needs-change` 또는 `question`이 제출된 뒤 plan을 개정할 때는 해당 feedback이 어떤 phase에 반영됐고 어떻게 처리됐는지 기록한다.
 
 | round | phase | target / anchor | 요청 유형 | 리뷰 요청 | 처리 방식 | 반영 위치 |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -107,7 +107,7 @@ UI evidence는 검토자가 직접 승인 여부를 판단할 수 있는 HTML/CS
 - [ ] component나 반복 UI 대상 수가 있으면 `대상 수 / covered units`가 전체 대상과 preview coverage를 설명한다.
 - [ ] token/schema/registry/variant처럼 함수, mapper, adapter, serializer를 거치는 값은 `function-contract` evidence로 input -> function/adapter -> output recipient -> negative/no-op이 보인다.
 - [ ] schema/RLS/API/function/state-machine처럼 dense한 계약은 `실행 흐름`의 긴 문장 대신 구조화 표로 분리했다.
-- [ ] developer review feedback으로 개정한 plan이면 `개발자 리뷰 반영 내역`에 요청과 처리 방식이 phase별로 남아 있다.
+- [ ] planning docs feedback으로 개정한 plan이면 `planning docs 피드백 반영 내역`에 요청과 처리 방식이 phase별로 남아 있다.
 - [ ] UI preview evidence는 검토자가 직접 판단할 수 있도록 계획한 화면 또는 component의 구조, 상태, 내용 밀도, 필요한 viewport 단서를 보여준다.
 - [ ] 체험 산출물은 production code가 아니라 plan 이해용 projection이며, 실제 API/server/DB/파일 쓰기를 요구하지 않는다.
 - [ ] 검증 책임은 실제 변경 경계와 관찰 가능한 완료 상태를 연결한다.

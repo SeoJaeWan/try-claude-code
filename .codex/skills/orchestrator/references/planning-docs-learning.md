@@ -1,21 +1,21 @@
-# Developer Review Learning
+# Planning Docs Learning
 
 ## Purpose
 
-Step 7 converts submitted browser review rounds into reusable planning-quality evidence without making plan wiki ingestion a blocking approval gate.
+Step 7 converts submitted planning docs rounds into reusable planning-quality evidence without making plan wiki ingestion a blocking approval gate.
 
 ## When to Run
 
-- Run after a submitted developer review round has been preserved in `review-history.json` and either approved or triaged.
+- Run after a submitted planning docs round has been preserved in `review-history.json` and either approved or triaged.
 - Do not run on unsubmitted `feedback.json`, stale `plan_signature`, or untriaged non-approved feedback.
-- Run before resetting `feedback.json`, regenerating the developer review package, changing `plan_signature`, or invoking the next role when feasible.
+- Run before resetting `feedback.json`, regenerating the planning docs package, changing `plan_signature`, or invoking the next role when feasible.
 
 ## Inputs
 
 Inspect:
 
-- `plans/{task-slug}/developer-review/feedback.json`
-- `plans/{task-slug}/developer-review/review-history.json`
+- `plans/{task-slug}/planning-docs/feedback.json`
+- `plans/{task-slug}/planning-docs/review-history.json`
 - current `plan.md`
 - fresh `plans/_orchestrator/review/{task-slug}/review.md`
 - `tdd.md` when present
@@ -37,7 +37,7 @@ Capture reusable planning guidance candidates from:
 - feedback that routed to `ui_direction`
 - feedback that exposed a repeatable `request_lock` or `scope_decision` planning gap
 - planning-quality issues the cold review did not catch
-- developer review feedback later connected to a TDD blocker
+- planning docs feedback later connected to a TDD blocker
 
 Keep as raw-only or skip:
 
@@ -49,9 +49,9 @@ Keep as raw-only or skip:
 
 ## Plan Wiki Boundary
 
-- If invoking `plan-wiki-ingest`, pass source type `developer-review`.
+- If invoking `plan-wiki-ingest`, pass source type `planning-docs`.
 - Do not write pattern rules directly from untriaged browser feedback.
 - Do not store full raw user feedback in pattern rules.
 - Pattern rules must be generalized planning guidance with raw evidence backlinks.
-- If `plan-wiki-ingest` is missing or does not yet support `developer-review` source evidence, report that learning capture was preserved as nonblocking evidence and continue orchestration.
-- If learning capture or plan wiki ingest fails, report the failure but do not invalidate current developer review approval or block TDD unless the failure corrupted authoritative developer review artifacts.
+- If `plan-wiki-ingest` is missing or does not yet support `planning-docs` source evidence, report that learning capture was preserved as nonblocking evidence and continue orchestration.
+- If learning capture or plan wiki ingest fails, report the failure but do not invalidate current planning docs approval or block TDD unless the failure corrupted authoritative planning docs artifacts.

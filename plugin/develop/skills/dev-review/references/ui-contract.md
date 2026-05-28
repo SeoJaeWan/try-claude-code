@@ -4,7 +4,7 @@ Use this reference when the dev-review server hands a fresh `review-data.json` t
 
 The v2 UI is **GitHub-style PR review**: a sidebar of commits + a Files Changed panel for the selected commit, with line-anchored comments. The v1 stepper (Overview → Commit → Final) is gone.
 
-This is the implementation-review counterpart to `.codex/skills/orchestrator/references/developer-review-ui.md`. The two UIs intentionally differ: planning review explains intent; implementation review exposes what the code actually does.
+This is the implementation-review counterpart to `.codex/skills/orchestrator/references/planning-docs-ui.md`. The two UIs intentionally differ: planning review explains intent; implementation review exposes what the code actually does.
 
 ## Paths
 

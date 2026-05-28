@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * plan.md, tdd.md, plan-review 산출물을 browser developer review package로 변환하는 생성기.
+ * plan.md, tdd.md, plan-review 산출물을 planning docs package로 변환하는 생성기.
  *
  * 출력은 `review-data.json`, `feedback.json`, `review-history.json`이며,
- * orchestrator의 developer review 서버가 이 파일들을 그대로 읽는다.
+ * orchestrator의 planning docs 서버가 이 파일들을 그대로 읽는다.
  */
 
 import crypto from "node:crypto";
@@ -14,7 +14,7 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 
 /**
- * developer review package JSON schema version.
+ * planning docs package JSON schema version.
  *
  * @type {number}
  */
@@ -29,39 +29,39 @@ const GENERATOR_CONTRACT_VERSION = 3;
 /**
  * CLI 진입점.
  *
- * 인자를 파싱하고 review package를 생성한 뒤 orchestration이 읽을 key=value 결과를 출력한다.
+ * 인자를 파싱하고 planning docs package를 생성한 뒤 orchestration이 읽을 key=value 결과를 출력한다.
  *
  * @returns {void}
  */
 function main() {
   try {
     const options = parseArgs(process.argv.slice(2));
-    const result = generateDeveloperReviewPackage(options);
+    const result = generatePlanningDocsPackage(options);
     process.stdout.write(`review_data=${toPosix(path.relative(options.repoRoot, result.reviewDataPath))}\n`);
     process.stdout.write(`feedback=${toPosix(path.relative(options.repoRoot, result.feedbackPath))}\n`);
     process.stdout.write(`review_history=${toPosix(path.relative(options.repoRoot, result.reviewHistoryPath))}\n`);
     process.stdout.write(`plan_signature=${result.planSignature}\n`);
   } catch (error) {
-    process.stderr.write(`[developer-review-package] error: ${error.message}\n`);
+    process.stderr.write(`[planning-docs-package] error: ${error.message}\n`);
     process.exit(error.exitCode || 1);
   }
 }
 
 /**
- * developer review package 파일 3종을 생성한다.
+ * planning docs package 파일 3종을 생성한다.
  *
  * @param {object} options 생성 옵션.
  * @param {string} [options.repoRoot] repository root. 기본값은 현재 작업 디렉터리.
  * @param {string} options.taskSlug task slug.
  * @param {string} [options.planPath] plan.md 경로.
  * @param {string} [options.reviewPath] review.md 경로.
- * @param {string} [options.outDir] developer-review 출력 디렉터리.
+ * @param {string} [options.outDir] planning-docs 출력 디렉터리.
  * @param {string} [options.planSignature] controller가 계산한 plan signature.
  * @param {string} [options.now] feedback 초기화에 사용할 ISO 시각.
  * @param {boolean} [options.allowLossyQuestionMarks] 손상 의심 물음표 검사를 건너뛸지 여부.
  * @returns {{ reviewDataPath: string, feedbackPath: string, reviewHistoryPath: string, planSignature: string }} 생성 결과 경로와 plan signature.
  */
-export function generateDeveloperReviewPackage(options) {
+export function generatePlanningDocsPackage(options) {
   const repoRoot = path.resolve(options.repoRoot || process.cwd());
   const taskSlug = options.taskSlug;
   if (!/^[A-Za-z0-9_-]+$/.test(taskSlug || "")) {
@@ -73,7 +73,7 @@ export function generateDeveloperReviewPackage(options) {
     repoRoot,
     options.reviewPath || path.join("plans", "_orchestrator", "review", taskSlug, "review.md")
   );
-  const outDir = path.resolve(repoRoot, options.outDir || path.join("plans", taskSlug, "developer-review"));
+  const outDir = path.resolve(repoRoot, options.outDir || path.join("plans", taskSlug, "planning-docs"));
   const now = options.now || new Date().toISOString();
 
   const planText = readRequiredUtf8(planPath, "plan");
@@ -151,11 +151,11 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--help" || arg === "-h") {
-      process.stdout.write(`Usage: node .codex/skills/orchestrator/scripts/generate-developer-review-package.mjs --task-slug <task-slug> [options]\n\n`);
+      process.stdout.write(`Usage: node .codex/skills/orchestrator/scripts/generate-planning-docs-package.mjs --task-slug <task-slug> [options]\n\n`);
       process.stdout.write("Options:\n");
       process.stdout.write("  --plan-path <path>        Default: plans/{task-slug}/plan.md\n");
       process.stdout.write("  --review-path <path>      Default: plans/_orchestrator/review/{task-slug}/review.md\n");
-      process.stdout.write("  --out-dir <path>          Default: plans/{task-slug}/developer-review\n");
+      process.stdout.write("  --out-dir <path>          Default: plans/{task-slug}/planning-docs\n");
       process.stdout.write("  --plan-signature <sig>    Use controller-computed signature instead of recomputing\n");
       process.stdout.write("  --now <iso>               Stable timestamp for feedback initialization\n");
       process.stdout.write("  --allow-lossy-question-marks  Do not fail on prose lines containing ??\n");
@@ -272,12 +272,12 @@ function suspiciousQuestionMarkLines(text) {
 }
 
 /**
- * plan.md, phase detail, review.md를 developer review 화면 모델로 변환한다.
+ * plan.md, phase detail, review.md를 planning docs 화면 모델로 변환한다.
  *
  * @param {object} input review-data 생성 입력.
  * @param {string} input.repoRoot repository root.
  * @param {string} input.taskSlug task slug.
- * @param {string} input.outDir developer-review 출력 디렉터리.
+ * @param {string} input.outDir planning-docs 출력 디렉터리.
  * @param {string} input.planPath plan.md 절대 경로.
  * @param {string} input.planText plan.md 내용.
  * @param {object[]} input.phaseRefs phase 참조 목록.
@@ -468,7 +468,7 @@ function hasReviewContent(value) {
  * @param {object[]} [input.topologyContract=[]] 전체 topology contract 목록.
  * @param {object[]} [input.evidenceArtifacts=[]] 전체 evidence artifact 목록.
  * @param {object} [input.tddData] tdd.md에서 추출한 검증 데이터.
- * @param {object[]} [input.reviewFeedbackRows=[]] developer review feedback 처리 행.
+ * @param {object[]} [input.reviewFeedbackRows=[]] planning docs feedback 처리 행.
  * @returns {object} review-data의 phase 모델.
  */
 function buildPhase({ ref, index, phaseText, flowRow, topologyContract = [], evidenceArtifacts = [], tddData = null, reviewFeedbackRows = [] }) {
@@ -677,13 +677,13 @@ function parseTddBlockers(tddText, summary) {
 }
 
 /**
- * plan.md의 developer review feedback 처리 표를 phase별 review 데이터로 변환한다.
+ * plan.md의 planning docs feedback 처리 표를 phase별 review 데이터로 변환한다.
  *
  * @param {string} planText plan.md 내용.
  * @returns {object[]} feedback handling 행.
  */
 function buildReviewFeedbackRows(planText) {
-  return parseFirstTable(section(planText, "개발자 리뷰 반영 내역")).rows
+  return parseFirstTable(section(planText, "planning docs 피드백 반영 내역")).rows
     .map((row, index) => ({
       id: stripMarkdown(row["id"] || row["ID"] || `FB${index + 1}`),
       phase: normalizePhaseRef(row["phase"] || row["Phase"] || row["단계"] || ""),
@@ -770,12 +770,12 @@ function buildTopologyContract(planText) {
 }
 
 /**
- * plan evidence 파일을 developer-review asset 영역으로 복사하고 metadata를 만든다.
+ * plan evidence 파일을 planning-docs asset 영역으로 복사하고 metadata를 만든다.
  *
  * @param {object} input evidence 생성 입력.
  * @param {string} input.planText plan.md 내용.
  * @param {string} input.planDir plan.md가 있는 디렉터리.
- * @param {string} input.outDir developer-review 출력 디렉터리.
+ * @param {string} input.outDir planning-docs 출력 디렉터리.
  * @returns {object[]} 복사된 evidence artifact metadata.
  * @throws {Error} evidence 경로가 `evidence/**` 밖이거나 파일이 없을 때.
  */

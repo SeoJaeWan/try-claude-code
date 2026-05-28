@@ -1,6 +1,6 @@
-# Developer Review UI Contract
+# Planning Docs UI Contract
 
-Use this reference when `orchestrator` has a reviewed plan/TDD pair and must collect explicit developer approval before implementation.
+Use this reference when `orchestrator` has a reviewed plan/TDD pair and must collect explicit planning docs approval before implementation.
 
 ## When to create
 
@@ -13,7 +13,7 @@ Do not create it for `blocked` reviews. Route blockers back to `architect`.
 Write only data, feedback, history, and copied evidence assets under:
 
 ```text
-plans/{task-slug}/developer-review/
+plans/{task-slug}/planning-docs/
 +-- review-data.json
 +-- feedback.json
 +-- review-history.json
@@ -23,24 +23,24 @@ plans/{task-slug}/developer-review/
     +-- diagrams/
 ```
 
-Do not copy `index.html` into `plans/{task-slug}/developer-review/`.
+Do not copy `index.html` into `plans/{task-slug}/planning-docs/`.
 
 The shared browser app lives at:
 
 ```text
-.codex/skills/orchestrator/assets/developer-review/index.html
+.codex/skills/orchestrator/assets/planning-docs/index.html
 ```
 
 Start or reuse it through:
 
 ```text
-node .codex/tools/start-plan-review-browser-server.mjs --task-slug {task-slug} --plan-signature {plan_signature}
+node .codex/tools/start-planning-docs-browser-server.mjs --task-slug {task-slug} --plan-signature {plan_signature}
 ```
 
 The launcher prints:
 
 ```text
-plan_review_browser_url=http://localhost:{port}/review/{task-slug}
+planning_docs_url=http://localhost:{port}/review/{task-slug}
 ```
 
 The server supports multiple task reviews at the same time. Task-specific data is served through:
@@ -58,7 +58,7 @@ GET    /api/reviews/{task-slug}/health
 GET    /review-assets/{task-slug}/...
 ```
 
-`task-slug` must contain only ASCII letters, digits, `_`, and `-`. The server resolves all task data and asset requests under `plans/{task-slug}/developer-review/`.
+`task-slug` must contain only ASCII letters, digits, `_`, and `-`. The server resolves all task data and asset requests under `plans/{task-slug}/planning-docs/`.
 
 The user finishes review by pressing Submit in the browser and saying `review complete` in chat. Do not rely on filesystem watching as the completion signal.
 
@@ -133,7 +133,7 @@ Overview and every required phase item must have a stable `review_item_signature
 
 - Prefer generating `review_item_signature` from deterministic canonical JSON of user-visible review item content plus the global scope/contract context that changes the meaning of that item.
 - Include current Overview scope/contract fields in phase signatures so a scope change invalidates phase approvals even when phase prose did not change.
-- Include phase-linked topology, evidence, TDD mappings, manual smoke gates, TDD blockers, and developer-review feedback handling in phase signatures.
+- Include phase-linked topology, evidence, TDD mappings, manual smoke gates, TDD blockers, and planning-docs feedback handling in phase signatures.
 - Do not include volatile fields such as timestamps, history, current feedback, or `review_item_signature` itself.
 - Treat target ids as routing ids only. Do not carry approval forward by `P2` alone.
 
@@ -236,7 +236,7 @@ The gate is approved only when `review_status = submitted`, every required `revi
 
 ## Review history model
 
-`review-history.json` is durable history for the developer-review loop. It is not editable live-review state.
+`review-history.json` is durable history for the planning-docs loop. It is not editable live-review state.
 
 Keep the existing history shape:
 
@@ -282,9 +282,9 @@ Rules:
 Read `feedback.json`.
 
 - If `plan_signature` differs from current plan signature, discard feedback and regenerate the package.
-- If `review_status` is not `submitted`, ask the user to submit the browser review first.
+- If `review_status` is not `submitted`, ask the user to submit the planning docs first.
 - If every required review item is approved with matching `approved_against` evidence and there are no active `needs-change` or `question` comments, treat current `plan_signature` and `tdd.md` as explicitly approved and continue toward implementation readiness.
-- If any required item is unapproved or any active non-approved comment exists, developer approval is absent and feedback triage is required.
+- If any required item is unapproved or any active non-approved comment exists, planning docs approval is absent and feedback triage is required.
 - Triage from the comment body, target id, anchor id, status type, and conflict with the locked request. Do not route from the raw type label alone.
 
 ## Invalidations
@@ -301,7 +301,7 @@ Any change to `generator_contract_version` invalidates generated review data eve
 - Do not re-expand dense schema/RLS/API/function details unless they explain a visible test mapping, manual smoke gate, TDD blocker, or evidence artifact.
 - Do not treat a sidebar check as a generic read-check signal; it is an approval shortcut and must create or clear approval evidence.
 - Do not reintroduce a manual read-check gate. Use approval evidence and section comments as the review state.
-- Do not let `architect` reinterpret approved feedback. If feedback changes scope or direction, revise the plan and require fresh developer review.
+- Do not let `architect` reinterpret approved feedback. If feedback changes scope or direction, revise the plan and require fresh planning docs.
 - Do not strip `owner_agent` routing from phase data when the reviewed plan defines it.
 - Do not route non-approved feedback directly to `architect` from `question` or `needs-change` labels alone.
 - Do not drop previous review rounds when resetting `feedback.json` or regenerating the package.

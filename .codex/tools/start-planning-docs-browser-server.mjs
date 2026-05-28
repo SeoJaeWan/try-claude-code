@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * plan developer review 브라우저 서버를 시작하거나 기존 호환 서버를 재사용하는 CLI 스크립트.
+ * planning docs 브라우저 서버를 시작하거나 기존 호환 서버를 재사용하는 CLI 스크립트.
  *
- * 지정된 task slug의 review package가 현재 plan signature와 맞는지 확인한 뒤,
- * Codex가 사용자에게 전달할 `plan_review_browser_url`을 출력한다.
+ * 지정된 task slug의 planning docs package가 현재 plan signature와 맞는지 확인한 뒤,
+ * Codex가 사용자에게 전달할 `planning_docs_url`을 출력한다.
  */
 
 import { spawn } from "node:child_process";
@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..", "..");
-const serverPath = path.join(repoRoot, ".codex", "tools", "plan-review-browser-server.mjs");
+const serverPath = path.join(repoRoot, ".codex", "tools", "planning-docs-browser-server.mjs");
 const argv = process.argv.slice(2);
 
 /**
@@ -42,9 +42,9 @@ function hasFlag(name) {
 }
 
 if (hasFlag("--help") || hasFlag("-h")) {
-  console.log("Usage: node .codex/tools/start-plan-review-browser-server.mjs --task-slug <task-slug> [--plan-signature <signature>] [--port 8787] [--max-port 8797]");
+  console.log("Usage: node .codex/tools/start-planning-docs-browser-server.mjs --task-slug <task-slug> [--plan-signature <signature>] [--port 8787] [--max-port 8797]");
   console.log("");
-  console.log("Starts or reuses the platform-neutral plan review browser server.");
+  console.log("Starts or reuses the platform-neutral planning docs browser server.");
   process.exit(0);
 }
 
@@ -119,11 +119,11 @@ async function isPortOpen(port) {
  */
 async function isCompatibleServer(port) {
   const health = await fetchJson(`http://localhost:${port}/api/health`);
-  return health?.ok === true && health?.mode === "multi-review";
+  return health?.ok === true && health?.kind === "planning-docs" && health?.mode === "multi-review";
 }
 
 /**
- * 현재 task slug에 대한 review package health 정보를 읽는다.
+ * 현재 task slug에 대한 planning docs package health 정보를 읽는다.
  *
  * @param {number} port review 서버 port.
  * @returns {Promise<object | null>} task health JSON 또는 실패 시 `null`.
@@ -172,7 +172,7 @@ function startServer(port) {
  */
 function printResult(port, reused, health) {
   const url = `http://localhost:${port}/review/${taskSlug}`;
-  console.log(`plan_review_browser_url=${url}`);
+  console.log(`planning_docs_url=${url}`);
   console.log(`port=${port}`);
   console.log(`server=${reused ? "reused" : "started"}`);
   console.log(`task_slug=${taskSlug}`);
@@ -208,5 +208,5 @@ for (let port = startPort; port <= maxPort; port += 1) {
   process.exit(0);
 }
 
-console.error(`Could not start or reuse a compatible plan review browser server on ports ${startPort}-${maxPort}.`);
+console.error(`Could not start or reuse a compatible planning docs browser server on ports ${startPort}-${maxPort}.`);
 process.exit(1);

@@ -17,8 +17,8 @@
 - Do not abandon a still-progressing role pass just because an initial short wait expired.
 - Do not respawn duplicate planning sub-agents for the same unchanged handoff when the earlier pass is still running and making recent progress.
 - Do not bypass review after architect revisions.
-- Do not report `planning_complete` for an implementation-scope plan before current-signature `tdd.md`, fresh `plan-review`, and developer review approval exist.
-- Do not present a developer review package that collapses a large implementation plan into only Overview and Final when reviewable Phase entries are missing; route the plan back to `architect`.
+- Do not report `planning_complete` for an implementation-scope plan before current-signature `tdd.md`, fresh `plan-review`, and planning docs approval exist.
+- Do not present a planning docs package that collapses a large implementation plan into only Overview and Final when reviewable Phase entries are missing; route the plan back to `architect`.
 - Do not treat `question` as automatically meaning `architect`.
 - Do not respawn `architect` by reflex when a compatible live role agent already exists.
 - Do not reuse the prior `plan-review` reviewer by default; cold review stays fresh.

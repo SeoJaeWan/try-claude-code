@@ -324,7 +324,7 @@ Include:
 - whether the actual red result matches the expected red reason
 - completion gate: the exact test, command, or execution check that must pass when the plan is complete
 
-Also include these fixed sections for plan review and browser review. Keep the headings literal so tooling can parse them:
+Also include these fixed sections for plan review and planning docs. Keep the headings literal so tooling can parse them:
 
 ```markdown
 ## Plan review 검증 매핑

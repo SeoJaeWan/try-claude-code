@@ -4,7 +4,7 @@
   "description": "Claude Code custom skills workspace",
   "type": "module",
   "scripts": {
-    "test": "node --test plugin/develop/scripts/__tests__/path-utils.test.mjs plugin/develop/scripts/__tests__/plan-frontmatter.test.mjs plugin/develop/scripts/__tests__/runner-state.test.mjs plugin/develop/scripts/__tests__/runner-state-cli.test.mjs plugin/develop/scripts/__tests__/sessions.test.mjs plugin/develop/scripts/__tests__/user-prompt-submit-hook.test.mjs .codex/skills/orchestrator/scripts/__tests__/generate-developer-review-package.test.mjs",
+    "test": "node --test plugin/develop/scripts/__tests__/path-utils.test.mjs plugin/develop/scripts/__tests__/plan-frontmatter.test.mjs plugin/develop/scripts/__tests__/runner-state.test.mjs plugin/develop/scripts/__tests__/runner-state-cli.test.mjs plugin/develop/scripts/__tests__/sessions.test.mjs plugin/develop/scripts/__tests__/user-prompt-submit-hook.test.mjs .codex/skills/orchestrator/scripts/__tests__/generate-planning-docs-package.test.mjs",
     "plan-wiki:docs": "node .codex/tools/plan-wiki-docs-server.mjs"
   }
 }
