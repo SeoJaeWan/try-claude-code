@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@layer base {
+  /* Ensure focus rings are always visible for keyboard navigation */
+  :focus-visible {
+    outline: 2px solid var(--color-node-active);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Prevent text overflow in panels and controls */
+  p, h1, h2, h3, span, button {
+    max-width: 100%;
+  }
+}
+
+:root {
+  --color-bg: #0a0a0f;
+  --color-surface: #111118;
+  --color-node-active: #3b82f6;
+  --color-node-completed: #22c55e;
+  --color-node-blocked: #ef4444;
+  --color-node-pending: #6b7280;
+  --color-connector-forward: #60a5fa;
+  --color-connector-block-return: #f87171;
+  --color-connector-rework-return: #fb923c;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-panel-bg: rgba(15, 15, 25, 0.92);
+  --color-panel-border: rgba(255, 255, 255, 0.08);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+.text-overflow-guard {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.focus-visible-ring:focus-visible {
+  outline: 2px solid var(--color-node-active);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
