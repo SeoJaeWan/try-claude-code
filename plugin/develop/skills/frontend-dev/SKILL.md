@@ -1,7 +1,6 @@
 ---
 name: frontend-dev
 description: "React/Next.js/Expo development with UI components, custom hooks, and state management. Use for frontend UI, API integration, and mobile app development. Use this skill for any task that involves creating or modifying React components, pages, hooks, styles, or frontend routing — even when the user just says 'add this to the UI', 'make this screen look like X', or 'wire up the API on the frontend'. Run inside the `frontend-developer` agent."
-model: sonnet
 ---
 
 <Skill_Guide>
@@ -66,7 +65,7 @@ This ensures you and the project are aligned. If you cannot find enough examples
 ## Implementation Steps
 
 1. Read plan from `plans/<slug>.plan.md` or `plans/<slug>/plan.md` (if present)
-2. Read `codemaps/frontend.md` (if present)
+2. Consult the project dev-wiki — follow `plugin/develop/references/dev-wiki-lookup.md` to narrow candidate files and pick up recorded conventions (skip silently if no wiki)
 3. **If the task references a Figma URL** — run the Figma integration workflow (see section below) before Convention Discovery
 4. **Run Convention Discovery** (above) — scan existing code for patterns
 5. Read project theme/style when the task includes UI work: `tailwind.config.*`, `app/globals.css`, component library tokens

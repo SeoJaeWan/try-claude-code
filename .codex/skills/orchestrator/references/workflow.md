@@ -21,7 +21,15 @@ Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output ru
 - Resolve the planning `plan_wiki_root` to `./.codex/plan-wiki/source/wiki`.
 - If `./.codex/plan-wiki/source/wiki` is missing, stop and route to `plan-wiki-setup` instead of attempting per-run staging inside this skill.
 - Before invoking any planning role, run `git -C .codex/plan-wiki/source pull --ff-only` once to refresh the plan wiki source clone.
-- If the fast-forward pull fails, stop before routing to planning roles and report the pull failure as the blocker; do not ask sub-agents to fetch, pull, or repair the plan wiki source clone.
+- If the fast-forward pull fails, stop before routing to planning roles and route to the `plan-wiki-setup` sync/repair unit. Report the failing command output, nested repo branch status, and `plan_wiki_sync_required`; do not ask planning sub-agents to fetch, pull, or repair the plan wiki source clone.
+- Do not merge, rebase, reset, clean, stash, or push the plan wiki source clone inside orchestrator. That repair belongs to `plan-wiki-setup`.
+- If `./.codex/dev-wiki/config.json` exists, treat this workspace as dev wiki opted in for orchestration context.
+- Resolve the dev wiki source clone to `./.codex/dev-wiki/source` and the project wiki root from `config.json` as `./.codex/dev-wiki/source/{project}`.
+- If dev wiki is opted in but the source clone or project folder is missing, stop before routing to planning roles and route to `dev-wiki-setup`; do not create or infer a dev wiki project from orchestrator.
+- Before invoking any planning role, run `git -C .codex/dev-wiki/source pull --ff-only` once to refresh the dev wiki source clone from GitHub, matching the plan wiki freshness pattern.
+- If the dev wiki fast-forward pull fails, stop before routing to planning roles and route to the `dev-wiki-setup` sync/repair unit. Report the failing command output, nested repo branch status, and `dev_wiki_sync_required`; do not ask planning sub-agents to fetch, pull, or repair the dev wiki source clone.
+- Do not merge, rebase, reset, clean, stash, or push the dev wiki source clone inside orchestrator. That repair belongs to `dev-wiki-setup`.
+- Add `dev_wiki_root` to planning role handoffs when dev wiki is opted in and the fast-forward preflight succeeds. Do not expand this into per-file context lists; each role reads the standard documents it needs from `dev_wiki_root`.
 - Confirm the linked local `plan-maker`, `plan-tdd`, and `plan-review` capabilities are present before routing to them.
 - Do not invoke `brainstorm`. If the latest context or referenced artifacts do not lock request scope, UI direction when relevant, and required/excluded execution areas, stop with `missing_upstream_lock`.
 - If a directly referenced or latest relevant brainstorm artifact exists, read its `artifact_status` before invoking `plan-maker`.
@@ -59,7 +67,7 @@ Invoke `plan-maker` when:
 Controller requirements:
 
 - Reuse the live `plan-maker` role agent for the same `task_slug` when compatible; otherwise start a new generic planning sub-agent and attach `plan-maker`.
-- Pass a handoff packet with exact `task-slug`, optional `plan_path`, `plan_wiki_root`, verified inputs, missing-input notes, latest review path when revising, locked request summary when available, and write scope under `./plans/{task-slug}/`.
+- Pass a handoff packet with exact `task-slug`, optional `plan_path`, `plan_wiki_root`, optional `dev_wiki_root`, verified inputs, missing-input notes, latest review path when revising, locked request summary when available, and write scope under `./plans/{task-slug}/`.
 - When Figma inventory is required, include only controller-verified `figma-inventory` manifest and snapshot paths in `authoritative_existing_inputs`.
 - Require exactly one result: `result = wrote_plan` with `written_paths`, or `result = blocking_packet` with user-input fields.
 - After every plan-maker pass, re-check written plan files and recompute `plan_signature` for each selected review target.
@@ -71,7 +79,7 @@ Controller requirements:
 ## Step 3. Run TDD Contract Authoring
 
 - Invoke `plan-tdd` when an executable implementation-scope plan exists and current `tdd.md` is missing or stale for that plan file.
-- Pass exact `task-slug`, `plan_path`, `plan_wiki_root`, current `plan_signature`, and required output path `./plans/{task-slug}/tdd.md`.
+- Pass exact `task-slug`, `plan_path`, `plan_wiki_root`, optional `dev_wiki_root`, current `plan_signature`, and required output path `./plans/{task-slug}/tdd.md`.
 - Limit the TDD pass to source-tree tests and `tdd.md`; it must not edit production code.
 - Require `tdd.md` YAML frontmatter with at least `plan_path`, `task_slug`, `plan_signature`, `outcome`, `gate_status`, `blocker_type`, `blocker_code`, `next_action`, `resume_from`, `tdd_signature`, `requires_user_decision`, `blocked_clause_ids`, and `affected_phase_paths`.
 - Require the TDD report to expose plan-review-readable rows for plan row/scenario to test mapping, manual smoke gates, and TDD blockers. These rows are what the planning docs UI uses to show whether a phase's plan clauses became verifiable contracts.
@@ -84,7 +92,7 @@ Controller requirements:
 
 - Invoke a fresh `plan-review` reviewer only when an executable plan file exists and current `review.md` is missing or stale for that plan file.
 - Do not reuse a prior reviewer agent by default.
-- Pass exact `task-slug`, `plan_path`, `plan_wiki_root`, current `plan_signature`, current `tdd.md` path, and required output path `./plans/_orchestrator/review/{task-slug}/review.md`.
+- Pass exact `task-slug`, `plan_path`, `plan_wiki_root`, optional `dev_wiki_root`, current `plan_signature`, current `tdd.md` path, and required output path `./plans/_orchestrator/review/{task-slug}/review.md`.
 - Limit reviewer write scope to the required review artifact.
 - Require `review.md` YAML frontmatter with at least `plan_path`, `task_slug`, `plan_signature`, `outcome`, `next_action`, `finding_signature`, `requires_user_decision`, `issue_codes`, and `affected_plan_paths`.
 - After the reviewer finishes, reread `review.md` from disk.

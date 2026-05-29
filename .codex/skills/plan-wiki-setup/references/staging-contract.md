@@ -31,6 +31,8 @@ If the planning root is missing, stop and route to `plan-wiki-setup` instead of 
 
 - `plan-wiki-setup` prepares or verifies `./.codex/plan-wiki/source`.
 - `orchestrator` may run one fast-forward pull preflight with `git -C .codex/plan-wiki/source pull --ff-only` before routing planning roles.
+- If that fast-forward preflight fails because the source clone is dirty, behind with local commits, diverged, conflicted, or otherwise cannot be advanced safely, route to the `plan-wiki-setup` sync/repair unit before invoking planning roles.
+- `orchestrator` must not merge, rebase, reset, clean, stash, or push the plan wiki source clone during planning preflight.
 - `plan-maker`, `brainstorm`, `plan-tdd`, and `plan-review` consume `./.codex/plan-wiki/source/wiki` directly and do not perform per-run clone, fetch, or pull inside the planning workflow.
 - Plan wiki maintenance skills may edit `./.codex/plan-wiki/source` and then report the nested repo Git status.
 - Commit and push are allowed only after explicit user approval.

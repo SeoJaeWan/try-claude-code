@@ -3,7 +3,7 @@ name: frontend-developer
 description: Frontend development expert for React, React Native, and Next.js. Implements UI components, custom hooks, state management, API integration, and mobile app development.
 skills: frontend-dev
 tools: Read, Edit, Write, Glob, Grep, Bash, mcp__plugin_figma_figma__get_design_context, mcp__plugin_figma_figma__get_variable_defs, mcp__plugin_figma_figma__search_design_system, mcp__plugin_figma_figma__get_code_connect_map, mcp__plugin_figma_figma__get_screenshot, mcp__plugin_figma_figma__get_metadata, mcp__plugin_figma_figma__get_context_for_code_connect, mcp__plugin_figma_figma__get_libraries
-model: sonnet
+model: claude-opus-4-8
 background: true
 ---
 

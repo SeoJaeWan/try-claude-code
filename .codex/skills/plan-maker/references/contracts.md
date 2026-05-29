@@ -15,6 +15,7 @@ Use this as the preferred planning entrypoint after upstream decisions have lock
    - `task_slug`
    - optional target `plan_path`
    - `plan_wiki_root`
+   - optional `dev_wiki_root`
    - optional `latest_review_path`
    - optional locked request summary when the parent intentionally narrowed context
    - optional `authoritative_existing_inputs` containing controller-verified literal upstream artifact paths
@@ -31,8 +32,9 @@ Use this as the preferred planning entrypoint after upstream decisions have lock
 11. Active plan wiki `core/common/용어-정책.md` - Korean-first visible prose and allowed English identifier rules.
 12. `./references/visual-parity-contract.md` when visual parity tasks are in scope.
 13. Relevant execution contracts only when routing or mode-sensitive conventions matter, using the minimum repo-local context that governs the work.
-14. Context7 MCP tools only as fallback when external library or API facts can still change the planning boundary after local inspection and any prior upstream decision handoff.
-15. Figma inventory snapshot artifacts only when Figma hierarchy, component-set inventory, Resource/* coverage, platform markers, or Figma-based classification changes the planning boundary.
+14. `../dev-wiki-setup/references/consumer-context.md` when `dev_wiki_root` is provided.
+15. Context7 MCP tools only as fallback when external library or API facts can still change the planning boundary after local inspection and any prior upstream decision handoff.
+16. Figma inventory snapshot artifacts only when Figma hierarchy, component-set inventory, Resource/* coverage, platform markers, or Figma-based classification changes the planning boundary.
 
 ## Output contract
 

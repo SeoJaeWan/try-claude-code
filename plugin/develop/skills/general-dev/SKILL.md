@@ -1,7 +1,6 @@
 ---
 name: general-dev
 description: "Infrastructure and DevOps development. Handles Docker, CI/CD, nginx, environment config, monorepo build scripts, and tasks outside frontend/backend scope. Use when the task involves Dockerfiles, GitHub Actions workflows, nginx config, .env setup, or deployment scripts. Triggers on: 'add Docker support', 'set up CI/CD', 'configure nginx', 'create .env template', 'write a deploy script', or any infra work that no single dev domain owns. Run inside the `general-developer` agent."
-model: sonnet
 ---
 
 <Skill_Guide>
@@ -41,7 +40,7 @@ Own work that does NOT belong to frontend-dev or backend-dev:
 ## Implementation Steps
 
 1. Read plan from `plans/<slug>.plan.md` or `plans/<slug>/plan.md`
-2. Read `codemaps/infra.md` (if present)
+2. Consult the project dev-wiki — follow `plugin/develop/references/dev-wiki-lookup.md` to narrow candidate files and pick up recorded conventions (skip silently if no wiki)
 3. Implement the required infrastructure changes
 4. Validate configuration syntax where possible (e.g., `docker compose config`, `nginx -t`, YAML lint)
 5. Return results based on plan.md

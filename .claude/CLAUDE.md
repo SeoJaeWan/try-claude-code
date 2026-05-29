@@ -23,11 +23,10 @@
 - **backend-dev** — 백엔드 API/DB/인증/서버 로직. 프레임워크·언어 자동 감지. `backend-developer` agent에서 실행
 - **frontend-dev** — React/Next.js/Expo UI 컴포넌트, 훅, 상태관리, API 연동. `frontend-developer` agent에서 실행
 - **general-dev** — Docker, CI/CD, nginx, env, 모노레포 빌드/배포 등 frontend/backend에 속하지 않는 인프라. `general-developer` agent에서 실행
-- **doc** — CODEMAPS(.md)/HUMANMAPS(.html) 자동 생성. `doc-updater` agent에서 실행. 트리거: `update docs`, `문서 업데이트`, `코드맵 갱신`
 - **runner** — 단일 self-contained plan을 하나의 worktree에서 실행, agent 하나를 dispatch하고 dev-review로 머지를 게이트. HEAD는 base 브랜치 유지
 - **dev-review** — runner 실행 후 commit 기반 브라우저 리뷰 게이트. localhost에 GitHub 스타일 UI 서빙, `needs-change`/`question`/`out-of-scope` 코멘트를 worktree로 라우팅
 
-`plugin/develop/agents/` — 위 dev 스킬이 위임받아 실행되는 sub-agent 정의 (backend-developer, frontend-developer, general-developer, doc-updater)
+`plugin/develop/agents/` — 위 dev 스킬이 위임받아 실행되는 sub-agent 정의 (backend-developer, frontend-developer, general-developer)
 
 ## `plugin/statusline/` — 스킬별 역할
 - **statusline** — inline 상태줄 on/off, inline/box 전환. 트리거: `statusline`, `상태줄`, `상태줄 켜기`, `상태줄 끄기`

@@ -9,7 +9,9 @@
 - Do not treat partial notes, briefs, legacy phase details, or non-executable artifacts as execution-ready plans.
 - Do not bypass the resolved `plan_wiki_root` with hardcoded external paths after the project-local source path is available.
 - In orchestrated mode, do not redo plan wiki bootstrap already owned by the orchestrator.
-- In orchestrated mode, do not invent alternate `plan_path`, `task_slug`, `plan_wiki_root`, or `plan_signature` metadata.
+- In orchestrated mode, do not invent alternate `plan_path`, `task_slug`, `plan_wiki_root`, `dev_wiki_root`, or `plan_signature` metadata.
+- Do not treat dev wiki as a replacement for source/config inspection. If `dev_wiki_root` conflicts with current repo facts, report the stale-wiki risk or execution blocker instead of approving from stale guidance.
+- Do not edit dev wiki files from `plan-review`; use them only as read-only project context.
 - In reused reviewer sessions, re-read the current plan file from disk and treat old findings as untrusted history.
 - Do not recursively review a full upstream plan graph; inspect only direct prerequisite parity when a plan names it.
 - Do not approve a plan that leaves canonical outputs, negative outputs, recipients, public boundaries, exclusions, or verification ownership for later agents to guess.

@@ -13,18 +13,20 @@ Provide an independent, read-only review of an executable plan file and its curr
 5. Resolved planning plan wiki root:
    - orchestrated mode: use the provided `plan_wiki_root`.
    - direct mode: use `./.codex/plan-wiki/source/wiki`.
-6. `registry.json`, stage core docs for `review`, and selected pattern files whose `적용 조건` match the reviewed plan.
-7. Plan Maker templates and local references only as needed to verify the plan contract.
-8. Repo-local execution contracts only when the plan makes a concrete routing, command, validation, or placement claim.
-9. Directly referenced local prerequisite plans only for one-hop prerequisite parity.
-10. Controller-verified Figma inventory manifest and snapshot artifacts only when the plan depends on Figma inventory, classification, or plan-local `figma-contract` artifacts.
+6. Optional orchestrator-provided `dev_wiki_root`.
+7. `registry.json`, stage core docs for `review`, and selected pattern files whose `적용 조건` match the reviewed plan.
+8. Plan Maker templates and local references only as needed to verify the plan contract.
+9. Repo-local execution contracts only when the plan makes a concrete routing, command, validation, or placement claim.
+10. `../dev-wiki-setup/references/consumer-context.md` when `dev_wiki_root` is provided.
+11. Directly referenced local prerequisite plans only for one-hop prerequisite parity.
+12. Controller-verified Figma inventory manifest and snapshot artifacts only when the plan depends on Figma inventory, classification, or plan-local `figma-contract` artifacts.
 
 ## Execution modes
 
 - `orchestrated`: an orchestrator handoff provides `task_slug`, `plan_path`, and `plan_wiki_root`.
 - `direct`: no orchestrator handoff exists; resolve the plan wiki root through the project-local source clone at `./.codex/plan-wiki/source/wiki`.
 
-In orchestrated mode, treat provided `task_slug`, `plan_path`, `plan_wiki_root`, optional `plan_signature`, and optional `tdd_path` as authoritative. If they are missing or contradictory, block instead of inventing replacements.
+In orchestrated mode, treat provided `task_slug`, `plan_path`, `plan_wiki_root`, optional `dev_wiki_root`, optional `plan_signature`, and optional `tdd_path` as authoritative. If required fields are missing or contradictory, block instead of inventing replacements.
 
 ## Output contract
 

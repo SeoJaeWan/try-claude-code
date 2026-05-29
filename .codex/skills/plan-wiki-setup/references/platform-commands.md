@@ -42,3 +42,20 @@ Plan wiki maintenance skills write to the nested source repo. Before committing,
 - Keep current-project repo changes and plan wiki source repo changes in separate commits.
 - Report the files included in the plan wiki commit before committing.
 - Push only after explicit user approval.
+
+## Sync/Repair After Fast-Forward Failure
+
+When orchestration preflight cannot run `git -C .codex/plan-wiki/source pull --ff-only`, inspect and classify the nested repo before receiving upstream changes:
+
+```text
+git -C .codex/plan-wiki/source status --short --branch
+git -C .codex/plan-wiki/source fetch origin
+git -C .codex/plan-wiki/source log --oneline --decorate --left-right HEAD...origin/main
+```
+
+- If the worktree is clean and only behind, run `git -C .codex/plan-wiki/source pull --ff-only`.
+- If the worktree is clean and diverged, ask for explicit approval before running `git -C .codex/plan-wiki/source merge --no-ff origin/main`.
+- If the worktree is dirty or conflicted, do not merge or rebase. Report the exact files and ask whether to commit, stash, discard selected files, or pause.
+- Do not push sync/repair results without explicit user approval.
+
+Read `references/sync-repair.md` for the full state classification and completion report.
