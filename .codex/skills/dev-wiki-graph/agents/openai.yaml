@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dev Wiki Graph"
+  short_description: "Generate project structure graph docs"
+  default_prompt: "Use $dev-wiki-graph to refresh this project wiki graph."

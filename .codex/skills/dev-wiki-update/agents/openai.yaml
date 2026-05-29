@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dev Wiki Update"
+  short_description: "Fold project rules into dev wiki docs"
+  default_prompt: "Use $dev-wiki-update to add this project rule to the dev wiki."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dev Wiki Setup"
+  short_description: "Set up a project-local dev wiki clone"
+  default_prompt: "Use $dev-wiki-setup to connect this project to the dev wiki."
