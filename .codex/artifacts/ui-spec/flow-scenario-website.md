@@ -1,10 +1,12 @@
 # flow 시나리오 웹사이트 UI 방향
 
-artifact_status: locked_ui_direction
+artifact_status: superseded
 artifact_path: ./.codex/artifacts/ui-spec/flow-scenario-website.md
 request_scope_artifact: ./.codex/artifacts/brainstorm/flow-scenario-website.md
 task_slug: flow-scenario-website
 reference_decision_status: locked
+superseded_by: ./.codex/artifacts/brainstorm/flow-scenario-experience-website.md
+superseded_reason: planning docs R2에서 설명형 홈페이지 UI 방향이 목표와 어긋난 것으로 판정됨
 
 ## UI 방향 요약 표
 

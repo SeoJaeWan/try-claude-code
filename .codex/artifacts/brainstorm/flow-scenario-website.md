@@ -1,8 +1,10 @@
 ---
-artifact_status: ready_for_planning
+artifact_status: superseded
 artifact_path: ./.codex/artifacts/brainstorm/flow-scenario-website.md
 task_slug: flow-scenario-website
 supersedes: ./.codex/artifacts/brainstorm/vite-flow-map-visualization.md
+superseded_by: ./.codex/artifacts/brainstorm/flow-scenario-experience-website.md
+superseded_reason: "planning docs R2에서 사용자가 설명형 홈페이지 방향이 아니라 하나의 시나리오로 전체 플로우를 자연스럽게 체득하는 사이트가 목표라고 재정의함"
 created_for: "flow 폴더 안의 Vite 웹사이트로 하나의 시나리오를 따라 brainstorm부터 plugin runner 종료까지 설명"
 ---
 
