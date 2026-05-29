@@ -46,14 +46,13 @@ scripts/                             # workspace/운영 보조 스크립트
 - 실행 오케스트레이션: `runner`, `session-restore`
 - 개발 도메인: `frontend-dev`, `backend-dev`, `general-dev`
 - 검증/리뷰: `dev-review`
-- 작업 마감: `commit`, `pr`, `doc`
+- 작업 마감: `commit`, `pr`
 
 여기에 대응하는 실행 agent도 같이 포함됩니다.
 
 - `frontend-developer`
 - `backend-developer`
 - `general-developer`
-- `doc-updater`
 
 훅은 `plugin/develop/hooks/hooks.json`에 정의되어 있으며, 현재 다음 이벤트를 사용합니다.
 

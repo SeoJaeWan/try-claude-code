@@ -40,7 +40,7 @@ Own work that does NOT belong to frontend-dev or backend-dev:
 ## Implementation Steps
 
 1. Read plan from `plans/<slug>.plan.md` or `plans/<slug>/plan.md`
-2. Read `codemaps/infra.md` (if present)
+2. Consult the project dev-wiki — follow `plugin/develop/references/dev-wiki-lookup.md` to narrow candidate files and pick up recorded conventions (skip silently if no wiki)
 3. Implement the required infrastructure changes
 4. Validate configuration syntax where possible (e.g., `docker compose config`, `nginx -t`, YAML lint)
 5. Return results based on plan.md

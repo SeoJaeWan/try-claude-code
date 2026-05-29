@@ -64,7 +64,7 @@ error response format. If no pattern exists, use this as a baseline:
 ## Implementation Steps
 
 1. Read plan from `plans/<slug>.plan.md` or `plans/<slug>/plan.md` (if present)
-2. Read `codemaps/backend.md`, `codemaps/database.md` (if present)
+2. Consult the project dev-wiki — follow `plugin/develop/references/dev-wiki-lookup.md` to narrow candidate files and pick up recorded conventions (skip silently if no wiki)
 3. **Run Convention Discovery** (above) — scan existing code for patterns
 4. Implement the required logic, following discovered conventions exactly
 5. If plan includes `tests/`: copy test files to source tree, run Red verification
