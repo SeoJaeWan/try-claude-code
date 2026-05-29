@@ -26,6 +26,7 @@ Read these references in order for every orchestration run:
 - Recompute orchestration state from artifacts on every re-entry; do not rely on hidden state files or stale chat memory.
 - Keep orchestration helper state current-turn only and safely discardable.
 - Do not run or substitute for `brainstorm`; stop with a missing-decision blocker when the request is not locked enough for `plan-maker`.
+- If the plan wiki fast-forward freshness preflight fails, stop before planning roles with `plan_wiki_sync_required` and route sync/repair to `plan-wiki-setup`; do not repair the nested wiki repo in orchestrator.
 - Always require fresh `plan-tdd` after plan-maker revisions before `plan-review`.
 - Always require fresh `plan-review` after the current plan and TDD artifacts are available.
 - Always require explicit planning docs approval after fresh `plan-review` and before reporting `planning_complete`.

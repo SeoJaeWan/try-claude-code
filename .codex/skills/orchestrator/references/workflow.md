@@ -21,7 +21,8 @@ Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output ru
 - Resolve the planning `plan_wiki_root` to `./.codex/plan-wiki/source/wiki`.
 - If `./.codex/plan-wiki/source/wiki` is missing, stop and route to `plan-wiki-setup` instead of attempting per-run staging inside this skill.
 - Before invoking any planning role, run `git -C .codex/plan-wiki/source pull --ff-only` once to refresh the plan wiki source clone.
-- If the fast-forward pull fails, stop before routing to planning roles and report the pull failure as the blocker; do not ask sub-agents to fetch, pull, or repair the plan wiki source clone.
+- If the fast-forward pull fails, stop before routing to planning roles and route to the `plan-wiki-setup` sync/repair unit. Report the failing command output, nested repo branch status, and `plan_wiki_sync_required`; do not ask planning sub-agents to fetch, pull, or repair the plan wiki source clone.
+- Do not merge, rebase, reset, clean, stash, or push the plan wiki source clone inside orchestrator. That repair belongs to `plan-wiki-setup`.
 - Confirm the linked local `plan-maker`, `plan-tdd`, and `plan-review` capabilities are present before routing to them.
 - Do not invoke `brainstorm`. If the latest context or referenced artifacts do not lock request scope, UI direction when relevant, and required/excluded execution areas, stop with `missing_upstream_lock`.
 - If a directly referenced or latest relevant brainstorm artifact exists, read its `artifact_status` before invoking `plan-maker`.

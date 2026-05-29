@@ -1,11 +1,11 @@
 ---
 name: plan-wiki-setup
-description: Create or verify the project-local `.codex/plan-wiki/source` clone of the shared GitHub plan wiki repository, bootstrap the required `raw/` and `wiki/` structure, and verify `.codex/plan-wiki/source/wiki` as the planning root for planning agents. Use when the plan wiki source clone is missing, broken, moved, empty, or needs first-time structure setup.
+description: Create, verify, bootstrap, or safely synchronize the project-local `.codex/plan-wiki/source` clone of the shared GitHub plan wiki repository, including repair routing when orchestrator fast-forward pull preflight fails because the source clone is dirty, conflicted, behind, diverged, or remote-mismatched. Use when the plan wiki source clone is missing, broken, moved, empty, needs first-time structure setup, or needs plan-wiki sync/repair before planning agents can consume `.codex/plan-wiki/source/wiki`.
 ---
 
 # Plan Wiki Setup
 
-Use this skill to connect a workspace to the shared plan wiki Git repository and verify the planning root consumed by planning agents. Read [references/platform-commands.md](references/platform-commands.md), [references/bootstrap-layout.md](references/bootstrap-layout.md), and [references/staging-contract.md](references/staging-contract.md) before editing the filesystem.
+Use this skill to connect a workspace to the shared plan wiki Git repository, safely synchronize the source clone when orchestration preflight cannot fast-forward, and verify the planning root consumed by planning agents. Read [references/platform-commands.md](references/platform-commands.md), [references/bootstrap-layout.md](references/bootstrap-layout.md), [references/staging-contract.md](references/staging-contract.md), and [references/sync-repair.md](references/sync-repair.md) before editing the filesystem.
 
 ## Workflow
 
@@ -32,7 +32,17 @@ Use this skill to connect a workspace to the shared plan wiki Git repository and
    - Confirm `core/`, `patterns/`, `tags/`, and `_meta/` exist under the planning root.
    - Confirm `plan-maker`, `plan-review`, and `orchestrator` can target the same planning root path.
 
-5. Report Git sync state.
+5. Run sync/repair when requested or when orchestrator fast-forward preflight failed.
+   - Follow [references/sync-repair.md](references/sync-repair.md).
+   - Classify the source repo state as `clean-current`, `clean-behind`, `clean-diverged`, `dirty`, `conflicted`, or `remote-mismatch`.
+   - For `clean-current`, verify the planning root and report ready.
+   - For `clean-behind`, receive remote changes with `git pull --ff-only`.
+   - For `clean-diverged`, do not rebase by default; use a non-destructive merge only after explicit user approval.
+   - For `dirty` or `conflicted`, report the exact files and safe next options before any merge, rebase, reset, or stash.
+   - For `remote-mismatch`, stop and report the configured remote and actual remote before any Git repair.
+   - After any successful sync, verify `./.codex/plan-wiki/source/wiki/registry.json` still exists.
+
+6. Report Git sync state.
    - After setup or bootstrap writes, run `git status --short` inside `./.codex/plan-wiki/source`.
    - If a commit is requested, include only plan wiki files changed by the current setup/bootstrap operation.
    - Do not include unrelated dirty files already present in the plan wiki source repo.
@@ -47,9 +57,12 @@ Use this skill to connect a workspace to the shared plan wiki Git repository and
 - Do not scatter environment-specific absolute paths throughout other skills.
 - Do not continue if the source repo remote does not match `./.codex/plan-wiki/config.json`.
 - Do not skip verification after clone or bootstrap.
+- Do not merge, rebase, reset, clean, or stash a dirty plan wiki source repo without explicit user approval.
+- Do not push plan wiki sync/repair results unless the user explicitly approves a push.
 
 ## Reference
 
 - Read [references/platform-commands.md](references/platform-commands.md) for the platform-neutral Node setup command and Git sync commands.
 - Read [references/bootstrap-layout.md](references/bootstrap-layout.md) for the initial directory and document set.
 - Read [references/staging-contract.md](references/staging-contract.md) for the planning root contract.
+- Read [references/sync-repair.md](references/sync-repair.md) for the safe receive/merge repair unit used after orchestrator fast-forward preflight failure.

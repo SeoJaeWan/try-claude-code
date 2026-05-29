@@ -5,6 +5,8 @@
 - Do not implement production code.
 - Do not create or rely on `state.json`, `clarification.md`, or `user-gate.md`.
 - Do not hardcode runtime-specific spawn mechanics into the skill contract.
+- Do not repair `./.codex/plan-wiki/source` inside orchestrator; if the fast-forward freshness preflight fails because the nested wiki clone is dirty, conflicted, behind, diverged, or remote-mismatched, stop before planning roles and route the repository to `plan-wiki-setup` sync/repair.
+- Do not merge, rebase, reset, clean, stash, or push the plan wiki source clone from orchestrator.
 - Do not ask planning sub-agents to rediscover `plan_path`, `plan_signature`, or `plan_wiki_root` when the orchestrator already selected them.
 - Do not ask planning sub-agents to rediscover controller-owned authority or reinterpret missing paths into fresh authoritative inputs.
 - Do not pass open-ended discovery prompts in orchestrated handoff packets.

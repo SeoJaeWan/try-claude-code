@@ -1,8 +1,10 @@
 ---
-artifact_status: ready_for_planning
+artifact_status: superseded
 artifact_path: ./.codex/artifacts/brainstorm/vite-flow-map-visualization.md
 task_slug: vite-flow-map-visualization
 created_for: "Vite 환경에서 brainstorm부터 plugin runner 종료까지 전체 흐름을 가시성 있게 시각화"
+superseded_by: ./.codex/artifacts/brainstorm/flow-scenario-website.md
+superseded_reason: "사용자가 3D/atlas형 플로우 맵보다 하나의 시나리오를 따라가는 flow 폴더 웹사이트 방향으로 기획을 수정했다."
 ---
 
 # Vite 플로우 맵 시각화 request-lock
