@@ -8,6 +8,7 @@
 - In orchestrated mode:
   - require `task_slug`, `plan_path`, and `plan_wiki_root`.
   - use the provided `plan_path` and `plan_wiki_root` exactly.
+  - use the provided `dev_wiki_root` as read-only project context when present.
   - preserve a provided current `plan_signature`.
   - do not run plan wiki staging or setup.
 - In direct mode:
@@ -20,6 +21,7 @@
 - Select candidate patterns using registry `selection.review`, `domain_taxonomy`, and `adjacency_rules`; always include `common`, then add touched domains only.
 - Read only selected pattern files whose `적용 조건` actually match the reviewed plan file.
 - Read the active plan wiki `core/common/용어-정책.md` before drafting findings.
+- If `dev_wiki_root` is present, read `../dev-wiki-setup/references/consumer-context.md`, then read only the standard dev wiki documents needed to check project-specific folder structure, naming, testing, command, module-boundary, workflow, and graph claims.
 
 ### Step 1. Load the plan and TDD report
 
@@ -51,6 +53,7 @@ Treat scope-challenge findings as normal review evidence.
 Judge the plan against:
 
 - active plan wiki core docs and selected patterns.
+- dev wiki project guidance when `dev_wiki_root` is provided, without letting it override current source/config facts or plan wiki planning policy.
 - active plan wiki plan artifact contract.
 - current `tdd.md` plan row/scenario to test mapping, manual smoke gates, TDD blockers, expected red reasons, actual red results when validation was attempted, and completion gates.
 - required YAML frontmatter and valid `owner_agent` routing.
@@ -62,6 +65,7 @@ Judge the plan against:
 - scenario-level `input -> output` contract completeness.
 - affected public boundaries, exclusions, no-op rules, recipients, and final interpretation boundaries.
 - source/test/fixture/artifact topology: implementation-scope plans should show concrete paths, status, owning phase, responsibility, and repo-local evidence for placement instead of invented or duplicate paths.
+- project-specific folder structure, naming, module boundary, workflow command, and testing conventions recorded in dev wiki when available.
 - planning-only evidence artifacts: UI/API/backend/utility/function evidence referenced by the plan should live under `evidence/**`, map to the stated phase and input/output/state/function/recipient contract, and avoid production-code or live-server implications. For UI scope, check that HTML/CSS preview evidence is present and connected when the plan relies on planning docs judgment; do not approve or reject the preview on behalf of the reviewer. Also check whether shell, screen, component, and state/variant evidence are separated when they are separate implementation judgment units, whether finite component/repeated-UI target counts have matching preview coverage or explicit exclusions, and whether token/schema/registry/variant transformations have `function-contract` input-output harnesses instead of only visual preview.
 - first-time test runner, command, spec root, source/test topology, mock/API fixture policy, storage/auth state policy, and expected red reason when implementation-first setup does not already exist.
 - verification realism and readiness.

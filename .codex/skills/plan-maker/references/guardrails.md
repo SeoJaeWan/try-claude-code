@@ -13,6 +13,8 @@
 - Do not create a test-only plan unless the active routing catalog contains a real execution agent for that responsibility and the upstream lock selected it.
 - Do not make future source paths, route paths, or test paths look committed unless the plan intentionally locks that topology from actual repo inspection.
 - Do not invent topology from framework memory alone; inspect the relevant local route, component, API, service, utility, test, fixture, or package boundary first.
+- Do not treat dev wiki as a replacement for source inspection. If `dev_wiki_root` conflicts with current source, config, scripts, or tests, treat the wiki as possibly stale and record the conflict instead of silently planning from it.
+- Do not edit dev wiki files from `plan-maker`; use them only as read-only project context.
 - Do not turn missing Figma, external reference, inventory, classification, or fixture authority into an implementation phase when that authority changes the plan boundary or validation scope.
 - Do not present HTML/JS evidence as production code. Evidence is a planning-only projection of the plan contract and must not require real API calls, DB access, filesystem writes, live dev servers, React builds, or production stack execution.
 - Do not treat Context7 as mandatory for every plan; use it only when unstable external facts can change the boundary, contract, or plan split.

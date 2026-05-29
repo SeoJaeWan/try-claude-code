@@ -11,9 +11,10 @@
 7. `../plan-review/SKILL.md`.
 8. `../plan-wiki-setup/references/staging-contract.md`.
 9. `../plan-wiki-setup/references/sync-repair.md` only when the plan wiki fast-forward preflight fails and the next safe route must be reported.
-10. `../dev-wiki-setup/references/staging-contract.md` when `.codex/dev-wiki/config.json` exists or dev wiki context is being reported.
+10. `../dev-wiki-setup/references/staging-contract.md` when `.codex/dev-wiki/config.json` exists or dev wiki root is being reported.
 11. `../dev-wiki-setup/references/sync-policy.md` only when the dev wiki fast-forward preflight fails and the next safe route must be reported.
-12. `../figma-inventory-snapshot/SKILL.md` only when a controller-verified Figma inventory artifact is already required by the locked planning input.
+12. `../dev-wiki-setup/references/consumer-context.md` when passing `dev_wiki_root` to planning roles.
+13. `../figma-inventory-snapshot/SKILL.md` only when a controller-verified Figma inventory artifact is already required by the locked planning input.
 
 ## Runtime Expectations
 
@@ -43,7 +44,7 @@ Treat only these artifacts as durable orchestration evidence:
 - review artifact at `./plans/_orchestrator/review/{task-slug}/review.md`
 - planning docs artifacts under `./plans/{task-slug}/planning-docs/`
 - directly referenced upstream request-lock or UI-direction artifacts under `./.codex/artifacts/**`
-- verified dev wiki context documents under `./.codex/dev-wiki/source/{project}/**` when the workspace has opted in and the source clone fast-forward preflight succeeded
+- verified `dev_wiki_root` under `./.codex/dev-wiki/source/{project}` when the workspace has opted in and the source clone fast-forward preflight succeeded
 
 Do not create a second source of truth for stage, approval, blocker routing, or agent reuse.
 
@@ -97,7 +98,7 @@ Include only the minimum fields needed for the role:
 - `task_slug`
 - selected `plan_path` when known
 - authoritative `plan_wiki_root`
-- verified dev wiki project root and relevant context files when `.codex/dev-wiki/config.json` exists and the fast-forward preflight succeeded
+- verified `dev_wiki_root` when `.codex/dev-wiki/config.json` exists and the fast-forward preflight succeeded
 - current `plan_signature` when freshness matters
 - latest user-request summary when the role cannot safely rely on full parent context
 - authoritative locked request summary or artifact path when present

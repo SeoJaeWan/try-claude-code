@@ -6,6 +6,7 @@
 
 - Inspect the repository before generating anything
 - Detect existing runners, assertion style, mocking style, naming, and file layout
+- When orchestrator provides `dev_wiki_root`, read `../dev-wiki-setup/references/consumer-context.md`, then use the relevant dev wiki testing, workflow, folder, and graph documents as read-only project context. Verify every placement and command against actual repo source, config, scripts, and existing tests.
 - Reuse the current stack unless the selected plan explicitly locks a first-time test stack or intentionally overrides the existing convention as part of the TDD contract
 - Before creating tests under a planned new source tree, confirm the plan locks the production topology and test-owner placement as contracts rather than examples
 - If the plan's concrete paths could be interpreted as tentative candidates, or if writing tests would force a hook/model/utility/runtime folder decision the plan did not justify, stop with `blocker_type = plan_contract`
@@ -54,6 +55,7 @@ Treat these as first-class coverage obligations.
 - In orchestrated mode:
   - use the provided `plan_path` as the authoritative plan path
   - if a current `plan_signature` is provided, treat it as the authoritative freshness fingerprint for this pass
+  - if `dev_wiki_root` is provided, use it only as project-specific read-only context; do not create, sync, repair, or edit dev wiki files
 - In direct mode:
   - load every phase detail file linked from the current `plan.md`
 - In orchestrated mode, do not rely on stale prior metadata when the current plan files on disk have changed.

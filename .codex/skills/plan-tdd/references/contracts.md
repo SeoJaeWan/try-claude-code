@@ -31,6 +31,7 @@ Author TDD contract tests after planning, not during implementation.
     - `task_slug`
     - `plan_path`
     - optional `plan_signature`
+    - optional `dev_wiki_root`
 4. Existing plan-local report when present:
     - `tdd.md` adjacent to the selected executable plan
 5. Local or planned test config and existing tests:
@@ -43,6 +44,7 @@ Author TDD contract tests after planning, not during implementation.
 8. `./references/component-test-conventions.md` when component rendering or same-screen interaction boundaries are in scope
 9. `./references/e2e-test-conventions.md` when frontend browser journeys are in scope
 10. Active plan wiki `core/common/용어-정책.md` before writing report prose or test intent text
+11. `../dev-wiki-setup/references/consumer-context.md` when `dev_wiki_root` is provided
 
 ## Output contract
 

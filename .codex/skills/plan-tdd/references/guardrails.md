@@ -22,6 +22,8 @@
 - Do not replace behavior, flow, state, codegen, or final-output contracts with file-existence/source-string tests merely because implementation or harness files are not present yet
 - Do not mark a behavior clause covered by smoke tests that only prove rendering, heading visibility, non-empty copy text, or absence of console errors
 - Do not place tests in a neighboring package just because its runner currently exists; do not let test placement move the selected behavior out of its owning app/module unless the plan intentionally locks that package as the future owner
+- Do not treat dev wiki as a replacement for repository test/config inspection. If `dev_wiki_root` conflicts with current source, scripts, or tests, treat the wiki as possibly stale and report the conflict instead of writing tests from stale guidance.
+- Do not edit dev wiki files from `plan-tdd`; use them only as read-only project context.
 - Do not freeze exact export inventories or negative-only import/export assertions unless the plan explicitly identifies that inventory as the stable public contract
 - Do not freeze volatile metadata snapshots such as exact registry counts, temporary source splits, deprecated sibling names, or excluded names unless the plan explicitly makes that exact snapshot the durable user-visible contract
 - Do not create package-root export tests that only prove re-export identity, legacy alias absence, or private symbol absence unless the external import behavior itself is the selected durable feature contract

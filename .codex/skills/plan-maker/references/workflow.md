@@ -11,6 +11,7 @@ Before writing any plan artifact:
   - `direct`: no orchestrator handoff exists.
 - In orchestrated mode:
   - treat provided `task_slug`, optional `plan_path`, and `plan_wiki_root` as authoritative.
+  - treat provided `dev_wiki_root` as the read-only project development reference root when present.
   - treat `authoritative_existing_inputs` as the only task-local upstream authority.
   - treat `known_missing_inputs` only as explicit missing-path warnings.
   - if reused for the same `task_slug`, prefer current disk artifacts and latest review over stale chat memory.
@@ -26,6 +27,7 @@ Before writing any plan artifact:
 - Select candidate patterns using registry `selection["plan-maker"]` and `adjacency_rules`; always include `common`, then add touched domains only.
 - Read only selected pattern files whose `적용 조건` match the request, repo-local context, or authoritative upstream inputs.
 - Read the active plan wiki `core/common/용어-정책.md` before drafting visible prose.
+- If `dev_wiki_root` is present, read `../dev-wiki-setup/references/consumer-context.md`, then read only the standard dev wiki documents relevant to the requested work. Use dev wiki to guide project-specific placement, naming, module, command, and graph inspection; verify committed topology against current repo source and config.
 
 ### Step 1. Analyze the request and upstream decisions
 
@@ -73,6 +75,7 @@ Inspect only enough repo-local context to make each plan file executable:
 - selected plan wiki patterns that affect topology, contracts, state, validation, rollout, rollback, or verification quality.
 - existing route/page/component/API/service/utility/test/fixture layout that could already satisfy or conflict with the requested change.
 - naming, package boundary, and placement convention needed to avoid duplicate files or invented topology.
+- project-specific conventions, architecture boundaries, workflow commands, and graph entry points from `dev_wiki_root` when provided.
 
 Do not deep-dive into implementation details or write source-tree tests.
 
@@ -131,6 +134,7 @@ If the plan includes implementation scope beyond documentation-only or structura
 - Re-check that dense contracts are visible as structured tables and not only as fragmented `changes[]` bullets in planning docs.
 - Re-check that plans revised from planning docs feedback contain `planning docs 피드백 반영 내역` entries for each handled non-approved comment.
 - Re-check that implementation-scope topology was derived from actual repo structure, not invented paths, and that topology rows do not duplicate existing UI/API/utility surfaces.
+- Re-check that dev wiki project guidance, when provided, was used as a project reference without overriding current source/config facts or plan wiki planning policy.
 - Re-check that every evidence row points under `evidence/**`, matches the plan's phase/input/output/state/function/recipient contract, is clearly planning-only, and gives the planning docs reviewer the concrete judgment material it claims to provide. For UI scope, re-check that shell/screen/component/state evidence is separated when those are separate implementation units. For function or adapter scope, re-check that input, function/adapter, output recipient, and negative/no-op examples are visible.
 - Fix critical self-review findings before handoff.
 - If a required wiki registry, core doc, or pattern cannot be read, treat that as a failed quality gate.
