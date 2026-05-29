@@ -11,7 +11,9 @@
 7. `../plan-review/SKILL.md`.
 8. `../plan-wiki-setup/references/staging-contract.md`.
 9. `../plan-wiki-setup/references/sync-repair.md` only when the plan wiki fast-forward preflight fails and the next safe route must be reported.
-10. `../figma-inventory-snapshot/SKILL.md` only when a controller-verified Figma inventory artifact is already required by the locked planning input.
+10. `../dev-wiki-setup/references/staging-contract.md` when `.codex/dev-wiki/config.json` exists or dev wiki context is being reported.
+11. `../dev-wiki-setup/references/sync-policy.md` only when the dev wiki fast-forward preflight fails and the next safe route must be reported.
+12. `../figma-inventory-snapshot/SKILL.md` only when a controller-verified Figma inventory artifact is already required by the locked planning input.
 
 ## Runtime Expectations
 
@@ -20,6 +22,8 @@
 - Do not silently inline plan-maker, TDD, or reviewer work when the sub-agent path is available.
 - Do not run `brainstorm`, request-scope locking, or UI-spec locking from this orchestrator contract unless the user explicitly invoked that separate skill or explicitly asked to continue beyond planning.
 - Do not repair the plan wiki source clone inside orchestrator. When `git -C .codex/plan-wiki/source pull --ff-only` fails, stop and route to `plan-wiki-setup` sync/repair before any planning role invocation.
+- If `.codex/dev-wiki/config.json` exists, refresh the dev wiki source clone before planning roles with `git -C .codex/dev-wiki/source pull --ff-only`, mirroring the plan wiki freshness preflight.
+- Do not repair the dev wiki source clone inside orchestrator. When the dev wiki fast-forward pull fails, stop and route to `dev-wiki-setup` sync/repair before any planning role invocation.
 - For implementation-scope plans, run `plan-tdd` after every current plan-maker pass and before `plan-review`; do not report browser approval or planning completion from a plan-only review.
 - Run planning docs only through `references/planning-docs.md` after a fresh `plan-review` has accepted the current plan signature and matching `tdd.md`.
 - Do not create, mutate, or rely on `state.json`, `clarification.md`, or `user-gate.md`.
@@ -39,6 +43,7 @@ Treat only these artifacts as durable orchestration evidence:
 - review artifact at `./plans/_orchestrator/review/{task-slug}/review.md`
 - planning docs artifacts under `./plans/{task-slug}/planning-docs/`
 - directly referenced upstream request-lock or UI-direction artifacts under `./.codex/artifacts/**`
+- verified dev wiki context documents under `./.codex/dev-wiki/source/{project}/**` when the workspace has opted in and the source clone fast-forward preflight succeeded
 
 Do not create a second source of truth for stage, approval, blocker routing, or agent reuse.
 
@@ -92,6 +97,7 @@ Include only the minimum fields needed for the role:
 - `task_slug`
 - selected `plan_path` when known
 - authoritative `plan_wiki_root`
+- verified dev wiki project root and relevant context files when `.codex/dev-wiki/config.json` exists and the fast-forward preflight succeeded
 - current `plan_signature` when freshness matters
 - latest user-request summary when the role cannot safely rely on full parent context
 - authoritative locked request summary or artifact path when present
@@ -113,6 +119,7 @@ Do not force planning sub-agents to rediscover orchestrator-owned metadata. Do n
 - `tdd_gate_blocker`: `plan-tdd` returned a blocker, wrote stale `tdd.md`, or could not map selected plan clauses to source-tree tests, execution commands, or manual smoke gates
 - `tool_data_blocker`: the role pass completed with `needs_user_input = false` because required external tool data, permission, timeout-safe shard data, or source inventory coverage is unavailable
 - `plan_wiki_sync_required`: the plan wiki source clone could not be refreshed by fast-forward preflight because it is dirty, diverged, conflicted, behind local commits, or otherwise needs `plan-wiki-setup` sync/repair before planning roles can consume it
+- `dev_wiki_sync_required`: the dev wiki source clone could not be refreshed by fast-forward preflight because it is dirty, diverged, conflicted, behind local commits, missing, remote-mismatched, or otherwise needs `dev-wiki-setup` sync/repair before planning roles can consume it
 - `planning_docs_gate_blocker`: the planning docs package cannot be generated, the review server cannot be started, feedback is incomplete, or submitted feedback requires routing before planning can complete
 - `controller_interruption`: the controller shut down a still-running planning sub-agent before explicit user cancellation or before the role-specific idle window was satisfied
 - `no_progress`: the same artifact signature or finding signature repeated against an unchanged plan after one safe retry
@@ -128,6 +135,7 @@ Report the exact classification when stopping.
 - When blocked by `missing_upstream_lock`, state that `brainstorm`, `figma-inventory-snapshot`, UI-direction locking, test-strategy locking, or another upstream locking step must happen before rerunning orchestrator.
 - When blocked by `tool_data_blocker`, report the exact missing tool/data root, path, or artifact instead of asking the user for a planning decision.
 - When blocked by `plan_wiki_sync_required`, report the failing fast-forward command, nested repo status summary, and that `plan-wiki-setup` sync/repair must receive or reconcile remote changes before rerunning orchestrator.
+- When blocked by `dev_wiki_sync_required`, report the failing fast-forward command, nested repo status summary, and that `dev-wiki-setup` sync/repair must receive or reconcile remote changes before rerunning orchestrator.
 - When stopping, report the exact failure classification.
 
 ## Output Contract

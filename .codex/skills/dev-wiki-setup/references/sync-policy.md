@@ -6,7 +6,7 @@
 - Verify the remote origin against config.
 - Create missing files and directories.
 - Run `git -C .codex/dev-wiki/source status --short`.
-- Run `git -C .codex/dev-wiki/source pull --ff-only` only when the user asks to sync or when setup is explicitly repairing a clean, behind clone.
+- Run `git -C .codex/dev-wiki/source pull --ff-only` only when the user asks to sync, when setup is explicitly repairing a clean behind clone, or when orchestrator runs its freshness preflight after `.codex/dev-wiki/config.json`, the source clone, and the configured project folder are verified.
 
 ## Operations Requiring Explicit Approval
 

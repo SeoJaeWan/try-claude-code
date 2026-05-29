@@ -23,6 +23,13 @@ Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output ru
 - Before invoking any planning role, run `git -C .codex/plan-wiki/source pull --ff-only` once to refresh the plan wiki source clone.
 - If the fast-forward pull fails, stop before routing to planning roles and route to the `plan-wiki-setup` sync/repair unit. Report the failing command output, nested repo branch status, and `plan_wiki_sync_required`; do not ask planning sub-agents to fetch, pull, or repair the plan wiki source clone.
 - Do not merge, rebase, reset, clean, stash, or push the plan wiki source clone inside orchestrator. That repair belongs to `plan-wiki-setup`.
+- If `./.codex/dev-wiki/config.json` exists, treat this workspace as dev wiki opted in for orchestration context.
+- Resolve the dev wiki source clone to `./.codex/dev-wiki/source` and the project wiki root from `config.json` as `./.codex/dev-wiki/source/{project}`.
+- If dev wiki is opted in but the source clone or project folder is missing, stop before routing to planning roles and route to `dev-wiki-setup`; do not create or infer a dev wiki project from orchestrator.
+- Before invoking any planning role, run `git -C .codex/dev-wiki/source pull --ff-only` once to refresh the dev wiki source clone from GitHub, matching the plan wiki freshness pattern.
+- If the dev wiki fast-forward pull fails, stop before routing to planning roles and route to the `dev-wiki-setup` sync/repair unit. Report the failing command output, nested repo branch status, and `dev_wiki_sync_required`; do not ask planning sub-agents to fetch, pull, or repair the dev wiki source clone.
+- Do not merge, rebase, reset, clean, stash, or push the dev wiki source clone inside orchestrator. That repair belongs to `dev-wiki-setup`.
+- Add verified dev wiki context paths, when present, to planning role handoffs so roles can read current project conventions, architecture notes, workflows, and graph artifacts without rediscovering the nested repo.
 - Confirm the linked local `plan-maker`, `plan-tdd`, and `plan-review` capabilities are present before routing to them.
 - Do not invoke `brainstorm`. If the latest context or referenced artifacts do not lock request scope, UI direction when relevant, and required/excluded execution areas, stop with `missing_upstream_lock`.
 - If a directly referenced or latest relevant brainstorm artifact exists, read its `artifact_status` before invoking `plan-maker`.
@@ -60,7 +67,7 @@ Invoke `plan-maker` when:
 Controller requirements:
 
 - Reuse the live `plan-maker` role agent for the same `task_slug` when compatible; otherwise start a new generic planning sub-agent and attach `plan-maker`.
-- Pass a handoff packet with exact `task-slug`, optional `plan_path`, `plan_wiki_root`, verified inputs, missing-input notes, latest review path when revising, locked request summary when available, and write scope under `./plans/{task-slug}/`.
+- Pass a handoff packet with exact `task-slug`, optional `plan_path`, `plan_wiki_root`, verified dev wiki context paths when available, verified inputs, missing-input notes, latest review path when revising, locked request summary when available, and write scope under `./plans/{task-slug}/`.
 - When Figma inventory is required, include only controller-verified `figma-inventory` manifest and snapshot paths in `authoritative_existing_inputs`.
 - Require exactly one result: `result = wrote_plan` with `written_paths`, or `result = blocking_packet` with user-input fields.
 - After every plan-maker pass, re-check written plan files and recompute `plan_signature` for each selected review target.
