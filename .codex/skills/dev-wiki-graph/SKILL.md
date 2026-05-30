@@ -23,15 +23,17 @@ Read these references before generating graph artifacts:
 
 2. Generate the first-pass graph.
    - Run `node .codex/skills/dev-wiki-graph/scripts/generate-dev-wiki-graph.mjs` from the workspace root.
-   - The script writes `overview.md`, `architecture-map.md`, `symbol-map.md`, `call-map.md`, `external-boundaries.md`, `graph.json`, and `graph.mmd`.
+   - The script writes `overview.md`, `architecture-map.md`, `symbol-map.md`, `call-map.md`, `impact-map.md`, `work-routing.md`, `external-boundaries.md`, `quality-signals.md`, `graph.json`, and `graph.mmd`.
    - Pass `--project <name>` only when overriding the config intentionally.
 
 3. Improve the generated map when useful.
-   - Read generated artifacts and nearby source files when the first pass is too shallow.
-   - Add concise human judgment about domain meaning, layer intent, or important workflows that the script cannot infer.
+   - The v2 generator indexes code with TypeScript syntax AST, prose/config contracts, and project overlay routing.
+   - Read generated artifacts and nearby source files when the first pass is still too shallow.
+   - Add concise human judgment about domain meaning, layer intent, or important workflows only when the generated `work-routing.md` or `architecture-map.md` misses a project-specific boundary.
    - Keep uncertainty short. Mark obvious dynamic, generated, or framework-convention gaps without over-explaining them.
 
 4. Verify and report.
+   - Run `npm run test:dev-wiki-graph` when the graph generator code changes.
    - Run `git -C .codex/dev-wiki/source status --short`.
    - Summarize graph files changed and notable blind spots.
    - Do not commit or push unless the user explicitly asks.
