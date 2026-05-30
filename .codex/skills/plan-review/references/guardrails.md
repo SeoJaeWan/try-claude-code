@@ -19,6 +19,7 @@
 - Do not approve an implementation-scope plan that commits new source/test/fixture topology without showing repo-local inspection evidence for those placements.
 - Do not approve a plan whose file/folder topology, phase rows, feature contracts, and evidence artifacts point to different paths, phases, inputs, outputs, or states.
 - Do not approve a plan that presents HTML/JS evidence as production code or requires real API calls, DB access, filesystem writes, live dev servers, React builds, or production stack execution for planning review.
+- Do not approve a plan that presents standalone planning-docs HTML/CSS as brand, Figma, design-system parity, component polish, or final visual fidelity evidence.
 - Do not approve a UI plan that leaves critical user-visible hierarchy, state coverage, responsive behavior, or accessibility implications unresolved.
 - Do not approve a non-trivial implementation plan that lacks reviewable Phase entries, completion signals, validation, and commit boundaries for planning docs.
 - Do not approve a plan that requires a separate shared contract, linked phase detail file, or unstated note to understand execution meaning.

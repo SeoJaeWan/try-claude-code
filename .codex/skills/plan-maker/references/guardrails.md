@@ -17,6 +17,7 @@
 - Do not edit dev wiki files from `plan-maker`; use them only as read-only project context.
 - Do not turn missing Figma, external reference, inventory, classification, or fixture authority into an implementation phase when that authority changes the plan boundary or validation scope.
 - Do not present HTML/JS evidence as production code. Evidence is a planning-only projection of the plan contract and must not require real API calls, DB access, filesystem writes, live dev servers, React builds, or production stack execution.
+- Do not present planning docs UI evidence as final visual quality. Default to labeled wireframes, and route brand, landing, Figma, design-system parity, or component polish claims to reference authority plus implementation-time validation.
 - Do not treat Context7 as mandatory for every plan; use it only when unstable external facts can change the boundary, contract, or plan split.
 - Do not treat old `plan.md + phases/*` artifacts as the current contract unless the task is explicitly a legacy migration or review.
 - Do not bypass Korean-first visible prose and terminology checks.

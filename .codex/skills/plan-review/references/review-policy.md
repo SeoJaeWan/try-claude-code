@@ -27,9 +27,11 @@ Typical blocker signals:
 - implementation-scope topology is committed without repo-local inspection evidence, or it duplicates/contradicts existing local surfaces the plan should have reused.
 - file/folder topology, phase rows, feature contracts, and evidence artifacts contradict each other on phase, path, input, output, state, or ownership.
 - evidence artifacts are presented as production code or require real API calls, DB access, filesystem writes, live dev servers, React builds, or production stack execution for planning review.
-- UI-facing plans rely on planning docs approval but do not provide any connected HTML/CSS preview evidence for the user-visible UI direction the reviewer must judge.
+- UI-facing plans rely on planning docs approval but do not provide connected HTML/CSS wireframe evidence for the user-visible structure, feature placement, state coverage, and responsive behavior the reviewer must judge.
 - UI-facing plans collapse separate shell, screen, component, or state/variant implementation judgment units into one broad preview in a way that would force implementation agents to infer component quality, route composition, or responsive behavior from unrelated context.
 - plans that name a finite component/repeated-UI target count do not expose matching component-preview coverage or an explicit excluded-unit rationale.
+- UI evidence for a new or revised plan omits `fidelity`, or uses unlabeled placeholder blocks so the reviewer cannot identify regions, actions, repeated units, states, or responsive transitions.
+- plans claim brand, landing, Figma, design-system parity, or component visual fidelity from standalone HTML/CSS evidence instead of naming a reference authority and implementation-time validation method.
 - plans that introduce token, schema, registry, variant, or design-system value transformation through a function, mapper, adapter, or serializer do not provide a `function-contract` input/output harness or equivalent structured contract showing input, function/adapter, output recipient, and negative/no-op cases.
 - missing current `tdd.md` for an implementation-scope plan, or `tdd.md` whose `plan_signature` does not match the reviewed plan.
 - missing plan row/scenario to test mapping in `tdd.md` for selected behavior, runtime lifecycle, policy, failure UI, no-op, recipient, or final-interpretation clauses.
@@ -54,7 +56,8 @@ Typical major signals:
 - verification unit choice is plausible but thin or poorly justified.
 - UI-facing observability or identifier detail is likely derivable but not clearly locked.
 - UI preview evidence exists but its review points, phase mapping, or covered states are too thin for the reviewer to know what judgment the preview is meant to support.
-- UI preview evidence is present but uses placeholder-like component examples, omits representative state/variant examples, or hides component coverage inside a shell preview instead of making the built units reviewable.
+- UI preview evidence is present but its wireframe labels are too generic, omits representative state/variant examples, or hides component coverage inside a shell preview instead of making the built units reviewable.
+- `reference-linked` visual scope exists but the reference authority, comparison surface, or post-implementation visual validation method is too thin for a later implementation/review agent to apply.
 - `function-contract` evidence exists but the input, selected function/adapter, output recipient, or prohibited output is too thin to become a later unit or Component Test contract.
 - expected red reason is present but too thin to distinguish valid completion-blocking failure from malformed test/setup failure.
 - plan-file split is defensible but hides important sequencing or ownership assumptions.

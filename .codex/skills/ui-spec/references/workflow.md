@@ -32,7 +32,7 @@ Lock the direction in words before generating variants:
 - reuse vs new-pattern expectations
 - design-system, tone, or visual constraints that artifact consumers must preserve
 - 나중 계획이 planning docs에서 검토자 판단 자료를 요구할 때의 HTML/CSS preview evidence 기대치
-- preview evidence 분해 방식: `shell-preview`, `screen-preview`, `component-preview`, `state-variant-preview`, `function-contract` 중 무엇이 필요한지와 각각의 검토 대상 수
+- preview evidence 분해 방식: `shell-preview`, `screen-preview`, `component-preview`, `state-variant-preview`, `function-contract` 중 무엇이 필요한지, 각각의 검토 대상 수, 그리고 `fidelity`
 
 Rules:
 
@@ -40,6 +40,8 @@ Rules:
 - Prefer concrete UI outcomes over abstract design jargon.
 - Keep the result tight enough that artifact consumers can use it without adding a recap section.
 - Do not collapse shell, screen, component, state/variant, and function transformation evidence into one large preview when those are separate implementation judgment units.
+- Default planning-docs UI evidence to labeled `wireframe` fidelity. Require labels for major regions, actions, repeated units, states, and responsive transitions.
+- Do not ask planning docs HTML/CSS to reproduce brand, landing, Figma, design-system parity, or component polish. Mark those as `reference-linked` and name the reference authority plus implementation-time validation surface.
 - Treat token, schema, registry, variant, or design-system value transformation as `function-contract` guidance, not as a visual-only UI preview.
 
 ### 3. Decide whether shotgun mode is needed
@@ -97,6 +99,7 @@ Apply the active plan wiki `core/common/용어-정책.md` to all human-readable 
 
 4. `체험 산출물 분해 표`
    - `산출물 종류`
+   - `fidelity`
    - `대상 단위`
    - `대상 수`
    - `검토자가 볼 것`
@@ -142,7 +145,7 @@ When producing the final handoff, provide a `locked_ui_direction` packet contain
 3. state-presentation expectations for empty / loading / error / success flows
 4. responsive, accessibility, and reuse constraints that materially affect planning
 5. approved visual references or variant notes when present
-6. preview evidence breakdown when the UI direction needs reviewer approval in planning docs
+6. preview evidence breakdown and fidelity when the UI direction needs reviewer approval in planning docs
 7. `function-contract` harness guidance when token/schema/registry/variant input must pass through a function, mapper, adapter, or serializer before reaching UI or runtime recipients
 8. explicit low-risk defaults vs still-blocking UI questions
 

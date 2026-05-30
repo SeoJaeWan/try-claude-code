@@ -381,6 +381,12 @@
       border-radius: 6px;
       background: #fff;
     }
+    .fidelity-note {
+      margin: -2px 0 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
 
     .comments {
       display: grid;
@@ -1102,9 +1108,11 @@
                 <div class="meta-row">
                   <span class="pill">${esc(item.id || "evidence")}</span>
                   ${item.kind ? `<span class="pill">${esc(item.kind)}</span>` : ""}
+                  ${item.fidelity ? `<span class="pill">${esc(item.fidelity)}</span>` : ""}
                   ${item.phase ? `<span class="pill">${esc(item.phase)}</span>` : ""}
                 </div>
                 <p><strong>${esc(item.purpose || "체험 산출물")}</strong></p>
+                ${fidelityNote(item)}
                 ${evidenceDetails(item)}
                 ${list(item.review_points)}
                 ${src ? `<p><a href="${esc(src)}" target="_blank" rel="noopener">새 창으로 열기</a></p>` : ""}
@@ -1118,6 +1126,7 @@
 
     function evidenceDetails(item) {
       const rows = [
+        ["fidelity", item.fidelity],
         ["대상 단위", item.target_unit],
         ["대상 수", item.covered_units],
         ["input", item.input],
@@ -1127,6 +1136,16 @@
       ].filter(([, value]) => value);
       if (!rows.length) return "";
       return `<dl class="kv-list">${rows.map(([key, value]) => `<div><dt>${esc(key)}</dt><dd>${esc(value)}</dd></div>`).join("")}</dl>`;
+    }
+
+    function fidelityNote(item) {
+      if (item.fidelity === "wireframe") {
+        return `<p class="fidelity-note">라벨이 붙은 구조 wireframe입니다. 최종 visual 품질이 아니라 영역, action, 상태, 반복 단위, responsive 변화를 검토합니다.</p>`;
+      }
+      if (item.fidelity === "reference-linked") {
+        return `<p class="fidelity-note">Visual fidelity는 연결된 reference와 구현 후 검증에서 판단합니다. 이 evidence는 구조와 상태 범위 검토용입니다.</p>`;
+      }
+      return "";
     }
 
     function renderComments(itemId, anchorId) {

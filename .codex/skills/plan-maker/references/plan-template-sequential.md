@@ -54,11 +54,13 @@ owner_agent: {owner-agent}
 
 ## 체험 산출물
 
-| id | phase | kind | 대상 단위 | 대상 수 / covered units | 경로 | input | function / adapter | output recipient | negative/no-op | 목적 | 검토 포인트 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `{artifact-id}` | `P1` | `shell-preview` / `screen-preview` / `component-preview` / `state-variant-preview` / `function-contract` / `api-contract` / `backend-contract` / `fixture-view` | {shell, route, component, state matrix, mapper 등} | {예: 27개 중 27개, 또는 none} | `evidence/{artifact}.html` | {입력/선택값} | {함수, mapper, adapter, serializer. 없으면 `none`} | {화면, CSS var, payload, renderer 등} | {금지 출력 또는 no-op} | {왜 이 산출물이 필요한지} | {empty, loading, success, validation-error, forbidden 등} |
+| id | phase | kind | fidelity | 대상 단위 | 대상 수 / covered units | 경로 | input | function / adapter | output recipient | negative/no-op | 목적 | 검토 포인트 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `{artifact-id}` | `P1` | `shell-preview` / `screen-preview` / `component-preview` / `state-variant-preview` / `function-contract` / `api-contract` / `backend-contract` / `fixture-view` | `wireframe` / `reference-linked` / `contract` | {shell, route, component, state matrix, mapper 등} | {예: 27개 중 27개, 또는 none} | `evidence/{artifact}.html` | {입력/선택값} | {함수, mapper, adapter, serializer. 없으면 `none`} | {화면, CSS var, payload, renderer 등} | {금지 출력 또는 no-op} | {왜 이 산출물이 필요한지} | {empty, loading, success, validation-error, forbidden 등} |
 
-UI evidence는 검토자가 직접 승인 여부를 판단할 수 있는 HTML/CSS preview evidence다. 최종 구현 코드는 아니지만, 계획한 화면 또는 component의 구조, 주요 control, 실제에 가까운 내용 밀도, 중요한 상태, 필요한 viewport 단서를 보여준다. shell, screen, component, state/variant가 서로 다른 구현 판단 단위이면 하나의 큰 preview에 섞지 말고 별도 evidence로 나눈다. 만들 대상 수가 있는 component나 반복 UI는 `대상 수 / covered units`에 전체 수와 실제 preview coverage를 적는다.
+UI evidence는 검토자가 직접 승인 여부를 판단할 수 있는 HTML/CSS preview evidence다. 기본 `fidelity`는 `wireframe`이며, 최종 구현 코드는 아니다. Wireframe evidence는 라벨이 붙은 구조 placeholder로 계획한 화면 또는 component의 영역, 주요 control, 반복 단위, 상태, responsive 전환 단서를 보여준다. 모든 주요 영역, action, 상태 marker, 반복 UI 단위는 검토자가 의미를 판단할 수 있는 라벨을 가져야 한다. 라벨 없는 장식 박스나 polished mock을 기본값으로 쓰지 않는다. shell, screen, component, state/variant가 서로 다른 구현 판단 단위이면 하나의 큰 preview에 섞지 말고 별도 evidence로 나눈다. 만들 대상 수가 있는 component나 반복 UI는 `대상 수 / covered units`에 전체 수와 실제 preview coverage를 적는다.
+
+브랜드, landing, Figma 재현, design-system parity, component visual 품질처럼 visual fidelity가 중요한 범위는 planning docs HTML/CSS로 흉내 내지 않는다. 이때는 `fidelity`를 `reference-linked`로 두고, reference authority와 구현 후 검증 방법을 기능 계약/검토 포인트에 명시한다. HTML/CSS evidence는 여전히 구조, 상태, 대상 범위 판단에만 사용한다. `function-contract`, `api-contract`, `backend-contract`, `fixture-view`처럼 UI fidelity가 아닌 산출물은 `fidelity`를 `contract`로 둔다.
 
 `function-contract`는 token, schema, registry, variant, form state, adapter input처럼 함수나 mapper를 거쳐 최종 UI/runtime recipient에 도달하는 계약을 보여주는 HTML/JS input-output harness다. `input`, `function / adapter`, `output recipient`, `negative/no-op`을 비워 두지 않는다. 예: Figma token record -> `resolveTokenValue` -> CSS variable/theme field, variant metadata -> `buildVariantMatrix` -> preview renderer 후보.
 
@@ -104,11 +106,13 @@ UI evidence는 검토자가 직접 승인 여부를 판단할 수 있는 HTML/CS
 - [ ] 관련 프로젝트 구조를 실제 확인했고, 생성/수정/유지/금지 경로를 `파일/폴더 구조 계약`에 확정했다.
 - [ ] UI/API/function/backend 계약이 문장만으로 다르게 해석될 수 있으면 `체험 산출물`에 HTML/CSS/JS preview 또는 harness를 연결했다.
 - [ ] UI evidence는 shell, screen, component, state/variant 판단 단위가 섞이지 않고 필요한 경우 별도 artifact로 분리되어 있다.
+- [ ] UI evidence는 `fidelity`를 명시했고, 기본 wireframe은 라벨 있는 placeholder로 영역, action, 반복 단위, 상태, responsive 전환 지점을 판단 가능하게 보여준다.
 - [ ] component나 반복 UI 대상 수가 있으면 `대상 수 / covered units`가 전체 대상과 preview coverage를 설명한다.
 - [ ] token/schema/registry/variant처럼 함수, mapper, adapter, serializer를 거치는 값은 `function-contract` evidence로 input -> function/adapter -> output recipient -> negative/no-op이 보인다.
 - [ ] schema/RLS/API/function/state-machine처럼 dense한 계약은 `실행 흐름`의 긴 문장 대신 구조화 표로 분리했다.
 - [ ] planning docs feedback으로 개정한 plan이면 `planning docs 피드백 반영 내역`에 요청과 처리 방식이 phase별로 남아 있다.
-- [ ] UI preview evidence는 검토자가 직접 판단할 수 있도록 계획한 화면 또는 component의 구조, 상태, 내용 밀도, 필요한 viewport 단서를 보여준다.
+- [ ] Visual fidelity가 중요한 범위는 HTML/CSS preview로 재현하려 하지 않고 reference authority와 구현 후 검증 방법을 별도로 고정했다.
+- [ ] UI preview evidence는 검토자가 직접 판단할 수 있도록 계획한 화면 또는 component의 구조, 상태, 기능 배치, 필요한 viewport 단서를 보여준다.
 - [ ] 체험 산출물은 production code가 아니라 plan 이해용 projection이며, 실제 API/server/DB/파일 쓰기를 요구하지 않는다.
 - [ ] 검증 책임은 실제 변경 경계와 관찰 가능한 완료 상태를 연결한다.
 - [ ] 구현 범위가 있으면 `## 실행 흐름`이 phase 단위로 보이고 각 phase의 완료 신호, 검증, 커밋 경계가 있다.

@@ -91,7 +91,7 @@ Required top-level fields:
 ```json
 {
   "schema_version": 2,
-  "generator_contract_version": 3,
+  "generator_contract_version": 4,
   "task_slug": "task-slug",
   "plan_path": "plans/task-slug/plan.md",
   "plan_signature": "abc123",
@@ -173,6 +173,24 @@ Phase objects expose compact plan/TDD review sections:
 ```
 
 Dense schema, RLS, API, function, state-machine, or validation details should appear only when they help explain the test mapping, manual smoke gate, or TDD blocker. Do not re-expand the browser phase view into the full plan document.
+
+Evidence artifact shape:
+
+```json
+{
+  "id": "UI-P1-empty",
+  "phase": "P1",
+  "kind": "screen-preview",
+  "fidelity": "wireframe",
+  "target_unit": "users empty route",
+  "covered_units": "1/1",
+  "asset": "assets/evidence/ui/P1-empty.html",
+  "purpose": "empty 상태 UI 확인",
+  "review_points": ["empty", "CTA", "mobile"]
+}
+```
+
+For UI evidence, `fidelity = wireframe` means labeled structural placeholders, not final visual quality. `fidelity = reference-linked` means the standalone HTML/CSS evidence remains structural and the plan must name the external reference authority plus implementation-time validation surface.
 
 ## Feedback model
 
@@ -298,6 +316,7 @@ Any change to `generator_contract_version` invalidates generated review data eve
 - Do not show raw `plan.md` or phase markdown as the default view.
 - Do not hide `plan-review` findings.
 - Do not treat evidence previews as implemented behavior.
+- Do not treat planning-docs HTML/CSS as brand, Figma, design-system parity, component polish, or final visual fidelity evidence.
 - Do not re-expand dense schema/RLS/API/function details unless they explain a visible test mapping, manual smoke gate, TDD blocker, or evidence artifact.
 - Do not treat a sidebar check as a generic read-check signal; it is an approval shortcut and must create or clear approval evidence.
 - Do not reintroduce a manual read-check gate. Use approval evidence and section comments as the review state.

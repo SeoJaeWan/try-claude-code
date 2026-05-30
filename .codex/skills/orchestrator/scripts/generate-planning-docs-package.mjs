@@ -24,7 +24,7 @@ const SCHEMA_VERSION = 2;
  *
  * @type {number}
  */
-const GENERATOR_CONTRACT_VERSION = 3;
+const GENERATOR_CONTRACT_VERSION = 4;
 
 /**
  * CLI 진입점.
@@ -811,6 +811,7 @@ function buildEvidenceArtifacts({ planText, planDir, outDir }) {
         id,
         phase,
         kind: stripMarkdown(row["kind"] || row["Kind"] || "evidence"),
+        fidelity: stripMarkdown(row["fidelity"] || row["Fidelity"] || row["표현 수준"] || row["표현수준"] || row["충실도"] || ""),
         entry: safeEntry,
         asset: copiedRelative,
         content_hash: contentHash,

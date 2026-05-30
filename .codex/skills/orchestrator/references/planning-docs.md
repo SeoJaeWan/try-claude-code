@@ -19,7 +19,7 @@ At the gate:
 - Parse `plan.md` `## 파일/폴더 구조 계약` and `## 체험 산출물` tables into `review-data.json.topology_contract` and `review-data.json.evidence_artifacts`.
 - Parse `tdd.md` plan-review sections into `review-data.json.tdd_summary`, phase `test_mappings`, `manual_smoke`, and `tdd_blockers`.
 - Validate every evidence `경로` as a relative `evidence/**` path under the plan folder, copy it to `plans/{task-slug}/planning-docs/assets/evidence/**`, and expose only the copied asset path in review data.
-- Treat `ui-preview` evidence as planning docs 검토자의 판단 자료. The package must expose the copied HTML/CSS preview and its review points, but must not decide whether the reviewer should approve the preview.
+- Treat UI evidence as planning docs 검토자의 판단 자료. The package must expose the copied HTML/CSS evidence, its `fidelity`, and its review points, but must not decide whether the reviewer should approve the preview.
 - Create or refresh `review-history.json` for current `task-slug` and `plan_signature`.
 - Ensure `review-data.json.review_items[]` contains `overview` and every required Phase target with a stable `review_item_signature`; include global scope/contract context in phase signatures so scope changes invalidate affected approvals.
 - Include topology, evidence, and TDD mapping metadata in review item signatures so changes to phase-linked paths, responsibilities, input/output harnesses, evidence content, test mappings, manual smoke gates, or TDD blockers invalidate stale approval.
@@ -33,7 +33,8 @@ At the gate:
   - Preserve `owner_agent` from the phase detail artifact.
   - UI preview and evidence artifacts are plan-level judgment material only; do not imply functional implementation exists.
   - Evidence artifacts are planning-only HTML/CSS/JS projections. Do not imply real API, DB, filesystem, live dev-server, React build, or production stack execution exists.
-  - Surface `ui-preview` evidence prominently enough that the planning docs reviewer can inspect it before approving or requesting plan revision.
+  - UI evidence defaults to labeled wireframes. Do not imply brand, Figma, design-system parity, component polish, or final visual fidelity from standalone planning-docs HTML/CSS.
+  - Surface UI evidence prominently enough that the planning docs reviewer can inspect its `fidelity`, labels, covered units, and review points before approving or requesting plan revision.
   - Surface TDD mappings prominently enough that the reviewer can see which plan rows were converted into source-tree tests, narrow execution commands, expected red results, or manual smoke gates.
   - `Previous`, `Next`, and direct step navigation reset visible review content to the top of the current step.
 - Ensure `review-data.json` includes the post-approval next action fields so the planning docs UI can tell the user that approved implementation-scope plans proceed to implementation against the approved `plan.md` and `tdd.md`.

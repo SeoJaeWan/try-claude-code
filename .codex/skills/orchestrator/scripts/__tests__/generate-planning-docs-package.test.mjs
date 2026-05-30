@@ -166,7 +166,7 @@ affected_phase_paths: []
   assert.ok(raw.includes(Buffer.from("한글 리뷰 패키지", "utf8")));
 
   const reviewData = JSON.parse(raw.toString("utf8"));
-  assert.equal(reviewData.generator_contract_version, 3);
+  assert.equal(reviewData.generator_contract_version, 4);
   assert.equal(reviewData.title, "한글 리뷰 패키지");
   assert.equal(reviewData.post_approval_next_action, "implementation");
   assert.equal(reviewData.post_approval_next_label, "다음 단계: 구현 실행");
@@ -494,9 +494,9 @@ test("includes topology and safely copied evidence artifacts", () => {
 
 ## 체험 산출물
 
-| id | phase | kind | 대상 단위 | 대상 수 / covered units | 경로 | input | function / adapter | output recipient | negative/no-op | 목적 | 검토 포인트 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| UI-P1-empty | P1 | screen-preview | users empty route | 1/1 | \`evidence/ui/P1-empty.html\` | empty user list | none | users route screen | 실제 API 호출 없음 | empty 상태 UI 확인 | empty; CTA; mobile |
+| id | phase | kind | fidelity | 대상 단위 | 대상 수 / covered units | 경로 | input | function / adapter | output recipient | negative/no-op | 목적 | 검토 포인트 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| UI-P1-empty | P1 | screen-preview | wireframe | users empty route | 1/1 | \`evidence/ui/P1-empty.html\` | empty user list | none | users route screen | 실제 API 호출 없음 | empty 상태 UI 확인 | empty; CTA; mobile |
 
 ## 실행 흐름
 
@@ -538,6 +538,7 @@ affected_plan_paths: []
   assert.equal(reviewData.evidence_artifacts[0].asset, "assets/evidence/ui/P1-empty.html");
   assert.equal(reviewData.phases[0].evidence_artifacts[0].id, "UI-P1-empty");
   assert.equal(reviewData.evidence_artifacts[0].kind, "screen-preview");
+  assert.equal(reviewData.evidence_artifacts[0].fidelity, "wireframe");
   assert.equal(reviewData.evidence_artifacts[0].target_unit, "users empty route");
   assert.equal(reviewData.evidence_artifacts[0].covered_units, "1/1");
   assert.equal(reviewData.evidence_artifacts[0].input, "empty user list");
@@ -566,9 +567,9 @@ test("rejects evidence paths outside evidence root", () => {
 
 ## 체험 산출물
 
-| id | phase | kind | 경로 | 목적 | 검토 포인트 |
-| --- | --- | --- | --- | --- | --- |
-| BAD | P1 | ui-preview | \`../secret.html\` | bad path | security |
+| id | phase | kind | fidelity | 경로 | 목적 | 검토 포인트 |
+| --- | --- | --- | --- | --- | --- | --- |
+| BAD | P1 | ui-preview | wireframe | \`../secret.html\` | bad path | security |
 
 ## 실행 흐름
 
