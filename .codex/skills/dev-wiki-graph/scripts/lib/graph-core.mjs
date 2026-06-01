@@ -14,6 +14,9 @@ const IMPORT_RESOLUTION_EXTENSIONS = [
   ".jsx",
   ".ts",
   ".tsx",
+  ".d.ts",
+  ".d.mts",
+  ".d.cts",
   ".mjs",
   ".cjs",
   ".mts",
@@ -44,6 +47,12 @@ function readJson(filePath) {
 
 function readText(root, relPath) {
   return readFileSync(path.join(root, relPath), "utf8");
+}
+
+function canReadText(file) {
+  if (file.kind === "font_asset") return false;
+  if (file.kind === "image_asset") return path.posix.extname(file.path) === ".svg";
+  return true;
 }
 
 function lineCount(text) {
@@ -212,6 +221,7 @@ function buildWorkRouting(fileAnalyses) {
     .slice(0, 16);
   const skillFiles = fileAnalyses.filter((item) => item.file_kind === "skill").map((item) => item.relPath).slice(0, 12);
   const hookFiles = fileAnalyses.filter((item) => item.file_kind === "hook_config").map((item) => item.relPath).slice(0, 12);
+  const assets = fileAnalyses.filter((item) => ["image_asset", "font_asset"].includes(item.file_kind)).map((item) => item.relPath).slice(0, 16);
   const scripts = packageScriptRows(fileAnalyses);
   const verifyScripts = scripts.filter((script) => VERIFY_SCRIPT_RE.test(script.name)).slice(0, 12);
 
@@ -260,6 +270,15 @@ function buildWorkRouting(fileAnalyses) {
       verification: verifyScripts.map((script) => `${script.file} scripts.${script.name}`)
     });
   }
+  if (assets.length) {
+    rows.push({
+      starting_point: "이미지와 폰트 자산",
+      observed_facts: assets,
+      read_first: assets,
+      related_files: [],
+      verification: []
+    });
+  }
 
   return rows;
 }
@@ -293,6 +312,9 @@ function buildQuality({ fileAnalyses, excluded, nodes, graphFiles, workspaceRoot
     indexed_hook_count: nodes.filter((node) => node.kind === "hook").length,
     indexed_workflow_count: nodes.filter((node) => node.kind === "workflow").length,
     indexed_config_file_count: fileAnalyses.filter((item) => ["config", "wiki_config", "marketplace_config"].includes(item.file_kind)).length,
+    indexed_asset_count: fileAnalyses.filter((item) => ["image_asset", "font_asset"].includes(item.file_kind)).length,
+    indexed_image_asset_count: fileAnalyses.filter((item) => item.file_kind === "image_asset").length,
+    indexed_font_asset_count: fileAnalyses.filter((item) => item.file_kind === "font_asset").length,
     indexed_test_file_count: fileAnalyses.filter((item) => item.is_test).length,
     indexed_route_count: nodes.filter((node) => node.kind === "route").length,
     package_script_count: packageScripts.length,
@@ -324,7 +346,7 @@ export function buildGraph({ workspaceRoot, project, maxFiles = 2000 }) {
   addNode(nodes, { id: `project:${project}`, kind: "project", label: project });
 
   for (const file of scan.files) {
-    const text = readText(workspaceRoot, file.path);
+    const text = canReadText(file) ? readText(workspaceRoot, file.path) : "";
     const externalBoundaries = detectExternalBoundaries(text);
     const baseAnalysis = {
       relPath: file.path,
@@ -387,6 +409,20 @@ export function buildGraph({ workspaceRoot, project, maxFiles = 2000 }) {
     if (["config", "wiki_config", "marketplace_config"].includes(analysis.file_kind)) {
       const id = `config:${file.path}`;
       addNode(nodes, { id, kind: "config", label: file.path, file: file.path, file_kind: analysis.file_kind });
+      addEdge(edges, { from: fileId, to: id, kind: "defines", confidence: "direct" });
+    }
+    if (["image_asset", "font_asset"].includes(analysis.file_kind)) {
+      const assetType = analysis.file_kind === "image_asset" ? "image" : "font";
+      const id = `asset:${file.path}`;
+      addNode(nodes, {
+        id,
+        kind: "asset",
+        label: file.path,
+        file: file.path,
+        asset_type: assetType,
+        extension: path.posix.extname(file.path),
+        bytes: file.bytes
+      });
       addEdge(edges, { from: fileId, to: id, kind: "defines", confidence: "direct" });
     }
     if (analysis.file_kind === "package_manifest") {
@@ -516,6 +552,9 @@ export function buildGraph({ workspaceRoot, project, maxFiles = 2000 }) {
       route_count: nodeList.filter((node) => node.kind === "route").length,
       script_count: nodeList.filter((node) => node.kind === "script").length,
       dependency_count: nodeList.filter((node) => node.kind === "dependency").length,
+      asset_count: nodeList.filter((node) => node.kind === "asset").length,
+      image_asset_count: nodeList.filter((node) => node.kind === "asset" && node.asset_type === "image").length,
+      font_asset_count: nodeList.filter((node) => node.kind === "asset" && node.asset_type === "font").length,
       external_count: nodeList.filter((node) => node.kind === "external").length,
       file_kinds: countBy(scan.files, (file) => file.kind),
       top_fan_in: topEntries(countBy(edgeList.filter((edge) => edge.kind === "imports"), (edge) => edge.to), 20),
@@ -574,6 +613,7 @@ export function renderArtifacts(graph) {
   const dependencyNodes = graph.nodes.filter((node) => node.kind === "dependency");
   const routeNodes = graph.nodes.filter((node) => node.kind === "route");
   const configNodes = graph.nodes.filter((node) => node.kind === "config");
+  const assetNodes = graph.nodes.filter((node) => node.kind === "asset");
   const symbolNodes = graph.nodes.filter((node) => ["symbol", "component", "hook", "type"].includes(node.kind));
   const callEdges = graph.edges.filter((edge) => edge.kind === "calls");
   const externalEdges = graph.edges.filter((edge) => edge.kind === "depends_on_external" || edge.kind === "reads_env");
@@ -630,6 +670,12 @@ export function renderArtifacts(graph) {
     "## Routes",
     "",
     routeNodes.length ? markdownTable(["route"], routeNodes.map((node) => [node.label]).slice(0, 80)) : "route node가 없습니다.",
+    "",
+    "## Assets",
+    "",
+    assetNodes.length
+      ? markdownTable(["asset", "type", "bytes"], assetNodes.map((node) => [node.file, node.asset_type, node.bytes]).slice(0, 120))
+      : "asset node가 없습니다.",
     "",
     "## Skills / Hooks / Workflows",
     "",
@@ -749,6 +795,9 @@ export function renderArtifacts(graph) {
     `- indexed_test_file_count: ${graph.quality.indexed_test_file_count}`,
     `- indexed_route_count: ${graph.quality.indexed_route_count}`,
     `- indexed_config_file_count: ${graph.quality.indexed_config_file_count}`,
+    `- indexed_asset_count: ${graph.quality.indexed_asset_count}`,
+    `- indexed_image_asset_count: ${graph.quality.indexed_image_asset_count}`,
+    `- indexed_font_asset_count: ${graph.quality.indexed_font_asset_count}`,
     `- env_reference_count: ${graph.quality.env_reference_count}`,
     `- external_package_count: ${graph.quality.external_package_count}`,
     "",

@@ -72,6 +72,20 @@ export function runHook(input) {
 
 test("renders", () => DashboardPage());
 `);
+  writeFile(root, "src/types/api/auth.d.ts", `export interface paths {
+  "/auth": unknown;
+}
+`);
+  writeFile(root, "src/types/api/index.d.ts", `import type { paths as Auth } from "./auth";
+
+declare global {
+  type paths = Auth;
+}
+`);
+  writeFile(root, "public/logo.svg", `<svg width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path d="M0 0h16v16H0z"/></svg>
+`);
+  writeFile(root, "public/hero.png", "fake png bytes");
+  writeFile(root, "public/fonts/inter.woff2", "fake font bytes");
   writeFile(root, "plugin/develop/skills/dev-review/assets/vendor/diff2html.min.js", "function noisyVendor() {}\n");
 
   return root;
@@ -83,13 +97,16 @@ test("generates facts-first graph artifacts", () => {
   const graph = result.graph;
 
   assert.equal(graph.schema_version, 3);
-  assert.equal(graph.metrics.code_file_count, 5);
+  assert.equal(graph.metrics.code_file_count, 7);
   assert.ok(graph.metrics.text_file_count >= 4);
   assert.equal(graph.quality.indexed_skill_count, 1);
   assert.equal(graph.quality.indexed_hook_count, 1);
   assert.equal(graph.quality.excluded_count, 1);
   assert.equal(graph.quality.local_import_count, graph.quality.resolved_local_import_count);
   assert.equal(graph.quality.package_script_count, 2);
+  assert.equal(graph.quality.indexed_asset_count, 3);
+  assert.equal(graph.quality.indexed_image_asset_count, 2);
+  assert.equal(graph.quality.indexed_font_asset_count, 1);
 
   assert.equal(graph.nodes.some((node) => ["domain", "layer", "owner"].includes(node.kind)), false);
 
@@ -100,11 +117,18 @@ test("generates facts-first graph artifacts", () => {
   assert.ok(graph.nodes.some((node) => node.id === "script:package.json#test"));
   assert.ok(graph.nodes.some((node) => node.id === "dependency:react"));
   assert.ok(graph.nodes.some((node) => node.id === "route:/dashboard"));
+  assert.ok(graph.nodes.some((node) => node.id === "asset:public/logo.svg" && node.asset_type === "image"));
+  assert.ok(graph.nodes.some((node) => node.id === "asset:public/fonts/inter.woff2" && node.asset_type === "font"));
 
   assert.ok(graph.edges.some((edge) =>
     edge.kind === "imports" &&
     edge.from === "file:plugin/develop/scripts/user-prompt-submit-hook.mjs" &&
     edge.to === "file:plugin/develop/scripts/lib/runner-state.mjs"
+  ));
+  assert.ok(graph.edges.some((edge) =>
+    edge.kind === "imports" &&
+    edge.from === "file:src/types/api/index.d.ts" &&
+    edge.to === "file:src/types/api/auth.d.ts"
   ));
   assert.ok(graph.edges.some((edge) =>
     edge.kind === "calls" &&

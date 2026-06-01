@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The graph is a navigation map for development. It should reduce first-pass file-tree reading and point Codex toward observed folders, files, entry points, symbols, calls, tests, scripts, routes, config files, and external boundaries.
+The graph is a navigation map for development. It should reduce first-pass file-tree reading and point Codex toward observed folders, files, entry points, symbols, calls, tests, scripts, routes, config files, image/font assets, and external boundaries.
 
 It is not a complete runtime model.
 
@@ -59,6 +59,7 @@ Use these kinds when applicable:
 - `dependency`
 - `config`
 - `workflow`
+- `asset`
 - `skill`
 - `agent`
 - `plugin`
@@ -117,6 +118,7 @@ Keep routing factual. It should answer "what exists, and where should I start lo
 - resolved and unresolved local imports
 - dynamic imports and parse diagnostics
 - indexed package scripts, routes, tests, skills, hooks, workflows, config files, env references, and external package references
+- indexed image and font assets by file path, extension, and size; do not read binary asset contents
 - warnings when observed facts are incomplete because of scanner limits
 
 ## Confidence

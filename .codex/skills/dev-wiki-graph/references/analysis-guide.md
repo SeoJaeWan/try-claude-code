@@ -11,7 +11,7 @@ node .codex/skills/dev-wiki-graph/scripts/generate-dev-wiki-graph.mjs
 The script scans:
 
 - JS/TS/MJS/CJS/CTS/MTS files with TypeScript syntax AST parsing, without type-checking
-- Markdown, package manifests, hook config, plugin manifests, workflow files, and common config files
+- Markdown, package manifests, hook config, plugin manifests, workflow files, common config files, image assets, and font assets
 - imports, exports, symbol declarations, direct call expressions, routes, tests, package scripts, dependency declarations, env references, URL references, and external package references
 
 ## Human Pass
@@ -34,6 +34,7 @@ Prefer a useful map over exhaustive analysis:
 - Include representative call flows.
 - Include rough impact and fact-based starting point maps.
 - Include env, DB, auth, storage, and external API boundaries.
+- Include image and font assets as inventory facts. SVG files may be read as text; binary image/font contents should not be read.
 - Keep generated artifacts short enough to read before implementation.
 
 ## Common Blind Spots

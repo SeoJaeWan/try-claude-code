@@ -6,16 +6,11 @@ export const CODE_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".
 export const CONFIG_EXTENSIONS = new Set([".json", ".jsonc", ".yml", ".yaml", ".toml", ".ini", ".conf", ".config", ".properties"]);
 export const MARKDOWN_EXTENSIONS = new Set([".md", ".mdx", ".markdown"]);
 export const STYLE_EXTENSIONS = new Set([".css", ".scss", ".sass", ".less", ".pcss"]);
-export const MARKUP_EXTENSIONS = new Set([".html", ".htm", ".xml", ".svg"]);
+export const MARKUP_EXTENSIONS = new Set([".html", ".htm", ".xml"]);
 export const TEXT_EXTENSIONS = new Set([".txt", ".text", ".csv", ".tsv", ".sql", ".graphql", ".gql", ".prisma"]);
+export const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".avif", ".svg"]);
+export const FONT_EXTENSIONS = new Set([".woff", ".woff2", ".ttf", ".otf", ".eot"]);
 export const BINARY_EXTENSIONS = new Set([
-  ".png",
-  ".jpg",
-  ".jpeg",
-  ".gif",
-  ".webp",
-  ".ico",
-  ".avif",
   ".pdf",
   ".zip",
   ".gz",
@@ -23,12 +18,7 @@ export const BINARY_EXTENSIONS = new Set([
   ".tar",
   ".mp3",
   ".mp4",
-  ".mov",
-  ".woff",
-  ".woff2",
-  ".ttf",
-  ".otf",
-  ".eot"
+  ".mov"
 ]);
 
 const ALLOWED_DOT_DIRS = new Set([".codex", ".github", ".claude-plugin", ".agents"]);
@@ -143,6 +133,8 @@ export function fileKind(relPath) {
   if (/^(\.claude-plugin|\.agents\/plugins)\/marketplace\.json$/.test(normalized)) return "marketplace_config";
   if (LOCKFILE_BASENAMES.has(base)) return "lockfile";
   if (CODE_EXTENSIONS.has(ext)) return "code";
+  if (IMAGE_EXTENSIONS.has(ext)) return "image_asset";
+  if (FONT_EXTENSIONS.has(ext)) return "font_asset";
   if (MARKDOWN_EXTENSIONS.has(ext)) return "markdown";
   if (STYLE_EXTENSIONS.has(ext)) return "stylesheet";
   if (MARKUP_EXTENSIONS.has(ext)) return "markup";
@@ -165,7 +157,9 @@ export function scanWorkspace(workspaceRoot, { maxFiles = 2000 } = {}) {
     const abs = path.join(workspaceRoot, relPath);
     if (!existsSync(abs)) continue;
     const stats = statSync(abs);
-    if (stats.size > MAX_FILE_BYTES) {
+    let kind = fileKind(relPath);
+
+    if (stats.size > MAX_FILE_BYTES && !["image_asset", "font_asset"].includes(kind)) {
       excluded.push({ path: relPath, reason: "large-file", bytes: stats.size });
       continue;
     }
@@ -180,7 +174,6 @@ export function scanWorkspace(workspaceRoot, { maxFiles = 2000 } = {}) {
       continue;
     }
 
-    let kind = fileKind(relPath);
     if (!kind && isLikelyTextFile(abs)) kind = "text";
     if (!kind) {
       excluded.push({ path: relPath, reason: "unknown-binary-or-unsupported", bytes: stats.size });
