@@ -1,11 +1,13 @@
 ---
 name: dev-wiki-graph
-description: Generate or refresh a project dev wiki graph that summarizes file structure, architecture layers, domain areas, key symbols, representative call flows, and external boundaries. Use when the user asks to build, update, refresh, inspect, or visualize a project graph for dev wiki, or when project navigation should be easier than reading the whole file tree. Requires `.codex/dev-wiki/config.json` and a project folder prepared by `dev-wiki-setup`.
+description: Generate or refresh a project dev wiki graph from repository facts: folders, files, imports, exports, symbols, tests, routes, scripts, dependencies, config files, env references, and external boundaries. Use when the user asks to build, update, refresh, inspect, or visualize a dev wiki project graph, or when project navigation should be easier than reading the whole file tree. Requires `.codex/dev-wiki/config.json` and a project folder prepared by `dev-wiki-setup`.
 ---
 
 # Dev Wiki Graph
 
 Create a useful project map, not a perfect static-analysis engine. The graph should help Codex and developers choose the right files faster before reading source code in detail.
+
+The graph is facts-first. Do not add project-specific domains, layers, owners, or business labels to the skill code. If a project has subjective naming needs, keep that outside the generator or add it later as human-written wiki prose.
 
 ## Required Reading
 
@@ -27,10 +29,11 @@ Read these references before generating graph artifacts:
    - Pass `--project <name>` only when overriding the config intentionally.
 
 3. Improve the generated map when useful.
-   - The v2 generator indexes code with TypeScript syntax AST, prose/config contracts, and project overlay routing.
+   - The v3 generator indexes repository facts from code, prose, config, package manifests, hooks, skills, tests, and routes.
    - Read generated artifacts and nearby source files when the first pass is still too shallow.
-   - Add concise human judgment about domain meaning, layer intent, or important workflows only when the generated `work-routing.md` or `architecture-map.md` misses a project-specific boundary.
-   - Keep uncertainty short. Mark obvious dynamic, generated, or framework-convention gaps without over-explaining them.
+   - Improve scanner exclusions or fact extraction when noisy files or missed factual relationships reduce navigation value.
+   - Do not patch the generator with project-specific domain, layer, owner, product, or business rules.
+   - Keep uncertainty short. Mark dynamic imports, generated files, framework conventions, and unresolved aliases as graph limits, not as classification failures.
 
 4. Verify and report.
    - Run `npm run test:dev-wiki-graph` when the graph generator code changes.
@@ -44,4 +47,4 @@ Read these references before generating graph artifacts:
 - Do not let graph generation replace source reading for implementation decisions.
 - Do not scan generated dependency folders such as `node_modules`, build outputs, or dev wiki source clones.
 - Do not edit plan wiki files.
-- Prefer concise maps that reveal entry points, domains, layers, key symbols, and representative flows over exhaustive symbol dumps.
+- Prefer concise maps that reveal observed entry points, file relationships, key symbols, tests, scripts, routes, config files, and external boundaries over exhaustive symbol dumps.

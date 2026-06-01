@@ -31,7 +31,7 @@ try {
   });
   console.log(`Generated dev wiki graph for ${result.project} at ${result.graphRoot}`);
   console.log(
-    `Files: ${result.graph.metrics.file_count}, code: ${result.graph.metrics.code_file_count}, prose/config: ${result.graph.metrics.prose_config_file_count}, symbols: ${result.graph.metrics.symbol_count}, imports: ${result.graph.metrics.import_edge_count}, calls: ${result.graph.metrics.call_edge_count}`
+    `Files: ${result.graph.metrics.file_count}, code: ${result.graph.metrics.code_file_count}, text/config: ${result.graph.metrics.text_file_count}, symbols: ${result.graph.metrics.symbol_count}, imports: ${result.graph.metrics.import_edge_count}, calls: ${result.graph.metrics.call_edge_count}`
   );
   if (result.graph.quality.warnings.length) {
     console.log(`Warnings: ${result.graph.quality.warnings.map((warning) => warning.code).join(", ")}`);

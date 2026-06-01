@@ -2,9 +2,11 @@
 
 ## Purpose
 
-The graph is a navigation map for development. It should reduce first-pass file-tree reading and point Codex toward likely entry points, layers, domains, symbols, calls, and external boundaries.
+The graph is a navigation map for development. It should reduce first-pass file-tree reading and point Codex toward observed folders, files, entry points, symbols, calls, tests, scripts, routes, config files, and external boundaries.
 
 It is not a complete runtime model.
+
+The graph is facts-first. It records observed repository structure and static relationships. It does not assign subjective `domain`, `layer`, or `owner` classifications.
 
 ## Required Outputs
 
@@ -25,8 +27,8 @@ Write these files under `{project}/graph/`:
 
 ```json
 {
-  "schema_version": 2,
-  "project": "try-claude-code",
+  "schema_version": 3,
+  "project": "example-project",
   "generated_at": "2026-05-29T00:00:00.000Z",
   "source_commit": "abc123",
   "source_dirty": false,
@@ -53,12 +55,13 @@ Use these kinds when applicable:
 - `type`
 - `route`
 - `test`
+- `script`
+- `dependency`
+- `config`
+- `workflow`
 - `skill`
 - `agent`
 - `plugin`
-- `domain`
-- `layer`
-- `owner`
 - `external`
 
 ## Edge Kinds
@@ -69,6 +72,8 @@ Use these edge kinds when applicable:
 - `imports`
 - `exports`
 - `defines`
+- `defines_script`
+- `declares_dependency`
 - `references`
 - `calls`
 - `renders`
@@ -76,9 +81,6 @@ Use these edge kinds when applicable:
 - `handles_route`
 - `tests`
 - `uses_skill`
-- `belongs_to_owner`
-- `belongs_to_domain`
-- `belongs_to_layer`
 - `depends_on_external`
 - `reads_env`
 
@@ -95,24 +97,27 @@ These indexes are syntax/navigation aids, not complete semantic analysis.
 
 ## Work Routing
 
-`work-routing.md` should map common user request categories to:
+`work-routing.md` should map observed repository facts to starting points:
 
-- trigger words or phrases
-- first documents/files to read
-- likely edit candidates
-- likely verification commands or manual checks
+- discovered docs and project instruction files
+- package scripts that look like verification commands
+- test files and their import targets
+- route files
+- config files
+- skills, hooks, plugins, workflows, and other explicit tool contracts
 
-Keep routing rough but actionable. It should answer "where should I start looking?" rather than guarantee exact ownership.
+Keep routing factual. It should answer "what exists, and where should I start looking?" rather than guarantee ownership or business meaning.
 
 ## Quality Signals
 
 `quality-signals.md` should report:
 
 - stale or missing indexed files
-- unknown/shared classification ratio
 - excluded vendor/generated/large files
-- whether SKILL.md and hook configs were indexed
-- warnings when generated graph quality is too low for navigation
+- resolved and unresolved local imports
+- dynamic imports and parse diagnostics
+- indexed package scripts, routes, tests, skills, hooks, workflows, config files, env references, and external package references
+- warnings when observed facts are incomplete because of scanner limits
 
 ## Confidence
 

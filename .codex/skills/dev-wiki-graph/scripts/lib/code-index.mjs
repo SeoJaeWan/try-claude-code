@@ -1,7 +1,6 @@
 import ts from "typescript";
 import path from "node:path";
 import { CODE_EXTENSIONS } from "./scan.mjs";
-import { isTestPath } from "./profile.mjs";
 
 const SCRIPT_KIND_BY_EXT = new Map([
   [".js", ts.ScriptKind.JS],
@@ -9,7 +8,9 @@ const SCRIPT_KIND_BY_EXT = new Map([
   [".ts", ts.ScriptKind.TS],
   [".tsx", ts.ScriptKind.TSX],
   [".mjs", ts.ScriptKind.JS],
-  [".cjs", ts.ScriptKind.JS]
+  [".cjs", ts.ScriptKind.JS],
+  [".mts", ts.ScriptKind.TS],
+  [".cts", ts.ScriptKind.TS]
 ]);
 
 const RESERVED_CALLS = new Set([
@@ -185,8 +186,14 @@ export function parseCodeFile(relPath, text) {
   };
 }
 
+function isTestPath(relPath) {
+  return /(^|\/)(__tests__|test|tests)\//.test(relPath) || /\.(test|spec)\.(ts|tsx|js|jsx|mjs|cjs|mts|cts)$/.test(relPath);
+}
+
 function detectRoute(relPath) {
   const normalized = relPath.replace(/\\/g, "/");
+  if (/^app\/page\.(tsx|jsx|ts|js)$/.test(normalized)) return "/";
+  if (/^src\/app\/page\.(tsx|jsx|ts|js)$/.test(normalized)) return "/";
   if (/^app\/.+\/page\.(tsx|jsx|ts|js)$/.test(normalized)) return normalized.replace(/^app\//, "/").replace(/\/page\.(tsx|jsx|ts|js)$/, "");
   if (/^app\/api\/.+\/route\.(ts|js)$/.test(normalized)) return normalized.replace(/^app\/api\//, "/api/").replace(/\/route\.(ts|js)$/, "");
   if (/^src\/app\/.+\/page\.(tsx|jsx|ts|js)$/.test(normalized)) return normalized.replace(/^src\/app\//, "/").replace(/\/page\.(tsx|jsx|ts|js)$/, "");
