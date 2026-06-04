@@ -5,8 +5,9 @@ Three JSON artifacts live under `plans/{key}/dev-review/`, where `key` is the pl
 | File | Writer | Reader | Lifecycle |
 |---|---|---|---|
 | `review-data.json` | helper script (deterministic only) | browser, skill on re-entry | regenerated every round; never edited by UI |
-| `feedback.json` | server on each reviewer action | browser, skill on `리뷰 완료` | editable live state; plan_signature-scoped |
+| `feedback.json` | server on each reviewer action | browser, skill on `리뷰 완료` | editable live state; plan_signature-scoped; reset to a clean `in_progress` round on each re-entry |
 | `review-history.json` | skill on round boundaries | browser, skill | append-only durable record |
+| `round-responses.json` | runner, before re-invoking the skill | skill on re-entry (then deletes it) | optional, single-round; maps the just-closed round's comment ids → the response each received |
 
 The v2 model drops the interpretation agent entirely. `review-data.json` is now flat, deterministic git/plan output. The reviewer's input lives in `feedback.json` as **line-anchored comments + per-commit verdict + viewed-flags**, modeled after GitHub PR review.
 
@@ -151,13 +152,16 @@ The gate passes iff every commit's verdict is `approved` or `out-of-scope`.
 
 ### Round boundary
 
-On re-entry with a prior `feedback.json` present and matching `plan_signature`:
+A round closes on **every** `리뷰 완료` (one `in_progress → submitted → processed` cycle), not only when HEAD changes. On re-entry with a prior `feedback.json` present and matching `plan_signature`, the skill closes the round and opens a clean one:
 
-- **Comments** — all `needs-change` comments on commits that received any new follow-up commit are auto-marked `resolved` (moved to `review-history.json`'s round entry, removed from `feedback.json.comments`). `question` comments stay if the reviewer hasn't reset them. `out-of-scope` comments are recorded in history and removed from live feedback.
-- **commit_status[sha].viewed** — preserved for commits that haven't received new follow-up commits in this round; reset to `false` for any commit that did.
-- **commit_status[sha].out_of_scope** — preserved as-is.
+- **review_status** — the new live file is always `in_progress`. The prior `submitted` value is never copied forward (copying it is the bug that locked the reviewer out).
+- **Comments** — **all** prior comments are archived to `review-history.json`'s round entry (each annotated with its `resolution_route` / `resolution_summary` / `resulting_commit_sha`) and the live `comments[]` is reset to empty. The reviewer re-reviews every commit from scratch each round.
+- **commit_status[sha].viewed** — reset to `false` for every commit.
+- **commit_status[sha].out_of_scope** — preserved per sha (a commit ruled out of scope stays out of scope until the reviewer changes it).
 
-When `plan_signature` differs, `feedback.json` is discarded entirely and a fresh in-progress copy is written.
+The browser also exposes a manual `POST /api/reopen` (the "Reopen for another round" button) that flips `submitted → in_progress` **without** snapshotting history — for the "I submitted too early" case before saying `리뷰 완료`.
+
+When `plan_signature` differs, `feedback.json` is discarded entirely and a fresh in-progress copy is written (no `commit_status` carry-over).
 
 ## review-history.json
 
@@ -219,6 +223,32 @@ When `plan_signature` differs, `feedback.json` is discarded entirely and a fresh
 - `rounds[]` is append-only. The skill never edits a prior round's body; it only adds new rounds and flips `resolution_state` on the round that just closed.
 - When `plan_signature` changes, previous rounds remain visible but are marked `superseded`; a new round starts fresh.
 
+## round-responses.json (optional, single-round)
+
+Written by the **runner** after it acts on a round's result (dispatches rework, answers questions in chat) and before it re-invokes the dev-review skill. It carries the responses that cannot be derived from git alone — most importantly the chat answers to `question` comments. The skill merges it into the closing round's `comments_snapshot[]` (Step 3), then **deletes** it so the next round does not re-read stale data.
+
+```jsonc
+{
+  "schema_version": 2,
+  "for_task_head_sha": "abc123a...",          // the HEAD of the round being closed (sanity check)
+  "responses": {
+    "cm_001": {                               // keyed by the prior round's comment id
+      "route": "rework",                      // "rework" | "answer" | "out-of-scope"
+      "summary": "try/catch 추가 + 401 응답 처리",
+      "resulting_commit_sha": "def4569..."    // null for answer / out-of-scope
+    },
+    "cm_002": {
+      "route": "answer",
+      "summary": "JWT 만료를 15분으로 둔 이유는 모바일 토큰 갱신 주기에 맞춘 것.",
+      "resulting_commit_sha": null
+    }
+  }
+}
+```
+
+- Comment ids the map does not cover fall back to the skill's by-type derivation (see SKILL.md Step 3): `needs-change` → derive the follow-up commit, `question` → `answer` with no summary, `out-of-scope` → fixed string.
+- The file is advisory. A missing or malformed `round-responses.json` is not fatal — the skill just uses the fallback derivation.
+
 ## Generator-vs-skill ownership summary
 
 | Field | Owner | Failure behavior |
@@ -229,5 +259,6 @@ When `plan_signature` differs, `feedback.json` is discarded entirely and a fresh
 | `commits[].sha`, `short_sha`, `message_subject`, `message_body`, `author*`, `timestamp`, `additions`, `deletions`, `files_changed`, `raw_diff_path` | helper | fatal if git parsing fails for a non-empty range |
 | `feedback.json.*` | server (per reviewer action) | server validates types and rejects malformed writes |
 | `review-history.json.rounds[]` | skill on `리뷰 완료` | append-only |
+| `round-responses.json` | runner before re-entry | advisory; skill consumes + deletes it; missing is non-fatal |
 
-The boundary is strict: the helper never touches `feedback.json` / `review-history.json`, the server never touches `review-data.json`, and the skill never edits prior history rounds.
+The boundary is strict: the helper never touches `feedback.json` / `review-history.json`, the server never touches `review-data.json` / `review-history.json`, and the skill never edits prior history rounds.

@@ -717,6 +717,11 @@ async function handleReviewApi(req, res, review, endpoint) {
     return handleSubmit(req, res, slug, dataRoot);
   }
 
+  // POST /api/reopen — unlock a submitted review for further editing
+  if (endpoint === "reopen" && req.method === "POST") {
+    return handleReopen(req, res, slug, dataRoot);
+  }
+
   return sendJson(res, 404, { error: "not found" });
 }
 
@@ -919,6 +924,33 @@ async function handleSubmit(req, res, slug, dataRoot) {
   fb.review_status = "submitted";
   await saveFeedback(dataRoot, fb);
   return sendJson(res, 200, { ok: true, review_status: "submitted" });
+}
+
+/**
+ * POST /api/reopen — submitted 상태의 리뷰를 다시 편집 가능하게 되돌린다
+ * (`review_status = "in_progress"`). history 는 건드리지 않는다 — 서버는
+ * review-history.json 의 소유자가 아니다. 이 엔드포인트는 "실수로 제출했고
+ * `리뷰 완료`를 말하기 전에 더 고치고 싶다" 는 수동 탈출구다. 라운드를
+ * history 로 굳히고 fresh 라운드를 여는 정식 close+reopen 은 `리뷰 완료`
+ * 재진입 시 skill 이 수행한다.
+ *
+ * 이미 in_progress 라면 멱등적으로 ok 를 반환한다.
+ *
+ * @param {import("node:http").IncomingMessage} req
+ * @param {import("node:http").ServerResponse} res
+ * @param {string} slug
+ * @param {string} dataRoot
+ */
+async function handleReopen(req, res, slug, dataRoot) {
+  const model = await loadModel(dataRoot);
+  if (!model) return sendJson(res, 404, { error: "review-data.json not found" });
+
+  let fb = await loadFeedback(dataRoot);
+  fb = ensureFeedbackShape(fb, model, slug);
+
+  fb.review_status = "in_progress";
+  await saveFeedback(dataRoot, fb);
+  return sendJson(res, 200, { ok: true, review_status: "in_progress" });
 }
 
 /**

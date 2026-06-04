@@ -93,7 +93,7 @@ The plan-state JSON does **not** carry a `status` field. Read
 | `"awaiting"` | present | ≥1 | exists (`review_status` not yet `submitted`) | **Step 4 awaiting** — `dev-review` already opened the browser. End your turn so the user can review. |
 | `"awaiting"` | present | ≥1 | `submitted` | **Step 4 — process result** — re-invoke `dev-review` to read the verdict and branch on approved/rework/qa_required. |
 | `"rework"` | present | ≥1 | any | **Step 4 — rework in flight** — re-invoke `dev-review`; the new HEAD triggers package regeneration in that skill. |
-| `"qa"` | present | ≥1 | any | **Step 4 — Q&A pause** — answer the reviewer's questions in chat, then ask them to reset the question comments and reply `리뷰 완료`. End your turn. |
+| `"qa"` | present | ≥1 | any | **Step 4 — Q&A pause** — answer the reviewer's questions in chat, write the answers to `round-responses.json`, run `qa-resolved`, then re-invoke `dev-review` (it closes the qa round into History and reopens a fresh round automatically). End your turn so the reviewer can review again. |
 | any non-null | **absent** | (task branch may still exist) | any | **Post-Step-5 re-entry** — the previous run reached Step 5 and the user picked PR / 나중에. Ask the user: re-create the worktree to continue, abandon the plan (`rm <state-path>`), or proceed to merge from the existing branch. |
 
 `null` worktree + non-null phase is the only "weird" combination; everything
@@ -308,8 +308,15 @@ CLI subcommand:
 | `result` from dev-review | CLI sequence | Next action |
 |---|---|---|
 | `approved` | (none needed) | Go to Step 5. The state file stays in place until Step 5 finishes. |
-| `rework` | `begin-rework <state-path> <feedback.json absolute path>` | Dispatch one rework agent per `rework_items[i]`, then `rework-done <state-path>`, then re-invoke `dev-review`. |
-| `qa_required` | `mark-qa-pending <state-path>` | Answer in chat, ask the user to reset the question comments in the browser and reply `리뷰 완료`. After they do, `qa-resolved <state-path>`, then re-invoke `dev-review` (same round). |
+| `rework` | `begin-rework <state-path> <feedback.json absolute path>` | Dispatch one rework agent per `rework_items[i]`, write `round-responses.json` (see below), then `rework-done <state-path>`, then re-invoke `dev-review`. |
+| `qa_required` | `mark-qa-pending <state-path>` | Answer the questions in chat, write the answers to `round-responses.json` (see below), then `qa-resolved <state-path>`, then re-invoke `dev-review`. The re-entry closes the qa round (questions + answers go to History) and opens a fresh round automatically — the reviewer does **not** manually reset anything. |
+
+**Writing `round-responses.json`.** Before re-invoking `dev-review` for a `rework` or `qa_required` result, write `plans/{plan_key}/dev-review/round-responses.json` so the response each comment received lands in History (schema: `references/review-data-schema.md` → "round-responses.json"):
+
+- For each `qa_required` `question_items[].comments[]` → `{ "<id>": { "route": "answer", "summary": "<your chat answer to that question>", "resulting_commit_sha": null } }`. This is the **only** way chat answers reach History — required.
+- For each `rework_items[].comments[]` → `{ "<id>": { "route": "rework", "summary": "<what the rework commit changed>", "resulting_commit_sha": "<follow-up commit sha>" } }`. Optional — if omitted, the skill derives it from the follow-up commit — but writing it gives accurate per-comment attribution.
+
+Set `for_task_head_sha` to the worktree's current HEAD short sha (the round being closed). The skill consumes and deletes this file on re-entry.
 
 All commands are `node "${CLAUDE_PLUGIN_ROOT}/scripts/runner-state-cli.mjs"
 <subcommand> ...`. `begin-rework` records the feedback.json path; rounds

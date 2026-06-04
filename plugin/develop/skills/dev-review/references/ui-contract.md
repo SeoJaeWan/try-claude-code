@@ -63,6 +63,7 @@ PATCH  /review/{key}/api/comment/{id}              # edit comment body / type / 
 DELETE /review/{key}/api/comment/{id}              # delete comment
 POST   /review/{key}/api/commit-status             # toggle viewed / out_of_scope
 POST   /review/{key}/api/submit                    # finalize: review_status = "submitted"
+POST   /review/{key}/api/reopen                    # unlock: review_status = "in_progress" (no history write)
 ```
 
 The HTML uses purely relative URLs; the server injects `<base href="/review/{key}/">` per request so every fetch resolves correctly.
@@ -108,11 +109,13 @@ The reviewer finishes by saying `리뷰 완료` in chat. The UI does not signal 
     - otherwise + `viewed: true` → green ✓
     - otherwise → no badge (unreviewed)
   - Active commit highlighted with accent border.
-- **History** (collapsible `<details>` below commits): one row per round, `R{N}` · `submitted_at` · short verdict tally. Click to expand round summary. Read-only.
+- **History** (collapsible `<details>` below commits): newest round first. Each round is itself an expandable `<details>` — header is `R{N}` · `resolution_state` · `submitted_at` · short comment tally; expanding shows every comment from that round (type badge + `file:Lline` + body) and, under each, the **response it received** (`↳ rework` / `↳ 답변` / `↳ out-of-scope`, the resulting commit short sha, and the summary). Read-only.
 - **Submit button** (sticky bottom):
   - Enabled when no `type === "needs-change"` comment is missing `dispatch_agent`.
   - Click triggers `POST /api/submit`.
   - If any commit has `viewed: false` and is not marked `out_of_scope`, show confirm dialog: `"커밋 N개를 보지 않았습니다. 그래도 제출하시겠습니까?"` (proceed-allowed warning).
+- **Reopen button** (sticky bottom, only while `review_status === "submitted"`):
+  - Click triggers `POST /api/reopen` → `review_status` back to `in_progress`, re-enabling edits on the current round. For the "I submitted too early" case before saying `리뷰 완료`. Does not touch history.
 
 ### Main panel — commit view
 
@@ -174,7 +177,7 @@ The v2 model is single-comment-per-anchor. No reply UI. Edit/delete only. If the
 - Disabled when any `needs-change` comment is missing `dispatch_agent` (server-side enforcement matches).
 - Warning (proceed-allowed) when any commit has `viewed: false` and `out_of_scope: false`.
 - On click → `POST /api/submit` → server sets `feedback.json.review_status = "submitted"` and stamps `updated_at`.
-- After submit, banner: `"리뷰가 제출되었습니다. 채팅에 '리뷰 완료'를 입력해주세요."` Comments and verdicts become read-only on this page until next round.
+- After submit, banner: `"리뷰가 제출되었습니다. 채팅에 '리뷰 완료'를 입력해주세요."` Comments and verdicts become read-only on this page until next round. A `Reopen for another round` button appears so the reviewer can unlock the current round without hand-editing JSON (`POST /api/reopen`).
 
 ## Diff rendering details
 
@@ -204,12 +207,12 @@ The v2 model is single-comment-per-anchor. No reply UI. Edit/delete only. If the
 
 ## Round re-entry behavior
 
-When the reviewer returns to the page after a rework round (new `review-data.json`):
+Every `리뷰 완료` closes the round and the skill reopens a clean one (see `review-data-schema.md` → "Round boundary"). When the reviewer returns to the page after re-entry (whether rework added commits or qa was answer-only):
 
-- Sidebar shows new commits at the bottom (still oldest-first overall — `git log --reverse` is stable).
-- New rework commits start with `viewed: false`. Earlier commits keep their `viewed` if untouched (skill-side preserved).
-- Resolved `needs-change` comments are gone from the live UI; they appear in the History panel under the previous round.
-- `question` comments not yet reset stay live so the reviewer can confirm them.
+- Sidebar shows the current commit set, oldest-first. After rework, new commits appear at the bottom.
+- The live `comments[]` is empty — **all** of the previous round's comments moved to History. The reviewer re-reviews every commit from scratch.
+- Every commit's `viewed` resets to `false`; `out_of_scope` is preserved per sha.
+- The previous round's comments **and the response each one received** are visible (read-only) by expanding that round in the History panel.
 
 ## Invalidations
 

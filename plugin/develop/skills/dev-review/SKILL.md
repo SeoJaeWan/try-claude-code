@@ -40,18 +40,33 @@ The skill infers `task_head_sha` from the worktree the state points at,
 derives `plan_signature` via the helper, and reads prior `feedback.json` /
 `review-history.json` when they exist.
 
-### Rounds are identified by task_head_sha, not a counter
+### A round closes on every submit, not only when HEAD changes
 
-There is no `current_round` integer in plan-state. The "current" review is
-always the one matching the worktree's live `task_head_sha`, and the UI
-labels rounds by the short SHA instead of a sequential index. Past rounds'
-data is snapshotted into `review-history.json` on re-entry — see Step 3.
+There is no `current_round` integer in plan-state. The UI labels rounds by
+the live `task_head_sha` short SHA, but a **round** is one
+`in_progress → submitted → processed` cycle of `feedback.json`. Every
+`리뷰 완료` closes the current round: Step 2/3 snapshot **all** of the
+just-submitted comments — together with the response each one received —
+into `review-history.json`, then reset `feedback.json` to a fresh
+`in_progress` round so the reviewer can review **every** commit again.
+
+This holds whether or not HEAD moved:
+
+- **rework** re-dispatch lands new commits → the regenerated round reviews a
+  new HEAD; prior comments are archived with `resolution_route: "rework"`.
+- **qa** answers happen in chat with **no new commits** → the round still
+  closes; prior comments are archived with `resolution_route: "answer"`.
+
+So `submitted` is never a terminal state for anything except `approved`.
+The reviewer is never stranded in a locked review — re-entry always
+reopens, and the browser also exposes a manual **Reopen** button
+(`POST /api/reopen`) for the "I submitted too early, let me keep editing
+before saying 리뷰 완료" case (that path does not snapshot history).
 
 `feedback.json` is a single live working file that the server overwrites
-on each reviewer action. When the runner re-invokes this skill after
-rework lands new commits, Step 2 below snapshots the soon-to-be-replaced
-`feedback.json` into `review-history.json` and then resets the live file
-for the new HEAD.
+on each reviewer action. When the runner re-invokes this skill after a
+round is processed, Step 2 below snapshots the soon-to-be-replaced
+`feedback.json` into `review-history.json` and then resets the live file.
 
 ## Artifacts the skill owns
 
@@ -65,6 +80,9 @@ plans/{key}/dev-review/              ← data-root; `key` is the plan dir's
 ├── review-data.json                # written by helper; deterministic; regenerated each round
 ├── feedback.json                   # live working file; overwritten by server on each reviewer action
 ├── review-history.json             # append-only record of prior rounds (snapshot taken at re-entry)
+├── round-responses.json            # OPTIONAL; written by the runner before re-entry; maps the
+│                                   # just-closed round's comment ids → the response they received
+│                                   # (route / summary / resulting_commit_sha). Consumed + deleted in Step 2.
 └── assets/
     └── diffs/                      # raw-diff .diff files keyed by short_sha
 
@@ -119,12 +137,14 @@ Helper failure is fatal — propagate the exit code. The runner cannot continue 
 
 See `references/helper-contract.md` for the full CLI and exit-code contract.
 
-### Step 2. Initialize or migrate `feedback.json`
+### Step 2. Close the prior round and reset `feedback.json`
 
 There is no interpretation agent in v2. After the helper writes
-`review-data.json`, the skill prepares the live `feedback.json` for the
-new round. The previous round's data lives in `review-history.json` (see
-Step 3) so the live file can be safely overwritten or carried forward.
+`review-data.json`, the skill prepares a **fresh** `feedback.json` for the
+new round. Unlike v1, the live file is never "carried over" — every round
+starts clean so the reviewer can re-review every commit. The just-closed
+round (its comments + the response each received) is preserved in
+`review-history.json` by Step 3.
 
 - **First round (no prior `feedback.json`)** → write a fresh skeleton:
 
@@ -141,47 +161,46 @@ Step 3) so the live file can be safely overwritten or carried forward.
   }
   ```
 
-- **Subsequent round (prior `feedback.json` exists, `plan_signature` matches)** → carry over what's still relevant:
+- **Subsequent round (prior `feedback.json` exists, `plan_signature` matches)** → close it and open a clean one:
 
-  - Read the prior `feedback.json` (its absolute path is in `state.dev_review.last_feedback_path`) and prior `review-history.json` (if any).
-  - Compute the set of "new commits in this round": `commits[].sha` in the new `review-data.json` whose sha is **not** in the most-recent history round's `commits_snapshot`.
-  - For each prior comment with `type === "needs-change"`:
-    - If the comment's `commit_sha` matches a commit that has any new follow-up commit (i.e., a new commit appears after it chronologically AND touches the same file), treat it as **resolved by rework** → push to history (Step 5) and drop from live `comments[]`.
-    - Otherwise → keep live (the reviewer may still want to act on it).
-  - For each prior comment with `type === "question"`: keep live unchanged. The reviewer resets these manually after chat answers.
-  - For each prior comment with `type === "out-of-scope"`: push to history with `resolution_route: "out-of-scope"` and drop from live.
-  - For `commit_status[sha]`:
-    - If sha is among "new commits" → drop (let it re-initialize as unviewed).
-    - If sha received a new follow-up commit affecting the same files → reset `viewed: false`, preserve `out_of_scope`.
-    - Otherwise → preserve as-is.
-  - Update `task_head_sha` to the new head; bump `updated_at`.
+  - Read the prior `feedback.json` (its absolute path is in `state.dev_review.last_feedback_path`). Step 3 archives **all** of its comments to history (this is what the reviewer sees as the closed round) — none are carried forward into the live file.
+  - Write the new live `feedback.json` as the first-round skeleton above, with **two** carry-overs from the prior file's `commit_status`:
+    - `viewed` → reset to `false` for every commit (the reviewer re-reviews the whole change set each round).
+    - `out_of_scope` → **preserved** per sha (a commit the reviewer ruled out of scope stays out of scope until they change it).
+  - Set `review_status: "in_progress"` and `task_head_sha` to the new head; bump `updated_at`. **Resetting `review_status` is mandatory** — the prior file is `submitted`, and copying that value forward is exactly the bug that used to strand the reviewer in a locked review.
 
-- **`plan_signature` mismatch** → discard prior `feedback.json` entirely; write the first-round skeleton.
+- **`plan_signature` mismatch** → discard prior `feedback.json` entirely; write the first-round skeleton (no `commit_status` carry-over).
 
 Write `feedback.json` atomically.
 
-> **Detection of "follow-up commits".** A simple heuristic: a commit C is followed-up if any commit chronologically after C in the new `commits[]` modifies a file in C's `files_changed[].path`. This avoids false positives from unrelated parallel edits while still catching the common rework pattern (same file touched again later). Edge cases (commits across multiple files where only some get follow-ups) err on the side of NOT auto-resolving — the reviewer can decide.
+### Step 3. Append the closed round to review history (with responses)
 
-### Step 3. Append to review history (round skeleton)
+On the very first call (no prior feedback file), create `review-history.json` with an empty `rounds[]` array — there is no closed round yet.
 
-On the very first call (no prior feedback file), create `review-history.json` with an empty `rounds[]` array.
-
-On re-entry (prior feedback file exists), append a new round entry capturing what closed in Step 2:
+On re-entry (prior feedback file exists), append a round entry that captures **everything** the reviewer submitted last round plus the response each comment received:
 
 ```jsonc
 {
-  "id": "R-<prior task_head_sha short>",  // the round that just closed (resolved by this regeneration)
+  "id": "R-<prior task_head_sha short>",  // the round that just closed
   "submitted_at": "<prior feedback file updated_at, or now>",
   "source_task_head_sha": "<prior task_head_sha>",
   "source_plan_signature": "<prior plan_signature>",
-  "resulting_task_head_sha": "<current task_head_sha>",
+  "resulting_task_head_sha": "<current task_head_sha>",  // == source when the round was qa-only (no new commits)
   "resulting_plan_signature": "<current plan_signature>",
   "resolution_state": "resolved",
   "commits_snapshot": [ /* commits[] subset from prior review-data.json */ ],
-  "comments_snapshot": [ /* comments resolved by rework or out-of-scope, with resolution_route + resulting_commit_sha */ ],
+  "comments_snapshot": [ /* EVERY prior comment, each annotated with its response (see below) */ ],
   "commit_verdicts_snapshot": { /* derived verdicts at submit time of prior round */ }
 }
 ```
+
+**Annotating each comment with its response.** For every comment in the prior `feedback.json`, copy it into `comments_snapshot[]` and attach `resolution_route` / `resolution_summary` / `resulting_commit_sha`:
+
+1. **Preferred source — `round-responses.json`.** If `{data-root}/round-responses.json` exists, it is a map written by the runner before this re-entry: `{ "<comment_id>": { "route": "rework"|"answer"|"out-of-scope", "summary": "<text>", "resulting_commit_sha": "<sha|null>" } }`. Use it verbatim for any comment id it covers, then **delete the file** after a successful history write (it belongs to exactly one round). This is the only way `question` answers (chat text) reach history.
+2. **Fallback by type** for any comment the map does not cover:
+   - `type === "needs-change"` → `route: "rework"`. Try to fill `resulting_commit_sha` + `resolution_summary` from a follow-up commit: a commit in the new `commits[]`, chronologically after the flagged commit, that touches a file in the flagged comment's commit. Use that commit's short sha and its Korean message body as the summary. If none is found, leave `resulting_commit_sha: null` and `resolution_summary: null`.
+   - `type === "question"` → `route: "answer"`, `resolution_summary: null` (the answer lived in chat and was not captured — the runner should have written `round-responses.json`; note it but do not block).
+   - `type === "out-of-scope"` → `route: "out-of-scope"`, fixed `resolution_summary: "리뷰어가 범위 외로 표시"`.
 
 `plan_signature` mismatch flips the prior round's `resolution_state` to `superseded`.
 
@@ -238,6 +257,8 @@ The plugin's dev-review server is **multi-review** and **discovery-based**: on e
    - 사이드바에서 커밋을 선택하고, diff에서 라인을 드래그해 코멘트를 남길 수 있습니다.
    - needs-change / question / out-of-scope 중 타입을 선택해주세요.
    - 모든 needs-change에 dispatch agent를 지정한 뒤, 사이드바 하단의 Submit을 누르고 채팅에 `리뷰 완료`라고 답장해주세요.
+   - 제출 직후 더 고치고 싶으면 Submit 자리의 `Reopen for another round` 버튼으로 다시 편집할 수 있습니다.
+   - 이전 라운드의 코멘트와 그에 대한 응답은 사이드바 `History`에서 펼쳐볼 수 있습니다.
    ```
 
 End your turn after this instruction. Do NOT poll `feedback.json`. Do NOT use `AskUserQuestion` — plain text lets the runtime's Stop hook behave normally. The background server stays alive across re-entries; only restart it (re-run step 2) if the health-check on re-entry shows it's gone or returns a non-dev-review `kind`.
@@ -288,7 +309,9 @@ Return a terminal summary to the runner:
 
 - `result = "approved"` when every commit's verdict is `approved` or `out-of-scope`.
 - `result = "rework"` when at least one commit's verdict is `needs-change`. Runner builds one re-dispatch per commit (not per comment), aggregating its `comments[]` into the prompt.
-- `result = "qa_required"` when there are `question` comments but no `needs-change`. Runner answers in chat, the reviewer resets those `question` comments via the browser, then re-runs `리뷰 완료`.
+- `result = "qa_required"` when there are `question` comments but no `needs-change`. The runner answers in chat, records each answer into `round-responses.json` (so it lands in history), then re-invokes this skill. That re-entry runs Step 2/3 even though HEAD did not move: the qa round closes (its questions + answers archived) and a fresh `in_progress` round opens for the reviewer. The reviewer no longer has to manually reset `question` comments — re-entry always reopens.
+
+> **What re-entry does after each result.** `approved` → the runner proceeds to merge; the skill does not regenerate. `rework` / `qa_required` → the runner acts (dispatch / answer), writes `round-responses.json`, and re-invokes this skill, which runs Steps 1–3: regenerate `review-data.json` (HEAD may be new for rework, unchanged for qa), archive the closed round with its responses, and reset `feedback.json` to a clean `in_progress` round.
 
 > **Per-commit dispatch_agent unanimity.** When multiple `needs-change` comments on the same commit pick different `dispatch_agent` values, the runner cannot dispatch them all at once — they share the same worktree and would interleave commits. Detect this in Step 5 and flip those comments to `question` with a generated body: `"이 커밋의 needs-change 코멘트가 서로 다른 dispatch_agent를 가리킵니다. 하나로 통일해주세요."` — turning the round into `qa_required` so the reviewer reconciles in the browser.
 
@@ -351,6 +374,8 @@ The runner owns the actual Agent dispatch. This skill just hands back `rework_it
 - Do NOT reuse v1 schema fields (`overview`, `cards`, `_fallback_cards`, `tests_added`, `deviations`, `addressed_by_this_commit`, `final`). The schema is v2.
 - Do NOT support comment threads / replies in the UI surface; this skill assumes single-comment-per-anchor.
 - Do NOT advance past Step 5 on anything except `result === "approved"`.
+- Do NOT carry `review_status: "submitted"` into the new round's `feedback.json`. Step 2 always opens the round as `in_progress`; a stale `submitted` is what strands the reviewer.
+- Do NOT keep `round-responses.json` after Step 3 consumes it. It describes exactly one closed round — delete it once the history write succeeds so the next round does not re-read stale responses.
 
 ## References
 

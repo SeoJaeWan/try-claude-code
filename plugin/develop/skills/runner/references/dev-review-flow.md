@@ -25,6 +25,16 @@ bookkeeping responsibility is recording the feedback path in
 `state.dev_review.last_feedback_path` via `begin-rework` so rework
 dispatches can find it.
 
+Every `리뷰 완료` closes a round and the skill reopens a clean one — the
+reviewer re-reviews every commit each round, and the prior round's comments
+move to `review-history.json`. So that the **response** each comment got
+shows up in History next to it, the runner writes
+`plans/{plan_key}/dev-review/round-responses.json` before re-invoking
+dev-review for a `qa_required` or `rework` result (required for qa — chat
+answers exist nowhere else; optional for rework — the skill can derive it
+from follow-up commits). The skill consumes and deletes the file. Shape and
+fallbacks: dev-review `references/review-data-schema.md` → "round-responses.json".
+
 | Trigger | Effect |
 |---|---|
 | First Step 4 entry (right after the plan-agent returns in Step 3) | dev-review skill writes a fresh `feedback.json`; runner has nothing to do until the result comes back |

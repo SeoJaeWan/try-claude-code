@@ -72,12 +72,24 @@
     .sb-history summary::-webkit-details-marker { display: none; }
     .sb-history-list { margin-top: 8px; display: grid; gap: 8px; }
     .sb-history-round { font-size: 12px; padding: 6px 8px; background: var(--bg); border: 1px solid var(--line-soft); border-radius: 6px; }
-    .sb-history-round-meta { color: var(--muted); font-size: 11px; }
+    .sb-history-round > summary { cursor: pointer; list-style: none; }
+    .sb-history-round > summary::-webkit-details-marker { display: none; }
+    .sb-history-round-meta { color: var(--muted); font-size: 11px; margin-top: 2px; }
+    .sb-history-empty { color: var(--muted); font-size: 11px; margin-top: 6px; }
+    .sb-history-comment { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line-soft); }
+    .sb-hc-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .sb-hc-head code { font-size: 10.5px; color: var(--muted); }
+    .sb-hc-body { margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+    .sb-hc-response { margin-top: 5px; padding: 5px 7px; background: var(--accent-soft); border-radius: 5px; }
+    .sb-hc-route { font-weight: 700; font-size: 11px; color: var(--accent); }
+    .sb-hc-summary { margin-top: 3px; white-space: pre-wrap; word-break: break-word; }
 
     .sb-submit-area { border-top: 1px solid var(--line-soft); padding: 12px 16px; display: grid; gap: 8px; }
     .btn-submit { background: var(--success); color: #fff; border: none; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
     .btn-submit:hover:not(:disabled) { filter: brightness(0.95); }
     .btn-submit:disabled { background: #94a3b0; cursor: not-allowed; }
+    .btn-reopen { background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-reopen:hover { background: var(--accent-soft); }
     .submit-hint { font-size: 11px; color: var(--muted); }
 
     /* Main panel */
@@ -217,6 +229,7 @@
       <div class="sb-submit-area">
         <div class="submit-hint" id="submit-hint"></div>
         <button class="btn-submit" id="btn-submit" disabled>Submit review</button>
+        <button class="btn-reopen" id="btn-reopen" style="display:none">Reopen for another round</button>
       </div>
     </aside>
     <main class="main" id="main">
@@ -368,21 +381,61 @@
       if (state.history && Array.isArray(state.history.rounds) && state.history.rounds.length > 0) {
         hist.style.display = "";
         histList.innerHTML = "";
-        for (const r of state.history.rounds) {
-          const div = document.createElement("div");
-          div.className = "sb-history-round";
-          const tally = (r.comments_snapshot || []).reduce((acc, c) => {
-            acc[c.type] = (acc[c.type] || 0) + 1; return acc;
-          }, {});
-          const tallyText = Object.entries(tally).map(([k, v]) => `${k}:${v}`).join(" · ") || "no comments";
-          div.innerHTML =
-            `<div><strong>${escapeHtml(r.id)}</strong> · ${escapeHtml(r.resolution_state || "")}</div>` +
-            `<div class="sb-history-round-meta">${escapeHtml(r.submitted_at || "")} · ${escapeHtml(tallyText)}</div>`;
-          histList.appendChild(div);
+        // Newest round first so the most recent review+response is on top.
+        for (const r of [...state.history.rounds].reverse()) {
+          histList.appendChild(renderHistoryRound(r));
         }
       } else {
         hist.style.display = "none";
       }
+    }
+
+    // Render one past review round: header tally + each comment with the
+    // response it received (route + summary + resulting commit). Read-only.
+    function renderHistoryRound(r) {
+      const comments = Array.isArray(r.comments_snapshot) ? r.comments_snapshot : [];
+      const tally = comments.reduce((acc, c) => {
+        acc[c.type] = (acc[c.type] || 0) + 1; return acc;
+      }, {});
+      const tallyText = Object.entries(tally).map(([k, v]) => `${k}:${v}`).join(" · ") || "no comments";
+
+      const det = document.createElement("details");
+      det.className = "sb-history-round";
+
+      const summary = document.createElement("summary");
+      summary.innerHTML =
+        `<strong>${escapeHtml(r.id)}</strong> · ${escapeHtml(r.resolution_state || "")}` +
+        `<div class="sb-history-round-meta">${escapeHtml((r.submitted_at || "").slice(0, 19).replace("T", " "))} · ${escapeHtml(tallyText)}</div>`;
+      det.appendChild(summary);
+
+      if (comments.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "sb-history-empty";
+        empty.textContent = "이 라운드에는 코멘트가 없습니다 (전체 승인).";
+        det.appendChild(empty);
+        return det;
+      }
+
+      for (const c of comments) {
+        const item = document.createElement("div");
+        item.className = "sb-history-comment";
+        const loc = `${c.file || ""}${c.line_start ? `:L${c.line_start}${c.line_end && c.line_end !== c.line_start ? `-${c.line_end}` : ""}` : ""}`;
+        let html =
+          `<div class="sb-hc-head"><span class="sb-badge ${escapeAttr(c.type)}">${escapeHtml(c.type)}</span> <code>${escapeHtml(loc)}</code></div>` +
+          (c.body ? `<div class="sb-hc-body">${escapeHtml(c.body)}</div>` : "");
+        // The response this comment received, if recorded.
+        const route = c.resolution_route;
+        if (route || c.resolution_summary || c.resulting_commit_sha) {
+          const routeLabel = { rework: "↳ rework", answer: "↳ 답변", "out-of-scope": "↳ out-of-scope" }[route] || "↳ 응답";
+          const sha = c.resulting_commit_sha ? ` <code>${escapeHtml(String(c.resulting_commit_sha).slice(0, 7))}</code>` : "";
+          html += `<div class="sb-hc-response"><span class="sb-hc-route">${escapeHtml(routeLabel)}</span>${sha}` +
+            (c.resolution_summary ? `<div class="sb-hc-summary">${escapeHtml(c.resolution_summary)}</div>` : "") +
+            `</div>`;
+        }
+        item.innerHTML = html;
+        det.appendChild(item);
+      }
+      return det;
     }
 
     function makeBadge(text, kind) {
@@ -957,6 +1010,7 @@
     // ---------- Submit ----------
     function renderSubmit() {
       const btn = document.querySelector("#btn-submit");
+      const reopenBtn = document.querySelector("#btn-reopen");
       const hint = document.querySelector("#submit-hint");
       const submitted = state.feedback.review_status === "submitted";
 
@@ -975,9 +1029,19 @@
       if (submitted) {
         btn.disabled = true;
         btn.textContent = "Submitted";
-        hint.textContent = `채팅에 '리뷰 완료'를 입력해주세요.`;
+        hint.textContent = `'리뷰 완료'를 입력하면 이 라운드가 history로 남고 새 라운드가 열립니다. 제출을 되돌리려면 Reopen.`;
+        reopenBtn.style.display = "";
+        reopenBtn.onclick = async () => {
+          try {
+            await apiSend("POST", "api/reopen");
+            await refreshFeedback();
+          } catch (err) {
+            alert(err.message);
+          }
+        };
         return;
       }
+      reopenBtn.style.display = "none";
       btn.disabled = blocked;
       btn.textContent = "Submit review";
       if (blocked) {
