@@ -1,5 +1,5 @@
 {
-  "description": "/runner path-sanity gate.",
+  "description": "/runner path-sanity gate + Codex wiki refresh on session start.",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -8,6 +8,19 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/user-prompt-submit-hook.mjs\"",
             "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/refresh-wikis.sh\"",
+            "async": true,
+            "statusMessage": "Refreshing Codex wiki repos"
           }
         ]
       }
