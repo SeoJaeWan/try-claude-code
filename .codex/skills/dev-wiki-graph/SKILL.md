@@ -1,6 +1,6 @@
 ---
 name: dev-wiki-graph
-description: Generate or refresh a project dev wiki graph from repository facts: folders, files, imports, exports, symbols, tests, routes, scripts, dependencies, config files, image/font assets, env references, and external boundaries. Use when the user asks to build, update, refresh, inspect, or visualize a dev wiki project graph, or when project navigation should be easier than reading the whole file tree. Requires `.codex/dev-wiki/config.json` and a project folder prepared by `dev-wiki-setup`.
+description: "Generate or refresh a project dev wiki graph from repository facts: folders, files, imports, exports, symbols, tests, routes, scripts, dependencies, config files, image/font assets, env references, and external boundaries. Use when the user asks to build, update, refresh, inspect, or visualize a dev wiki project graph, or when project navigation should be easier than reading the whole file tree. Requires `.codex/dev-wiki/config.json` and a project folder prepared by `dev-wiki-setup`."
 ---
 
 # Dev Wiki Graph
