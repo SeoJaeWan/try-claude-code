@@ -15,8 +15,8 @@ Use this when `plan-tdd` handles component rendering, props/callback behavior, f
 - Reuse the repository's existing component or rendered-harness convention.
 - Typical owners include Testing Library with jsdom, Playwright Component Test, Storybook interaction tests, and existing component `*.test.*` / `*.spec.*` files.
 - If multiple component runners exist, use the owner closest to the component or screen boundary named by the plan.
-- If no Component Test setup exists and the plan does not lock a first-time runner, command, spec root, and placement, return a blocker instead of inventing setup.
-- If the plan locks a first-time Component Test stack and topology, author the red contract tests against that planned stack and report the setup gap as a completion gate.
+- If no Component Test setup exists and the plan locks the first-time runner, command, spec root, placement, source/test topology, and scenario contract, author the red contract tests against that planned stack and report the setup gap as a failed completion gate.
+- Block only when no local setup exists and the plan does not lock the first-time runner, command, spec root, placement, source/test topology, and scenario contract. Use `blocker_type = plan_contract` and `blocker_code = first_time_test_contract_missing`.
 
 ## Authoring rules
 

@@ -10,9 +10,9 @@
 - Reuse the current stack unless the selected plan explicitly locks a first-time test stack or intentionally overrides the existing convention as part of the TDD contract
 - Before creating tests under a planned new source tree, confirm the plan locks the production topology and test-owner placement as contracts rather than examples
 - If the plan's concrete paths could be interpreted as tentative candidates, or if writing tests would force a hook/model/utility/runtime folder decision the plan did not justify, stop with `blocker_type = plan_contract`
-- If the target app/module implementation tree or runner config is missing but the selected plan explicitly locks the planned runner, command path, spec root or test placement, and source/test topology, enter `TDD contract mode`
-- In `TDD contract mode`, you may create missing source-tree test directories and owner test files even when the target app/module implementation tree is missing
-- In `TDD contract mode`, missing runner/config/package ownership does not block writing tests by itself as long as:
+- Enter `TDD contract mode` when the target app/module implementation tree, test setup, runner config, or package ownership is missing and the selected plan explicitly locks the planned first-time test contract
+- In `TDD contract mode`, create missing source-tree test directories and owner test files even when the target app/module implementation tree, runner config, or harness does not exist yet
+- Missing runner/config/package ownership does not block writing tests by itself in `TDD contract mode` as long as:
   - the planned runner is explicitly locked by the plan
   - the planned command path and spec root or test file placement are explicitly locked by the plan
   - the planned source/test topology is explicitly locked by the plan when tests define future route, module, or package structure
@@ -21,19 +21,19 @@
   - mock/API fixtures, storage state, auth state, seeded data, and locator/test id policy are locked when the test needs them before real integration exists
   - the report records which validation commands could not be run yet and states that plan completion remains blocked until they pass
 - Do not place tests in an adjacent package only because that package has an existing runner. The owner test must live in the target app/module that owns the selected behavior, unless the plan explicitly selects the adjacent package as the durable owner.
-- If a needed test type has no existing setup, stop immediately with:
+- If a needed test type has no existing setup and the plan does not lock the runner, command path, spec root or placement, source/test topology, and scenario contract strongly enough to author a TDD contract test, stop with:
   - `outcome = blocked`
-  - `blocker_type = external_setup`
-  - `blocker_code = setup_missing`
-  - `next_action = stop`
-  - `resume_from = tdd`
-  only when the plan also fails to lock the runner, command path, spec root or placement, source/test topology, and scenario contract strongly enough to author a TDD contract test
-- If placement or stack is ambiguous because local conventions are missing or conflicting, stop with:
+  - `blocker_type = plan_contract`
+  - `blocker_code = first_time_test_contract_missing`
+  - `next_action = plan_revision`
+  - `resume_from = none`
+- If placement or stack is ambiguous because local conventions are missing or conflicting, block only when the plan also fails to lock the first-time stack, placement, topology, and scenario contract. Use:
   - `outcome = blocked`
-  - `blocker_type = external_setup`
-  - `blocker_code = local_convention_missing`
-  - `next_action = stop`
-  - `resume_from = tdd`
+  - `blocker_type = plan_contract`
+  - `blocker_code = first_time_test_contract_missing`
+  - `next_action = plan_revision`
+  - `resume_from = none`
+  Reserve `external_setup` for prerequisites the current plan revision cannot supply.
 
 ### Step 1. Determine execution mode
 
@@ -113,6 +113,7 @@ Blocker typing rules:
 
 - use `blocker_type = plan_contract` when the plan contract is incomplete, contradictory, or under-specified
 - use `blocker_type = plan_contract` when this skill would otherwise have to choose production or test topology that the plan artifact did not lock
+- use `blocker_type = plan_contract` with `blocker_code = first_time_test_contract_missing` when no local setup exists and the plan does not lock the first-time runner, command path, spec root or placement, source/test topology, and scenario contract strongly enough to author tests
 - use `blocker_type = user_policy` only when the blocker truly depends on a fresh user decision rather than a missing technical contract
 - use `blocker_type = external_setup` only when the source tree or test environment is missing a prerequisite that the current plan revision cannot supply
 
@@ -200,12 +201,12 @@ Before finalizing `create`, `update`, or `delete`, reconcile the affected-owner 
 - Default policy: `modify-first, create-if-new-owner`
 - Split one owner into multiple specs only when the existing file becomes materially too large or divergent
 - When split is required, add a small registry file for that UI area
-- If the selected user-visible clause has no stable owner UI area or journey and local conventions do not expose a stable place to create one, return a blocker with:
+- If the selected user-visible clause has no stable owner UI area or journey, local conventions do not expose a stable place to create one, and the plan does not lock one, return a blocker with:
   - `outcome = blocked`
-  - `blocker_type = external_setup`
-  - `blocker_code = owner_spec_missing`
-  - `next_action = stop`
-  - `resume_from = tdd`
+  - `blocker_type = plan_contract`
+  - `blocker_code = first_time_test_contract_missing`
+  - `next_action = plan_revision`
+  - `resume_from = none`
 
 ### Step 6. Author unit tests
 
@@ -254,7 +255,7 @@ Before finalizing `create`, `update`, or `delete`, reconcile the affected-owner 
 
 - Follow `references/e2e-test-conventions.md`
 - Follow `references/test-authoring-conventions.md`
-- Use only the runner already configured in the project
+- Use the existing configured runner unless `TDD contract mode` explicitly uses the first-time runner and spec root locked by the plan
 - In `TDD contract mode`, use the runner and spec root explicitly locked by the plan even if the config file is not implemented yet; record the command as not run/failed until the harness exists
 - Author only the selected browser journey tests; do not add plan-external regression sweeps
 - Derive every scenario and assertion from explicit selected plan clauses only
@@ -373,7 +374,9 @@ Frontmatter rules:
 - `plan_signature`: a stable short fingerprint of the normalized current `plan.md` plus the linked phase detail files; if the orchestrator provided `plan_signature`, preserve it exactly
 - `gate_status`: `passed` | `failed` | `blocked`
 - `blocker_type`: `none` | `plan_contract` | `user_policy` | `external_setup`
-- `blocker_code`: use a specific code such as `setup_missing`, `local_convention_missing`, or `owner_spec_missing` when blocked; otherwise `none`
+- `blocker_code`: use a specific code such as `first_time_test_contract_missing`, `owner_spec_missing`, or another narrow code when blocked; otherwise `none`
+- In `TDD contract mode`, when tests were authored but the harness or command cannot run yet, use `outcome = completed`, `gate_status = failed`, `blocker_type = none`, `blocker_code = none`, `next_action = done`, and `resume_from = none`. Record the missing command or harness as the completion gate and expected red reason.
+- Use `outcome = blocked` only for clauses that cannot be mapped or authored from the current plan contract, or for prerequisites that the current plan revision cannot supply.
 - `next_action`:
   - `done` when `outcome = completed`
   - `plan_revision` when `blocker_type = plan_contract`
