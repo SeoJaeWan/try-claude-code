@@ -22,6 +22,25 @@ Author TDD contract tests after planning, not during implementation.
 - Treat plan-locked future route files, source modules, spec roots, locator/test id policy, mock/API fixtures, and browser storage/auth state as intentional TDD contracts. Do not reinterpret them as speculative only because the implementation does not exist yet.
 - Use source-inspection tests only when the selected plan clause makes source topology itself the durable behavior, such as workspace membership, public export presence, route file topology, or required config ownership. Do not use source inspection as a substitute for user-visible behavior, state transitions, runtime wiring, code generation, route outcomes, or UI flow.
 
+## First-Time Test Contract Fields
+
+Use this section as the source of truth when the target app, test harness, runner config, or package ownership does not exist yet.
+
+The selected plan must lock:
+
+- first-time runner or test stack
+- command path or package script
+- spec root or test file placement
+- source/test topology when tests define future route, module, package, or app structure
+- config owner or browser/mobile bootstrap command when the runner needs it
+- selected scenario contract with observable output and important negative/no-op output
+- expected red reason and completion gate
+- mock/API fixture, storage state, auth state, seeded data, and locator/test id policy when the test needs them before real integration exists
+
+When these fields are locked, author the red contract tests and record missing setup as a failed completion gate. When they are not locked, use `blocker_type = plan_contract` and `blocker_code = first_time_test_contract_missing`.
+
+Layer convention references must not redefine this blocker taxonomy. They may add only layer-specific runner, bootstrap, locator, or assertion guidance.
+
 ## Inputs to inspect
 
 1. Current executable plan file:

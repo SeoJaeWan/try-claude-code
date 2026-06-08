@@ -44,9 +44,8 @@ Use this skill to connect a workspace to the shared plan wiki Git repository, sa
 
 6. Report Git sync state.
    - After setup or bootstrap writes, run `git status --short` inside `./.codex/plan-wiki/source`.
-   - If a commit is requested, include only plan wiki files changed by the current setup/bootstrap operation.
-   - Do not include unrelated dirty files already present in the plan wiki source repo.
-   - Commit and push only after explicit user approval.
+   - Follow [references/platform-commands.md](references/platform-commands.md) Git Sync rules after writes and before any plan wiki commit.
+   - For setup/bootstrap, the current operation includes only files changed by setup, bootstrap, or approved sync/repair.
    - The commit target is the plan wiki source repo, not the current project repo.
 
 ## Guardrails
@@ -65,4 +64,5 @@ Use this skill to connect a workspace to the shared plan wiki Git repository, sa
 - Read [references/platform-commands.md](references/platform-commands.md) for the platform-neutral Node setup command and Git sync commands.
 - Read [references/bootstrap-layout.md](references/bootstrap-layout.md) for the initial directory and document set.
 - Read [references/staging-contract.md](references/staging-contract.md) for the planning root contract.
+- Read [references/history-model.md](references/history-model.md) when setup, lint, ingest, or feedback operations need the shared operation history schema.
 - Read [references/sync-repair.md](references/sync-repair.md) for the safe receive/merge repair unit used after orchestrator fast-forward preflight failure.

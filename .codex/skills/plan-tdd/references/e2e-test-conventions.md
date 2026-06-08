@@ -16,9 +16,9 @@ Use this when `plan-tdd` handles selected frontend browser journeys.
 - Typical signals:
     - `playwright.config.*` for browser/web
     - `.maestro/` for React Native / Expo mobile
-- If no E2E setup exists and the plan locks the first-time E2E runner, command, spec root, browser/mobile bootstrap contract, source/test topology, and selected journey contract, create the red contract spec in the planned source-tree location
+- Follow `references/contracts.md` First-Time Test Contract Fields and `references/workflow.md` `TDD contract mode` when E2E setup is missing
 - Missing harness, browser/mobile bootstrap, or app route is the expected red reason in `TDD contract mode`, not a reason to skip writing the spec
-- Block only when no local E2E setup exists and the plan does not lock the first-time E2E runner, command, spec root, bootstrap contract, topology, and journey contract. Use `blocker_type = plan_contract` and `blocker_code = first_time_test_contract_missing`
+- Layer-specific additions are the browser/mobile bootstrap contract, route or journey owner, storage/auth state, and stable locator policy
 
 ## Update strategy
 

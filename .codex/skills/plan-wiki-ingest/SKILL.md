@@ -68,10 +68,8 @@ Use this skill to process review inbox files into the plan wiki. Resolve the pla
    - If the ingest batch succeeds, remove the remaining source review files from the inbox.
    - Do not continue with partial cleanup after a failed batch.
    - Write one operation history record under `history/YYYY/MM/` with `type: ingest`, input reviews, changed files, validation status, and source review cleanup outcome.
-   - Run `git status --short` inside `./.codex/plan-wiki/source` and report the changed plan wiki files.
-   - If a commit is requested, include only plan wiki files changed by the current ingest batch.
-   - Do not include unrelated dirty files already present in the plan wiki source repo.
-   - Commit and push the plan wiki source repo only after explicit user approval.
+   - Follow `../plan-wiki-setup/references/platform-commands.md` Git Sync rules after writes and before any plan wiki commit.
+   - For ingest batches, the current operation includes only raw records, promoted wiki files, graph links, registry entries, history records, and source review cleanup changed by this batch.
 
 ## Promotion Rules
 
@@ -92,4 +90,6 @@ Use this skill to process review inbox files into the plan wiki. Resolve the pla
 ## Reference
 
 - Read [references/data-model.md](references/data-model.md) for path contracts, raw schema, registry schema, pattern-file schema, file naming, and promotion policy.
-- Read [references/history-model.md](references/history-model.md) for operation history schema and docs exposure rules.
+- Read [../plan-wiki-setup/references/history-model.md](../plan-wiki-setup/references/history-model.md) for the shared operation history schema and docs exposure rules.
+- Read [references/history-model.md](references/history-model.md) for ingest-specific history fields and status meaning.
+- Read [../plan-wiki-setup/references/platform-commands.md](../plan-wiki-setup/references/platform-commands.md) for nested source repo Git safety before committing plan wiki changes.

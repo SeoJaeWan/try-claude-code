@@ -34,10 +34,8 @@ Use this skill to inspect the plan wiki without silently rewriting it. Resolve t
    - If the user approves, apply only the approved subset of changes.
    - Refresh `wiki/_meta/점검-보고서.md` to reflect what was actually changed and what remains deferred.
    - If approval is partial, keep the rest as pending or deferred.
-   - After approved changes, run `git status --short` inside `./.codex/plan-wiki/source` and report the changed plan wiki files.
-   - If a commit is requested, include only plan wiki files changed by the current lint cleanup.
-   - Do not include unrelated dirty files already present in the plan wiki source repo.
-   - Commit and push the plan wiki source repo only after explicit user approval.
+   - Follow `../plan-wiki-setup/references/platform-commands.md` Git Sync rules after writes and before any plan wiki commit.
+   - For lint cleanup, the current operation includes only the user-approved cleanup subset and the refreshed `wiki/_meta/점검-보고서.md`.
 
 ## Lint Focus
 
@@ -75,3 +73,4 @@ Use this skill to inspect the plan wiki without silently rewriting it. Resolve t
 ## Reference
 
 - Read [references/checklist.md](references/checklist.md) for the exact checks and the expected `점검-보고서.md` structure.
+- Read [../plan-wiki-setup/references/platform-commands.md](../plan-wiki-setup/references/platform-commands.md) for nested source repo Git safety before committing plan wiki changes.

@@ -36,10 +36,12 @@ After setup:
 ## Git Sync
 
 Plan wiki maintenance skills write to the nested source repo. Before committing, inspect the plan wiki source repo state and keep the commit boundary limited to the current operation.
+This section is the source of truth for plan wiki source repo Git safety; other plan-wiki skills should link here instead of duplicating the full policy.
 
 - Commit only plan wiki files created, modified, deleted, or moved by the current operation.
 - Do not include unrelated dirty files already present in `./.codex/plan-wiki/source`.
 - Keep current-project repo changes and plan wiki source repo changes in separate commits.
+- After setup or maintenance writes, run `git -C .codex/plan-wiki/source status --short` and report the changed plan wiki files.
 - Report the files included in the plan wiki commit before committing.
 - Push only after explicit user approval.
 

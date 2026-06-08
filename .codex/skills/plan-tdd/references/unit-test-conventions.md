@@ -7,8 +7,7 @@ Use this when `plan-tdd` handles logic boundaries.
 - Logic changes are unit-test mandatory for both frontend and backend
 - Reuse the repository's existing runner, assertion style, mocking style, and file layout unless the selected plan explicitly locks a first-time runner or an intentional topology override
 - Update an existing boundary test before creating a new file
-- If unit-test setup is missing but the selected plan locks the first-time runner, command, placement, source/test topology, and scenario contract strongly enough for `TDD contract mode`, author the planned red contract tests and report the setup gap as a failed completion gate
-- Stop only when unit-test setup or placement is missing and neither local convention nor the selected plan locks enough contract to author tests. Use `blocker_type = plan_contract` and `blocker_code = first_time_test_contract_missing`
+- Follow `references/contracts.md` First-Time Test Contract Fields and `references/workflow.md` `TDD contract mode` when unit setup or placement is missing
 - Derive every new assertion from an explicit selected plan clause or a risk pattern already implied by that clause
 - Do not add plan-external regression coverage
 

@@ -16,7 +16,7 @@ Provide an independent, read-only review of an executable plan file and its curr
 6. Optional orchestrator-provided `dev_wiki_root`.
 7. `registry.json`, stage core docs for `review`, and selected pattern files whose `적용 조건` match the reviewed plan.
 8. Plan Maker templates and local references only as needed to verify the plan contract.
-9. Repo-local execution contracts only when the plan makes a concrete routing, command, validation, or placement claim.
+9. Repo-local execution contracts only when the plan makes a concrete routing, command, validation, or placement claim; include `../plan-tdd/references/contracts.md` First-Time Test Contract Fields when the plan expects TDD before the test environment exists.
 10. `../dev-wiki-setup/references/consumer-context.md` when `dev_wiki_root` is provided.
 11. Directly referenced local prerequisite plans only for one-hop prerequisite parity.
 12. Controller-verified Figma inventory manifest and snapshot artifacts only when the plan depends on Figma inventory, classification, or plan-local `figma-contract` artifacts.

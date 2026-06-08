@@ -61,7 +61,7 @@ Use this step only when a planning boundary depends on facts not already locked 
   - inputs, outputs, props, callbacks, handoff meaning, state ownership, invalid/no-op rules, exclusions, recipients, and final interpretation boundaries.
   - verification unit, observable result, stable identifier policy, and selected E2E reason when the choice affects the completion gate.
   - committed source topology and test-owner placement when new paths, route files, modules, or spec locations shape implementation.
-  - first-time test runner, command, spec root, config ownership, browser/mobile bootstrap command, mock/API fixture policy, and storage/auth state policy when the current repository does not already provide the needed test environment.
+  - first-time TDD contract fields from `../plan-tdd/references/contracts.md` when the current repository does not already provide the needed test environment.
 - Do not force concrete test files, helper names, exhaustive locator lists, or runner mechanics into the plan when local conventions can derive them later.
 - Carry `deferrable` items only as short defaults or constraints when they matter to execution.
 
@@ -117,7 +117,7 @@ If the plan includes implementation scope beyond documentation-only or structura
 
 - Make behavior, state, routing, UI interaction, and contract-selection scenarios explicit enough for source-tree test or command verification to produce `unit`, `Component Test`, selected `E2E`, `skip`, or `block` outcomes.
 - Lock the verification unit, observable result, stable identifier policy, and selected E2E journey reason when leaving them open would let the same plan produce different tests.
-- If the target test environment does not exist yet, lock the planned runner, command, config owner, spec root or test file placement, source/test topology, and expected red reason so later test authoring can produce completion-blocking red contract tests instead of treating setup absence as the decision point.
+- If the target test environment does not exist yet, lock `../plan-tdd/references/contracts.md` First-Time Test Contract Fields so later test authoring can produce completion-blocking red contract tests instead of treating setup absence as the decision point.
 - If mock API, fixture server, `storageState`, or seeded browser state is required before real integration exists, lock what the mock proves, what it does not prove, and the later integration gate that must turn the red contract green.
 - Do not generate source-tree tests in this skill.
 

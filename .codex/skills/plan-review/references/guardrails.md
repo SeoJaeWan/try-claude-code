@@ -15,7 +15,7 @@
 - In reused reviewer sessions, re-read the current plan file from disk and treat old findings as untrusted history.
 - Do not recursively review a full upstream plan graph; inspect only direct prerequisite parity when a plan names it.
 - Do not approve a plan that leaves canonical outputs, negative outputs, recipients, public boundaries, exclusions, or verification ownership for later agents to guess.
-- Do not approve a plan that expects first-time TDD but leaves runner, command, spec root, source/test topology, mock/API fixture policy, storage/auth state policy, or expected red reason for later test authoring to invent.
+- Do not approve a plan that expects first-time TDD but leaves `../plan-tdd/references/contracts.md` First-Time Test Contract Fields for later test authoring to invent.
 - Do not approve an implementation-scope plan that commits new source/test/fixture topology without showing repo-local inspection evidence for those placements.
 - Do not approve a plan whose file/folder topology, phase rows, feature contracts, and evidence artifacts point to different paths, phases, inputs, outputs, or states.
 - Do not approve a plan that presents HTML/JS evidence as production code or requires real API calls, DB access, filesystem writes, live dev servers, React builds, or production stack execution for planning review.

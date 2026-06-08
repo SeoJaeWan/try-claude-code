@@ -58,10 +58,8 @@ Use this skill to process feedback captured from the plan wiki docs UI. Resolve 
 7. Finalize the feedback record.
    - Move or rewrite the feedback JSON into the correct outcome folder.
    - Use `applied` when wiki source files changed successfully.
-   - Run `git status --short` inside `./.codex/plan-wiki/source` and report the changed plan wiki files.
-   - If a commit is requested, include only plan wiki files changed by the current feedback batch.
-   - Do not include unrelated dirty files already present in the plan wiki source repo.
-   - Commit and push the plan wiki source repo only after explicit user approval.
+   - Follow `../plan-wiki-setup/references/platform-commands.md` Git Sync rules after writes and before any plan wiki commit.
+   - For feedback batches, the current operation includes only feedback records, source docs, graph links, registry entries, and history records changed by this batch.
    - Use `needs-decision` when user approval is required before changing source files.
    - Use `stale` when the selected text no longer maps to the source document.
    - Use `rejected` only when the feedback is invalid or contradicts source evidence.
@@ -86,4 +84,6 @@ Use this skill to process feedback captured from the plan wiki docs UI. Resolve 
 ## Reference
 
 - Read [references/feedback-model.md](references/feedback-model.md) for feedback JSON schema, statuses, and selection matching.
-- Read [references/history-model.md](references/history-model.md) for operation history schema and docs exposure rules.
+- Read [../plan-wiki-setup/references/history-model.md](../plan-wiki-setup/references/history-model.md) for the shared operation history schema and docs exposure rules.
+- Read [references/history-model.md](references/history-model.md) for feedback-specific history fields and status meaning.
+- Read [../plan-wiki-setup/references/platform-commands.md](../plan-wiki-setup/references/platform-commands.md) for nested source repo Git safety before committing plan wiki changes.

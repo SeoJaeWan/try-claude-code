@@ -38,7 +38,7 @@ Typical blocker signals:
 - missing manual smoke gate in `tdd.md` for selected plan clauses that are explicitly not automatable before implementation.
 - TDD reports `blocker_type = plan_contract` for a selected clause, or hides a TDD blocker behind a ready plan review.
 - missing test-strategy decisions required by the active plan wiki decision policy when TDD authoring would otherwise choose the gate.
-- missing first-time test runner, command, spec root or test-owner placement, source/test topology, mock/API fixture policy, browser storage/auth state policy, or expected red reason when the plan expects contract tests before the test environment exists.
+- missing `../plan-tdd/references/contracts.md` First-Time Test Contract Fields when the plan expects contract tests before the test environment exists.
 - plan count, local prerequisite relationship, authority artifact, reference-comparison, Figma parity, or Figma inventory provenance contradicts the active plan wiki contract.
 - Figma-first, external-reference, inventory, classification, or fixture authority is required for implementation or validation, but the plan moves that authority creation into an implementation phase instead of consuming a verified planning input artifact.
 - implementation scope is large enough to require staged execution or planning docs, but the plan has no reviewable `## 실행 흐름` Phase entries, so later tooling or the user would have to infer phase boundaries.

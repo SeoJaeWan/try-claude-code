@@ -35,5 +35,4 @@ If the planning root is missing, stop and route to `plan-wiki-setup` instead of 
 - `orchestrator` must not merge, rebase, reset, clean, stash, or push the plan wiki source clone during planning preflight.
 - `plan-maker`, `brainstorm`, `plan-tdd`, and `plan-review` consume `./.codex/plan-wiki/source/wiki` directly and do not perform per-run clone, fetch, or pull inside the planning workflow.
 - Plan wiki maintenance skills may edit `./.codex/plan-wiki/source` and then report the nested repo Git status.
-- Commit and push are allowed only after explicit user approval.
-- Plan wiki commits must include only files changed by the current operation and must not absorb unrelated dirty files in `./.codex/plan-wiki/source`.
+- Plan wiki maintenance commits follow `platform-commands.md` Git Sync rules.

@@ -10,24 +10,17 @@
 - Reuse the current stack unless the selected plan explicitly locks a first-time test stack or intentionally overrides the existing convention as part of the TDD contract
 - Before creating tests under a planned new source tree, confirm the plan locks the production topology and test-owner placement as contracts rather than examples
 - If the plan's concrete paths could be interpreted as tentative candidates, or if writing tests would force a hook/model/utility/runtime folder decision the plan did not justify, stop with `blocker_type = plan_contract`
-- Enter `TDD contract mode` when the target app/module implementation tree, test setup, runner config, or package ownership is missing and the selected plan explicitly locks the planned first-time test contract
+- Enter `TDD contract mode` when the target app/module implementation tree, test setup, runner config, or package ownership is missing and the selected plan satisfies `references/contracts.md` First-Time Test Contract Fields
 - In `TDD contract mode`, create missing source-tree test directories and owner test files even when the target app/module implementation tree, runner config, or harness does not exist yet
-- Missing runner/config/package ownership does not block writing tests by itself in `TDD contract mode` as long as:
-  - the planned runner is explicitly locked by the plan
-  - the planned command path and spec root or test file placement are explicitly locked by the plan
-  - the planned source/test topology is explicitly locked by the plan when tests define future route, module, or package structure
-  - the selected plan exposes enough behavior contract to author failing-capable tests
-  - the repository already signals the same broad stack or adjacent convention strongly enough to author tests consistently, or the plan locks a first-time stack
-  - mock/API fixtures, storage state, auth state, seeded data, and locator/test id policy are locked when the test needs them before real integration exists
-  - the report records which validation commands could not be run yet and states that plan completion remains blocked until they pass
+- Missing runner/config/package ownership does not block writing tests by itself in `TDD contract mode`; record validation commands that cannot run yet and keep them as completion gates
 - Do not place tests in an adjacent package only because that package has an existing runner. The owner test must live in the target app/module that owns the selected behavior, unless the plan explicitly selects the adjacent package as the durable owner.
-- If a needed test type has no existing setup and the plan does not lock the runner, command path, spec root or placement, source/test topology, and scenario contract strongly enough to author a TDD contract test, stop with:
+- If a needed test type has no existing setup and the plan does not satisfy First-Time Test Contract Fields, stop with:
   - `outcome = blocked`
   - `blocker_type = plan_contract`
   - `blocker_code = first_time_test_contract_missing`
   - `next_action = plan_revision`
   - `resume_from = none`
-- If placement or stack is ambiguous because local conventions are missing or conflicting, block only when the plan also fails to lock the first-time stack, placement, topology, and scenario contract. Use:
+- If placement or stack is ambiguous because local conventions are missing or conflicting, block only when the plan also fails to satisfy First-Time Test Contract Fields. Use:
   - `outcome = blocked`
   - `blocker_type = plan_contract`
   - `blocker_code = first_time_test_contract_missing`
@@ -113,7 +106,7 @@ Blocker typing rules:
 
 - use `blocker_type = plan_contract` when the plan contract is incomplete, contradictory, or under-specified
 - use `blocker_type = plan_contract` when this skill would otherwise have to choose production or test topology that the plan artifact did not lock
-- use `blocker_type = plan_contract` with `blocker_code = first_time_test_contract_missing` when no local setup exists and the plan does not lock the first-time runner, command path, spec root or placement, source/test topology, and scenario contract strongly enough to author tests
+- use `blocker_type = plan_contract` with `blocker_code = first_time_test_contract_missing` when no local setup exists and the plan does not satisfy `references/contracts.md` First-Time Test Contract Fields
 - use `blocker_type = user_policy` only when the blocker truly depends on a fresh user decision rather than a missing technical contract
 - use `blocker_type = external_setup` only when the source tree or test environment is missing a prerequisite that the current plan revision cannot supply
 
