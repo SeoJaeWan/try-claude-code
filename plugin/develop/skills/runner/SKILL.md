@@ -267,9 +267,15 @@ Agent(
   subagent_type: <state.owner_agent>,
   description: "Plan: <state.plan_slug>",
   prompt: <contents of references/prompts/plan-dispatch.md with
-           {{worktree_path}}, {{plan_path}}, {{state_path}} substituted>,
+           {{worktree_path}}, {{plan_path}}, {{state_path}},
+           {{author_notes_dir}} substituted>,
 )
 ```
+
+`{{author_notes_dir}}` is `dirname(state_path) + "/dev-review/author-notes-input"`
+(absolute) — where the agent drops its line-anchored AI rationale notes. The
+dev-review helper reads that directory on the next round and resolves each
+snippet to a diff line.
 
 **Foreground only — never pass `run_in_background: true`.** A background
 dispatch returns before commits exist; the model would end its turn with
@@ -326,7 +332,8 @@ by a counter.
 For each `rework_items[i]`, dispatch
 `Agent(subagent_type: item.dispatch_agent, ...)` with the prompt body from
 **`references/prompts/rework-dispatch.md`** — substitute `{{worktree_path}}`,
-`{{commit_short_sha}}`, `{{commit_subject}}`, and render `{{comments_block}}`
+`{{commit_short_sha}}`, `{{commit_subject}}`, `{{author_notes_dir}}`
+(same value as the plan dispatch), and render `{{comments_block}}`
 from `item.comments[]` per the format documented in that file. Rework
 dispatches must be **foreground**.
 

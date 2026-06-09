@@ -70,6 +70,11 @@ Exit code `0` is the only success. Any non-zero exit must stop the runner.
    - Each `*.md` with YAML frontmatter containing `name` and `description` becomes an entry in `available_agents[]`, sorted by name.
    - Files without valid frontmatter are skipped with a `warn` log.
 
+5. **Author notes input** (`{out-dir}/author-notes-input/*.json`)
+   - Optional, agent-written. Each file carries a `commit_sha` + `notes[]` anchored by **code snippet** (see `references/review-data-schema.md` → "author-notes.json").
+   - For each note, the helper parses the target commit's unified diff, derives new-side line numbers (identical to diff2html's), and resolves the snippet to a line.
+   - Unresolvable notes (commit not in range, file not in commit, snippet not found) are dropped with a `warn` — never fatal. A missing input directory yields an empty `notes[]`.
+
 The helper does NOT read prior `feedback.json` / `review-history.json`. v2 has no `addressed_by_this_commit` or cross-round linking; the skill handles round boundaries directly when it merges feedback from the previous round.
 
 ## What the helper writes
@@ -86,6 +91,10 @@ The helper does NOT read prior `feedback.json` / `review-history.json`. v2 has n
 3. `{diffs-dir}/_index.json` (single file)
    - Map `{ "short_sha": "relative_path_to_diff" }` — convenience.
 
+4. `{out-dir}/author-notes.json` (single file)
+   - Resolved AI rationale notes (snippet → new-side line). Always written, even with an empty `notes[]` when there is no input, so the browser fetch never 404s.
+   - Read-only review context; the browser renders it as inline "AI 설명" widgets. Never part of `feedback.json` or the merge gate.
+
 The helper does NOT touch `feedback.json` or `review-history.json`. The skill owns those.
 
 ## Stale schema cleanup
@@ -93,7 +102,7 @@ The helper does NOT touch `feedback.json` or `review-history.json`. The skill ow
 Before writing, the helper checks `--out`'s parent folder. If `review-data.json` already exists with `schema_version < 2`, the helper:
 
 1. Logs `warn: stale schema_version detected, wiping data folder`
-2. Deletes `review-data.json`, `feedback.json`, `review-history.json`, and `assets/diffs/` recursively (within the data folder; never escapes).
+2. Deletes `review-data.json`, `feedback.json`, `review-history.json`, `author-notes.json`, `assets/` and `author-notes-input/` recursively (within the data folder; never escapes).
 3. Recreates `assets/diffs/` and proceeds.
 
 This is the one-time migration path. v2-or-newer schemas pass through untouched.

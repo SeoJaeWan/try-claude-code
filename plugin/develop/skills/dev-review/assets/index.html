@@ -165,6 +165,22 @@
     .comment-agent { font-size: 11px; color: var(--accent); margin-top: 4px; }
     .comment-stale-warning { font-size: 11px; color: var(--danger); margin-top: 4px; }
 
+    /* AI author notes — read-only "왜 이렇게 했는지" 설명. 리뷰어 코멘트와
+       시각적으로 구분되도록 인디고 계열 + 좌측 강조선을 쓴다. */
+    .ai-note-thread { background: var(--panel); }
+    .ai-note-thread > td { padding: 0 !important; }
+    .ai-note-inner { margin: 6px 8px; border: 1px solid #d3c7f0; border-left: 3px solid #7c5cdb; border-radius: 6px; background: #faf8ff; }
+    .ai-note { padding: 9px 12px; border-bottom: 1px solid #ece6fa; }
+    .ai-note:last-child { border-bottom: none; }
+    .ai-note-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; margin-bottom: 4px; }
+    .ai-note-badge { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: rgba(124, 92, 219, 0.12); color: #6639ba; letter-spacing: 0.02em; }
+    .ai-note-cat { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: rgba(124, 92, 219, 0.08); color: #6639ba; border: 1px solid rgba(124, 92, 219, 0.25); }
+    .ai-note-cat.review-request { background: rgba(207, 102, 0, 0.12); color: #b35300; border-color: rgba(207, 102, 0, 0.4); }
+    .ai-note-inner.has-review-request { border-left-color: #e08a1e; box-shadow: 0 0 0 1px rgba(224, 138, 30, 0.15); }
+    .ai-note-anchor { font-family: ui-monospace, "SF Mono", monospace; font-size: 11px; color: var(--muted); }
+    .ai-note-ro { font-size: 10.5px; color: var(--muted); margin-left: auto; }
+    .ai-note-body { white-space: pre-wrap; font-size: 13px; line-height: 1.55; color: var(--ink); }
+
     /* Add-comment hover indicator on diff gutter — CSS-only, no per-row DOM nodes */
     .d2h-code-side-linenumber, .d2h-code-linenumber { position: relative; user-select: none; }
     .diff-area:not(.submitted) tr:hover .d2h-code-linenumber[data-line]::before,
@@ -266,6 +282,7 @@
       model: null,
       feedback: null,
       history: null,
+      authorNotes: [],
       activeSha: null,
       diffMode: localStorage.getItem("devreview.diffMode") || "unified",
       diffCache: new Map(),
@@ -280,6 +297,10 @@
         state.model = await apiGet("review-data.json");
         state.feedback = await apiGet("feedback.json");
         try { state.history = await apiGet("review-history.json"); } catch { state.history = null; }
+        try {
+          const an = await apiGet("author-notes.json");
+          state.authorNotes = Array.isArray(an?.notes) ? an.notes : [];
+        } catch { state.authorNotes = []; }
       } catch (err) {
         document.querySelector("#main").innerHTML =
           `<div class="empty-main"><strong>로드 실패:</strong> ${escapeHtml(err.message)}</div>`;
@@ -625,9 +646,13 @@
       ui.draw();
       try { ui.highlightCode(); } catch { /* hljs optional */ }
 
-      // Decorate file wrappers with anchors and attach drag handlers
+      // Decorate file wrappers with anchors and attach drag handlers.
+      // Render reviewer comments first, then AI notes: both insert as the
+      // code row's nextSibling, so the later insert lands directly under the
+      // row — giving "code → AI 설명 → reviewer comment" when they coincide.
       decorateDiffArea(diffArea, commit);
       renderInlineComments(diffArea, commit);
+      renderAuthorNotes(diffArea, commit);
     }
 
     // Update only the verdict toolbar's checkbox states + dim banner —
@@ -865,6 +890,73 @@
           el.appendChild(warn);
         }
       }
+      return el;
+    }
+
+    // ---------- AI author note rendering (read-only) ----------
+    // AI 노트는 작성 agent 가 남긴 "왜" 설명이다. 리뷰어 코멘트와 달리
+    // feedback 에 들어가지 않고, submit 게이팅에도 영향을 주지 않는다. 따라서
+    // edit/delete 없이 읽기 전용으로만 렌더한다. 앵커는 항상 new-side.
+    function renderAuthorNotes(root, commit) {
+      const notes = (state.authorNotes || []).filter((n) => n.commit_sha === commit.sha);
+      if (notes.length === 0) return;
+      const byAnchor = new Map(); // key = file|new|line → [notes]
+      for (const n of notes) {
+        const key = `${n.file}|${n.side || "new"}|${n.line_end}`;
+        const arr = byAnchor.get(key) || [];
+        arr.push(n);
+        byAnchor.set(key, arr);
+      }
+      const wrappers = root.querySelectorAll(".d2h-file-wrapper");
+      for (const w of wrappers) {
+        const path = w.dataset.fileAnchor;
+        const cells = w.querySelectorAll(".d2h-code-side-linenumber, .d2h-code-linenumber");
+        const seenKeys = new Set();
+        for (const cell of cells) {
+          if (cell.dataset.file !== path) continue;
+          if (cell.dataset.side !== "new") continue;
+          const key = `${cell.dataset.file}|${cell.dataset.side}|${cell.dataset.line}`;
+          if (seenKeys.has(key)) continue;
+          const arr = byAnchor.get(key);
+          if (!arr) continue;
+          seenKeys.add(key);
+          const tr = cell.closest("tr");
+          tr.parentNode.insertBefore(buildAuthorNoteRow(arr), tr.nextSibling);
+        }
+      }
+    }
+
+    function buildAuthorNoteRow(notes) {
+      const tr = document.createElement("tr");
+      tr.className = "ai-note-thread";
+      const td = document.createElement("td");
+      td.colSpan = 8;
+      const inner = document.createElement("div");
+      inner.className = "ai-note-inner";
+      if (notes.some((n) => n.category === "리뷰 요청")) inner.classList.add("has-review-request");
+      for (const n of notes) inner.appendChild(buildAuthorNoteEl(n));
+      td.appendChild(inner);
+      tr.appendChild(td);
+      return tr;
+    }
+
+    function buildAuthorNoteEl(n) {
+      const el = document.createElement("div");
+      el.className = "ai-note";
+      const lineLabel = n.line_start === n.line_end ? `L${n.line_start}` : `L${n.line_start}–L${n.line_end}`;
+      const isReviewReq = n.category === "리뷰 요청";
+      const head = document.createElement("div");
+      head.className = "ai-note-head";
+      head.innerHTML =
+        `<span class="ai-note-badge">🤖 AI 설명</span>` +
+        (n.category ? `<span class="ai-note-cat${isReviewReq ? " review-request" : ""}">${escapeHtml(n.category)}</span>` : "") +
+        `<span class="ai-note-anchor">${escapeHtml(n.file)}:${escapeHtml(lineLabel)}</span>` +
+        `<span class="ai-note-ro">read-only</span>`;
+      el.appendChild(head);
+      const body = document.createElement("div");
+      body.className = "ai-note-body";
+      body.textContent = n.body || "";
+      el.appendChild(body);
       return el;
     }
 

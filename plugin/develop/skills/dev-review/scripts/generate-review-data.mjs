@@ -35,6 +35,7 @@ import {
 import { readPlan } from "./lib/plan.mjs";
 import { discoverAvailableAgents, defaultAgentsDirs } from "./lib/agents.mjs";
 import { writeJsonAtomic, writeTextAtomic, ensureDir } from "./lib/output.mjs";
+import { buildAuthorNotes } from "./lib/author-notes.mjs";
 import { loadState } from "../../../scripts/lib/runner-state.mjs";
 
 const SCHEMA_VERSION = 2;
@@ -140,6 +141,7 @@ function run(args, logger) {
 
   const commitObjects = [];
   const diffIndex = {};
+  const diffTextBySha = new Map();
   let totalAdditions = 0;
   let totalDeletions = 0;
   const allChangedPaths = new Set();
@@ -160,6 +162,7 @@ function run(args, logger) {
     const diffAbs = path.join(diffsDirAbs, diffFile);
     writeTextAtomic(diffAbs, rawDiff);
     diffIndex[short] = path.relative(dataRootAbs, diffAbs).split(path.sep).join("/");
+    diffTextBySha.set(meta.sha, rawDiff);
 
     const nameStatus = commitNameStatus(worktreeAbs, meta.sha);
     const numstat = commitNumstat(worktreeAbs, meta.sha);
@@ -228,6 +231,23 @@ function run(args, logger) {
   logger.info(
     `wrote ${toPosix(path.relative(workspaceRoot, outAbs))} (${sizeKb} KB) and ${commitObjects.length} diffs`,
   );
+
+  // 작성 agent 의 근거 노트를 스니펫→라인으로 해석해 author-notes.json 을
+  // 만든다. 입력이 없으면 빈 notes[] 로 기록한다(UI fetch 가 항상 성공하도록).
+  const authorNotesInputDir = path.join(dataRootAbs, "author-notes-input");
+  const authorNotes = buildAuthorNotes({
+    inputDir: authorNotesInputDir,
+    commits: commitObjects,
+    diffTextBySha,
+    taskSlug,
+    taskHeadSha,
+    planSignature: plan.planSignature,
+    generatedAt,
+    logger,
+  });
+  const authorNotesAbs = path.join(dataRootAbs, "author-notes.json");
+  writeJsonAtomic(authorNotesAbs, authorNotes);
+  logger.info(`wrote author-notes.json (${authorNotes.notes.length} notes)`);
 }
 
 /**
@@ -265,13 +285,13 @@ function cleanupStaleSchema(dataRootAbs, logger) {
  * @param {string} dataRootAbs - 데이터 루트 절대 경로.
  */
 function wipeDataFolder(dataRootAbs) {
-  for (const name of ["review-data.json", "feedback.json", "review-history.json"]) {
+  for (const name of ["review-data.json", "feedback.json", "review-history.json", "author-notes.json"]) {
     const p = path.join(dataRootAbs, name);
     if (fs.existsSync(p)) fs.rmSync(p);
   }
-  const assetsDir = path.join(dataRootAbs, "assets");
-  if (fs.existsSync(assetsDir)) {
-    fs.rmSync(assetsDir, { recursive: true, force: true });
+  for (const dir of ["assets", "author-notes-input"]) {
+    const abs = path.join(dataRootAbs, dir);
+    if (fs.existsSync(abs)) fs.rmSync(abs, { recursive: true, force: true });
   }
 }
 

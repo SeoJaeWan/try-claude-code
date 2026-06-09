@@ -17,6 +17,9 @@ plans/{key}/dev-review/              ← data-root (per-task; `key` is the
 ├── review-data.json                 # regenerated every round, deterministic
 ├── feedback.json                    # written by server on each reviewer action
 ├── review-history.json              # append-only record of prior rounds
+├── author-notes.json                # resolved AI rationale notes (helper-written, read-only)
+├── author-notes-input/              # agent-written snippet-anchored input (one file per commit)
+│   └── {short_sha}.json
 └── assets/
     └── diffs/
         └── {short_sha}.diff         # one raw unified diff per commit
@@ -53,6 +56,7 @@ GET    /review/{key}/vendor/{...}                   # plugin html-root assets
 GET    /review/{key}/review-data.json               # data-root JSON (proxied)
 GET    /review/{key}/feedback.json                  # data-root JSON (proxied)
 GET    /review/{key}/review-history.json            # data-root JSON (proxied)
+GET    /review/{key}/author-notes.json              # data-root JSON (proxied; read-only AI notes)
 GET    /review/{key}/assets/diffs/{short_sha}.diff  # data-root raw diff
 GET    /review/{key}/api/health                     # per-review diagnostic
 GET    /review/{key}/api/review-data                # JSON proxy
@@ -148,6 +152,12 @@ The reviewer finishes by saying `리뷰 완료` in chat. The UI does not signal 
    - Comment widget shows: type badge · body · `(dispatch_agent)` if needs-change · edit/delete buttons.
    - Multi-line comments: highlight the entire range (background tint) on the anchored side.
 
+6. **AI author notes (read-only)**
+   - The author/rework agent's "왜 이렇게 했는지" rationale, fetched from `author-notes.json.notes[]` filtered by `commit_sha === commit.sha`. Anchored on the **new** side only.
+   - Rendered with the same `<tr>`-injection machine as comments, but as `<tr class="ai-note-thread">` with a distinct indigo style and a `🤖 AI 설명` badge + a category chip (`핵심 로직` / `리뷰 요청` / `트레이드오프/우회` / `phase 핵심`). The `리뷰 요청` category is highlighted (amber) to draw the reviewer's eye.
+   - **Read-only**: no edit/delete, no popup. The reviewer adds their own comment separately if they want to respond. AI notes are NOT part of `feedback.json`, do NOT count toward submit gating, and are NOT archived to `review-history.json`.
+   - When a reviewer comment and an AI note land on the same line, render order is `code row → AI note → reviewer comment` (both insert as the code row's `nextSibling`, so render comments first, then notes).
+
 ## Drag-to-comment interaction
 
 GitHub-style. Triggered on the diff's gutter (line-number column).
@@ -234,3 +244,4 @@ The browser polls `/api/feedback` and `/api/review-data` only on initial load an
 - Do NOT reuse v1 fields (`overview`, `cards`, `final`, `addressed_by_this_commit`, `_fallback_cards`). The schema is v2.
 - Do NOT support comment threads / replies — single comment per anchor, edit/delete only.
 - Do NOT block submit on unviewed commits — show warning and let the reviewer proceed.
+- Do NOT let AI author notes (`author-notes.json`) enter `feedback.json`, gate submit, or appear in history — they are read-only review context rendered as their own `ai-note-thread` rows.

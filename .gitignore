@@ -15,3 +15,8 @@ test/**/origin-workspace/tsconfig.tsbuildinfo
 
 # runner skill plan-state SSOT — local progress, not part of the plan itself.
 plans/**/.runner-state.json
+
+# dev-review AI author notes — agent input + generated output, regenerated
+# each round; local review metadata, not part of the plan.
+plans/**/dev-review/author-notes.json
+plans/**/dev-review/author-notes-input/

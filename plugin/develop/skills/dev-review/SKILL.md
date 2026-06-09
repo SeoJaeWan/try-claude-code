@@ -83,6 +83,8 @@ plans/{key}/dev-review/              ← data-root; `key` is the plan dir's
 ├── round-responses.json            # OPTIONAL; written by the runner before re-entry; maps the
 │                                   # just-closed round's comment ids → the response they received
 │                                   # (route / summary / resulting_commit_sha). Consumed + deleted in Step 2.
+├── author-notes.json               # written by helper; resolved AI rationale notes; read-only in UI
+├── author-notes-input/             # written by author/rework agent; snippet-anchored input (one per commit)
 └── assets/
     └── diffs/                      # raw-diff .diff files keyed by short_sha
 
@@ -128,6 +130,8 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/dev-review/scripts/generate-review-data.mjs" 
 where the rest of this skill expects to find it.
 
 The helper writes the **final** `review-data.json` directly. There is no `.partial.json` and no merge step. If a stale (`schema_version < 2`) artifact exists in the data folder, the helper wipes it before regenerating (one-time migration).
+
+The same helper run also resolves the author/rework agent's AI rationale notes: it reads `author-notes-input/*.json` (snippet-anchored), maps each snippet to a new-side diff line, and writes `author-notes.json`. This is deterministic and read-only — the AI notes never enter `feedback.json` and never gate the merge. Unresolvable anchors are dropped with a `warn`; a missing input directory yields an empty `notes[]`. See `references/review-data-schema.md` → "author-notes.json".
 
 Pass `--available-agents-dir` so `available_agents` is populated even when
 `CLAUDE_PLUGIN_ROOT` does not propagate. Without it the dispatch dropdown is
@@ -376,6 +380,7 @@ The runner owns the actual Agent dispatch. This skill just hands back `rework_it
 - Do NOT advance past Step 5 on anything except `result === "approved"`.
 - Do NOT carry `review_status: "submitted"` into the new round's `feedback.json`. Step 2 always opens the round as `in_progress`; a stale `submitted` is what strands the reviewer.
 - Do NOT keep `round-responses.json` after Step 3 consumes it. It describes exactly one closed round — delete it once the history write succeeds so the next round does not re-read stale responses.
+- Do NOT route AI author notes (`author-notes.json`) into rework, history, or submit gating. They are deterministic, read-only review context the helper resolves from the agent's `author-notes-input/`; the skill neither edits them nor treats them as reviewer feedback.
 
 ## References
 

@@ -12,6 +12,7 @@ Substitutions the runner skill must perform before dispatch:
 | `{{worktree_path}}` | `state.worktree_path` | `worktrees/feat-login` |
 | `{{plan_path}}` | `state.plan_path` | `plans/login.plan.md` |
 | `{{state_path}}` | absolute path of `.runner-state.json` | `.../plans/login/.runner-state.json` |
+| `{{author_notes_dir}}` | `dirname(state_path)` + `/dev-review/author-notes-input` (absolute) | `.../plans/login/dev-review/author-notes-input` |
 
 The dispatched call uses `subagent_type: state.owner_agent` and
 `description: "Plan: " + state.plan_slug`. These are not part of the prompt
@@ -66,3 +67,64 @@ exact wording so the runner can decide whether to re-dispatch.
 - Commit each phase with `git add -A && git commit -m '...'` using a
   HEREDOC or `-m`+`-m` for the body.
 - Full spec: `plugin/develop/references/commit-convention.md`.
+
+## AI 근거 노트 (author notes)
+
+The reviewer reads your diff in a GitHub-style UI. The commit body explains
+the WHY at the commit level, but some specific lines deserve a pointed
+explanation right next to the code — the non-obvious decision, the thing you
+want a second opinion on, the load-bearing logic. After committing each
+phase, leave those as **line-anchored notes** so they render as inline "AI
+설명" comments on the exact lines.
+
+You anchor by **code snippet, not line number** — the runner resolves the
+snippet to the right diff line later, so your notes survive even if a later
+phase shifts the lines.
+
+**After each phase commit**, if (and only if) that commit has parts worth
+explaining, append a notes file:
+
+- Path: `{{author_notes_dir}}/<short_sha>.json` where `<short_sha>` is the
+  first 7 chars of the commit you just made
+  (`git rev-parse --short=7 HEAD`). Create the directory if needed
+  (`mkdir -p`). This path is **outside your worktree** — do NOT `git add` or
+  commit it; it is review metadata, not code.
+- Shape:
+
+  ```json
+  {
+    "commit_sha": "<full 40-char sha of this commit — git rev-parse HEAD>",
+    "notes": [
+      {
+        "file": "src/auth.ts",
+        "anchor": "const token = jwt.sign(payload",
+        "occurrence": 1,
+        "category": "핵심 로직",
+        "body": "만료를 15분으로 둔 이유: refresh 토큰과 분리해 탈취 시 노출 창을 줄임."
+      }
+    ]
+  }
+  ```
+
+**Field rules:**
+
+- `file` — must be a file this commit actually changed (a path in the
+  commit's diff).
+- `anchor` — a short substring of a line **you added or changed** in this
+  commit (the new version of the code). Pick something distinctive on that
+  line. If the same text appears on multiple changed lines in that file, set
+  `occurrence` to the 1-based position (default 1).
+- `category` — exactly one of: `핵심 로직` (load-bearing logic),
+  `리뷰 요청` (you specifically want the reviewer to weigh in on this
+  approach), `트레이드오프/우회` (a compromise or workaround), `phase 핵심`
+  (the core deliverable of this phase). `리뷰 요청` is highlighted in the UI,
+  so use it deliberately.
+- `body` — Korean, 1–3 sentences. The actual reasoning a reviewer couldn't
+  get from the diff alone.
+
+**Be conservative — quality over coverage.** Annotate only what genuinely
+needs it: the decision someone would question, the logic that carries the
+phase, the spot you want reviewed. A note per changed line is noise. A
+trivial commit (rename, formatting, obvious wiring) may have **zero** notes —
+just skip the file. These notes are read-only context for the reviewer; they
+never trigger rework on their own.

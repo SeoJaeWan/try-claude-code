@@ -8,6 +8,8 @@ Three JSON artifacts live under `plans/{key}/dev-review/`, where `key` is the pl
 | `feedback.json` | server on each reviewer action | browser, skill on `리뷰 완료` | editable live state; plan_signature-scoped; reset to a clean `in_progress` round on each re-entry |
 | `review-history.json` | skill on round boundaries | browser, skill | append-only durable record |
 | `round-responses.json` | runner, before re-invoking the skill | skill on re-entry (then deletes it) | optional, single-round; maps the just-closed round's comment ids → the response each received |
+| `author-notes-input/<short_sha>.json` | author / rework agent, after each commit | helper (deterministic) | snippet-anchored AI rationale **input**; one file per commit; gitignored |
+| `author-notes.json` | helper script (deterministic) | browser | resolved AI rationale notes (snippet → new-side diff line); regenerated every round; gitignored |
 
 The v2 model drops the interpretation agent entirely. `review-data.json` is now flat, deterministic git/plan output. The reviewer's input lives in `feedback.json` as **line-anchored comments + per-commit verdict + viewed-flags**, modeled after GitHub PR review.
 
@@ -249,6 +251,65 @@ Written by the **runner** after it acts on a round's result (dispatches rework, 
 - Comment ids the map does not cover fall back to the skill's by-type derivation (see SKILL.md Step 3): `needs-change` → derive the follow-up commit, `question` → `answer` with no summary, `out-of-scope` → fixed string.
 - The file is advisory. A missing or malformed `round-responses.json` is not fatal — the skill just uses the fallback derivation.
 
+## author-notes.json (AI author notes)
+
+The author/rework agent explains the WHY at the commit level in the commit body, but some specific lines deserve a pointed explanation right next to the code. These are **AI-authored, read-only** inline notes — distinct from reviewer `comments[]`: they never enter `feedback.json`, never gate submit, and never trigger rework. They render in the UI as "🤖 AI 설명" widgets on the anchored line.
+
+Two artifacts, mirroring the input→resolved split used elsewhere:
+
+### Input — `author-notes-input/<short_sha>.json` (agent-written)
+
+The agent anchors by **code snippet, not line number** — the helper resolves the snippet against that commit's diff later, so notes survive line shifts from subsequent commits. One file per commit (filename is the short sha; only `commit_sha` inside is authoritative).
+
+```jsonc
+{
+  "commit_sha": "abc123a4b5c6...",            // full sha of the commit these notes belong to
+  "notes": [
+    {
+      "file": "src/auth.ts",                  // must be a file this commit changed
+      "anchor": "const token = jwt.sign(payload", // substring of a NEW-side line in this commit
+      "occurrence": 1,                        // optional, 1-based; disambiguates repeated anchors
+      "category": "핵심 로직",                 // 핵심 로직 | 리뷰 요청 | 트레이드오프/우회 | phase 핵심
+      "body": "만료를 15분으로 둔 이유: refresh 토큰과 분리해 탈취 노출창 축소." // Korean, 1–3 sentences
+    }
+  ]
+}
+```
+
+### Output — `author-notes.json` (helper-written, UI-read)
+
+The helper parses each commit's unified diff, computes new-side line numbers (the same numbers diff2html assigns in the UI), resolves each `anchor` to a line, and emits:
+
+```jsonc
+{
+  "schema_version": 1,
+  "task_slug": "task-auth-login",
+  "task_head_sha": "def4569...",
+  "plan_signature": "a3f1c...",
+  "generated_at": "2026-04-24T10:30:00Z",
+  "notes": [
+    {
+      "id": "ai_abc123a_1",                   // ai_<short_sha>_<n>
+      "commit_sha": "abc123a4b5c6...",
+      "short_sha": "abc123a",
+      "file": "src/auth.ts",
+      "side": "new",                          // always new-side in v1
+      "line_start": 42,
+      "line_end": 42,                         // single-line anchor (start === end)
+      "category": "핵심 로직",
+      "body": "만료를 15분으로 둔 이유: ..."
+    }
+  ]
+}
+```
+
+### Resolution rules
+
+- An anchor that cannot be resolved (commit not in range, file not in the commit, snippet not found) is **dropped with a `warn`** — never fatal. AI notes are a supplementary layer; a bad anchor must not block `review-data.json`.
+- `category` outside the known four is kept as-is (logged `warn`); an empty category defaults to `핵심 로직`. The reasoning matters more than the tag.
+- `notes[]` is sorted deterministically: commit order → file → line.
+- When the input directory is absent, the helper still writes `author-notes.json` with an empty `notes[]` so the UI fetch always succeeds.
+
 ## Generator-vs-skill ownership summary
 
 | Field | Owner | Failure behavior |
@@ -260,5 +321,7 @@ Written by the **runner** after it acts on a round's result (dispatches rework, 
 | `feedback.json.*` | server (per reviewer action) | server validates types and rejects malformed writes |
 | `review-history.json.rounds[]` | skill on `리뷰 완료` | append-only |
 | `round-responses.json` | runner before re-entry | advisory; skill consumes + deletes it; missing is non-fatal |
+| `author-notes-input/*.json` | author/rework agent after each commit | advisory input; missing is non-fatal; never committed into the codebase |
+| `author-notes.json` | helper (resolves snippets → lines) | unresolvable anchors dropped with `warn`; empty `notes[]` when no input |
 
-The boundary is strict: the helper never touches `feedback.json` / `review-history.json`, the server never touches `review-data.json` / `review-history.json`, and the skill never edits prior history rounds.
+The boundary is strict: the helper never touches `feedback.json` / `review-history.json`, the server never touches `review-data.json` / `review-history.json`, and the skill never edits prior history rounds. The author-notes layer is read-only review context: it never enters `feedback.json` and never affects the merge gate.

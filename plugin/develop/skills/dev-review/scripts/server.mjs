@@ -511,7 +511,7 @@ function resolveStaticForReview(review, tail) {
     return resolved;
   }
 
-  const dataPathStaticFiles = ["review-data.json", "feedback.json", "review-history.json"];
+  const dataPathStaticFiles = ["review-data.json", "feedback.json", "review-history.json", "author-notes.json"];
   if (dataPathStaticFiles.includes(tail)) {
     return path.join(review.dataRoot, tail);
   }
