@@ -4,8 +4,8 @@
 
 - Step 0. Normalize target and verify prerequisites
 - Step 1. Build the current orchestration picture
-- Step 2. Run plan-maker draft or revision
-- Step 3. Run TDD contract authoring
+- Step 2. Run inline plan-maker draft or revision
+- Step 3. Run inline TDD contract authoring
 - Step 4. Run cold review
 - Step 5. Route review findings
 - Step 6. Planning docs gate
@@ -29,8 +29,8 @@ Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output ru
 - Before invoking any planning role, run `git -C .codex/dev-wiki/source pull --ff-only` once to refresh the dev wiki source clone from GitHub, matching the plan wiki freshness pattern.
 - If the dev wiki fast-forward pull fails, stop before routing to planning roles and route to the `dev-wiki-setup` sync/repair unit. Report the failing command output, nested repo branch status, and `dev_wiki_sync_required`; do not ask planning sub-agents to fetch, pull, or repair the dev wiki source clone.
 - Do not merge, rebase, reset, clean, stash, or push the dev wiki source clone inside orchestrator. That repair belongs to `dev-wiki-setup`.
-- Add `dev_wiki_root` to planning role handoffs when dev wiki is opted in and the fast-forward preflight succeeds. Do not expand this into per-file context lists; each role reads the standard documents it needs from `dev_wiki_root`.
-- Confirm the linked local `plan-maker`, `plan-tdd`, and `plan-review` capabilities are present before routing to them.
+- Add `dev_wiki_root` to inline role context or reviewer handoffs when dev wiki is opted in and the fast-forward preflight succeeds. Do not expand this into per-file context lists; each role reads the standard documents it needs from `dev_wiki_root`.
+- Confirm the linked local `plan-maker`, `plan-tdd`, and `plan-review` capabilities are present before routing to them. `plan-maker` and `plan-tdd` run inline by default; `plan-review` runs through a fresh sub-agent.
 - Do not invoke `brainstorm`. If the latest context or referenced artifacts do not lock request scope, UI direction when relevant, and required/excluded execution areas, stop with `missing_upstream_lock`.
 - If a directly referenced or latest relevant brainstorm artifact exists, read its `artifact_status` before invoking `plan-maker`.
   - Continue only when the artifact is `ready_for_planning` or the current user request explicitly targets an already-approved executable plan.
@@ -40,7 +40,7 @@ Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output ru
 - Derive the default plan directory as `./plans/{task-slug}/`.
 - If the current run explicitly targets an existing executable plan file, resolve that file as `plan_path`.
 - Collect task-local plan or prerequisite paths referenced by the user request, current selected plan, latest fresh review artifact, or directly referenced upstream decision artifact when they affect the next role pass.
-- Resolve each referenced path literally before spawning a planning sub-agent.
+- Resolve each referenced path literally before invoking an inline role or spawning a fresh reviewer.
 - Build `authoritative_existing_inputs` from verified present paths only.
 - If a verified upstream decision artifact already locks ambiguity for the next plan-maker pass, treat that artifact as authoritative upstream input.
 - If the locked upstream input makes Figma or another external source the authority for implementation or validation, verify the named inventory manifest and snapshot files exist before adding them to `authoritative_existing_inputs`; otherwise stop with `tool_data_blocker`.
@@ -56,7 +56,7 @@ Follow `contracts.md` for freshness, handoff, wait, failure, chat, and output ru
 - If multiple plan files were just written, run Step 3 for each file that lacks a fresh TDD artifact.
 - If all selected plan files have fresh acceptable review artifacts, inspect planning docs artifacts for the current `plan_signature` before deciding completion.
 
-## Step 2. Run Plan Maker Draft or Revision
+## Step 2. Run Inline Plan Maker Draft or Revision
 
 Invoke `plan-maker` when:
 
@@ -66,27 +66,32 @@ Invoke `plan-maker` when:
 
 Controller requirements:
 
-- Reuse the live `plan-maker` role agent for the same `task_slug` when compatible; otherwise start a new generic planning sub-agent and attach `plan-maker`.
-- Pass a handoff packet with exact `task-slug`, optional `plan_path`, `plan_wiki_root`, optional `dev_wiki_root`, verified inputs, missing-input notes, latest review path when revising, locked request summary when available, and write scope under `./plans/{task-slug}/`.
+- Load the local `plan-maker` skill and run the pass inline in the controller session by default.
+- Use the exact `task-slug`, optional `plan_path`, `plan_wiki_root`, optional `dev_wiki_root`, verified inputs, missing-input notes, latest review path when revising, locked request summary when available, and write scope under `./plans/{task-slug}/`.
+- Do not spawn a `plan-maker` sub-agent by default. Use one only when the user explicitly asks for delegation, when the controller chooses a bounded parallel/fallback pass with disjoint write scope, or when inline execution is impossible.
+- Inline write scope is planning-only: executable plan artifacts under `./plans/{task-slug}/` and plan-local evidence when required by the plan. Inline `plan-maker` must not edit production source, source-tree tests, `tdd.md`, `review.md`, `.codex/**`, plan wiki files, or dev wiki files.
 - When Figma inventory is required, include only controller-verified `figma-inventory` manifest and snapshot paths in `authoritative_existing_inputs`.
-- Require exactly one result: `result = wrote_plan` with `written_paths`, or `result = blocking_packet` with user-input fields.
+- For inline execution, completion is artifact-based: a current plan file is present, readable, and self-contained enough for the next TDD/review step, or the controller emits a blocking packet in chat.
+- For optional delegated execution, require exactly one result: `result = wrote_plan` with `written_paths`, or `result = blocking_packet` with user-input fields.
 - After every plan-maker pass, re-check written plan files and recompute `plan_signature` for each selected review target.
-- If the plan-maker returned a blocking packet with `needs_user_input = true`, ask the user directly in chat and stop. The user's answer should be handled upstream or by a later plan-maker pass.
-- If the plan-maker returned `needs_user_input = false` for missing tool data, stop with `tool_data_blocker`.
-- Apply the wait policy and classify failures with `contracts.md`.
-- Allow one safe retry only when the controller materially changed the handoff. Do not retry unchanged handoffs or retry while a previous plan-maker pass is still progressing.
+- If inline `plan-maker` identifies a blocking packet with `needs_user_input = true`, ask the user directly in chat and stop. The user's answer should be handled upstream or by a later plan-maker pass.
+- If inline `plan-maker` identifies missing tool data with `needs_user_input = false`, stop with `tool_data_blocker`.
+- Apply sub-agent wait policy only for optional delegated execution. For inline execution, classify stale or missing output as `artifact_writeback_failure` or the narrower blocker from `contracts.md`.
+- Allow one safe retry only when the controller materially changed the inputs. Do not retry unchanged inline passes that produce the same artifact signature or finding signature.
 
-## Step 3. Run TDD Contract Authoring
+## Step 3. Run Inline TDD Contract Authoring
 
 - Invoke `plan-tdd` when an executable implementation-scope plan exists and current `tdd.md` is missing or stale for that plan file.
-- Pass exact `task-slug`, `plan_path`, `plan_wiki_root`, optional `dev_wiki_root`, current `plan_signature`, and required output path `./plans/{task-slug}/tdd.md`.
-- Limit the TDD pass to source-tree tests and `tdd.md`; it must not edit production code.
+- Load the local `plan-tdd` skill and run the pass inline in the controller session by default.
+- Use exact `task-slug`, `plan_path`, `plan_wiki_root`, optional `dev_wiki_root`, current `plan_signature`, and required output path `./plans/{task-slug}/tdd.md`.
+- Do not spawn a `plan-tdd` sub-agent by default. Use one only when the user explicitly asks for delegation, when the controller chooses a bounded parallel/fallback pass with disjoint write scope, or when inline execution is impossible.
+- Limit the inline TDD pass to source-tree tests and `tdd.md`; it must not edit production code, executable plans, review artifacts, `.codex/**`, plan wiki files, or dev wiki files.
 - Require `tdd.md` YAML frontmatter with at least `plan_path`, `task_slug`, `plan_signature`, `outcome`, `gate_status`, `blocker_type`, `blocker_code`, `next_action`, `resume_from`, `tdd_signature`, `requires_user_decision`, `blocked_clause_ids`, and `affected_phase_paths`.
 - Require the TDD report to expose plan-review-readable rows for plan row/scenario to test mapping, manual smoke gates, and TDD blockers. These rows are what the planning docs UI uses to show whether a phase's plan clauses became verifiable contracts.
 - If `plan-tdd` returns `blocker_type = plan_contract`, route the blocker to the next `plan-maker` pass before `plan-review`.
 - If `plan-tdd` returns `blocker_type = external_setup`, stop with `tdd_gate_blocker` and report the missing setup or runner contract; do not hide it behind browser approval.
 - If `plan-tdd` completes with `gate_status = failed` because newly written red contracts fail as expected before implementation, continue to Step 4. Red contracts are valid planning evidence when expected red reasons are recorded.
-- Apply the wait policy and classify failures with `contracts.md`.
+- Apply sub-agent wait policy only for optional delegated execution. For inline execution, reread `tdd.md` and source-tree tests from disk, then classify stale or missing output as `tdd_gate_blocker` or `artifact_writeback_failure`.
 
 ## Step 4. Run Cold Review
 
@@ -100,7 +105,7 @@ Controller requirements:
 
 ## Step 5. Route Review Findings
 
-- If fresh review outcome is `blocked`, send findings to the next `plan-maker` pass.
+- If fresh review outcome is `blocked`, route findings to the next inline `plan-maker` pass.
 - If outcome is `ready-with-findings`, route to Step 6 with noted non-blocking findings.
 - If outcome is `ready`, route to Step 6.
 - If the same `finding_signature` repeats against the same `plan_signature` after one plan-maker revision attempt, stop and report `no_progress`.
@@ -119,7 +124,7 @@ Controller requirements:
 - Follow `references/planning-docs.md` Step 6.
 - If every required review item is approved with current signature evidence and no active `needs-change` or `question` comment remains, continue to Step 8.
 - If any required review item is not approved or any active non-approved comment remains, preserve or update `review-history.json`, classify the feedback, and route according to `references/planning-docs.md`.
-- Feedback that changes plan meaning routes to `plan-maker`; after revision, rerun Step 3, Step 4, and Step 6 for the new `plan_signature`.
+- Feedback that changes plan meaning routes to inline `plan-maker`; after revision, rerun Step 3, Step 4, and Step 6 for the new `plan_signature`.
 - Feedback that only needs an answer must be answered in chat, then the same-signature review package must require browser re-submit.
 
 ## Step 8. Capture Planning Docs Learning

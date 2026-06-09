@@ -18,9 +18,12 @@
 
 ## Runtime Expectations
 
-- Assume the runtime can invoke generic planning sub-agents and attach the local `plan-maker`, `plan-tdd`, or `plan-review` skill for the active pass.
-- If a required local skill is missing, unreadable, or cannot be attached to a sub-agent, stop and report the blocker.
-- Do not silently inline plan-maker, TDD, or reviewer work when the sub-agent path is available.
+- Assume the controller can load and execute local `plan-maker` and `plan-tdd` skills inline in the main session for the active pass.
+- Assume the runtime can invoke a fresh generic planning sub-agent and attach the local `plan-review` skill for cold review.
+- If `plan-maker` or `plan-tdd` is missing or unreadable, stop and report the blocker before writing artifacts.
+- If a fresh `plan-review` sub-agent cannot be invoked or cannot attach the local `plan-review` skill, stop and report the blocker.
+- Run `plan-maker` and `plan-tdd` inline by default. Use sub-agents for those roles only when the user explicitly requests delegation, when the controller chooses a bounded parallel/fallback pass with disjoint write scope, or when an inline pass is impossible.
+- Never inline `plan-review`. The reviewer must stay independent from the controller that wrote or revised `plan.md` and `tdd.md`.
 - Do not run `brainstorm`, request-scope locking, or UI-spec locking from this orchestrator contract unless the user explicitly invoked that separate skill or explicitly asked to continue beyond planning.
 - Do not repair the plan wiki source clone inside orchestrator. When `git -C .codex/plan-wiki/source pull --ff-only` fails, stop and route to `plan-wiki-setup` sync/repair before any planning role invocation.
 - If `.codex/dev-wiki/config.json` exists, refresh the dev wiki source clone before planning roles with `git -C .codex/dev-wiki/source pull --ff-only`, mirroring the plan wiki freshness preflight.
@@ -29,9 +32,9 @@
 - Run planning docs only through `references/planning-docs.md` after a fresh `plan-review` has accepted the current plan signature and matching `tdd.md`.
 - Do not create, mutate, or rely on `state.json`, `clarification.md`, or `user-gate.md`.
 - Treat orchestration helper state as current-turn only. It may be recomputed from artifacts on every re-entry.
-- Prefer role-pinned live-agent reuse for `plan-maker` when the same `task_slug`, role contract, and handoff authority still apply.
 - Always use a fresh reviewer pass for `plan-review`; do not reuse a prior reviewer agent by default.
-- If a planning sub-agent invocation fails, report the exact target role and exact tool error.
+- If a required inline role cannot complete or write fresh artifacts, classify the exact artifact or role failure.
+- If a required reviewer sub-agent invocation fails, report the exact target role and exact tool error.
 
 ## Authoritative Artifacts
 
@@ -56,13 +59,13 @@ The orchestrator may keep only current-turn helper state such as:
 - selected `plan_path`
 - current `plan_signature`
 - `current_handoff_signature`
-- `active_role_agent_id` for the currently running role pass when available
-- `live_role_agents` keyed by role for reusable `plan-maker` passes when available
+- `active_reviewer_agent_id` for the currently running fresh review pass when available
+- `delegated_role_agent_ids` for optional non-default delegated maker/TDD passes when available
 - whether the current review artifact is fresh
 - whether the current planning docs package and approval evidence match the current `plan_signature`
 - the latest user question still awaiting an answer
 - `last_meaningful_progress_at`
-- the last planning sub-agent outcome and exact failure text
+- the last inline role, delegated role, or reviewer outcome and exact failure text
 - per-turn retry counters
 
 This helper state must be safely discardable between turns.
@@ -79,18 +82,19 @@ This helper state must be safely discardable between turns.
 
 ## Wait Policy
 
-- When a role pass is on the critical path, prefer a long wait over repeated short polling.
-- For plan-maker, TDD, and reviewer passes, the first bounded wait should normally be at least 3 minutes, and 5 minutes is preferred when the workflow is otherwise blocked on that pass.
+- Inline `plan-maker` and `plan-tdd` passes are controller work, so sub-agent wait policy does not apply to them.
+- When a fresh reviewer or optional delegated maker/TDD pass is on the critical path, prefer a long wait over repeated short polling.
+- For reviewer passes, the first bounded wait should normally be at least 3 minutes, and 5 minutes is preferred when the workflow is otherwise blocked on review.
+- For optional delegated maker/TDD passes, use the same bounded wait policy only after confirming delegation is still the chosen route.
 - If the sub-agent emits meaningful progress, or if the required artifact path or reviewed plan file changes on disk during the wait window, refresh `last_meaningful_progress_at` and allow another bounded wait before intervening.
-- Do not treat slow analysis alone as `agent_protocol_failure` while there is fresh evidence of progress.
-- Only switch to a narrowed fallback such as `write now or block` after sustained idle time: normally at least 5 minutes for reviewer and at least 8 minutes for plan-maker.
-- For `plan-maker`, prefer reusing a compatible live role agent before spawning a replacement.
+- Do not treat slow sub-agent analysis alone as `agent_protocol_failure` while there is fresh evidence of progress.
+- Only switch a reviewer to a narrowed fallback such as `write now or block` after sustained idle time: normally at least 5 minutes for reviewer.
 - For `plan-review`, prefer a fresh reviewer even when a prior reviewer agent still exists.
 - A timed-out `wait_agent` call with empty status is not evidence that the sub-agent is idle, stuck, or finished.
 
 ## Handoff Packet Rules
 
-When invoking a planning sub-agent, pass a concise handoff packet in the prompt or structured message, not a file-backed orchestration packet.
+When invoking a fresh reviewer or optional delegated role sub-agent, pass a concise handoff packet in the prompt or structured message, not a file-backed orchestration packet.
 
 Include only the minimum fields needed for the role:
 
@@ -109,20 +113,20 @@ Include only the minimum fields needed for the role:
 - latest `tdd.md` path when the next `plan-review` pass must review plan/TDD alignment
 - explicit output path requirements for the role
 
-Do not force planning sub-agents to rediscover orchestrator-owned metadata. Do not include wildcard globs, open-ended discovery prompts, or instructions that ask the sub-agent to reinterpret missing paths into new authoritative inputs. State narrow terminal output contracts explicitly.
+Do not force reviewer or delegated sub-agents to rediscover orchestrator-owned metadata. Do not include wildcard globs, open-ended discovery prompts, or instructions that ask the sub-agent to reinterpret missing paths into new authoritative inputs. State narrow terminal output contracts explicitly.
 
 ## Failure Taxonomy
 
 - `missing_upstream_lock`: request scope, UI direction, test strategy, execution-agent boundary, planning-ready artifact status, or latest relevant request-lock artifact is not locked enough for `plan-maker`
-- `invocation_failure`: the runtime could not invoke or reuse the planning sub-agent
-- `agent_protocol_failure`: the agent replied or streamed progress, but did not provide a usable terminal result for the requested role before the bounded wait ended
-- `artifact_writeback_failure`: the agent claimed success but the required artifact is still missing or stale on disk
+- `invocation_failure`: the runtime could not invoke the required fresh reviewer or optional delegated planning sub-agent
+- `agent_protocol_failure`: the delegated agent or reviewer replied or streamed progress, but did not provide a usable terminal result for the requested role before the bounded wait ended
+- `artifact_writeback_failure`: an inline role or delegated agent completed or appeared complete, but the required artifact is still missing or stale on disk
 - `tdd_gate_blocker`: `plan-tdd` returned a blocker, wrote stale `tdd.md`, or could not map selected plan clauses to source-tree tests, execution commands, or manual smoke gates
 - `tool_data_blocker`: the role pass completed with `needs_user_input = false` because required external tool data, permission, timeout-safe shard data, or source inventory coverage is unavailable
 - `plan_wiki_sync_required`: the plan wiki source clone could not be refreshed by fast-forward preflight because it is dirty, diverged, conflicted, behind local commits, or otherwise needs `plan-wiki-setup` sync/repair before planning roles can consume it
 - `dev_wiki_sync_required`: the dev wiki source clone could not be refreshed by fast-forward preflight because it is dirty, diverged, conflicted, behind local commits, missing, remote-mismatched, or otherwise needs `dev-wiki-setup` sync/repair before planning roles can consume it
 - `planning_docs_gate_blocker`: the planning docs package cannot be generated, the review server cannot be started, feedback is incomplete, or submitted feedback requires routing before planning can complete
-- `controller_interruption`: the controller shut down a still-running planning sub-agent before explicit user cancellation or before the role-specific idle window was satisfied
+- `controller_interruption`: the controller shut down a still-running reviewer or optional delegated planning sub-agent before explicit user cancellation or before the role-specific idle window was satisfied
 - `no_progress`: the same artifact signature or finding signature repeated against an unchanged plan after one safe retry
 
 Report the exact classification when stopping.

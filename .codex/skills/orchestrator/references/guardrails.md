@@ -1,6 +1,8 @@
 # Orchestrator Guardrails
 
-- Orchestrate only: do not substitute for request-scope locking, UI direction locking, `plan-maker`, `plan-tdd`, or `plan-review`.
+- Orchestrate only: do not substitute for request-scope locking, UI direction locking, or `plan-review`.
+- Run `plan-maker` and `plan-tdd` inline by default under their local skill contracts; do not treat inline execution as permission to skip their required reading, output shape, or write-scope rules.
+- Do not inline `plan-review`; every cold review must use a fresh reviewer sub-agent.
 - Do not invoke `brainstorm`; require the user or upstream context to provide the locked scope before this workflow starts.
 - Do not implement production code.
 - Do not create or rely on `state.json`, `clarification.md`, or `user-gate.md`.
@@ -10,22 +12,24 @@
 - Do not create or infer dev wiki opt-in inside orchestrator. Missing `.codex/dev-wiki/config.json` means no dev wiki context for that run.
 - Do not repair `./.codex/dev-wiki/source` inside orchestrator; if the fast-forward freshness preflight fails because the nested wiki clone is dirty, conflicted, behind, diverged, ahead-only with remote changes, or remote-mismatched, stop before planning roles and route the repository to `dev-wiki-setup` sync/repair.
 - Do not merge, rebase, reset, clean, stash, or push the dev wiki source clone from orchestrator.
-- Do not ask planning sub-agents to rediscover `plan_path`, `plan_signature`, or `plan_wiki_root` when the orchestrator already selected them.
-- Do not ask planning sub-agents to rediscover controller-owned authority or reinterpret missing paths into fresh authoritative inputs.
+- Do not ask reviewer or optional delegated sub-agents to rediscover `plan_path`, `plan_signature`, or `plan_wiki_root` when the orchestrator already selected them.
+- Do not ask reviewer or optional delegated sub-agents to rediscover controller-owned authority or reinterpret missing paths into fresh authoritative inputs.
 - Do not pass open-ended discovery prompts in orchestrated handoff packets.
 - Do not ask `plan-maker` to perform full-file Figma tree reads or to use Code Connect tools as Figma inventory evidence.
+- Do not let inline `plan-maker` edit production source, source-tree tests, `tdd.md`, `review.md`, `.codex/**`, plan wiki files, or dev wiki files.
+- Do not let inline `plan-tdd` edit production source, executable plans, `review.md`, `.codex/**`, plan wiki files, or dev wiki files.
 - Do not let `orchestrator` classify Figma component families; it may only pass through controller-verified snapshot artifacts when already available.
 - Do not route missing Figma tool data as a user decision unless the user must choose the root nodes or inventory scope.
 - Do not trust stale review artifacts after `plan_signature` changes.
 - Do not let the `plan-review` reviewer edit plans, tests, `tdd.md`, or write any file except the required `review.md` artifact.
 - Do not bypass `plan-tdd` before `plan-review` for implementation-scope plans.
-- Do not abandon a still-progressing role pass just because an initial short wait expired.
-- Do not respawn duplicate planning sub-agents for the same unchanged handoff when the earlier pass is still running and making recent progress.
+- Do not delegate `plan-maker` or `plan-tdd` by default. Use sub-agents for those roles only when explicitly requested, when a bounded parallel/fallback pass has disjoint write scope, or when inline execution is impossible.
+- Do not abandon a still-progressing reviewer or optional delegated role pass just because an initial short wait expired.
+- Do not respawn duplicate planning sub-agents for the same unchanged handoff when the earlier optional delegated pass or reviewer is still running and making recent progress.
 - Do not bypass review after plan-maker revisions.
 - Do not report `planning_complete` for an implementation-scope plan before current-signature `tdd.md`, fresh `plan-review`, and planning docs approval exist.
 - Do not present a planning docs package that collapses a large implementation plan into only Overview and Final when reviewable Phase entries are missing; route the plan back to `plan-maker`.
 - Do not treat `question` as automatically meaning `plan-maker`.
-- Do not respawn `plan-maker` by reflex when a compatible live role agent already exists.
 - Do not reuse the prior `plan-review` reviewer by default; cold review stays fresh.
 - Do not keep looping silently when the same signature repeats with no plan progress.
 - Do not collapse invocation, protocol, and artifact-writeback failures into one generic stall.
