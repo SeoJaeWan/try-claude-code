@@ -154,7 +154,7 @@ The reviewer finishes by saying `리뷰 완료` in chat. The UI does not signal 
 
 6. **AI author notes (read-only)**
    - The author/rework agent's "왜 이렇게 했는지" rationale, fetched from `author-notes.json.notes[]` filtered by `commit_sha === commit.sha`. Anchored on the **new** side only.
-   - Rendered with the same `<tr>`-injection machine as comments, but as `<tr class="ai-note-thread">` with a distinct indigo style and a `🤖 AI 설명` badge + a category chip (`핵심 로직` / `리뷰 요청` / `트레이드오프/우회` / `phase 핵심`). The `리뷰 요청` category is highlighted (amber) to draw the reviewer's eye.
+   - Rendered with the same `<tr>`-injection machine as comments, but as `<tr class="ai-note-thread">` with a distinct indigo style. The widget is intentionally minimal: **just the note body** — no badge, no category chip, no anchor text. The indigo left-border container is the only marker distinguishing an AI note from a reviewer comment. The `category` field is kept in the data but not displayed as text; a `리뷰 요청` note still gets a subtle amber left-border (`ai-note-inner.has-review-request`) as a non-text cue, nothing more.
    - **Read-only**: no edit/delete, no popup. The reviewer adds their own comment separately if they want to respond. AI notes are NOT part of `feedback.json`, do NOT count toward submit gating, and are NOT archived to `review-history.json`.
    - When a reviewer comment and an AI note land on the same line, render order is `code row → AI note → reviewer comment` (both insert as the code row's `nextSibling`, so render comments first, then notes).
 

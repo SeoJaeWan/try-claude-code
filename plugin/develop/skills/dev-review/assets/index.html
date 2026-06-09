@@ -172,13 +172,7 @@
     .ai-note-inner { margin: 6px 8px; border: 1px solid #d3c7f0; border-left: 3px solid #7c5cdb; border-radius: 6px; background: #faf8ff; }
     .ai-note { padding: 9px 12px; border-bottom: 1px solid #ece6fa; }
     .ai-note:last-child { border-bottom: none; }
-    .ai-note-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; margin-bottom: 4px; }
-    .ai-note-badge { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: rgba(124, 92, 219, 0.12); color: #6639ba; letter-spacing: 0.02em; }
-    .ai-note-cat { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: rgba(124, 92, 219, 0.08); color: #6639ba; border: 1px solid rgba(124, 92, 219, 0.25); }
-    .ai-note-cat.review-request { background: rgba(207, 102, 0, 0.12); color: #b35300; border-color: rgba(207, 102, 0, 0.4); }
     .ai-note-inner.has-review-request { border-left-color: #e08a1e; box-shadow: 0 0 0 1px rgba(224, 138, 30, 0.15); }
-    .ai-note-anchor { font-family: ui-monospace, "SF Mono", monospace; font-size: 11px; color: var(--muted); }
-    .ai-note-ro { font-size: 10.5px; color: var(--muted); margin-left: auto; }
     .ai-note-body { white-space: pre-wrap; font-size: 13px; line-height: 1.55; color: var(--ink); }
 
     /* Add-comment hover indicator on diff gutter — CSS-only, no per-row DOM nodes */
@@ -943,16 +937,6 @@
     function buildAuthorNoteEl(n) {
       const el = document.createElement("div");
       el.className = "ai-note";
-      const lineLabel = n.line_start === n.line_end ? `L${n.line_start}` : `L${n.line_start}–L${n.line_end}`;
-      const isReviewReq = n.category === "리뷰 요청";
-      const head = document.createElement("div");
-      head.className = "ai-note-head";
-      head.innerHTML =
-        `<span class="ai-note-badge">🤖 AI 설명</span>` +
-        (n.category ? `<span class="ai-note-cat${isReviewReq ? " review-request" : ""}">${escapeHtml(n.category)}</span>` : "") +
-        `<span class="ai-note-anchor">${escapeHtml(n.file)}:${escapeHtml(lineLabel)}</span>` +
-        `<span class="ai-note-ro">read-only</span>`;
-      el.appendChild(head);
       const body = document.createElement("div");
       body.className = "ai-note-body";
       body.textContent = n.body || "";
