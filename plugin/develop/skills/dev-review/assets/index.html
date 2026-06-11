@@ -175,6 +175,26 @@
     .ai-note-inner.has-review-request { border-left-color: #e08a1e; box-shadow: 0 0 0 1px rgba(224, 138, 30, 0.15); }
     .ai-note-body { white-space: pre-wrap; font-size: 13px; line-height: 1.55; color: var(--ink); }
 
+    /* Past-round reviewer comments rendered inline on their original line.
+       Read-only history (from review-history.json), visually muted/gray so it
+       reads as "이미 지나간 라운드" — distinct from live comments and AI notes. */
+    .history-thread { background: var(--panel); }
+    .history-thread > td { padding: 0 !important; }
+    .history-inner { margin: 6px 8px; border: 1px solid var(--line); border-left: 3px solid var(--muted); border-radius: 6px; background: var(--bg); }
+    .history-comment { padding: 9px 12px; border-bottom: 1px dashed var(--line-soft); }
+    .history-comment:last-child { border-bottom: none; }
+    .history-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .history-round-badge { background: var(--line-soft); color: var(--muted); padding: 1px 7px; border-radius: 999px; font-weight: 700; font-size: 11px; }
+    .history-reply-chip { font-size: 11px; color: var(--muted); }
+    .history-body { white-space: pre-wrap; font-size: 13px; line-height: 1.55; color: var(--ink); margin-top: 4px; }
+    .history-response { margin-top: 6px; padding: 6px 8px; background: var(--accent-soft); border-radius: 5px; font-size: 12px; }
+    .history-response .route { font-weight: 700; color: var(--accent); }
+    .history-response .summary { margin-top: 3px; color: var(--ink); white-space: pre-wrap; }
+    .history-actions { margin-left: auto; }
+    .history-actions button { background: none; border: 1px solid var(--line); border-radius: 4px; font-size: 11px; padding: 2px 7px; cursor: pointer; color: var(--muted); }
+    .history-actions button:hover { color: var(--accent); border-color: var(--accent); }
+    .comment-reply-chip { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+
     /* Add-comment hover indicator on diff gutter — CSS-only, no per-row DOM nodes */
     .d2h-code-side-linenumber, .d2h-code-linenumber { position: relative; user-select: none; }
     .diff-area:not(.submitted) tr:hover .d2h-code-linenumber[data-line]::before,
@@ -640,13 +660,12 @@
       ui.draw();
       try { ui.highlightCode(); } catch { /* hljs optional */ }
 
-      // Decorate file wrappers with anchors and attach drag handlers.
-      // Render reviewer comments first, then AI notes: both insert as the
-      // code row's nextSibling, so the later insert lands directly under the
-      // row — giving "code → AI 설명 → reviewer comment" when they coincide.
+      // Decorate file wrappers with anchors and attach drag handlers, then
+      // inject the three inline layers (live comments / past-round history /
+      // AI notes) in one place so ordering stays consistent across the full
+      // render and the incremental refresh path.
       decorateDiffArea(diffArea, commit);
-      renderInlineComments(diffArea, commit);
-      renderAuthorNotes(diffArea, commit);
+      renderInlineLayers(diffArea, commit);
     }
 
     // Update only the verdict toolbar's checkbox states + dim banner —
@@ -663,14 +682,25 @@
       if (diffArea) diffArea.classList.toggle("dimmed", !!stat.out_of_scope);
     }
 
-    // Re-render only the inline comment threads. Existing diff DOM is left
-    // alone — we tear out previous .comment-thread rows and insert fresh
-    // ones from current feedback. Cheap relative to a full Diff2Html redraw.
+    // (Re)inject the three inline layers under their anchored code rows.
+    // Each layer inserts at the code row's nextSibling, so the LAST inserted
+    // lands closest to the row. Insert live → history → notes to get the
+    // top-to-bottom order: code → AI 설명 → past round → live comment.
+    // Existing diff DOM (and scroll/highlight work) is preserved; we only tear
+    // out and rebuild the widget rows, which is cheap vs a Diff2Html redraw.
+    function renderInlineLayers(root, commit) {
+      root.querySelectorAll("tr.comment-thread, tr.history-thread, tr.ai-note-thread")
+        .forEach((tr) => tr.remove());
+      renderInlineComments(root, commit);
+      renderHistoryComments(root, commit);
+      renderAuthorNotes(root, commit);
+    }
+
+    // Used by the incremental render path when only feedback changed.
     function refreshInlineComments(commit) {
       const diffArea = document.querySelector("#diff-area");
       if (!diffArea) return;
-      diffArea.querySelectorAll("tr.comment-thread").forEach((tr) => tr.remove());
-      renderInlineComments(diffArea, commit);
+      renderInlineLayers(diffArea, commit);
     }
 
     async function loadRawDiff(commit) {
@@ -867,6 +897,12 @@
       }
       head.appendChild(actions);
       el.appendChild(head);
+      if (c.in_reply_to && c.in_reply_to.round_id) {
+        const chip = document.createElement("div");
+        chip.className = "comment-reply-chip";
+        chip.textContent = `↳ ${c.in_reply_to.round_id}의 코멘트에 대한 후속 지시`;
+        el.appendChild(chip);
+      }
       const body = document.createElement("div");
       body.className = "comment-body";
       body.textContent = c.body || "(빈 코멘트)";
@@ -883,6 +919,133 @@
           warn.textContent = "⚠ 이 dispatch_agent는 현재 라운드에서 사용할 수 없습니다. 코멘트를 수정해주세요.";
           el.appendChild(warn);
         }
+      }
+      return el;
+    }
+
+    // ---------- Past-round history rendering (inline, read-only) ----------
+    // Reviewer comments from prior rounds (review-history.json) rendered on
+    // their original line so the question/instruction AND the response it got
+    // stay next to the code. The anchored commit is immutable, so the stored
+    // line numbers remain valid forever. Reviewers can attach a follow-up
+    // instruction here via "후속 지시 달기" (B-lite: a new live comment that
+    // carries in_reply_to pointing back at this past comment).
+    function collectHistoryComments(commitSha) {
+      const rounds = state.history && Array.isArray(state.history.rounds) ? state.history.rounds : [];
+      const out = [];
+      for (const r of rounds) {
+        const snap = Array.isArray(r.comments_snapshot) ? r.comments_snapshot : [];
+        for (const c of snap) {
+          if (c.commit_sha !== commitSha) continue;
+          out.push({ ...c, round_id: r.id });
+        }
+      }
+      return out;
+    }
+
+    function renderHistoryComments(root, commit) {
+      const hcs = collectHistoryComments(commit.sha);
+      if (hcs.length === 0) return;
+      const byAnchor = new Map(); // key = file|side|line_end → [history comments]
+      for (const c of hcs) {
+        const key = `${c.file}|${c.side}|${c.line_end}`;
+        const arr = byAnchor.get(key) || [];
+        arr.push(c);
+        byAnchor.set(key, arr);
+      }
+      // Oldest round first within each anchor so the chain reads top-to-bottom.
+      for (const arr of byAnchor.values()) {
+        arr.sort((a, b) => roundNum(a.round_id) - roundNum(b.round_id));
+      }
+
+      const wrappers = root.querySelectorAll(".d2h-file-wrapper");
+      for (const w of wrappers) {
+        const path = w.dataset.fileAnchor;
+        const cells = w.querySelectorAll(".d2h-code-side-linenumber, .d2h-code-linenumber");
+        const seenKeys = new Set();
+        for (const cell of cells) {
+          if (cell.dataset.file !== path) continue;
+          const key = `${cell.dataset.file}|${cell.dataset.side}|${cell.dataset.line}`;
+          if (seenKeys.has(key)) continue;
+          const arr = byAnchor.get(key);
+          if (!arr) continue;
+          seenKeys.add(key);
+          const tr = cell.closest("tr");
+          tr.parentNode.insertBefore(buildHistoryThreadRow(arr, commit), tr.nextSibling);
+        }
+      }
+    }
+
+    function roundNum(id) {
+      const m = /^R(\d+)$/.exec(id || "");
+      return m ? Number(m[1]) : 0;
+    }
+
+    function buildHistoryThreadRow(comments, commit) {
+      const tr = document.createElement("tr");
+      tr.className = "history-thread";
+      const td = document.createElement("td");
+      td.colSpan = 8;
+      const inner = document.createElement("div");
+      inner.className = "history-inner";
+      for (const c of comments) inner.appendChild(buildHistoryCommentEl(c, commit));
+      td.appendChild(inner);
+      tr.appendChild(td);
+      return tr;
+    }
+
+    function buildHistoryCommentEl(c, commit) {
+      const el = document.createElement("div");
+      el.className = "history-comment";
+      const lineLabel = c.line_start === c.line_end ? `L${c.line_start}` : `L${c.line_start}–L${c.line_end}`;
+
+      const head = document.createElement("div");
+      head.className = "history-head";
+      let headHtml =
+        `<span class="history-round-badge">${escapeHtml(c.round_id)}</span>` +
+        `<span class="comment-type-badge ${escapeAttr(c.type)}">${escapeHtml(c.type)}</span>` +
+        `<span class="comment-anchor">${escapeHtml(c.file)}:${escapeHtml(lineLabel)} (${escapeHtml(c.side)})</span>`;
+      if (c.in_reply_to && c.in_reply_to.round_id) {
+        headHtml += `<span class="history-reply-chip">↳ ${escapeHtml(c.in_reply_to.round_id)} 후속</span>`;
+      }
+      head.innerHTML = headHtml;
+
+      // Reply: open the comment popup prefilled on this same anchor, carrying
+      // in_reply_to so the new live comment links back to this past one.
+      if (state.feedback.review_status !== "submitted") {
+        const actions = document.createElement("div");
+        actions.className = "history-actions";
+        const replyBtn = document.createElement("button");
+        replyBtn.textContent = "후속 지시 달기";
+        replyBtn.addEventListener("click", () => openCommentPopup({
+          commit_sha: commit.sha,
+          file: c.file,
+          side: c.side,
+          line_start: c.line_start,
+          line_end: c.line_end,
+          in_reply_to: { round_id: c.round_id, comment_id: c.id },
+        }));
+        actions.appendChild(replyBtn);
+        head.appendChild(actions);
+      }
+      el.appendChild(head);
+
+      if (c.body) {
+        const body = document.createElement("div");
+        body.className = "history-body";
+        body.textContent = c.body;
+        el.appendChild(body);
+      }
+
+      const route = c.resolution_route;
+      if (route || c.resolution_summary || c.resulting_commit_sha) {
+        const routeLabel = { rework: "↳ rework", answer: "↳ 답변", "out-of-scope": "↳ out-of-scope" }[route] || "↳ 응답";
+        const sha = c.resulting_commit_sha ? ` <code>${escapeHtml(String(c.resulting_commit_sha).slice(0, 7))}</code>` : "";
+        const resp = document.createElement("div");
+        resp.className = "history-response";
+        resp.innerHTML = `<span class="route">${escapeHtml(routeLabel)}</span>${sha}` +
+          (c.resolution_summary ? `<div class="summary">${escapeHtml(c.resolution_summary)}</div>` : "");
+        el.appendChild(resp);
       }
       return el;
     }
@@ -946,8 +1109,9 @@
 
     // ---------- Comment popup ----------
     function openCommentPopup(opts) {
-      // opts: { commit_sha, file, side, line_start, line_end, [id, type, body, dispatch_agent, isEdit] }
+      // opts: { commit_sha, file, side, line_start, line_end, [id, type, body, dispatch_agent, isEdit, in_reply_to] }
       const isEdit = opts.isEdit === true;
+      const replyTo = opts.in_reply_to && opts.in_reply_to.round_id ? opts.in_reply_to : null;
       const lineLabel = opts.line_start === opts.line_end ? `L${opts.line_start}` : `L${opts.line_start}–L${opts.line_end}`;
 
       const backdrop = document.createElement("div");
@@ -955,7 +1119,8 @@
       const popup = document.createElement("div");
       popup.className = "popup";
       popup.innerHTML = `
-        <h3>${isEdit ? "Edit comment" : "New comment"}</h3>
+        <h3>${isEdit ? "Edit comment" : (replyTo ? "후속 지시" : "New comment")}</h3>
+        ${replyTo ? `<div class="popup-anchor">↳ ${escapeHtml(replyTo.round_id)}의 코멘트에 대한 후속 지시</div>` : ""}
         <div class="popup-anchor">${escapeHtml(opts.file)} · ${escapeHtml(lineLabel)} (${escapeHtml(opts.side)})</div>
         <div class="popup-types">
           <label data-type="needs-change"><input type="radio" name="ctype" value="needs-change"> needs-change</label>
@@ -1031,6 +1196,7 @@
           type: t,
           body: ta.value,
           dispatch_agent: t === "needs-change" ? agentSelect.value : null,
+          in_reply_to: replyTo,
         };
         try {
           if (isEdit) {

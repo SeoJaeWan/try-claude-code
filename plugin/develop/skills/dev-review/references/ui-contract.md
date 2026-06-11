@@ -62,7 +62,7 @@ GET    /review/{key}/api/health                     # per-review diagnostic
 GET    /review/{key}/api/review-data                # JSON proxy
 GET    /review/{key}/api/feedback                   # JSON proxy
 
-POST   /review/{key}/api/comment                   # create line comment
+POST   /review/{key}/api/comment                   # create line comment (optional in_reply_to: {round_id, comment_id})
 PATCH  /review/{key}/api/comment/{id}              # edit comment body / type / dispatch_agent
 DELETE /review/{key}/api/comment/{id}              # delete comment
 POST   /review/{key}/api/commit-status             # toggle viewed / out_of_scope
@@ -149,14 +149,21 @@ The reviewer finishes by saying `리뷰 완료` in chat. The UI does not signal 
 5. **Inline comment widgets**
    - Existing comments for this commit — fetch from `feedback.json.comments[]` filtered by `commit_sha === commit.sha`.
    - For each comment, find the row in the diff with `(file, side, line_start, line_end)` and inject a sibling `<tr class="comment-thread">` directly below the deepest anchored row.
-   - Comment widget shows: type badge · body · `(dispatch_agent)` if needs-change · edit/delete buttons.
+   - Comment widget shows: type badge · body · `(dispatch_agent)` if needs-change · edit/delete buttons. A comment carrying `in_reply_to` also shows a `↳ {round_id}의 코멘트에 대한 후속 지시` chip above its body.
    - Multi-line comments: highlight the entire range (background tint) on the anchored side.
+
+5b. **Inline past-round history (read-only)**
+   - Past-round reviewer comments come from `review-history.json.rounds[].comments_snapshot[]`, filtered by `commit_sha === commit.sha`. They render inline on the **same** anchored line as a `<tr class="history-thread">` (muted/gray, left-bordered), grouped per anchor, oldest round first.
+   - The anchored commit is immutable, so the snapshot's line numbers stay valid across rounds — no snippet re-resolution needed (unlike AI notes).
+   - Each past comment shows: round badge (`R1`) · type badge · anchor · original body · the response it received (`↳ rework / ↳ 답변 / ↳ out-of-scope`, the resulting commit short sha, and the summary). When the past comment itself carried `in_reply_to`, a `↳ {round_id} 후속` chip is shown.
+   - **Reply (B-lite follow-up).** While `review_status !== "submitted"`, each past comment has a `후속 지시 달기` button. It opens the standard comment popup **pre-filled with the same anchor** (`commit_sha / file / side / line range`) and sets `in_reply_to = { round_id, comment_id }` pointing at that past comment. The reviewer picks a type and writes a body; the result is an ordinary current-round live comment that simply carries `in_reply_to`. There is no nested thread store — the link is one field, and the visual "chain" is just past widgets and the new live comment sharing one line.
+   - The history layer is **read-only**: no edit/delete on past comments, and it never enters `feedback.json` or gates submit. It is the same record the sidebar `History` panel renders, shown inline for context.
 
 6. **AI author notes (read-only)**
    - The author/rework agent's "왜 이렇게 했는지" rationale, fetched from `author-notes.json.notes[]` filtered by `commit_sha === commit.sha`. Anchored on the **new** side only.
    - Rendered with the same `<tr>`-injection machine as comments, but as `<tr class="ai-note-thread">` with a distinct indigo style. The widget is intentionally minimal: **just the note body** — no badge, no category chip, no anchor text. The indigo left-border container is the only marker distinguishing an AI note from a reviewer comment. The `category` field is kept in the data but not displayed as text; a `리뷰 요청` note still gets a subtle amber left-border (`ai-note-inner.has-review-request`) as a non-text cue, nothing more.
    - **Read-only**: no edit/delete, no popup. The reviewer adds their own comment separately if they want to respond. AI notes are NOT part of `feedback.json`, do NOT count toward submit gating, and are NOT archived to `review-history.json`.
-   - When a reviewer comment and an AI note land on the same line, render order is `code row → AI note → reviewer comment` (both insert as the code row's `nextSibling`, so render comments first, then notes).
+   - When a reviewer comment, an AI note, and past-round history all land on the same line, render order top-to-bottom is `code row → AI note → past-round history (oldest→newest) → live comment`. All three layers insert at the code row's `nextSibling`, so the renderer inserts live comments first, then history, then notes (the last insert lands closest to the code). A single `renderInlineLayers(root, commit)` tears out and rebuilds all three layers so the order is identical on the full render and the incremental feedback refresh.
 
 ## Drag-to-comment interaction
 
@@ -177,9 +184,9 @@ GitHub-style. Triggered on the diff's gutter (line-number column).
 - Buttons: `Save` (POST /api/comment) · `Cancel`.
 - Editing an existing comment uses the same popup (PATCH instead of POST). Delete button triggers DELETE.
 
-## Comment thread (single comment, no replies)
+## Comment thread (single comment, no nested replies)
 
-The v2 model is single-comment-per-anchor. No reply UI. Edit/delete only. If the reviewer wants to add another point at the same anchor, they create a separate comment (the system permits multiple comments at the same line range).
+The v2 model is single-comment-per-anchor with **no nested reply store**. Within a round, edit/delete only; multiple comments may share one anchor as independent entries. The one cross-round link is `in_reply_to`: a follow-up comment is a normal current-round comment that records `{ round_id, comment_id }` pointing at a past comment (created via the `후속 지시 달기` button on an inline history widget). This is a flat link for display + agent context, not a recursive thread — there is no reply-to-a-reply UI, and the data stays single-comment-per-anchor.
 
 ## Submit flow
 
@@ -222,7 +229,7 @@ Every `리뷰 완료` closes the round and the skill reopens a clean one (see `r
 - Sidebar shows the current commit set, oldest-first. After rework, new commits appear at the bottom.
 - The live `comments[]` is empty — **all** of the previous round's comments moved to History. The reviewer re-reviews every commit from scratch.
 - Every commit's `viewed` resets to `false`; `out_of_scope` is preserved per sha.
-- The previous round's comments **and the response each one received** are visible (read-only) by expanding that round in the History panel.
+- The previous round's comments **and the response each one received** are visible (read-only) two ways: by expanding that round in the sidebar History panel, **and** inline on each comment's original diff line (the `history-thread` layer). On the inline copy, `후속 지시 달기` starts a follow-up comment in the fresh round, linked via `in_reply_to`.
 
 ## Invalidations
 
@@ -240,8 +247,8 @@ The browser polls `/api/feedback` and `/api/review-data` only on initial load an
 - Do NOT enable Submit while any `needs-change` comment lacks `dispatch_agent`.
 - Do NOT allow drag selection across files, hunks, or sides.
 - Do NOT auto-resolve `needs-change` comments client-side; the skill owns round-boundary cleanup.
-- Do NOT mutate `review-history.json` from the UI; read-only.
+- Do NOT mutate `review-history.json` from the UI; read-only. The inline `history-thread` layer renders it but never writes it; `후속 지시 달기` creates a new comment in `feedback.json`, it does not edit the past comment.
 - Do NOT reuse v1 fields (`overview`, `cards`, `final`, `addressed_by_this_commit`, `_fallback_cards`). The schema is v2.
-- Do NOT support comment threads / replies — single comment per anchor, edit/delete only.
+- Do NOT support nested comment threads / reply-to-a-reply. The only cross-round link is a flat `in_reply_to` on a normal comment; within a round it stays single-comment-per-anchor with edit/delete only.
 - Do NOT block submit on unviewed commits — show warning and let the reviewer proceed.
 - Do NOT let AI author notes (`author-notes.json`) enter `feedback.json`, gate submit, or appear in history — they are read-only review context rendered as their own `ai-note-thread` rows.

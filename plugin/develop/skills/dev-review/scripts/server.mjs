@@ -65,6 +65,7 @@ const port = Number.isFinite(requestedPort) ? requestedPort : 9797;
 
 const SHA_RE = /^[a-f0-9]{40}$/;
 const COMMENT_ID_RE = /^cm_\d+$/;
+const ROUND_ID_RE = /^R\d+$/;
 const VALID_SIDES = new Set(["new", "old"]);
 const REVIEW_DISCOVERY_MAX_DEPTH = 6;
 
@@ -763,6 +764,7 @@ async function handleCommentCreate(req, res, slug, dataRoot) {
       type: body.type,
       body: body.body ?? "",
       dispatch_agent: body.type === COMMENT_TYPE.NEEDS_CHANGE ? body.dispatch_agent : null,
+      in_reply_to: normalizeInReplyTo(body.in_reply_to),
       created_at: now,
       updated_at: now,
     };
@@ -954,6 +956,40 @@ async function handleReopen(req, res, slug, dataRoot) {
 }
 
 /**
+ * `in_reply_to` 의 형태를 검증한다. 후속 지시 코멘트가 가리키는 과거 코멘트
+ * 참조다. 코멘트 id 는 라운드마다 다시 발급되므로(cm_001 이 매 라운드 재사용)
+ * 라운드까지 포함해야 모호하지 않다 — `{ round_id, comment_id }`.
+ *
+ * 값이 없으면(`undefined`/`null`) 유효한 것으로 본다. 존재의 검증(그 라운드/
+ * 코멘트가 review-history.json 에 실제로 있는지)은 하지 않는다 — history 는
+ * 서버가 소유하지 않는 별도 산출물이고, 끊긴 참조는 UI 가 무시하면 그만이다.
+ *
+ * @param {*} v - in_reply_to 후보 값.
+ * @returns {string|null} 위반 메시지 또는 null.
+ */
+function validateInReplyTo(v) {
+  if (v === undefined || v === null) return null;
+  if (typeof v !== "object" || Array.isArray(v)) {
+    return "in_reply_to must be an object { round_id, comment_id }";
+  }
+  if (!ROUND_ID_RE.test(v.round_id)) return "in_reply_to.round_id must look like 'R1'";
+  if (!COMMENT_ID_RE.test(v.comment_id)) return "in_reply_to.comment_id must look like 'cm_001'";
+  return null;
+}
+
+/**
+ * in_reply_to 후보 값을 저장용으로 정규화한다. 유효한 참조면 round_id/
+ * comment_id 만 추린 객체를, 없으면 null 을 반환한다.
+ *
+ * @param {*} v
+ * @returns {{round_id: string, comment_id: string}|null}
+ */
+function normalizeInReplyTo(v) {
+  if (v === undefined || v === null) return null;
+  return { round_id: v.round_id, comment_id: v.comment_id };
+}
+
+/**
  * 코멘트 생성 입력의 형식·범위·라운드 무결성을 검증한다. 통과하면 null,
  * 위반 시 사람 읽기 좋은 에러 메시지를 반환한다.
  *
@@ -979,6 +1015,8 @@ function validateCommentInput(body, model) {
     }
   }
   if (body.body !== undefined && typeof body.body !== "string") return "body must be a string";
+  const replyErr = validateInReplyTo(body.in_reply_to);
+  if (replyErr) return replyErr;
   return null;
 }
 

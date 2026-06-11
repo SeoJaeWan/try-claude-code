@@ -111,6 +111,7 @@ Removed from v2. The runner's rework loop is now per-commit (one needs-change ve
       "type": "needs-change",                  // "needs-change" | "question" | "out-of-scope"
       "body": "에러 처리가 빠졌어요",
       "dispatch_agent": "backend-developer",   // required iff type === "needs-change"
+      "in_reply_to": null,                     // optional follow-up link; { round_id, comment_id } or null
       "created_at": "2026-04-24T10:32:00Z",
       "updated_at": "2026-04-24T10:32:00Z"
     }
@@ -136,6 +137,7 @@ Removed from v2. The runner's rework loop is now per-commit (one needs-change ve
 - **`comments[].line_start`/`line_end`** — line numbers in the diff hunk (1-based, matches the side). The browser computes these from the drag range.
 - **`comments[].type`** — three values, no plain "comment" type. A neutral note has no place in this workflow because every comment is either actionable (needs-change/question) or recorded-but-ignored (out-of-scope).
 - **`comments[].dispatch_agent`** — required iff `type === "needs-change"`. Submit endpoint rejects a `needs-change` comment without it.
+- **`comments[].in_reply_to`** — optional. `null` for a normal comment; `{ round_id, comment_id }` when this comment is a **follow-up instruction** on a past-round comment (B-lite reply). The reference is round-qualified because `comments[].id` (`cm_001`, …) restarts at 1 every round — a bare comment id is ambiguous, but `round_id` (`R1`, …) is never reused. The server validates only the shape; it does not verify the referenced round/comment still exists (`review-history.json` is a separate artifact the server does not own — a dangling reference is simply ignored by the UI). Older comments written before this field existed may omit it; readers treat a missing field as `null`. The field is preserved verbatim into `review-history.json` when the round closes, so a follow-up chain stays visible inline on later rounds.
 - **`commit_status[sha].viewed`** — reviewer's "I've reviewed this commit" toggle. Defaults `false`. Resets to `false` when new follow-up commits are added in a later round (see Round boundary).
 - **`commit_status[sha].out_of_scope`** — convenience flag for "this entire commit is out of my review scope". When true, all `needs-change` comments on this commit are ignored at submit time. Mutually independent from `viewed`.
 
@@ -200,6 +202,7 @@ When `plan_signature` differs, `feedback.json` is discarded entirely and a fresh
           "type": "needs-change",
           "body": "에러 처리가 빠졌어요",
           "dispatch_agent": "backend-developer",
+          "in_reply_to": null,                 // preserved from feedback.json; { round_id, comment_id } for a follow-up
           "resolution_route": "rework",        // "rework" | "answer" | "out-of-scope"
           "resulting_commit_sha": "def4569...", // populated after rework agent commits
           "resolution_summary": "try/catch 추가 + 401 응답 처리"
@@ -224,6 +227,7 @@ When `plan_signature` differs, `feedback.json` is discarded entirely and a fresh
   - `superseded` — `plan_signature` changed mid-round, this round's feedback no longer authoritative
 - `rounds[]` is append-only. The skill never edits a prior round's body; it only adds new rounds and flips `resolution_state` on the round that just closed.
 - When `plan_signature` changes, previous rounds remain visible but are marked `superseded`; a new round starts fresh.
+- `comments_snapshot[].in_reply_to` is copied verbatim from the live comment. The browser uses it (plus the snapshot's anchor) to render each past comment **inline on its original diff line** — the commit is immutable so the stored line numbers stay valid — and to draw the follow-up chain. The sidebar `History` panel and the inline rendering read the same `comments_snapshot[]`; they are two views of one record, never two stores.
 
 ## round-responses.json (optional, single-round)
 

@@ -198,7 +198,7 @@ On re-entry (prior feedback file exists), append a round entry that captures **e
 }
 ```
 
-**Annotating each comment with its response.** For every comment in the prior `feedback.json`, copy it into `comments_snapshot[]` and attach `resolution_route` / `resolution_summary` / `resulting_commit_sha`:
+**Annotating each comment with its response.** For every comment in the prior `feedback.json`, copy it into `comments_snapshot[]` (verbatim — including `in_reply_to` when present, so a follow-up chain survives into history and keeps rendering inline) and attach `resolution_route` / `resolution_summary` / `resulting_commit_sha`:
 
 1. **Preferred source — `round-responses.json`.** If `{data-root}/round-responses.json` exists, it is a map written by the runner before this re-entry: `{ "<comment_id>": { "route": "rework"|"answer"|"out-of-scope", "summary": "<text>", "resulting_commit_sha": "<sha|null>" } }`. Use it verbatim for any comment id it covers, then **delete the file** after a successful history write (it belongs to exactly one round). This is the only way `question` answers (chat text) reach history.
 2. **Fallback by type** for any comment the map does not cover:
@@ -298,7 +298,7 @@ Return a terminal summary to the runner:
       "message_subject": "feat(auth): implement JWT-based login",
       "dispatch_agent": "backend-developer",   // unanimous: same agent across all needs-change comments on this commit (see note)
       "comments": [
-        { "id": "cm_001", "file": "src/auth.ts", "side": "new", "line_start": 42, "line_end": 45, "body": "..." }
+        { "id": "cm_001", "file": "src/auth.ts", "side": "new", "line_start": 42, "line_end": 45, "body": "...", "in_reply_to": null }
       ]
     }
   ],
@@ -316,6 +316,8 @@ Return a terminal summary to the runner:
 - `result = "qa_required"` when there are `question` comments but no `needs-change`. The runner answers in chat, records each answer into `round-responses.json` (so it lands in history), then re-invokes this skill. That re-entry runs Step 2/3 even though HEAD did not move: the qa round closes (its questions + answers archived) and a fresh `in_progress` round opens for the reviewer. The reviewer no longer has to manually reset `question` comments — re-entry always reopens.
 
 > **What re-entry does after each result.** `approved` → the runner proceeds to merge; the skill does not regenerate. `rework` / `qa_required` → the runner acts (dispatch / answer), writes `round-responses.json`, and re-invokes this skill, which runs Steps 1–3: regenerate `review-data.json` (HEAD may be new for rework, unchanged for qa), archive the closed round with its responses, and reset `feedback.json` to a clean `in_progress` round.
+
+> **Follow-up comments (`in_reply_to`).** A comment may carry `in_reply_to: { round_id, comment_id }` — the reviewer attached it as a follow-up on a past-round comment (via the inline history `후속 지시 달기` button). Pass it through verbatim in `rework_items[]` / `question_items[]`. The runner resolves the referenced past comment from `review-history.json` (`rounds[].id === round_id`, then `comments_snapshot[].id === comment_id`) and prepends its body + the response it received to the re-dispatch / answer context, so the agent knows this instruction continues an earlier thread rather than starting fresh. A dangling reference (round/comment not found) is non-fatal — treat the comment as standalone.
 
 > **Per-commit dispatch_agent unanimity.** When multiple `needs-change` comments on the same commit pick different `dispatch_agent` values, the runner cannot dispatch them all at once — they share the same worktree and would interleave commits. Detect this in Step 5 and flip those comments to `question` with a generated body: `"이 커밋의 needs-change 코멘트가 서로 다른 dispatch_agent를 가리킵니다. 하나로 통일해주세요."` — turning the round into `qa_required` so the reviewer reconciles in the browser.
 
@@ -341,6 +343,13 @@ in this worktree; build on it, do not redo prior commits.
 - {file}:L{line_start}-L{line_end} (side: {new|old}): "{body}"
 - {file}:L{line_start}-L{line_end} (side: {new|old}): "{body}"
 - ...
+
+## Follow-up context (only for comments carrying in_reply_to)
+For each comment with `in_reply_to`, the runner resolves the referenced past
+comment and inlines it here so you continue the prior thread:
+- 이전 ({round_id}) 리뷰어 코멘트: "{past body}"
+  - 그때의 처리: {↳ rework {sha} / ↳ 답변 / ↳ out-of-scope} — "{resolution_summary}"
+  - 이번 후속 지시: "{this comment's body}"
 
 ## Instructions
 Apply the feedback. Do NOT touch unrelated files. Do NOT rebase or amend
@@ -376,7 +385,7 @@ The runner owns the actual Agent dispatch. This skill just hands back `rework_it
 - Do NOT auto-map files to `dispatch_agent`. The reviewer picks it in the UI.
 - Do NOT poll-wait for `feedback.json` changes — end your turn and let the user say `리뷰 완료`.
 - Do NOT reuse v1 schema fields (`overview`, `cards`, `_fallback_cards`, `tests_added`, `deviations`, `addressed_by_this_commit`, `final`). The schema is v2.
-- Do NOT support comment threads / replies in the UI surface; this skill assumes single-comment-per-anchor.
+- Do NOT support nested comment threads / reply-to-a-reply. The one cross-round link is a flat `in_reply_to` on an otherwise-normal comment; within a round the model stays single-comment-per-anchor.
 - Do NOT advance past Step 5 on anything except `result === "approved"`.
 - Do NOT carry `review_status: "submitted"` into the new round's `feedback.json`. Step 2 always opens the round as `in_progress`; a stale `submitted` is what strands the reviewer.
 - Do NOT keep `round-responses.json` after Step 3 consumes it. It describes exactly one closed round — delete it once the history write succeeds so the next round does not re-read stale responses.
