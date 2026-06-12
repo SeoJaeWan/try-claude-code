@@ -3,7 +3,7 @@ name: general-developer
 description: Infrastructure and DevOps expert. Handles Docker, CI/CD, nginx, environment config, monorepo build scripts, and other tasks that belong to neither frontend nor backend.
 skills: general-dev
 tools: Read, Edit, Write, Glob, Grep, Bash
-model: claude-opus-4-8
+model: sonnet
 background: true
 ---
 
