@@ -31,6 +31,8 @@
 - Request locking: executable planning 전에 `brainstorm`을 먼저 사용하고, UI direction이 충분히 구체적이지 않으면 `ui-spec`을 사용한다.
 - Orchestrated planning: `orchestrator`가 plan wiki를 fast-forward pull로 1회 refresh한 뒤 `plan-maker -> plan-tdd -> plan-review -> planning docs` 순서로 라우팅한다.
 - Direct planning: upstream scope, UI direction, execution area, exclusion, verification expectation이 이미 잠겨 있을 때만 `plan-maker`를 직접 사용한다.
+- Direct implementation: plan을 만들지 않고 바로 처리하는 작은 작업에서도 `.codex/dev-wiki/config.json`이 있고 `.codex/dev-wiki/source/{project}`가 존재하면, 작업 범위에 맞는 dev wiki 문서를 먼저 참고한다. 예: 파일 배치와 naming은 `conventions/`, 구조와 경계는 `architecture/`, 실행/검증/Git 절차는 `workflows/`, 탐색 시작점은 `graph/`를 본다.
+- Dev wiki precedence: dev wiki는 프로젝트별 개발 참고자료이며, 현재 source/config/test와 충돌하면 source를 우선하고 dev wiki를 stale 가능성으로 본다. dev wiki 자체를 갱신해야 할 때는 명시적 규칙 반영은 `dev-wiki-update`, repository와 wiki의 전체 동기화는 `dev-wiki-sync`, graph 산출물 갱신은 `dev-wiki-graph`를 사용한다.
 - Plan wiki maintenance: wiki source 작업에는 `plan-wiki-setup`, `plan-wiki-lint`, `plan-wiki-ingest`, `plan-wiki-apply-feedback`를 사용한다. root repository commit과 `.codex/plan-wiki/source` commit은 분리한다.
 - Figma inventory: complete Figma hierarchy, component-set inventory, Resource/* coverage, platform marker가 plan boundary에 영향을 주면 planning 전에 `figma-inventory-snapshot`을 사용한다.
 
