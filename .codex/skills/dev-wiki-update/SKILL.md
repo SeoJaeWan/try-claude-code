@@ -37,7 +37,8 @@ Read these references before editing wiki files:
    - Write in Korean-first prose. Keep English only for literal identifiers, paths, commands, package names, API names, schema keys, and user-quoted terms.
    - Convert user rules into durable guidance: scope, rule, reason, examples, and exclusions when needed.
    - Convert repository evidence into durable current-state guidance, and label uncertainty instead of pretending it is policy.
-   - Distinguish confirmed rules, observed conventions, and items that need confirmation.
+   - When evidence is incomplete, still write the best-supported inference as `추정` or `확인 필요`; do not omit the topic merely because it is not proven.
+   - Distinguish confirmed rules, observed conventions, inferred guidance, and items that need confirmation.
    - Replace stale or conflicting text instead of stacking contradictory bullets.
    - Use Obsidian wikilinks for direct project-wiki relationships when helpful.
 
@@ -51,7 +52,7 @@ Read these references before editing wiki files:
 - Do not write update history files; Git diff and commit messages are the record.
 - Do not edit plan wiki files.
 - Do not edit `{project}/graph/`; graph files are owned by `dev-wiki-graph`.
-- Do not silently invent missing policy. If the rule depends on a project decision the user did not provide and local context cannot prove it, label it as an observed convention or ask before writing.
+- Do not silently invent missing policy. If the rule depends on a project decision the user did not provide and local context cannot prove it, record it as an observed convention, `추정`, or `확인 필요` instead of leaving the document empty.
 - Do not promote commit history, folder shape, or repeated code patterns into mandatory policy unless a config file, existing docs, or the user confirms that they are rules.
 - Do not turn a one-off implementation note into a global project convention unless the user frames it as a rule.
 - Do not duplicate the same rule across many files; choose one owner and link to it if necessary.

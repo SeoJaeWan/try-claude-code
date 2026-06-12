@@ -45,9 +45,12 @@ For repository-derived updates:
 4. Separate evidence into:
    - **확정 규칙**: confirmed by user instruction, existing project docs, config, or enforced tooling.
    - **관찰된 관례**: repeated in source, tests, commit history, or workflows, but not explicitly enforced.
+   - **추정**: weakly supported by headings, partial docs, common local patterns, or nearby evidence, but not repeated or enforced.
    - **확인 필요**: plausible but not proven enough to write as guidance.
 5. Update only `conventions/`, `architecture/`, and `workflows/`.
 6. Do not update `graph/`; route graph refreshes to `dev-wiki-graph`.
+
+Do not skip a standard topic only because the evidence is incomplete. If the schema says the document owns the topic and the project has partial evidence, write the best-supported inference under `추정` or `확인 필요` with a short evidence note.
 
 ## Writing Shape
 
@@ -84,12 +87,26 @@ For evidence-derived documents, prefer this shape when uncertainty matters:
 
 ...
 
+### 추정
+
+...
+
 ### 확인 필요
 
 ...
 ```
 
-Omit empty sections. Do not write a mandatory rule when the evidence only supports an observed convention.
+Omit empty sections only when there is no useful evidence or inference for that section. Do not write a mandatory rule when the evidence only supports an observed convention or inference.
+
+## Inference Standard
+
+Use inference deliberately:
+
+- If a document contains a heading such as "브랜치 전략" but no body, write a `확인 필요` entry that names the missing details and any nearby clues.
+- If recent commits mostly use `feat:`, `fix:`, `docs:`, or similar prefixes, write a `관찰된 관례` entry for the observed commit style and note the sample size.
+- If branch names visible locally suggest `feature/*`, `hotfix/*`, or release branches, write a `추정` entry and name the source command or evidence.
+- If only common industry practice supports the idea and the repository has no clue, keep it in `확인 필요`, not `확정 규칙`.
+- Prefer a short imperfect wiki note over leaving a schema-owned standard document empty.
 
 ## Evidence Checks
 
