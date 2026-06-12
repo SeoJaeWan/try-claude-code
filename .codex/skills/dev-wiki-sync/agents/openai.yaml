@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dev Wiki Sync"
+  short_description: "Sync dev wiki with repo facts"
+  default_prompt: "Use $dev-wiki-sync to refresh this project's dev wiki from the current repository."

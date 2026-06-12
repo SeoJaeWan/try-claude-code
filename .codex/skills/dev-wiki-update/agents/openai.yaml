@@ -1,4 +1,4 @@
 interface:
   display_name: "Dev Wiki Update"
-  short_description: "Sync project rules and observed facts"
-  default_prompt: "Use $dev-wiki-update to refresh this project's dev wiki from rules and repository evidence."
+  short_description: "Record explicit project rules"
+  default_prompt: "Use $dev-wiki-update to record this project rule in the dev wiki."

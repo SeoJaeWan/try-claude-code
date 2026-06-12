@@ -1,11 +1,11 @@
 ---
 name: dev-wiki-update
-description: Update a project-specific dev wiki from user-provided rules or observable repository facts, including conventions, folder structure, architecture notes, workflow commands, Git/commit conventions, release flows, and development constraints. Use when the user says to add, change, record, infer, refresh, or sync project knowledge into dev wiki, excluding graph artifacts handled by `dev-wiki-graph`; requires `.codex/dev-wiki/config.json` and the matching project folder prepared by `dev-wiki-setup`.
+description: Update a project-specific dev wiki from explicit user-provided rules, conventions, architecture notes, workflow commands, or development constraints. Use when the user says to add, change, record, or update a specific rule or note into dev wiki. Do not use for full repository-vs-wiki synchronization; use `dev-wiki-sync` for project-wide sync, and `dev-wiki-graph` for graph artifacts. Requires `.codex/dev-wiki/config.json` and the matching project folder prepared by `dev-wiki-setup`.
 ---
 
 # Dev Wiki Update
 
-Fold user-provided project rules and observable repository facts into the current project wiki. Keep the wiki as a current, human-readable development reference rather than an append-only log.
+Fold explicit user-provided project rules into the current project wiki. Keep the wiki as a current, human-readable development reference rather than an append-only log.
 
 ## Required Reading
 
@@ -27,18 +27,14 @@ Read these references before editing wiki files:
    - Use the standard document names from `./.codex/dev-wiki/source/_meta/schema.md` when present.
    - Create a new document only when no standard document can own the rule cleanly.
 
-3. Inspect repository evidence when the user asks to infer, refresh, or sync project knowledge.
-   - Read only evidence relevant to the target documents.
-   - Common evidence includes `package.json`, config files, CI workflows, source roots, route folders, test files, API clients, env references, docs, and recent Git history.
-   - Use Git history for observed commit message patterns, branch names, merge style, tags, and release hints when needed.
+3. Inspect narrow supporting evidence only when needed.
+   - Use repository files only to place or reconcile the user-provided rule.
+   - Do not perform a full schema-wide repository sync; route that work to `dev-wiki-sync`.
    - Do not update `{project}/graph/`; use `dev-wiki-graph` for graph artifacts.
 
-4. Integrate the rule or observed fact.
+4. Integrate the explicit rule.
    - Write in Korean-first prose. Keep English only for literal identifiers, paths, commands, package names, API names, schema keys, and user-quoted terms.
    - Convert user rules into durable guidance: scope, rule, reason, examples, and exclusions when needed.
-   - Convert repository evidence into durable current-state guidance, and label uncertainty instead of pretending it is policy.
-   - When evidence is incomplete, still write the best-supported inference as `추정` or `확인 필요`; do not omit the topic merely because it is not proven.
-   - Distinguish confirmed rules, observed conventions, inferred guidance, and items that need confirmation.
    - Replace stale or conflicting text instead of stacking contradictory bullets.
    - Use Obsidian wikilinks for direct project-wiki relationships when helpful.
 
@@ -52,7 +48,7 @@ Read these references before editing wiki files:
 - Do not write update history files; Git diff and commit messages are the record.
 - Do not edit plan wiki files.
 - Do not edit `{project}/graph/`; graph files are owned by `dev-wiki-graph`.
-- Do not silently invent missing policy. If the rule depends on a project decision the user did not provide and local context cannot prove it, record it as an observed convention, `추정`, or `확인 필요` instead of leaving the document empty.
-- Do not promote commit history, folder shape, or repeated code patterns into mandatory policy unless a config file, existing docs, or the user confirms that they are rules.
+- Do not infer or refresh unrelated standard documents during `dev-wiki-update`; use `dev-wiki-sync` for that.
+- Do not silently invent missing policy. If the rule depends on a project decision the user did not provide and local context cannot prove it, ask before writing.
 - Do not turn a one-off implementation note into a global project convention unless the user frames it as a rule.
 - Do not duplicate the same rule across many files; choose one owner and link to it if necessary.
