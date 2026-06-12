@@ -205,6 +205,8 @@ function bootstrapSourceRoot(sourceRoot) {
       "",
       "각 프로젝트 폴더는 `README.md`, `project.json`, `conventions/`, `architecture/`, `workflows/`, `graph/`를 기본 구조로 사용합니다.",
       "",
+      "같은 성격의 정보는 모든 프로젝트에서 같은 폴더와 같은 파일명에 기록합니다. 프로젝트마다 특정 주제가 아직 없거나 적용되지 않더라도 공통 파일은 유지하고, 내용에는 \"아직 기록된 규칙이 없습니다.\" 또는 \"해당 없음\"을 명시합니다.",
+      "",
       "`history/` 디렉터리는 만들지 않습니다. 변경 이력은 Git commit으로 관리합니다.",
       ""
     ].join("\n")
@@ -213,6 +215,19 @@ function bootstrapSourceRoot(sourceRoot) {
 
 function sectionReadme(title, description) {
   return [`# ${title}`, "", description, ""].join("\n");
+}
+
+function linkedReadme(title, description, links) {
+  return [
+    `# ${title}`,
+    "",
+    description,
+    "",
+    "## 문서",
+    "",
+    ...links.map(([target, label]) => `- [[${target}|${label}]]`),
+    ""
+  ].join("\n");
 }
 
 function blankDoc(title, prompt) {
@@ -261,23 +276,57 @@ function bootstrapProject(sourceRoot, project) {
     mkdirSync(path.join(projectRoot, dir), { recursive: true });
   }
 
-  writeTextIfMissing(path.join(projectRoot, "conventions", "README.md"), sectionReadme("개발 규칙", "코드 작성, 이름, 폴더 배치, 테스트 규칙을 기록합니다."));
+  writeTextIfMissing(
+    path.join(projectRoot, "conventions", "README.md"),
+    linkedReadme("개발 규칙", "코드 작성, 이름, 폴더 배치, 테스트, API, UI 규칙을 기록합니다.", [
+      ["coding", "코딩 규칙"],
+      ["folder-structure", "폴더 구조 규칙"],
+      ["naming", "이름 규칙"],
+      ["testing", "테스트 규칙"],
+      ["api", "API 규칙"],
+      ["ui", "UI 규칙"],
+      ["rule-application", "규칙 적용 기준"]
+    ])
+  );
   writeTextIfMissing(path.join(projectRoot, "conventions", "coding.md"), blankDoc("코딩 규칙", "코드 작성 방식과 금지 패턴을 기록합니다."));
-  writeTextIfMissing(path.join(projectRoot, "conventions", "naming.md"), blankDoc("이름 규칙", "파일, 폴더, 함수, 컴포넌트, 테스트 이름 규칙을 기록합니다."));
   writeTextIfMissing(path.join(projectRoot, "conventions", "folder-structure.md"), blankDoc("폴더 구조 규칙", "새 파일을 어디에 두고 각 폴더가 무엇을 소유하는지 기록합니다."));
+  writeTextIfMissing(path.join(projectRoot, "conventions", "naming.md"), blankDoc("이름 규칙", "파일, 폴더, 함수, 컴포넌트, hook, 테스트, fixture 이름 규칙을 기록합니다."));
   writeTextIfMissing(path.join(projectRoot, "conventions", "testing.md"), blankDoc("테스트 규칙", "테스트 계층, fixture, mock, 검증 명령을 기록합니다."));
+  writeTextIfMissing(path.join(projectRoot, "conventions", "api.md"), blankDoc("API 규칙", "API 호출 방식, DTO와 type 위치, request/response 계약, error handling 규칙을 기록합니다."));
+  writeTextIfMissing(path.join(projectRoot, "conventions", "ui.md"), blankDoc("UI 규칙", "컴포넌트 사용 기준, 디자인 시스템, spacing, layout, 상태 표현, 접근성, 반응형 기준을 기록합니다."));
+  writeTextIfMissing(path.join(projectRoot, "conventions", "rule-application.md"), blankDoc("규칙 적용 기준", "여러 규칙이 충돌하거나 적용 우선순위가 애매할 때의 판단 기준을 기록합니다."));
 
-  writeTextIfMissing(path.join(projectRoot, "architecture", "README.md"), sectionReadme("아키텍처", "프로젝트 구조, 계층, 모듈 경계, 상태, 외부 경계를 기록합니다."));
+  writeTextIfMissing(
+    path.join(projectRoot, "architecture", "README.md"),
+    linkedReadme("아키텍처", "프로젝트 구조, 계층, 모듈 경계, 상태, 외부 경계를 기록합니다.", [
+      ["overview", "아키텍처 개요"],
+      ["layers", "계층 구조"],
+      ["module-boundaries", "모듈 경계"],
+      ["state", "상태 소유권"],
+      ["external-boundaries", "외부 경계"]
+    ])
+  );
   writeTextIfMissing(path.join(projectRoot, "architecture", "overview.md"), blankDoc("아키텍처 개요", "프로젝트의 전체 구조와 의도를 기록합니다."));
   writeTextIfMissing(path.join(projectRoot, "architecture", "layers.md"), blankDoc("계층 구조", "계층과 의존 방향을 기록합니다."));
   writeTextIfMissing(path.join(projectRoot, "architecture", "module-boundaries.md"), blankDoc("모듈 경계", "모듈별 소유권과 경계 규칙을 기록합니다."));
   writeTextIfMissing(path.join(projectRoot, "architecture", "state.md"), blankDoc("상태 소유권", "클라이언트 상태, 서버 상태, cache, persistence 규칙을 기록합니다."));
   writeTextIfMissing(path.join(projectRoot, "architecture", "external-boundaries.md"), blankDoc("외부 경계", "DB, env, auth, storage, 외부 API 경계를 기록합니다."));
 
-  writeTextIfMissing(path.join(projectRoot, "workflows", "README.md"), sectionReadme("작업 흐름", "로컬 실행, 명령, 검증, 배포 절차를 기록합니다."));
-  writeTextIfMissing(path.join(projectRoot, "workflows", "local-dev.md"), blankDoc("로컬 개발", "로컬 실행과 환경 준비 절차를 기록합니다."));
+  writeTextIfMissing(
+    path.join(projectRoot, "workflows", "README.md"),
+    linkedReadme("작업 흐름", "로컬 실행, 명령, 검증, Git 작업, 릴리즈 절차를 기록합니다.", [
+      ["commands", "명령"],
+      ["local-dev", "로컬 개발"],
+      ["test-and-quality", "검증 흐름"],
+      ["git", "Git 작업 흐름"],
+      ["release", "릴리즈"]
+    ])
+  );
   writeTextIfMissing(path.join(projectRoot, "workflows", "commands.md"), blankDoc("명령", "build, lint, typecheck, test 명령을 기록합니다."));
+  writeTextIfMissing(path.join(projectRoot, "workflows", "local-dev.md"), blankDoc("로컬 개발", "로컬 실행과 환경 준비 절차를 기록합니다."));
   writeTextIfMissing(path.join(projectRoot, "workflows", "test-and-quality.md"), blankDoc("검증 흐름", "작업 완료 전 확인해야 하는 검증 흐름을 기록합니다."));
+  writeTextIfMissing(path.join(projectRoot, "workflows", "git.md"), blankDoc("Git 작업 흐름", "브랜치 네이밍, 브랜치 역할, PR 대상, merge 방식, commit message 규칙, hotfix 브랜치 절차를 기록합니다."));
+  writeTextIfMissing(path.join(projectRoot, "workflows", "release.md"), blankDoc("릴리즈", "테스트/운영 배포, GitHub Actions, tag, 릴리즈 체크리스트, 배포 후 검수, rollback 기준을 기록합니다."));
 
   writeTextIfMissing(path.join(projectRoot, "graph", "README.md"), sectionReadme("프로젝트 그래프", "코드를 읽기 전 참고하는 구조 지도와 그래프 산출물을 관리합니다."));
 }

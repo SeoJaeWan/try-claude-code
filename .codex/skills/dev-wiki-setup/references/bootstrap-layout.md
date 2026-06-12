@@ -23,9 +23,12 @@ Create this project structure when missing:
   conventions/
     README.md
     coding.md
-    naming.md
     folder-structure.md
+    naming.md
     testing.md
+    api.md
+    ui.md
+    rule-application.md
   architecture/
     README.md
     overview.md
@@ -35,14 +38,18 @@ Create this project structure when missing:
     external-boundaries.md
   workflows/
     README.md
-    local-dev.md
     commands.md
+    local-dev.md
     test-and-quality.md
+    git.md
+    release.md
   graph/
     README.md
 ```
 
-Optional files such as `conventions/ui.md`, `conventions/api.md`, `conventions/data.md`, and `workflows/release.md` should be created lazily when the project needs them.
+Use these standard file names for every project. If a project has no applicable rule yet, keep the file with placeholder prose such as "아직 기록된 규칙이 없습니다." or "해당 없음".
+
+Project-specific extra documents may be added when needed, but they must not replace the standard file names above.
 
 ## Obsidian Defaults
 
