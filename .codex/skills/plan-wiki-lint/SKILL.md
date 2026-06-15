@@ -1,76 +1,52 @@
 ---
 name: plan-wiki-lint
-description: Audit the plan wiki for registry drift, broken raw backlinks, duplicate or conflicting pattern rules, orphan registrations, taxonomy drift, Obsidian graph-link drift, docs-first source formatting, feedback/history record consistency, and document consistency problems. Use when Codex needs to prepare a proposed cleanup report in `wiki/_meta/점검-보고서.md` and wait for explicit user approval before applying any wiki cleanup.
+description: Scan and maintain the shared plan wiki by refreshing generated frontmatter/link indexes, checking core/pattern/raw health, reporting tag or term drift, and applying only safe mechanical cleanup. Use when Codex needs to lint, inspect, refresh generated indexes, or prepare cleanup proposals for `.codex/plan-wiki/source/wiki` without applying semantic rule changes.
 ---
 
 # Plan Wiki Lint
 
-Use this skill to inspect the plan wiki without silently rewriting it. Resolve the wiki root from `./.codex/plan-wiki/source`, then read [references/checklist.md](references/checklist.md) before drafting the cleanup report.
+Maintain the plan wiki as an OKF-compatible shared planning knowledge bundle. Lint now observes document attributes and generated indexes instead of enforcing manual taxonomy, adjacency, or tag-page registries.
+
+## Required Reading
+
+Read [references/checklist.md](references/checklist.md) before scanning or editing.
 
 ## Workflow
 
 1. Verify the target.
-   - Plan wiki root: `./.codex/plan-wiki/source`
-   - Required working files: `wiki/registry.json` and `wiki/_meta/점검-보고서.md`
+   - Plan wiki root: `./.codex/plan-wiki/source/wiki`.
+   - Required control file: `wiki/registry.json`.
    - If the source repo is missing or broken, stop and use `plan-wiki-setup`.
 
-2. Read the current routing and graph surface first.
-   - Read `wiki/registry.json`.
-   - Read every core document listed in the registry.
-   - Read every registered pattern file.
-   - Read every tag page under `wiki/{graph_notes_root}/`.
-   - Inspect only as much raw material as needed to verify broken or suspicious backlinks.
+2. Refresh generated indexes.
+   - Run `node .codex/tools/wiki-index.mjs --mode plan --root .codex/plan-wiki/source/wiki`.
+   - Treat `wiki/generated/**` as derived output. Do not hand-edit it.
 
-3. Run the lint checks from the reference checklist.
-   - Look for registry drift, broken `raw_sources`, broken Obsidian wikilinks, duplicate or conflicting rules, orphan registrations, unregistered files, taxonomy drift, overbroad tags, stale guidance, Korean-schema drift, Korean terminology drift, docs-first source drift, tag-page drift, malformed feedback records, and malformed history records.
-   - Treat lint as a review pass, not an excuse to rewrite the whole wiki.
+3. Inspect the health output.
+   - Read `wiki/generated/wiki-health.md`.
+   - Read `wiki/generated/normalize-proposals.md`.
+   - Inspect core, pattern, and raw source files only as needed to verify reported issues.
 
-4. Write the proposed cleanup plan to `wiki/_meta/점검-보고서.md`.
-   - Summarize findings and the exact cleanup you plan to apply.
-   - Separate blocking issues from optional tidy-ups.
-   - Do not apply fixes yet.
+4. Run plan-wiki-specific checks.
+   - Ensure registry stage-core files exist.
+   - Ensure core and pattern documents have useful `type` metadata or a migration finding.
+   - Ensure promoted patterns link to evidence when evidence exists.
+   - Ensure feedback outcome records are not malformed when feedback folders exist.
+   - Ensure project-specific facts are not promoted into shared policy without generalization.
 
-5. Stop and wait for explicit user approval.
-   - If the user approves, apply only the approved subset of changes.
-   - Refresh `wiki/_meta/점검-보고서.md` to reflect what was actually changed and what remains deferred.
-   - If approval is partial, keep the rest as pending or deferred.
-   - Follow `../plan-wiki-setup/references/platform-commands.md` Git Sync rules after writes and before any plan wiki commit.
-   - For lint cleanup, the current operation includes only the user-approved cleanup subset and the refreshed `wiki/_meta/점검-보고서.md`.
+5. Apply only safe mechanical cleanup.
+   - Safe: generated refresh, duplicate frontmatter list entries, obvious metadata whitespace, and stale generated files.
+   - Approval required: tag merge, pattern merge, rule weakening/strengthening, core promotion, raw deletion, feedback deletion, or registry routing changes.
 
-## Lint Focus
-
-- Ensure every core document and promoted pattern file used by planning is registered in `wiki/registry.json`.
-- Ensure the registry does not contain orphan core or pattern paths.
-- Ensure `wiki/index.md` is absent and registry `indexes` is absent.
-- Ensure no separate `wiki/docs/**` tree exists; the existing wiki files must remain the docs-first source.
-- Ensure registry `document_model` is `docs-first-source`.
-- Ensure `graph_notes_root` exists, every top-level domain has a `registry.graph_notes.domains[domain]` page, and every `domain_taxonomy.tags` value has a `registry.graph_notes.tags[domain][tag]` page.
-- Ensure every promoted pattern has at least one valid raw backlink.
-- Ensure domain landing pages link only to domain-local tag pages.
-- Ensure domain-local tag pages link only to matching pattern rules, not raw records.
-- Ensure pattern `## 관련 문서` sections link to all tag pages and all `raw_sources`.
-- Ensure every raw document has a `## 관련 문서` section with a plain status value and promoted or referenced pattern links, without direct domain/tag links.
-- Ensure duplicate or conflicting rules are identified across exact domain tags and registry-declared adjacent domain tags.
-- Ensure stale guidance is marked or rewritten only when the raw evidence and current core contract justify it.
-- Ensure promoted pattern frontmatter includes Korean `title` and `summary`.
-- Ensure promoted pattern frontmatter uses Obsidian-compatible `tags` as a list, not a nested routing object.
-- Ensure `domains`, `domain_tags`, `stages`, and `risks` mirror the derived `plan-wiki/...` values in `tags`.
-- Ensure promoted pattern bodies use the docs-first Korean headings `개요`, `문제`, `적용 조건`, `해야 할 것`, `피해야 할 것`, `적용 예시`, `판단 근거`, and `관련 문서`.
-- Ensure human-readable prose follows the active `core/common/용어-정책.md`, with English retained only for literal identifier exceptions.
-- Ensure tag pages avoid long comma-separated link lines and use readable bullet lists for related tags or patterns.
-- Ensure new pattern files still match the one-file-per-rule registry model rather than turning into freeform note sprawl.
-- Ensure feedback outcome folders and history root exist when docs feedback is enabled.
-- Ensure feedback and history JSON records are valid and do not claim changed files that are missing.
+6. Report.
+   - Summarize generated files changed, blocking health issues, cleanup applied, and cleanup proposals that need approval.
+   - Run `git -C .codex/plan-wiki/source status --short`.
+   - Do not commit or push unless the user explicitly asks.
 
 ## Guardrails
 
-- Do not modify wiki content before writing the proposed cleanup report.
-- Do not delete raw evidence or wiki documents without explicit approval.
-- Do not rewrite whole documents when a narrow rule edit is enough.
-- Do not treat lint as a semantic re-ingest pass; stay focused on quality, consistency, routing integrity, and graph-link integrity.
-- Do not rewrite feedback or history records except to report malformed records or apply user-approved cleanup.
-
-## Reference
-
-- Read [references/checklist.md](references/checklist.md) for the exact checks and the expected `점검-보고서.md` structure.
-- Read [../plan-wiki-setup/references/platform-commands.md](../plan-wiki-setup/references/platform-commands.md) for nested source repo Git safety before committing plan wiki changes.
+- Do not reintroduce manual `wiki/tags/**` maintenance as the source of truth.
+- Do not block on unregistered tags; tags are observed from frontmatter.
+- Do not use generated files as canonical policy.
+- Do not apply semantic cleanup without explicit approval.
+- Do not edit dev wiki files.

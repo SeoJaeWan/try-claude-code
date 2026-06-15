@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dev Wiki Lint"
+  short_description: "Scan and maintain dev wiki health"
+  default_prompt: "Use $dev-wiki-lint to scan the dev wiki, refresh generated indexes, and report cleanup candidates."

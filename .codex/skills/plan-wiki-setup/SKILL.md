@@ -21,7 +21,7 @@ Use this skill to connect a workspace to the shared plan wiki Git repository, sa
    - If the repo is dirty, report that before running maintenance that may overwrite or conflict with local changes.
 
 3. Bootstrap the source repo structure when explicitly needed.
-   - Create `raw/`, `wiki/`, `wiki/core/`, `wiki/patterns/`, `wiki/tags/`, `wiki/_meta/`, `feedback/`, `feedback/inbox/`, `feedback/applied/`, `feedback/rejected/`, `feedback/needs-decision/`, `feedback/stale/`, and `history/` if they do not exist.
+   - Create `raw/`, `wiki/`, `wiki/core/`, `wiki/patterns/`, `wiki/generated/`, `wiki/_meta/`, `feedback/`, `feedback/inbox/`, `feedback/applied/`, `feedback/rejected/`, `feedback/needs-decision/`, `feedback/stale/`, and `history/` if they do not exist.
    - Seed `wiki/registry.json` if missing.
    - Seed the required core planning documents if missing.
    - Preserve existing user content; do not overwrite populated files without explicit approval.
@@ -29,7 +29,7 @@ Use this skill to connect a workspace to the shared plan wiki Git repository, sa
 4. Verify the planning root.
    - Treat `./.codex/plan-wiki/source/wiki` as the planning root.
    - Confirm `./.codex/plan-wiki/source/wiki/registry.json` exists.
-   - Confirm `core/`, `patterns/`, `tags/`, and `_meta/` exist under the planning root.
+   - Confirm `core/`, `patterns/`, `generated/`, and `_meta/` exist under the planning root.
    - Confirm `plan-maker`, `plan-review`, and `orchestrator` can target the same planning root path.
 
 5. Run sync/repair when requested or when orchestrator fast-forward preflight failed.
@@ -52,6 +52,7 @@ Use this skill to connect a workspace to the shared plan wiki Git repository, sa
 
 - Do not recreate legacy sync-link directories; planning agents read `./.codex/plan-wiki/source/wiki` directly.
 - Do not point planning skills at `raw/`, `feedback/`, or `history/`; those are source-maintenance roots.
+- Do not create or depend on manual `wiki/tags/**` pages as the source of truth. Generated indexes under `wiki/generated/**` replace manual tag navigation.
 - Do not overwrite existing wiki documents just to match a new template.
 - Do not scatter environment-specific absolute paths throughout other skills.
 - Do not continue if the source repo remote does not match `./.codex/plan-wiki/config.json`.

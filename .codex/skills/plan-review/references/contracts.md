@@ -14,7 +14,7 @@ Provide an independent, read-only review of an executable plan file and its curr
    - orchestrated mode: use the provided `plan_wiki_root`.
    - direct mode: use `./.codex/plan-wiki/source/wiki`.
 6. Optional orchestrator-provided `dev_wiki_root`.
-7. `registry.json`, stage core docs for `review`, and selected pattern files whose `적용 조건` match the reviewed plan.
+7. `registry.json`, stage core docs for `review`, and selected pattern files discovered from generated indexes, frontmatter, markdown links, or source search whose `적용 조건` match the reviewed plan.
 8. Plan Maker templates and local references only as needed to verify the plan contract.
 9. Repo-local execution contracts only when the plan makes a concrete routing, command, validation, or placement claim; include `../plan-tdd/references/contracts.md` First-Time Test Contract Fields when the plan expects TDD before the test environment exists.
 10. `../dev-wiki-setup/references/consumer-context.md` when `dev_wiki_root` is provided.

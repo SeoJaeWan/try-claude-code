@@ -15,7 +15,7 @@ Read these references in order whenever this skill runs:
 2. [references/workflow.md](references/workflow.md) for plan wiki routing, plan loading, finding classification, artifact writing, and response flow.
 3. [references/guardrails.md](references/guardrails.md) for non-negotiable review constraints.
 4. [references/review-policy.md](references/review-policy.md) for severity mapping, outcome states, and review artifact shape.
-5. [../../plan-wiki/source/wiki/core/common/용어-정책.md](../../plan-wiki/source/wiki/core/common/용어-정책.md) before writing human-readable findings.
+5. The active plan wiki generated index at [../../plan-wiki/source/wiki/generated/index.json](../../plan-wiki/source/wiki/generated/index.json) when present, to discover matching pattern documents from frontmatter and links.
 
 Read repo-local execution contracts only when the reviewed plan makes concrete routing, validation, comparison, or placement claims that depend on them.
 
@@ -23,7 +23,7 @@ Read repo-local execution contracts only when the reviewed plan makes concrete r
 
 - Review-write-only: do not edit plans, source code, tests, wiki files, or helper notes.
 - Write exactly one artifact: `./plans/_orchestrator/review/{task-slug}/review.md`.
-- Treat the resolved plan wiki registry, stage core docs, and selected patterns as mandatory review input.
+- Treat the resolved plan wiki registry stage-core docs as mandatory review input; discover selected patterns from generated indexes, frontmatter, markdown links, and source search.
 - Review the current plan file and current `tdd.md` from disk; do not trust stale chat memory or prior review metadata.
 - Report findings first, ordered by severity.
 - Do not rewrite the plan inside the review skill.

@@ -71,7 +71,7 @@ If artifact handoff is plausible, inspect the staged plan wiki before asking the
 - if the planning root exists:
   - read `{plan_wiki_root}/registry.json`
   - read every path in `stage_core.brainstorm` when present; otherwise fall back to the registry `core` array and state that the wiki does not yet expose a brainstorm-specific core list
-  - use `selection.brainstorm` when present to select candidate pattern files by domain first: always include `common`, add `frontend`, `backend`, or `infra` only when the user's request or local evidence touches that domain, then narrow by `domain_taxonomy.tags`
+  - use `generated/index.json` when present to select candidate pattern files by `type`, `stage`, `tags`, title, and markdown links; if it is missing, use narrow source search under `patterns/**`
   - read only the selected pattern files whose `적용 조건` clauses materially help classify the current ambiguity
 - if the planning root is missing or unreadable and artifact handoff is likely:
   - state that the plan wiki dependency is missing

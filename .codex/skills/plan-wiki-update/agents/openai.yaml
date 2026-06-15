@@ -1,0 +1,4 @@
+interface:
+  display_name: "Plan Wiki Update"
+  short_description: "Apply feedback and update plan wiki"
+  default_prompt: "Use $plan-wiki-update to apply feedback or user-provided planning knowledge to the plan wiki."

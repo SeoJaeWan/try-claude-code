@@ -14,7 +14,7 @@ Planning agents should find:
 - `./.codex/plan-wiki/source/wiki/registry.json`
 - `./.codex/plan-wiki/source/wiki/core/**`
 - `./.codex/plan-wiki/source/wiki/patterns/**`
-- `./.codex/plan-wiki/source/wiki/tags/**`
+- `./.codex/plan-wiki/source/wiki/generated/**`
 - `./.codex/plan-wiki/source/wiki/_meta/**`
 
 `raw/`, `feedback/`, and `history/` live at `./.codex/plan-wiki/source/` and are not part of the planning root.

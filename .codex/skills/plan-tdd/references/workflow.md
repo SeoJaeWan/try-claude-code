@@ -277,7 +277,7 @@ Write `tdd.md` adjacent to the selected executable `plan.md`.
 
 This report is a helper artifact, not the source of truth.
 The source of truth is the actual test files in the source tree.
-Apply the active plan wiki `core/common/용어-정책.md` to human-readable report prose and test intent text:
+Apply active plan wiki writing guidance when present; otherwise use Korean-first report prose and test intent text:
 
 - keep YAML frontmatter keys, blocker codes, test types, commands, file paths, metadata comments, API names, and code identifiers in English when they must match literally
 - write clause summaries, reasons, blocker explanations, validation notes, and test descriptions in Korean-first prose

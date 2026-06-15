@@ -1,4 +1,4 @@
 interface:
   display_name: "Plan Wiki Ingest"
-  short_description: "Ingest review files into raw evidence, pattern rules, registry, and history."
-  default_prompt: "Use this skill when Codex needs to ingest review files from the main repository root under .codex/reviews into the plan wiki raw store, pattern files, registry, tag pages, and operation history."
+  short_description: "Legacy route to plan-wiki-update"
+  default_prompt: "Use $plan-wiki-update to process any remaining legacy review evidence into the plan wiki."

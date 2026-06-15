@@ -62,7 +62,7 @@ Layer convention references must not redefine this blocker taxonomy. They may ad
 7. `./references/unit-test-conventions.md` when logic boundaries are in scope
 8. `./references/component-test-conventions.md` when component rendering or same-screen interaction boundaries are in scope
 9. `./references/e2e-test-conventions.md` when frontend browser journeys are in scope
-10. Active plan wiki `core/common/용어-정책.md` before writing report prose or test intent text
+10. Active plan wiki writing guidance when present; otherwise Korean-first report prose and test intent text with English retained for exact identifiers, paths, commands, runner terms, and source-defined metadata values
 11. `../dev-wiki-setup/references/consumer-context.md` when `dev_wiki_root` is provided
 
 ## Output contract

@@ -135,7 +135,7 @@ function verifyPlanWiki(sourceRoot) {
     "wiki/registry.json",
     "wiki/core",
     "wiki/patterns",
-    "wiki/tags",
+    "wiki/generated",
     "wiki/_meta",
     "raw",
     "feedback",

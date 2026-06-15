@@ -1,6 +1,6 @@
 ---
 name: dev-wiki-update
-description: Update a project-specific dev wiki from explicit user-provided rules, conventions, architecture notes, workflow commands, or development constraints. Use when the user says to add, change, record, or update a specific rule or note into dev wiki. Do not use for full repository-vs-wiki synchronization; use `dev-wiki-sync` for project-wide sync, and `dev-wiki-graph` for graph artifacts. Requires `.codex/dev-wiki/config.json` and the matching project folder prepared by `dev-wiki-setup`.
+description: Update a project-specific dev wiki from explicit user-provided rules, conventions, architecture notes, workflow commands, or development constraints, then refresh generated indexes and cleanup proposals. Use when the user says to add, change, record, or update a specific rule or note into dev wiki. Use `dev-wiki-audit` for repo-vs-wiki comparison, `dev-wiki-lint` for health/index maintenance, and `dev-wiki-graph` for graph artifacts.
 ---
 
 # Dev Wiki Update
@@ -29,7 +29,7 @@ Read these references before editing wiki files:
 
 3. Inspect narrow supporting evidence only when needed.
    - Use repository files only to place or reconcile the user-provided rule.
-   - Do not perform a full schema-wide repository sync; route that work to `dev-wiki-sync`.
+   - Do not perform a full repository-vs-wiki audit; route that work to `dev-wiki-audit`.
    - Do not update `{project}/graph/`; use `dev-wiki-graph` for graph artifacts.
 
 4. Integrate the explicit rule.
@@ -38,9 +38,15 @@ Read these references before editing wiki files:
    - Replace stale or conflicting text instead of stacking contradictory bullets.
    - Use Obsidian wikilinks for direct project-wiki relationships when helpful.
 
-5. Verify and report.
+5. Refresh generated indexes and inspect cleanup proposals.
+   - Run `node .codex/tools/wiki-index.mjs --mode dev --root .codex/dev-wiki/source/{project}` after wiki edits.
+   - Read `{project}/generated/wiki-health.md` and `{project}/generated/normalize-proposals.md`.
+   - Apply only mechanical cleanup that does not change rule meaning.
+   - Report tag, term, link, or metadata drift as proposals unless the user already approved that exact cleanup.
+
+6. Verify and report.
    - Run `git -C .codex/dev-wiki/source status --short`.
-   - Summarize changed dev wiki files and unresolved decisions.
+   - Summarize changed dev wiki files, generated files, and unresolved decisions.
    - Do not commit or push unless the user explicitly asks.
 
 ## Guardrails
@@ -48,7 +54,8 @@ Read these references before editing wiki files:
 - Do not write update history files; Git diff and commit messages are the record.
 - Do not edit plan wiki files.
 - Do not edit `{project}/graph/`; graph files are owned by `dev-wiki-graph`.
-- Do not infer or refresh unrelated standard documents during `dev-wiki-update`; use `dev-wiki-sync` for that.
+- Do not infer or refresh unrelated standard documents during `dev-wiki-update`; use `dev-wiki-audit` for that.
+- Do not create manual tag index pages. Tags are observed from frontmatter and reported in generated indexes.
 - Do not silently invent missing policy. If the rule depends on a project decision the user did not provide and local context cannot prove it, ask before writing.
 - Do not turn a one-off implementation note into a global project convention unless the user frames it as a rule.
 - Do not duplicate the same rule across many files; choose one owner and link to it if necessary.

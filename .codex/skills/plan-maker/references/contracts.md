@@ -25,11 +25,11 @@ Use this as the preferred planning entrypoint after upstream decisions have lock
 4. Active plan wiki `core/common/계획-산출물-계약.md` - executable plan file contract.
 5. Active plan wiki `core/common/실행-라우팅.md` - canonical `owner_agent` catalog and routing rules.
 6. `../plan-wiki-setup/references/staging-contract.md` and `../plan-wiki-setup/references/platform-commands.md` in direct mode.
-7. Resolved planning `plan_wiki_root` containing `registry.json`, `core/`, `patterns/`, `tags/`, and domain-first selection policy.
-8. Stage core documents and matching pattern files selected by the registry for `plan-maker`.
+7. Resolved planning `plan_wiki_root` containing `registry.json`, `core/`, `patterns/`, and generated indexes when available.
+8. Stage core documents selected by the registry for `plan-maker`, plus matching pattern files discovered from generated indexes, frontmatter, markdown links, and source search.
 9. `./references/git.md` - branch naming rules when needed.
 10. `./references/plan-template-sequential.md` - self-contained plan file template.
-11. Active plan wiki `core/common/용어-정책.md` - Korean-first visible prose and allowed English identifier rules.
+11. Active plan wiki writing guidance when present; otherwise use Korean-first visible prose with English only for exact identifiers, paths, commands, schema keys, agent names, and source-defined metadata values.
 12. `./references/visual-parity-contract.md` when visual parity tasks are in scope.
 13. Relevant execution contracts only when routing or mode-sensitive conventions matter, including `../plan-tdd/references/contracts.md` First-Time Test Contract Fields when first-time TDD may be required.
 14. `../dev-wiki-setup/references/consumer-context.md` when `dev_wiki_root` is provided.

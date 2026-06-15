@@ -3,7 +3,7 @@
 /**
  * plan wiki source repository를 사람이 읽는 로컬 문서 사이트로 보여주는 HTTP 서버.
  *
- * `wiki/core`, `wiki/patterns`, `wiki/tags`, `raw`, `history`, `feedback`을 읽어
+ * `wiki/core`, `wiki/patterns`, `wiki/generated`, `raw`, `history`, `feedback`을 읽어
  * 문서 페이지, 검색 API, 선택 영역 feedback inbox 저장 API를 제공한다.
  */
 
@@ -61,7 +61,7 @@ const documentRoots = [
   { kind: "core", label: "핵심 정책", root: "wiki/core", routePrefix: "/core" },
   { kind: "pattern", label: "패턴", root: "wiki/patterns", routePrefix: "/patterns" },
   { kind: "raw", label: "원문 리뷰", root: "raw", routePrefix: "/raw" },
-  { kind: "tag", label: "태그", root: "wiki/tags", routePrefix: "/tags", nested: true },
+  { kind: "generated", label: "생성 인덱스", root: "wiki/generated", routePrefix: "/generated" },
   { kind: "meta", label: "메타", root: "wiki/_meta", routePrefix: "/meta" }
 ];
 
@@ -488,7 +488,7 @@ function routeFor(rootConfig, sourcePath) {
  * @returns {number} sort comparator 결과.
  */
 function routeSort(a, b) {
-  const order = { core: 0, pattern: 1, tag: 2, raw: 3, meta: 4 };
+  const order = { core: 0, pattern: 1, generated: 2, raw: 3, meta: 4 };
   const kindDiff = (order[a.kind] ?? 9) - (order[b.kind] ?? 9);
   if (kindDiff) return kindDiff;
   return a.title.localeCompare(b.title, "ko");
@@ -505,7 +505,7 @@ function docKindLabel(kind) {
     core: "핵심",
     pattern: "패턴",
     raw: "원문",
-    tag: "태그",
+    generated: "생성 인덱스",
     meta: "메타",
     history: "히스토리"
   }[kind] || kind;
@@ -1015,7 +1015,7 @@ function renderSidebar(model, currentPath) {
   const groups = groupByKind(model.docs);
   const core = groups.get("core") || [];
   const patterns = groups.get("pattern") || [];
-  const tags = groups.get("tag") || [];
+  const generated = groups.get("generated") || [];
   const raw = groups.get("raw") || [];
   const meta = groups.get("meta") || [];
 
@@ -1030,7 +1030,7 @@ function renderSidebar(model, currentPath) {
   return `<aside class="sidebar">
     <div class="side-search">
       <label for="site-search">검색</label>
-      <input id="site-search" type="search" autocomplete="off" placeholder="정책, 패턴, 태그 검색">
+      <input id="site-search" type="search" autocomplete="off" placeholder="정책, 패턴, 인덱스 검색">
       <div id="search-results" class="search-results" hidden></div>
     </div>
     <nav>
@@ -1042,7 +1042,7 @@ function renderSidebar(model, currentPath) {
       </section>
       ${section("핵심 정책", core)}
       ${section("패턴", patterns, 60)}
-      ${section("태그", tags, 80)}
+      ${section("생성 인덱스", generated, 20)}
       ${section("원문 리뷰", raw, 30)}
       ${section("메타", meta)}
     </nav>
@@ -1146,7 +1146,7 @@ function renderLayout({ model, currentPath, title, content, document = null }) {
 function renderHome(model) {
   const core = model.docs.filter((doc) => doc.kind === "core");
   const patterns = model.docs.filter((doc) => doc.kind === "pattern");
-  const tags = model.docs.filter((doc) => doc.kind === "tag");
+  const generated = model.docs.filter((doc) => doc.kind === "generated");
   const recentHistory = model.history.slice(0, 8);
   const recentFeedback = model.feedback.slice(0, 8);
 
@@ -1169,7 +1169,7 @@ function renderHome(model) {
   <section class="overview-grid">
     <div class="metric"><strong>${core.length}</strong><span>핵심 정책</span></div>
     <div class="metric"><strong>${patterns.length}</strong><span>패턴</span></div>
-    <div class="metric"><strong>${tags.length}</strong><span>태그 문서</span></div>
+    <div class="metric"><strong>${generated.length}</strong><span>생성 인덱스</span></div>
     <div class="metric"><strong>${model.history.length}</strong><span>히스토리</span></div>
   </section>
   <section>
@@ -1199,7 +1199,7 @@ function renderHome(model) {
 function renderDocument(model, doc, currentPath) {
   const tagLinks = doc.tags
     .map((tag) => {
-      const href = resolveWikiLink(`wiki/tags/${tag}`, model.routeMap) || `/tags/${tag}`;
+      const href = resolveWikiLink("wiki/generated/tag-index", model.routeMap) || "/generated/tag-index";
       return `<a class="tag" href="${escapeAttr(href)}">${escapeHtml(tag)}</a>`;
     })
     .join("");

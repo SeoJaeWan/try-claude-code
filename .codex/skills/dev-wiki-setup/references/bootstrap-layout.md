@@ -45,6 +45,8 @@ Create this project structure when missing:
     release.md
   graph/
     README.md
+  generated/
+    .gitkeep
 ```
 
 Use these standard file names for every project. If a project has no applicable rule yet, keep the file with placeholder prose such as "아직 기록된 규칙이 없습니다." or "해당 없음".
@@ -65,3 +67,7 @@ Keep the vault root at the dev wiki source root so Obsidian can show relationshi
 ## Content Rule
 
 Default project documents are placeholders for current project knowledge. They should invite updates but not pretend to know rules that have not been recorded yet.
+
+## Generated Output
+
+`generated/` is owned by `dev-wiki-lint` and stores derived indexes, link graphs, health reports, and normalization proposals. Do not hand-edit generated files or create manual tag indexes beside them.

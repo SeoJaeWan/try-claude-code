@@ -24,9 +24,9 @@ Before writing any plan artifact:
   - if missing, repair with `plan-wiki-setup` when available or stop with the missing dependency.
 - Read `{plan_wiki_root}/registry.json`.
 - Read every core document listed in `stage_core["plan-maker"]`; if absent, read the registry `core` array.
-- Select candidate patterns using registry `selection["plan-maker"]` and `adjacency_rules`; always include `common`, then add touched domains only.
+- If `{plan_wiki_root}/generated/index.json` exists, use it to discover candidate patterns by `type`, `stage`, `tags`, `risk`, title, and markdown links. If it is missing or stale, fall back to `rg` over `patterns/**` and mention that the generated index should be refreshed.
 - Read only selected pattern files whose `적용 조건` match the request, repo-local context, or authoritative upstream inputs.
-- Read the active plan wiki `core/common/용어-정책.md` before drafting visible prose.
+- Use active plan wiki writing guidance when present; otherwise apply Korean-first prose with English only for exact identifiers and source-defined metadata values.
 - If `dev_wiki_root` is present, read `../dev-wiki-setup/references/consumer-context.md`, then read only the standard dev wiki documents relevant to the requested work. Use dev wiki to guide project-specific placement, naming, module, command, and graph inspection; verify committed topology against current repo source and config.
 
 ### Step 1. Analyze the request and upstream decisions
@@ -100,7 +100,7 @@ Do not deep-dive into implementation details or write source-tree tests.
 - Treat concrete future source paths, route paths, test paths, and spec roots as committed topology only when the plan intentionally uses them as the execution contract.
 - When revising from planning docs feedback, read the provided `feedback.json` / `review-history.json` context and write a `## planning docs 피드백 반영 내역` section that records each handled `target_id` / `anchor_id`, request type, reviewer request summary, handling summary, and phase or section where it was applied.
 - Do not drop, paraphrase away, or silently satisfy `needs-change` / `question` feedback without leaving a review-handling trace in the plan body.
-- After drafting plan files, run the active `용어-정책.md` writing pass on all human-readable prose. Translate avoidable English shorthand outside code spans, and keep English only when it has a literal identifier reason.
+- After drafting plan files, run a Korean-first writing pass on all human-readable prose. Translate avoidable English shorthand outside code spans, and keep English only when it has a literal identifier or source-defined metadata reason.
 
 ### Step 6. Choose plan count
 
@@ -130,7 +130,7 @@ If the plan includes implementation scope beyond documentation-only or structura
 ### Step 9. Run quality gates
 
 - Run the active plan wiki quality gate checklist before finalizing.
-- Re-check selected patterns, terminology policy compliance, plan self-containment, request traceability, public contracts, verification ownership, related-plan lineage, authority artifacts, and execution handoff requirements.
+- Re-check selected patterns, writing-guidance compliance, plan self-containment, request traceability, public contracts, verification ownership, related-plan lineage, authority artifacts, and execution handoff requirements.
 - Re-check that implementation-scope plans expose reviewable Phase rows and commit boundaries that planning docs can present without inventing phase meaning.
 - Re-check that dense contracts are visible as structured tables and not only as fragmented `changes[]` bullets in planning docs.
 - Re-check that plans revised from planning docs feedback contain `planning docs 피드백 반영 내역` entries for each handled non-approved comment.
@@ -138,7 +138,7 @@ If the plan includes implementation scope beyond documentation-only or structura
 - Re-check that dev wiki project guidance, when provided, was used as a project reference without overriding current source/config facts or plan wiki planning policy.
 - Re-check that every evidence row points under `evidence/**`, matches the plan's phase/input/output/state/function/recipient contract, is clearly planning-only, declares `fidelity`, and gives the planning docs reviewer the concrete judgment material it claims to provide. For UI scope, re-check that shell/screen/component/state evidence is separated when those are separate implementation units, and that wireframes use meaningful labels instead of unlabeled decoration. For visual fidelity scope, re-check that the plan links the reference authority and implementation-time validation instead of using HTML/CSS as a fake final rendering. For function or adapter scope, re-check that input, function/adapter, output recipient, and negative/no-op examples are visible.
 - Fix critical self-review findings before handoff.
-- If a required wiki registry, core doc, or pattern cannot be read, treat that as a failed quality gate.
+- If a required wiki registry or stage-core doc cannot be read, treat that as a failed quality gate. If generated indexes are missing, continue with source search and report the maintenance gap.
 
 ### Step 10. Compatibility and handoff
 

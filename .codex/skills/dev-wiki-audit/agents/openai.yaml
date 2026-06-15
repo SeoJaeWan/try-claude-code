@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dev Wiki Audit"
+  short_description: "Compare repo evidence with dev wiki"
+  default_prompt: "Use $dev-wiki-audit to compare this repository with the dev wiki and report stale or missing knowledge."

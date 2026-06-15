@@ -10,7 +10,7 @@ History is not the source of truth. The source of truth remains:
 
 - `wiki/core/**`
 - `wiki/patterns/**`
-- `wiki/tags/**`
+- `wiki/generated/**`
 - `raw/**`
 - `wiki/registry.json`
 

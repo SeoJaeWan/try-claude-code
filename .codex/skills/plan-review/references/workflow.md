@@ -18,9 +18,9 @@
   - stop if `./.codex/plan-wiki/source/wiki` is missing.
 - Read `{plan_wiki_root}/registry.json`.
 - Read every core document listed in `stage_core.review`; if absent, read the registry `core` array.
-- Select candidate patterns using registry `selection.review`, `domain_taxonomy`, and `adjacency_rules`; always include `common`, then add touched domains only.
+- If `{plan_wiki_root}/generated/index.json` exists, use it to discover candidate patterns by `type`, `stage`, `tags`, `risk`, title, and markdown links. If it is missing or stale, fall back to `rg` over `patterns/**` and mention that the generated index should be refreshed.
 - Read only selected pattern files whose `적용 조건` actually match the reviewed plan file.
-- Read the active plan wiki `core/common/용어-정책.md` before drafting findings.
+- Use active plan wiki writing guidance when present; otherwise apply Korean-first prose with English only for exact identifiers and source-defined metadata values.
 - If `dev_wiki_root` is present, read `../dev-wiki-setup/references/consumer-context.md`, then read only the standard dev wiki documents needed to check project-specific folder structure, naming, testing, command, module-boundary, workflow, and graph claims.
 
 ### Step 1. Load the plan and TDD report

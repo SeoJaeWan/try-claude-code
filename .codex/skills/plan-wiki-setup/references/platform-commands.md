@@ -30,7 +30,7 @@ After setup:
 
 - confirm `./.codex/plan-wiki/source/.git` exists
 - confirm `./.codex/plan-wiki/source/wiki/registry.json` exists
-- confirm `./.codex/plan-wiki/source/wiki/core/`, `patterns/`, `tags/`, and `_meta/` exist
+- confirm `./.codex/plan-wiki/source/wiki/core/`, `patterns/`, `generated/`, and `_meta/` exist
 - confirm `./.codex/plan-wiki/source/raw/`, `feedback/`, and `history/` exist
 
 ## Git Sync

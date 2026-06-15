@@ -14,7 +14,7 @@ Read these references in order whenever this skill runs:
 1. [references/contracts.md](references/contracts.md) for purpose, inputs, output contract, execution modes, and Korean-first output requirements.
 2. [references/workflow.md](references/workflow.md) for the full planning workflow.
 3. [references/guardrails.md](references/guardrails.md) for non-negotiable planning constraints.
-4. [../../plan-wiki/source/wiki/core/common/용어-정책.md](../../plan-wiki/source/wiki/core/common/용어-정책.md) before drafting visible plan prose.
+4. The active plan wiki generated index at [../../plan-wiki/source/wiki/generated/index.json](../../plan-wiki/source/wiki/generated/index.json) when present, to discover matching pattern documents from frontmatter and links.
 5. [references/plan-template-sequential.md](references/plan-template-sequential.md) before writing new plan artifacts.
 
 Read these references only when the corresponding scope is active:
@@ -26,7 +26,7 @@ Read these references only when the corresponding scope is active:
 ## Controller Rules
 
 - Planning only: do not write implementation code or source-tree tests.
-- Treat plan wiki registry/core/pattern guidance as mandatory when the planning root is available.
+- Treat plan wiki registry stage-core guidance as mandatory when the planning root is available; discover optional patterns from generated indexes, frontmatter, and markdown links rather than registry taxonomy.
 - Resolve blocking ambiguity before writing plan artifacts; stop with a clear missing-decision packet when product scope, UI direction, or execution-agent boundary is not locked enough for planning.
-- Write visible plan prose in Korean-first language; keep English for exact identifiers, paths, commands, schema keys, agent names, and canonical taxonomy IDs.
+- Write visible plan prose in Korean-first language; keep English for exact identifiers, paths, commands, schema keys, agent names, and user- or source-defined metadata values.
 - Follow the active plan wiki plan artifact contract for self-contained plan files; do not duplicate that contract in chat or skill-local prose.

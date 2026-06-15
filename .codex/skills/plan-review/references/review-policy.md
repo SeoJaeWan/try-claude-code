@@ -1,6 +1,6 @@
 # Plan Review Policy
 
-Use this file for severity mapping, outcome states, and review artifact shape. Use the active plan wiki core docs and selected patterns as the source of truth for plan artifact meaning, quality gates, test-strategy expectations, execution handoff, visual comparison policy, and learned domain rules.
+Use this file for severity mapping, outcome states, and review artifact shape. Use the active plan wiki core docs and matching patterns discovered from generated indexes, frontmatter, markdown links, or source search as the source of truth for plan artifact meaning, quality gates, test-strategy expectations, execution handoff, visual comparison policy, and learned domain rules.
 
 ## Outcome States
 
@@ -82,7 +82,7 @@ Prefer no finding over a low-value minor note.
 
 Check the plan against:
 
-1. resolved `plan_wiki_root/registry.json`, listed stage core docs, and selected matching patterns.
+1. resolved `plan_wiki_root/registry.json`, listed stage core docs, generated index status, and selected matching patterns.
 2. active plan wiki plan artifact contract.
 3. terminology policy for visible prose.
 4. repo-local execution contracts only when the plan makes concrete claims that depend on them.

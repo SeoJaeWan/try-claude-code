@@ -37,8 +37,9 @@ Read these references before generating graph artifacts:
 
 4. Verify and report.
    - Run `npm run test:dev-wiki-graph` when the graph generator code changes.
+   - Run `node .codex/tools/wiki-index.mjs --mode dev --root .codex/dev-wiki/source/{project}` after graph output changes so generated wiki indexes include graph evidence.
    - Run `git -C .codex/dev-wiki/source status --short`.
-   - Summarize graph files changed and notable blind spots.
+   - Summarize graph files changed, generated index changes, and notable blind spots.
    - Do not commit or push unless the user explicitly asks.
 
 ## Guardrails

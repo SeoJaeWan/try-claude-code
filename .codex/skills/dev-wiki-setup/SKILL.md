@@ -30,7 +30,7 @@ Read these references before editing the filesystem:
 
 3. Bootstrap the dev wiki vault.
    - Ensure `.obsidian/`, `_meta/`, and the configured project folder exist.
-   - Ensure the project has `README.md`, `project.json`, `conventions/`, `architecture/`, `workflows/`, and `graph/`.
+   - Ensure the project has `README.md`, `project.json`, `conventions/`, `architecture/`, `workflows/`, `graph/`, and `generated/`.
    - Create missing default documents only when absent. Do not overwrite populated documents.
 
 4. Verify the nested repo state.
@@ -42,6 +42,7 @@ Read these references before editing the filesystem:
 
 - Do not make projects use dev wiki implicitly. Missing `.codex/dev-wiki/config.json` means dev wiki is not enabled.
 - Do not create a `history/` directory. Git commits are the change history.
+- Do not create manual tag index directories. Tags and links are derived by `dev-wiki-lint` into `{project}/generated/`.
 - Do not merge, rebase, reset, clean, stash, or push the dev wiki source repo without explicit user approval.
 - Do not store machine-specific absolute paths in config or wiki documents.
 - Do not point downstream skills at `plan-wiki`; this setup prepares only `dev-wiki`.
