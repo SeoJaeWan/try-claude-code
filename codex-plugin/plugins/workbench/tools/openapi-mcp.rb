@@ -7,6 +7,7 @@ require "digest"
 require "fileutils"
 require "json"
 require "net/http"
+require "optparse"
 require "stringio"
 require "time"
 require "uri"
@@ -456,12 +457,23 @@ class OpenApiMcp
   def endpoint_urls(svc, document, path, method, operation)
     swagger_url = svc.fetch("swaggerUrl")
     api_base_url = svc["apiBaseUrl"] || root_url(swagger_url)
+    swagger_document_url = swagger_document_url(swagger_url, document.fetch(:name))
     {
       "swaggerUrl" => swagger_url,
-      "swaggerOperationUrl" => swagger_operation_url(swagger_url, operation),
+      "swaggerDocumentUrl" => swagger_document_url,
+      "swaggerOperationUrl" => swagger_operation_url(swagger_document_url, operation),
       "specUrl" => document.fetch(:url),
       "endpointUrl" => join_url_path(api_base_url, path)
     }.compact
+  end
+
+  def swagger_document_url(swagger_url, document_name)
+    uri = URI(swagger_url)
+    params = URI.decode_www_form(uri.query.to_s)
+    params.reject! { |key, _| key == "urls.primaryName" }
+    params << ["urls.primaryName", document_name.to_s]
+    uri.query = URI.encode_www_form(params)
+    uri.to_s
   end
 
   def swagger_operation_url(swagger_url, operation)
@@ -787,5 +799,87 @@ class JsonRpcStdio
 end
 
 if $PROGRAM_NAME == __FILE__
-  JsonRpcStdio.new(OpenApiMcp.new).run
+  def parse_cli_options(argv)
+    options = {}
+    parser = OptionParser.new do |opts|
+      opts.banner = <<~TEXT
+        Usage:
+          ruby openapi-mcp.rb                         # run MCP stdio server
+          ruby openapi-mcp.rb list-services
+          ruby openapi-mcp.rb refresh-service [--service SERVICE]
+          ruby openapi-mcp.rb search-endpoints --query QUERY [--service SERVICE] [--limit N]
+          ruby openapi-mcp.rb get-endpoint --service SERVICE --method METHOD --path PATH
+          ruby openapi-mcp.rb find-schema-field --field FIELD [--service SERVICE] [--limit N]
+      TEXT
+      opts.on("--service SERVICE", "Service id such as carplat-manager, carplat-web-app, or tms") { |value| options[:service] = value }
+      opts.on("--query QUERY", "Search query") { |value| options[:query] = value }
+      opts.on("--field FIELD", "Schema field name") { |value| options[:field] = value }
+      opts.on("--method METHOD", "HTTP method") { |value| options[:method] = value }
+      opts.on("--path PATH", "Endpoint path") { |value| options[:path] = value }
+      opts.on("--limit N", Integer, "Result limit") { |value| options[:limit] = value }
+      opts.on("-h", "--help", "Show help") do
+        puts opts
+        exit 0
+      end
+    end
+
+    parser.parse!(argv)
+    [argv.shift, options, parser]
+  end
+
+  def require_cli_option!(options, key, command)
+    value = options[key]
+    return value if value && value.to_s != ""
+
+    raise OptionParser::MissingArgument, "#{command} requires --#{key.to_s.tr("_", "-")}"
+  end
+
+  def run_cli(argv)
+    command, options, parser = parse_cli_options(argv)
+    app = OpenApiMcp.new
+    result = case command
+             when "list-services"
+               app.send(:list_services)
+             when "refresh-service"
+               app.send(:refresh_service, options[:service])
+             when "search-endpoints"
+               app.send(
+                 :search_endpoints,
+                 require_cli_option!(options, :query, command),
+                 options[:service],
+                 options[:limit] || 10
+               )
+             when "get-endpoint"
+               app.send(
+                 :get_endpoint,
+                 require_cli_option!(options, :service, command),
+                 require_cli_option!(options, :method, command),
+                 require_cli_option!(options, :path, command)
+               )
+             when "find-schema-field"
+               app.send(
+                 :find_schema_field,
+                 require_cli_option!(options, :field, command),
+                 options[:service],
+                 options[:limit] || 10
+               )
+             else
+               warn parser
+               exit 2
+             end
+
+    puts JSON.pretty_generate(result)
+  rescue OptionParser::ParseError, KeyError => e
+    warn e.message
+    exit 2
+  rescue StandardError => e
+    warn "#{e.class}: #{e.message}"
+    exit 1
+  end
+
+  if ARGV.empty?
+    JsonRpcStdio.new(OpenApiMcp.new).run
+  else
+    run_cli(ARGV)
+  end
 end

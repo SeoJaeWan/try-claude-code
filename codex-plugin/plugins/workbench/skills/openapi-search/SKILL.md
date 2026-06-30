@@ -27,11 +27,23 @@ Find candidate API endpoints from registered Swagger/OpenAPI documents and retur
 ## Workflow
 
 1. Use `tool_search` for `openapi` tools if they are not already available.
-2. Call `list_services` to check cache status when useful.
-3. Call `refresh_service` for the likely service, or all services if uncertain.
-4. Call `search_endpoints` with Korean product terms, English identifiers, screen names, path fragments, and schema fields.
-5. Call `get_endpoint` for strong candidates only.
-6. Use `find_schema_field` when the user gives a field such as `reservationId`, `couponId`, or `carId`.
+2. If OpenAPI MCP tools are exposed, call them directly:
+   - `list_services`
+   - `refresh_service`
+   - `search_endpoints`
+   - `get_endpoint`
+   - `find_schema_field`
+3. If OpenAPI MCP tools are not exposed in the current session, use the bundled CLI fallback instead of skipping API evidence:
+   - Resolve the plugin root from this `SKILL.md` path, then run `ruby <plugin-root>/tools/openapi-mcp.rb <command>`.
+   - Example: `ruby <plugin-root>/tools/openapi-mcp.rb list-services`
+   - Example: `ruby <plugin-root>/tools/openapi-mcp.rb refresh-service --service carplat-manager`
+   - Example: `ruby <plugin-root>/tools/openapi-mcp.rb search-endpoints --service carplat-manager --query "관리자 계정 admin" --limit 5`
+   - Example: `ruby <plugin-root>/tools/openapi-mcp.rb get-endpoint --service carplat-manager --method GET --path /admin`
+   - Example: `ruby <plugin-root>/tools/openapi-mcp.rb find-schema-field --service carplat-manager --field roleId`
+4. Call `list_services` to check cache status when useful.
+5. Call or run `refresh_service` / `refresh-service` for the likely service, or all services if uncertain.
+6. Call or run endpoint search with Korean product terms, English identifiers, screen names, path fragments, and schema fields.
+7. Inspect endpoint details only for strong candidates.
 
 ## Output
 
@@ -42,7 +54,8 @@ Use Korean for explanations unless the user asks otherwise. Keep methods, paths,
 
 - `<service>` `<METHOD> <path>` - <summary>
   - Confidence: <candidate / likely / confirmed>
-  - Swagger: <swaggerUrl or swaggerOperationUrl>
+  - Swagger: <swaggerDocumentUrl, or swaggerUrl if the document URL is unavailable>
+  - Operation: <swaggerOperationUrl when useful>
   - Spec: <specUrl>
   - Endpoint candidate: <endpointUrl>
   - Request/Response: <core fields only>
