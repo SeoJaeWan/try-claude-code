@@ -36,10 +36,10 @@ scripts/                             # workspace/운영 보조 스크립트
 
 | 플러그인 | 경로 | 역할 |
 |---|---|---|
-| `try-claude-code` | `plugin/develop` | worktree 기반 실행, 훅, stop-review gate, dev-review, 개발/문서/검증 스킬 |
-| `try-claude-code-statusline` | `plugin/statusline` | 상태줄 bootstrap, 동기화, on/off, inline/box 전환 |
+| `try-claude-code` | `claude-plugin/develop` | worktree 기반 실행, 훅, stop-review gate, dev-review, 개발/문서/검증 스킬 |
+| `try-claude-code-statusline` | `claude-plugin/statusline` | 상태줄 bootstrap, 동기화, on/off, inline/box 전환 |
 
-### `plugin/develop`
+### `claude-plugin/develop`
 
 현재 메인 실행 플러그인은 `2.5.0` 기준으로 아래 범주를 갖습니다.
 
@@ -54,13 +54,13 @@ scripts/                             # workspace/운영 보조 스크립트
 - `backend-developer`
 - `general-developer`
 
-훅은 `plugin/develop/hooks/hooks.json`에 정의되어 있으며, 현재 다음 이벤트를 사용합니다.
+훅은 `claude-plugin/develop/hooks/hooks.json`에 정의되어 있으며, 현재 다음 이벤트를 사용합니다.
 
 - `SessionStart` / `SessionEnd`: 세션 라이프사이클과 Codex 가용성 추적
 - `PostToolUse`: worktree 및 agent 사용 추적
 - `Stop`: stop-review gate 실행
 
-### `plugin/statusline`
+### `claude-plugin/statusline`
 
 상태줄은 이제 별도 플러그인입니다. 예전 `/init-statusline` 문서 대신 아래 식의 트리거를 기준으로 동작합니다.
 
@@ -101,8 +101,8 @@ SessionStart 훅이 `~/.claude/statusline/` 아래 파일을 자동 동기화하
 `dev-review`는 planning review가 아니라 구현 리뷰입니다. `runner`가 모든 phase commit을 끝낸 뒤 merge/PR/later 결정을 내리기 전에 실행합니다.
 
 - 리뷰 데이터: `plans/{task}/dev-review/review-data.json`, `feedback.json`, `review-history.json`, `assets/diffs/*`
-- 리뷰 UI: `plugin/develop/skills/dev-review/assets/index.html`에서 직접 서빙
-- 서버: `plugin/develop/skills/dev-review/scripts/server.mjs`
+- 리뷰 UI: `claude-plugin/develop/skills/dev-review/assets/index.html`에서 직접 서빙
+- 서버: `claude-plugin/develop/skills/dev-review/scripts/server.mjs`
 - URL: `http://localhost:9797/review/{task_slug}`
 
 서버는 한 프로세스가 여러 task review를 동시에 호스팅합니다. commit step에서는 변경 파일을 기준으로 앱 package를 탐지하고, `scripts.dev`가 있으면 별도 포트에 dev server를 lazy spawn해 오른쪽 iframe에 표시합니다. reviewer가 commit별 route를 직접 바꾸면 `feedback.json.preview_routes`에 저장되어 같은 round에서 다시 열 때 유지됩니다.
@@ -116,7 +116,7 @@ SessionStart 훅이 `~/.claude/statusline/` 아래 파일을 자동 동기화하
 3. `plan-tdd`가 실제 테스트 파일을 소스 트리에 생성하고 plan row/test/manual smoke 매핑을 남깁니다.
 4. `plan-review`가 현재 `plan.md`와 `tdd.md`를 함께 cold review합니다.
 5. `orchestrator`가 planning docs gate와 feedback triage를 관리합니다.
-6. 구현 실행은 `plugin/develop`의 `runner`가 task 단위 worktree에서 수행하고, phase별 commit을 만듭니다.
+6. 구현 실행은 `claude-plugin/develop`의 `runner`가 task 단위 worktree에서 수행하고, phase별 commit을 만듭니다.
 7. `runner`가 `dev-review`를 열어 commit card, diff, live preview 기반 구현 리뷰를 받고, `needs-change` 피드백은 같은 worktree에서 재작업 라운드로 돌립니다.
 8. 구현 리뷰가 승인된 뒤 stop-review gate와 merge/PR/later 결정을 거칩니다.
 
@@ -155,7 +155,7 @@ npm test
 
 이 명령은 hook contract 테스트를 실행합니다. CI의 [plugin-test.yml](./.github/workflows/plugin-test.yml)은 여기에 더해 아래 smoke test도 함께 돌립니다.
 
-- `plugin/develop/scripts/session-lifecycle-hook.mjs`의 SessionStart Codex probe
+- `claude-plugin/develop/scripts/session-lifecycle-hook.mjs`의 SessionStart Codex probe
 
 매트릭스는 `ubuntu / macOS / windows x Node 20, 22`입니다.
 

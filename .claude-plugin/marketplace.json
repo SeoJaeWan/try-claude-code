@@ -11,12 +11,12 @@
         {
             "name": "try-claude-code",
             "description": "Agents, hooks, and skills for AI-assisted development workflow — Git, testing, planning, and documentation",
-            "source": "./plugin/develop"
+            "source": "./claude-plugin/develop"
         },
         {
             "name": "try-claude-code-statusline",
             "description": "Multi-line box UI status line with toggle on/off support",
-            "source": "./plugin/statusline"
+            "source": "./claude-plugin/statusline"
         }
     ]
 }

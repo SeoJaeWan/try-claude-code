@@ -31,6 +31,6 @@ jobs:
         run: |
           set -e
           out=$(echo '{"session_id":"ci-probe","cwd":"."}' \
-            | node plugin/develop/scripts/session-lifecycle-hook.mjs session-start 2>&1)
+            | node claude-plugin/develop/scripts/session-lifecycle-hook.mjs session-start 2>&1)
           echo "$out"
           echo "$out" | grep -q "Codex" || (echo "probe did not announce Codex status" && exit 1)

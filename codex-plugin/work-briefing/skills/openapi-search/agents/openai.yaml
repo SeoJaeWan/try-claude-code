@@ -1,0 +1,12 @@
+interface:
+  display_name: "OpenAPI Search"
+  short_description: "Find API candidates from Swagger specs"
+  default_prompt: "Use $openapi-search to find candidate APIs and Swagger links for this feature."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "openapi"
+      description: "Local OpenAPI MCP server for searching registered Swagger/OpenAPI specs"
+      transport: "stdio"
+policy:
+  allow_implicit_invocation: true

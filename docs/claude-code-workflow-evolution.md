@@ -67,7 +67,7 @@ flowchart LR
 | Stage 5 | 2026-03-03 ~ 2026-03-05 | skill dispatch + planner-lite | `planner-lite`, `plan-maker`, `init-agent`, `jira` | 계획 스킬 + 실행 스킬 | 문서 계약 + 부분 자동화 | `plan.md`, 테스트 아티팩트, Jira 산출물 |
 | Stage 6 | 2026-03-06 | pluginization 전환 | `try-claude-plugin` 관련 계약 문서 | 플러그인 패키징 | 배포/마이그레이션 계약 | plugin seed/bootstrap/migration |
 | Stage 7 | 2026-03-06 ~ 2026-03-31 | plugin + dev-cli 실험 | `marketplace.json`, historical `plugin/skills/*`, `docs/dev-cli-design.md`, `.codex/skills/*` | 계획 스킬 + 플러그인 스킬 + CLI | 실행 강제 규칙 | preview/apply scaffold, tests/evals |
-| Stage 8 | 2026-04-01 ~ 2026-04-28 | plugin split + artifact-driven planning | `.claude-plugin/marketplace.json`, `plugin/develop/*`, `plugin/statusline/*`, `.codex/skills/*`, `.codex/tools/*` | planning artifact + runtime hook + worktree 실행 | 아티팩트/훅 기반 실행 계약 | `plans/*`, `planning-docs/*`, `dev-review/*`, `qa/*`, plan wiki 연동 |
+| Stage 8 | 2026-04-01 ~ 2026-04-28 | plugin split + artifact-driven planning | `.claude-plugin/marketplace.json`, `claude-plugin/develop/*`, `claude-plugin/statusline/*`, `.codex/skills/*`, `.codex/tools/*` | planning artifact + runtime hook + worktree 실행 | 아티팩트/훅 기반 실행 계약 | `plans/*`, `planning-docs/*`, `dev-review/*`, `qa/*`, plan wiki 연동 |
 
 ---
 
@@ -491,13 +491,13 @@ flowchart TD
 `2026-04-01` 이후에는 구조가 다시 크게 바뀐다.
 
 - `frontend-dev`, `backend-dev`에서 CLI scaffold 의존을 제거하고 convention discovery로 전환
-- `plugin/develop`와 `plugin/statusline`으로 서브플러그인 분리
+- `claude-plugin/develop`와 `claude-plugin/statusline`으로 서브플러그인 분리
 - session lifecycle, worktree-aware stop gate, session restore 같은 runtime hook 계층 강화
 - `.codex/skills/*`를 로컬 planning stack으로 정리
 - plan wiki staging, 이후 link-only planning root로 고정
 - orchestrator를 stateless, artifact-driven 흐름으로 재구성
 - planning docs gate, feedback triage, QA verification, visual parity 스킬 분리 추가
-- 구현 완료 후 merge 전 단계에 `plugin/develop/skills/dev-review` 기반 implementation review gate 추가
+- 구현 완료 후 merge 전 단계에 `claude-plugin/develop/skills/dev-review` 기반 implementation review gate 추가
 - `dev-review`는 plugin-internal multi-review server, data-only task artifacts, commit별 live preview iframe, route override를 갖는 구조로 발전 *(live preview iframe과 route override는 `2026-04-28~29`에 제거됨 — Stage 9 참조)*
 - 메인 develop 플러그인은 이 흐름을 포함해 `2.5.0`으로 갱신 *(현재는 `2.17.0`)*
 
@@ -544,9 +544,9 @@ Stage 8의 중요한 추가점은 planning review와 implementation review가 �
 
 | 구분 | Planning review | Implementation review |
 |---|---|---|
-| 소유자 | `.codex/skills/orchestrator` | `plugin/develop/skills/dev-review` |
+| 소유자 | `.codex/skills/orchestrator` | `claude-plugin/develop/skills/dev-review` |
 | 검토 대상 | `plan.md`와 phase detail | runner가 만든 실제 commit, diff, test, merge impact |
-| 서버 | `.codex/tools/planning-docs-browser-server.mjs` | `plugin/develop/skills/dev-review/scripts/server.mjs` |
+| 서버 | `.codex/tools/planning-docs-browser-server.mjs` | `claude-plugin/develop/skills/dev-review/scripts/server.mjs` |
 | URL 성격 | planning docs package | `http://localhost:9797/review/{task_slug}` multi-review |
 | 아티팩트 | `plans/*/planning-docs/*` | `plans/*/dev-review/review-data.json`, `feedback.json`, `review-history.json`, `assets/diffs/*` |
 
@@ -560,12 +560,12 @@ commit step에서는 오른쪽 sticky panel에 live preview iframe이 붙는다.
 |---|---|---|
 | 배포 메타 | 로컬 plugin bundle 공개 | `.claude-plugin/marketplace.json`, `.agents/plugins/marketplace.json` |
 | planning 계층 | 요청 잠금, 계획 생성, cold review, TDD contract test 작성, plan wiki 연동 | `.codex/skills/brainstorm/SKILL.md`, `.codex/skills/plan-maker/SKILL.md`, `.codex/skills/orchestrator/SKILL.md`, `.codex/skills/plan-review/SKILL.md`, `.codex/skills/plan-tdd/SKILL.md` |
-| 실행 계층 | worktree 기반 구현/문서화/검증 실행 | `plugin/develop/skills/runner/SKILL.md`, `plugin/develop/skills/frontend-dev/SKILL.md`, `plugin/develop/skills/backend-dev/SKILL.md`, `plugin/develop/skills/general-dev/SKILL.md` |
-| 구현 리뷰 계층 | commit 기반 구현 리뷰, feedback routing, live preview | `plugin/develop/skills/dev-review/SKILL.md`, `plugin/develop/skills/dev-review/scripts/server.mjs`, ~~`scripts/lib/preview-pool.mjs`~~ *(제거됨; 현재 lib 구성은 Stage 9 참조)* |
-| 역할 프롬프트 | 도메인별 agent 책임 정의 | `plugin/develop/agents/frontend-developer.md`, `plugin/develop/agents/backend-developer.md`, `plugin/develop/agents/general-developer.md` |
-| runtime hook 계층 | 세션 추적, /runner 부트스트랩 | `plugin/develop/hooks/hooks.json`, `plugin/develop/scripts/session-lifecycle-hook.mjs`, `plugin/develop/scripts/user-prompt-submit-hook.mjs` *(Stage 9에서 session-lifecycle hook은 제거되고 `UserPromptSubmit` → `user-prompt-submit-hook.mjs` 하나만 남음)* |
+| 실행 계층 | worktree 기반 구현/문서화/검증 실행 | `claude-plugin/develop/skills/runner/SKILL.md`, `claude-plugin/develop/skills/frontend-dev/SKILL.md`, `claude-plugin/develop/skills/backend-dev/SKILL.md`, `claude-plugin/develop/skills/general-dev/SKILL.md` |
+| 구현 리뷰 계층 | commit 기반 구현 리뷰, feedback routing, live preview | `claude-plugin/develop/skills/dev-review/SKILL.md`, `claude-plugin/develop/skills/dev-review/scripts/server.mjs`, ~~`scripts/lib/preview-pool.mjs`~~ *(제거됨; 현재 lib 구성은 Stage 9 참조)* |
+| 역할 프롬프트 | 도메인별 agent 책임 정의 | `claude-plugin/develop/agents/frontend-developer.md`, `claude-plugin/develop/agents/backend-developer.md`, `claude-plugin/develop/agents/general-developer.md` |
+| runtime hook 계층 | 세션 추적, /runner 부트스트랩 | `claude-plugin/develop/hooks/hooks.json`, `claude-plugin/develop/scripts/session-lifecycle-hook.mjs`, `claude-plugin/develop/scripts/user-prompt-submit-hook.mjs` *(Stage 9에서 session-lifecycle hook은 제거되고 `UserPromptSubmit` → `user-prompt-submit-hook.mjs` 하나만 남음)* |
 | planning review / knowledge 계층 | planning docs UI와 plan wiki 관리 | `.codex/tools/planning-docs-browser-server.mjs`, `.codex/tools/plan-wiki-docs-server.mjs`, `.codex/skills/plan-wiki-setup/SKILL.md`, `.codex/skills/plan-wiki-ingest/SKILL.md`, `.codex/skills/plan-wiki-lint/SKILL.md`, `.codex/skills/plan-wiki-apply-feedback/SKILL.md` |
-| statusline 계층 | 상태줄 bootstrap / sync / mode 전환 | `plugin/statusline/skills/statusline/SKILL.md`, `plugin/statusline/hooks/hooks.json` |
+| statusline 계층 | 상태줄 bootstrap / sync / mode 전환 | `claude-plugin/statusline/skills/statusline/SKILL.md`, `claude-plugin/statusline/hooks/hooks.json` |
 
 ### 현재 구조의 가장 큰 차이
 
@@ -599,7 +599,7 @@ Stage 8 직후부터 두 갈래로 정리가 진행됐다. (1) 만들었다 무�
 
 | 구분 | 파일 |
 |---|---|
-| 진입 | `plugin/develop/skills/dev-review/SKILL.md` (v2, model: sonnet) |
+| 진입 | `claude-plugin/develop/skills/dev-review/SKILL.md` (v2, model: sonnet) |
 | 서버 | `scripts/server.mjs` (discovery 기반) |
 | 데이터 생성 | `scripts/generate-review-data.mjs` |
 | lib | `scripts/lib/{agents,args,comment-types,git,output,plan}.mjs` |
@@ -619,7 +619,7 @@ runner 쪽도 함께 정리됐다.
 
 ### 3. runtime hook 축소
 
-세션 lifecycle hook 계층(`session-lifecycle-hook.mjs`, `session-restore` 스킬)은 제거됐다. 현재 `plugin/develop/hooks/hooks.json`에는 `UserPromptSubmit` 하나만 남아 `/runner` path-sanity gate(`user-prompt-submit-hook.mjs`)를 건다.
+세션 lifecycle hook 계층(`session-lifecycle-hook.mjs`, `session-restore` 스킬)은 제거됐다. 현재 `claude-plugin/develop/hooks/hooks.json`에는 `UserPromptSubmit` 하나만 남아 `/runner` path-sanity gate(`user-prompt-submit-hook.mjs`)를 건다.
 
 ### 4. dev-wiki 지식 계층 도입 (`2026-05-29 ~`)
 
@@ -677,7 +677,7 @@ Stage 8이 "구현 리뷰 + live preview까지 붙여 기능을 넓힌" 단계�
 | 2026-03-15 | `daaec82` | skill별 coding-rules 참조와 `init-coding-rules` 제거, CLI가 규칙 대체 |
 | 2026-04-01 | `b965194`, `b2cf8ad` | convention discovery 전환, `packages/` 제거로 dev CLI 실험 종료 |
 | 2026-04-02 | `e245d94` | session lifecycle + worktree-aware stop-gate 도입 |
-| 2026-04-10 | `856d24b`, `ac63606` | `plugin/develop`, `plugin/statusline` 분리와 skill 명칭 정리 |
+| 2026-04-10 | `856d24b`, `ac63606` | `claude-plugin/develop`, `claude-plugin/statusline` 분리와 skill 명칭 정리 |
 | 2026-04-20 | `2b7e237`, `b44b996` | QA verification 추가, orchestrator의 stateless artifact-driven 정리 |
 | 2026-04-22 | `28f8671`, `71ad200` | generic skill subagent 전환, plan wiki link-only 고정 |
 | 2026-04-23 | `c81b67b` | planning docs gate 추가 |
@@ -939,11 +939,11 @@ flowchart LR
 |---|---|---|---|---|
 | 요청 잠금 / 기획 | `brainstorm`, `ui-spec`, `plan-maker` | `.codex/skills/*` | plan wiki + planning references | `plans/*`, phase detail, 결정 기록 |
 | cold review / planning docs | `plan-review`, `orchestrator`, `planning-docs-browser-server` | `.codex/skills/plan-review/SKILL.md`, `.codex/skills/orchestrator/SKILL.md`, `.codex/tools/planning-docs-browser-server.mjs` | review policy + browser feedback + plan signature | `plans/_orchestrator/review/*`, `plans/*/planning-docs/*` |
-| 프론트엔드 구현 | `runner` 후 `frontend-dev` | `plugin/develop/skills/frontend-dev/SKILL.md`, `plugin/develop/agents/frontend-developer.md` | `plan.md` + 기존 UI code conventions | 실제 소스 변경, 필요 시 test/E2E 복사 |
-| 백엔드 구현 | `runner` 후 `backend-dev` | `plugin/develop/skills/backend-dev/SKILL.md`, `plugin/develop/agents/backend-developer.md` | `plan.md` + 기존 backend/database conventions | 실제 소스 변경, 필요 시 test/E2E 복사 |
-| infra / general | `runner` 후 `general-dev` | `plugin/develop/skills/general-dev/SKILL.md` | `plan.md` + infra config examples | CI/CD, Docker, env, deploy 변경 |
-| implementation review | `runner` Step 4 후 `dev-review` | `plugin/develop/skills/dev-review/SKILL.md`, `plugin/develop/skills/dev-review/scripts/server.mjs`, `plugin/develop/skills/dev-review/scripts/generate-review-data.mjs` | commit log + diff + plan signature + reviewer feedback + optional live preview | `plans/*/dev-review/review-data.json`, `feedback.json`, `review-history.json`, raw diffs |
-| 세션 / runtime 보조 | `/runner` path-sanity gate, statusline | `plugin/develop/hooks/hooks.json`, `plugin/develop/scripts/user-prompt-submit-hook.mjs`, `plugin/statusline/skills/statusline/SKILL.md` | hook contract + local runtime state | path-gated runner 진입, statusline sync *(session-restore 스킬·session-lifecycle hook은 Stage 9에서 제거됨)* |
+| 프론트엔드 구현 | `runner` 후 `frontend-dev` | `claude-plugin/develop/skills/frontend-dev/SKILL.md`, `claude-plugin/develop/agents/frontend-developer.md` | `plan.md` + 기존 UI code conventions | 실제 소스 변경, 필요 시 test/E2E 복사 |
+| 백엔드 구현 | `runner` 후 `backend-dev` | `claude-plugin/develop/skills/backend-dev/SKILL.md`, `claude-plugin/develop/agents/backend-developer.md` | `plan.md` + 기존 backend/database conventions | 실제 소스 변경, 필요 시 test/E2E 복사 |
+| infra / general | `runner` 후 `general-dev` | `claude-plugin/develop/skills/general-dev/SKILL.md` | `plan.md` + infra config examples | CI/CD, Docker, env, deploy 변경 |
+| implementation review | `runner` Step 4 후 `dev-review` | `claude-plugin/develop/skills/dev-review/SKILL.md`, `claude-plugin/develop/skills/dev-review/scripts/server.mjs`, `claude-plugin/develop/skills/dev-review/scripts/generate-review-data.mjs` | commit log + diff + plan signature + reviewer feedback + optional live preview | `plans/*/dev-review/review-data.json`, `feedback.json`, `review-history.json`, raw diffs |
+| 세션 / runtime 보조 | `/runner` path-sanity gate, statusline | `claude-plugin/develop/hooks/hooks.json`, `claude-plugin/develop/scripts/user-prompt-submit-hook.mjs`, `claude-plugin/statusline/skills/statusline/SKILL.md` | hook contract + local runtime state | path-gated runner 진입, statusline sync *(session-restore 스킬·session-lifecycle hook은 Stage 9에서 제거됨)* |
 | dev wiki 지식 | 프로젝트 규칙/그래프 관리 | `.codex/skills/dev-wiki-setup/SKILL.md`, `.codex/skills/dev-wiki-update/SKILL.md`, `.codex/skills/dev-wiki-graph/SKILL.md`, `.codex/dev-wiki/config.json` | repo facts + 사용자 제공 규칙 | `.codex/dev-wiki/source/*`, 프로젝트 그래프 |
 
 ---
@@ -984,16 +984,16 @@ flowchart LR
 
 - `.claude-plugin/marketplace.json` (marketplace `0.1.0`)
 - `.agents/plugins/marketplace.json`
-- `plugin/develop/.claude-plugin/plugin.json` (develop `2.17.0`)
-- `plugin/statusline/.claude-plugin/plugin.json` (statusline `1.2.0`)
-- `plugin/develop/skills/frontend-dev/SKILL.md`
-- `plugin/develop/skills/backend-dev/SKILL.md`
-- `plugin/develop/skills/runner/SKILL.md`
-- `plugin/develop/skills/dev-review/SKILL.md`
-- `plugin/develop/skills/dev-review/references/{helper-contract,ui-contract,review-data-schema}.md`
-- `plugin/develop/skills/dev-review/scripts/{server.mjs,generate-review-data.mjs}`, `scripts/lib/{agents,args,comment-types,git,output,plan}.mjs`
-- `plugin/develop/hooks/hooks.json`, `plugin/develop/scripts/user-prompt-submit-hook.mjs`
-- `plugin/statusline/skills/statusline/SKILL.md`
+- `claude-plugin/develop/.claude-plugin/plugin.json` (develop `2.17.0`)
+- `claude-plugin/statusline/.claude-plugin/plugin.json` (statusline `1.2.0`)
+- `claude-plugin/develop/skills/frontend-dev/SKILL.md`
+- `claude-plugin/develop/skills/backend-dev/SKILL.md`
+- `claude-plugin/develop/skills/runner/SKILL.md`
+- `claude-plugin/develop/skills/dev-review/SKILL.md`
+- `claude-plugin/develop/skills/dev-review/references/{helper-contract,ui-contract,review-data-schema}.md`
+- `claude-plugin/develop/skills/dev-review/scripts/{server.mjs,generate-review-data.mjs}`, `scripts/lib/{agents,args,comment-types,git,output,plan}.mjs`
+- `claude-plugin/develop/hooks/hooks.json`, `claude-plugin/develop/scripts/user-prompt-submit-hook.mjs`
+- `claude-plugin/statusline/skills/statusline/SKILL.md`
 - `.codex/skills/orchestrator/SKILL.md`
 - `.codex/skills/plan-review/SKILL.md`
 - `.codex/skills/plan-wiki-setup/SKILL.md`

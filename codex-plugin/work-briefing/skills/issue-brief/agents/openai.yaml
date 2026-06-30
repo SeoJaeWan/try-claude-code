@@ -1,0 +1,22 @@
+interface:
+  display_name: "Issue Brief"
+  short_description: "Jira/Figma/API evidence to scoped work"
+  default_prompt: "Use $issue-brief to turn this Jira issue, linked Figma evidence, and candidate APIs into a concise implementation brief."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "atlassian"
+      description: "Atlassian MCP server for Jira issue fields and comments"
+      transport: "streamable_http"
+      url: "https://mcp.atlassian.com/v1/mcp/authv2"
+    - type: "mcp"
+      value: "figma"
+      description: "Figma MCP server for inspecting linked design evidence"
+      transport: "streamable_http"
+      url: "https://mcp.figma.com/mcp"
+    - type: "mcp"
+      value: "openapi"
+      description: "Local OpenAPI MCP server for searching registered Swagger/OpenAPI specs"
+      transport: "stdio"
+policy:
+  allow_implicit_invocation: true
