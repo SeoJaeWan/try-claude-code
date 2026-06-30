@@ -1,4 +1,0 @@
-interface:
-  display_name: "Plan TDD"
-  short_description: "Author owner-aware unit, Component Test, and selected E2E TDD contracts from a plan."
-  default_prompt: "Use $plan-tdd to create or update source-tree unit, Component Test, and selected E2E tests, including owner-test migration and Korean-first targeted gate reporting, that close every selected clause from an executable plan artifact and its linked phase detail files using local test conventions."

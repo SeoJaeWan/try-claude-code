@@ -1,4 +1,0 @@
-interface:
-  display_name: "Orchestrator"
-  short_description: "Coordinate inline planning and cold review."
-  default_prompt: "Use $orchestrator to run the artifact-driven planning workflow after upstream scope is locked: inline plan-maker/TDD, fresh cold review, planning docs approval, and planning-complete reporting."

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Plan Review"
-  short_description: "Critically review executable plans for blockers, drift, and top-level bloat."
-  default_prompt: "Use $plan-review to cold-review one self-contained executable plan file under ./plans for blockers, YAML header validity, Korean-first terminology drift, self-containment gaps, owner routing mistakes, contract drift, implementation readiness, and verification risks before execution."

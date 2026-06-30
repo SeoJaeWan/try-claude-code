@@ -1,7 +1,0 @@
-interface:
-  display_name: "Tech Note"
-  short_description: "Source-backed Korean technical notes"
-  default_prompt: "Use $tech-note to turn this technical conversation into a source-backed Korean Markdown note with a 4:3 thumbnail."
-
-policy:
-  allow_implicit_invocation: true
