@@ -1,7 +1,7 @@
 {
   "name": "workbench",
-  "version": "0.1.0+codex.20260630031843",
-  "description": "Workspace for issue briefing, brainstorming, test briefing, API discovery, and dev wiki maintenance.",
+  "version": "0.1.0+codex.20260630071853",
+  "description": "Workspace for issue briefing, brainstorming, convention-aware scoped execution, test briefing, API discovery, and dev wiki maintenance.",
   "author": {
     "name": "Local developer"
   },
@@ -9,18 +9,20 @@
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Workbench",
-    "shortDescription": "Shape work and maintain project knowledge.",
-    "longDescription": "Workbench collects scoped work-shaping tools for Codex, including Jira issue briefs, selected-unit brainstorming, goal-focused test briefing, linked Figma design inspection, registered Swagger/OpenAPI discovery, and project dev wiki maintenance.",
+    "shortDescription": "Shape and execute scoped work.",
+    "longDescription": "Workbench collects scoped work tools for Codex, including Jira issue briefs, selected-unit brainstorming, dev-wiki-aware guarded one-unit execution, goal-focused test briefing, linked Figma design inspection, registered Swagger/OpenAPI discovery, and project dev wiki maintenance.",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [
       "MCP",
       "Skills",
-      "Test authoring"
+      "Test authoring",
+      "Scoped implementation"
     ],
     "defaultPrompt": [
       "Use $issue-brief to summarize this Jira issue.",
       "Use $brainstorm to review the selected work unit before implementation.",
+      "Use $executor to implement one selected work unit with dev wiki conventions and scope guarding.",
       "Use $test-brief to create tests before implementation."
     ],
     "brandColor": "#2563EB"

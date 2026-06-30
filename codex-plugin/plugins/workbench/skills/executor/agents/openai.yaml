@@ -1,0 +1,4 @@
+interface:
+  display_name: "Executor"
+  short_description: "Implement one brainstormed work unit."
+  default_prompt: "Use $executor to implement one selected work unit while guarding scope."

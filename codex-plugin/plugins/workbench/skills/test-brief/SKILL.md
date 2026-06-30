@@ -60,6 +60,17 @@ Map the Work Unit goal to testable assertions.
 - For UI work, test user-visible behavior or state transitions, not layout trivia.
 - For bug fixes, write a regression test that fails on the current behavior when practical.
 
+### Test Intent
+
+Classify the test intent before writing tests. Use the intent to decide whether tests should pass now or intentionally fail.
+
+- **Compatibility / characterization**: Default for existing feature changes, refactors, mock-to-real API migration, generated type cleanup, or internal implementation swaps where the public behavior should remain stable. Write tests that pass on the current implementation and continue passing after the change.
+- **Red / target contract**: Use for new features, missing behavior, or explicit TDD requests where no current behavior exists. These tests may fail before implementation.
+- **Regression**: Use for bug fixes. When practical, write a test that fails on the current bug and passes after the fix.
+- **Brief only**: Use when the test harness, placement, or observable behavior is unclear.
+
+If intent is ambiguous, ask whether the tests should pass on the current code or intentionally fail. For compatibility work, prefer public behavior and action result assertions first. Do NOT assert future implementation details such as a new endpoint call unless the selected unit is specifically about that integration boundary, the current code already exposes it, or the user explicitly asks for target-contract tests.
+
 ### Test Naming
 
 - Write `describe` and `it` descriptions in Korean by default.
@@ -80,10 +91,10 @@ describe("매니저 메뉴 관리 server action", () => {
 
 ## Workflow
 
-1. Decide whether to write tests or only produce a test brief.
+1. Classify the Test Intent and decide whether to write tests or only produce a test brief.
    - Write tests when the project has a clear test harness and the target behavior can be isolated.
    - Produce only a brief when test placement is unclear, harness is absent, or required dependencies are missing.
-2. Choose the smallest test layer that proves the selected unit:
+2. Choose the smallest test layer that proves the selected unit and matches the Test Intent:
    - type/contract test
    - unit test
    - server action/API boundary test
@@ -104,6 +115,7 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 
 - Target Unit: <selected unit>
 - Test Goal: <what these tests prove>
+- Test Intent: <Compatibility / Red / Regression / Brief only>
 - Test Layer: <type/unit/server action/component/e2e/brief only>
 - Existing Pattern: <nearby test files or "no clear pattern">
 
