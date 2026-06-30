@@ -14,7 +14,9 @@ require "uri"
 require "yaml"
 
 ROOT = File.expand_path("../..", __dir__)
-DEFAULT_SERVICES_FILE = File.expand_path("openapi-mcp-services.json", __dir__)
+CODEX_HOME = ENV.fetch("CODEX_HOME", File.expand_path("~/.codex"))
+DEFAULT_CONFIG_DIR = ENV.fetch("OPENAPI_MCP_CONFIG_DIR", File.expand_path("workbench", CODEX_HOME))
+DEFAULT_SERVICES_FILE = File.expand_path("openapi-services.json", DEFAULT_CONFIG_DIR)
 SERVICES_FILE = ENV.fetch("OPENAPI_MCP_SERVICES_FILE", DEFAULT_SERVICES_FILE)
 CACHE_DIR = ENV.fetch("OPENAPI_MCP_CACHE_DIR", File.expand_path("~/.codex/cache/openapi-mcp"))
 TIMEOUT_SEC = Integer(ENV.fetch("OPENAPI_MCP_TIMEOUT_SEC", "20"))
@@ -81,6 +83,33 @@ class OpenApiMcp
         }
       },
       {
+        name: "register_service",
+        description: "Register or replace one local Swagger/OpenAPI service in the user-owned OpenAPI service registry.",
+        inputSchema: {
+          type: "object",
+          required: %w[id name swaggerUrl],
+          properties: {
+            id: { type: "string", description: "Stable service id, e.g. manager-api." },
+            name: { type: "string", description: "Human-readable service name." },
+            swaggerUrl: { type: "string", description: "Swagger UI URL or OpenAPI document discovery URL." },
+            apiBaseUrl: { type: "string", description: "Optional API base URL for endpoint candidates." }
+          },
+          additionalProperties: false
+        }
+      },
+      {
+        name: "unregister_service",
+        description: "Remove one local Swagger/OpenAPI service from the user-owned OpenAPI service registry.",
+        inputSchema: {
+          type: "object",
+          required: ["service"],
+          properties: {
+            service: { type: "string", description: "Service id to remove." }
+          },
+          additionalProperties: false
+        }
+      },
+      {
         name: "refresh_service",
         description: "Fetch and cache OpenAPI specs for one service or all services. Reads OpenAPI documents only; it never calls API endpoints.",
         inputSchema: {
@@ -140,6 +169,10 @@ class OpenApiMcp
     case name
     when "list_services"
       text_result(list_services)
+    when "register_service"
+      text_result(register_service(args.fetch("id"), args.fetch("name"), args.fetch("swaggerUrl"), args["apiBaseUrl"]))
+    when "unregister_service"
+      text_result(unregister_service(args.fetch("service")))
     when "refresh_service"
       text_result(refresh_service(args["service"]))
     when "search_endpoints"
@@ -154,14 +187,39 @@ class OpenApiMcp
   end
 
   def load_services
-    data = JSON.parse(File.read(SERVICES_FILE))
-    data.fetch("services").map do |svc|
-      required = %w[id name swaggerUrl]
-      missing = required.reject { |key| svc[key].to_s != "" }
-      raise "Invalid service config, missing #{missing.join(", ")}" unless missing.empty?
+    return [] unless File.exist?(SERVICES_FILE)
 
-      svc
+    raw = File.read(SERVICES_FILE)
+    return [] if raw.strip.empty?
+
+    data = JSON.parse(raw)
+    services = data.fetch("services", [])
+    raise "Invalid service config: services must be an array" unless services.is_a?(Array)
+
+    services.map { |svc| normalize_service_config(svc) }
+  end
+
+  def normalize_service_config(svc)
+    raise "Invalid service config: service must be an object" unless svc.is_a?(Hash)
+
+    required = %w[id name swaggerUrl]
+    missing = required.reject { |key| svc[key].to_s != "" }
+    raise "Invalid service config, missing #{missing.join(", ")}" unless missing.empty?
+
+    id = svc.fetch("id").to_s
+    raise "Invalid service id '#{id}'. Use lowercase letters, digits, hyphen, or underscore." unless id.match?(/\A[a-z0-9][a-z0-9_-]*\z/)
+
+    swagger_uri = URI(svc.fetch("swaggerUrl").to_s)
+    raise "Invalid swaggerUrl for '#{id}': must be http(s)" unless %w[http https].include?(swagger_uri.scheme)
+
+    if svc["apiBaseUrl"].to_s != ""
+      api_base_uri = URI(svc.fetch("apiBaseUrl").to_s)
+      raise "Invalid apiBaseUrl for '#{id}': must be http(s)" unless %w[http https].include?(api_base_uri.scheme)
     end
+
+    hash_pick(svc, "id", "name", "swaggerUrl", "apiBaseUrl")
+  rescue URI::InvalidURIError => e
+    raise "Invalid URL in service '#{svc["id"] || "(unknown)"}': #{e.message}"
   end
 
   def service_ids
@@ -177,6 +235,7 @@ class OpenApiMcp
 
   def list_services
     {
+      servicesFile: SERVICES_FILE,
       cacheDir: CACHE_DIR,
       services: @services.map do |svc|
         docs = cached_docs_for(svc.fetch("id"))
@@ -194,6 +253,46 @@ class OpenApiMcp
         }
       end
     }
+  end
+
+  def register_service(id, name, swagger_url, api_base_url = nil)
+    candidate = {
+      "id" => id.to_s,
+      "name" => name.to_s,
+      "swaggerUrl" => swagger_url.to_s
+    }
+    candidate["apiBaseUrl"] = api_base_url.to_s if api_base_url.to_s != ""
+    normalized = normalize_service_config(candidate)
+
+    services = @services.reject { |svc| svc.fetch("id") == normalized.fetch("id") }
+    services << normalized
+    write_services(services)
+    @services = load_services
+
+    {
+      servicesFile: SERVICES_FILE,
+      registered: normalized,
+      services: @services.map { |svc| hash_pick(svc, "id", "name", "swaggerUrl", "apiBaseUrl") }
+    }
+  end
+
+  def unregister_service(service_id)
+    service!(service_id)
+    services = @services.reject { |svc| svc.fetch("id") == service_id }
+    write_services(services)
+    @services = load_services
+
+    {
+      servicesFile: SERVICES_FILE,
+      removed: service_id,
+      services: @services.map { |svc| hash_pick(svc, "id", "name", "swaggerUrl", "apiBaseUrl") }
+    }
+  end
+
+  def write_services(services)
+    FileUtils.mkdir_p(File.dirname(SERVICES_FILE))
+    File.write("#{SERVICES_FILE}.tmp", JSON.pretty_generate({ "services" => services }) + "\n")
+    FileUtils.mv("#{SERVICES_FILE}.tmp", SERVICES_FILE)
   end
 
   def refresh_service(service_id = nil)
@@ -806,12 +905,18 @@ if $PROGRAM_NAME == __FILE__
         Usage:
           ruby openapi-mcp.rb                         # run MCP stdio server
           ruby openapi-mcp.rb list-services
+          ruby openapi-mcp.rb register-service --id ID --name NAME --swagger-url URL [--api-base-url URL]
+          ruby openapi-mcp.rb unregister-service --service SERVICE
           ruby openapi-mcp.rb refresh-service [--service SERVICE]
           ruby openapi-mcp.rb search-endpoints --query QUERY [--service SERVICE] [--limit N]
           ruby openapi-mcp.rb get-endpoint --service SERVICE --method METHOD --path PATH
           ruby openapi-mcp.rb find-schema-field --field FIELD [--service SERVICE] [--limit N]
       TEXT
-      opts.on("--service SERVICE", "Service id such as carplat-manager, carplat-web-app, or tms") { |value| options[:service] = value }
+      opts.on("--id ID", "Service id to register") { |value| options[:id] = value }
+      opts.on("--name NAME", "Service display name to register") { |value| options[:name] = value }
+      opts.on("--swagger-url URL", "Swagger UI URL or OpenAPI discovery URL to register") { |value| options[:swagger_url] = value }
+      opts.on("--api-base-url URL", "Optional API base URL for endpoint candidates") { |value| options[:api_base_url] = value }
+      opts.on("--service SERVICE", "Service id") { |value| options[:service] = value }
       opts.on("--query QUERY", "Search query") { |value| options[:query] = value }
       opts.on("--field FIELD", "Schema field name") { |value| options[:field] = value }
       opts.on("--method METHOD", "HTTP method") { |value| options[:method] = value }
@@ -840,6 +945,16 @@ if $PROGRAM_NAME == __FILE__
     result = case command
              when "list-services"
                app.send(:list_services)
+             when "register-service"
+               app.send(
+                 :register_service,
+                 require_cli_option!(options, :id, command),
+                 require_cli_option!(options, :name, command),
+                 require_cli_option!(options, :swagger_url, command),
+                 options[:api_base_url]
+               )
+             when "unregister-service"
+               app.send(:unregister_service, require_cli_option!(options, :service, command))
              when "refresh-service"
                app.send(:refresh_service, options[:service])
              when "search-endpoints"

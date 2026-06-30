@@ -44,17 +44,15 @@ Prefer live MCP evidence when available.
    - Do not edit files.
 
 4. OpenAPI / Swagger
-   - Use an OpenAPI MCP tool when available; search for `openapi` tools with `tool_search` if needed.
+   - Use the `openapi` skill behavior and OpenAPI MCP tools when available; search for `openapi` tools with `tool_search` if needed.
    - If OpenAPI MCP tools are not exposed in the current session, do not skip API evidence. Use the bundled CLI fallback:
      - Resolve the plugin root from this `SKILL.md` path.
      - Run `ruby <plugin-root>/tools/openapi-mcp.rb list-services`.
      - Run `ruby <plugin-root>/tools/openapi-mcp.rb refresh-service --service <service>` for the likely service.
      - Run `ruby <plugin-root>/tools/openapi-mcp.rb search-endpoints --service <service> --query "<terms>" --limit 5`.
      - Run `ruby <plugin-root>/tools/openapi-mcp.rb get-endpoint --service <service> --method <METHOD> --path <path>` for strong candidates.
-   - Registered service hints:
-     - `carplat-manager`: manager/admin APIs from `https://test-api-admin.carplat.co.kr/`
-     - `carplat-web-app`: web/app APIs from `https://test-api.carplat.co.kr/`
-     - `tms`: TMS APIs from `http://apis.preprod.turucar.com/tms/index.html`
+   - Services are user-registered through `openapi`; do not assume built-in service IDs or hardcoded Swagger URLs.
+   - If no OpenAPI services are registered, say API evidence could not be checked and suggest registering the relevant Swagger service with `openapi`.
    - Search endpoints using Jira/Figma domain words, screen names, feature names, and likely schema fields.
    - Refresh the relevant OpenAPI service cache before searching when API evidence is needed.
    - If the relevant service is unclear, refresh all registered services before searching.
@@ -109,6 +107,7 @@ If the Figma link cannot be opened, keep the URL in the brief and mark it as blo
 When the issue may require API integration:
 
 - choose likely services from the product surface: manager/admin, web/app, or TMS
+- inspect registered OpenAPI services first and choose from the user's local registry
 - refresh the chosen OpenAPI service cache with `refresh_service` or the CLI `refresh-service`; refresh all services if the service cannot be inferred
 - search OpenAPI endpoints by product terms, Korean labels, English identifiers, and schema fields using MCP or CLI fallback
 - inspect endpoint details only for strong candidates

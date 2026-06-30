@@ -1,22 +1,3 @@
 {
-  "services": [
-    {
-      "id": "carplat-manager",
-      "name": "carplat manager",
-      "swaggerUrl": "https://test-api-admin.carplat.co.kr/",
-      "apiBaseUrl": "https://test-api-admin.carplat.co.kr"
-    },
-    {
-      "id": "carplat-web-app",
-      "name": "carplat web/app",
-      "swaggerUrl": "https://test-api.carplat.co.kr/",
-      "apiBaseUrl": "https://test-api.carplat.co.kr"
-    },
-    {
-      "id": "tms",
-      "name": "tms",
-      "swaggerUrl": "http://apis.preprod.turucar.com/tms/index.html",
-      "apiBaseUrl": "http://apis.preprod.turucar.com/tms"
-    }
-  ]
+  "services": []
 }

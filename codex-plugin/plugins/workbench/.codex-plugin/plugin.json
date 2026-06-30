@@ -1,7 +1,7 @@
 {
   "name": "workbench",
-  "version": "0.1.0+codex.20260630071853",
-  "description": "Workspace for issue briefing, brainstorming, convention-aware scoped execution, test briefing, API discovery, and dev wiki maintenance.",
+  "version": "0.1.0+codex.20260630072658",
+  "description": "Workspace for issue briefing, brainstorming, convention-aware scoped execution, test briefing, OpenAPI registry/search, and dev wiki maintenance.",
   "author": {
     "name": "Local developer"
   },
@@ -10,19 +10,21 @@
   "interface": {
     "displayName": "Workbench",
     "shortDescription": "Shape and execute scoped work.",
-    "longDescription": "Workbench collects scoped work tools for Codex, including Jira issue briefs, selected-unit brainstorming, dev-wiki-aware guarded one-unit execution, goal-focused test briefing, linked Figma design inspection, registered Swagger/OpenAPI discovery, and project dev wiki maintenance.",
+    "longDescription": "Workbench collects scoped work tools for Codex, including Jira issue briefs, selected-unit brainstorming, dev-wiki-aware guarded one-unit execution, goal-focused test briefing, linked Figma design inspection, user-registered Swagger/OpenAPI discovery, and project dev wiki maintenance.",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [
       "MCP",
       "Skills",
       "Test authoring",
-      "Scoped implementation"
+      "Scoped implementation",
+      "OpenAPI registry"
     ],
     "defaultPrompt": [
       "Use $issue-brief to summarize this Jira issue.",
       "Use $brainstorm to review the selected work unit before implementation.",
       "Use $executor to implement one selected work unit with dev wiki conventions and scope guarding.",
+      "Use $openapi to register Swagger services or find candidate APIs.",
       "Use $test-brief to create tests before implementation."
     ],
     "brandColor": "#2563EB"
