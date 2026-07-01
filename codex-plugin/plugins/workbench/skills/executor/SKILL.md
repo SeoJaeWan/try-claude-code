@@ -17,6 +17,7 @@ The goal is not to run a large autonomous plan. The goal is to finish one review
 - Do NOT proceed through a scope expansion as if it is normal implementation work.
 - Do NOT rewrite test-brief assertions, fixtures, or expected contracts to make the implementation easier.
 - Do NOT bypass relevant dev wiki conventions with manual workarounds when the convention directly applies.
+- Do NOT preserve non-conforming names or public exports merely because they already existed.
 - Do NOT revert user changes. Only consider reverting changes made during this executor run, and only after checking the baseline.
 - Keep the user in control when the work boundary widens.
 - Prefer narrow, reviewable edits over broad refactors.
@@ -66,6 +67,19 @@ During implementation:
 - If following a convention changes shared architecture, generated contracts, or unrelated modules, treat it as scope expansion and stop before continuing.
 - If the selected unit cannot follow a relevant convention without widening scope, report the conflict and ask whether to split, include, or change the approach.
 
+## Naming And Public API Conventions
+
+Treat names in touched implementation boundaries as part of the implementation, not as untouchable legacy surface.
+
+- When the selected Work Unit modifies a file that exports functions, actions, hooks, components, types, or schemas, check those exported names against relevant dev wiki and local naming conventions.
+- If an exported name in a touched file violates convention and its direct import/update surface is inside the selected unit's impact area, rename it and update those direct imports in the same run.
+- Do NOT keep a non-conforming export name only because existing UI code imports it.
+- Do NOT use "public API preservation" as the default answer for app-internal exports such as server actions, hooks, or domain helpers. Prefer convention-compliant names when the affected imports are local and reviewable.
+- Preserve an existing non-conforming name only when renaming would cross a package boundary, require migration work outside the selected unit, break an external contract, or contradict an explicit user constraint.
+- If renaming to match convention affects many unrelated modules, treat that as scope expansion and stop with the options: rename within this unit, split naming cleanup into a separate unit, or keep legacy name for now.
+- If a compatibility wrapper is needed temporarily, explain why and mark it as a scope decision rather than silently leaving the convention mismatch.
+- At handoff, explicitly report convention-driven renames or local refactors: old name, new name, files updated, and why the convention required it.
+
 ## Scope Discipline
 
 Treat implementation as a scope contract.
@@ -78,6 +92,7 @@ Allowed changes usually include:
 - Generated files for the selected API/schema only.
 - Configuration entries needed to expose the selected API/schema.
 - Local refactors in touched files when required to satisfy relevant dev wiki conventions for the selected unit.
+- Direct import/call-site updates required by convention-compliant renames inside the selected unit's impact area.
 
 Scope expansion signals include:
 
@@ -87,6 +102,7 @@ Scope expansion signals include:
 - Type-check or lint fixes outside the selected unit.
 - Large rewrites caused by an automation command.
 - Convention cleanup outside the selected unit's files or direct impact area.
+- Naming migrations that spread into unrelated domains or package-level public APIs.
 
 When scope expansion appears:
 
@@ -120,7 +136,7 @@ After a bulk command:
 
 1. Restate the selected unit, goal, and out of scope before editing when the task is non-trivial.
 2. Establish the baseline and expected change surface.
-3. Read only the relevant dev wiki conventions and repository examples for the selected unit.
+3. Read only the relevant dev wiki conventions and repository examples for the selected unit, including naming/export conventions for files you will touch.
 4. If `test-brief` exists, run or inspect the focused tests first and preserve the declared Test Intent.
 5. Implement the smallest next phase from `brainstorm` Work Steps while applying relevant conventions locally.
 6. After each broad command or meaningful edit batch, inspect the diff for scope expansion.
@@ -157,6 +173,9 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 
 **Scope Notes**
 - <none, or scope expansion found and decision taken>
+
+**Convention Changes**
+- <none, or old name -> new name / local refactor and affected files>
 
 **Validation**
 - <command>: <pass/fail/blocked>
