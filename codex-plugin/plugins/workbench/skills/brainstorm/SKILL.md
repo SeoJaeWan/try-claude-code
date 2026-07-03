@@ -37,9 +37,10 @@ Gather only enough evidence to reason about the selected unit.
 ### Dev Wiki
 
 - Use the `dev-wiki` skill behavior when relevant, but keep the interaction lightweight.
-- Resolve the project dev wiki root from `${CODEX_HOME:-~/.codex}/workbench/dev-wiki` and the current workspace mapping when available.
+- Resolve the project dev wiki root from `${CODEX_HOME:-~/.codex}/workbench/dev-wiki` and the current workspace mapping.
+- Treat missing central config, missing workspace mapping, or a missing project wiki folder as "dev wiki not configured" for this workspace. Do not fall back to legacy project-local `.codex/dev-wiki` as a consumer.
 - Read relevant dev wiki documents only: conventions, architecture, workflow commands, test/quality notes, and graph files that affect the selected unit.
-- If dev wiki is not set up, say so briefly and continue from repository evidence.
+- If dev wiki is not configured or has no relevant notes, say so briefly and continue from repository evidence.
 
 ### Repository
 

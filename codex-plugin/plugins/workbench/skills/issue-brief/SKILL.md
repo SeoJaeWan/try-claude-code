@@ -38,12 +38,21 @@ Prefer live MCP evidence when available.
    - If only the general Figma execution tool is available, load the required Figma usage guidance first and run read-only inspection code only.
    - Never write to Figma from this skill.
 
-3. Repository
+3. Dev Wiki
+   - Use dev wiki only when the workspace has opted in through the Workbench-owned root: `${CODEX_HOME:-~/.codex}/workbench/dev-wiki/config.json` plus a current workspace mapping in `workspaces.json`.
+   - Resolve the project wiki root as `${CODEX_HOME:-~/.codex}/workbench/dev-wiki/source/{project}` from that mapping.
+   - If the central config, workspace mapping, or project wiki folder is missing, treat dev wiki as not configured and continue without it.
+   - Do not fall back to legacy project-local `.codex/dev-wiki` from this skill.
+   - When configured, read only lightweight project context needed to map the issue to likely areas: relevant conventions, architecture boundaries, workflow/test commands, and graph navigation files.
+   - Use dev wiki as project context, not as product requirement evidence. Jira, Figma, OpenAPI, repository source, and explicit user input remain the only sources for requirements.
+   - If dev wiki conflicts with current repository evidence, treat the wiki as possibly stale and mention the conflict instead of planning from stale guidance.
+
+4. Repository
    - Only inspect the repository when it helps map the issue to likely implementation areas.
    - Keep repository inspection lightweight: routes, screen/component names, API clients, state hooks, and tests.
    - Do not edit files.
 
-4. OpenAPI / Swagger
+5. OpenAPI / Swagger
    - Use the `openapi` skill behavior and OpenAPI MCP tools when available; search for `openapi` tools with `tool_search` if needed.
    - If OpenAPI MCP tools are not exposed in the current session, do not skip API evidence. Use the bundled CLI fallback:
      - Resolve the plugin root from this `SKILL.md` path.
@@ -118,7 +127,18 @@ When the issue may require API integration:
 
 Do not block the brief if OpenAPI MCP is unavailable. State that API evidence was not checked.
 
-### 5. Build the Work Breakdown
+### 5. Read Project Context
+
+When dev wiki is configured for the current workspace:
+
+- read only the documents that help place the work: relevant `conventions/`, `architecture/`, `workflows/`, and `graph/` entries
+- use `graph/overview.md` as navigation when available, then read only the specific graph files needed for the issue
+- use dev wiki to improve impact areas, test placement, validation commands, and likely implementation paths
+- do not turn dev wiki observations into Jira requirements or numbered Work Units by themselves
+
+When dev wiki is not configured, continue without it and rely on repository evidence when implementation mapping is useful.
+
+### 6. Build the Work Breakdown
 
 Translate evidence into small, actionable work units. Each unit must be something the user or implementer can directly change, implement, verify in UI, wire to an API, or test.
 
@@ -150,7 +170,7 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 
 - Issue: `KEY-123` - <title>
 - Context: <parent/selected issue relationship, status, and short goal>
-- Evidence read: <Jira fields/comments, Figma links/nodes, repo areas if inspected>
+- Evidence read: <Jira fields/comments, Figma links/nodes, dev wiki context if configured, repo areas if inspected>
 
 **Confirmed Requirements**
 - <requirement> (source: <comment id / field / Figma node>)
