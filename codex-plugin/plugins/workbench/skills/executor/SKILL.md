@@ -1,6 +1,6 @@
 ---
 name: executor
-description: Implement exactly one selected work unit from a brainstorm or test brief while guarding scope and following dev wiki conventions. Use when the user says "executor", "excutor", "실행해", "구현해", "1번 작업 진행", "이 작업 진행", or asks Codex to implement a brainstormed Work Unit with tests, validation, dev wiki guidance, and scope-expansion checks. This skill may edit code, tests, generated files, and configuration only when they are directly required by the selected unit.
+description: Implement exactly one selected work unit from a brainstorm or test brief while guarding scope and following dev wiki conventions. Use when the user says "executor", "excutor", "실행해", "구현해", "1번 작업 진행", "이 작업 진행", or asks Codex to implement a brainstormed Work Unit with tests, validation, dev wiki guidance, visual grounding for UI comparison when source evidence exists, and scope-expansion checks. This skill may edit code, tests, generated files, and configuration only when they are directly required by the selected unit.
 ---
 
 # Executor
@@ -30,6 +30,7 @@ Identify:
 - The selected Work Unit, Goal, Out of Scope, Work Steps, Risks, and Checks from `brainstorm`.
 - Any `test-brief` files, Test Intent, expected pass/fail state, and implementation handoff.
 - Relevant issue brief evidence: API endpoints, Figma nodes, Jira comments, and confirmed requirements.
+- Visual comparison evidence for UI/image-facing work: Figma nodes, source website URLs, reference screenshots, target local route, viewport, and expected state.
 - Relevant dev wiki conventions for the project, domain, test layer, API boundary, styling, and workflow.
 - User constraints such as "1번만", "테스트는 건드리지 마", "type-gen은 하지 마", or "커밋까지".
 
@@ -132,16 +133,38 @@ After a bulk command:
 - For example, in an `admin-menu` unit, `admin-menu.d.ts` and `oas.json` may be in scope, but `admin.d.ts`, `role.d.ts`, and role/member action fixes are scope expansion unless the brainstorm explicitly included them.
 - If dev wiki requires a generator such as `type-gen`, prefer running it and then stopping on unrelated generated diffs over manually editing generated contracts. Manual edits are allowed only when the repo convention permits them or the user explicitly chooses that tradeoff.
 
+## Visual Grounding For UI Work
+
+Use `visual-grounding` when all of these are true:
+
+- The selected Work Unit changes visible UI, layout, styling, responsive behavior, image presentation, or component state.
+- A comparison source exists: Figma frame/node, source website, production page, or reference screenshot.
+- The target route/component state can be opened or reasonably captured in the local implementation.
+
+Do not use `visual-grounding` for pure API wiring, text-only copy changes, internal logic, or UI work without a source-to-target mapping.
+
+When using `visual-grounding`:
+
+1. Before implementation, use it to extract actionable source evidence when the design/source UI is needed to choose the implementation approach.
+2. After the first implementation pass, use it again when practical to compare the source UI with the local result.
+3. Fix only High-confidence findings automatically. Inspect code before fixing Medium-confidence findings. Report Low-confidence findings without changing code.
+4. Treat broad design-system/token rewrites, fixture changes, or unrelated route fixes discovered by visual grounding as scope expansion.
+5. Include the visual-grounding artifact path or a short summary in the final handoff.
+
+Visual-grounding findings do not override dev wiki conventions or the selected Work Unit boundary. They are evidence for scoped UI fixes, not permission to redesign neighboring surfaces.
+
 ## Workflow
 
 1. Restate the selected unit, goal, and out of scope before editing when the task is non-trivial.
 2. Establish the baseline and expected change surface.
 3. Read only the relevant dev wiki conventions and repository examples for the selected unit, including naming/export conventions for files you will touch.
-4. If `test-brief` exists, run or inspect the focused tests first and preserve the declared Test Intent.
-5. Implement the smallest next phase from `brainstorm` Work Steps while applying relevant conventions locally.
-6. After each broad command or meaningful edit batch, inspect the diff for scope expansion.
-7. Run focused verification first, then broader checks only when they are relevant and practical.
-8. Report changed files, validation results, dev wiki convention notes, and any scope decisions.
+4. If the unit is UI/image-facing and has comparison evidence, use `visual-grounding` to collect source/target evidence before or during implementation.
+5. If `test-brief` exists, run or inspect the focused tests first and preserve the declared Test Intent.
+6. Implement the smallest next phase from `brainstorm` Work Steps while applying relevant conventions locally.
+7. After each broad command or meaningful edit batch, inspect the diff for scope expansion.
+8. For UI/image-facing work with comparison evidence, run a practical post-implementation `visual-grounding` check and apply only scoped High-confidence fixes.
+9. Run focused verification first, then broader checks only when they are relevant and practical.
+10. Report changed files, validation results, visual-grounding findings or artifact path, dev wiki convention notes, and any scope decisions.
 
 ## Test Handling
 
@@ -166,6 +189,7 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 - Scope: <intended change surface>
 - Baseline: <existing dirty files or clean>
 - Dev Wiki: <relevant conventions applied or "not configured / no relevant note">
+- Visual Grounding: <not applicable / artifact path / findings applied / blocked reason>
 
 **Implemented**
 - <changed behavior/file group>

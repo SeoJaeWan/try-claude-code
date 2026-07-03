@@ -1,7 +1,7 @@
 {
   "name": "workbench",
-  "version": "0.1.0+codex.20260703064405",
-  "description": "Workspace for issue briefing, brainstorming, branch work reporting, convention-aware scoped execution, test briefing, OpenAPI registry/search, and dev wiki maintenance.",
+  "version": "0.1.0+codex.20260703161600",
+  "description": "Workspace for issue briefing, brainstorming, branch work reporting, visual grounding for UI fidelity, convention-aware scoped execution, test briefing, OpenAPI registry/search, and dev wiki maintenance.",
   "author": {
     "name": "Local developer"
   },
@@ -10,7 +10,7 @@
   "interface": {
     "displayName": "Workbench",
     "shortDescription": "Shape, report, and execute scoped work.",
-    "longDescription": "Workbench collects scoped work tools for Codex, including Jira issue briefs, selected-unit brainstorming, commit-by-commit branch work reporting with feedback, dev-wiki-aware guarded one-unit execution, goal-focused test briefing, linked Figma design inspection, user-registered Swagger/OpenAPI discovery, and project dev wiki maintenance.",
+    "longDescription": "Workbench collects scoped work tools for Codex, including Jira issue briefs, selected-unit brainstorming, commit-by-commit branch work reporting with feedback, visual grounding that compares Figma/source UI evidence against local implementations, dev-wiki-aware guarded one-unit execution, goal-focused test briefing, linked Figma design inspection, user-registered Swagger/OpenAPI discovery, and project dev wiki maintenance.",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [
@@ -19,12 +19,14 @@
       "Branch reporting",
       "Test authoring",
       "Scoped implementation",
+      "Visual grounding",
       "OpenAPI registry"
     ],
     "defaultPrompt": [
       "Use $issue-brief to summarize this Jira issue.",
       "Use $brainstorm to review the selected work unit before implementation.",
       "Use $branch-work-report to summarize the current work branch by commit with feedback.",
+      "Use $visual-grounding to compare a Figma or source UI against a local route and identify actionable UI fixes.",
       "Use $executor to implement one selected work unit with dev wiki conventions and scope guarding.",
       "Use $openapi to register Swagger services or find candidate APIs.",
       "Use $test-brief to create tests before implementation."
