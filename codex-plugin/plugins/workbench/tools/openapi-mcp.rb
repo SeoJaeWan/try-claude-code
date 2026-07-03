@@ -20,8 +20,15 @@ DEFAULT_SERVICES_FILE = File.expand_path("openapi-services.json", DEFAULT_CONFIG
 SERVICES_FILE = ENV.fetch("OPENAPI_MCP_SERVICES_FILE", DEFAULT_SERVICES_FILE)
 CACHE_DIR = ENV.fetch("OPENAPI_MCP_CACHE_DIR", File.expand_path("~/.codex/cache/openapi-mcp"))
 TIMEOUT_SEC = Integer(ENV.fetch("OPENAPI_MCP_TIMEOUT_SEC", "20"))
+RESPONSE_BODY_LIMIT_BYTES = Integer(ENV.fetch("OPENAPI_MCP_RESPONSE_BODY_LIMIT_BYTES", "200000"))
 
 HTTP_METHODS = %w[get put post delete patch options head trace].freeze
+SENSITIVE_HEADER_NAMES = %w[
+  authorization proxy-authorization cookie set-cookie x-api-key x-api-token api-key token
+].freeze
+SENSITIVE_BODY_KEYS = %w[
+  access_token api_key apikey authorization cookie password refresh_token secret token
+].freeze
 
 class OpenApiMcp
   def initialize
@@ -161,6 +168,25 @@ class OpenApiMcp
           },
           additionalProperties: false
         }
+      },
+      {
+        name: "call_endpoint",
+        description: "Call a registered API endpoint using its apiBaseUrl. Executes the HTTP request and returns structured request/response details.",
+        inputSchema: {
+          type: "object",
+          required: %w[service method path],
+          properties: {
+            service: { type: "string" },
+            method: { type: "string", enum: HTTP_METHODS.map(&:upcase) + HTTP_METHODS },
+            path: { type: "string", description: "Endpoint path or OpenAPI path template, e.g. /users/{id}." },
+            pathParams: { type: "object", description: "Values for OpenAPI path template variables.", additionalProperties: true },
+            query: { type: "object", description: "Query string parameters.", additionalProperties: true },
+            headers: { type: "object", description: "Request headers. Overrides env-provided headers.", additionalProperties: true },
+            body: { description: "JSON request body. Objects and arrays are JSON-encoded." },
+            timeoutSec: { type: "integer", minimum: 1, maximum: 300, default: TIMEOUT_SEC }
+          },
+          additionalProperties: false
+        }
       }
     ]
   end
@@ -181,6 +207,20 @@ class OpenApiMcp
       text_result(get_endpoint(args.fetch("service"), args.fetch("method"), args.fetch("path")))
     when "find_schema_field"
       text_result(find_schema_field(args.fetch("field"), args["service"], args["limit"] || 10))
+    when "call_endpoint"
+      text_result(
+        call_endpoint(
+          args.fetch("service"),
+          args.fetch("method"),
+          args.fetch("path"),
+          args["pathParams"] || {},
+          args["query"] || {},
+          args["headers"] || {},
+          args.key?("body") ? args["body"] : nil,
+          args.key?("body"),
+          args["timeoutSec"] || TIMEOUT_SEC
+        )
+      )
     else
       error(-32_602, "Unknown tool: #{name}")
     end
@@ -373,6 +413,42 @@ class OpenApiMcp
     }
   end
 
+  def call_endpoint(service_id, method, path, path_params = {}, query = {}, request_headers = {}, body = nil, body_provided = false, timeout_sec = TIMEOUT_SEC)
+    svc = service!(service_id)
+    method = normalize_method!(method)
+    path_params = normalize_hash_arg(path_params, "pathParams")
+    query = normalize_hash_arg(query, "query")
+    request_headers = normalize_hash_arg(request_headers, "headers")
+    timeout_sec = normalize_timeout(timeout_sec)
+
+    endpoint = endpoint_for_call(service_id, method, path)
+    expanded_path = expand_path_template(path, path_params)
+    uri = build_endpoint_uri(svc, expanded_path, query)
+    headers = request_headers_for(uri, svc, request_headers)
+    validation = validate_endpoint_call(endpoint, path_params, query, headers, body_provided)
+    request = build_http_request(method, uri, headers, body, body_provided)
+
+    started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    response = perform_request(uri, request, timeout_sec)
+    duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1000).round
+
+    {
+      service: service_id,
+      method: method.upcase,
+      path: path,
+      resolvedPath: expanded_path,
+      url: uri.to_s,
+      documented: !endpoint.nil?,
+      validation: validation,
+      request: {
+        headers: mask_sensitive_headers(headers),
+        body: body_provided ? mask_sensitive_body(body) : nil
+      }.compact,
+      response: summarize_http_response(response),
+      durationMs: duration_ms
+    }
+  end
+
   def refresh_one_service(svc)
     discovered = discover_documents(svc.fetch("swaggerUrl"))
     docs = discovered.map do |document|
@@ -519,8 +595,8 @@ class OpenApiMcp
         .gsub("\r", "\n")
   end
 
-  def perform_request(uri, request)
-    Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https", open_timeout: TIMEOUT_SEC, read_timeout: TIMEOUT_SEC) do |http|
+  def perform_request(uri, request, timeout_sec = TIMEOUT_SEC)
+    Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https", open_timeout: timeout_sec, read_timeout: timeout_sec) do |http|
       http.request(request)
     end
   end
@@ -533,6 +609,17 @@ class OpenApiMcp
 
     headers.merge!(by_host[uri.host] || {})
     headers.merge!(by_service[service.fetch("id")] || {}) if service
+    headers
+  end
+
+  def request_headers_for(uri, svc, overrides = {})
+    headers = parse_json_env("OPENAPI_MCP_HEADERS")
+    by_host = parse_json_env("OPENAPI_MCP_HOST_HEADERS")
+    by_service = parse_json_env("OPENAPI_MCP_SERVICE_HEADERS")
+
+    headers.merge!(by_host[uri.host] || {})
+    headers.merge!(by_service[svc.fetch("id")] || {})
+    headers.merge!(stringify_hash(overrides))
     headers
   end
 
@@ -590,6 +677,14 @@ class OpenApiMcp
 
   def join_url_path(base_url, path)
     "#{base_url.to_s.sub(%r{/+\z}, "")}/#{path.to_s.sub(%r{\A/+}, "")}"
+  end
+
+  def build_endpoint_uri(svc, path, query)
+    api_base_url = svc["apiBaseUrl"] || root_url(svc.fetch("swaggerUrl"))
+    uri = URI(join_url_path(api_base_url, path))
+    pairs = URI.decode_www_form(uri.query.to_s) + flatten_query(query)
+    uri.query = pairs.empty? ? nil : URI.encode_www_form(pairs)
+    uri
   end
 
   def normalize_document(svc, document, spec)
@@ -793,6 +888,193 @@ class OpenApiMcp
     text.to_s.downcase
   end
 
+  def normalize_method!(method)
+    normalized = method.to_s.downcase
+    raise "Invalid HTTP method '#{method}'" unless HTTP_METHODS.include?(normalized)
+
+    normalized
+  end
+
+  def normalize_hash_arg(value, name)
+    return {} if value.nil?
+    raise "#{name} must be an object" unless value.is_a?(Hash)
+
+    value
+  end
+
+  def normalize_timeout(value)
+    timeout = Integer(value)
+    raise "timeoutSec must be between 1 and 300" if timeout < 1 || timeout > 300
+
+    timeout
+  rescue ArgumentError, TypeError
+    raise "timeoutSec must be an integer"
+  end
+
+  def endpoint_for_call(service_id, method, path)
+    ensure_cache(service_id)
+    docs_for_scope(service_id).flat_map { |doc| doc.fetch("endpoints", []) }
+                              .find { |endpoint| endpoint["method"] == method && endpoint["path"] == path }
+  rescue StandardError
+    nil
+  end
+
+  def validate_endpoint_call(endpoint, path_params, query, request_headers, body_provided)
+    warnings = []
+    unless endpoint
+      return {
+        ok: false,
+        warnings: ["Endpoint was not found in the cached OpenAPI document; request will still be sent."]
+      }
+    end
+
+    Array(endpoint["parameters"]).each do |param|
+      next unless param["required"]
+
+      name = param["name"].to_s
+      case param["in"]
+      when "path"
+        warnings << "Missing required path parameter: #{name}" unless path_params.key?(name) || path_params.key?(name.to_sym)
+      when "query"
+        warnings << "Missing required query parameter: #{name}" unless query.key?(name) || query.key?(name.to_sym)
+      when "header"
+        warnings << "Missing required header: #{name}" unless header_key?(request_headers, name)
+      end
+    end
+
+    if endpoint.dig("requestBody", "required") && !body_provided
+      warnings << "Missing required request body."
+    end
+
+    { ok: warnings.empty?, warnings: warnings }
+  end
+
+  def header_key?(headers, name)
+    headers.keys.any? { |key| key.to_s.downcase == name.to_s.downcase }
+  end
+
+  def expand_path_template(path, path_params)
+    expanded = path.to_s.gsub(/\{([^}]+)\}/) do
+      name = Regexp.last_match(1)
+      value = path_params[name] || path_params[name.to_sym]
+      raise "Missing pathParams.#{name} for #{path}" if value.nil?
+
+      URI.encode_www_form_component(value.to_s)
+    end
+
+    if expanded.match?(/\{[^}]+\}/)
+      raise "Unresolved path template in #{expanded}"
+    end
+
+    expanded
+  end
+
+  def flatten_query(query)
+    query.flat_map do |key, value|
+      if value.is_a?(Array)
+        value.map { |item| [key.to_s, item.to_s] }
+      elsif value.nil?
+        [[key.to_s, ""]]
+      else
+        [[key.to_s, value.to_s]]
+      end
+    end
+  end
+
+  def build_http_request(method, uri, headers, body, body_provided)
+    request_class = {
+      "get" => Net::HTTP::Get,
+      "post" => Net::HTTP::Post,
+      "put" => Net::HTTP::Put,
+      "patch" => Net::HTTP::Patch,
+      "delete" => Net::HTTP::Delete,
+      "head" => Net::HTTP::Head,
+      "options" => Net::HTTP::Options,
+      "trace" => Net::HTTP::Trace
+    }.fetch(method)
+    request = request_class.new(uri)
+    headers.each { |key, value| request[key] = value.to_s }
+    request["User-Agent"] ||= "Codex openapi-mcp/0.1"
+
+    if body_provided
+      request["Content-Type"] ||= "application/json"
+      request.body = body.is_a?(String) ? body : JSON.generate(body)
+    end
+
+    request
+  end
+
+  def summarize_http_response(response)
+    raw_body = response.body.to_s
+    truncated = raw_body.bytesize > RESPONSE_BODY_LIMIT_BYTES
+    body_text = truncated ? raw_body.byteslice(0, RESPONSE_BODY_LIMIT_BYTES) : raw_body
+    parsed_body = parse_response_body(body_text, response["content-type"], truncated)
+
+    {
+      status: response.code.to_i,
+      message: response.message,
+      headers: mask_sensitive_headers(response.each_header.to_h),
+      body: parsed_body,
+      truncated: truncated,
+      bytes: raw_body.bytesize
+    }
+  end
+
+  def parse_response_body(body_text, content_type, truncated)
+    return nil if body_text.empty?
+    return body_text if truncated
+
+    if content_type.to_s.include?("json") || body_text.lstrip.start_with?("{", "[")
+      JSON.parse(body_text)
+    else
+      body_text
+    end
+  rescue JSON::ParserError
+    body_text
+  end
+
+  def mask_sensitive_headers(headers)
+    stringify_hash(headers).each_with_object({}) do |(key, value), masked|
+      masked[key] = sensitive_header?(key) ? mask_value(value) : value
+    end
+  end
+
+  def sensitive_header?(key)
+    normalized = key.to_s.downcase
+    SENSITIVE_HEADER_NAMES.any? { |name| normalized == name || normalized.include?(name) }
+  end
+
+  def mask_sensitive_body(value)
+    case value
+    when Hash
+      value.each_with_object({}) do |(key, child), masked|
+        masked[key] = sensitive_body_key?(key) ? mask_value(child) : mask_sensitive_body(child)
+      end
+    when Array
+      value.map { |item| mask_sensitive_body(item) }
+    else
+      value
+    end
+  end
+
+  def sensitive_body_key?(key)
+    normalized = key.to_s.downcase
+    SENSITIVE_BODY_KEYS.any? { |name| normalized == name || normalized.include?(name) }
+  end
+
+  def mask_value(value)
+    return nil if value.nil?
+
+    text = value.to_s
+    return "***" if text.length <= 12
+
+    "#{text[0, 8]}***"
+  end
+
+  def stringify_hash(hash)
+    hash.each_with_object({}) { |(key, value), result| result[key.to_s] = value }
+  end
+
   def compact_text(text)
     return nil if text.nil?
 
@@ -911,6 +1193,7 @@ if $PROGRAM_NAME == __FILE__
           ruby openapi-mcp.rb search-endpoints --query QUERY [--service SERVICE] [--limit N]
           ruby openapi-mcp.rb get-endpoint --service SERVICE --method METHOD --path PATH
           ruby openapi-mcp.rb find-schema-field --field FIELD [--service SERVICE] [--limit N]
+          ruby openapi-mcp.rb call-endpoint --service SERVICE --method METHOD --path PATH [--path-params JSON] [--query-params JSON] [--headers JSON] [--body JSON] [--timeout-sec N]
       TEXT
       opts.on("--id ID", "Service id to register") { |value| options[:id] = value }
       opts.on("--name NAME", "Service display name to register") { |value| options[:name] = value }
@@ -921,6 +1204,11 @@ if $PROGRAM_NAME == __FILE__
       opts.on("--field FIELD", "Schema field name") { |value| options[:field] = value }
       opts.on("--method METHOD", "HTTP method") { |value| options[:method] = value }
       opts.on("--path PATH", "Endpoint path") { |value| options[:path] = value }
+      opts.on("--path-params JSON", "Path template parameters as JSON object") { |value| options[:path_params] = value }
+      opts.on("--query-params JSON", "Query string parameters as JSON object") { |value| options[:query_params] = value }
+      opts.on("--headers JSON", "Request headers as JSON object") { |value| options[:headers] = value }
+      opts.on("--body JSON", "JSON request body") { |value| options[:body] = value }
+      opts.on("--timeout-sec N", Integer, "Request timeout seconds") { |value| options[:timeout_sec] = value }
       opts.on("--limit N", Integer, "Result limit") { |value| options[:limit] = value }
       opts.on("-h", "--help", "Show help") do
         puts opts
@@ -937,6 +1225,22 @@ if $PROGRAM_NAME == __FILE__
     return value if value && value.to_s != ""
 
     raise OptionParser::MissingArgument, "#{command} requires --#{key.to_s.tr("_", "-")}"
+  end
+
+  def parse_json_cli_option(options, key, default, command)
+    raw = options[key]
+    return default if raw.nil? || raw.to_s == ""
+
+    JSON.parse(raw)
+  rescue JSON::ParserError => e
+    raise OptionParser::InvalidArgument, "#{command} --#{key.to_s.tr("_", "-")} must be valid JSON: #{e.message}"
+  end
+
+  def parse_json_object_cli_option(options, key, command)
+    parsed = parse_json_cli_option(options, key, {}, command)
+    return parsed if parsed.is_a?(Hash)
+
+    raise OptionParser::InvalidArgument, "#{command} --#{key.to_s.tr("_", "-")} must be a JSON object"
   end
 
   def run_cli(argv)
@@ -977,6 +1281,19 @@ if $PROGRAM_NAME == __FILE__
                  require_cli_option!(options, :field, command),
                  options[:service],
                  options[:limit] || 10
+               )
+             when "call-endpoint"
+               app.send(
+                 :call_endpoint,
+                 require_cli_option!(options, :service, command),
+                 require_cli_option!(options, :method, command),
+                 require_cli_option!(options, :path, command),
+                 parse_json_object_cli_option(options, :path_params, command),
+                 parse_json_object_cli_option(options, :query_params, command),
+                 parse_json_object_cli_option(options, :headers, command),
+                 parse_json_cli_option(options, :body, nil, command),
+                 options.key?(:body),
+                 options[:timeout_sec] || TIMEOUT_SEC
                )
              else
                warn parser

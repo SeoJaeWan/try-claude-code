@@ -1,6 +1,6 @@
 {
   "name": "workbench",
-  "version": "0.1.0+codex.20260630233445",
+  "version": "0.1.0+codex.20260701013454",
   "description": "Workspace for issue briefing, brainstorming, convention-aware scoped execution, test briefing, OpenAPI registry/search, and dev wiki maintenance.",
   "author": {
     "name": "Local developer"
