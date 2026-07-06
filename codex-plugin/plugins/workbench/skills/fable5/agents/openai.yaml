@@ -1,4 +1,4 @@
 interface:
   display_name: "Fable 5"
-  short_description: "Fact-first operating mode (explicit invocation)"
-  default_prompt: "Use $fable5 to run this task with fact-first diagnosis, scoped execution, and evidence-based validation."
+  short_description: "Claude Fable 5 operating mode (explicit invocation)"
+  default_prompt: "Use $fable5 to run this task under the Claude Fable 5 operating rules: situation dispatch, session posture, fact-first diagnosis, disclosed defaults, and the completion gate."

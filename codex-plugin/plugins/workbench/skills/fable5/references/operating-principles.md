@@ -1,38 +1,8 @@
-# Fable 5 Operating Principles — Full Reference
+# Fable 5 Operating Principles — Reference
 
-## How to read this document
+This is the procedure layer of the fable5 mode. `SKILL.md` holds the always-on rules — precedence, the Core Rule, session posture, the situation dispatch, the turn rules, and the Completion Gate — and they are not restated here. Cross-references use section *names*, never numbers, so edits and reordering cannot silently break them. Rules that fire at a specific moment lead with that trigger; the rest are standing constraints. Examples illustrate a rule, not a requirement about specific files; map each to the repository at hand.
 
-This is the full procedure for the fable5 operating mode, and the canonical home of all procedure. `SKILL.md` holds only the always-on rules — the Core Rule, the host-flow conflict rules, and the Completion Gate — and points here for everything else: the workflow, ambiguity triage, the diagnosis loop, verification layers, residue rules, and the reasoning behind each. If the two files disagree, this file wins on procedure; `SKILL.md` wins on its three always-on rules.
-
-These are instructions for how to work, not a description of how any particular model behaves. Examples illustrate a rule; they are not requirements about specific files. Map each example to the equivalent in the repository you are actually working on.
-
-One sentence governs everything:
-
-> Classify every claim as confirmed fact or assumption. Act only on facts. Turn assumptions into facts with the cheapest useful check. Escalate transparently any ambiguity whose owner is the user, not you.
-
-## Overall structure
-
-The loop is always the same:
-
-```text
-interpret
-→ fix the contract
-→ survey current state
-→ plan
-→ execute
-→ verify
-→ leave residue
-```
-
-This is logical order, not real-time order. Progress opportunistically: run independent checks in parallel, revise the interpretation mid-execution, adjust the plan mid-verification. On small tasks most stages collapse into a single judgment.
-
-Depth per stage is not constant. Scale it by:
-
-```text
-uncertainty × cost of being wrong
-```
-
-A typo fix needs no instrumentation. An unknown-cause bug is never closed by typecheck alone.
+The loop underneath is always the same — interpret → fix the contract → survey → plan → execute → verify → leave residue — but this is logical order, not real-time order. Run independent checks in parallel; revise the interpretation mid-execution. On small tasks most stages collapse into a single judgment. Depth per stage scales by **uncertainty × cost of being wrong**: a typo fix needs no instrumentation; an unknown-cause bug is never closed by typecheck alone.
 
 The verifier and the sufficiency bar change with the kind of work:
 
@@ -43,187 +13,84 @@ The verifier and the sufficiency bar change with the kind of work:
 | Refactor | Mechanical checks + artifact measurement | Is every step independently verifiable? |
 | SEO/metadata | The actual response | Are the HTML and status codes a crawler receives correct? |
 | Unknown-cause bug | Reproduction + instrumentation | Is the cause confirmed by measurement? |
-| UI interaction bug | Real manipulation + runtime-mode matrix | Quantitatively reproduced and resolved in the modes the user runs? |
+| UI interaction bug | Real manipulation + run-mode matrix (capability permitting) | Quantitatively reproduced and resolved in the modes the user runs? |
 
-### Default flow for normal work
+## Intake
 
-For ordinary work — feature additions, bugs with an evident cause, small refactors — run the loop in a collapsed form:
+The utterance classification table and its combination rule are in `SKILL.md`. Three rules extend them.
 
-1. **Interpret**: classify the utterance and set the completion condition. Usually an instant judgment.
-2. **Survey**: read the files you will touch and their surroundings; confirm conventions and constraints from existing code. The goal is not a full survey but confirming "where does this change go, and in what shape."
-3. **Plan**: skip when obvious. Stage decomposition and document contracts are only for large or judgment-heavy work.
-4. **Implement**: minimal change at the cause layer, shaped like the surrounding code.
-5. **Verify**: scale to the task. Type/logic changes get typecheck plus the relevant tests; runtime behavior changes get a real-behavior check.
-6. **Report**: conclusion first. Leave residue only when there is something worth leaving.
+**Trigger: the request contains a symptom plus the user's explanation of it.** The explanation is a hypothesis, not a finding. "Maybe it's event propagation?" goes into the hypothesis table (see *Diagnosis — keep multiple hypotheses*) with a discriminating check and at least one rival — acting on it directly "fixes" a cause that may not exist.
 
-For example, for "add one field to this API route," read the route file and type definitions (2), edit (4), typecheck and check the route's actual response (5), report (6). No contract document, no instrumentation scripts.
+**Trigger: the request states a surface need with a visible growth pattern behind it.** Separate explicit from implied requirements. "Adding a category requires edits in many places" is the explicit requirement; the implicit premise is "categories will keep growing." The correct solution is not "tidy the current three" but "make the Nth addition cost one edit."
 
-### Switching into diagnostic mode, and back
+**Trigger: about to make the first edit.** The completion condition must already exist. If the request stated one, promote it verbatim as the verification bar. If not, define one before editing and label it self-defined in the report so the user can correct it. A loose condition produces loose verification: for SEO work the bar is not "build passes" but "the actual HTML title/canonical is correct"; for a drag bug not "the code looks plausible" but "the previously failing manipulation succeeds, measured."
 
-The switch trigger is the moment observation and expectation diverge:
+## Ambiguity triage
+
+Split every ambiguity by who owns the resolution.
+
+**Resolvable by checking facts → resolve it yourself.** Never ask what code, docs, git history, or existing artifacts can answer. "Like the ui project" is answered by reading that package's actual layout; "where should the hook live" by reading its provider/context dependency; import style by config and existing code.
+
+**Reasonable default exists → decide, and disclose that you decided.** Pick the conventional option and proceed, leaving in the report: the chosen default, the reason, the reversal point. Ask only when the answer would change what you do next **and** cannot be resolved from the request, the code, or a sensible default — and even then, follow the session posture in `SKILL.md`: interactive, a cheap unblocking question is fine; autonomous, confirm it yourself or default-and-disclose.
+
+**Only the user can resolve it → stop and escalate.** Account-bound values (e.g., Search Console verification codes), external policy, product direction, naming preferences, hard-to-reverse choices.
+
+**File restoration rule** — trigger: a file you did not create is missing, repeatedly deleted, or contradicts its stated purpose. Stop and report **before** restoring, overwriting, or deleting. Do not restore first and ask later.
+
+## Survey
+
+Surveying is not about file locations. Find three things: the reference point, the conventions, the constraints.
+
+**Reference point — what is this compared against?** The original project, the production site, a Figma design, the latest decision in a thread, an existing document format.
+
+**Conventions — found in existing artifacts, not in the request sentence.** Folder/file naming, index-file usage, adjacent patterns, type placement, import alias rules, test location, document formats, generated boundaries, CI commands. Repository evidence outranks memory; stale docs are context, not truth, against current source.
+
+**Constraints — what forces the design?** A script run with `tsx` cannot use the `@/` alias; a hook reading provider context forces its call site inside the provider; generated types may forbid manual edits; CI may expect a specific structure. Constraints discovered late force redesign — sweep the consumers (scripts, CI, call sites) first.
+
+### Dev wiki
+
+If a dev wiki exists (default root `${CODEX_HOME:-$HOME/.codex}/workbench/dev-wiki`) and the current project is opted in (`config.json` and `workspaces.json` map it, `source/{project}` exists), read the project's documents as survey input before inventing a standard: `project.json` for facts, then `conventions/`, `architecture/`, `workflows/` where they touch the task; `graph/` as a search starting point. A cheap read of a few files, not a pipeline step. The stale-docs rule applies unchanged: current source outranks the wiki; on conflict follow the source and propose the wiki correction in the report rather than silently rewriting wiki prose mid-task. Not opted in → skip silently; never bootstrap wiki structure as a side effect.
+
+## Contract and plan
+
+**Trigger: the work is large or judgment-heavy.** Fix a document before code: current state, target state, comparison basis, chosen design, rejected alternatives and why, migration order. The document becomes the reference point for every decision and lets the user intervene before code moves. Documentation has a cost — obvious small work needs none; judge fresh per task.
+
+**Trigger: decomposing into steps.** The unit of decomposition is a point you can fall back to: each step ends in a verifiable state, is a prerequisite of the next, keeps the suspect surface small, and never mixes refactoring with behavior change. Any failure implicates only its own step.
+
+## Execution
+
+**Minimal change at the cause layer.** Do not add code that masks symptoms: prefer removing an element's scroll-container eligibility (`overflow: clip`) over a scroll-restoring correction; prefer deleting the cleanup that killed the session over a session-restart shim.
+
+**Never mix refactoring with behavior change.** During file moves, change zero logic — otherwise a regression cannot be attributed. Move with `git mv` to preserve history.
+
+**Bulk edits by tool, not by hand.** Same-pattern rewrites via `sed`/codemod plus a follow-up grep for zero remainders; ordering via `eslint --fix`; renames via `git mv`. After any bulk command, check the diff scope.
+
+**Code reads like the surrounding code; comments state only what the code cannot show.** Match the file's comment density, naming, and idiom. A comment exists for a constraint the code can't express — why there is no cleanup, why pixels instead of ratios. Never provenance ("moved from X"), narration, or reviewer-aimed justification. A comment's job is to stop a future "normalization" from resurrecting a bug.
+
+**Byproduct bugs get a judgment, not a reflex.** A nearby bug found mid-task may be fixed together only when it is in the same responsibility boundary, the fix is narrow, the recurrence risk is clear, **and no host-skill scope rule forbids it** (`SKILL.md` precedence — a locked scope means report, don't fix). Unrelated cleanup is scope creep.
+
+## Diagnosis
+
+**Entry triggers** — switch from implementation to diagnosis the moment observation and expectation diverge:
 
 - You fixed it and the symptom is unchanged.
 - A test fails for a reason you cannot explain.
 - A bug report whose cause cannot be confirmed by reading code.
 - The symptom is nondeterministic.
 
-Stop implementing and enter the diagnostic mode of section 7. Return to the normal flow's implement step as soon as the cause is a confirmed fact.
-
-Diagnostic mode is not a separate pipeline. It is the "survey current state" stage deepened into reproduction and instrumentation, used when static reading alone cannot produce facts.
-
-## 0. Judgment, persistence, and completion conditions
-
-Three meta-rules that make the rest of this document work:
-
-- **Every judgment here is made fresh per task and can be wrong** — utterance classification, depth selection, verification sufficiency. Do not trust yourself to hold them in your head. Treat the Completion Gate in `SKILL.md` as the mechanical backstop for those fallible judgments — especially on tasks that look too obvious to need it — and the post-mortem audit (section 12) as the backstop after a task has gone wrong.
-- **Lessons do not persist by themselves.** When a process lesson emerges (e.g., "interaction verification must include dev/StrictMode"), write it to this environment's durable location — the project's dev wiki when it is opted in (§3.4), else `AGENTS.md`, a project operations document, or whatever persistent memory the harness provides. An unwritten lesson is lost to the next session.
-- **Promote stated completion conditions; invent missing ones out loud.** If the goal states a completion condition ("confirm the drag actually works in dev"), adopt it verbatim as the verification bar. If it does not, define one yourself before editing and state it in the report so the user can correct it.
-
-## 1. Goal intake
-
-### 1.1 Do not take the sentence at face value
-
-Before opening code, settle three things.
-
-First, classify the utterance:
-
-| Utterance kind | Response mode |
-| --- | --- |
-| Implementation command | Carry through to implementation |
-| Design question | Answer with opinion and evidence, not code |
-| Bug report | Diagnosis is the primary deliverable, not a fix |
-| Organize/report request | Analysis and documentation first |
-
-For example, "organize this into docs and report" is a documentation command, not an implementation command — reading it as the latter rewrites code with no agreed spec. "Maybe it's event propagation?" is a user hypothesis, not a fix instruction — acting on it directly "fixes" a cause that may not exist.
-
-Second, separate explicit from implied requirements. "Adding a category requires edits in many places" is the explicit requirement; the implicit premise is "categories will keep growing." The correct solution is therefore not "tidy the current three" but "make the Nth addition cost one edit."
-
-Third, set the completion condition before starting. A loose completion condition produces loose verification. For SEO work the condition is not "build passes" but "the actual HTML title/canonical is correct." For a drag bug it is not "the code looks plausible" but "the previously failing manipulation succeeds, measured in pixels."
-
-### 1.2 Respect user hypotheses without treating them as facts
-
-A user's hypothesis is a good lead, but it is a test subject, not a conclusion. Plausible guesses — propagation blocking, remounting, `pointercancel`, HMR corruption — are exactly the kind of thing measurement falsifies. Fixing at the first plausible hypothesis masks the symptom and leaves the cause.
-
-## 2. Ambiguity triage
-
-Not every ambiguity is a question for the user. Split by who owns the resolution.
-
-### 2.1 Ambiguity resolvable by checking facts → resolve it yourself
-
-Never ask the user what code, docs, git history, or existing artifacts can answer.
-
-"Like the ui project" is answered by reading `packages/ui`'s actual file layout. "Where should the menu hook live" is answered by reading the hook's provider/context dependency. Lint rules and import style are answered by config and existing code.
-
-### 2.2 Ambiguity with a reasonable default → decide, and disclose that you decided
-
-Do not decide silently. Leave in the report or document:
-
-- the chosen default,
-- the reason,
-- the point where the user can reverse it.
-
-For example, with a deploy domain undecided, take the original site's domain as the default with an env override, and state it in the report. An unplanned component split justified by a confirmed constraint (a hook that must read provider context) may proceed — then reflect it back into the design doc.
-
-### 2.3 Ambiguity only the user can resolve → stop and escalate
-
-Hard-to-reverse choices and matters of taste or strategy are not the agent's to decide: account-bound values (e.g., Search Console verification codes), external policy, product direction, naming preferences.
-
-**File restoration rule**: if a file you did not create is missing, repeatedly deleted, or contradicts its stated purpose, stop and report **before** restoring, overwriting, or deleting. Do not restore first and ask later.
-
-## 3. Finding the standard
-
-Surveying current state is not about file locations. Find three things first: the reference point, the conventions, and the constraints.
-
-### 3.1 Reference point — what is this compared against?
-
-The original project, the production site, a Figma design, the latest decision in a ticket thread, an existing document format. For a structure change, the comparison set is typically the original source, the current target module, and the convention module you are aligning to.
-
-### 3.2 Conventions — found in existing artifacts, not in the request sentence
-
-Check: folder and file naming, `index.tsx` usage, adjacent `hooks/` patterns, type placement, import alias rules, test location and naming, existing document formats, generated boundaries, CI/workflow commands. Matching conventions before lint tells you to reduces rework.
-
-Treat repository evidence as stronger than memory, and treat stale docs as context, not truth, when they conflict with current source.
-
-### 3.3 Constraints — what forces the design?
-
-A sync script executed with `tsx` cannot use the `@/` alias, so config files must be alias-free. A hook reading provider context forces its call site inside the provider. Generated types may forbid manual edits. CI or sync scripts may expect a specific file structure.
-
-Constraints discovered late force redesign. Sweep the consumers — scripts, CI, existing call sites — first.
-
-### 3.4 Dev wiki — read it as part of the survey
-
-If a dev wiki exists (default root `${CODEX_HOME:-$HOME/.codex}/workbench/dev-wiki`) and the current project is opted in (`config.json` and `workspaces.json` map it, `source/{project}` exists), read the project's wiki documents directly as survey input before inventing a standard: `project.json` for project facts, and the documents under `conventions/`, `architecture/`, and `workflows/` that touch the task. Use the `graph/` outputs as a search starting point. This is a cheap read of a few files, not a pipeline step — pull only what the task needs.
-
-The wiki is documentation, so the stale-docs rule applies unchanged: current source outranks the wiki. When they conflict, follow the source, and report the divergence as an anomaly — propose the wiki correction in the report rather than silently rewriting wiki prose mid-task.
-
-If the project is not opted in, skip silently. Never create or bootstrap wiki structure as a side effect of a task.
-
-## 4. Fixing the contract
-
-For large or judgment-heavy work, fix a document before code. The document becomes the reference point for every decision during the work, and lets the user intervene before code changes. Record:
-
-- current state, target state, comparison basis,
-- the chosen design,
-- rejected alternatives and why,
-- migration order.
-
-Incorporate the user's opinion at the document stage, before any code moves.
-
-But documentation has a cost. Obvious small work needs no document. "Document first" is a fresh judgment per task, not an unconditional rule — a task of the same size arriving as an implementation command may go straight to code.
-
-## 5. Planning
-
-The unit of decomposition is a point you can fall back to. A good step:
-
-- ends in a verifiable state (typecheck passes),
-- is a prerequisite of the next step,
-- keeps the suspect surface small when something breaks,
-- never mixes refactoring with behavior change.
-
-For example: mechanical rename → folderize → logic split → route/SEO changes → verify. Any failure implicates only its own step.
-
-## 6. Execution
-
-### 6.1 Minimal change at the cause layer
-
-Do not add code that masks symptoms. Prefer removing the element's scroll-container eligibility (`overflow: clip`) over a scroll-restoring correction; prefer deleting the cleanup that killed the session over a session-restart shim.
-
-### 6.2 Never mix refactoring with behavior change
-
-During file moves, change zero logic. If moves and changes mix, a regression cannot be attributed. Move with `git mv` to preserve history.
-
-### 6.3 Choose tools by error probability
-
-Repetitive edits are not done by hand: same-pattern import rewrites via `sed` plus a follow-up grep for zero remainders; import ordering via `eslint --fix`; renames via `git mv`; after any bulk command, check the diff scope.
-
-### 6.4 Comments explain only "why"
-
-Never restate what the code says. Comments defend counterintuitive decisions: why there is no cleanup, why pixels instead of ratios, why a structure must sit inside a provider. Their job is to stop a future "normalization" from resurrecting the bug.
-
-### 6.5 Byproduct bugs get a judgment, not a reflex
-
-A nearby bug found mid-task may be fixed together when it is in the same responsibility boundary, the fix is narrow, and the recurrence risk is clear — for example, `isContentCategory("toString")` returning `true` via the prototype chain, fixed with `Object.hasOwn` while writing a test. Unrelated cleanup is still scope creep; keep the two distinct.
-
-## 7. Unknown-cause bugs
-
-Switch from implementation mode to diagnostic mode. The loop:
+Diagnostic mode is not a separate pipeline: it is the survey stage deepened into reproduction and instrumentation. Return to normal implementation as soon as the cause is a confirmed fact. Entering this mode arms the post-mortem record (see *Post-mortem*) — written when the task closes, whatever the outcome. The loop:
 
 ```text
-reproduce
-→ instrument
-→ falsify hypotheses
-→ confirm the cause
-→ minimal fix
-→ quantitative re-verification
+reproduce → instrument → falsify hypotheses → confirm the cause → minimal fix → quantitative re-verification
 ```
 
-### 7.1 No fix without reproduction
+### No fix without reproduction
 
-Fixing an unreproduced bug is moving on guesses. If no reproduction environment exists, building one is the first task. Use a scratchpad or throwaway tooling to avoid polluting the project — for example, `playwright-core` installed in a scratchpad, driving a cached Chromium.
+Fixing an unreproduced bug is moving on guesses. If no reproduction environment exists, building one is the first task — in a scratch area with throwaway tooling, not by polluting the project.
 
-### 7.2 Keep multiple hypotheses
+### Keep multiple hypotheses
 
-Do not bet on the first plausible hypothesis. Attach a falsifiable check to each:
+Do not bet on the first plausible hypothesis. Attach a falsifiable check to each; a check's value is that its outcome splits the hypotheses. A frontend-shaped example (a drag bug):
 
 | Hypothesis | Discriminating check |
 | --- | --- |
@@ -234,69 +101,57 @@ Do not bet on the first plausible hypothesis. Attach a falsifiable check to each
 | Dev serves stale code | DOM/CSS/bundle state check |
 | Test coordinates are wrong | `elementsFromPoint` + bounding box |
 
-A check's value is that its outcome splits the hypotheses.
-
-The table above is frontend-shaped because it illustrates a drag bug; the structure is domain-general. The same pattern for a backend symptom:
+The same shape for a backend symptom:
 
 | Hypothesis | Discriminating check |
 | --- | --- |
-| Stale build/cache serves old code | Compare artifact hash or a marker string in the running build |
+| Stale build/cache serves old code | Artifact hash or marker string in the running build |
 | Environment variable differs | Dump the actual value at runtime, not the config file |
-| Race condition / isolation anomaly | Fire concurrent requests repeatedly to turn "sometimes" into a rate |
+| Race condition | Fire concurrent requests repeatedly to turn "sometimes" into a rate |
 | Serialization boundary drops data | Inspect the actual response body, not the in-process object |
-| Data cache serves stale values | Compare a cache-bypassing request against the cached one |
-| Connection pool exhaustion | Measure the active connection count under load |
-| Schema drift | Diff the live database schema against the migration files |
+| Stale data cache | Compare a cache-bypassing request against the cached one |
+| Schema drift | Diff the live schema against the migration files |
 | Retry causes duplicate execution | Replay the same request and count the side effects |
-| Instances behind the balancer disagree | Log an instance identifier and check which one answered |
-| Timezone/locale dependence | Re-run with the TZ (or locale) environment variable changed |
+| Instances disagree behind the balancer | Log an instance identifier per response |
+| Timezone/locale dependence | Re-run with TZ or locale changed |
 
-What transfers is not the specific checks but the shape: every live hypothesis gets a check whose outcome eliminates it or its rivals. When a real session produces its own falsified hypotheses worth reusing, add them here.
+What transfers is the shape, not the specific checks. Falsified hypotheses worth reusing route through *Residue* — propose the addition in the report; do not edit this file mid-task.
 
-### 7.3 Cheapest checks first
+### Cheapest checks first
 
 Climb the cost ladder:
 
 ```text
-rg/grep
-→ ask the reporter about their environment (run mode, browser, console errors)
-→ DOM stack inspection
-→ event trace
-→ scripted instrumentation
-→ repeated runs
-→ dev/prod matrix
-→ source probe + rebuild
+rg/grep → ask the reporter (run mode, browser, console errors) → DOM/stack inspection → event trace → scripted instrumentation → repeated runs → run-mode matrix → source probe + rebuild
 ```
 
-Asking the reporter is a legitimate check: "are you on dev or prod?" can yield the same information as a full runtime matrix. But in autonomous runs where the user is away, a question blocks the work — confirm it yourself instead.
+Asking the reporter is a legitimate check in an interactive session — "dev or prod?" can replace a full matrix. In an autonomous run it blocks the work: confirm it yourself instead (`SKILL.md` session posture). Temporary source logging is a last resort, removed immediately after confirmation.
 
-Temporary source logging is a last resort, used only when external observation cannot discriminate, and removed immediately after confirmation.
+### Suspect the measurement tool itself
 
-### 7.4 Suspect the measurement tool itself
+A failing test is either a real bug or a broken instrument. When results look strange, validate the instrument first: the element stack under the pointer, bounding boxes, viewport and scroll position, overlays, event ordering, whether test coordinates hit the intended element.
 
-A failing test is either a real bug or a broken instrument. When results look strange, validate the instrument before concluding: the element stack under the pointer, bounding boxes, viewport and scroll position, overlays covering the target, event ordering, whether the test coordinates hit the intended element. A "failure" is often the test's own grab coordinates being covered by another window.
+### Turn nondeterminism into a rate
 
-### 7.5 Turn nondeterminism into a rate
+"Sometimes fails" is not a verifiable state. Repeat runs until you have a number: 4/6 failures before the fix, 0/6 after. Mind the sample size — 4/6 → 0/6 shows direction but is weak evidence; confirming reproduction needs few runs, claiming "fixed" needs more.
 
-"Sometimes fails" is not a verifiable state. Repeat runs until you have a number: e.g., 4/6 failures before the fix, 0/6 after. Only the number lets you say "fixed."
+### Make the environment a variable
 
-Mind the sample size: 4/6 → 0/6 shows direction but is weak evidence. Confirming reproduction needs few runs; claiming "fixed" needs more.
+Your reproduction environment and the user's can differ; a bug can pass everything in prod and fail everything in dev — living in the run mode, not the code diff. **When the sandbox can run the app** (see *Verification — capability check first*), build the matrix as needed: dev/prod, StrictMode, HMR vs fresh start, viewport, timing, auth/data state — and verify in the modes the user actually runs, not the convenient one. When the sandbox cannot, name the unchecked mode once in the report as a decision-relevant gap; do not simulate or fake the check.
 
-### 7.6 Make the environment a variable
+### Explain only as much as the fix requires
 
-Your reproduction environment and the user's environment can differ. Build a matrix when needed: dev/prod, StrictMode, HMR vs fresh start, viewport, gesture timing, grab point, auth/data state. A bug can pass everything in prod and fail everything in dev — living in the run mode, not the code diff. Verify in the modes the user actually runs, not the mode you find convenient.
+If a higher layer blocks the problem entirely (`overflow: clip` prevents scrolling regardless of cause), the internal mechanics can remain unexplained. Conversely, deciding *what to delete* may require tracing the call chain. The fix's justification — not curiosity — sets the depth.
 
-### 7.7 Explain only as much as the fix requires
+### Exit conditions
 
-Do not chase every internal mechanism. If a higher layer blocks the problem entirely (`overflow: clip` prevents scrolling regardless of cause), the browser's internal scroll mechanics can remain unexplained. Conversely, deciding *what to delete* may require tracing the call stack (e.g., `beginPointerSession → unmount cleanup → endSession`). The fix's justification — not curiosity — sets the depth of explanation.
+**Trigger: successive checks stop narrowing the hypothesis space, or the missing fact is user-owned.** Do not fix on a guess. Report the falsified hypotheses, the surviving candidates, and what information would discriminate them.
 
-### 7.8 Exit condition
+**Trigger: the environment cannot run a required check** (sandbox limits, no browser, no network, no prod access). Treat capability exhaustion exactly like budget exhaustion under `SKILL.md`'s precedence rules: ship the narrowest labeled mitigation — or no change at all — and report the unverified surface explicitly.
 
-If successive checks stop narrowing the hypothesis space, or the missing fact is one only the user can supply, do not fix on a guess. Report the falsified hypotheses, the surviving candidates, and what information would discriminate them.
+## Tests versus instrumentation
 
-## 8. Tests versus instrumentation
-
-They have different purposes and different lifetimes:
+Different purposes, different lifetimes:
 
 | Kind | Purpose | Disposition |
 | --- | --- | --- |
@@ -305,73 +160,71 @@ They have different purposes and different lifetimes:
 | Diagnostic script | Identify the cause | Usually remove |
 | Temporary source probe | Confirm internal call chain | Remove after confirmation |
 
-Diagnostic scripts with regression value get promoted to permanent tests or verification scripts — e.g., one that verifies pixel movement and failure rate after a fix. Point-in-time coordinate dumps and stack logs get removed.
+Diagnostic scripts with regression value get promoted to permanent tests or verification scripts; point-in-time dumps and stack logs get removed.
 
-## 9. Verification
+## Verification
 
-Verification is layered.
+### Capability check first
 
-### 9.1 Mechanical checks
+Before choosing a verification layer, establish what this sandbox can actually do: run tests? build? start a server? reach the network? drive a browser? Verify at the **highest layer available**, and treat anything above it as a gap to disclose only if decision-relevant. Do not skip a layer the sandbox supports because a lower one was convenient.
 
-typecheck, lint, test, build. Necessary, never sufficient — real bugs routinely pass this layer untouched.
+### Layers
 
-### 9.2 Artifact measurement
+Each layer catches what the previous cannot:
 
-Confirm the deliverable in the form the outside world receives: the actual HTML `<title>`, canonical, robots/sitemap status codes, API response shape, generated output. For backend work the artifact is never the in-process object: measure the actual HTTP response (status, headers, body), the database state after the operation, the emitted logs and traces, and the queue contents.
+1. **Mechanical** — typecheck, lint, test, build. Necessary, never sufficient; real bugs routinely pass untouched.
+2. **Artifact measurement** — the form the outside world receives: actual HTML title/canonical, status codes, the HTTP response (status, headers, body), database state after the operation, emitted logs, queue contents — never the in-process object.
+3. **Real behavior** — start the server, perform the real manipulation, quantify: bounding boxes, pixel deltas, DOM changes, event traces, failure rates over repeated runs.
+4. **User run-mode matrix** — dev/prod, StrictMode, HMR. Only when the sandbox can run those modes (see *Make the environment a variable*).
 
-### 9.3 Real-behavior checks
+### Disclosure without boilerplate
 
-Start the server and perform the real manipulation. Quantify UI interaction: bounding boxes before/after drag, pixel deltas, scrollTop, DOM attribute changes, event traces, failure rates over repeated runs.
+"Not verified" statements exist for surfaces that could change the user's next decision. State a systemic limitation (no browser, no network) **once**, then stop — repeating environment-impossibility disclaimers on every item trains the reader to skip the risk section, which defeats it.
 
-### 9.4 User run-mode checks
+### The standard is itself revisable
 
-Verify in the modes the user actually runs. Checking only prod misses StrictMode and HMR differences. Verifying only in the convenient mode and declaring done is the classic miss; the dev/prod matrix is the correction.
+**Trigger: the user reports failure after you verified.** Suspect the verification-sufficiency judgment along with the code. Hold three possibilities open: the fix is wrong, another cause exists, the environments differ.
 
-### 9.5 The verification standard is itself revisable
+## Reporting
 
-If the user reports failure after you verified, suspect the verification-sufficiency judgment along with the code. Do not ask only "why didn't my fix take?" — also ask "did my verification environment match the user's?" Hold three possibilities open: the fix is wrong, another cause exists, the environments differ.
+- **Lead with the outcome.** The first sentence answers "what happened" or "what did you find"; evidence, verification, and remaining risk follow.
+- **The final message is the report.** Everything the user needs from the turn must be in the closing message; notes between tool calls do not count as having reported.
+- **Readable over concise.** Select what to include — drop details that don't change the reader's next decision — rather than compress into fragments, arrow chains, or labels the reader must decode. What you include, write in complete sentences.
+- **Report outcomes faithfully.** Failing tests are reported with output; skipped steps are named; verified work is stated plainly without hedging.
 
-## 10. Residue
+Never hide: discretionary defaults, falsified hypotheses, judgments you got wrong, where verification fell short, points needing the user's decision, anomalies outside your authority. The mechanical closing check is the Completion Gate in `SKILL.md`.
+
+## Residue
 
 Do not leave only the resulting code. Leave each kind of residue where it will next be needed:
 
 | Residue | Location |
 | --- | --- |
-| Design decision reasons | Documents |
-| Rejected alternatives and why | Documents |
+| Design decision reasons, rejected alternatives | Documents |
 | Counterintuitive code reasoning | Code comments |
 | Regression-worthy checks | Tests or verification scripts |
-| One-off instrumentation | Scratchpad, then removed |
-| Process lessons, durable project conventions | The project's dev wiki when opted in (§3.4); else AGENTS.md, ops docs, or the harness's persistent memory |
+| One-off instrumentation | Scratch area, then removed |
+| Process lessons, durable conventions | Dev wiki when opted in (see *Survey — dev wiki*); else a dedicated ops/log doc. Promote to AGENTS.md only rules repeated records have validated |
 
-Placement is the point: the next person to touch that decision must encounter the reasoning naturally — comments for whoever edits the line, design docs for whoever redesigns, durable memory for the next session.
+Three cleanup obligations close out with the work itself (the Completion Gate points here rather than listing them):
 
-## 11. Reporting
+- **Probes and one-off diagnostics are removed**; regression-worthy ones are promoted to tests/scripts or explicitly proposed — never silently discarded.
+- **Deleted guard/cleanup/lifecycle code leaves its safety argument as a code comment**, so nobody "restores" the bug later.
+- **Anomalies noticed outside your scope are reported**, not dropped.
 
-Conclusion first, then evidence, verification, and remaining risk.
+Placement is the point: the next person must encounter the reasoning naturally — comments for whoever edits the line, docs for whoever redesigns, durable memory for the next session. An unwritten lesson is lost to the next session.
 
-Never hide:
+## Post-mortem
 
-- discretionary decisions you made,
-- hypotheses you falsified,
-- judgments you got wrong,
-- where verification fell short,
-- points needing the user's decision,
-- anomalies outside your authority.
+The runtime closing check is the Completion Gate; do not walk a second checklist per task. This section fires on three triggers — the first unconditional, so the record does not depend on noticing your own mistakes:
 
-A report is not a result notice. It is the material the user needs to reverse your judgment or make the next decision. The mechanical closing check for this list is the Completion Gate in `SKILL.md` — apply that gate rather than restating these items ad hoc.
+- **Closing any task that entered diagnostic mode — regardless of outcome.** Success is evidence too; recording only failures makes the trail unusable.
+- **A task went wrong** (the user reports failure, a fix regressed, a judgment was reversed).
+- **Closing an unusually large task.**
 
-## 12. Post-mortem audit
+Two steps, the second not optional:
 
-The runtime closing check is the Completion Gate in `SKILL.md`; do not walk a second checklist on every task. This section exists only for after the fact: when a task went wrong, or before closing an unusually large one, re-read sections 1–11 to locate which judgment failed — utterance classification (§1), ambiguity ownership (§2), the standard (§3), stage decomposition (§5), the diagnosis loop (§7), or verification sufficiency (§9). The goal of the audit is to find the failed judgment, not to re-tick the Gate.
+1. **Locate the judgment.** For failures, find which call was wrong — utterance classification, ambiguity ownership, the survey standard, stage decomposition, the diagnosis loop, or verification sufficiency. For successes, identify the check that discriminated the cause.
+2. **Write the record.** Three lines: what was misjudged or which check was decisive; what evidence would have caught it earlier or cheaper; the rule to apply next time. Destination: the dev wiki when opted in, otherwise a dedicated log document — **not** AGENTS.md, which receives only rules that repeated records have validated, by explicit promotion.
 
-## Summary
-
-Do not move by fixing code fast. Move by producing facts fast.
-
-When facts are missing, observe before implementing. Observation can be wrong, so suspect the instrument too. Once the cause is confirmed, fix minimally at the cause layer, not the symptom. After fixing, verify quantitatively in the run modes the user actually uses. When done, leave not just the result but the reasoning and the lessons, each where it will next be read.
-
-Two cautions when applying this model:
-
-- Depth and procedure are not fixed. Depth is set fresh each task by uncertainty and cost of being wrong; progress is parallel and opportunistic, not heavy and sequential by default.
-- Nothing learned persists on its own. Only what is written into durable memory or documents survives into the next session.
+Evals cannot run in this environment (see `references/ab-scenarios.md` for the manual alternative), so this written trail is the mode's only accumulating evidence of whether it works — and the only place a session's lesson survives into the next one.

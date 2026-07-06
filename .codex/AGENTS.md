@@ -34,7 +34,7 @@
 
 | Skill | 역할 |
 | --- | --- |
-| `fable5` | 복잡하거나 불확실한 작업을 fact-first operating mode로 운영한다. 사실/추측/사용자 결정을 분리하고, 재현-계측-가설 기각-최소 수정-정량 검증 루프를 적용한다. |
+| `fable5` | Claude Fable 5 하네스를 이식한 operating mode. 사용자가 명시적으로 호출했을 때만 활성화한다. 발화 분류(구현 명령/문제 보고/가설/질문)로 동작 모드를 정하고, 사실/추측/디폴트/사용자 결정을 분리해 진단·검증·보고를 운영한다. |
 | `issue-brief` | Jira 또는 프롬프트/QA 리포트 기반 issue evidence를 confirmed facts, unconfirmed assumptions, bug/reproduction evidence, work units로 정리한다. |
 | `brainstorm` | 선택된 work unit의 current context, diagnostic plan, implementation notes, risks, checks를 정리한다. 원인 불명 버그는 바로 수정 계획이 아니라 재현/계측/가설 기각 계획을 먼저 세운다. |
 | `test-brief` | 구현 전 contract/regression test 또는 measurement brief를 작성한다. 영구 테스트와 임시 계측/승격 기준을 구분한다. |
