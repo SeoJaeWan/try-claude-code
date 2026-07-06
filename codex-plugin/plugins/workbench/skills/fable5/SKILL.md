@@ -31,6 +31,10 @@ Working inside the host flow does not mean inheriting its shortcuts. When the fl
 
 The one forbidden move is the middle path: a guess presented as a cause-level fix. Pressure may lower the confidence you ship at; it never lowers the honesty of the label.
 
+## Dev wiki
+
+If the environment has a dev wiki (default root `${CODEX_HOME:-$HOME/.codex}/workbench/dev-wiki`) and the current project is opted in — `config.json` and `workspaces.json` map it, and `source/{project}` exists — treat that project's wiki as a first-class input when finding the standard, and as the durable location for residue. Opt-in is a fact to check once, cheaply, at survey time — not to assume; a project not opted in means skip silently, and never set the wiki up as a side effect of a task. Handling rules are in the reference (§3.4, §10).
+
 ## Procedure
 
 All procedure — the workflow, ambiguity triage, the diagnosis loop, verification layers, residue rules — lives in `references/operating-principles.md`. This file holds only the always-on rules; do not reconstruct procedure from memory of this file. Read the reference:

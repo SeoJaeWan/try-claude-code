@@ -76,7 +76,7 @@ Diagnostic mode is not a separate pipeline. It is the "survey current state" sta
 Three meta-rules that make the rest of this document work:
 
 - **Every judgment here is made fresh per task and can be wrong** — utterance classification, depth selection, verification sufficiency. Treat the checklist (section 12) and the Completion Gate in `SKILL.md` as mechanical backstops for those fallible judgments, especially on tasks that look too obvious to need them.
-- **Lessons do not persist by themselves.** When a process lesson emerges (e.g., "interaction verification must include dev/StrictMode"), write it to this environment's durable location — `AGENTS.md`, a project operations document, or whatever persistent memory the harness provides. An unwritten lesson is lost to the next session.
+- **Lessons do not persist by themselves.** When a process lesson emerges (e.g., "interaction verification must include dev/StrictMode"), write it to this environment's durable location — the project's dev wiki when it is opted in (§3.4), else `AGENTS.md`, a project operations document, or whatever persistent memory the harness provides. An unwritten lesson is lost to the next session.
 - **Promote stated completion conditions; invent missing ones out loud.** If the goal states a completion condition ("confirm the drag actually works in dev"), adopt it verbatim as the verification bar. If it does not, define one yourself before editing and state it in the report so the user can correct it.
 
 ## 1. Goal intake
@@ -149,6 +149,14 @@ Treat repository evidence as stronger than memory, and treat stale docs as conte
 *(source session)* A sync script executed with `tsx` cannot use the `@/` alias, so config files had to be alias-free. A hook reading provider context forces its call site inside the provider. Generated types may forbid manual edits. CI or sync scripts may expect a specific file structure.
 
 Constraints discovered late force redesign. Sweep the consumers — scripts, CI, existing call sites — first.
+
+### 3.4 Dev wiki — read it as part of the survey
+
+If a dev wiki exists (default root `${CODEX_HOME:-$HOME/.codex}/workbench/dev-wiki`) and the current project is opted in (`config.json` and `workspaces.json` map it, `source/{project}` exists), read the project's wiki documents directly as survey input before inventing a standard: `project.json` for project facts, and the documents under `conventions/`, `architecture/`, and `workflows/` that touch the task. This is a cheap read of a few files, not a pipeline step — pull only what the task needs.
+
+The wiki is documentation, so the stale-docs rule applies unchanged: current source outranks the wiki. When they conflict, follow the source, and report the divergence as an anomaly (it is exactly the kind of stale-documentation fact worth surfacing) — propose the wiki correction in the report rather than silently rewriting wiki prose mid-task.
+
+If the project is not opted in, skip silently. Never create or bootstrap wiki structure as a side effect of a task.
 
 ## 4. Fixing the contract
 
@@ -336,7 +344,7 @@ Do not leave only the resulting code. Leave each kind of residue where it will n
 | Counterintuitive code reasoning | Code comments |
 | Regression-worthy checks | Tests or verification scripts |
 | One-off instrumentation | Scratchpad, then removed |
-| Process lessons | This environment's durable memory (AGENTS.md, ops docs) |
+| Process lessons, durable project conventions | The project's dev wiki when opted in (§3.4); else AGENTS.md, ops docs, or the harness's persistent memory |
 
 Placement is the point: the next person to touch that decision must encounter the reasoning naturally — comments for whoever edits the line, design docs for whoever redesigns, durable memory for the next session.
 
