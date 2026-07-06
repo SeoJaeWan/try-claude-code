@@ -28,6 +28,7 @@ Identify:
 - Target UI: local URL/route, app command if needed, viewport, and state setup.
 - Scope: entire page, one frame/section, modal, component, responsive breakpoint, specific visual concern, or interaction symptom.
 - Interaction, when relevant: click, drag, scroll, focus, hover, keyboard, touch, gesture timing, target coordinate/selector, expected state change, and whether the failure is deterministic or flaky.
+- Cheap clarifications, when relevant: dev/prod, browser/device, viewport, zoom/device scale, reduced motion, console errors, first-action-only behavior, and whether the user can provide these faster than Codex can instrument them.
 - Constraints: whether Codex may modify code after the report, whether to inspect only, and which differences are intentionally accepted.
 
 If source and target mapping is unclear, ask for the missing mapping before doing visual work. The minimum useful mapping is:
@@ -93,20 +94,21 @@ For the target route:
 When the task includes a UI interaction symptom such as drag, click, focus, scroll, hover, keyboard, touch, or flaky first action:
 
 1. Align the target state before interacting: route, viewport, scroll position, open modal/menu, auth, fixture data, and selected item.
-2. Identify the intended target by selector, role/text, or coordinate. Prefer semantic selectors where available, but record coordinates when the bug is coordinate-sensitive.
-3. Before trusting a failed interaction, validate the measurement:
+2. If the reporter is available, ask cheap environment questions before building expensive automation when those answers would distinguish the same hypotheses.
+3. Identify the intended target by selector, role/text, or coordinate. Prefer semantic selectors where available, but record coordinates when the bug is coordinate-sensitive.
+4. Before trusting a failed interaction, validate the measurement:
    - capture the target bounding box
    - call `elementsFromPoint` or equivalent for the action coordinate
    - record viewport size, scroll offsets, and overlay/modal/menu stack
    - verify the element is visible, enabled, and not covered when relevant
-4. Capture event or state traces that distinguish likely causes:
+5. Capture event or state traces that distinguish likely causes:
    - pointer/mouse/touch/keyboard event order
    - `pointercancel`, `blur`, `focusin`, `scroll`, or mutation events
    - DOM attribute/state changes before and after the interaction
    - bounding box or pixel deltas for drag/resize/move behavior
-5. For flaky symptoms, repeat the interaction enough times to report a frequency, such as `4/6 failed`, and repeat the same measurement after a fix.
-6. Compare runtime modes when they may affect UI behavior: dev/prod, StrictMode, HMR/fresh server, browser, viewport, device scale factor, reduced motion, or mobile/touch emulation.
-7. If external observation cannot distinguish causes, recommend a narrow temporary source probe for `executor` rather than guessing from screenshots.
+6. For flaky symptoms, repeat the interaction enough times to report a frequency, such as `4/6 failed`, and repeat the same measurement after a fix. Note when the sample is directional rather than conclusive.
+7. Compare runtime modes when they may affect UI behavior: dev/prod, StrictMode, HMR/fresh server, browser, viewport, device scale factor, reduced motion, or mobile/touch emulation.
+8. If external observation cannot distinguish causes, recommend a narrow temporary source probe for `executor` rather than guessing from screenshots.
 
 Interaction findings should separate:
 
@@ -209,6 +211,7 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep file paths
    - Target: <region and measurement/visual cue>
    - Interaction: <event trace / element stack / bounding box delta / repeated-run result, when relevant>
    - Measurement Check: <coordinate/overlay/test-tool validation, or "not needed">
+   - Sample Note: <repeat count and whether evidence is directional or stable, when relevant>
    - Code Hint: <file/component/selector candidate>
    - Suggested Edit: <narrow fix>
 

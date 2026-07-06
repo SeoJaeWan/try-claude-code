@@ -104,6 +104,7 @@ For each commit, consider whether feedback is needed in these areas:
 - Behavior risk: changed control flow, edge cases, error handling, auth/session state, permissions, persistence, API contracts, schema changes, migrations, or backward compatibility.
 - Test risk: logic changed without nearby tests, removed tests, brittle snapshots, missing regression coverage, or manual-only verification.
 - Diagnostic risk: unknown-cause bug fixes without reproduced symptoms, falsified hypotheses, measurement-tool validation, repeated-run evidence for flaky behavior, or dev/prod/runtime-mode verification.
+- Over-diagnosis risk: simple or already-confirmed fixes burdened with unnecessary plans, temporary scripts, broad runtime matrices, or documentation that did not reduce meaningful uncertainty.
 - Maintainability: duplicated logic, naming drift, dead code, inconsistent local patterns, hidden coupling, or config/documentation drift.
 - Residual artifact risk: temporary probes, debug logging, scratch diagnostic scripts, screenshots, or task-only artifacts committed without an explicit promotion reason.
 - Review focus: files or paths reviewers should inspect carefully.
@@ -171,6 +172,7 @@ Before finalizing, revise the report if any of these are true:
 - A feature commit does not mention state, API/data flow, validation, or tests even though the diff includes them.
 - Feedback says only "테스트 필요" without naming the missing or stale test surface.
 - Bug-fix feedback says only "재현 필요" or "검증 필요" without naming the missing symptom, hypothesis check, runtime mode, or regression surface.
+- A simple fix report praises heavy diagnostics without explaining which uncertainty or risk justified them.
 - The whole report could have been written from `git log --oneline` and `--stat` without reading diffs.
 
 ## Final Quality Bar

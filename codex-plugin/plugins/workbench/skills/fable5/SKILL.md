@@ -7,6 +7,8 @@ description: Fact-first operating mode for complex work, unknown-cause bugs, hig
 
 Use this skill as an operating mode for complex or uncertain work. It does not replace `issue-brief`, `brainstorm`, `test-brief`, `executor`, or `visual-grounding`; it governs how to use them and how deeply to diagnose, implement, verify, and report.
 
+Fable 5 is not "always investigate deeply." Normal work should stay light: interpret the request, read the nearby code and conventions, make the smallest appropriate change, verify at the right layer, and report. Switch into deep diagnostic mode only when observation and expectation diverge or the cause is not yet a fact.
+
 ## Core Rule
 
 Classify every important claim as one of:
@@ -38,13 +40,15 @@ Act on confirmed facts. Turn assumptions into facts with the cheapest useful che
    - Split work so each step ends in a verifiable state.
    - Keep refactors and behavior changes separated when practical.
    - Make each step narrow enough that a regression has a small suspect surface.
+   - Skip explicit planning when the change is small, obvious, and low-risk.
 
 5. **Diagnose unknown-cause bugs before fixing**
    - Reproduce or measure before editing production code.
    - Keep multiple hypotheses alive until checks falsify them.
-   - Start with cheap checks: `rg`, static reads, DOM/event stack, focused scripts, repeated runs, runtime matrices.
+   - Start with cheap checks: `rg`, static reads, asking the reporter for environment details when they are available, DOM/event stack, focused scripts, repeated runs, runtime matrices.
    - Validate the measurement tool itself when coordinates, screenshots, timers, mocks, cached builds, or flaky behavior are involved.
    - Use temporary source probes only when external observation cannot distinguish causes, and remove them after confirmation.
+   - Return to normal implementation mode as soon as the cause is confirmed.
 
 6. **Change the cause, not the symptom**
    - Prefer cause-level fixes over masking or retrying around symptoms.
@@ -55,7 +59,7 @@ Act on confirmed facts. Turn assumptions into facts with the cheapest useful che
    - Run focused mechanical checks first: typecheck, lint, tests, build, or the local equivalent.
    - Measure the actual artifact when the output matters: HTML, metadata, API shape, generated files, UI state, or pixel delta.
    - For interaction bugs, verify the runtime modes the user actually uses: dev/prod, StrictMode, HMR/fresh start, viewport, auth/data state, browser, or device mode.
-   - For flaky symptoms, compare before/after frequency using the same repeated-run method.
+   - For flaky symptoms, compare before/after frequency using the same repeated-run method, and treat tiny samples as directional rather than conclusive.
 
 8. **Leave useful residue**
    - Put design decisions in documents.
@@ -75,7 +79,7 @@ Use the existing workbench skills when they fit:
 - Use `visual-grounding` for UI fidelity or interaction evidence.
 - Use `branch-work-report` to review whether commits preserve evidence, validation, and cleanup.
 
-Do not create a parallel debug flow when the normal workbench flow can carry the work. Increase diagnostic depth inside the existing flow.
+Do not create a parallel debug flow when the normal workbench flow can carry the work. Increase diagnostic depth inside the existing flow only when the selected unit needs it.
 
 ## Reference
 

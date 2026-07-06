@@ -88,6 +88,7 @@ When Test Intent is **Measurement brief**:
 - State what result would justify a production fix.
 - State what should be deleted after diagnosis.
 - State what should be promoted to a permanent regression test or verification script after the fix.
+- For flaky behavior, state the sample size or repetition expectation. Small samples can prove direction during diagnosis, but post-fix confidence usually needs more repetitions or a broader runtime matrix.
 - Prefer artifact locations outside project-owned test suites for temporary diagnostics, such as task-local scratch/artifact directories, unless the repo already has a convention.
 
 ### Test Naming
@@ -156,6 +157,7 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 - Diagnostic Artifacts: <temporary scripts/traces/matrices, or "not applicable">
 - What They Prove: <hypotheses or measurement risks each artifact checks>
 - Measurement Tool Check: <how to verify the repro/test itself is valid>
+- Sample Size: <repeat count / runtime matrix needed, or "not applicable">
 - Cleanup: <temporary files/probes to remove after diagnosis>
 - Promote: <regression test or verification script to keep if it proves stable behavior>
 

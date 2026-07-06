@@ -9,7 +9,7 @@ Use this skill after `issue-brief` or any equivalent work breakdown, when the us
 
 The goal is not to make a large plan. The goal is to help the user understand how one work unit unfolds: current code shape, dev wiki conventions, goal-oriented work phases, implementation or diagnostic notes, risks, and checks.
 
-For unknown-cause bugs, the first useful output is often a diagnostic plan, not a fix plan. Preserve the difference between confirmed facts, unconfirmed assumptions, and hypotheses that still need measurement.
+For normal low-uncertainty work, keep the brainstorm lightweight. For unknown-cause bugs, the first useful output is often a diagnostic plan, not a fix plan. Preserve the difference between confirmed facts, unconfirmed assumptions, and hypotheses that still need measurement.
 
 ## Core Rules
 
@@ -70,6 +70,7 @@ When the selected unit is a bug whose cause is not confirmed:
 - Build a small hypothesis set. Prefer 2-5 plausible causes rather than one favored explanation.
 - Attach a falsification or confirmation check to each hypothesis.
 - Prefer the cheapest useful check first: `rg`/static read, DOM or event stack inspection, focused script, repeated run, runtime matrix, then temporary source probes only when external observation is insufficient.
+- Include cheap user questions before expensive instrumentation when the reporter is available and the answer would separate hypotheses.
 - Include a measurement-tool check when the symptom depends on automation, coordinates, screenshots, timers, network mocks, or a flaky repro.
 - For flaky behavior, define how to measure frequency, such as repeated runs before and after the fix.
 - Include relevant runtime modes when they could change behavior: dev/prod, StrictMode, HMR/fresh start, viewport, auth/data state, feature flag, browser, or mobile/webview.
@@ -92,10 +93,15 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 - Evidence: <prompt/Jira/Figma/OpenAPI/repo facts that matter for this unit>
 
 **Diagnostic Plan**
+- Mode: <Normal / Diagnostic>
 - Symptom: <observable symptom, or "not applicable">
 - Known Facts: <facts already confirmed by issue brief/repo evidence>
 - Unconfirmed Assumptions: <suspected causes or implementation guesses still unverified>
 - Hypotheses: <numbered hypotheses with the cheapest falsification/confirmation check for each, or "not applicable">
+- Ask First: <cheap user/reporter questions before instrumentation, or "not applicable">
+- Parallel Checks: <independent checks that can run in parallel, or "none">
+- Switch Trigger: <why this unit needs diagnostic mode, or "not applicable">
+- Return Condition: <what fact lets executor return to implementation mode, or "not applicable">
 - Measurement Risk: <how the test/repro itself could be wrong, or "low">
 - Runtime Matrix: <dev/prod/browser/viewport/auth/data modes that matter, or "not applicable">
 - Completion Condition: <what observation proves diagnosis is complete enough to fix>
@@ -127,6 +133,7 @@ For selected units:
 - Keep UI, state, API, validation, and tests as separate concerns unless the selected unit naturally owns all of them.
 - If the unit is blocked by API/design uncertainty, say what is blocked and make the first **Work Steps** item the smallest unblock action, but do not invent implementation details.
 - If the unit is an unknown-cause bug, make the first **Work Steps** item a concrete reproduction or measurement step unless reproduction is already confirmed.
+- If the unit is low-risk and the cause/work surface is already clear, do not inflate it into a diagnostic plan. Mark `Mode: Normal` and keep Work Steps short.
 - If the unit is already implemented or partially implemented, frame the output around verification, cleanup, and regression checks.
 - If the current workspace does not contain the relevant product code, state that clearly and base the output on available evidence only.
 - Use 3-5 Work Steps by default. More than 5 means the selected unit is probably too large and should be split.
@@ -135,6 +142,7 @@ For selected units:
 - Prefer steps that depend on the previous result. Example: "타입 계약 생성" -> "생성된 타입 차이 해석" -> "API wrapper 전환 범위 결정" -> "필드명 영향 반영".
 - Do not put vague steps like "요구사항 검토" unless that is the only safe unblock goal.
 - For diagnostic units, avoid vague steps like "원인 파악". Prefer steps like "pointer event trace로 `pointercancel` 발생 여부를 기각한다" or "dev/prod matrix로 실행 모드 차이를 분리한다".
+- For diagnostic units, include the condition for returning to normal implementation. Diagnosis should end once it has produced the fact needed for a scoped fix.
 
 ## Quality Bar
 

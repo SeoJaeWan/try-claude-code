@@ -9,7 +9,7 @@ Use this skill after `issue-brief`, `brainstorm`, and optionally `test-brief` wh
 
 The goal is not to run a large autonomous plan. The goal is to finish one reviewable unit while making scope boundaries visible, especially when generators, formatters, or shared types change files outside the selected unit.
 
-For unknown-cause bugs, finishing the unit may first mean proving the cause through reproduction and measurement before applying a production fix. Do not skip the diagnostic loop just because a plausible fix is obvious.
+For normal low-uncertainty work, keep execution direct and scoped. For unknown-cause bugs, finishing the unit may first mean proving the cause through reproduction and measurement before applying a production fix. Do not skip the diagnostic loop just because a plausible fix is obvious, but also do not force deep diagnostics onto work whose cause and completion condition are already clear.
 
 ## Core Rules
 
@@ -19,6 +19,8 @@ For unknown-cause bugs, finishing the unit may first mean proving the cause thro
 - Do NOT proceed through a scope expansion as if it is normal implementation work.
 - Do NOT rewrite test-brief assertions, fixtures, or expected contracts to make the implementation easier.
 - Do NOT implement a suspected fix for an unknown-cause bug before reproducing or measuring the symptom, unless the root cause is already confirmed by evidence.
+- Do NOT replace a cheap user/reporter clarification with expensive instrumentation when the user is available and the answer would distinguish the same hypotheses.
+- Do NOT keep running diagnostics after the cause is confirmed. Return to normal scoped implementation.
 - Do NOT treat automation failure, screenshot mismatch, coordinate failure, or flaky behavior as product failure until the measurement tool itself has been checked.
 - Do NOT bypass relevant dev wiki conventions with manual workarounds when the convention directly applies.
 - Do NOT preserve non-conforming names or public exports merely because they already existed.
@@ -58,6 +60,8 @@ If existing user changes overlap the target files, read them carefully and work 
 
 Use this mode when the selected unit is a bug report and the root cause is not confirmed.
 
+Do not use this mode for every bug fix. If the failing line, broken contract, or needed behavior is already established, implement the scoped fix and verify it at the appropriate layer.
+
 The loop is:
 
 ```text
@@ -76,13 +80,14 @@ Rules:
 - Keep confirmed facts, unconfirmed assumptions, and hypotheses separate in your reasoning and handoff.
 - Maintain multiple plausible hypotheses until measurements eliminate them.
 - Attach a falsification or confirmation check to each hypothesis before editing production code.
-- Start with cheap checks: `rg`/static read, DOM stack, event trace, focused script, repeated run, runtime matrix, and only then temporary source probes when external observation is insufficient.
+- Start with cheap checks: `rg`/static read, asking the reporter for environment details when available, DOM stack, event trace, focused script, repeated run, runtime matrix, and only then temporary source probes when external observation is insufficient.
 - Validate the measurement tool itself when the result depends on coordinates, overlays, screenshots, timers, mocked APIs, browser automation, cached builds, or flaky ordering.
-- For flaky symptoms, measure frequency before and after the fix with repeated runs.
+- For flaky symptoms, measure frequency before and after the fix with repeated runs. Treat very small samples as directional evidence; use more repetitions or runtime modes before calling the fix stable when the cost of being wrong is high.
 - Compare relevant runtime modes when they can change behavior: dev/prod, StrictMode, HMR/fresh start, viewport, browser, auth/data state, feature flag, or mobile/webview.
 - Use temporary scripts or probes when needed, but remove temporary source probes and task-only diagnostics before handoff unless the user explicitly wants them kept.
 - Promote only valuable, stable regression checks to committed tests or verification scripts. Do not commit one-off diagnostics that only served cause discovery.
 - If no hypothesis can be distinguished with the available environment, stop with the evidence gathered and the smallest missing input instead of guessing.
+- Return to normal implementation mode as soon as the cause is confirmed enough to justify a scoped fix.
 
 Cause-level fixes:
 

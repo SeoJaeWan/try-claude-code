@@ -32,6 +32,7 @@ Prefer live MCP evidence when available.
    - Treat the current user prompt and any pasted text as first-class evidence.
    - Extract observable facts: reported symptom, expected behavior, actual behavior, reproduction steps, environment, affected screen/API, user role, data state, acceptance checks, and explicit constraints.
    - Extract user hypotheses separately from confirmed facts. Examples: "이벤트 전파 차단 아닐까", "API가 느린 것 같아", "HMR 문제일 수도".
+   - Extract cheap clarifying questions when the user can answer faster than Codex can measure, such as dev/prod, browser/device, viewport, role, data state, feature flag, console error, and whether the symptom is first-action-only or flaky.
    - Preserve source labels such as "user prompt", "pasted QA report", "copied Jira comment", "screenshot description", or "conversation context" when no external URL exists.
    - If the prompt contains enough context, proceed without asking for Jira.
 
@@ -120,6 +121,7 @@ When the user provides issue details directly:
   - reproduction steps or missing reproduction data
   - affected environment such as dev/prod, browser, viewport, role, auth state, feature flag, or data state
   - whether the issue is deterministic or flaky
+- Add askable clarifications when they are cheaper than repository or browser instrumentation. If the user is not available or the task is autonomous, keep them as assumptions to verify through measurement.
 - If the cause is unknown, do not invent the cause. Put suspected causes under **Unconfirmed Assumptions** and make the next step a diagnostic `brainstorm` or a small reproduction/regression unit when actionable.
 
 ### 3. Collect Jira Evidence
@@ -216,6 +218,9 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 
 **Unconfirmed Assumptions**
 - <suspected cause / inferred implementation path / user hypothesis> (status: unverified, suggested check if obvious)
+
+**Askable Clarifications**
+- <question that would cheaply distinguish facts, or "none / continue with measurement">
 
 **Confirmed Requirements**
 - <requirement> (source: <prompt / pasted report / comment id / field / Figma node>)
