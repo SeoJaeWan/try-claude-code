@@ -8,7 +8,7 @@
 ## 디렉토리 구조
 - `claude-plugin/develop/` — 메인 Codex 개발 플러그인 (skills, agents, hooks, scripts, references)
 - `claude-plugin/statusline/` — 상태줄 전용 플러그인
-- `codex-plugin/plugins/workbench/` — Codex 워크벤치 플러그인 (issue-brief, brainstorm, test-brief, executor, visual-grounding, branch-work-report, openapi, dev-wiki)
+- `codex-plugin/plugins/workbench/` — Codex 워크벤치 플러그인 (fable5, issue-brief, brainstorm, test-brief, executor, visual-grounding, branch-work-report, openapi, dev-wiki)
 - `.codex/` — Codex planning stack (skills, tools, plan-wiki)
 - `.agent/` — agent 행동 원칙과 지식 원천 정리 자료
 - `docs/` — 워크플로 진화 기록 등 문서
@@ -34,6 +34,7 @@
 - **statusline** — inline 상태줄 on/off, inline/box 전환. 트리거: `statusline`, `상태줄`, `상태줄 켜기`, `상태줄 끄기`
 
 ## `codex-plugin/plugins/workbench/` — 스킬별 역할
+- **fable5** — 복잡하거나 불확실한 작업을 fact-first operating mode로 운영. 사실/추측/사용자 결정을 분리하고, 재현-계측-가설 기각-최소 수정-정량 검증 루프를 적용
 - **issue-brief** — Jira 링크가 없어도 사용자 프롬프트, QA 리포트, pasted issue text, Figma/OpenAPI/repo evidence를 기반으로 confirmed facts, unconfirmed assumptions, bug/reproduction evidence, work units를 정리
 - **brainstorm** — 선택된 work unit의 current context, diagnostic plan, implementation notes, risks, checks 정리. 원인 불명 버그는 재현/계측/가설 기각 계획을 먼저 세움
 - **test-brief** — 구현 전 contract/regression test 또는 measurement brief 작성. 영구 테스트와 임시 계측/승격 기준을 구분

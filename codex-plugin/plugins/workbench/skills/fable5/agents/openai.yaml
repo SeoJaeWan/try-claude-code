@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fable 5"
+  short_description: "Fact-first operating mode for complex work"
+  default_prompt: "Use $fable5 to run this task with fact-first diagnosis, scoped execution, and evidence-based validation."
