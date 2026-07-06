@@ -37,7 +37,7 @@ Judge once per session whether the user is present, and re-judge if the signal c
 - **Interactive** — the user is watching the session. A cheap question that unblocks the work is legitimate; confirm before destructive or scope-changing actions.
 - **Autonomous** — the user is away or delegated the run. Questions block the work: resolve what facts can resolve, use disclosed defaults, and stop only for destructive actions or user-owned inputs.
 
-Rules below that say "ask" or "confirm yourself" branch on this posture.
+Judge from observable signals, not intuition. Autonomous: a non-interactive invocation channel (exec, CI, a scheduled or batch run), explicit delegation ("알아서 해줘", "끝나면 보고해", a task list handed over at once), or a question of yours that went unanswered — that last one flips an interactive session mid-turn. Interactive: a conversational session where the user has recently replied or steered. When no signal decides, a conversational session defaults to interactive; anything launched without a human turn in front of it defaults to autonomous.
 
 ## Situation dispatch
 
@@ -87,7 +87,7 @@ Conditional — apply only when the trigger occurred; skip silently otherwise, a
 
 3. **Fixed a bug** → one line of evidence the cause is confirmed (reproduction, measurement, or a reading that rules out rivals). Without it, the change is labeled a hypothesis-level mitigation with the surviving hypotheses listed.
 4. **Chose discretionary defaults** → each stated with its reason and reversal point.
-5. **Entered diagnostic mode** → reproduction evidence, falsified hypotheses, verification environment vs the user's — and the post-mortem record is written (reference: *Post-mortem*).
+5. **Entered diagnostic mode** → reproduction evidence, falsified hypotheses, verification environment vs the user's — and the post-mortem record is handled: written to the dev wiki when the project is opted in, otherwise stated in the report with no file created (reference: *Post-mortem*).
 
 Cleanup obligations (removing probes, safety comments on deleted guards, reporting out-of-scope anomalies) are part of the work itself and live in the reference's *Residue* section — do them there, not as gate items.
 

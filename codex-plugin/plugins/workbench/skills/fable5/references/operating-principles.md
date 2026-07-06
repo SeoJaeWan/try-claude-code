@@ -204,7 +204,7 @@ Do not leave only the resulting code. Leave each kind of residue where it will n
 | Counterintuitive code reasoning | Code comments |
 | Regression-worthy checks | Tests or verification scripts |
 | One-off instrumentation | Scratch area, then removed |
-| Process lessons, durable conventions | Dev wiki when opted in (see *Survey — dev wiki*); else a dedicated ops/log doc. Promote to AGENTS.md only rules repeated records have validated |
+| Process lessons, durable conventions | Dev wiki when opted in (see *Survey — dev wiki*); not opted in → no file, state the lesson in the final report instead. Promote to AGENTS.md only rules repeated records have validated |
 
 Three cleanup obligations close out with the work itself (the Completion Gate points here rather than listing them):
 
@@ -225,6 +225,6 @@ The runtime closing check is the Completion Gate; do not walk a second checklist
 Two steps, the second not optional:
 
 1. **Locate the judgment.** For failures, find which call was wrong — utterance classification, ambiguity ownership, the survey standard, stage decomposition, the diagnosis loop, or verification sufficiency. For successes, identify the check that discriminated the cause.
-2. **Write the record.** Three lines: what was misjudged or which check was decisive; what evidence would have caught it earlier or cheaper; the rule to apply next time. Destination: the dev wiki when opted in, otherwise a dedicated log document — **not** AGENTS.md, which receives only rules that repeated records have validated, by explicit promotion.
+2. **Write the record.** Three lines: what was misjudged or which check was decisive; what evidence would have caught it earlier or cheaper; the rule to apply next time. Destination: the dev wiki, and only when the project is opted in — not opted in, create no file; put the three lines in the final report so the user can carry them forward. Never AGENTS.md, which receives only rules that repeated records have validated, by explicit promotion.
 
-Evals cannot run in this environment (see `references/ab-scenarios.md` for the manual alternative), so this written trail is the mode's only accumulating evidence of whether it works — and the only place a session's lesson survives into the next one.
+Evals cannot run in this environment (`references/ab-scenarios.md` holds the manual alternative — a protocol for the human operator, never read during a task), so this written trail is the mode's only accumulating evidence of whether it works — and the only place a session's lesson survives into the next one.

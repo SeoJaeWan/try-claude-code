@@ -35,7 +35,7 @@ Run in a sandbox that cannot start the prod server or drive a browser (the typic
 
 ## Recording results
 
-Append one line per round to the project's log doc (or dev wiki when opted in), the same destination as post-mortem records:
+Append one line per round to the project's dev wiki when it is opted in — the same destination as post-mortem records. Not opted in, keep the log wherever you (the operator) track these rounds; the agent creates no file for this:
 
 ```
 2026-07-06 | scenario 1 | with-skill: rival table + 5-run rate / without: direct patch | verdict: better on ★1,★2
