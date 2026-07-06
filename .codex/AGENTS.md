@@ -53,7 +53,8 @@
 - Dev wiki precedence: dev wiki는 프로젝트별 개발 참고자료이며, 현재 source/config/test와 충돌하면 source를 우선하고 dev wiki를 stale 가능성으로 본다. dev wiki 자체를 갱신해야 할 때는 명시적 규칙 반영은 `dev-wiki-update`, repository와 wiki의 전체 동기화는 `dev-wiki-sync`, graph 산출물 갱신은 `dev-wiki-graph`를 사용한다.
 - Plan wiki maintenance: wiki source 작업에는 `plan-wiki-setup`, `plan-wiki-lint`, `plan-wiki-ingest`, `plan-wiki-apply-feedback`를 사용한다. root repository commit과 `.codex/plan-wiki/source` commit은 분리한다.
 - Figma inventory: complete Figma hierarchy, component-set inventory, Resource/* coverage, platform marker가 plan boundary에 영향을 주면 planning 전에 `figma-inventory-snapshot`을 사용한다.
-- Workbench execution flow: 복잡하거나 불확실한 작업은 `fable5`를 operating mode로 삼고, Jira 없이도 사용자 프롬프트가 충분하면 `issue-brief`가 범용 issue brief를 만들며, `brainstorm -> test-brief(optional) -> executor`가 하나의 reviewable work unit을 진행한다. 원인 불명 버그는 별도 debug skill을 만들지 않고 이 흐름 안에서 diagnostic depth를 높인다.
+- Workbench execution flow: Jira 없이도 사용자 프롬프트가 충분하면 `issue-brief`가 범용 issue brief를 만들며, `brainstorm -> test-brief(optional) -> executor`가 하나의 reviewable work unit을 진행한다. 원인 불명 버그는 별도 debug skill을 만들지 않고 이 흐름 안에서 diagnostic depth를 높인다.
+- Fable 5 operating mode: `fable5`는 위 execution flow와 독립적인 별개 스킬이다. 사용자가 명시적으로 호출했을 때만 활성화되며 해당 작업을 fact-first depth로 운영한다. `issue-brief -> brainstorm -> executor` 파이프라인을 감싸거나 그 안의 stage로 동작하지 않는다.
 
 ## 편집 규칙
 

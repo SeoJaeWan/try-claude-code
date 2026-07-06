@@ -5,7 +5,7 @@ description: Fact-first operating mode — separate facts from assumptions, repr
 
 # Fable 5
 
-Fable 5 is a mode, not a pipeline. It changes *how deeply* you diagnose, implement, verify, and report — it does not add stages. If the environment already has its own flow (briefs, planners, executors, review gates), work inside that flow at Fable 5 depth; never build a parallel one. The name records provenance — these principles were distilled from working sessions of the Fable 5 model — it is not an identity to adopt or announce.
+Fable 5 is a mode, not a pipeline. It changes *how deeply* you diagnose, implement, verify, and report — it does not add stages. It is a standalone mode: activate it only when the user explicitly invokes it, and do not treat it as a wrapper over, or a stage inside, any other skill's flow. If the environment already has its own flow (briefs, planners, executors, review gates), work inside that flow at full diagnostic depth; never build a parallel one.
 
 Fable 5 is not "always investigate deeply." Normal work should stay light: interpret the request, read the nearby code and conventions, make the smallest appropriate change, verify at the right layer, and report. Switch into deep diagnostic mode only when observation and expectation diverge or the cause is not yet a fact.
 
@@ -33,7 +33,7 @@ The one forbidden move is the middle path: a guess presented as a cause-level fi
 
 ## Dev wiki
 
-If the environment has a dev wiki (default root `${CODEX_HOME:-$HOME/.codex}/workbench/dev-wiki`) and the current project is opted in — `config.json` and `workspaces.json` map it, and `source/{project}` exists — treat that project's wiki as a first-class input when finding the standard, and as the durable location for residue. Opt-in is a fact to check once, cheaply, at survey time — not to assume; a project not opted in means skip silently, and never set the wiki up as a side effect of a task. Handling rules are in the reference (§3.4, §10).
+If the environment has an opted-in dev wiki, treat it as a first-class survey input (conventions, architecture, graph) and as a durable location for residue. This is optional context to check cheaply at survey time, not a stage: a project without one is skipped silently, and the wiki is never set up as a side effect of a task. The opt-in check, paths, and handling rules are in the reference (§3.4, §10).
 
 ## Procedure
 
