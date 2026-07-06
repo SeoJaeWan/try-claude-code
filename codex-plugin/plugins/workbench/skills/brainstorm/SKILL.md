@@ -1,13 +1,15 @@
 ---
 name: brainstorm
-description: Pre-implementation review for one selected work unit. Use when the user says brainstorm, "브레인스토밍", "1번 작업할게", "이 작업 어떻게 하면 될까", or selects a Work Unit from an issue brief and wants Codex to inspect the current code, dev wiki, API/design evidence, risks, and completion checks before implementation. This skill does not implement code, create plan files, run TDD, commit, or open PRs.
+description: Pre-implementation or pre-diagnosis review for one selected work unit. Use when the user says brainstorm, "브레인스토밍", "1번 작업할게", "이 작업 어떻게 하면 될까", or selects a Work Unit from an issue brief and wants Codex to inspect the current code, dev wiki, API/design evidence, risks, diagnostic hypotheses, and completion checks before implementation. This skill does not implement code, create plan files, run TDD, commit, or open PRs.
 ---
 
 # Brainstorm
 
 Use this skill after `issue-brief` or any equivalent work breakdown, when the user chooses one small unit and wants to understand how to approach it before editing code.
 
-The goal is not to make a large plan. The goal is to help the user understand how one work unit unfolds: current code shape, dev wiki conventions, goal-oriented work phases, implementation notes, risks, and checks.
+The goal is not to make a large plan. The goal is to help the user understand how one work unit unfolds: current code shape, dev wiki conventions, goal-oriented work phases, implementation or diagnostic notes, risks, and checks.
+
+For unknown-cause bugs, the first useful output is often a diagnostic plan, not a fix plan. Preserve the difference between confirmed facts, unconfirmed assumptions, and hypotheses that still need measurement.
 
 ## Core Rules
 
@@ -16,6 +18,8 @@ The goal is not to make a large plan. The goal is to help the user understand ho
 - Do NOT turn the selected unit into a long autonomous plan.
 - Do NOT include unrelated units from the original issue unless they affect the selected unit.
 - Do NOT treat missing API/design/code evidence as an implementation step. Put it in risks or open questions.
+- Do NOT treat a reported symptom or user-provided suspected cause as the root cause until it has a falsifying/confirming check.
+- Do NOT plan production code edits for an unknown-cause bug before defining how to reproduce or measure it, unless the root cause is already confirmed by evidence.
 - Keep the result scoped to one reviewable unit. If the selected unit is too broad, split it into smaller candidate units and recommend the first one.
 - Keep **Work Steps** goal-oriented and sequential. They should describe the phases needed to complete this unit, not fixed commands, QA checklists, or a full project plan.
 
@@ -25,6 +29,7 @@ Identify:
 
 - The selected work unit number, title, or pasted Work Unit block.
 - Any available issue brief content, especially Confirmed Requirements, Design Evidence, API Evidence, Open Questions, and Suggested Next Unit.
+- Any issue brief **Confirmed Facts**, **Unconfirmed Assumptions**, reported symptoms, reproduction clues, runtime environment, and user hypotheses.
 - Jira issue key, Figma URL, Swagger URL, endpoint, or repo path included by the user.
 - User constraints such as "첫 번째 작업만", "UI만", "API 연동은 제외", or "검수 기준만".
 
@@ -56,6 +61,20 @@ Gather only enough evidence to reason about the selected unit.
 - Re-check OpenAPI only when the selected unit depends on a specific endpoint and the existing evidence is insufficient.
 - Re-check Figma only when the selected unit depends on missing visual state or interaction detail; keep reads shallow and node-specific.
 
+### Unknown-Cause Bugs
+
+When the selected unit is a bug whose cause is not confirmed:
+
+- Identify observable symptoms before possible causes.
+- Keep user hypotheses as hypotheses, not implementation facts.
+- Build a small hypothesis set. Prefer 2-5 plausible causes rather than one favored explanation.
+- Attach a falsification or confirmation check to each hypothesis.
+- Prefer the cheapest useful check first: `rg`/static read, DOM or event stack inspection, focused script, repeated run, runtime matrix, then temporary source probes only when external observation is insufficient.
+- Include a measurement-tool check when the symptom depends on automation, coordinates, screenshots, timers, network mocks, or a flaky repro.
+- For flaky behavior, define how to measure frequency, such as repeated runs before and after the fix.
+- Include relevant runtime modes when they could change behavior: dev/prod, StrictMode, HMR/fresh start, viewport, auth/data state, feature flag, browser, or mobile/webview.
+- Do not turn broad "확인/검토" into Work Steps. Each diagnostic step should produce a concrete observation, artifact, or decision.
+
 ## Output Format
 
 Use Korean for user-facing prose unless the user asks otherwise. Keep code identifiers, paths, URLs, issue keys, field names, and commands exact.
@@ -70,7 +89,16 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 **Current Context**
 - Dev Wiki: <relevant conventions or "not configured / no relevant note">
 - Code: <likely files/modules/components/hooks/API clients/tests>
-- Evidence: <Jira/Figma/OpenAPI facts that matter for this unit>
+- Evidence: <prompt/Jira/Figma/OpenAPI/repo facts that matter for this unit>
+
+**Diagnostic Plan**
+- Symptom: <observable symptom, or "not applicable">
+- Known Facts: <facts already confirmed by issue brief/repo evidence>
+- Unconfirmed Assumptions: <suspected causes or implementation guesses still unverified>
+- Hypotheses: <numbered hypotheses with the cheapest falsification/confirmation check for each, or "not applicable">
+- Measurement Risk: <how the test/repro itself could be wrong, or "low">
+- Runtime Matrix: <dev/prod/browser/viewport/auth/data modes that matter, or "not applicable">
+- Completion Condition: <what observation proves diagnosis is complete enough to fix>
 
 **Implementation Notes**
 - <specific approach note based on existing code and conventions>
@@ -89,6 +117,7 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 - <manual verification>
 - <test/lint/typecheck command or focused test target, if known>
 - <regression check>
+- <diagnostic/reproduction check when the unit is an unknown-cause bug>
 ```
 
 ## Work Unit Discipline
@@ -97,6 +126,7 @@ For selected units:
 
 - Keep UI, state, API, validation, and tests as separate concerns unless the selected unit naturally owns all of them.
 - If the unit is blocked by API/design uncertainty, say what is blocked and make the first **Work Steps** item the smallest unblock action, but do not invent implementation details.
+- If the unit is an unknown-cause bug, make the first **Work Steps** item a concrete reproduction or measurement step unless reproduction is already confirmed.
 - If the unit is already implemented or partially implemented, frame the output around verification, cleanup, and regression checks.
 - If the current workspace does not contain the relevant product code, state that clearly and base the output on available evidence only.
 - Use 3-5 Work Steps by default. More than 5 means the selected unit is probably too large and should be split.
@@ -104,6 +134,7 @@ For selected units:
 - Do not include generic final verification steps such as `npm run type-check`, `npm run lint`, or manual QA in **Work Steps**; put those in **Checks**.
 - Prefer steps that depend on the previous result. Example: "타입 계약 생성" -> "생성된 타입 차이 해석" -> "API wrapper 전환 범위 결정" -> "필드명 영향 반영".
 - Do not put vague steps like "요구사항 검토" unless that is the only safe unblock goal.
+- For diagnostic units, avoid vague steps like "원인 파악". Prefer steps like "pointer event trace로 `pointercancel` 발생 여부를 기각한다" or "dev/prod matrix로 실행 모드 차이를 분리한다".
 
 ## Quality Bar
 

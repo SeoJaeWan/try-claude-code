@@ -80,6 +80,7 @@ For each non-trivial commit, write enough detail to answer:
 - Where it lands: the main files/modules and why those files matter.
 - How it is verified: tests added/changed, existing tests affected, or manual checks implied by the change.
 - What could break: compatibility, edge cases, environment assumptions, mobile/web differences, race conditions, performance, security, or quota concerns.
+- For bug-fix commits, what evidence supports the root cause: reproduced symptom, hypotheses ruled out, measurement-tool validation, repeated-run evidence for flaky behavior, runtime modes checked, and regression coverage left behind.
 
 Use 3-6 bullets under `작업 내용` for normal commits. Use 6-10 bullets or grouped sub-bullets for large feature commits. Mechanical rename/version-only commits can be shorter, but still explain whether behavior changed.
 
@@ -91,6 +92,7 @@ When explaining `영향 범위`, name specific surfaces instead of broad categor
 - 공통 컴포넌트/전역 설정: layout, font, provider, config, lint/test/build behavior.
 - 운영/런타임: env vars, rate limit, external service quota, SSR/client boundary, mobile webview/native behavior.
 - 테스트/검증: added coverage, broken/stale tests, manual QA needed.
+- 진단/잔류물: repro scripts, temporary probes, debug logs, screenshots, artifacts, or promoted regression checks.
 
 Avoid generic impact phrases such as `위치 기능 전체`, `앱 전체`, or `테스트에 영향` unless they are followed by concrete examples.
 
@@ -101,7 +103,9 @@ For each commit, consider whether feedback is needed in these areas:
 - Commit scope: mixed concerns, oversized commit, unclear message, or changes that would be easier to review if split.
 - Behavior risk: changed control flow, edge cases, error handling, auth/session state, permissions, persistence, API contracts, schema changes, migrations, or backward compatibility.
 - Test risk: logic changed without nearby tests, removed tests, brittle snapshots, missing regression coverage, or manual-only verification.
+- Diagnostic risk: unknown-cause bug fixes without reproduced symptoms, falsified hypotheses, measurement-tool validation, repeated-run evidence for flaky behavior, or dev/prod/runtime-mode verification.
 - Maintainability: duplicated logic, naming drift, dead code, inconsistent local patterns, hidden coupling, or config/documentation drift.
+- Residual artifact risk: temporary probes, debug logging, scratch diagnostic scripts, screenshots, or task-only artifacts committed without an explicit promotion reason.
 - Review focus: files or paths reviewers should inspect carefully.
 
 Feedback must be specific. Prefer:
@@ -139,12 +143,12 @@ Default to this structure:
      - 의도: <why this commit exists>
      - 구현: <specific implementation mechanics from diff/code>
      - 데이터/상태 흐름: <API params, store fields, cache, lifecycle, validation, or "해당 없음">
-     - 검증: <tests added/changed or likely manual checks>
+     - 진단/검증: <tests added/changed, repro/measurement evidence, hypotheses ruled out, runtime modes checked, or likely manual checks>
    - 영향 범위:
      - 사용자/화면: <specific routes/screens/interactions or "해당 없음">
      - API/데이터: <specific contracts/types/cache/query/env or "해당 없음">
      - 상태/런타임: <specific stores/native bridge/storage/config/runtime concerns or "해당 없음">
-     - 테스트/리뷰 포인트: <specific tests, stale mocks, files to review, or "해당 없음">
+     - 테스트/진단/리뷰 포인트: <specific tests, stale mocks, temporary probes/artifacts, promoted checks, files to review, or "해당 없음">
    - 피드백: <actionable review note or "특이사항 없음">
 
 **전체 피드백**
@@ -166,6 +170,7 @@ Before finalizing, revise the report if any of these are true:
 - `영향 범위` repeats the same broad phrase as the commit subject.
 - A feature commit does not mention state, API/data flow, validation, or tests even though the diff includes them.
 - Feedback says only "테스트 필요" without naming the missing or stale test surface.
+- Bug-fix feedback says only "재현 필요" or "검증 필요" without naming the missing symptom, hypothesis check, runtime mode, or regression surface.
 - The whole report could have been written from `git log --oneline` and `--stat` without reading diffs.
 
 ## Final Quality Bar
@@ -176,5 +181,6 @@ The user should be able to hand the report to a reviewer and understand:
 - what base it was compared against
 - what each commit changed and how the important pieces work
 - which user-visible flows, data/API contracts, state stores, runtime assumptions, and tests are affected
+- for bug-fix commits, what evidence supports the root cause and whether temporary diagnostics were removed or intentionally promoted
 - what feedback or review focus each commit deserves
 - what remains to verify before merge

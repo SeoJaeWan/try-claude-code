@@ -1,13 +1,15 @@
 ---
 name: test-brief
-description: Create or update tests before implementation for one selected work unit. Use after brainstorm when the user says "test brief", "테스트 브리프", "테스트 먼저", "이 작업 테스트부터 만들자", or wants Codex to inspect dev wiki, current test setup, and existing patterns to write goal-focused tests that define completion criteria. This skill may edit test files only; it must not implement production code.
+description: Create or update tests, or define measurement scripts before implementation, for one selected work unit. Use after brainstorm when the user says "test brief", "테스트 브리프", "테스트 먼저", "이 작업 테스트부터 만들자", or wants Codex to inspect dev wiki, current test setup, existing patterns, and diagnostic needs to write goal-focused tests or measurement criteria that define completion. This skill may edit test files only; it must not implement production code.
 ---
 
 # Test Brief
 
 Use this skill after `brainstorm` when the user wants the selected work unit's goal fixed as tests before implementation.
 
-The goal is to create the smallest useful test surface that proves the work unit is complete. Prefer tests that encode the actual goal and contract, not broad snapshots or generic coverage.
+The goal is to create the smallest useful test surface, or measurement brief, that proves the work unit is complete. Prefer tests that encode the actual goal and contract, not broad snapshots or generic coverage.
+
+For unknown-cause bugs, do not force a permanent test before the cause is understood. It is valid to produce a measurement brief that tells `executor` what temporary repro scripts, traces, repeated runs, or runtime matrices to create, and which of them should be promoted to a permanent regression test after the cause is confirmed.
 
 ## Core Rules
 
@@ -17,6 +19,8 @@ The goal is to create the smallest useful test surface that proves the work unit
 - Do NOT add new test dependencies unless the user explicitly approves.
 - Do NOT write tests for unrelated Work Units.
 - Do NOT create tests that merely assert implementation details unless the selected unit is specifically about an integration boundary.
+- Do NOT turn temporary diagnostic probes into committed tests unless they prove a stable public behavior or valuable regression.
+- Do NOT encode an unconfirmed root-cause hypothesis as a permanent test contract.
 - If the current project has no suitable test harness, do not invent one. Produce a Test Brief and recommend the smallest harness decision instead.
 
 ## Inputs
@@ -25,6 +29,7 @@ Identify:
 
 - The selected Work Unit and its Goal.
 - The `brainstorm` output: Current Context, Implementation Notes, Work Steps, Risks, and Checks.
+- Any `brainstorm` Diagnostic Plan: Symptom, Known Facts, Unconfirmed Assumptions, Hypotheses, Measurement Risk, Runtime Matrix, and Completion Condition.
 - Any issue brief evidence that defines observable behavior, API contracts, field names, or UI states.
 - User constraints such as "테스트만 작성", "unit test만", "type test만", "server action 테스트만", or "파일 만들지 말고 설계만".
 
@@ -59,6 +64,7 @@ Map the Work Unit goal to testable assertions.
 - For type-generation work, prefer compile-time/type-level assertions only if the project already has a pattern for them.
 - For UI work, test user-visible behavior or state transitions, not layout trivia.
 - For bug fixes, write a regression test that fails on the current behavior when practical.
+- For unknown-cause bugs, first decide whether the current evidence supports a permanent regression test or only a measurement brief. If the root cause is not confirmed, prefer testing the observable symptom or defining diagnostic measurements rather than asserting the suspected cause.
 
 ### Test Intent
 
@@ -67,9 +73,22 @@ Classify the test intent before writing tests. Use the intent to decide whether 
 - **Compatibility / characterization**: Default for existing feature changes, refactors, mock-to-real API migration, generated type cleanup, or internal implementation swaps where the public behavior should remain stable. Write tests that pass on the current implementation and continue passing after the change.
 - **Red / target contract**: Use for new features, missing behavior, or explicit TDD requests where no current behavior exists. These tests may fail before implementation.
 - **Regression**: Use for bug fixes. When practical, write a test that fails on the current bug and passes after the fix.
+- **Measurement brief**: Use for unknown-cause bugs, flaky behavior, UI interactions, timing issues, environment-specific failures, or suspected test-harness problems where temporary scripts or traces are needed before a permanent regression test can be chosen.
 - **Brief only**: Use when the test harness, placement, or observable behavior is unclear.
 
 If intent is ambiguous, ask whether the tests should pass on the current code or intentionally fail. For compatibility work, prefer public behavior and action result assertions first. Do NOT assert future implementation details such as a new endpoint call unless the selected unit is specifically about that integration boundary, the current code already exposes it, or the user explicitly asks for target-contract tests.
+
+### Measurement And Promotion Criteria
+
+When Test Intent is **Measurement brief**:
+
+- Define the smallest diagnostic artifacts `executor` should create, such as a repro script, DOM stack check, event trace, focus/scroll trace, repeated run script, dev/prod matrix, network capture, or temporary source probe.
+- For each artifact, state what it proves or falsifies.
+- Include how to validate the measurement tool itself when coordinates, timers, screenshots, mocks, or browser automation could be wrong.
+- State what result would justify a production fix.
+- State what should be deleted after diagnosis.
+- State what should be promoted to a permanent regression test or verification script after the fix.
+- Prefer artifact locations outside project-owned test suites for temporary diagnostics, such as task-local scratch/artifact directories, unless the repo already has a convention.
 
 ### Test Naming
 
@@ -93,6 +112,7 @@ describe("매니저 메뉴 관리 server action", () => {
 
 1. Classify the Test Intent and decide whether to write tests or only produce a test brief.
    - Write tests when the project has a clear test harness and the target behavior can be isolated.
+   - Produce a measurement brief when the observable symptom is clear but the root cause or right permanent test layer is not.
    - Produce only a brief when test placement is unclear, harness is absent, or required dependencies are missing.
 2. Choose the smallest test layer that proves the selected unit and matches the Test Intent:
    - type/contract test
@@ -101,10 +121,11 @@ describe("매니저 메뉴 관리 server action", () => {
    - component interaction test
    - route/e2e test only when lower layers cannot prove the goal
 3. Create or update only the necessary test files.
-4. Run the narrowest relevant test command when practical.
+4. For Measurement brief, do not create production code or permanent tests unless the observable behavior and test layer are already clear. Document the measurement plan instead.
+5. Run the narrowest relevant test command when practical.
    - If tests are expected to fail before implementation, report that as expected and include the meaningful failure.
    - If the test command cannot run, explain why.
-5. Do not fix production code to make the tests pass.
+6. Do not fix production code to make the tests pass.
 
 ## Output Format
 
@@ -115,7 +136,7 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 
 - Target Unit: <selected unit>
 - Test Goal: <what these tests prove>
-- Test Intent: <Compatibility / Red / Regression / Brief only>
+- Test Intent: <Compatibility / Red / Regression / Measurement brief / Brief only>
 - Test Layer: <type/unit/server action/component/e2e/brief only>
 - Existing Pattern: <nearby test files or "no clear pattern">
 
@@ -130,6 +151,13 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 
 **Mocks / Fixtures**
 - <client mock, server action mock, fixture, generated type assumption>
+
+**Measurement / Promotion Criteria**
+- Diagnostic Artifacts: <temporary scripts/traces/matrices, or "not applicable">
+- What They Prove: <hypotheses or measurement risks each artifact checks>
+- Measurement Tool Check: <how to verify the repro/test itself is valid>
+- Cleanup: <temporary files/probes to remove after diagnosis>
+- Promote: <regression test or verification script to keep if it proves stable behavior>
 
 **Run Result**
 - <command run and pass/fail/blocked>

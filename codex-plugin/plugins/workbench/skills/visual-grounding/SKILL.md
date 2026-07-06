@@ -1,11 +1,11 @@
 ---
 name: visual-grounding
-description: Visual grounding workflow for UI implementation work. Use when the user wants Codex to compare a Figma frame, source website, or reference screenshot against a local implementation route so the AI can identify actionable visual differences and fix likely UI issues. Triggers include "visual grounding", "visual compare", "Figma와 비교", "원본 UI와 비교", "현재 구현 화면 비교", "디자인 보고 수정", or when a frontend task has a clear source UI and target route.
+description: Visual and interaction grounding workflow for UI implementation work. Use when the user wants Codex to compare a Figma frame, source website, reference screenshot, or reported UI interaction against a local implementation route so the AI can identify actionable visual differences, interaction failures, and likely UI issues. Triggers include "visual grounding", "visual compare", "interaction grounding", "Figma와 비교", "원본 UI와 비교", "현재 구현 화면 비교", "디자인 보고 수정", "드래그/클릭/포커스 확인", or when a frontend task has a clear source UI, target route, or interaction symptom.
 ---
 
 # Visual Grounding
 
-Use this skill to help Codex see what to fix in UI work by building a grounded evidence package: source UI evidence, target implementation evidence, matched regions, difference candidates, confidence, and code/selector hints.
+Use this skill to help Codex see what to fix in UI work by building a grounded evidence package: source UI evidence, target implementation evidence, matched regions, interaction observations, difference candidates, confidence, and code/selector hints.
 
 This is not a pixel-perfect approval gate. The goal is to produce a small set of findings that are specific enough for an implementation agent to act on.
 
@@ -15,6 +15,7 @@ This is not a pixel-perfect approval gate. The goal is to produce a small set of
 - Do NOT claim a visual issue is actionable unless it has a source region, target region, and likely code/selector hint.
 - Do NOT auto-fix low-confidence differences, anti-aliasing noise, data mismatch, or intentional product copy/content differences.
 - Do NOT compare unrelated states. Align route, viewport, theme, auth, data state, modal/open/selected state, and scroll position first.
+- Do NOT treat an interaction automation failure as a product bug until the target coordinate, visible element stack, viewport, and event path have been checked when practical.
 - Do NOT turn every pixel mismatch into a finding. Report the few differences that affect layout, hierarchy, usability, or design fidelity.
 - Prefer High/Medium confidence findings. Put uncertain observations in `Notes` or `Open Questions`.
 - If the source and target cannot be aligned enough for useful comparison, stop with a blocked report and name the missing input.
@@ -25,7 +26,8 @@ Identify:
 
 - Source UI: Figma URL/node, production/source URL, or image file.
 - Target UI: local URL/route, app command if needed, viewport, and state setup.
-- Scope: entire page, one frame/section, modal, component, responsive breakpoint, or specific visual concern.
+- Scope: entire page, one frame/section, modal, component, responsive breakpoint, specific visual concern, or interaction symptom.
+- Interaction, when relevant: click, drag, scroll, focus, hover, keyboard, touch, gesture timing, target coordinate/selector, expected state change, and whether the failure is deterministic or flaky.
 - Constraints: whether Codex may modify code after the report, whether to inspect only, and which differences are intentionally accepted.
 
 If source and target mapping is unclear, ask for the missing mapping before doing visual work. The minimum useful mapping is:
@@ -35,7 +37,8 @@ If source and target mapping is unclear, ask for the missing mapping before doin
   "source": "Figma URL, source URL, or image path",
   "target": "local URL or route",
   "viewport": { "width": 1440, "height": 900 },
-  "state": "default / selected tab / modal open / logged-in fixture"
+  "state": "default / selected tab / modal open / logged-in fixture",
+  "interaction": "optional: drag window titlebar / click Save / keyboard Tab sequence"
 }
 ```
 
@@ -85,6 +88,33 @@ For the target route:
    - source file hints from framework conventions, component names, route files, class names, test ids, and imports
 5. If Playwright/browser tooling is unavailable, still collect repository evidence and screenshots by the best available method, but mark DOM evidence as missing.
 
+### Interaction Evidence
+
+When the task includes a UI interaction symptom such as drag, click, focus, scroll, hover, keyboard, touch, or flaky first action:
+
+1. Align the target state before interacting: route, viewport, scroll position, open modal/menu, auth, fixture data, and selected item.
+2. Identify the intended target by selector, role/text, or coordinate. Prefer semantic selectors where available, but record coordinates when the bug is coordinate-sensitive.
+3. Before trusting a failed interaction, validate the measurement:
+   - capture the target bounding box
+   - call `elementsFromPoint` or equivalent for the action coordinate
+   - record viewport size, scroll offsets, and overlay/modal/menu stack
+   - verify the element is visible, enabled, and not covered when relevant
+4. Capture event or state traces that distinguish likely causes:
+   - pointer/mouse/touch/keyboard event order
+   - `pointercancel`, `blur`, `focusin`, `scroll`, or mutation events
+   - DOM attribute/state changes before and after the interaction
+   - bounding box or pixel deltas for drag/resize/move behavior
+5. For flaky symptoms, repeat the interaction enough times to report a frequency, such as `4/6 failed`, and repeat the same measurement after a fix.
+6. Compare runtime modes when they may affect UI behavior: dev/prod, StrictMode, HMR/fresh server, browser, viewport, device scale factor, reduced motion, or mobile/touch emulation.
+7. If external observation cannot distinguish causes, recommend a narrow temporary source probe for `executor` rather than guessing from screenshots.
+
+Interaction findings should separate:
+
+- product behavior facts
+- measurement-tool risks
+- unconfirmed hypotheses
+- code/selector hints
+
 ## Region Matching
 
 Build a small source-to-target mapping before analysis. Match by:
@@ -114,6 +144,7 @@ Prioritize differences in this order:
 5. Color and tokens: text, background, border, disabled/selected/active state.
 6. Component state: hover, selected, disabled, loading, empty, error, modal open.
 7. Responsive behavior: wrap, scroll, truncation, safe area, mobile density.
+8. Interaction behavior: wrong target receives event, first action ignored, drag delta mismatch, focus/scroll side effect, event cancellation, flaky state transition, dev/prod behavior split.
 
 Avoid reporting:
 
@@ -136,6 +167,8 @@ Every actionable finding must include:
 - problem
 - source evidence
 - target evidence
+- interaction evidence when relevant
+- measurement-tool check when relevant
 - confidence
 - likely code surface or selector
 - suggested edit
@@ -167,12 +200,15 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep file paths
 - Target: <local URL / route>
 - Viewport: <width>x<height>
 - State: <state setup>
+- Interaction: <not applicable / action, target, timing, expected result>
 - Evidence: <screenshots / Figma metadata / DOM styles / missing evidence>
 
 **Findings**
 1. <High|Medium> - <short issue>
    - Source: <region and measurement/visual cue>
    - Target: <region and measurement/visual cue>
+   - Interaction: <event trace / element stack / bounding box delta / repeated-run result, when relevant>
+   - Measurement Check: <coordinate/overlay/test-tool validation, or "not needed">
    - Code Hint: <file/component/selector candidate>
    - Suggested Edit: <narrow fix>
 

@@ -1,6 +1,6 @@
 ---
 name: executor
-description: Implement exactly one selected work unit from a brainstorm or test brief while guarding scope and following dev wiki conventions. Use when the user says "executor", "excutor", "실행해", "구현해", "1번 작업 진행", "이 작업 진행", or asks Codex to implement a brainstormed Work Unit with tests, validation, dev wiki guidance, visual grounding for UI comparison when source evidence exists, and scope-expansion checks. This skill may edit code, tests, generated files, and configuration only when they are directly required by the selected unit.
+description: Implement or diagnose exactly one selected work unit from a brainstorm or test brief while guarding scope and following dev wiki conventions. Use when the user says "executor", "excutor", "실행해", "구현해", "1번 작업 진행", "이 작업 진행", or asks Codex to implement a brainstormed Work Unit with tests, validation, diagnostic measurement for unknown-cause bugs, dev wiki guidance, visual grounding for UI comparison when source evidence exists, and scope-expansion checks. This skill may edit code, tests, generated files, and configuration only when they are directly required by the selected unit.
 ---
 
 # Executor
@@ -9,6 +9,8 @@ Use this skill after `issue-brief`, `brainstorm`, and optionally `test-brief` wh
 
 The goal is not to run a large autonomous plan. The goal is to finish one reviewable unit while making scope boundaries visible, especially when generators, formatters, or shared types change files outside the selected unit.
 
+For unknown-cause bugs, finishing the unit may first mean proving the cause through reproduction and measurement before applying a production fix. Do not skip the diagnostic loop just because a plausible fix is obvious.
+
 ## Core Rules
 
 - Implement only the selected Work Unit.
@@ -16,6 +18,8 @@ The goal is not to run a large autonomous plan. The goal is to finish one review
 - Do NOT silently fix unrelated type errors, lint errors, generated files, routes, domains, or tests.
 - Do NOT proceed through a scope expansion as if it is normal implementation work.
 - Do NOT rewrite test-brief assertions, fixtures, or expected contracts to make the implementation easier.
+- Do NOT implement a suspected fix for an unknown-cause bug before reproducing or measuring the symptom, unless the root cause is already confirmed by evidence.
+- Do NOT treat automation failure, screenshot mismatch, coordinate failure, or flaky behavior as product failure until the measurement tool itself has been checked.
 - Do NOT bypass relevant dev wiki conventions with manual workarounds when the convention directly applies.
 - Do NOT preserve non-conforming names or public exports merely because they already existed.
 - Do NOT revert user changes. Only consider reverting changes made during this executor run, and only after checking the baseline.
@@ -28,8 +32,11 @@ The goal is not to run a large autonomous plan. The goal is to finish one review
 Identify:
 
 - The selected Work Unit, Goal, Out of Scope, Work Steps, Risks, and Checks from `brainstorm`.
+- Any `brainstorm` Diagnostic Plan: Symptom, Known Facts, Unconfirmed Assumptions, Hypotheses, Measurement Risk, Runtime Matrix, and Completion Condition.
 - Any `test-brief` files, Test Intent, expected pass/fail state, and implementation handoff.
+- Any `test-brief` Measurement / Promotion Criteria: diagnostic artifacts, what they prove, measurement-tool checks, cleanup criteria, and promotion criteria.
 - Relevant issue brief evidence: API endpoints, Figma nodes, Jira comments, and confirmed requirements.
+- Relevant prompt-provided evidence: confirmed facts, unconfirmed assumptions, reported symptoms, expected/actual behavior, reproduction clues, runtime context, and user hypotheses.
 - Visual comparison evidence for UI/image-facing work: Figma nodes, source website URLs, reference screenshots, target local route, viewport, and expected state.
 - Relevant dev wiki conventions for the project, domain, test layer, API boundary, styling, and workflow.
 - User constraints such as "1번만", "테스트는 건드리지 마", "type-gen은 하지 마", or "커밋까지".
@@ -46,6 +53,42 @@ Before editing:
 - Define an expected change surface in your own reasoning: likely app files, tests, generated files, and config directly tied to the selected unit.
 
 If existing user changes overlap the target files, read them carefully and work with them. If they make the selected unit unsafe to implement, stop and explain the conflict.
+
+## Unknown-Cause Bug Mode
+
+Use this mode when the selected unit is a bug report and the root cause is not confirmed.
+
+The loop is:
+
+```text
+reproduce
+-> measure
+-> falsify hypotheses
+-> confirm cause
+-> apply smallest cause-level fix
+-> quantitatively re-verify
+-> remove temporary probes
+```
+
+Rules:
+
+- Reproduce before fixing. If a full repro is not possible, create the cheapest useful observation that distinguishes likely causes.
+- Keep confirmed facts, unconfirmed assumptions, and hypotheses separate in your reasoning and handoff.
+- Maintain multiple plausible hypotheses until measurements eliminate them.
+- Attach a falsification or confirmation check to each hypothesis before editing production code.
+- Start with cheap checks: `rg`/static read, DOM stack, event trace, focused script, repeated run, runtime matrix, and only then temporary source probes when external observation is insufficient.
+- Validate the measurement tool itself when the result depends on coordinates, overlays, screenshots, timers, mocked APIs, browser automation, cached builds, or flaky ordering.
+- For flaky symptoms, measure frequency before and after the fix with repeated runs.
+- Compare relevant runtime modes when they can change behavior: dev/prod, StrictMode, HMR/fresh start, viewport, browser, auth/data state, feature flag, or mobile/webview.
+- Use temporary scripts or probes when needed, but remove temporary source probes and task-only diagnostics before handoff unless the user explicitly wants them kept.
+- Promote only valuable, stable regression checks to committed tests or verification scripts. Do not commit one-off diagnostics that only served cause discovery.
+- If no hypothesis can be distinguished with the available environment, stop with the evidence gathered and the smallest missing input instead of guessing.
+
+Cause-level fixes:
+
+- Prefer removing or correcting the cause over masking the symptom.
+- Be especially cautious with deleting cleanup, lifecycle, cancellation, or guard code. State why the deleted behavior is safe or covered elsewhere.
+- If a byproduct bug is found inside the same responsibility boundary and the fix is narrow, it may be included. Treat unrelated cleanup as scope expansion.
 
 ## Dev Wiki Conventions
 
@@ -158,13 +201,15 @@ Visual-grounding findings do not override dev wiki conventions or the selected W
 1. Restate the selected unit, goal, and out of scope before editing when the task is non-trivial.
 2. Establish the baseline and expected change surface.
 3. Read only the relevant dev wiki conventions and repository examples for the selected unit, including naming/export conventions for files you will touch.
-4. If the unit is UI/image-facing and has comparison evidence, use `visual-grounding` to collect source/target evidence before or during implementation.
-5. If `test-brief` exists, run or inspect the focused tests first and preserve the declared Test Intent.
-6. Implement the smallest next phase from `brainstorm` Work Steps while applying relevant conventions locally.
-7. After each broad command or meaningful edit batch, inspect the diff for scope expansion.
-8. For UI/image-facing work with comparison evidence, run a practical post-implementation `visual-grounding` check and apply only scoped High-confidence fixes.
-9. Run focused verification first, then broader checks only when they are relevant and practical.
-10. Report changed files, validation results, visual-grounding findings or artifact path, dev wiki convention notes, and any scope decisions.
+4. If the unit is an unknown-cause bug, execute the diagnostic loop before production edits unless the root cause is already confirmed.
+5. If the unit is UI/image-facing and has comparison evidence, use `visual-grounding` to collect source/target evidence before or during implementation.
+6. If `test-brief` exists, run or inspect the focused tests first and preserve the declared Test Intent. If it is a Measurement brief, create only the diagnostic artifacts needed to prove or falsify the stated hypotheses.
+7. Implement the smallest next phase from `brainstorm` Work Steps while applying relevant conventions locally.
+8. After each broad command or meaningful edit batch, inspect the diff for scope expansion.
+9. For UI/image-facing work with comparison evidence, run a practical post-implementation `visual-grounding` check and apply only scoped High-confidence fixes.
+10. Run focused verification first, then broader checks only when they are relevant and practical. For unknown-cause bugs, include the same quantitative check that reproduced or measured the issue before the fix.
+11. Remove temporary probes, task-only diagnostic files, and debug logging unless they were intentionally promoted to permanent regression coverage.
+12. Report changed files, diagnostic findings, validation results, visual-grounding findings or artifact path, dev wiki convention notes, promoted checks, cleanup, and any scope decisions.
 
 ## Test Handling
 
@@ -177,6 +222,7 @@ Visual-grounding findings do not override dev wiki conventions or the selected W
 - Allowed test edits are limited to mechanical fixes required by the implementation context: import paths, renamed public APIs from the same selected unit, test harness setup, or type-only adjustments that do not weaken the original assertion.
 - If a test appears wrong, stale, over-specific, or contradictory to dev wiki or confirmed requirements, stop and explain the conflict. Ask whether to update the test contract instead of editing it automatically.
 - If implementation reveals that the test and selected unit disagree, prefer changing production code to satisfy the test when scoped and correct. Otherwise stop with a **Test Contract Conflict** note.
+- For Measurement brief artifacts, do not treat every temporary script as a permanent test contract. Use them to establish facts, then delete, report, or promote according to the brief.
 
 ## Output Format
 
@@ -189,6 +235,7 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 - Scope: <intended change surface>
 - Baseline: <existing dirty files or clean>
 - Dev Wiki: <relevant conventions applied or "not configured / no relevant note">
+- Diagnostics: <not applicable / symptom reproduced / hypotheses falsified / cause confirmed / blocked>
 - Visual Grounding: <not applicable / artifact path / findings applied / blocked reason>
 
 **Implemented**
@@ -203,6 +250,10 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 
 **Validation**
 - <command>: <pass/fail/blocked>
+- <diagnostic/reproduction check>: <before/after result, repeated-run count, runtime modes when relevant>
+
+**Diagnostic Cleanup**
+- <temporary probes/scripts removed, promoted checks, or "not applicable">
 
 **Handoff**
 - <remaining risk, manual check, or next small unit>
