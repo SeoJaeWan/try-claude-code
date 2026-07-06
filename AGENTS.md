@@ -8,7 +8,9 @@
 ## 디렉토리 구조
 - `claude-plugin/develop/` — 메인 Codex 개발 플러그인 (skills, agents, hooks, scripts, references)
 - `claude-plugin/statusline/` — 상태줄 전용 플러그인
+- `codex-plugin/plugins/workbench/` — Codex 워크벤치 플러그인 (issue-brief, brainstorm, test-brief, executor, visual-grounding, branch-work-report, openapi, dev-wiki)
 - `.codex/` — Codex planning stack (skills, tools, plan-wiki)
+- `.agent/` — agent 행동 원칙과 지식 원천 정리 자료
 - `docs/` — 워크플로 진화 기록 등 문서
 - `plans/` — 작업별 planning/review 산출물 (`plans/{task}/`)
 
@@ -30,6 +32,19 @@
 
 ## `claude-plugin/statusline/` — 스킬별 역할
 - **statusline** — inline 상태줄 on/off, inline/box 전환. 트리거: `statusline`, `상태줄`, `상태줄 켜기`, `상태줄 끄기`
+
+## `codex-plugin/plugins/workbench/` — 스킬별 역할
+- **issue-brief** — Jira 링크가 없어도 사용자 프롬프트, QA 리포트, pasted issue text, Figma/OpenAPI/repo evidence를 기반으로 confirmed facts, unconfirmed assumptions, bug/reproduction evidence, work units를 정리
+- **brainstorm** — 선택된 work unit의 current context, diagnostic plan, implementation notes, risks, checks 정리. 원인 불명 버그는 재현/계측/가설 기각 계획을 먼저 세움
+- **test-brief** — 구현 전 contract/regression test 또는 measurement brief 작성. 영구 테스트와 임시 계측/승격 기준을 구분
+- **executor** — 선택된 work unit 하나를 구현/진단. 원인 불명 버그는 재현 → 계측 → 가설 기각 → 원인 확정 → 최소 수정 → 정량 재검증 루프를 따름
+- **visual-grounding** — Figma/source UI/reference screenshot과 local target 비교, interaction evidence(click/drag/focus/scroll 등) 수집
+- **branch-work-report** — 현재 branch 작업을 commit 단위로 보고하고, 버그 수정의 원인 근거/검증/임시 계측 잔류물을 리뷰
+- **openapi** — 등록된 Swagger/OpenAPI 서비스 검색, 갱신, endpoint inspect/test 보조
+- **dev-wiki** — Workbench-owned dev wiki setup/audit/update/lint/graph 관리
+
+## `.agent/` — 지식 원천
+- `.agent/fable5/` — Fable 5 행동 원칙 원본 정리 4개와 통합 완전판. codex-plugin workbench 스킬 개선의 근거 자료로 사용
 
 ## 컨벤션
 - 스킬 작성 시 부정 명시("Do NOT") 형식 우선 사용
