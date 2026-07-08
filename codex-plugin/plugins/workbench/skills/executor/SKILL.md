@@ -116,6 +116,25 @@ During implementation:
 - If following a convention changes shared architecture, generated contracts, or unrelated modules, treat it as scope expansion and stop before continuing.
 - If the selected unit cannot follow a relevant convention without widening scope, report the conflict and ask whether to split, include, or change the approach.
 
+## Temporary Compatibility Code
+
+Use this section when the selected unit needs short-lived code to keep the project compiling or running while the broader workflow is removing or replacing a legacy surface.
+
+Examples include a helper around a soon-to-be-removed type, an adapter for an old API response shape, a compatibility wrapper for a renamed export, or a guard that exists only until the next Work Unit removes the old path.
+
+Rules:
+
+- Prefer avoiding temporary compatibility code when a small scoped fix can remove the legacy dependency now.
+- Add temporary compatibility code only when it is required for the selected unit to pass without implementing neighboring Work Units.
+- Keep the compatibility layer narrow, local, and easy to delete. Do not turn it into a new abstraction or public API unless the selected unit explicitly requires that.
+- Mark each intentional temporary compatibility block with a searchable comment:
+  `REMOVE: <why this exists now>; remove when <condition/work unit>`
+- Put the marker next to the wrapper, helper, adapter, fallback branch, or legacy type use that should be removed. Do not hide it only in the final message.
+- Include the removal trigger in the marker: the follow-up Work Unit, migration step, API contract switch, generated type removal, feature flag cleanup, or issue key when available.
+- Do NOT mark ordinary technical debt, unrelated cleanup, or speculative future refactors as `REMOVE:`. Use this marker only when the current workflow already expects the code to disappear.
+- If the project already has a local convention such as `TODO_REMOVE`, `@deprecated`, or issue-linked TODOs, follow that convention while preserving the `REMOVE:` text when possible.
+- At handoff, list every `REMOVE:` marker added or preserved, including file path, symbol/branch, reason, and removal trigger.
+
 ## Naming And Public API Conventions
 
 Treat names in touched implementation boundaries as part of the implementation, not as untouchable legacy surface.
@@ -126,7 +145,7 @@ Treat names in touched implementation boundaries as part of the implementation, 
 - Do NOT use "public API preservation" as the default answer for app-internal exports such as server actions, hooks, or domain helpers. Prefer convention-compliant names when the affected imports are local and reviewable.
 - Preserve an existing non-conforming name only when renaming would cross a package boundary, require migration work outside the selected unit, break an external contract, or contradict an explicit user constraint.
 - If renaming to match convention affects many unrelated modules, treat that as scope expansion and stop with the options: rename within this unit, split naming cleanup into a separate unit, or keep legacy name for now.
-- If a compatibility wrapper is needed temporarily, explain why and mark it as a scope decision rather than silently leaving the convention mismatch.
+- If a compatibility wrapper is needed temporarily, mark it with `REMOVE:` and explain why as a scope decision rather than silently leaving the convention mismatch.
 - At handoff, explicitly report convention-driven renames or local refactors: old name, new name, files updated, and why the convention required it.
 
 ## Scope Discipline
@@ -212,9 +231,10 @@ Visual-grounding findings do not override dev wiki conventions or the selected W
 7. Implement the smallest next phase from `brainstorm` Work Steps while applying relevant conventions locally.
 8. After each broad command or meaningful edit batch, inspect the diff for scope expansion.
 9. For UI/image-facing work with comparison evidence, run a practical post-implementation `visual-grounding` check and apply only scoped High-confidence fixes.
-10. Run focused verification first, then broader checks only when they are relevant and practical. For unknown-cause bugs, include the same quantitative check that reproduced or measured the issue before the fix.
-11. Remove temporary probes, task-only diagnostic files, and debug logging unless they were intentionally promoted to permanent regression coverage.
-12. Report changed files, diagnostic findings, validation results, visual-grounding findings or artifact path, dev wiki convention notes, promoted checks, cleanup, and any scope decisions.
+10. If temporary compatibility code was added, confirm each block has a `REMOVE:` marker with a reason and removal trigger.
+11. Run focused verification first, then broader checks only when they are relevant and practical. For unknown-cause bugs, include the same quantitative check that reproduced or measured the issue before the fix.
+12. Remove temporary probes, task-only diagnostic files, and debug logging unless they were intentionally promoted to permanent regression coverage.
+13. Report changed files, diagnostic findings, validation results, visual-grounding findings or artifact path, dev wiki convention notes, promoted checks, cleanup, `REMOVE:` markers, and any scope decisions.
 
 ## Test Handling
 
@@ -252,6 +272,9 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 
 **Convention Changes**
 - <none, or old name -> new name / local refactor and affected files>
+
+**Temporary Compatibility**
+- <none, or `REMOVE:` marker path/symbol, reason, and removal trigger>
 
 **Validation**
 - <command>: <pass/fail/blocked>

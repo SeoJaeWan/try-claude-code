@@ -11,6 +11,8 @@ The goal is not to make a large plan. The goal is to help the user understand ho
 
 For normal low-uncertainty work, keep the brainstorm lightweight. For unknown-cause bugs, the first useful output is often a diagnostic plan, not a fix plan. Preserve the difference between confirmed facts, unconfirmed assumptions, and hypotheses that still need measurement.
 
+When an issue brief, prior brainstorm, test brief, executor result, or user-provided work breakdown exists, show where the selected unit sits in the larger workflow. Keep this as a short progress marker, not a new plan for all units.
+
 ## Core Rules
 
 - Do NOT implement code.
@@ -30,6 +32,7 @@ Identify:
 - The selected work unit number, title, or pasted Work Unit block.
 - Any available issue brief content, especially Confirmed Requirements, Design Evidence, API Evidence, Open Questions, and Suggested Next Unit.
 - Any issue brief **Confirmed Facts**, **Unconfirmed Assumptions**, reported symptoms, reproduction clues, runtime environment, and user hypotheses.
+- Any prior workflow state: completed issue brief, previous brainstorm/test brief, executor result, branch report, or user statement about what is already done.
 - Jira issue key, Figma URL, Swagger URL, endpoint, or repo path included by the user.
 - User constraints such as "첫 번째 작업만", "UI만", "API 연동은 제외", or "검수 기준만".
 
@@ -87,6 +90,13 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 - Goal: <what this unit should finish>
 - Out of Scope: <nearby things intentionally not included>
 
+**Progress Context**
+- Current Stage: <where this brainstorm sits in the larger workflow, e.g. "after issue brief, before test-brief/executor">
+- Already Done: <confirmed prior work/evidence, or "not provided">
+- This Brainstorm Decides: <the specific decision or readiness check for the selected unit>
+- Next Step: <likely next handoff such as test-brief, executor, more evidence, or split unit>
+- Still Out of Scope: <other work units or follow-up areas not handled here>
+
 **Current Context**
 - Dev Wiki: <relevant conventions or "not configured / no relevant note">
 - Code: <likely files/modules/components/hooks/API clients/tests>
@@ -130,6 +140,8 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 
 For selected units:
 
+- Include **Progress Context** when there is any visible broader workflow context. If no broader context is available, keep it to `Current Stage: standalone brainstorm` and do not invent completed work.
+- Keep **Progress Context** to 3-5 bullets. It should orient the user, not summarize the whole issue brief or become a project timeline.
 - Keep UI, state, API, validation, and tests as separate concerns unless the selected unit naturally owns all of them.
 - If the unit is blocked by API/design uncertainty, say what is blocked and make the first **Work Steps** item the smallest unblock action, but do not invent implementation details.
 - If the unit is an unknown-cause bug, make the first **Work Steps** item a concrete reproduction or measurement step unless reproduction is already confirmed.
