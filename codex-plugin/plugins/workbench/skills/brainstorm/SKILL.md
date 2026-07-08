@@ -19,6 +19,7 @@ When an issue brief, prior brainstorm, test brief, executor result, or user-prov
 - Do NOT edit files, commit, push, open PRs, or modify Jira/Figma.
 - Do NOT turn the selected unit into a long autonomous plan.
 - Do NOT include unrelated units from the original issue unless they affect the selected unit.
+- Do NOT renumber, reinterpret, or switch the selected Issue Brief Work Unit because repository evidence makes a neighboring unit look more convenient.
 - Do NOT treat missing API/design/code evidence as an implementation step. Put it in risks or open questions.
 - Do NOT treat a reported symptom or user-provided suspected cause as the root cause until it has a falsifying/confirming check.
 - Do NOT plan production code edits for an unknown-cause bug before defining how to reproduce or measure it, unless the root cause is already confirmed by evidence.
@@ -31,12 +32,22 @@ Identify:
 
 - The selected work unit number, title, or pasted Work Unit block.
 - Any available issue brief content, especially Confirmed Requirements, Design Evidence, API Evidence, Open Questions, and Suggested Next Unit.
+- The exact Issue Brief Work Unit block for the selected number/title: title, Change, Impact, API, Evidence, Check, and Unknowns if present.
+- Adjacent Issue Brief Work Units that could be confused with the selected unit.
 - Any issue brief **Confirmed Facts**, **Unconfirmed Assumptions**, reported symptoms, reproduction clues, runtime environment, and user hypotheses.
 - Any prior workflow state: completed issue brief, previous brainstorm/test brief, executor result, branch report, or user statement about what is already done.
 - Jira issue key, Figma URL, Swagger URL, endpoint, or repo path included by the user.
 - User constraints such as "첫 번째 작업만", "UI만", "API 연동은 제외", or "검수 기준만".
 
 If the user only says "1번 작업할게" and the selected unit is not visible in the conversation, ask for the issue brief or the specific Work Unit text.
+
+When an Issue Brief is visible and the user selects a number or title:
+
+1. Locate the exact numbered Work Unit before inspecting repository details.
+2. Preserve the selected number, title, Change, and Check as the brainstorm contract.
+3. Identify nearby Work Units that are explicitly not part of this brainstorm.
+4. If the selected number/title cannot be matched, stop and ask for the intended Work Unit instead of guessing.
+5. If repository evidence suggests a different Work Unit is more urgent or already partially underway, report that as workflow drift. Do not silently switch the target.
 
 ## Evidence Gathering
 
@@ -90,6 +101,14 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 - Goal: <what this unit should finish>
 - Out of Scope: <nearby things intentionally not included>
 
+**Issue Brief Alignment**
+- Source Unit: <exact Issue Brief unit number/title, or "prompt-provided unit">
+- Original Change: <Change from the Issue Brief Work Unit>
+- Original Check: <Check / acceptance from the Issue Brief Work Unit>
+- Adjacent Units Excluded: <neighboring unit numbers/titles that are not part of this brainstorm>
+- Alignment: <confirmed / blocked because the selected unit is missing or ambiguous>
+- Workflow Drift: <repo or prior-work mismatch, skipped units, partial completion, or "none observed">
+
 **Progress Context**
 - Current Stage: <where this brainstorm sits in the larger workflow, e.g. "after issue brief, before test-brief/executor">
 - Already Done: <confirmed prior work/evidence, or "not provided">
@@ -140,6 +159,9 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 
 For selected units:
 
+- Start from the exact Issue Brief Work Unit, then use repository evidence to understand implementation shape. Do not let repository findings redefine the selected unit.
+- Keep **Issue Brief Alignment** concrete enough that `executor` can use it as a contract: selected unit, original change, original check, excluded adjacent units, and any workflow drift.
+- If the selected unit appears already completed, partially completed, skipped, or confused with another unit, say so under **Workflow Drift** and frame Work Steps around the selected unit's remaining verification or cleanup. Do not move to a different unit without user confirmation.
 - Include **Progress Context** when there is any visible broader workflow context. If no broader context is available, keep it to `Current Stage: standalone brainstorm` and do not invent completed work.
 - Keep **Progress Context** to 3-5 bullets. It should orient the user, not summarize the whole issue brief or become a project timeline.
 - Keep UI, state, API, validation, and tests as separate concerns unless the selected unit naturally owns all of them.

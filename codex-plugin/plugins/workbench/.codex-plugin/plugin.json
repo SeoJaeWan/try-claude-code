@@ -1,6 +1,6 @@
 {
   "name": "workbench",
-  "version": "0.1.0+codex.20260706223200",
+  "version": "0.1.0+codex.20260708073042",
   "description": "Workspace for issue briefing, brainstorming, branch work reporting, the explicit-invocation Fable 5 operating mode, visual grounding for UI fidelity, convention-aware scoped execution, test briefing, OpenAPI registry/search, and dev wiki maintenance.",
   "author": {
     "name": "Local developer"

@@ -15,6 +15,7 @@ For normal low-uncertainty work, keep execution direct and scoped. For unknown-c
 
 - Implement only the selected Work Unit.
 - Do NOT implement neighboring Work Units unless the user explicitly expands scope.
+- Do NOT reinterpret, renumber, or replace the brainstorm target with a different Issue Brief Work Unit.
 - Do NOT silently fix unrelated type errors, lint errors, generated files, routes, domains, or tests.
 - Do NOT proceed through a scope expansion as if it is normal implementation work.
 - Do NOT rewrite test-brief assertions, fixtures, or expected contracts to make the implementation easier.
@@ -34,6 +35,7 @@ For normal low-uncertainty work, keep execution direct and scoped. For unknown-c
 Identify:
 
 - The selected Work Unit, Goal, Out of Scope, Work Steps, Risks, and Checks from `brainstorm`.
+- The `brainstorm` **Issue Brief Alignment**: Source Unit, Original Change, Original Check, Adjacent Units Excluded, Alignment, and Workflow Drift.
 - Any `brainstorm` Diagnostic Plan: Symptom, Known Facts, Unconfirmed Assumptions, Hypotheses, Measurement Risk, Runtime Matrix, and Completion Condition.
 - Any `test-brief` files, Test Intent, expected pass/fail state, and implementation handoff.
 - Any `test-brief` Measurement / Promotion Criteria: diagnostic artifacts, what they prove, measurement-tool checks, cleanup criteria, and promotion criteria.
@@ -44,6 +46,21 @@ Identify:
 - User constraints such as "1번만", "테스트는 건드리지 마", "type-gen은 하지 마", or "커밋까지".
 
 If the selected unit is unclear, ask for the Work Unit or brainstorm output before editing.
+
+## Brainstorm Contract
+
+Use the latest relevant `brainstorm` output as the implementation contract for this run.
+
+Before editing:
+
+- Extract the exact Target Unit, Goal, Out of Scope, Issue Brief Alignment, Work Steps, Risks, and Checks from `brainstorm`.
+- Treat `Issue Brief Alignment.Source Unit`, `Original Change`, and `Original Check` as the selected Work Unit's identity. Do not replace them with a neighboring Issue Brief unit based on repository findings.
+- Treat `Adjacent Units Excluded` and brainstorm **Out of Scope** as hard boundaries unless the user explicitly expands scope.
+- Map the expected change surface to brainstorm Work Steps and Checks. If a change cannot be tied to the brainstorm contract, treat it as scope expansion.
+- If repository state contradicts the brainstorm contract, stop before editing and report a **Brainstorm Contract Conflict**. Examples: the brainstorm targeted unit 4 but code evidence points to unit 6, a prerequisite unit is missing, or the selected unit appears already complete.
+- If the user explicitly overrides the brainstorm target, restate the override as a scope decision before editing.
+
+Do not use `issue-brief` directly to choose a different unit once a brainstorm handoff exists. Use issue-brief only to clarify the brainstorm contract or detect a mismatch.
 
 ## Baseline
 
@@ -164,6 +181,7 @@ Allowed changes usually include:
 
 Scope expansion signals include:
 
+- Changes that implement an adjacent Issue Brief Work Unit rather than the brainstorm Target Unit.
 - Generated files for unrelated APIs or domains.
 - Fixes in unrelated routes, roles, admin/member flows, layouts, or shared features.
 - Dependency, lockfile, formatter, or config churn not required by the selected unit.
@@ -222,19 +240,20 @@ Visual-grounding findings do not override dev wiki conventions or the selected W
 
 ## Workflow
 
-1. Restate the selected unit, goal, and out of scope before editing when the task is non-trivial.
+1. Restate the selected unit, source Issue Brief unit, goal, and out of scope from `brainstorm` before editing when the task is non-trivial.
 2. Establish the baseline and expected change surface.
-3. Read only the relevant dev wiki conventions and repository examples for the selected unit, including naming/export conventions for files you will touch.
-4. If the unit is an unknown-cause bug, execute the diagnostic loop before production edits unless the root cause is already confirmed.
-5. If the unit is UI/image-facing and has comparison evidence, use `visual-grounding` to collect source/target evidence before or during implementation.
-6. If `test-brief` exists, run or inspect the focused tests first and preserve the declared Test Intent. If it is a Measurement brief, create only the diagnostic artifacts needed to prove or falsify the stated hypotheses.
-7. Implement the smallest next phase from `brainstorm` Work Steps while applying relevant conventions locally.
-8. After each broad command or meaningful edit batch, inspect the diff for scope expansion.
-9. For UI/image-facing work with comparison evidence, run a practical post-implementation `visual-grounding` check and apply only scoped High-confidence fixes.
-10. If temporary compatibility code was added, confirm each block has a `REMOVE:` marker with a reason and removal trigger.
-11. Run focused verification first, then broader checks only when they are relevant and practical. For unknown-cause bugs, include the same quantitative check that reproduced or measured the issue before the fix.
-12. Remove temporary probes, task-only diagnostic files, and debug logging unless they were intentionally promoted to permanent regression coverage.
-13. Report changed files, diagnostic findings, validation results, visual-grounding findings or artifact path, dev wiki convention notes, promoted checks, cleanup, `REMOVE:` markers, and any scope decisions.
+3. Verify the brainstorm contract against the visible Issue Brief fields and current repository state. Stop with **Brainstorm Contract Conflict** if the target unit is missing, ambiguous, contradicted, or actually points to a neighboring unit.
+4. Read only the relevant dev wiki conventions and repository examples for the selected unit, including naming/export conventions for files you will touch.
+5. If the unit is an unknown-cause bug, execute the diagnostic loop before production edits unless the root cause is already confirmed.
+6. If the unit is UI/image-facing and has comparison evidence, use `visual-grounding` to collect source/target evidence before or during implementation.
+7. If `test-brief` exists, run or inspect the focused tests first and preserve the declared Test Intent. If it is a Measurement brief, create only the diagnostic artifacts needed to prove or falsify the stated hypotheses.
+8. Implement the smallest next phase from `brainstorm` Work Steps while applying relevant conventions locally.
+9. After each broad command or meaningful edit batch, inspect the diff for scope expansion.
+10. For UI/image-facing work with comparison evidence, run a practical post-implementation `visual-grounding` check and apply only scoped High-confidence fixes.
+11. If temporary compatibility code was added, confirm each block has a `REMOVE:` marker with a reason and removal trigger.
+12. Run focused verification first, then broader checks only when they are relevant and practical. For unknown-cause bugs, include the same quantitative check that reproduced or measured the issue before the fix.
+13. Remove temporary probes, task-only diagnostic files, and debug logging unless they were intentionally promoted to permanent regression coverage.
+14. Report changed files, diagnostic findings, validation results, visual-grounding findings or artifact path, dev wiki convention notes, promoted checks, cleanup, `REMOVE:` markers, and any scope decisions.
 
 ## Test Handling
 
@@ -257,6 +276,7 @@ Use Korean for user-facing prose unless the user asks otherwise. Keep code ident
 **Executor**
 
 - Target Unit: <selected unit>
+- Brainstorm Contract: <source Issue Brief unit, original change/check, alignment status>
 - Scope: <intended change surface>
 - Baseline: <existing dirty files or clean>
 - Dev Wiki: <relevant conventions applied or "not configured / no relevant note">
@@ -308,6 +328,17 @@ If you must stop because tests should not be changed automatically, use:
 - Test Contract: <test file/assertion/fixture involved>
 - Conflict: <why implementation cannot satisfy it as written>
 - Recommendation: <keep test and change implementation / revise test contract / split work>
+```
+
+If you must stop because the brainstorm handoff does not match the Issue Brief or repository state, use:
+
+```markdown
+**Brainstorm Contract Conflict**
+
+- Brainstorm Target: <target unit from brainstorm>
+- Issue Brief Source Unit: <number/title/change/check from Issue Brief, if visible>
+- Conflict: <mismatch, skipped prerequisite, adjacent unit confusion, already-complete state, or missing original unit>
+- Recommendation: <use this brainstorm as-is / redo brainstorm for the correct unit / switch target with explicit user approval / split prerequisite work>
 ```
 
 ## Quality Bar
