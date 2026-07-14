@@ -1,9 +1,7 @@
 
 node_modules/
-.codex/plan-wiki/source
-.codex/plan-wiki/source/
-.codex/dev-wiki/source
-.codex/dev-wiki/source/
+legacy/codex-planning-stack/plan-wiki/source/
+legacy/codex-planning-stack/dev-wiki/source/
 .claude/*
 !.claude/CLAUDE.md
 test/**/workspace/
@@ -12,11 +10,3 @@ test/**/origin-workspace/.next/
 test/**/origin-workspace/test-results/
 test/**/origin-workspace/playwright-report/
 test/**/origin-workspace/tsconfig.tsbuildinfo
-
-# runner skill plan-state SSOT — local progress, not part of the plan itself.
-plans/**/.runner-state.json
-
-# dev-review AI author notes — agent input + generated output, regenerated
-# each round; local review metadata, not part of the plan.
-plans/**/dev-review/author-notes.json
-plans/**/dev-review/author-notes-input/

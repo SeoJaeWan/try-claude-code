@@ -2,10 +2,12 @@
 
 ## Scope
 
-이 문서는 `plugin/` 쪽 Claude 스킬을 제외하고 `.codex/skills/**` 안의 Codex 스킬 문서만 전수조사한 결과다.
+이 문서는 `claude-plugin/` 쪽 Claude 스킬과 `codex-plugin/` Workbench 스킬을 제외하고 `.codex/skills/**` 안의 Codex planning 스킬 문서만 전수조사한 결과다.
+
+> 이 문서는 2026-06-05 기준의 `.codex` planning stack drift audit이다. 현재 사용자-facing Codex 스킬의 기준 경로는 `codex-plugin/plugins/workbench/`이며, 현재 구조와 책임 경계는 [`docs/current-architecture.md`](../../docs/current-architecture.md)를 참조한다.
 
 - 조사 대상: `.codex/skills/**/SKILL.md`, `.codex/skills/**/references/*.md`
-- 제외 대상: `.codex/skills/**/assets/**`, `.codex/skills/**/scripts/**`, `.codex/skills/**/agents/**`, `plugin/**`
+- 제외 대상: `.codex/skills/**/assets/**`, `.codex/skills/**/scripts/**`, `.codex/skills/**/agents/**`, `claude-plugin/**`, `codex-plugin/**`
 - 조사 규모: 스킬 14개, 문서 65개, 약 5,602라인
 - 목적: 같은 정책이 여러 문서에 분산되어 향후 수정 시 드리프트가 생길 수 있는 지점을 찾는다.
 

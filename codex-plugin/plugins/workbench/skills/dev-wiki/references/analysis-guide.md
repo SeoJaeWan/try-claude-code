@@ -5,7 +5,8 @@
 Use the script for a broad map:
 
 ```bash
-node .codex/skills/dev-wiki-graph/scripts/generate-dev-wiki-graph.mjs
+DEV_WIKI_ROOT="${CODEX_HOME:-$HOME/.codex}/workbench/dev-wiki"
+node <skill-dir>/scripts/generate-dev-wiki-graph.mjs --workspace-root "$PWD" --dev-wiki-root "$DEV_WIKI_ROOT"
 ```
 
 The script scans:

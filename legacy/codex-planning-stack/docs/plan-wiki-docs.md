@@ -1,4 +1,6 @@
-# Plan Wiki Docs
+# Plan Wiki Docs (Archived)
+
+> 이 문서는 project-local `.codex/` planning stack의 역사 자료다. 아래 명령과 경로는 현재 활성 Workbench 계약이 아니다.
 
 Plan Wiki Docs는 프로젝트 로컬 clone인 `./.codex/plan-wiki/source`를 문서 사이트처럼 보여주는 로컬 서버다. 별도 docs 원본을 만들지 않고, plan wiki repo의 `wiki/core/**`, `wiki/patterns/**`, `wiki/tags/**`, `raw/**`, `feedback/**`, `history/**`를 화면에 렌더링한다.
 
@@ -44,7 +46,7 @@ npm run plan-wiki:docs -- --source-root /path/to/plan-wiki --port 9788
 - `selection.prefix`, `selection.suffix`: 재매칭용 주변 문맥
 - `feedback.type`, `feedback.comment`: 사람이 남긴 피드백
 
-이후 `plan-wiki-apply-feedback` 스킬이 inbox JSON을 읽어 원본 wiki 문서를 수정하고, 처리 결과를 outcome 폴더와 `history/YYYY/MM/*.json`에 남긴다.
+이후 `plan-wiki-update` 스킬이 inbox JSON을 읽어 원본 wiki 문서를 수정하고, 처리 결과를 outcome 폴더와 `history/YYYY/MM/*.json`에 남긴다.
 
 ## Git 동기화
 

@@ -1,15 +1,13 @@
 {
   "name": "try-claude-code",
   "version": "2.4.0",
-  "description": "Claude Code custom skills workspace",
+  "description": "Codex Workbench plugin development workspace",
   "type": "module",
   "scripts": {
     "codex-plugin:deploy": "node codex-plugin/scripts/deploy-workbench-plugin.mjs",
-    "test": "node --test claude-plugin/develop/scripts/__tests__/path-utils.test.mjs claude-plugin/develop/scripts/__tests__/plan-frontmatter.test.mjs claude-plugin/develop/scripts/__tests__/runner-state.test.mjs claude-plugin/develop/scripts/__tests__/runner-state-cli.test.mjs claude-plugin/develop/scripts/__tests__/sessions.test.mjs claude-plugin/develop/scripts/__tests__/user-prompt-submit-hook.test.mjs .codex/skills/orchestrator/scripts/__tests__/generate-planning-docs-package.test.mjs .codex/skills/dev-wiki-graph/scripts/__tests__/generate-dev-wiki-graph.test.mjs",
-    "test:dev-wiki-graph": "node --test .codex/skills/dev-wiki-graph/scripts/__tests__/generate-dev-wiki-graph.test.mjs",
-    "plan-wiki:docs": "node .codex/tools/plan-wiki-docs-server.mjs"
-  },
-  "devDependencies": {
-    "typescript": "^6.0.3"
+    "test": "npm run test:workbench",
+    "test:workbench": "npm run test:dev-wiki-graph && npm run test:openapi",
+    "test:dev-wiki-graph": "node --test codex-plugin/plugins/workbench/skills/dev-wiki/scripts/__tests__/generate-dev-wiki-graph.test.mjs",
+    "test:openapi": "ruby codex-plugin/plugins/workbench/tools/__tests__/openapi-mcp.test.rb"
   }
 }

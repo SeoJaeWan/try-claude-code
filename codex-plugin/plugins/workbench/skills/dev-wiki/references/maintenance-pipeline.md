@@ -5,7 +5,7 @@ Use the same maintenance shape as `plan-wiki-lint`, with project-specific checks
 ## Pipeline
 
 1. Verify the dev wiki source clone and project root.
-2. Scan markdown frontmatter and links with `.codex/tools/wiki-index.mjs`.
+2. Scan markdown frontmatter and links with `node <skill-dir>/scripts/wiki-index.mjs --mode dev --root "$DEV_WIKI_ROOT/source/<project>"`.
 3. Refresh `{project}/generated/index.json`, `tag-index.md`, `link-graph.json`, `wiki-health.md`, and `normalize-proposals.md`.
 4. Apply only safe mechanical cleanup.
 5. Leave semantic cleanup as explicit proposals.

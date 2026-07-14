@@ -1,4 +1,4 @@
-# Claude Code Workflow Evolution Map
+# Codex Workbench / Claude Code Workflow Evolution Map
 
 ## 목적
 
@@ -12,13 +12,13 @@
 1. 시기별로 사용자가 요청했을 때 어떤 진입 문서가 라우팅을 담당했는지 설명한다.
 2. 각 버전대에서 실제로 어떤 문서와 스킬과 에이전트와 코드가 연결됐는지 도식화한다.
 3. 규칙이 어디에 있었는지, 그리고 그 규칙이 설명 문서였는지 실행 강제 규칙이었는지 구분한다.
-4. 현재 구조가 왜 `plugin + planning skill + runtime hook + review artifact` 중심으로 바뀌었는지 보여준다.
+4. 현재 구조가 왜 `codex-plugin` Workbench + project-local planning/wiki + 별도 Claude 실행 플러그인으로 분리됐는지 보여준다.
 
-> **문서 기준일: 2026-06-04.**
+> **문서 기준일: 2026-07-08.**
 > Stage 0–7은 과거 `claude-code-skills` 흐름 기록이라 그대로 보존한다.
 > 단, `2026-04-28` 기준으로 쓰여 있던 "현재" 서술(특히 dev-review의 live preview iframe, develop `2.5.0`, `preview-pool.mjs` / `session-restore` 참조)은 그 뒤 `2026-05~06` 작업에서 바뀌었다.
-> 바뀐 부분은 Stage 8에서 superseded로 표시하고, 실제 현재 상태는 **Stage 9 (2026-05 ~ 현재)** 에 정리했다.
-> 현재 버전: marketplace `0.1.0` · develop `2.17.0` · statusline `1.2.0`.
+> 바뀐 부분은 Stage 8–9에서 superseded로 표시하고, 실제 현재 상태는 **Stage 10 (2026-06-30 ~ 현재)** 과 [`docs/current-architecture.md`](../../docs/current-architecture.md)를 기준으로 읽는다.
+> 현재 버전: Workbench `0.1.0+codex.20260708073042` · Claude develop `2.20.1` · statusline `1.2.0`.
 
 ## 범위와 해석 기준
 
@@ -51,8 +51,9 @@ flowchart LR
     J["2026-04-28<br/>implementation dev-review (+live preview, 곧 제거)"]
     K["2026-05<br/>dev-review GitHub-style 재설계 + multi-round"]
     L["2026-05~06<br/>dev-wiki 지식 스택 도입"]
+    M["2026-06-30~현재<br/>Codex Workbench 중심 구조"]
 
-    A --> B --> C --> D --> E --> F --> G --> H --> I --> J --> K --> L
+    A --> B --> C --> D --> E --> F --> G --> H --> I --> J --> K --> L --> M
 ```
 
 ## 버전대별 핵심 요약
@@ -68,6 +69,8 @@ flowchart LR
 | Stage 6 | 2026-03-06 | pluginization 전환 | `try-claude-plugin` 관련 계약 문서 | 플러그인 패키징 | 배포/마이그레이션 계약 | plugin seed/bootstrap/migration |
 | Stage 7 | 2026-03-06 ~ 2026-03-31 | plugin + dev-cli 실험 | `marketplace.json`, historical `plugin/skills/*`, `docs/dev-cli-design.md`, `.codex/skills/*` | 계획 스킬 + 플러그인 스킬 + CLI | 실행 강제 규칙 | preview/apply scaffold, tests/evals |
 | Stage 8 | 2026-04-01 ~ 2026-04-28 | plugin split + artifact-driven planning | `.claude-plugin/marketplace.json`, `claude-plugin/develop/*`, `claude-plugin/statusline/*`, `.codex/skills/*`, `.codex/tools/*` | planning artifact + runtime hook + worktree 실행 | 아티팩트/훅 기반 실행 계약 | `plans/*`, `planning-docs/*`, `dev-review/*`, `qa/*`, plan wiki 연동 |
+| Stage 9 | 2026-05-01 ~ 2026-06-29 | dev-review 축소 + dev-wiki 지식 계층 | `claude-plugin/develop/*`, `.codex/dev-wiki/*`, `.codex/skills/dev-wiki-*` | commit review + project knowledge maintenance | 상태 파일, review history, repo facts | `dev-review/*`, `.codex/dev-wiki/source/*`, graph artifacts |
+| Stage 10 | 2026-06-30 ~ 현재 | Codex Workbench 중심 구조 | `codex-plugin/plugins/workbench/*`, `.codex/`, `claude-plugin/*` | Codex Workbench 스킬 + project-local planning/wiki + 별도 Claude 실행 플러그인 | Work Unit, 진단, 범위가드, 근거 기반 실행 | issue brief, brainstorm, test brief, executor, branch report, dev wiki |
 
 ---
 
@@ -486,7 +489,7 @@ flowchart TD
 ## Stage 8. 2026-04-01 ~ 2026-04-28
 ## plugin split + artifact-driven planning stack 시기
 
-> **이 단계의 일부 서술은 superseded다.** 아래 본문은 `2026-04-28` 시점 상태를 기록한 것이다. dev-review의 live preview iframe, develop `2.5.0`, `preview-pool.mjs`, `session-restore` 같은 항목은 `2026-05` 이후 제거·재설계됐다. 현재 상태는 **Stage 9**를 참조한다.
+> **이 단계의 일부 서술은 superseded다.** 아래 본문은 `2026-04-28` 시점 상태를 기록한 것이다. dev-review의 live preview iframe, develop `2.5.0`, `preview-pool.mjs`, `session-restore` 같은 항목은 `2026-05` 이후 제거·재설계됐다. Stage 9가 그 후속 historical snapshot이고, 현재 구조는 **Stage 10**과 [`docs/current-architecture.md`](../../docs/current-architecture.md)를 참조한다.
 
 `2026-04-01` 이후에는 구조가 다시 크게 바뀐다.
 
@@ -582,7 +585,7 @@ Stage 7까지는 "규칙을 실행 가능한 recipe로 옮기는 것"이 핵심�
 
 ---
 
-## Stage 9. 2026-05-01 ~ 현재 (2026-06-04)
+## Stage 9. 2026-05-01 ~ 2026-06-29 (historical snapshot)
 ## dev-review 재설계 + 인터페이스 축소 + dev-wiki 지식 스택
 
 Stage 8 직후부터 두 갈래로 정리가 진행됐다. (1) 만들었다 무거워진 부분을 도로 줄이는 정리, (2) 새 지식 계층(dev-wiki) 추가.
@@ -639,7 +642,40 @@ Stage 8이 "구현 리뷰 + live preview까지 붙여 기능을 넓힌" 단계�
 
 ---
 
-## 문서 부담과 스킬 독립성의 변화
+## Stage 10. 2026-06-30 ~ 현재
+## Codex Workbench를 메인 사용자-facing 플러그인으로 정리
+
+2026-06-30의 `fe581c0`에서 Claude와 Codex 플러그인을 별도 영역으로 나눈 뒤, 현재의 작업 진입점은 `codex-plugin/plugins/workbench/`로 수렴했다. Stage 8–9에 기록된 `claude-plugin/develop` 중심의 "현재 흐름"은 역사적 실행 레이어 설명으로 읽어야 하며, Codex 작업 도구의 최신 기준은 [`docs/current-architecture.md`](../../docs/current-architecture.md)다.
+
+### 전환을 만든 커밋 흐름
+
+- `fe581c0` — Claude Code 플러그인을 `claude-plugin/`으로 분리하고 Codex 플러그인 영역을 별도로 시작
+- `4770e39` — 이전 `.codex` legacy skill bundle 제거
+- `9c383c6` — `codex-plugin/plugins/workbench/`에 issue brief, dev wiki, brainstorm, test brief 기반 Workbench workflow 추가
+- `cb9aedc`, `63bc3aa`, `a113713` — 범위가드 실행, OpenAPI registry, endpoint testing 확장
+- `71bfaec`, `52618b4` — commit 기반 branch report와 visual grounding 추가
+- `030d2bc` 이후 — 명시적 Fable5 operating mode와 Workbench 문서 계약 보강
+- `e709108`, `9d3cbd7` — brainstorm/executor가 Issue Brief Work Unit handoff를 보존하도록 계약 강화
+
+### 현재 Codex Workbench 흐름
+
+```mermaid
+flowchart LR
+    U["사용자 요청"] --> IB["issue-brief<br/>사실·가정·Work Unit"]
+    IB --> BS["brainstorm<br/>선택 단위 검토"]
+    BS --> TB["test-brief<br/>필요 시 테스트·측정"]
+    TB --> EX["executor<br/>범위가드 구현·진단"]
+    EX --> BR["branch-work-report<br/>커밋별 보고"]
+    VG["visual-grounding"] -. 근거 .-> BS
+    OA["openapi"] -. API 근거 .-> IB
+    DW["dev-wiki"] -. 프로젝트 지식 .-> BS
+```
+
+Workbench는 Codex의 메인 사용자-facing 스킬을 소유한다. `.codex/`는 project-local planning/wiki 상태와 도구를 소유하며, `claude-plugin/`은 별도 Claude Code 실행·상태줄 플러그인으로 남는다.
+
+---
+
+## 문서 부담과 스킬 독립성의 변화 (Stage 0–9 historical analysis)
 
 이 흐름은 단순히 "버전이 올라갈수록 구조가 복잡해졌다"로 읽으면 오해가 생긴다.
 
@@ -921,7 +957,7 @@ flowchart LR
 실행 = 에이전트/스킬이 phase 순서에 따라 수행
 ```
 
-### 3. 현재
+### 3. Stage 9까지의 현재 스냅샷 (역사 기록)
 
 ```text
 워크플로 규칙 = SKILL.md
@@ -933,7 +969,7 @@ flowchart LR
 
 ---
 
-## 작업 종류별 현재 연결 지도
+## Stage 9 시점 작업 연결 지도 (역사 기록)
 
 | 작업 종류 | 진입점 | 실행 스킬/도구 | 규칙 소스 | 대표 산출물 |
 |---|---|---|---|---|
@@ -952,14 +988,14 @@ flowchart LR
 
 이 두 레포의 전체 흐름은 아래 문장으로 요약할 수 있다.
 
-> 처음에는 "Claude가 문서를 읽고 규칙을 기억해 개발하는 방식"이었고, 중간에는 "plugin + dev CLI가 scaffold 규칙을 강제하는 방식"을 잠깐 거쳤으며, 지금은 "계획/리뷰 아티팩트와 runtime hook이 실행을 통제하고, 각 도메인 스킬이 코드베이스에서 규칙을 발견하는 방식"으로 바뀌었다.
+> 처음에는 "Claude가 문서를 읽고 규칙을 기억해 개발하는 방식"이었고, 중간에는 "plugin + dev CLI가 scaffold 규칙을 강제하는 방식"을 잠깐 거쳤으며, 현재는 "Codex Workbench가 Work Unit·근거·범위가드를 중심으로 작업을 조율하고, 별도 Claude 플러그인이 실행 레이어를 보조하는 방식"으로 분리됐다.
 
 좀 더 구체적으로 보면 다음과 같다.
 
 1. `claude-code-skills` 초기는 사람 친화적 운영 문서와 대화형 스킬이 중심이었다.
 2. 중간에는 `.claude`, `.ai`, `.codex`가 결합된 artifact-first workflow로 발전했다.
 3. `try-claude-code` 초기에는 plugin packaging과 dev CLI 기반 scaffold 실험이 들어갔다.
-4. 현재는 그 실험을 정리한 뒤, plugin split + planning stack + planning/implementation review artifact + runtime hook 구조로 재편됐다.
+4. 현재는 그 실험을 정리한 뒤, `codex-plugin` Workbench + project-local planning/wiki + 별도 Claude 실행 플러그인 구조로 재편됐다.
 
 즉, 진화 방향은 항상 같다.
 
@@ -982,21 +1018,12 @@ flowchart LR
 
 ### 현재 구조 확인용
 
-- `.claude-plugin/marketplace.json` (marketplace `0.1.0`)
-- `.agents/plugins/marketplace.json`
-- `claude-plugin/develop/.claude-plugin/plugin.json` (develop `2.17.0`)
-- `claude-plugin/statusline/.claude-plugin/plugin.json` (statusline `1.2.0`)
-- `claude-plugin/develop/skills/frontend-dev/SKILL.md`
-- `claude-plugin/develop/skills/backend-dev/SKILL.md`
-- `claude-plugin/develop/skills/runner/SKILL.md`
-- `claude-plugin/develop/skills/dev-review/SKILL.md`
-- `claude-plugin/develop/skills/dev-review/references/{helper-contract,ui-contract,review-data-schema}.md`
-- `claude-plugin/develop/skills/dev-review/scripts/{server.mjs,generate-review-data.mjs}`, `scripts/lib/{agents,args,comment-types,git,output,plan}.mjs`
-- `claude-plugin/develop/hooks/hooks.json`, `claude-plugin/develop/scripts/user-prompt-submit-hook.mjs`
-- `claude-plugin/statusline/skills/statusline/SKILL.md`
-- `.codex/skills/orchestrator/SKILL.md`
-- `.codex/skills/plan-review/SKILL.md`
-- `.codex/skills/plan-wiki-setup/SKILL.md`
-- `.codex/skills/dev-wiki-setup/SKILL.md`, `.codex/skills/dev-wiki-update/SKILL.md`, `.codex/skills/dev-wiki-graph/SKILL.md`
-- `.codex/dev-wiki/config.json`
-- `.codex/tools/planning-docs-browser-server.mjs`
+- [`docs/current-architecture.md`](../../docs/current-architecture.md) — 현재 구조와 책임 경계의 canonical 문서
+- `codex-plugin/plugins/workbench/.codex-plugin/plugin.json` — Codex Workbench manifest, capabilities, default prompt
+- `codex-plugin/.agents/plugins/marketplace.json` — Codex Workbench marketplace 등록
+- `codex-plugin/plugins/workbench/skills/{issue-brief,brainstorm,test-brief,executor}/SKILL.md` — 기본 Work Unit 흐름
+- `codex-plugin/plugins/workbench/skills/{branch-work-report,visual-grounding,openapi,dev-wiki,fable5}/SKILL.md` — 보고, 근거 수집, 지식 유지, 선택적 운영 모드
+- `codex-plugin/scripts/deploy-workbench-plugin.mjs` — Workbench 배포 스크립트
+- `.codex/dev-wiki/config.json`, `.codex/plan-wiki/config.json` — project-local 지식 영역 설정
+- `claude-plugin/develop/.claude-plugin/plugin.json` — 별도 Claude Code 실행 플러그인 (`2.20.1`)
+- `claude-plugin/statusline/.claude-plugin/plugin.json` — 별도 Claude Code 상태줄 플러그인 (`1.2.0`)
