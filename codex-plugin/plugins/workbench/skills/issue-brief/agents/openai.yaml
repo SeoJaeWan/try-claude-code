@@ -1,7 +1,7 @@
 interface:
   display_name: "Issue Brief"
-  short_description: "Jira/Figma/API evidence to scoped work"
-  default_prompt: "Use $issue-brief to turn this Jira issue, linked Figma evidence, and candidate APIs into a concise implementation brief."
+  short_description: "Organize Jira, Figma, API, and user context"
+  default_prompt: "Use $issue-brief to organize this Jira, Figma, API, and user-provided context without inventing an implementation plan."
 dependencies:
   tools:
     - type: "mcp"

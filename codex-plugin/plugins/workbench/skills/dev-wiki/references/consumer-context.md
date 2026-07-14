@@ -6,15 +6,21 @@ Use `dev_wiki_root` as the project-specific development reference root after Wor
 
 `plan_wiki_root` still owns planning policy, artifact contracts, review gates, and learned planning patterns. `dev_wiki_root` owns project-specific conventions, architecture notes, workflow commands, and graph navigation.
 
-## Input
+## Input And Resolution
 
-In orchestrated mode, consume only the controller-provided path:
+In orchestrated mode, consume the controller-provided path when available:
 
 ```text
 dev_wiki_root: ${CODEX_HOME:-~/.codex}/workbench/dev-wiki/source/{project}
 ```
 
-Do not rediscover, create, clone, pull, repair, or rewrite the dev wiki source clone from a downstream planning role. `$dev-wiki` owns setup, freshness, and repair.
+For direct Workbench consumers such as `brainstorm` and `executor`, resolve the root in this order:
+
+1. Prefer the exact current-workspace mapping in `workspaces.json`.
+2. When no mapping exists, use an unambiguous `source/{workspace-basename}` folder whose `project.json` matches the folder name.
+3. If neither resolution is exact, treat the dev wiki as unavailable.
+
+Do not create, clone, pull, repair, refresh, or rewrite the source clone from a downstream planning or execution role. `$dev-wiki` owns setup, freshness, and repair. Reading an already-existing exact project folder does not change dev-wiki opt-in state.
 
 ## Standard Documents
 

@@ -35,7 +35,7 @@ Use this workspace mapping shape:
 }
 ```
 
-Missing config or missing workspace mapping means the workspace has not opted in to dev wiki. Only setup should create it.
+Missing config or missing workspace mapping means the workspace has not opted in to dev-wiki setup and maintenance. Only setup should create or register it. A downstream consumer may still read an existing exact `source/{workspace-basename}` project folder when its `project.json` is unambiguous; that read does not register the workspace or change dev-wiki state.
 
 ## Root Resolution
 

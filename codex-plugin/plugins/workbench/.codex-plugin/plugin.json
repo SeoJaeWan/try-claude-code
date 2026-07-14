@@ -1,7 +1,7 @@
 {
   "name": "workbench",
   "version": "0.1.0+codex.20260708073042",
-  "description": "Workspace for issue briefing, brainstorming, branch work reporting, the explicit-invocation Fable 5 operating mode, visual grounding for UI fidelity, convention-aware scoped execution, test briefing, OpenAPI registry/search, and dev wiki maintenance.",
+  "description": "Goal-centered Workbench for evidence briefs, decision dialogue, explicit execution, optional verification, OpenAPI, visual grounding, and dev wiki context.",
   "author": {
     "name": "Local developer"
   },
@@ -10,7 +10,7 @@
   "interface": {
     "displayName": "Workbench",
     "shortDescription": "Shape, report, and execute scoped work.",
-    "longDescription": "Workbench collects scoped work tools for Codex, including prompt/Jira issue briefs, selected-unit brainstorming, the explicitly invoked Fable 5 operating mode (a Claude Fable 5 operating-rule transplant), commit-by-commit branch work reporting with feedback, visual grounding that compares Figma/source UI evidence against local implementations, dev-wiki-aware guarded one-unit execution, goal-focused test briefing, linked Figma design inspection, user-registered Swagger/OpenAPI discovery, and project dev wiki maintenance.",
+    "longDescription": "Workbench provides a flexible goal-centered workflow for Codex: organize Jira/Figma/API/user evidence, clarify goals and completion conditions through dialogue, use optional evidence providers, execute an explicit Goal Contract with automatic project dev wiki context, and verify the result with tests, API checks, UI grounding, or branch reporting when needed.",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [
@@ -24,14 +24,13 @@
       "OpenAPI registry"
     ],
     "defaultPrompt": [
-      "Use $issue-brief to summarize this issue, Jira ticket, QA report, or pasted product context.",
-      "Use $fable5 to run this task under the Claude Fable 5 operating rules: situation dispatch, session posture, fact-first diagnosis, disclosed defaults, and the completion gate.",
-      "Use $brainstorm to review the selected work unit before implementation.",
+      "Use $issue-brief to organize this Jira, Figma, API, QA, or user-provided context without inventing an implementation plan.",
+      "Use $brainstorm to clarify the goal, collect useful evidence, and prepare an explicit Goal Contract.",
       "Use $branch-work-report to summarize the current work branch by commit with feedback.",
       "Use $visual-grounding to compare a Figma or source UI against a local route and identify actionable UI fixes.",
-      "Use $executor to implement one selected work unit with dev wiki conventions and scope guarding.",
+      "Use $executor to execute an explicit Goal Contract with automatic project dev wiki context and completion checks.",
       "Use $openapi to register Swagger services or find candidate APIs.",
-      "Use $test-brief to create tests before implementation."
+      "Use $test-brief when a goal needs an optional test or measurement contract."
     ],
     "brandColor": "#2563EB"
   }

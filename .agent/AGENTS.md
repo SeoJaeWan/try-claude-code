@@ -21,7 +21,7 @@
 
 - Do NOT create, edit, move, or delete files under `.codex/` without explicit user approval.
 - Keep `.codex/` limited to `AGENTS.md`; do not add project-local skills, tools, artifacts, config, or wiki clones there.
-- Treat `legacy/codex-planning-stack/dev-wiki/source/` and `legacy/codex-planning-stack/plan-wiki/source/` as repositories with Git boundaries separate from the root repository.
+- Treat `legacy/old/codex-planning-stack/dev-wiki/source/` and `legacy/old/codex-planning-stack/plan-wiki/source/` as repositories with Git boundaries separate from the root repository.
 - Do NOT mix `codex-plugin/` implementation changes with `.codex/` planning maintenance unless the requested work explicitly requires both.
 - Do NOT treat files under `legacy/` as active product entrypoints or current workflow contracts.
 

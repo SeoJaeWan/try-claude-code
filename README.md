@@ -1,6 +1,6 @@
 # try-Codex
 
-Codex Workbench 플러그인을 개발·검증하는 저장소입니다. 현재 사용자-facing 제품은 [`codex-plugin/plugins/workbench/`](./codex-plugin/plugins/workbench/)이며, 이전 Claude Code 플러그인과 project-local Codex planning stack은 [`legacy/`](./legacy/)에 보관합니다.
+Codex Workbench 플러그인을 개발·검증하는 저장소입니다. 현재 사용자-facing 제품은 [`codex-plugin/plugins/workbench/`](./codex-plugin/plugins/workbench/)이며, 이전 Claude Code 플러그인과 project-local Codex planning stack은 [`legacy/old/`](./legacy/old/)에, 현재 Workbench 기준 snapshot은 [`legacy/v1/workbench/`](./legacy/v1/workbench/)에 보관합니다.
 
 현재 구조와 책임 경계의 기준 문서는 [`docs/current-architecture.md`](./docs/current-architecture.md)입니다.
 
@@ -17,10 +17,8 @@ Codex Workbench 플러그인을 개발·검증하는 저장소입니다. 현재 
 ├── docs/
 │   └── current-architecture.md     # 현재 구조의 canonical 문서
 ├── legacy/
-│   ├── claude-code/                # 과거 Claude plugin, plans, CI
-│   ├── codex-planning-stack/       # 과거 .codex planning/wiki stack
-│   └── docs/                       # 역사 문서와 참고자료
-├── AGENTS.md
+│   ├── old/                        # 과거 플러그인·planning stack·fable5
+│   └── v1/workbench/               # 현재 Workbench의 보존본
 ├── README.md
 ├── package.json
 └── .gitignore
@@ -30,17 +28,29 @@ Codex Workbench 플러그인을 개발·검증하는 저장소입니다. 현재 
 
 | 스킬 | 역할 |
 |---|---|
-| `issue-brief` | 프롬프트, 이슈, QA·API·디자인 근거를 Work Unit으로 정리 |
-| `brainstorm` | 선택한 Work Unit의 현재 상태, 위험, 진단·구현 메모 검토 |
-| `test-brief` | 구현 전 contract/regression test 또는 측정 기준 작성 |
-| `executor` | 선택한 Work Unit 하나를 범위 내에서 구현·진단 |
+| `issue-brief` | Jira·Figma·QA·API·사용자 입력을 근거 중심으로 정리 |
+| `brainstorm` | 목표·완료 조건을 사용자와 토론하고 Goal Contract로 정리 |
+| `test-brief` | 필요할 때 Goal Contract를 검증 계약으로 변환 |
+| `executor` | 명시된 Goal Contract를 dev wiki와 함께 실행 |
 | `branch-work-report` | 현재 브랜치의 커밋별 변경과 리뷰 포인트 보고 |
 | `visual-grounding` | Figma·원본 UI·스크린샷과 local 구현 비교 |
 | `openapi` | Swagger/OpenAPI 서비스와 endpoint 탐색·검증 |
-| `dev-wiki` | 중앙 Workbench dev wiki의 setup, audit, update, lint, graph 유지 |
-| `fable5` | 명시적으로 호출한 경우 fact-first 운영 원칙 적용 |
+| `dev-wiki` | 중앙 Workbench dev wiki의 setup, audit, update, lint, graph 유지; brainstorm/executor의 자동 컨텍스트 |
 
-기본 흐름은 `issue-brief → brainstorm → 필요 시 test-brief → executor → branch-work-report`입니다.
+고정된 필수 순서는 없습니다. `issue-brief`는 단독으로 끝날 수 있고, 사용자가 목표를 직접 주면 `brainstorm`으로 바로 시작할 수 있습니다. `brainstorm`은 필요할 때 `issue-brief`, `openapi`, `visual-grounding`을 다시 호출해 근거를 추가하고, 목표와 완료 조건이 명확해졌을 때만 Goal Contract를 만듭니다. `executor`는 사용자의 명시적 요청으로만 시작합니다. `test-brief`와 `branch-work-report`는 선택적 지원 기능입니다.
+
+```text
+issue-brief (선택) ─────┐
+                       ↓
+사용자 목표 ───────→ brainstorm ↔ issue/API/UI 근거
+                       │          + 자동 dev wiki 컨텍스트
+                       ↓
+                 Goal Contract
+                       ↓ (명시적 요청)
+                    executor
+                       ↓
+             필요 시 test / API / UI 검증
+```
 
 ## 실행
 
@@ -53,4 +63,4 @@ npm run codex-plugin:deploy
 
 ## Legacy 정책
 
-`legacy/`는 현재 runtime, marketplace, CI, 테스트의 입력이 아닙니다. `legacy/codex-planning-stack/dev-wiki/source/`와 `plan-wiki/source/`는 각 원격 저장소를 유지하는 별도 Git clone이며 root repository에서는 ignore합니다.
+`legacy/`는 현재 runtime, marketplace, CI, 테스트의 입력이 아닙니다. `legacy/old/codex-planning-stack/dev-wiki/source/`와 `legacy/old/codex-planning-stack/plan-wiki/source/`는 각 원격 저장소를 유지하는 별도 Git clone이며 root repository에서는 ignore합니다.

@@ -131,6 +131,7 @@ Workflow:
 ## Guardrails
 
 - Do not make a project use dev wiki implicitly. Missing central config or workspace mapping means not opted in unless the user asked to set it up.
+- This opt-in gate controls dev-wiki setup and maintenance. Downstream consumers such as `brainstorm` and `executor` may read an existing unambiguous `source/{workspace-basename}` project folder without changing opt-in state, according to the Workbench consumer contract.
 - Do not overwrite whole wiki documents with generated summaries.
 - Do not create `history/` directories; Git commits are the change history.
 - Do not create manual tag index pages; generated indexes own tag and link indexes.

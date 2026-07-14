@@ -1,4 +1,4 @@
 interface:
   display_name: "Executor"
-  short_description: "Implement one brainstormed work unit."
-  default_prompt: "Use $executor to implement one selected work unit while guarding scope."
+  short_description: "Execute an explicit goal with project context"
+  default_prompt: "Use $executor to execute this explicit goal with the project's dev wiki context and completion checks."

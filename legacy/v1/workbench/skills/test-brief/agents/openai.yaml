@@ -1,0 +1,4 @@
+interface:
+  display_name: "Test Brief"
+  short_description: "Create tests before implementation."
+  default_prompt: "Use $test-brief to create goal-focused tests before implementation."

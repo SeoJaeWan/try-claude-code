@@ -1,4 +1,4 @@
 interface:
   display_name: "Test Brief"
-  short_description: "Create tests before implementation."
-  default_prompt: "Use $test-brief to create goal-focused tests before implementation."
+  short_description: "Turn a goal into optional verification criteria"
+  default_prompt: "Use $test-brief when this goal needs a test or measurement contract before or after execution."
