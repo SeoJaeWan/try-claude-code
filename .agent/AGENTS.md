@@ -11,7 +11,7 @@
 
 - `codex-plugin/plugins/workbench/` — Workbench manifest, skills, MCP 설정, tools
 - `codex-plugin/.agents/plugins/marketplace.json` — 현재 Codex marketplace 등록
-- `.codex/AGENTS.md` — `.codex/`를 지침 파일만 남기는 보호 경계
+- `.codex/AGENTS.md`와 `.codex/skills/evaluate-workbench/` — 보호 경계와 project-local Workbench 성능 벤치마크
 - `.claude/CLAUDE.md` — 이 파일을 import하는 Claude Code 전용 어댑터
 - `.github/workflows/workbench-test.yml` — 활성 Workbench CI
 - `docs/` — 현재 구조와 사용 중인 문서만 유지
@@ -20,9 +20,9 @@
 ## 보호 영역
 
 - Do NOT create, edit, move, or delete files under `.codex/` without explicit user approval.
-- Keep `.codex/` limited to `AGENTS.md`; do not add project-local skills, tools, artifacts, config, or wiki clones there.
+- Keep `.codex/` limited to `AGENTS.md` and `skills/evaluate-workbench/`; do not add other project-local skills, tools, artifacts, config, or wiki clones there without explicit user approval.
 - Treat `legacy/old/codex-planning-stack/dev-wiki/source/` and `legacy/old/codex-planning-stack/plan-wiki/source/` as repositories with Git boundaries separate from the root repository.
-- Do NOT mix `codex-plugin/` implementation changes with `.codex/` planning maintenance unless the requested work explicitly requires both.
+- Do NOT mix `codex-plugin/` implementation changes with `.codex/` maintenance unless the requested work explicitly requires both, including moving or updating the Workbench evaluator.
 - Do NOT treat files under `legacy/` as active product entrypoints or current workflow contracts.
 
 ## 스킬 컨벤션

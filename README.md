@@ -11,7 +11,8 @@ Codex Workbench 플러그인을 개발·검증하는 저장소입니다. 현재 
 ├── .agent/                         # Workbench 행동 원칙 원본
 ├── .claude/                        # Claude가 이 저장소를 읽을 때의 지침
 ├── .codex/
-│   └── AGENTS.md                   # .codex 보호 경계
+│   ├── AGENTS.md                   # .codex 보호 경계
+│   └── skills/evaluate-workbench/  # project-local Workbench 성능 벤치마크
 ├── .github/                        # Workbench CI
 ├── codex-plugin/                   # 메인 제품
 ├── docs/
@@ -52,6 +53,10 @@ issue-brief (선택) ─────┐
              필요 시 test / API / UI 검증
 ```
 
+## Project-local Workbench 벤치마크
+
+`.codex/skills/evaluate-workbench/`는 Workbench 플러그인에 포함되지 않는 이 저장소 전용 평가 스킬입니다. 비교 대상의 스킬 이름이나 절차를 강제하지 않고, 격리된 로직·프론트엔드 과제의 최종 결과 성공률과 성공한 실행 시간만 비교합니다. 실행 기록은 `<workspace>/output/evaluate/`에 남으며 Git에는 포함하지 않습니다.
+
 ## 실행
 
 ```bash
@@ -59,7 +64,7 @@ npm test
 npm run codex-plugin:deploy
 ```
 
-`npm test`는 Workbench의 dev-wiki Node 테스트와 OpenAPI Ruby 테스트를 실행합니다. 배포 manifest는 [`codex-plugin/plugins/workbench/.codex-plugin/plugin.json`](./codex-plugin/plugins/workbench/.codex-plugin/plugin.json), 활성 marketplace 등록은 [`codex-plugin/.agents/plugins/marketplace.json`](./codex-plugin/.agents/plugins/marketplace.json)이 소유합니다.
+`npm test`는 Workbench의 dev-wiki Node 테스트, OpenAPI Ruby 테스트와 project-local evaluate-workbench 러너 테스트를 실행합니다. 배포 manifest는 [`codex-plugin/plugins/workbench/.codex-plugin/plugin.json`](./codex-plugin/plugins/workbench/.codex-plugin/plugin.json), 활성 marketplace 등록은 [`codex-plugin/.agents/plugins/marketplace.json`](./codex-plugin/.agents/plugins/marketplace.json)이 소유합니다.
 
 ## Legacy 정책
 

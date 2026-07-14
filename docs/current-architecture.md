@@ -2,17 +2,18 @@
 
 > 기준일: 2026-07-14
 
-이 문서는 저장소의 현재 기준점을 설명한다. 사용자-facing 제품과 활성 CI는 Codex Workbench를 중심으로 구성하고, Claude Code 플러그인과 project-local Codex planning stack은 `legacy/`에 격리한다.
+이 문서는 저장소의 현재 기준점을 설명한다. 사용자-facing 제품은 Codex Workbench 플러그인에 두고, Workbench 성능 평가는 project-local `.codex` skill로 분리한다. Claude Code 플러그인과 과거 project-local Codex planning stack은 `legacy/`에 격리한다.
 
 ## 현재 기준점
 
 | 영역 | 경로 | 역할 |
 |---|---|---|
 | Codex 메인 플러그인 | `codex-plugin/plugins/workbench/` | 근거 정리, 목표·완료 조건 대화, Goal Contract 실행, 선택적 검증, dev wiki 컨텍스트와 유지보수 |
+| Project-local 평가 스킬 | `.codex/skills/evaluate-workbench/` | Workbench target의 반복 구현 결과와 성공 시간을 격리 비교 |
 | Codex marketplace | `codex-plugin/.agents/plugins/marketplace.json` | Workbench 로컬 marketplace 등록 |
 | 배포 도구 | `codex-plugin/scripts/deploy-workbench-plugin.mjs` | Workbench manifest와 cachebuster 기반 배포 |
-| Codex 지침 경계 | `.codex/AGENTS.md` | `.codex/`에 project-local stack이 다시 생기지 않도록 보호 |
-| 활성 CI | `.github/workflows/workbench-test.yml` | Workbench Node·Ruby 테스트 |
+| Codex 지침 경계 | `.codex/AGENTS.md` | evaluator 외 project-local stack이 다시 생기지 않도록 보호 |
+| 활성 CI | `.github/workflows/workbench-test.yml` | Workbench와 project-local evaluator 테스트 |
 | 현재 문서 | `docs/current-architecture.md` | 현재 구조의 canonical 문서 |
 | 역사 보관 | `legacy/old/` | Claude Code 플러그인, Codex planning stack, fable5, 과거 plan·CI·문서 |
 | v1 보존본 | `legacy/v1/workbench/` | 현재 Workbench를 개선 전 상태로 보존한 snapshot |
@@ -24,7 +25,9 @@
 ├── .agent/
 ├── .claude/
 ├── .codex/
-│   └── AGENTS.md
+│   ├── AGENTS.md
+│   └── skills/
+│       └── evaluate-workbench/
 ├── .github/
 ├── codex-plugin/
 ├── docs/
@@ -57,12 +60,12 @@ codex-plugin/
 │   │   ├── branch-work-report/
 │   │   ├── visual-grounding/
 │   │   ├── openapi/
-│   │   ├── dev-wiki/
+│   │   └── dev-wiki/
 │   └── tools/
 └── scripts/deploy-workbench-plugin.mjs
 ```
 
-Workbench의 기본 역할은 plugin manifest의 default prompt와 각 `SKILL.md`가 소유한다. 스킬을 추가하거나 수정할 때는 `codex-plugin/plugins/workbench/`를 기준으로 판단한다.
+Workbench의 기본 역할은 plugin manifest의 default prompt와 각 `SKILL.md`가 소유한다. 배포되는 Workbench 스킬을 추가하거나 수정할 때는 `codex-plugin/plugins/workbench/`를 기준으로 판단한다. `evaluate-workbench`는 배포 대상이 아니며 `.codex/skills/evaluate-workbench/`가 별도로 소유한다.
 
 ## 목표 중심 작업 흐름
 
@@ -81,12 +84,26 @@ issue-brief (선택) ─────┐
 
 `issue-brief`는 정보 정리만으로 종료할 수 있다. `brainstorm`은 직접 시작하거나 중간에 `issue-brief`, `openapi`, `visual-grounding`을 호출해 근거를 추가할 수 있다. 해당 프로젝트의 dev wiki는 `brainstorm`과 `executor`가 자동으로 참고한다. `test-brief`와 `branch-work-report`는 선택적 지원 기능이다. `legacy/old/fable5/`는 더 이상 활성 plugin skill이 아닌 과거 운영 모드의 참고본이다.
 
+## Workbench 결과 벤치마크
+
+`.codex/skills/evaluate-workbench/`는 위 목표 중심 작업 흐름이나 Workbench 플러그인에 포함되는 단계가 아니라, Workbench 버전이나 구성이 실제 구현 목표를 얼마나 안정적이고 빠르게 완료하는지 비교하는 project-local 평가 스킬이다.
+
+- 비교 대상은 `current`, `v1`, `v3` 같은 고정 목록이 아니라 사용자가 지정한 임의의 label과 plugin root다.
+- 각 대상은 자기 manifest와 skill metadata에서 고유한 흐름을 발견한다. 공통 skill 이름이나 순서를 전제하지 않는다.
+- `profile-cache-dedupe` 로직 과제와 `optimistic-favorite-ui` 프론트엔드 과제를 동일 prompt·fixture로 반복한다.
+- 각 반복은 새 workspace와 새 subagent를 사용한다. Oracle과 다른 실행 결과는 대상에 노출하지 않는다.
+- 최종 artifact가 public·hidden check와 dependency contract를 모두 통과했는지만 PASS로 계산한다. 성공률이 같을 때만 성공 실행의 중앙 시간을 비교한다.
+- 관찰 가능한 입력·출력과 사용 skill 정보는 사람이 실패 원인을 확인하도록 보존하지만 점수에는 사용하지 않는다.
+- 결과는 `<workspace>/output/evaluate/<UTC timestamp>/`에 저장하며 활성 plugin이나 skill cache 내부에는 쓰지 않는다.
+
 ## 책임 경계
 
 - `codex-plugin/plugins/workbench/`는 현재 제품의 사용자-facing 스킬과 runtime 구현을 소유한다.
+- `.codex/skills/evaluate-workbench/`는 Workbench 배포물과 독립된 개발용 평가 prompt, fixture, Oracle, runner를 소유한다.
 - `brainstorm`과 `executor`는 프로젝트 dev wiki가 해석되면 별도 요청 없이 관련 문서를 읽는다.
 - `dev-wiki` 스킬 자체는 setup, audit, update, lint, graph 같은 wiki 관리 요청을 담당한다.
-- `.codex/`에는 보호용 `AGENTS.md`만 둔다. project-local skills, tools, artifacts, config, wiki clone을 추가하지 않는다.
+- `evaluate-workbench`는 격리된 fixture만 변경하며 사용자의 실제 application workspace를 평가 대상으로 수정하지 않는다.
+- `.codex/`에는 `AGENTS.md`와 `skills/evaluate-workbench/`만 둔다. 다른 project-local skills, tools, artifacts, config, wiki clone을 추가하지 않는다.
 - `.agent/`는 Workbench 행동 원칙의 원천이며 자동 지침 진입점이 아니다.
 - `.claude/CLAUDE.md`는 `.agent/AGENTS.md`를 import하는 Claude용 얇은 어댑터다.
 - `.github/`에는 활성 Workbench CI만 둔다.
@@ -102,7 +119,7 @@ issue-brief (선택) ─────┐
 | `plans/` | `legacy/old/claude-code/plans/` |
 | `.github/workflows/plugin-test.yml` | `legacy/old/claude-code/ci/plugin-test.yml` |
 | `.agents/plugins/marketplace.json` | `legacy/old/codex-planning-stack/marketplace.json` |
-| `.codex/{config.toml,artifacts,skills,tools}` | `legacy/old/codex-planning-stack/` |
+| 과거 `.codex/{config.toml,artifacts,skills,tools}` planning stack | `legacy/old/codex-planning-stack/` |
 | `.codex/{dev-wiki,plan-wiki}` | `legacy/old/codex-planning-stack/` |
 | `docs/plan-wiki-docs.md` | `legacy/old/codex-planning-stack/docs/plan-wiki-docs.md` |
 | 역사 문서 | `legacy/old/docs/` |
@@ -113,7 +130,7 @@ issue-brief (선택) ─────┐
 
 ## 검증 기준
 
-- `.codex/AGENTS.md`가 `.codex/`의 유일한 파일이어야 한다.
-- `npm test`는 Workbench dev-wiki와 OpenAPI 테스트를 실행한다.
+- `.codex/`에는 `AGENTS.md`와 `skills/evaluate-workbench/`만 존재해야 한다.
+- `npm test`는 Workbench dev-wiki·OpenAPI와 project-local evaluate-workbench 러너 테스트를 실행한다.
 - `.github/workflows/workbench-test.yml`은 루트 `npm test`와 같은 활성 테스트 경계를 사용한다.
-- 활성 package, CI, Workbench 문서는 project-local `.codex/skills`, `.codex/tools`, `.codex/dev-wiki`, `.codex/plan-wiki`를 실행 경로로 참조하지 않는다.
+- 활성 package와 CI는 `.codex/skills/evaluate-workbench`만 project-local skill 실행 경로로 참조할 수 있으며 `.codex/tools`, `.codex/dev-wiki`, `.codex/plan-wiki`는 참조하지 않는다.

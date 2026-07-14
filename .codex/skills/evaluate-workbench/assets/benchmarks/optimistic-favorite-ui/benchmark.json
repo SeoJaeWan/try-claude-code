@@ -1,0 +1,38 @@
+{
+  "id": "optimistic-favorite-ui",
+  "title": "Optimistic favorite UI",
+  "fixture": "fixture",
+  "prompt": "prompt.md",
+  "setupCommand": ["npm", "ci", "--ignore-scripts"],
+  "setupTimeoutMs": 600000,
+  "publicChecks": [
+    {
+      "id": "public-tests",
+      "command": ["npm", "exec", "--", "vitest", "run", "test/product-list.test.tsx"],
+      "timeoutMs": 180000
+    },
+    {
+      "id": "typecheck",
+      "command": ["npm", "exec", "--", "tsc", "--noEmit"],
+      "timeoutMs": 180000
+    },
+    {
+      "id": "production-build",
+      "command": ["npm", "exec", "--", "vite", "build"],
+      "timeoutMs": 180000
+    }
+  ],
+  "oracleFiles": [
+    {
+      "source": "oracle/optimistic-favorite.hidden.test.tsx",
+      "destination": "test/optimistic-favorite.hidden.test.tsx"
+    }
+  ],
+  "oracleChecks": [
+    {
+      "id": "hidden-interaction",
+      "command": ["npm", "exec", "--", "vitest", "run", "test/optimistic-favorite.hidden.test.tsx"],
+      "timeoutMs": 180000
+    }
+  ]
+}
