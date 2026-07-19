@@ -3,6 +3,7 @@
   "title": "Optimistic favorite UI",
   "fixture": "fixture",
   "prompt": "prompt.md",
+  "interactiveScenario": "scenario.json",
   "setupCommand": ["npm", "ci", "--ignore-scripts"],
   "setupTimeoutMs": 600000,
   "publicChecks": [

@@ -13,6 +13,14 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
+async function waitFor(predicate, message) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (predicate()) return;
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+  assert.fail(message);
+}
+
 test("deduplicates simultaneous requests for the same user", async () => {
   const request = deferred();
   let calls = 0;
@@ -25,6 +33,7 @@ test("deduplicates simultaneous requests for the same user", async () => {
 
   const first = cache.get("user-1");
   const second = cache.get("user-1");
+  await waitFor(() => calls >= 1, "the profile request did not start");
   assert.equal(calls, 1);
 
   request.resolve({ id: "user-1", name: "Ada" });
@@ -47,6 +56,7 @@ test("keeps simultaneous requests for different users independent", async () => 
 
   const first = cache.get("user-1");
   const second = cache.get("user-2");
+  await waitFor(() => calls >= 2, "both independent profile requests did not start");
   assert.equal(calls, 2);
 
   requests.get("user-2").resolve({ id: "user-2" });
@@ -68,6 +78,7 @@ test("shares a rejection but retries after the failed request settles", async ()
 
   const first = cache.get("user-1");
   const second = cache.get("user-1");
+  await waitFor(() => calls >= 1, "the shared profile request did not start");
   assert.equal(calls, 1);
 
   firstRequest.reject(new Error("network unavailable"));

@@ -3,6 +3,7 @@
   "title": "Profile cache request deduplication",
   "fixture": "fixture",
   "prompt": "prompt.md",
+  "interactiveScenario": "scenario.json",
   "publicChecks": [
     {
       "id": "public-tests",

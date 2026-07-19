@@ -12,6 +12,7 @@ Codex Workbench 플러그인을 개발·검증하는 저장소입니다. 현재 
 ├── .claude/                        # Claude가 이 저장소를 읽을 때의 지침
 ├── .codex/
 │   ├── AGENTS.md                   # .codex 보호 경계
+│   ├── config.toml                 # 프로젝트 agent thread 한도
 │   └── skills/evaluate-workbench/  # project-local Workbench 성능 벤치마크
 ├── .github/                        # Workbench CI
 ├── codex-plugin/                   # 메인 제품
@@ -55,7 +56,7 @@ issue-brief (선택) ─────┐
 
 ## Project-local Workbench 벤치마크
 
-`.codex/skills/evaluate-workbench/`는 Workbench 플러그인에 포함되지 않는 이 저장소 전용 평가 스킬입니다. 비교 대상의 스킬 이름이나 절차를 강제하지 않고, 격리된 로직·프론트엔드 과제의 최종 결과 성공률과 성공한 실행 시간만 비교합니다. 실행 기록은 `<workspace>/output/evaluate/`에 남으며 Git에는 포함하지 않습니다.
+`.codex/skills/evaluate-workbench/`는 Workbench 플러그인에 포함되지 않는 이 저장소 전용 평가 스킬입니다. 기본 `full-loop` 모드는 불완전한 사용자 요청에서 시작해 고정된 숨은 사용자 상태로 목표를 대화하고, Goal Contract가 합의된 뒤 같은 subagent 세션에서 구현까지 이어지는 전체 결과를 비교합니다. 메인 세션은 답변을 임의로 만들지 않고 시나리오의 고정 답변·확인·반론만 전달합니다. Goal Contract와 최종 artifact가 모두 통과해야 성공이며, 성공률이 같으면 성공 실행의 사용자 대화 턴 수와 같은 병렬 부하의 latency 순으로 비교합니다. 기존의 명확한 로직·프론트엔드 구현 과제는 `executor-only` 컴포넌트 진단으로 남습니다. 실행 기록은 `<workspace>/output/evaluate/`에 남으며 Git에는 포함하지 않습니다.
 
 ## 실행
 
