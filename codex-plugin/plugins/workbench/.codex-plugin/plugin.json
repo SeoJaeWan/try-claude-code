@@ -1,6 +1,6 @@
 {
   "name": "workbench",
-  "version": "0.1.0+codex.20260714065910",
+  "version": "0.1.0+codex.20260719050300",
   "description": "Goal-centered Workbench for evidence briefs, decision dialogue, explicit execution, optional verification, OpenAPI, visual grounding, and dev wiki context.",
   "author": {
     "name": "Local developer"

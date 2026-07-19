@@ -61,9 +61,11 @@ if (!skipInstall) {
   if (dryRun) {
     console.log(`[dry-run] ${command.join(" ")}`);
   } else {
-    const result = spawnSync(command[0], command.slice(1), {
+    const executable = process.platform === "win32" ? "codex.cmd" : command[0];
+    const result = spawnSync(executable, command.slice(1), {
       cwd: repoRoot,
       stdio: "inherit",
+      shell: process.platform === "win32",
     });
 
     if (result.error) {
