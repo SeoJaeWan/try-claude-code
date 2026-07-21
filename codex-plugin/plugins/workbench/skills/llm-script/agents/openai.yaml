@@ -1,0 +1,7 @@
+interface:
+  display_name: "LLM Script Capture"
+  short_description: "Inspect or enable script-source capture."
+  default_prompt: "Use $workbench:llm-script to report script-source capture status for this workspace."
+
+policy:
+  allow_implicit_invocation: false

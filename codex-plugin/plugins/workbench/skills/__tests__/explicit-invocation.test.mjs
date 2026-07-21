@@ -24,6 +24,7 @@ test("every Workbench skill requires an explicit namespaced invocation", () => {
     "dev-wiki",
     "executor",
     "issue-brief",
+    "llm-script",
     "openapi",
     "test-brief",
     "visual-grounding"

@@ -1,7 +1,7 @@
 {
   "name": "workbench",
-  "version": "0.1.0+codex.20260721030154",
-  "description": "Explicitly invoked Workbench skills for evidence briefs, decision dialogue, scoped execution, OpenAPI, visual grounding, and dev wiki context.",
+  "version": "0.1.0+codex.20260721072327",
+  "description": "Explicitly invoked Workbench skills for evidence briefs, decision dialogue, scoped execution, OpenAPI, visual grounding, dev wiki context, and opt-in script-source capture.",
   "author": {
     "name": "Local developer"
   },
@@ -9,8 +9,8 @@
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Workbench",
-    "shortDescription": "Shape, report, and execute scoped work.",
-    "longDescription": "Workbench provides explicitly invoked skills for Codex: organize Jira/Figma/API/user evidence, clarify goals and completion conditions through dialogue, execute a Goal Contract with project dev wiki context, and verify the result with tests, API checks, or UI grounding when requested.",
+    "shortDescription": "Shape, execute, and observe scoped work.",
+    "longDescription": "Workbench provides explicitly invoked skills for Codex: organize Jira/Figma/API/user evidence, clarify goals and completion conditions through dialogue, execute a Goal Contract with project dev wiki context, verify results, and explicitly set up opt-in collection of source snapshots for scripts Codex executes.",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [
@@ -20,12 +20,13 @@
       "Test authoring",
       "Scoped implementation",
       "Visual grounding",
-      "OpenAPI registry"
+      "OpenAPI registry",
+      "Script source capture"
     ],
     "defaultPrompt": [
-      "Use $workbench:brainstorm to clarify a goal and prepare a Goal Contract.",
-      "Use $workbench:executor to execute an explicit goal with completion checks.",
-      "Use $workbench:openapi to register, inspect, or test a Swagger/OpenAPI service."
+      "Use $workbench:brainstorm to clarify a goal and prepare a Goal Contract, then invoke $workbench:executor separately to execute it.",
+      "Use $workbench:openapi to register, inspect, or test a Swagger/OpenAPI service.",
+      "Use $workbench:llm-script to set up or inspect opt-in script-source capture for the current workspace."
     ],
     "brandColor": "#2563EB"
   }

@@ -6,9 +6,10 @@
   "scripts": {
     "codex-plugin:deploy": "node codex-plugin/scripts/deploy-workbench-plugin.mjs",
     "test": "npm run test:workbench",
-    "test:workbench": "npm run test:workbench-skills && npm run test:dev-wiki-graph && npm run test:openapi && npm run test:evaluate-workbench",
+    "test:workbench": "npm run test:workbench-skills && npm run test:dev-wiki-graph && npm run test:llm-script && npm run test:openapi && npm run test:evaluate-workbench",
     "test:workbench-skills": "node --test codex-plugin/plugins/workbench/skills/__tests__/explicit-invocation.test.mjs",
     "test:dev-wiki-graph": "node --test codex-plugin/plugins/workbench/skills/dev-wiki/scripts/__tests__/generate-dev-wiki-graph.test.mjs",
+    "test:llm-script": "node --test codex-plugin/plugins/workbench/skills/llm-script/scripts/__tests__/stage-llm-script.test.mjs codex-plugin/plugins/workbench/skills/llm-script/scripts/__tests__/capture-script-source.test.mjs codex-plugin/plugins/workbench/skills/llm-script/scripts/__tests__/hook-config.test.mjs",
     "test:openapi": "ruby codex-plugin/plugins/workbench/tools/__tests__/openapi-mcp.test.rb",
     "test:evaluate-workbench": "node --test .codex/skills/evaluate-workbench/scripts/__tests__/benchmark-runner.test.mjs"
   }

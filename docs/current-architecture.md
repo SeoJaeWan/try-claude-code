@@ -8,7 +8,7 @@
 
 | 영역 | 경로 | 역할 |
 |---|---|---|
-| Codex 메인 플러그인 | `codex-plugin/plugins/workbench/` | 근거 정리, 목표·완료 조건 대화, Goal Contract 실행, 선택적 검증, dev wiki 컨텍스트와 유지보수 |
+| Codex 메인 플러그인 | `codex-plugin/plugins/workbench/` | 근거 정리, 목표·완료 조건 대화, Goal Contract 실행, 선택적 검증, dev wiki 컨텍스트와 script-source 수집 |
 | Project-local 평가 스킬 | `.codex/skills/evaluate-workbench/` | Workbench target의 목표 대화·Goal Contract·동일 세션 구현 결과를 격리 비교하고 executor-only 구현 성능을 진단 |
 | Project-local Codex 설정 | `.codex/config.toml` | Workbench 평가용 동시 agent thread 한도를 이 저장소에서만 20으로 확장 |
 | Codex marketplace | `codex-plugin/.agents/plugins/marketplace.json` | Workbench 로컬 marketplace 등록 |
@@ -54,6 +54,8 @@ codex-plugin/
 ├── plugins/workbench/
 │   ├── .codex-plugin/plugin.json
 │   ├── AGENTS.md
+│   ├── hooks/
+│   │   └── hooks.json
 │   ├── skills/
 │   │   ├── issue-brief/
 │   │   ├── brainstorm/
@@ -61,12 +63,13 @@ codex-plugin/
 │   │   ├── executor/
 │   │   ├── visual-grounding/
 │   │   ├── openapi/
-│   │   └── dev-wiki/
+│   │   ├── dev-wiki/
+│   │   └── llm-script/
 │   └── tools/
 └── scripts/deploy-workbench-plugin.mjs
 ```
 
-Workbench의 기본 역할은 plugin manifest의 default prompt와 각 `SKILL.md`가 소유한다. 모든 Workbench 스킬은 `agents/openai.yaml`에서 implicit invocation을 비활성화하며 `$workbench:<skill>`로만 호출한다. 배포되는 Workbench 스킬을 추가하거나 수정할 때는 `codex-plugin/plugins/workbench/`를 기준으로 판단한다. `evaluate-workbench`는 배포 대상이 아니며 `.codex/skills/evaluate-workbench/`가 별도로 소유한다.
+Workbench의 기본 역할은 plugin manifest의 default prompt와 각 `SKILL.md`가 소유한다. 모든 Workbench 스킬은 `agents/openai.yaml`에서 implicit invocation을 비활성화하며 `$workbench:<skill>`로만 호출한다. `llm-script`의 workspace setup과 status 역시 `$workbench:llm-script`를 명시해야 시작하지만, 등록된 workspace에서 source를 수집하는 `PostToolUse` hook은 이후 shell 도구 사용마다 자동으로 동작한다. 이는 implicit skill invocation이 아니라 setup으로 활성화한 plugin runtime이다. 배포되는 Workbench 스킬과 hook을 추가하거나 수정할 때는 `codex-plugin/plugins/workbench/`를 기준으로 판단한다. `evaluate-workbench`는 배포 대상이 아니며 `.codex/skills/evaluate-workbench/`가 별도로 소유한다.
 
 ## 목표 중심 작업 흐름
 
@@ -84,6 +87,21 @@ $workbench:issue-brief (선택) ─────┐
 ```
 
 각 스킬은 사용자가 `$workbench:<skill>`을 지정할 때만 시작한다. `$workbench:issue-brief`는 정보 정리만으로 종료할 수 있고, `$workbench:brainstorm`은 Goal Contract를 만들되 다른 스킬이나 `$workbench:executor`를 자동 호출하지 않는다. 필요한 API·UI·테스트 근거 스킬도 사용자가 별도로 명시한다. brainstorm과 executor는 해당 프로젝트의 기존 dev wiki를 직접 컨텍스트로 읽을 수 있지만 `$workbench:dev-wiki` 유지보수 스킬을 자동 호출하지 않는다. `legacy/old/fable5/`는 더 이상 활성 plugin skill이 아닌 과거 운영 모드의 참고본이다.
+
+## LLM script-source 수집
+
+`$workbench:llm-script setup`은 현재 workspace를 중앙 수집 대상에 등록하고, `$workbench:llm-script status`는 config, source clone, workspace mapping을 읽기 전용으로 확인한다. 기본 staging root는 `${CODEX_HOME:-~/.codex}/workbench/llm-script/`, clone은 `source/`, append-only record는 `source/records/YYYY/MM/DD/`에 둔다. workspace가 등록되지 않았거나 capture가 비활성화된 경우 hook은 아무 것도 기록하지 않는다.
+
+`hooks/hooks.json`은 shell 실행 뒤 `PostToolUse`에서 source-capture command를 호출한다. capture는 실행된 file entrypoint의 당시 내용이나 inline·heredoc source를 record 하나의 JSON source snapshot으로 보존한다. 같은 shell 호출에서 script entrypoint가 여러 개 탐지되면 각각 별도 record로 남긴다. import dependency를 재귀적으로 따라가거나 script를 실행 가능한 library 형태로 복제하지 않는다.
+
+수집 경계는 다음과 같다.
+
+- 실행 이유, prompt·transcript·session, hook process 환경 값, stdout·stderr·결과를 별도 저장하지 않는다. source 자체에 포함된 비민감 환경 할당은 코드로 보존한다.
+- 집계, 요약, 후보 선정, catalog, deduplication, script 생성은 수행하지 않는다.
+- 등록 workspace 밖의 파일과 `.git`, `node_modules`, vendor, 비밀정보 파일, binary, 크기 제한을 넘는 source는 제외한다.
+- 중앙 clone에 `pull`, `add`, `commit`, `push`를 자동 실행하지 않는다. record를 검토하고 집계하거나 Git으로 게시하는 책임은 사용자에게 있다.
+- hook은 best-effort라 모든 실행의 완전한 이력을 보장하지 않는다. 설치·업데이트 뒤 `/hooks`에서 matcher와 command를 검토하고 trust 상태를 확인한다.
+- `PostToolUse` payload는 `exec_command`의 별도 workdir를 전달하지 않는다. file source는 세션 cwd 기준 상대·절대 경로나 command에 명시된 static `cd`까지만 정확히 복원하며, 실행 후 삭제·변경된 파일은 건너뛸 수 있다. inline·heredoc source는 command 원문에서 수집한다.
 
 ## Workbench 결과 벤치마크
 
@@ -110,6 +128,8 @@ $workbench:issue-brief (선택) ─────┐
 - 메인 Codex 대화는 `spawn_agent`·`wait_agent`·`send_input`·`close_agent`로 benchmark subagent의 생명주기를 직접 관리한다. Node runner의 `spawnSync`는 fixture setup, Git, 테스트 같은 로컬 프로세스 전용이며 subagent를 만들지 않는다.
 - `$workbench:brainstorm`과 `$workbench:executor`는 프로젝트 dev wiki가 해석되면 별도 유지보수 스킬 호출 없이 관련 문서를 읽는다.
 - `$workbench:dev-wiki` 스킬 자체는 명시적으로 호출될 때 setup, audit, update, lint, graph 같은 wiki 관리 요청을 담당한다.
+- `$workbench:llm-script` 스킬은 명시적으로 호출될 때 setup과 status를 담당하고, 설정 뒤 자동 capture는 plugin `PostToolUse` hook이 담당한다.
+- llm-script 중앙 clone은 source snapshot record만 보존한다. 수집 데이터의 집계·script화·Git 게시를 Workbench가 자동 수행하지 않는다.
 - `evaluate-workbench`는 격리된 fixture만 변경하며 사용자의 실제 application workspace를 평가 대상으로 수정하지 않는다.
 - `.codex/`에는 `AGENTS.md`, 평가용 `config.toml`, `skills/evaluate-workbench/`만 둔다. 다른 project-local skills, tools, artifacts, config, wiki clone을 추가하지 않는다.
 - `.agent/`는 Workbench 행동 원칙의 원천이며 자동 지침 진입점이 아니다.
@@ -139,6 +159,6 @@ $workbench:issue-brief (선택) ─────┐
 ## 검증 기준
 
 - `.codex/`에는 `AGENTS.md`, `config.toml`, `skills/evaluate-workbench/`만 존재해야 한다.
-- `npm test`는 Workbench dev-wiki·OpenAPI와 project-local evaluate-workbench 러너 테스트를 실행한다.
+- `npm test`는 Workbench dev-wiki·llm-script·OpenAPI와 project-local evaluate-workbench 러너 테스트를 실행한다.
 - `.github/workflows/workbench-test.yml`은 루트 `npm test`와 같은 활성 테스트 경계를 사용한다.
 - 활성 package와 CI는 `.codex/skills/evaluate-workbench`만 project-local skill 실행 경로로 참조할 수 있으며 `.codex/tools`, `.codex/dev-wiki`, `.codex/plan-wiki`는 참조하지 않는다.

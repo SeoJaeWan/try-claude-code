@@ -1,0 +1,18 @@
+{
+  "description": "Capture source snapshots for scripts executed in explicitly registered workspaces.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/skills/llm-script/scripts/capture-script-source.mjs\"",
+            "commandWindows": "node \"%PLUGIN_ROOT%\\skills\\llm-script\\scripts\\capture-script-source.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
