@@ -68,7 +68,6 @@ Use additional evidence only when it can affect implementation or verification. 
 - If the OpenAPI workflow is required for registered API contract inspection or an API test, ask the user to invoke `$workbench:openapi`. Never infer mutation permission from documentation.
 - If the visual workflow is required for a matching source frame, page, screenshot, or interaction state, ask the user to invoke `$workbench:visual-grounding`.
 - If a test or measurement contract is required, ask the user to invoke `$workbench:test-brief`. It is optional, not an automatic prerequisite.
-- If the user wants a commit-based report after the work, tell them to invoke `$workbench:branch-work-report`.
 
 Continue with directly available repository and dev wiki evidence when it is sufficient. Otherwise pause for the required explicit invocation.
 

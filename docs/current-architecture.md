@@ -59,7 +59,6 @@ codex-plugin/
 │   │   ├── brainstorm/
 │   │   ├── test-brief/
 │   │   ├── executor/
-│   │   ├── branch-work-report/
 │   │   ├── visual-grounding/
 │   │   ├── openapi/
 │   │   └── dev-wiki/

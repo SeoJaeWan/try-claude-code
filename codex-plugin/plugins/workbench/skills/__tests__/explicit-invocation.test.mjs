@@ -21,7 +21,6 @@ test("every Workbench skill requires an explicit namespaced invocation", () => {
   const skills = skillDirectories();
   assert.deepEqual(skills, [
     "brainstorm",
-    "branch-work-report",
     "dev-wiki",
     "executor",
     "issue-brief",

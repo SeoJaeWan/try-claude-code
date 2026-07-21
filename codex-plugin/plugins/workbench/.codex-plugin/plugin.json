@@ -1,6 +1,6 @@
 {
   "name": "workbench",
-  "version": "0.1.0+codex.20260721023130",
+  "version": "0.1.0+codex.20260721030154",
   "description": "Explicitly invoked Workbench skills for evidence briefs, decision dialogue, scoped execution, OpenAPI, visual grounding, and dev wiki context.",
   "author": {
     "name": "Local developer"
@@ -10,14 +10,13 @@
   "interface": {
     "displayName": "Workbench",
     "shortDescription": "Shape, report, and execute scoped work.",
-    "longDescription": "Workbench provides explicitly invoked skills for Codex: organize Jira/Figma/API/user evidence, clarify goals and completion conditions through dialogue, execute a Goal Contract with project dev wiki context, and verify the result with tests, API checks, UI grounding, or branch reporting when requested.",
+    "longDescription": "Workbench provides explicitly invoked skills for Codex: organize Jira/Figma/API/user evidence, clarify goals and completion conditions through dialogue, execute a Goal Contract with project dev wiki context, and verify the result with tests, API checks, or UI grounding when requested.",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [
       "MCP",
       "Skills",
       "Fact-first diagnosis",
-      "Branch reporting",
       "Test authoring",
       "Scoped implementation",
       "Visual grounding",
