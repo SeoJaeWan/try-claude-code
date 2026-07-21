@@ -35,19 +35,197 @@ async function write(filePath, content) {
   await fsp.writeFile(filePath, content);
 }
 
-test("freezes dynamic target metadata and judges a solved isolated fixture", async (t) => {
+async function writeCanonicalTarget(target, { pluginName = "workbench", version = "1.0.0" } = {}) {
+  await write(
+    path.join(target, ".codex-plugin", "plugin.json"),
+    `${JSON.stringify({ name: pluginName, version, skills: "./skills/" }, null, 2)}\n`,
+  );
+  await write(
+    path.join(target, "skills", "brainstorm", "SKILL.md"),
+    "---\nname: brainstorm\ndescription: Clarify a selected goal.\n---\n\n# Brainstorm\n",
+  );
+  await write(
+    path.join(target, "skills", "executor", "SKILL.md"),
+    "---\nname: executor\ndescription: Execute a selected goal.\n---\n\n# Executor\n",
+  );
+}
+
+test("rejects invalid plugin identity and canonical entrypoints before creating a session", async (t) => {
+  await t.test("rejects a non-workbench plugin name", async (t) => {
+    const root = await fsp.mkdtemp(path.join(os.tmpdir(), "evaluate-workbench-invalid-plugin-"));
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+    const target = path.join(root, "candidate");
+    const outputRoot = path.join(root, "output");
+    await writeCanonicalTarget(target, { pluginName: "renamed-workbench" });
+
+    const result = runRaw(
+      [
+        "init",
+        "--target",
+        `candidate=${target}`,
+        "--repetitions",
+        "1",
+        "--output-root",
+        outputRoot,
+      ],
+      root,
+    );
+
+    assert.notEqual(result.status, 0);
+    assert.match(
+      result.stderr,
+      /Target candidate must use plugin manifest name "workbench".*found "renamed-workbench"/,
+    );
+    assert.equal(fs.existsSync(outputRoot), false);
+  });
+
+  await t.test("rejects a skill name outside its canonical path", async (t) => {
+    const root = await fsp.mkdtemp(path.join(os.tmpdir(), "evaluate-workbench-invalid-skill-"));
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+    const target = path.join(root, "candidate");
+    const outputRoot = path.join(root, "output");
+    await write(
+      path.join(target, ".codex-plugin", "plugin.json"),
+      `${JSON.stringify({ name: "workbench", version: "1.0.0", skills: "./skills/" }, null, 2)}\n`,
+    );
+    await write(
+      path.join(target, "skills", "brainstorm", "SKILL.md"),
+      "---\nname: brainstorm\ndescription: Clarify a selected goal.\n---\n",
+    );
+    await write(
+      path.join(target, "skills", "runner", "SKILL.md"),
+      "---\nname: executor\ndescription: Execute a selected goal.\n---\n",
+    );
+
+    const result = runRaw(
+      [
+        "init",
+        "--target",
+        `candidate=${target}`,
+        "--repetitions",
+        "1",
+        "--output-root",
+        outputRoot,
+      ],
+      root,
+    );
+
+    assert.notEqual(result.status, 0);
+    assert.match(
+      result.stderr,
+      /Target candidate cannot honor the canonical explicit Workbench entrypoints: missing skills\/executor\/SKILL\.md/,
+    );
+    assert.equal(fs.existsSync(outputRoot), false);
+  });
+
+  await t.test("rejects a canonical skill without frontmatter", async (t) => {
+    const root = await fsp.mkdtemp(path.join(os.tmpdir(), "evaluate-workbench-missing-frontmatter-"));
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+    const target = path.join(root, "candidate");
+    const outputRoot = path.join(root, "output");
+    await writeCanonicalTarget(target);
+    await write(
+      path.join(target, "skills", "executor", "SKILL.md"),
+      "# Executor\n\nExecute a selected goal.\n",
+    );
+
+    const result = runRaw(
+      [
+        "init",
+        "--target",
+        `candidate=${target}`,
+        "--repetitions",
+        "1",
+        "--output-root",
+        outputRoot,
+      ],
+      root,
+    );
+
+    assert.notEqual(result.status, 0);
+    assert.match(
+      result.stderr,
+      /invalid declarations: skills\/executor\/SKILL\.md is missing frontmatter/,
+    );
+    assert.equal(fs.existsSync(outputRoot), false);
+  });
+
+  await t.test("rejects a canonical skill without an explicit name", async (t) => {
+    const root = await fsp.mkdtemp(path.join(os.tmpdir(), "evaluate-workbench-missing-name-"));
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+    const target = path.join(root, "candidate");
+    const outputRoot = path.join(root, "output");
+    await writeCanonicalTarget(target);
+    await write(
+      path.join(target, "skills", "executor", "SKILL.md"),
+      "---\ndescription: Execute a selected goal.\n---\n\n# Executor\n",
+    );
+
+    const result = runRaw(
+      [
+        "init",
+        "--target",
+        `candidate=${target}`,
+        "--repetitions",
+        "1",
+        "--output-root",
+        outputRoot,
+      ],
+      root,
+    );
+
+    assert.notEqual(result.status, 0);
+    assert.match(
+      result.stderr,
+      /invalid declarations: skills\/executor\/SKILL\.md is missing an explicit name/,
+    );
+    assert.equal(fs.existsSync(outputRoot), false);
+  });
+
+  await t.test("rejects a mismatched skill name at the canonical path", async (t) => {
+    const root = await fsp.mkdtemp(path.join(os.tmpdir(), "evaluate-workbench-invalid-name-"));
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+    const target = path.join(root, "candidate");
+    const outputRoot = path.join(root, "output");
+    await writeCanonicalTarget(target);
+    await write(
+      path.join(target, "skills", "executor", "SKILL.md"),
+      "---\nname: runner\ndescription: Execute a selected goal.\n---\n",
+    );
+
+    const result = runRaw(
+      [
+        "init",
+        "--target",
+        `candidate=${target}`,
+        "--repetitions",
+        "1",
+        "--output-root",
+        outputRoot,
+      ],
+      root,
+    );
+
+    assert.notEqual(result.status, 0);
+    assert.match(
+      result.stderr,
+      /invalid names: skills\/executor\/SKILL\.md declares "runner"/,
+    );
+    assert.equal(fs.existsSync(outputRoot), false);
+  });
+});
+
+test("freezes canonical target metadata and judges a solved isolated fixture", async (t) => {
   const root = await fsp.mkdtemp(path.join(os.tmpdir(), "evaluate-workbench-"));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
 
   const target = path.join(root, "renamed-flow");
-  await write(
-    path.join(target, ".codex-plugin", "plugin.json"),
-    `${JSON.stringify({ name: "renamed-workbench", version: "3.2.1", skills: "./skills/" }, null, 2)}\n`,
-  );
-  await write(
-    path.join(target, "skills", "goal-driver", "SKILL.md"),
-    "---\nname: goal-driver\ndescription: Complete a selected goal.\n---\n\n# Goal Driver\n",
-  );
+  await writeCanonicalTarget(target, { version: "3.2.1" });
 
   const initialized = run(
     [
@@ -79,13 +257,32 @@ test("freezes dynamic target metadata and judges a solved isolated fixture", asy
   assert.equal(manifest.execution.clockStopStrategy, "per-agent-parallel-branch");
   assert.equal(manifest.execution.requestedConcurrency, 2);
   assert.equal(manifest.execution.speedMetric, "parallel-load-agent-latency-ms");
+  assert.deepEqual(manifest.invocation, {
+    policy: "explicit-only",
+    brainstorm: "$workbench:brainstorm",
+    executor: "$workbench:executor",
+  });
   assert.deepEqual(manifest.schedule.map((run) => run.dispatchIndex), [1, 2]);
   assert.equal(manifest.targets[0].pluginVersion, "3.2.1");
-  assert.deepEqual(manifest.targets[0].skills.map((skill) => skill.name), ["goal-driver"]);
-  assert.equal(manifest.targets[0].fileCount, 2);
+  assert.deepEqual(
+    manifest.targets[0].skills.map(({ name, declaredName, hasFrontmatter }) => ({
+      name,
+      declaredName,
+      hasFrontmatter,
+    })),
+    [
+      { name: "brainstorm", declaredName: "brainstorm", hasFrontmatter: true },
+      { name: "executor", declaredName: "executor", hasFrontmatter: true },
+    ],
+  );
+  assert.equal(manifest.targets[0].fileCount, 3);
   assert.deepEqual(
     manifest.targets[0].files.map((file) => file.path),
-    [".codex-plugin/plugin.json", "skills/goal-driver/SKILL.md"],
+    [
+      ".codex-plugin/plugin.json",
+      "skills/brainstorm/SKILL.md",
+      "skills/executor/SKILL.md",
+    ],
   );
 
   const prepared = run(
@@ -103,6 +300,7 @@ test("freezes dynamic target metadata and judges a solved isolated fixture", asy
     root,
   );
   assert.equal(prepared.dispatchIndex, 1);
+  assert.match(await fsp.readFile(prepared.input, "utf8"), /^\$workbench:executor\n\n/);
 
   await write(
     path.join(prepared.workspace, "src", "profile-cache.js"),
@@ -164,7 +362,7 @@ test("freezes dynamic target metadata and judges a solved isolated fixture", asy
       "--output-file",
       responsePath,
       "--skill",
-      `goal-driver@${path.join(target, "skills", "goal-driver", "SKILL.md")}`,
+      `executor@${path.join(target, "skills", "executor", "SKILL.md")}`,
     ],
     root,
   );
@@ -200,7 +398,7 @@ test("freezes dynamic target metadata and judges a solved isolated fixture", asy
     path.join(prepared.runDir, "skill-io", "conversation.md"),
     "utf8",
   );
-  assert.match(conversation, /goal-driver/);
+  assert.match(conversation, /executor/);
   assert.match(conversation, /구현과 테스트를 완료했습니다/);
 });
 
@@ -209,14 +407,7 @@ test("calibrates the profile Oracle against the unchanged negative fixture", asy
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
 
   const target = path.join(root, "candidate");
-  await write(
-    path.join(target, ".codex-plugin", "plugin.json"),
-    `${JSON.stringify({ name: "candidate", version: "1.0.0", skills: "./skills/" }, null, 2)}\n`,
-  );
-  await write(
-    path.join(target, "skills", "flow", "SKILL.md"),
-    "---\nname: flow\ndescription: Execute a goal.\n---\n",
-  );
+  await writeCanonicalTarget(target);
   const initialized = run(
     [
       "init",
@@ -263,14 +454,7 @@ test("drives a fixed full-loop dialogue and gates execution on the Goal Contract
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
 
   const target = path.join(root, "candidate");
-  await write(
-    path.join(target, ".codex-plugin", "plugin.json"),
-    `${JSON.stringify({ name: "candidate-workbench", version: "1.0.0", skills: "./skills/" }, null, 2)}\n`,
-  );
-  await write(
-    path.join(target, "skills", "native-flow", "SKILL.md"),
-    "---\nname: native-flow\ndescription: Clarify and execute goals.\n---\n",
-  );
+  await writeCanonicalTarget(target);
 
   const initialized = run(
     [
@@ -301,6 +485,7 @@ test("drives a fixed full-loop dialogue and gates execution on the Goal Contract
     root,
   );
   assert.equal(prepared.benchmarkMode, "full-loop");
+  assert.match(await fsp.readFile(prepared.input, "utf8"), /^\$workbench:brainstorm\n\n/);
   assert.match(await fsp.readFile(prepared.input, "utf8"), /아직 코드는 수정하지 마/);
   assert.equal(fs.existsSync(prepared.controllerState), true);
   assert.equal(fs.existsSync(prepared.controllerScenario), true);
@@ -320,8 +505,9 @@ test("drives a fixed full-loop dialogue and gates execution on the Goal Contract
   assert.equal(answered.action, "reply");
   assert.deepEqual(answered.missingDecisionIds, ["change-boundary"]);
   const answeredText = await fsp.readFile(answered.reply, "utf8");
+  assert.match(answeredText, /^\$workbench:brainstorm\n\n/);
   assert.match(answeredText, /같은 `userId`/);
-  assert.equal(answeredText.indexOf("같은 `userId`"), 0);
+  assert.ok(answeredText.indexOf("같은 `userId`") > 0);
 
   const objected = run(
     ["scenario-reply", "--run-dir", prepared.runDir, "--finalize-attempt", "true"],
@@ -335,6 +521,7 @@ test("drives a fixed full-loop dialogue and gates execution on the Goal Contract
     root,
   );
   assert.equal(contractRequest.action, "request-contract");
+  assert.match(await fsp.readFile(contractRequest.reply, "utf8"), /^\$workbench:brainstorm\n\n/);
   assert.match(await fsp.readFile(contractRequest.reply, "utf8"), /목표, 완료 조건/);
 
   const contractFile = path.join(root, "goal-contract.md");
@@ -359,6 +546,7 @@ test("drives a fixed full-loop dialogue and gates execution on the Goal Contract
     root,
   );
   assert.equal(contract.status, "PASS");
+  assert.match(await fsp.readFile(contract.executeInput, "utf8"), /^\$workbench:executor\n\n/);
   assert.match(await fsp.readFile(contract.executeInput, "utf8"), /방금 합의한 내용만 기준/);
 
   await write(
@@ -438,6 +626,7 @@ test("drives a fixed full-loop dialogue and gates execution on the Goal Contract
     ],
     root,
   );
+  assert.match(await fsp.readFile(uiPrepared.input, "utf8"), /^\$workbench:brainstorm\n\n/);
   assert.match(await fsp.readFile(uiPrepared.input, "utf8"), /아직 코드는 수정하지 마/);
   run(
     [
@@ -498,14 +687,7 @@ test("rejects a full-loop contract when the target edits before execution approv
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
 
   const target = path.join(root, "candidate");
-  await write(
-    path.join(target, ".codex-plugin", "plugin.json"),
-    `${JSON.stringify({ name: "candidate", version: "1.0.0", skills: "./skills/" }, null, 2)}\n`,
-  );
-  await write(
-    path.join(target, "skills", "flow", "SKILL.md"),
-    "---\nname: flow\ndescription: Clarify and execute a goal.\n---\n",
-  );
+  await writeCanonicalTarget(target);
   const initialized = run(
     [
       "init",
@@ -588,14 +770,7 @@ test("requests all twenty standard comparison runs in one parallel batch", async
   const targets = [];
   for (const label of ["current", "v1"]) {
     const target = path.join(root, label);
-    await write(
-      path.join(target, ".codex-plugin", "plugin.json"),
-      `${JSON.stringify({ name: `${label}-workbench`, version: "1.0.0", skills: "./skills/" }, null, 2)}\n`,
-    );
-    await write(
-      path.join(target, "skills", "flow", "SKILL.md"),
-      `---\nname: ${label}-flow\ndescription: Complete a selected goal.\n---\n`,
-    );
+    await writeCanonicalTarget(target);
     targets.push(`${label}=${target}`);
   }
 
@@ -643,14 +818,7 @@ test("aborts and refuses to summarize a partially launched parallel batch", asyn
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
 
   const target = path.join(root, "candidate");
-  await write(
-    path.join(target, ".codex-plugin", "plugin.json"),
-    `${JSON.stringify({ name: "candidate-workbench", version: "1.0.0", skills: "./skills/" }, null, 2)}\n`,
-  );
-  await write(
-    path.join(target, "skills", "flow", "SKILL.md"),
-    "---\nname: flow\ndescription: Complete a selected goal.\n---\n",
-  );
+  await writeCanonicalTarget(target);
 
   const initialized = run(
     [

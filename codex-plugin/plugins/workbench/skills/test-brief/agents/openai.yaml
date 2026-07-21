@@ -1,4 +1,7 @@
 interface:
   display_name: "Test Brief"
   short_description: "Turn a goal into optional verification criteria"
-  default_prompt: "Use $test-brief when this goal needs a test or measurement contract before or after execution."
+  default_prompt: "Use $workbench:test-brief when this goal needs a test or measurement contract before or after execution."
+
+policy:
+  allow_implicit_invocation: false

@@ -70,4 +70,4 @@ Default project documents are placeholders for current project knowledge. They s
 
 ## Generated Output
 
-`generated/` is owned by `dev-wiki-lint` and stores derived indexes, link graphs, health reports, and normalization proposals. Do not hand-edit generated files or create manual tag indexes beside them.
+`generated/` is owned by the lint mode of `$workbench:dev-wiki` and stores derived indexes, link graphs, health reports, and normalization proposals. Do not hand-edit generated files or create manual tag indexes beside them.

@@ -5,12 +5,13 @@ description: Controlled performance benchmarking for one or more arbitrary Workb
 
 # Evaluate Workbench
 
-Compare observable outcomes produced by Workbench targets under the same controlled user state. Default to the full interaction from an incomplete request through Goal Contract agreement and implementation. Keep the existing explicit-goal implementation cases as an optional executor-only component benchmark.
+Compare observable outcomes produced by Workbench targets under the same controlled user state. Every target turn uses the canonical explicit selectors: `$workbench:brainstorm` for goal dialogue and `$workbench:executor` for implementation. Default to the full interaction from an incomplete request through Goal Contract agreement and implementation. Keep the existing explicit-goal implementation cases as an optional executor-only component benchmark.
 
 ## Boundaries
 
 - This is an explicit, relatively expensive benchmark. Do NOT invoke it implicitly.
-- Accept arbitrary auditable `label=absolute-plugin-root` targets. Do NOT assume skill names, shared stages, or a fixed internal flow.
+- Accept auditable `label=absolute-plugin-root` Workbench targets that expose the canonical `brainstorm` and `executor` skills. Do not compare a target that cannot honor the explicit `$workbench:brainstorm` and `$workbench:executor` entrypoints.
+- A target path records evidence; it does not rebind the `$workbench` namespace. Before dispatch, verify that each target agent's installed `$workbench` plugin is the exact target version. If two versions cannot be installed in separate agent environments, stop instead of reporting a cross-version comparison.
 - Use only the fixed `profile-cache-dedupe` and `optimistic-favorite-ui` cases. Do NOT tune a prompt, scenario response, or Oracle for a target.
 - Run exactly one mode per session:
   - `full-loop` (default): incomplete request → controlled dialogue → Goal Contract → same-thread execution → artifact.
@@ -33,7 +34,7 @@ Resolve:
 - Output root: default to `<active-workspace>/output/evaluate`.
 - Concurrency: request one open agent slot per scheduled run. Two targets × two cases × five repetitions requires 20 slots.
 
-If a target root is ambiguous, ask only for that path. Do not substitute a cache or legacy target. Run separate sessions when comparing modes; do not mix their scores.
+If a target root is ambiguous, ask only for that path. Do not substitute a cache or legacy target. Run separate sessions when comparing modes; do not mix their scores. A fresh workspace or thread alone does not isolate plugin installation.
 
 ## Initialize and prepare
 
@@ -69,7 +70,7 @@ Build every launch payload in schedule order, then submit all `spawn_agent` call
 1. Start its run clock.
 2. Immediately spawn a fresh subagent without inherited conversation context.
 
-Give the subagent only its workspace, `input.md`, selected target root, and the target envelope from [subagent-protocol.md](references/subagent-protocol.md). Tell it to discover the target's native flow; do not name expected skills.
+Give the subagent only its workspace, `input.md`, selected target root, and the target envelope from [subagent-protocol.md](references/subagent-protocol.md). Each generated input explicitly names the Workbench skill for that turn; tell the agent to honor that selector against the selected target.
 
 If any spawn fails or every requested slot is unavailable, close all spawned agents, stop all clocks, and abort the session:
 
@@ -122,7 +123,7 @@ node <this-skill>/scripts/benchmark-runner.mjs record-contract \
   --uncertain <mapping-description>
 ```
 
-- `PASS`: every required decision is matched with no contradiction, invented material decision, or premature workspace edit. Send the returned `executeInput` unchanged to the same agent thread.
+- `PASS`: every required decision is matched with no contradiction, invented material decision, or premature workspace edit. Send the returned `executeInput`, which explicitly invokes `$workbench:executor`, unchanged to the same agent thread.
 - `FAIL`: finish as `CONTRACT_FAIL`; do not execute an unaccepted contract.
 - `EVAL_INVALID`: exclude the run from comparison. Use this whenever semantic mapping is genuinely uncertain; do not turn evaluator uncertainty into target failure.
 

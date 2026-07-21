@@ -1,7 +1,7 @@
 interface:
   display_name: "OpenAPI"
   short_description: "Register, search, and test Swagger APIs."
-  default_prompt: "Use $openapi to register Swagger services, find candidate APIs, or test registered endpoints."
+  default_prompt: "Use $workbench:openapi to register Swagger services, find candidate APIs, or test registered endpoints."
 dependencies:
   tools:
     - type: "mcp"
@@ -9,4 +9,4 @@ dependencies:
       description: "Local OpenAPI MCP server for registering and searching Swagger/OpenAPI specs"
       transport: "stdio"
 policy:
-  allow_implicit_invocation: true
+  allow_implicit_invocation: false

@@ -1,11 +1,11 @@
 ---
 name: visual-grounding
-description: Visual and interaction grounding workflow for UI implementation work. Use when the user wants Codex to compare a Figma frame, source website, reference screenshot, or reported UI interaction against a local implementation route so the AI can identify actionable visual differences, interaction failures, and likely UI issues. Triggers include "visual grounding", "visual compare", "interaction grounding", "Figma와 비교", "원본 UI와 비교", "현재 구현 화면 비교", "디자인 보고 수정", "드래그/클릭/포커스 확인", or when a frontend task has a clear source UI, target route, or interaction symptom.
+description: Explicit-invocation-only visual and interaction grounding for UI work. Invoke only as `$workbench:visual-grounding`. Compare a Figma frame, source website, reference screenshot, or reported interaction against a local implementation route to identify actionable visual differences, interaction failures, and likely UI issues.
 ---
 
 # Visual Grounding
 
-Use this skill to help Codex see what to fix in UI work by building a grounded evidence package: source UI evidence, target implementation evidence, matched regions, interaction observations, difference candidates, confidence, and code/selector hints.
+Run this skill only when the user explicitly invokes `$workbench:visual-grounding`. Build a grounded UI evidence package containing source evidence, target implementation evidence, matched regions, interaction observations, difference candidates, confidence, and code or selector hints.
 
 This is not a pixel-perfect approval gate. The goal is to produce a small set of findings that are specific enough for an implementation agent to act on.
 
@@ -108,7 +108,7 @@ When the task includes a UI interaction symptom such as drag, click, focus, scro
    - bounding box or pixel deltas for drag/resize/move behavior
 6. For flaky symptoms, repeat the interaction enough times to report a frequency, such as `4/6 failed`, and repeat the same measurement after a fix. Note when the sample is directional rather than conclusive.
 7. Compare runtime modes when they may affect UI behavior: dev/prod, StrictMode, HMR/fresh server, browser, viewport, device scale factor, reduced motion, or mobile/touch emulation.
-8. If external observation cannot distinguish causes, recommend a narrow temporary source probe for `executor` rather than guessing from screenshots.
+8. If external observation cannot distinguish causes, recommend a narrow temporary source probe and tell the user to invoke `$workbench:executor` rather than guessing from screenshots. Never invoke it automatically.
 
 Interaction findings should separate:
 

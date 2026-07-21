@@ -1,4 +1,7 @@
 interface:
   display_name: "Branch Work Report"
   short_description: "Report branch work commit by commit."
-  default_prompt: "Use $branch-work-report to summarize the current work branch by commit with feedback."
+  default_prompt: "Use $workbench:branch-work-report to summarize the current work branch by commit with feedback."
+
+policy:
+  allow_implicit_invocation: false

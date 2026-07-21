@@ -21,6 +21,8 @@ SERVICES_FILE = ENV.fetch("OPENAPI_MCP_SERVICES_FILE", DEFAULT_SERVICES_FILE)
 CACHE_DIR = ENV.fetch("OPENAPI_MCP_CACHE_DIR", File.expand_path("~/.codex/cache/openapi-mcp"))
 TIMEOUT_SEC = Integer(ENV.fetch("OPENAPI_MCP_TIMEOUT_SEC", "20"))
 RESPONSE_BODY_LIMIT_BYTES = Integer(ENV.fetch("OPENAPI_MCP_RESPONSE_BODY_LIMIT_BYTES", "200000"))
+# Increment when normalized documents or the cache bundle format become incompatible.
+CACHE_SCHEMA_VERSION = 1
 
 HTTP_METHODS = %w[get put post delete patch options head trace].freeze
 SENSITIVE_HEADER_NAMES = %w[
@@ -278,7 +280,7 @@ class OpenApiMcp
       servicesFile: SERVICES_FILE,
       cacheDir: CACHE_DIR,
       services: @services.map do |svc|
-        docs = cached_docs_for(svc.fetch("id"))
+        docs = cached_docs_for(svc)
         endpoints = docs.sum { |doc| doc.fetch("endpoints", []).length }
         {
           id: svc.fetch("id"),
@@ -303,11 +305,13 @@ class OpenApiMcp
     }
     candidate["apiBaseUrl"] = api_base_url.to_s if api_base_url.to_s != ""
     normalized = normalize_service_config(candidate)
+    existing = @services.find { |svc| svc.fetch("id") == normalized.fetch("id") }
 
     services = @services.reject { |svc| svc.fetch("id") == normalized.fetch("id") }
     services << normalized
     write_services(services)
     @services = load_services
+    remove_service_cache(normalized.fetch("id")) if existing.nil? || source_fingerprint(existing) != source_fingerprint(normalized)
 
     {
       servicesFile: SERVICES_FILE,
@@ -321,6 +325,7 @@ class OpenApiMcp
     services = @services.reject { |svc| svc.fetch("id") == service_id }
     write_services(services)
     @services = load_services
+    remove_service_cache(service_id)
 
     {
       servicesFile: SERVICES_FILE,
@@ -444,45 +449,67 @@ class OpenApiMcp
         headers: mask_sensitive_headers(headers),
         body: body_provided ? mask_sensitive_body(body) : nil
       }.compact,
+      # Endpoint response bodies remain unmasked (subject to the response-size limit) and never enter the spec cache.
       response: summarize_http_response(response),
       durationMs: duration_ms
     }
   end
 
   def refresh_one_service(svc)
+    existing_docs = cached_docs_for(svc)
+    stale_by_url = existing_docs.to_h { |doc| [document_identity(doc.fetch("documentUrl")), doc] }
     discovered = discover_documents(svc.fetch("swaggerUrl"))
+    cached_docs = []
     docs = discovered.map do |document|
-      spec = fetch_spec(document.fetch(:url))
-      normalized = normalize_document(svc, document, spec)
-      write_cache(svc.fetch("id"), document, normalized)
-      {
-        name: document.fetch(:name),
-        url: document.fetch(:url),
-        endpoints: normalized.fetch("endpoints").length,
-        ok: true
-      }
-    rescue StandardError => e
-      stale = stale_cached_document(svc.fetch("id"), document)
-      if stale
-        stale["stale"] = true
-        write_cache(svc.fetch("id"), document, stale)
+      begin
+        spec = document[:spec] || fetch_spec(document.fetch(:url))
+        normalized = normalize_document(svc, document, spec)
+        cached_docs << normalized
         {
           name: document.fetch(:name),
           url: document.fetch(:url),
-          endpoints: stale.fetch("endpoints", []).length,
+          endpoints: normalized.fetch("endpoints").length,
+          ok: true
+        }
+      rescue StandardError => e
+        stale = stale_by_url[document_identity(document.fetch(:url))]&.dup
+        if stale
+          stale["stale"] = true
+          cached_docs << stale
+          {
+            name: document.fetch(:name),
+            url: document.fetch(:url),
+            endpoints: stale.fetch("endpoints", []).length,
+            ok: false,
+            stale: true,
+            error: "#{e.class}: #{e.message}"
+          }
+        else
+          {
+            name: document.fetch(:name),
+            url: document.fetch(:url),
+            ok: false,
+            error: "#{e.class}: #{e.message}"
+          }
+        end
+      end
+    end
+
+    if cached_docs.empty? && existing_docs.any?
+      refresh_error = docs.map { |doc| doc[:error] }.compact.first
+      cached_docs = existing_docs.map { |doc| doc.merge("stale" => true) }
+      docs = cached_docs.map do |doc|
+        {
+          name: doc["documentName"],
+          url: doc["documentUrl"],
+          endpoints: doc.fetch("endpoints", []).length,
           ok: false,
           stale: true,
-          error: "#{e.class}: #{e.message}"
-        }
-      else
-        {
-          name: document.fetch(:name),
-          url: document.fetch(:url),
-          ok: false,
-          error: "#{e.class}: #{e.message}"
+          error: refresh_error || "No OpenAPI document refreshed successfully."
         }
       end
     end
+    write_service_cache(svc, cached_docs)
 
     {
       service: svc.fetch("id"),
@@ -490,28 +517,59 @@ class OpenApiMcp
       documents: docs,
       ok: docs.any? { |doc| doc[:ok] || doc[:stale] }
     }
+  rescue StandardError => e
+    stale_docs = existing_docs.map { |doc| doc.merge("stale" => true) }
+    write_service_cache(svc, stale_docs)
+    {
+      service: svc.fetch("id"),
+      swaggerUrl: svc.fetch("swaggerUrl"),
+      documents: if stale_docs.empty?
+                   [{ ok: false, error: "#{e.class}: #{e.message}" }]
+                 else
+                   stale_docs.map do |doc|
+                     {
+                       name: doc["documentName"],
+                       url: doc["documentUrl"],
+                       endpoints: doc.fetch("endpoints", []).length,
+                       ok: false,
+                       stale: true,
+                       error: "#{e.class}: #{e.message}"
+                     }
+                   end
+                 end,
+      ok: stale_docs.any?
+    }
   end
 
   def ensure_cache(service_id = nil)
     services = service_id ? [service!(service_id)] : @services
-    missing = services.select { |svc| cached_docs_for(svc.fetch("id")).empty? }
+    missing = services.select { |svc| cached_docs_for(svc).empty? }
     missing.each { |svc| refresh_one_service(svc) }
   end
 
   def docs_for_scope(service_id = nil)
-    ids = service_id ? [service!(service_id).fetch("id")] : service_ids
-    ids.flat_map { |id| cached_docs_for(id) }
+    services = service_id ? [service!(service_id)] : @services
+    services.flat_map { |svc| cached_docs_for(svc) }
   end
 
   def discover_documents(swagger_url)
     base_uri = URI(swagger_url)
-    html = fetch_text(base_uri)
-    docs = extract_swagger_urls(html, base_uri)
+    source = fetch_text(base_uri)
+    direct_spec = parse_openapi_text(source)
+    if openapi_document?(direct_spec)
+      return [{ url: base_uri.to_s, name: direct_spec.dig("info", "title") || "-", spec: direct_spec }]
+    end
+
+    docs = extract_swagger_urls(source, base_uri)
 
     if docs.empty?
       initializer_uri = URI.join(swagger_url.end_with?("/") ? swagger_url : "#{swagger_url}/", "swagger-initializer.js")
-      initializer = fetch_text(initializer_uri)
-      docs = extract_swagger_urls(initializer, initializer_uri)
+      begin
+        initializer = fetch_text(initializer_uri)
+        docs = extract_swagger_urls(initializer, initializer_uri)
+      rescue StandardError
+        docs = []
+      end
     end
 
     docs = default_document_candidates(base_uri) if docs.empty?
@@ -561,15 +619,25 @@ class OpenApiMcp
   end
 
   def fetch_spec(url)
-    raw = normalize_document_text(fetch_text(URI(url)))
-    parsed = if raw.lstrip.start_with?("{", "[")
-               JSON.parse(raw)
-             else
-               YAML.safe_load(raw, permitted_classes: [Date, Time], aliases: true)
-             end
-    raise "Fetched document is not an OpenAPI object" unless parsed.is_a?(Hash)
+    parsed = parse_openapi_text(fetch_text(URI(url)))
+    raise "Fetched document is not an OpenAPI object" unless openapi_document?(parsed)
 
     parsed
+  end
+
+  def parse_openapi_text(text)
+    raw = normalize_document_text(text)
+    if raw.lstrip.start_with?("{", "[")
+      JSON.parse(raw)
+    else
+      YAML.safe_load(raw, permitted_classes: [Date, Time], aliases: true)
+    end
+  rescue JSON::ParserError, Psych::Exception
+    nil
+  end
+
+  def openapi_document?(value)
+    value.is_a?(Hash) && (value["openapi"].to_s != "" || value["swagger"].to_s != "")
   end
 
   def fetch_text(uri)
@@ -1091,31 +1159,122 @@ class OpenApiMcp
     value
   end
 
-  def cached_docs_for(service_id)
-    map_present(Dir[File.join(CACHE_DIR, "#{service_id}-*.json")].sort) do |path|
-      JSON.parse(File.read(path))
-    rescue JSON::ParserError
-      nil
-    end
+  def cached_docs_for(service)
+    svc = service.is_a?(Hash) ? service : @services.find { |item| item.fetch("id") == service }
+    return [] unless svc
+
+    record = read_service_cache(svc)
+    record ? refresh_cached_presentation(svc, record.fetch("documents")) : []
   end
 
-  def stale_cached_document(service_id, document)
-    cache_path = cache_path_for(service_id, document)
-    return nil unless File.exist?(cache_path)
+  def refresh_cached_presentation(svc, documents)
+    documents.each do |doc|
+      next unless doc.is_a?(Hash)
 
-    JSON.parse(File.read(cache_path))
-  rescue JSON::ParserError
+      doc["serviceName"] = svc.fetch("name")
+      document_url = doc["documentUrl"]
+      if document_url && document_identity(document_url) == document_identity(svc.fetch("swaggerUrl"))
+        document_url = svc.fetch("swaggerUrl")
+        doc["documentUrl"] = document_url
+      end
+      document = { name: doc["documentName"], url: document_url }
+      Array(doc["endpoints"]).each do |endpoint|
+        next unless endpoint.is_a?(Hash)
+
+        operation = { "tags" => endpoint["tags"], "operationId" => endpoint["operationId"] }
+        endpoint["documentUrl"] = document_url
+        endpoint["urls"] = endpoint_urls(svc, document, endpoint["path"], endpoint["method"], operation)
+      end
+    end
+    documents
+  end
+
+  def read_service_cache(svc)
+    path = service_cache_path(svc.fetch("id"))
+    return nil unless File.exist?(path)
+
+    record = JSON.parse(File.read(path))
+    return nil unless record.is_a?(Hash) && record["documents"].is_a?(Array)
+    return nil unless cache_manifest_matches?(record["manifest"], svc)
+
+    record
+  rescue JSON::ParserError, Errno::ENOENT
     nil
   end
 
-  def write_cache(service_id, document, data)
+  def write_service_cache(svc, documents)
     FileUtils.mkdir_p(CACHE_DIR)
-    File.write(cache_path_for(service_id, document), JSON.pretty_generate(data))
+    path = service_cache_path(svc.fetch("id"))
+    temporary_path = "#{path}.tmp-#{Process.pid}-#{Thread.current.object_id}"
+    record = {
+      "manifest" => cache_manifest(svc),
+      "documents" => documents
+    }
+    File.write(temporary_path, JSON.pretty_generate(record) + "\n")
+    File.rename(temporary_path, path)
+    remove_legacy_cache_files(svc.fetch("id"))
+  ensure
+    FileUtils.rm_f(temporary_path) if defined?(temporary_path) && temporary_path
   end
 
-  def cache_path_for(service_id, document)
-    digest = Digest::SHA256.hexdigest(document.fetch(:url))[0, 16]
-    File.join(CACHE_DIR, "#{service_id}-#{digest}.json")
+  def remove_service_cache(service_id)
+    FileUtils.rm_f(service_cache_path(service_id))
+    remove_legacy_cache_files(service_id)
+  end
+
+  def remove_legacy_cache_files(service_id)
+    legacy_name = /\A#{Regexp.escape(service_id)}-[0-9a-f]{16}\.json\z/
+    Dir[File.join(CACHE_DIR, "#{service_id}-*.json")].each do |path|
+      FileUtils.rm_f(path) if File.basename(path).match?(legacy_name)
+    end
+  end
+
+  def service_cache_path(service_id)
+    File.join(CACHE_DIR, "#{service_id}.cache.json")
+  end
+
+  def cache_manifest(svc)
+    {
+      "serviceId" => svc.fetch("id"),
+      "canonicalSwaggerUrl" => canonical_url(svc.fetch("swaggerUrl")),
+      "effectiveApiBaseUrl" => effective_api_base_url(svc),
+      "sourceFingerprint" => source_fingerprint(svc),
+      "cacheSchemaVersion" => CACHE_SCHEMA_VERSION,
+      "refreshedAt" => Time.now.utc.iso8601
+    }
+  end
+
+  def cache_manifest_matches?(manifest, svc)
+    return false unless manifest.is_a?(Hash)
+
+    expected = cache_manifest(svc)
+    %w[serviceId canonicalSwaggerUrl effectiveApiBaseUrl sourceFingerprint cacheSchemaVersion].all? do |key|
+      manifest[key] == expected[key]
+    end
+  end
+
+  def source_fingerprint(svc)
+    identity = {
+      "canonicalSwaggerUrl" => canonical_url(svc.fetch("swaggerUrl")),
+      "effectiveApiBaseUrl" => effective_api_base_url(svc)
+    }
+    Digest::SHA256.hexdigest(JSON.generate(identity))
+  end
+
+  def effective_api_base_url(svc)
+    canonical_url(svc["apiBaseUrl"] || root_url(svc.fetch("swaggerUrl"))).sub(%r{/+\z}, "")
+  end
+
+  def canonical_url(url)
+    uri = URI(url.to_s.strip)
+    uri.fragment = nil
+    uri.normalize.to_s
+  end
+
+  def document_identity(url)
+    canonical_url(url)
+  rescue URI::InvalidURIError
+    url.to_s
   end
 
   def map_present(items)

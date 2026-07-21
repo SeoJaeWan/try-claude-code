@@ -1,6 +1,6 @@
 # Dev Wiki Maintenance Pipeline
 
-Use the same maintenance shape as `plan-wiki-lint`, with project-specific checks.
+Use `$workbench:dev-wiki` in lint mode for this maintenance pipeline, with project-specific checks.
 
 ## Pipeline
 
@@ -15,7 +15,7 @@ Use the same maintenance shape as `plan-wiki-lint`, with project-specific checks
 
 - Project documents should identify the project through frontmatter or `project.json`.
 - `conventions/`, `architecture/`, and `workflows/` are policy/prose areas.
-- `graph/` is generated repository evidence and is owned by `dev-wiki-graph`.
+- `graph/` is generated repository evidence and is owned by the graph mode of `$workbench:dev-wiki`.
 - Generated graph evidence must not be rewritten into mandatory policy unless the user confirms the rule.
 - Missing `type` is a health issue, but not automatically a reason to invent policy.
 

@@ -1,4 +1,7 @@
 interface:
   display_name: "Brainstorm"
   short_description: "Build a goal contract through dialogue and evidence"
-  default_prompt: "Use $brainstorm to clarify the goal, collect useful evidence, and prepare an explicit execution contract."
+  default_prompt: "Use $workbench:brainstorm to clarify the goal, collect useful evidence, and prepare an explicit execution contract."
+
+policy:
+  allow_implicit_invocation: false

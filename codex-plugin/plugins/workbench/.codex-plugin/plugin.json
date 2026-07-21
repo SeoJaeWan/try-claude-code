@@ -1,7 +1,7 @@
 {
   "name": "workbench",
-  "version": "0.1.0+codex.20260719050300",
-  "description": "Goal-centered Workbench for evidence briefs, decision dialogue, explicit execution, optional verification, OpenAPI, visual grounding, and dev wiki context.",
+  "version": "0.1.0+codex.20260721023130",
+  "description": "Explicitly invoked Workbench skills for evidence briefs, decision dialogue, scoped execution, OpenAPI, visual grounding, and dev wiki context.",
   "author": {
     "name": "Local developer"
   },
@@ -10,7 +10,7 @@
   "interface": {
     "displayName": "Workbench",
     "shortDescription": "Shape, report, and execute scoped work.",
-    "longDescription": "Workbench provides a flexible goal-centered workflow for Codex: organize Jira/Figma/API/user evidence, clarify goals and completion conditions through dialogue, use optional evidence providers, execute an explicit Goal Contract with automatic project dev wiki context, and verify the result with tests, API checks, UI grounding, or branch reporting when needed.",
+    "longDescription": "Workbench provides explicitly invoked skills for Codex: organize Jira/Figma/API/user evidence, clarify goals and completion conditions through dialogue, execute a Goal Contract with project dev wiki context, and verify the result with tests, API checks, UI grounding, or branch reporting when requested.",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [
@@ -24,13 +24,9 @@
       "OpenAPI registry"
     ],
     "defaultPrompt": [
-      "Use $issue-brief to organize this Jira, Figma, API, QA, or user-provided context without inventing an implementation plan.",
-      "Use $brainstorm to clarify the goal, collect useful evidence, and prepare an explicit Goal Contract.",
-      "Use $branch-work-report to summarize the current work branch by commit with feedback.",
-      "Use $visual-grounding to compare a Figma or source UI against a local route and identify actionable UI fixes.",
-      "Use $executor to execute an explicit Goal Contract with automatic project dev wiki context and completion checks.",
-      "Use $openapi to register Swagger services or find candidate APIs.",
-      "Use $test-brief when a goal needs an optional test or measurement contract."
+      "Use $workbench:brainstorm to clarify a goal and prepare a Goal Contract.",
+      "Use $workbench:executor to execute an explicit goal with completion checks.",
+      "Use $workbench:openapi to register, inspect, or test a Swagger/OpenAPI service."
     ],
     "brandColor": "#2563EB"
   }

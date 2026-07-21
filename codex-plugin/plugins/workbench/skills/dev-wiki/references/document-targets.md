@@ -2,7 +2,7 @@
 
 Use this routing table when deciding where a user-provided rule belongs.
 
-Do not route updates to `{project}/graph/`; graph artifacts are owned by `dev-wiki-graph`.
+Do not route updates to `{project}/graph/`; graph artifacts are owned by the graph mode of `$workbench:dev-wiki`.
 
 | Rule type | Primary target |
 | --- | --- |
@@ -24,4 +24,4 @@ Do not route updates to `{project}/graph/`; graph artifacts are owned by `dev-wi
 | Branch naming, PR target, merge style, commit message, hotfix Git procedure | `workflows/git.md` |
 | Release, versioning, deployment, migration operation | `workflows/release.md` |
 
-For repository-derived observations or schema-wide refreshes, use `dev-wiki-sync`.
+For repository-derived observations or schema-wide refreshes, use `$workbench:dev-wiki` in audit mode first, then continue in update mode only after explicit approval.

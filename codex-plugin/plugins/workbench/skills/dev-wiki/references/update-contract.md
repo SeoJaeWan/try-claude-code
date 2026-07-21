@@ -27,7 +27,7 @@ For each rule:
 5. Remove or reconcile contradiction when the new rule supersedes old guidance.
 6. Leave Git diff as the history.
 
-For repository-wide inference or stale wiki cleanup, stop and route to `dev-wiki-sync`.
+For repository-wide inference or stale wiki cleanup, stop and use `$workbench:dev-wiki` in audit mode first. Continue in update mode only after explicit approval.
 
 ## Writing Shape
 

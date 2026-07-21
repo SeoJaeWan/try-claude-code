@@ -6,6 +6,8 @@ The evaluating parent owns the complete Codex agent lifecycle. The local runner 
 
 Start one fresh target agent per `(target, benchmark, attempt)` without inherited conversation context. Prepare all workspaces and payloads first, then submit every spawn in one parallel orchestration using the balanced manifest order.
 
+A fresh agent thread does not by itself change the installed plugin binding. Dispatch only when `$workbench:*` resolves to the exact selected target in that agent environment. If same-named target versions cannot be independently installed, abort the comparison.
+
 Give each agent only:
 
 - its isolated fixture workspace;
@@ -13,7 +15,7 @@ Give each agent only:
 - the generated `input.md`;
 - the mode-specific envelope below.
 
-Do not name expected target skills. Tell the agent to inspect its selected target's manifest and skill metadata and use that target's native flow. Prohibit access to another target, evaluator files, hidden scenario state, Oracles, prior output, and sibling runs.
+Every generated user input explicitly names `$workbench:brainstorm` or `$workbench:executor`. Tell the agent to inspect the selected target's matching skill metadata and honor that selector. Prohibit access to another target, evaluator files, hidden scenario state, Oracles, prior output, and sibling runs.
 
 Track each returned agent ID against one run directory. Reuse that same agent for every follow-up in the run. Completed-but-open agents retain context and consume concurrency, so close them only after the final response is recorded.
 
@@ -23,7 +25,7 @@ Use this common envelope:
 
 ```text
 Work only in <workspace>.
-Use only the Workbench target at <target-root>. Discover and follow that target's native skills and flow without assuming skill names.
+Use only the Workbench target at <target-root>. Follow the explicit `$workbench:brainstorm` or `$workbench:executor` selector in each user input and load the matching skill from this target.
 Do not inspect evaluate-workbench, controller/scenario files, Oracle files, prior attempts, sibling targets, or output outside this run.
 Do not commit, push, publish, call production services, add dependencies, or change files outside the isolated workspace.
 Treat each follow-up from the evaluating conversation as the same user's next message.

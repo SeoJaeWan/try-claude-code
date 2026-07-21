@@ -20,7 +20,7 @@ For direct Workbench consumers such as `brainstorm` and `executor`, resolve the 
 2. When no mapping exists, use an unambiguous `source/{workspace-basename}` folder whose `project.json` matches the folder name.
 3. If neither resolution is exact, treat the dev wiki as unavailable.
 
-Do not create, clone, pull, repair, refresh, or rewrite the source clone from a downstream planning or execution role. `$dev-wiki` owns setup, freshness, and repair. Reading an already-existing exact project folder does not change dev-wiki opt-in state.
+Do not create, clone, pull, repair, refresh, or rewrite the source clone from a downstream planning or execution role. `$workbench:dev-wiki` owns setup, freshness, and repair. Reading an already-existing exact project folder does not change dev-wiki opt-in state.
 
 ## Standard Documents
 
@@ -42,8 +42,9 @@ Common starting points:
 - `workflows/test-and-quality.md`
 - `graph/overview.md`
 - `graph/architecture-map.md`
-- `graph/symbol-map.md`
-- `graph/call-map.md`
+- `graph/symbol-map.md` (compiler-grade symbol analysis is intentionally unavailable)
+- `graph/call-map.md` (test connections and call-analysis limits only)
+- `graph/impact-map.md`
 - `graph/external-boundaries.md`
 
 ## Precedence

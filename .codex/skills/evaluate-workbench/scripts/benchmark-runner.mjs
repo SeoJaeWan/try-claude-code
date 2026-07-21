@@ -12,6 +12,23 @@ const skillRoot = path.resolve(scriptDir, "..");
 const benchmarkRoot = path.join(skillRoot, "assets", "benchmarks");
 const benchmarkIds = ["profile-cache-dedupe", "optimistic-favorite-ui"];
 const benchmarkModes = ["full-loop", "executor-only"];
+const explicitInvocations = Object.freeze({
+  brainstorm: "$workbench:brainstorm",
+  executor: "$workbench:executor",
+});
+const canonicalSkillEntrypoints = Object.freeze([
+  { name: "brainstorm", path: "skills/brainstorm/SKILL.md" },
+  { name: "executor", path: "skills/executor/SKILL.md" },
+]);
+
+function explicitSkillInput(skill, content) {
+  const invocation = explicitInvocations[skill];
+  if (!invocation) throw new Error(`Unknown explicit Workbench skill: ${skill}`);
+  const trimmed = content.trim();
+  return trimmed.startsWith(invocation)
+    ? `${trimmed}\n`
+    : `${invocation}\n\n${trimmed}\n`;
+}
 
 function usage() {
   return `Usage:
@@ -151,10 +168,15 @@ async function walkFiles(root, predicate = () => true) {
   return found;
 }
 
-function parseSkillName(content, fallback) {
-  const frontmatter = content.match(/^---\s*\n([\s\S]*?)\n---/);
-  const name = frontmatter?.[1].match(/^name:\s*["']?([^"'\n]+)["']?\s*$/m)?.[1]?.trim();
-  return name || fallback;
+function parseSkillIdentity(content, fallback) {
+  const frontmatter = content.match(/^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/);
+  const declaredName = frontmatter?.[1]
+    .match(/^name:[ \t]*["']?([^"'\r\n]+)["']?[ \t]*\r?$/m)?.[1]?.trim() || null;
+  return {
+    name: declaredName || fallback,
+    declaredName,
+    hasFrontmatter: frontmatter !== null,
+  };
 }
 
 async function describeTarget(raw) {
@@ -182,8 +204,12 @@ async function describeTarget(raw) {
     const digest = sha256(content);
     files.push({ path: relative, sha256: digest });
     if (relative.endsWith("/SKILL.md")) {
+      const identity = parseSkillIdentity(
+        content.toString("utf8"),
+        path.basename(path.dirname(filePath)),
+      );
       skills.push({
-        name: parseSkillName(content.toString("utf8"), path.basename(path.dirname(filePath))),
+        ...identity,
         path: relative,
         sha256: digest,
       });
@@ -200,6 +226,45 @@ async function describeTarget(raw) {
     files,
     skills,
   };
+}
+
+function validateCanonicalWorkbenchTarget(target) {
+  if (target.pluginName !== "workbench") {
+    const found = target.pluginName === null ? "missing" : JSON.stringify(target.pluginName);
+    throw new Error(
+      `Target ${target.id} must use plugin manifest name "workbench" for explicit selectors; found ${found}`,
+    );
+  }
+
+  const missing = [];
+  const invalidDeclarations = [];
+  const invalidNames = [];
+  for (const entrypoint of canonicalSkillEntrypoints) {
+    const skill = target.skills.find(
+      (candidate) => candidate.path.split(path.sep).join("/") === entrypoint.path,
+    );
+    if (!skill) {
+      missing.push(entrypoint.path);
+    } else if (!skill.hasFrontmatter) {
+      invalidDeclarations.push(`${entrypoint.path} is missing frontmatter`);
+    } else if (skill.declaredName === null) {
+      invalidDeclarations.push(`${entrypoint.path} is missing an explicit name`);
+    } else if (skill.declaredName !== entrypoint.name) {
+      invalidNames.push(`${entrypoint.path} declares ${JSON.stringify(skill.declaredName)}`);
+    }
+  }
+
+  if (missing.length > 0 || invalidDeclarations.length > 0 || invalidNames.length > 0) {
+    const details = [];
+    if (missing.length > 0) details.push(`missing ${missing.join(", ")}`);
+    if (invalidDeclarations.length > 0) {
+      details.push(`invalid declarations: ${invalidDeclarations.join(", ")}`);
+    }
+    if (invalidNames.length > 0) details.push(`invalid names: ${invalidNames.join(", ")}`);
+    throw new Error(
+      `Target ${target.id} cannot honor the canonical explicit Workbench entrypoints: ${details.join("; ")}`,
+    );
+  }
 }
 
 function utcRunId(date = new Date()) {
@@ -399,8 +464,6 @@ async function commandInit(options) {
   const benchmarkMode = oneOf(options.one("mode", "full-loop"), benchmarkModes, "mode");
   const repetitions = positiveInteger(options.one("repetitions", "5"), "repetitions");
   const outputRoot = path.resolve(options.one("output-root", path.join(process.cwd(), "output", "evaluate")));
-  await fsp.mkdir(outputRoot, { recursive: true });
-  const sessionDir = await uniqueDirectory(outputRoot, utcRunId());
   const targets = [];
   const seen = new Set();
   for (const raw of targetArgs) {
@@ -408,9 +471,12 @@ async function commandInit(options) {
     if (seen.has(target.id)) {
       throw new Error(`Duplicate target id: ${target.id}`);
     }
+    validateCanonicalWorkbenchTarget(target);
     seen.add(target.id);
     targets.push(target);
   }
+  await fsp.mkdir(outputRoot, { recursive: true });
+  const sessionDir = await uniqueDirectory(outputRoot, utcRunId());
 
   const schedule = [];
   for (let attempt = 1; attempt <= repetitions; attempt += 1) {
@@ -437,6 +503,10 @@ async function commandInit(options) {
     benchmarks: benchmarkIds,
     targets,
     schedule,
+    invocation: {
+      policy: "explicit-only",
+      ...explicitInvocations,
+    },
     execution: {
       mode: "parallel-all",
       dispatchStrategy: "single-parallel-tool-batch",
@@ -518,9 +588,12 @@ async function commandPrepare(options) {
   let scenarioPath = null;
   if (benchmarkMode === "full-loop") {
     ({ scenario, scenarioPath } = await loadScenario(definition));
-    await fsp.copyFile(
-      path.join(benchmarkRoot, benchmarkId, scenario.initialPrompt),
+    await fsp.writeFile(
       path.join(runDir, "input.md"),
+      explicitSkillInput(
+        "brainstorm",
+        await fsp.readFile(path.join(benchmarkRoot, benchmarkId, scenario.initialPrompt), "utf8"),
+      ),
     );
     await writeJson(controllerStatePath(runDir), {
       schemaVersion: 1,
@@ -539,7 +612,13 @@ async function commandPrepare(options) {
       createdAt: new Date().toISOString(),
     });
   } else {
-    await fsp.copyFile(path.join(benchmarkRoot, benchmarkId, definition.prompt), path.join(runDir, "input.md"));
+    await fsp.writeFile(
+      path.join(runDir, "input.md"),
+      explicitSkillInput(
+        "executor",
+        await fsp.readFile(path.join(benchmarkRoot, benchmarkId, definition.prompt), "utf8"),
+      ),
+    );
   }
 
   const setupChecks = [];
@@ -589,6 +668,7 @@ async function commandPrepare(options) {
     executionMode: manifest.execution?.mode ?? "sequential",
     speedMetric: manifest.execution?.speedMetric ?? "target-active-duration-ms",
     dispatchIndex: scheduledRun.dispatchIndex ?? scheduleIndex + 1,
+    invocation: manifest.invocation,
     activeDurationMs: 0,
     activeTurnStartedAt: null,
     activeSegments: [],
@@ -606,6 +686,7 @@ async function commandPrepare(options) {
       controllerState: benchmarkMode === "full-loop" ? controllerStatePath(runDir) : null,
       controllerScenario: benchmarkMode === "full-loop" ? scenarioPath : null,
       target: runTarget,
+      invocation: manifest.invocation,
       dispatchIndex: scheduledRun.dispatchIndex ?? scheduleIndex + 1,
     }, null, 2)}\n`,
   );
@@ -777,7 +858,7 @@ async function writeControllerReply(runDir, state, action, content, metadata = {
     repliesDir,
     `${String(sequence).padStart(3, "0")}-${assertSafeSegment(action, "controller action")}.md`,
   );
-  await fsp.writeFile(replyPath, `${content.trim()}\n`);
+  await fsp.writeFile(replyPath, explicitSkillInput("brainstorm", content));
   state.replies = state.replies ?? [];
   state.replies.push({
     sequence,
@@ -1096,7 +1177,7 @@ async function commandRecordContract(options) {
   let executeInput = null;
   if (status === "PASS") {
     executeInput = path.join(controllerRoot(runDir), "execute.md");
-    await fsp.writeFile(executeInput, `${scenario.executePrompt.trim()}\n`);
+    await fsp.writeFile(executeInput, explicitSkillInput("executor", scenario.executePrompt));
   }
   process.stdout.write(`${JSON.stringify({ ...result, executeInput }, null, 2)}\n`);
 }

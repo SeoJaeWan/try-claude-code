@@ -1,11 +1,11 @@
 ---
 name: issue-brief
-description: Evidence briefing for Jira, Figma, QA reports, OpenAPI context, and user-provided product information. Use when the user asks for an issue brief, "이슈 브리프", "Jira 일감 정리", "Figma 요구사항 정리", or wants source material organized before deciding or implementing. This skill may finish as a standalone context brief and may be re-entered during brainstorm; it does not invent a goal, choose mandatory Work Units, or execute code.
+description: Explicit-invocation-only evidence briefing for Jira, Figma, QA reports, OpenAPI context, repository evidence, and user-provided product information. Invoke only as `$workbench:issue-brief`. Organize source material before decision or implementation without inventing a goal, choosing mandatory Work Units, or executing code.
 ---
 
 # Issue Brief
 
-Use this skill to normalize product and engineering evidence. Treat it as a standalone endpoint and as a source-evidence provider that can be called again while a brainstorm is in progress.
+Run this skill only when the user explicitly invokes `$workbench:issue-brief`. Normalize product and engineering evidence as either a standalone result or a source-evidence brief explicitly requested during `$workbench:brainstorm`.
 
 ## Role
 
@@ -13,7 +13,7 @@ Use this skill to normalize product and engineering evidence. Treat it as a stan
 - Separate confirmed facts, explicit requirements, unconfirmed assumptions, and missing evidence.
 - Preserve the user's stated goal when one exists; do not invent a goal from symptoms or source material.
 - Stop after the brief when the user asked only for a summary.
-- Do not require the user to continue to `brainstorm` or `executor`.
+- Do not require the user to continue to `$workbench:brainstorm` or `$workbench:executor`.
 
 Do NOT create a mandatory linear pipeline, number implementation Work Units by default, select an executor target, edit code, modify Jira/Figma, commit, push, or open a PR.
 
@@ -24,11 +24,11 @@ Accept any of these entry points:
 - Jira issue, comment, QA report, or pasted product context.
 - Figma URL, screenshot description, or design decision.
 - User-provided goal, concern, or request to organize a problem.
-- New evidence supplied while `brainstorm` is active.
+- New evidence supplied with an explicit `$workbench:issue-brief` invocation while `$workbench:brainstorm` is active.
 
 When new evidence arrives during brainstorm, summarize only the new evidence and its impact on the current understanding. Do not restart the whole conversation or silently replace the brainstorm goal.
 
-If the user asks for an API element or endpoint check, collect OpenAPI document evidence when the relevant service is registered. Keep endpoint execution and mutation rules in the `openapi` skill; this skill reads API documentation and does not call business endpoints.
+If the user asks for an API element or endpoint check, collect read-only OpenAPI document evidence when the relevant service is registered. This does not invoke `$workbench:openapi`. For endpoint execution, tell the user to invoke `$workbench:openapi`; this skill does not call business endpoints.
 
 ## Evidence Rules
 
@@ -91,11 +91,11 @@ Use Korean for user-facing prose. Keep paths, field names, endpoints, issue keys
 - <explicit constraint or missing evidence>
 
 **Next Conversation**
-- <"완료 목표와 조건이 있다면 brainstorm으로 이어갈 수 있음" / a concise question / "없음">
+- <"완료 목표와 조건을 논의하려면 `$workbench:brainstorm`을 호출할 수 있음" / a concise question / "없음">
 ```
 
 Do not add `Work Units` or `Suggested Next Unit` unless the user explicitly asks for an implementation breakdown. Even then, present candidates as optional discussion material, not as a handoff contract.
 
 ## Completion
 
-Finish after delivering the brief when the user asked only to organize information. If the user asks to reason toward a goal, hand the evidence to `brainstorm` conceptually, but do not invoke `executor` or assume that a goal is complete.
+Finish after delivering the brief when the user asked only to organize information. If goal discovery is the next useful step, tell the user to invoke `$workbench:brainstorm`; do not invoke it automatically. Never invoke `$workbench:executor` or assume that a goal is complete.

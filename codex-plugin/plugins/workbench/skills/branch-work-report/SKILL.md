@@ -1,11 +1,11 @@
 ---
 name: branch-work-report
-description: Current Git work-branch reporting by commit. Use when the user asks to summarize, report, review, or organize work done on the current branch, especially in Korean phrases such as "작업 내역 정리", "커밋 단위로 정리", "브랜치 작업 보고", "작업 보고서", or asks for feedback on branch commits. This skill inspects Git history and diffs only; it does not edit code, commit, push, or open PRs.
+description: Explicit-invocation-only current Git work-branch reporting by commit. Invoke only as `$workbench:branch-work-report`. Inspect Git history and diffs to produce a detailed review-ready summary and actionable feedback without editing code, committing, pushing, or opening a PR.
 ---
 
 # Branch Work Report
 
-Use this skill to produce a review-ready report for the current Git work branch. The report must follow the branch's commits, explain what each commit did in enough detail for a reviewer to understand the implementation without reopening every diff, and include actionable feedback where the diff suggests a risk or improvement.
+Run this skill only when the user explicitly invokes `$workbench:branch-work-report`. Produce a review-ready report for the current Git work branch. The report must follow the branch's commits, explain what each commit did in enough detail for a reviewer to understand the implementation without reopening every diff, and include actionable feedback where the diff suggests a risk or improvement.
 
 ## Core Rules
 

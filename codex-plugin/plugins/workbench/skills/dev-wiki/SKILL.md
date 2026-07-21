@@ -1,11 +1,11 @@
 ---
 name: dev-wiki
-description: Manage a project dev wiki through one conversational entry point. Use when the user asks to set up, repair, audit, update, lint, refresh indexes, generate graphs, inspect health, or record project-specific development knowledge in the Workbench-owned dev wiki root, defaulting to `${CODEX_HOME:-~/.codex}/workbench/dev-wiki/source/{project}`. Routes legacy dev-wiki setup/audit/update/lint/graph/sync requests internally and does not edit plan wiki files.
+description: Explicit-invocation-only management for a project dev wiki. Invoke only as `$workbench:dev-wiki`, then route setup, audit, update, lint, graph, and maintenance work through this single skill in the Workbench-owned dev wiki root, defaulting to `${CODEX_HOME:-~/.codex}/workbench/dev-wiki/source/{project}`. Do not edit plan wiki files.
 ---
 
 # Dev Wiki
 
-Use this skill as the single entry point for project-specific dev wiki work. The user should not need to choose between setup, audit, update, lint, graph, or sync skills; infer the mode from the request and continue the conversation in small, reviewable steps.
+Run this skill only when the user explicitly invokes `$workbench:dev-wiki`. Use it as the single entry point for project-specific dev wiki work. After invocation, infer the setup, audit, update, lint, graph, or maintenance mode from the request and continue in small, reviewable steps.
 
 Dev wiki stores project-specific development conventions, architecture notes, workflows, and graph artifacts. It is separate from plan wiki, which stores shared planning knowledge.
 
@@ -131,7 +131,7 @@ Workflow:
 ## Guardrails
 
 - Do not make a project use dev wiki implicitly. Missing central config or workspace mapping means not opted in unless the user asked to set it up.
-- This opt-in gate controls dev-wiki setup and maintenance. Downstream consumers such as `brainstorm` and `executor` may read an existing unambiguous `source/{workspace-basename}` project folder without changing opt-in state, according to the Workbench consumer contract.
+- This opt-in gate controls dev-wiki setup and maintenance. Explicitly invoked consumers such as `$workbench:brainstorm` and `$workbench:executor` may read an existing unambiguous `source/{workspace-basename}` project folder without changing opt-in state, according to the Workbench consumer contract.
 - Do not overwrite whole wiki documents with generated summaries.
 - Do not create `history/` directories; Git commits are the change history.
 - Do not create manual tag index pages; generated indexes own tag and link indexes.

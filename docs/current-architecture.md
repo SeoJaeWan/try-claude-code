@@ -1,6 +1,6 @@
 # Current Architecture — Codex Workbench
 
-> 기준일: 2026-07-16
+> 기준일: 2026-07-21
 
 이 문서는 저장소의 현재 기준점을 설명한다. 사용자-facing 제품은 Codex Workbench 플러그인에 두고, Workbench 성능 평가는 project-local `.codex` skill로 분리한다. Claude Code 플러그인과 과거 project-local Codex planning stack은 `legacy/`에 격리한다.
 
@@ -67,34 +67,35 @@ codex-plugin/
 └── scripts/deploy-workbench-plugin.mjs
 ```
 
-Workbench의 기본 역할은 plugin manifest의 default prompt와 각 `SKILL.md`가 소유한다. 배포되는 Workbench 스킬을 추가하거나 수정할 때는 `codex-plugin/plugins/workbench/`를 기준으로 판단한다. `evaluate-workbench`는 배포 대상이 아니며 `.codex/skills/evaluate-workbench/`가 별도로 소유한다.
+Workbench의 기본 역할은 plugin manifest의 default prompt와 각 `SKILL.md`가 소유한다. 모든 Workbench 스킬은 `agents/openai.yaml`에서 implicit invocation을 비활성화하며 `$workbench:<skill>`로만 호출한다. 배포되는 Workbench 스킬을 추가하거나 수정할 때는 `codex-plugin/plugins/workbench/`를 기준으로 판단한다. `evaluate-workbench`는 배포 대상이 아니며 `.codex/skills/evaluate-workbench/`가 별도로 소유한다.
 
 ## 목표 중심 작업 흐름
 
 ```text
-issue-brief (선택) ─────┐
-                       ↓
-사용자 목표 ───────→ brainstorm ↔ issue/API/UI 근거
-                       │          + 자동 dev wiki 컨텍스트
-                       ↓
-                 Goal Contract
-                       ↓ (명시적 요청)
-                    executor
-                       ↓
-             필요 시 test / API / UI 검증
+$workbench:issue-brief (선택) ─────┐
+                                  ↓
+사용자 명시 호출 ─────→ $workbench:brainstorm
+                                  │  + 기존 dev wiki 컨텍스트
+                                  ↓
+                            Goal Contract
+                                  ↓ (별도 명시 호출)
+                           $workbench:executor
+                                  ↓
+              필요한 지원 스킬도 각각 명시 호출
 ```
 
-`issue-brief`는 정보 정리만으로 종료할 수 있다. `brainstorm`은 직접 시작하거나 중간에 `issue-brief`, `openapi`, `visual-grounding`을 호출해 근거를 추가할 수 있다. 해당 프로젝트의 dev wiki는 `brainstorm`과 `executor`가 자동으로 참고한다. `test-brief`와 `branch-work-report`는 선택적 지원 기능이다. `legacy/old/fable5/`는 더 이상 활성 plugin skill이 아닌 과거 운영 모드의 참고본이다.
+각 스킬은 사용자가 `$workbench:<skill>`을 지정할 때만 시작한다. `$workbench:issue-brief`는 정보 정리만으로 종료할 수 있고, `$workbench:brainstorm`은 Goal Contract를 만들되 다른 스킬이나 `$workbench:executor`를 자동 호출하지 않는다. 필요한 API·UI·테스트 근거 스킬도 사용자가 별도로 명시한다. brainstorm과 executor는 해당 프로젝트의 기존 dev wiki를 직접 컨텍스트로 읽을 수 있지만 `$workbench:dev-wiki` 유지보수 스킬을 자동 호출하지 않는다. `legacy/old/fable5/`는 더 이상 활성 plugin skill이 아닌 과거 운영 모드의 참고본이다.
 
 ## Workbench 결과 벤치마크
 
 `.codex/skills/evaluate-workbench/`는 위 목표 중심 작업 흐름이나 Workbench 플러그인에 포함되는 단계가 아니라, Workbench 버전이나 구성이 불완전한 사용자 목표를 합의 가능한 Goal Contract로 만들고 같은 세션에서 얼마나 안정적으로 구현하는지 비교하는 project-local 평가 스킬이다.
 
 - 비교 대상은 `current`, `v1`, `v3` 같은 고정 목록이 아니라 사용자가 지정한 임의의 label과 plugin root다.
-- 각 대상은 자기 manifest와 skill metadata에서 고유한 흐름을 발견한다. 공통 skill 이름이나 순서를 전제하지 않는다.
-- 기본 `full-loop` 모드는 두 과제의 불완전한 최초 요청에서 시작한다. 숨겨진 scenario가 질문에는 고정 답변을, 올바른 제안에는 고정 확인을, 잘못되거나 누락된 결정에는 고정 반론을 제공한다. 메인 세션은 scenario 밖의 사용자 사실이나 힌트를 만들 수 없다.
-- 모든 필수 결정이 사용자 확인 상태가 된 뒤 고정된 최종 정리 요청으로 Goal Contract를 받는다. 계약의 필수 의미 슬롯이 모두 맞을 때만 요구사항을 반복하지 않는 실행 요청을 같은 subagent thread에 전달한다.
-- `executor-only` 모드는 기존의 완전한 `profile-cache-dedupe` 로직 과제와 `optimistic-favorite-ui` 프론트엔드 과제를 사용하며 전체 Workbench 성능이 아닌 구현 컴포넌트 진단으로 취급한다.
+- 평가는 각 대상의 명시 호출 entrypoint를 사용한다. 현재 Workbench 계약에서는 목표 대화에 `$workbench:brainstorm`, 구현에 `$workbench:executor`를 사용하며, 이 entrypoint가 없는 대상은 동일한 명시 호출 벤치마크 대상으로 취급하지 않는다.
+- plugin root는 평가 근거일 뿐 `$workbench` namespace를 재바인딩하지 않는다. target agent 환경마다 정확한 버전의 Workbench를 별도로 설치할 수 없으면, 같은 namespace를 공유하는 버전 간 비교는 중단하고 유효한 결과로 보고하지 않는다.
+- 기본 `full-loop` 모드는 `$workbench:brainstorm`을 명시한 두 과제의 불완전한 최초 요청에서 시작한다. 숨겨진 scenario가 질문에는 고정 답변을, 올바른 제안에는 고정 확인을, 잘못되거나 누락된 결정에는 고정 반론을 제공한다. 메인 세션은 scenario 밖의 사용자 사실이나 힌트를 만들 수 없다.
+- 모든 필수 결정이 사용자 확인 상태가 된 뒤 고정된 최종 정리 요청으로 Goal Contract를 받는다. 계약의 필수 의미 슬롯이 모두 맞을 때만 요구사항을 반복하지 않고 `$workbench:executor`를 명시한 실행 요청을 같은 subagent thread에 전달한다.
+- `executor-only` 모드는 `$workbench:executor`를 명시한 완전한 `profile-cache-dedupe` 로직 과제와 `optimistic-favorite-ui` 프론트엔드 과제를 사용하며 전체 Workbench 성능이 아닌 구현 컴포넌트 진단으로 취급한다.
 - 각 반복은 새 workspace와 새 subagent를 사용한다. 모든 workspace와 최초 입력을 먼저 준비한 뒤, 전체 `spawn_agent` 호출을 하나의 병렬 배치로 제출한다. 일부 agent만 시작할 수 있으면 wave 실행으로 전환하지 않고 세션을 무효화한다.
 - 각 대화 라운드는 active agent별 병렬 wait branch에서 응답 직후 clock을 멈춘 다음 barrier 뒤에 해석한다. 다음 고정 답변도 한 번의 병렬 follow-up 배치로 전달해 메인 세션의 분류 순서가 latency에 포함되지 않게 한다.
 - Oracle과 다른 실행 결과는 대상에 노출하지 않으며, 모든 target clock이 멈춘 뒤에만 검증을 시작한다.
@@ -108,8 +109,8 @@ issue-brief (선택) ─────┐
 - `codex-plugin/plugins/workbench/`는 현재 제품의 사용자-facing 스킬과 runtime 구현을 소유한다.
 - `.codex/skills/evaluate-workbench/`는 Workbench 배포물과 독립된 개발용 평가 prompt, fixture, Oracle, runner를 소유한다.
 - 메인 Codex 대화는 `spawn_agent`·`wait_agent`·`send_input`·`close_agent`로 benchmark subagent의 생명주기를 직접 관리한다. Node runner의 `spawnSync`는 fixture setup, Git, 테스트 같은 로컬 프로세스 전용이며 subagent를 만들지 않는다.
-- `brainstorm`과 `executor`는 프로젝트 dev wiki가 해석되면 별도 요청 없이 관련 문서를 읽는다.
-- `dev-wiki` 스킬 자체는 setup, audit, update, lint, graph 같은 wiki 관리 요청을 담당한다.
+- `$workbench:brainstorm`과 `$workbench:executor`는 프로젝트 dev wiki가 해석되면 별도 유지보수 스킬 호출 없이 관련 문서를 읽는다.
+- `$workbench:dev-wiki` 스킬 자체는 명시적으로 호출될 때 setup, audit, update, lint, graph 같은 wiki 관리 요청을 담당한다.
 - `evaluate-workbench`는 격리된 fixture만 변경하며 사용자의 실제 application workspace를 평가 대상으로 수정하지 않는다.
 - `.codex/`에는 `AGENTS.md`, 평가용 `config.toml`, `skills/evaluate-workbench/`만 둔다. 다른 project-local skills, tools, artifacts, config, wiki clone을 추가하지 않는다.
 - `.agent/`는 Workbench 행동 원칙의 원천이며 자동 지침 진입점이 아니다.

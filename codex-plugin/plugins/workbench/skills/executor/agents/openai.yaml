@@ -1,4 +1,7 @@
 interface:
   display_name: "Executor"
   short_description: "Execute an explicit goal with project context"
-  default_prompt: "Use $executor to execute this explicit goal with the project's dev wiki context and completion checks."
+  default_prompt: "Use $workbench:executor to execute this explicit goal with the project's dev wiki context and completion checks."
+
+policy:
+  allow_implicit_invocation: false

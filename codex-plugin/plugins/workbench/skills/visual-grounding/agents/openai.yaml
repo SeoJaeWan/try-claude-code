@@ -1,0 +1,7 @@
+interface:
+  display_name: "Visual Grounding"
+  short_description: "Ground UI differences with source and target evidence"
+  default_prompt: "Use $workbench:visual-grounding to compare a source UI with the local implementation and report actionable differences."
+
+policy:
+  allow_implicit_invocation: false

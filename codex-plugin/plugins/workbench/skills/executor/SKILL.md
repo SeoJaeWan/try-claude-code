@@ -1,11 +1,11 @@
 ---
 name: executor
-description: Execute an explicit Goal Contract or a user-stated goal while using repository evidence and the project's dev wiki. Use when the user says executor, "실행해", "구현해", "진행해", or explicitly hands off a brainstorm decision for implementation. Choose the implementation method freely within the goal, completion conditions, and scope; stop and return to brainstorm when the goal or completion conditions are missing. This skill may edit code, tests, generated files, and configuration only when directly required by the goal.
+description: Explicit-invocation-only execution of a Goal Contract or sufficiently specified user goal. Invoke only as `$workbench:executor`. Use repository evidence and existing project dev wiki context, choose the implementation method within the goal and completion conditions, and edit code, tests, generated files, or configuration only when directly required by the agreed scope.
 ---
 
 # Executor
 
-Use this skill only after the user explicitly requests execution. Treat a finalized `Goal Contract` from `brainstorm` as the preferred handoff, but accept a direct user goal when it contains enough completion conditions to implement safely.
+Run this skill only when the user explicitly invokes `$workbench:executor`. Do not treat an unnamespaced implementation request or a completed Goal Contract as invocation. Treat a finalized Goal Contract from `$workbench:brainstorm` as the preferred handoff, but accept a direct user goal when it contains enough completion conditions to implement safely.
 
 ## Role
 
@@ -13,7 +13,7 @@ Use this skill only after the user explicitly requests execution. Treat a finali
 - Decide the concrete implementation method using repository patterns and project context.
 - Keep changes within the execution boundary and completion conditions.
 - Verify the result at the layers required by the goal.
-- Return to `brainstorm` when a product decision, success condition, or scope boundary is missing.
+- Stop and ask the user to invoke `$workbench:brainstorm` when a product decision, success condition, or scope boundary is missing.
 
 The Goal Contract defines **what and why**. It does not prescribe every **how**. Do NOT force a fixed command sequence, implement unrelated cleanup, commit, push, or open a PR unless the user explicitly asks.
 
@@ -26,7 +26,7 @@ Before editing, identify:
 - Decisions and constraints.
 - Execution Boundary: in scope and out of scope.
 - Verification Direction.
-- Any explicit test-brief or diagnostic contract.
+- Any explicit Test Brief or diagnostic contract.
 
 If any of these are missing and cannot be safely inferred from the user's direct request, stop with a concise handback:
 
@@ -35,14 +35,14 @@ If any of these are missing and cannot be safely inferred from the user's direct
 
 - Missing: <goal / completion condition / scope / decision>
 - Why it blocks execution: <short reason>
-- Next: return to brainstorm and clarify this before editing.
+- Next: invoke `$workbench:brainstorm` to clarify this before editing.
 ```
 
 Do not invent an acceptance condition or silently select a neighboring goal.
 
-## Implicit Dev Wiki Context
+## Existing Dev Wiki Context
 
-When a project dev wiki exists, read it automatically before implementation. The user does not need to request `dev-wiki` for this context lookup.
+When a project dev wiki exists, read it directly before implementation. This context lookup does not invoke `$workbench:dev-wiki` or perform wiki maintenance.
 
 Resolve `${CODEX_HOME:-~/.codex}/workbench/dev-wiki` as follows:
 
@@ -63,14 +63,14 @@ Read only relevant architecture, conventions, workflows, testing, and graph note
 
 ## Evidence And Optional Skills
 
-Use additional evidence only when it can affect implementation or verification:
+Use additional evidence only when it can affect implementation or verification. Workbench support skills are explicit-only; never invoke them automatically:
 
-- Use `openapi` for registered API contract inspection or an explicitly requested API test. Never infer mutation permission from documentation.
-- Use `visual-grounding` when the goal changes UI and a matching source frame, page, screenshot, or interaction state exists.
-- Use `test-brief` when the user wants a test or measurement contract before implementation. It is optional, not an automatic prerequisite.
-- Use `branch-work-report` after the work when the user requests a commit-based report.
+- If the OpenAPI workflow is required for registered API contract inspection or an API test, ask the user to invoke `$workbench:openapi`. Never infer mutation permission from documentation.
+- If the visual workflow is required for a matching source frame, page, screenshot, or interaction state, ask the user to invoke `$workbench:visual-grounding`.
+- If a test or measurement contract is required, ask the user to invoke `$workbench:test-brief`. It is optional, not an automatic prerequisite.
+- If the user wants a commit-based report after the work, tell them to invoke `$workbench:branch-work-report`.
 
-Do not call every supporting skill by default.
+Continue with directly available repository and dev wiki evidence when it is sufficient. Otherwise pause for the required explicit invocation.
 
 ## Unknown-Cause Diagnostics
 
@@ -107,8 +107,8 @@ Use the completion conditions as the primary check. Prefer, in order of usefulne
 
 - focused regression or contract tests;
 - existing project test/lint/type commands relevant to changed files;
-- explicit API checks through `openapi`;
-- source-to-target UI or interaction comparison through `visual-grounding`;
+- API checks already provided by an explicit `$workbench:openapi` result;
+- source-to-target UI or interaction evidence already provided by an explicit `$workbench:visual-grounding` result;
 - manual checks required by the Goal Contract.
 
 If a check is unavailable, report the gap instead of substituting an unrelated green command.

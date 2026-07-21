@@ -1,7 +1,7 @@
 interface:
   display_name: "Issue Brief"
   short_description: "Organize Jira, Figma, API, and user context"
-  default_prompt: "Use $issue-brief to organize this Jira, Figma, API, and user-provided context without inventing an implementation plan."
+  default_prompt: "Use $workbench:issue-brief to organize this Jira, Figma, API, and user-provided context without inventing an implementation plan."
 dependencies:
   tools:
     - type: "mcp"
@@ -19,4 +19,4 @@ dependencies:
       description: "Local OpenAPI MCP server for searching registered Swagger/OpenAPI specs"
       transport: "stdio"
 policy:
-  allow_implicit_invocation: true
+  allow_implicit_invocation: false

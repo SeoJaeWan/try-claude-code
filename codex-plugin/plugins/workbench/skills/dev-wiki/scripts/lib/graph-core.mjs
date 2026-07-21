@@ -362,7 +362,6 @@ export function buildGraph({ workspaceRoot, project, maxFiles = 2000 }) {
   const nodes = new Map();
   const edges = new Map();
   const fileAnalyses = [];
-  const symbolByName = new Map();
   const resolutionStats = {
     local_import_count: 0,
     resolved_local_import_count: 0,
@@ -476,14 +475,6 @@ export function buildGraph({ workspaceRoot, project, maxFiles = 2000 }) {
       addEdge(edges, { from: fileId, to: routeId, kind: "handles_route", confidence: "direct" });
     }
 
-    for (const symbol of analysis.symbols || []) {
-      addNode(nodes, { ...symbol, file: file.path });
-      addEdge(edges, { from: fileId, to: symbol.id, kind: "defines", confidence: "direct" });
-      if (symbol.exported) addEdge(edges, { from: fileId, to: symbol.id, kind: "exports", confidence: "direct" });
-      if (!symbolByName.has(symbol.name)) symbolByName.set(symbol.name, []);
-      symbolByName.get(symbol.name).push({ ...symbol, file: file.path });
-    }
-
     for (const boundary of externalBoundaries) {
       const extId = `external:${boundary.kind}:${boundary.name}`;
       addNode(nodes, { id: extId, kind: "external", label: boundary.name, boundary_kind: boundary.kind });
@@ -498,7 +489,6 @@ export function buildGraph({ workspaceRoot, project, maxFiles = 2000 }) {
 
   for (const analysis of fileAnalyses.filter((item) => item.file_kind === "code")) {
     const fileId = `file:${analysis.relPath}`;
-    const importedLocals = new Map();
 
     for (const item of analysis.imports || []) {
       if (item.kind === "dynamic-import") resolutionStats.dynamic_import_count += 1;
@@ -516,32 +506,12 @@ export function buildGraph({ workspaceRoot, project, maxFiles = 2000 }) {
         addEdge(edges, { from: fileId, to: `file:${resolved}`, kind: "imports", confidence: "direct", specifier: item.specifier });
         if (analysis.is_test) addEdge(edges, { from: fileId, to: `file:${resolved}`, kind: "tests", confidence: "direct", specifier: item.specifier });
         if (item.kind === "export-from") addEdge(edges, { from: fileId, to: `file:${resolved}`, kind: "exports", confidence: "direct", specifier: item.specifier });
-        for (const name of item.names || []) importedLocals.set(name.local, { file: resolved, imported: name.imported });
       } else {
         const pkg = packageName(item.specifier);
         if (pkg) {
           const extId = `external:package:${pkg}`;
           addNode(nodes, { id: extId, kind: "external", label: pkg, boundary_kind: "package" });
           addEdge(edges, { from: fileId, to: extId, kind: "depends_on_external", confidence: "direct", specifier: item.specifier });
-        }
-      }
-    }
-
-    for (const call of analysis.calls || []) {
-      const imported = importedLocals.get(call.name);
-      if (imported) {
-        const targetSymbols = (symbolByName.get(imported.imported === "default" ? call.name : imported.imported) || []).filter((item) => item.file === imported.file);
-        addEdge(edges, {
-          from: call.caller || fileId,
-          to: targetSymbols[0]?.id || `file:${imported.file}`,
-          kind: "calls",
-          confidence: targetSymbols.length ? "direct" : "inferred",
-          line: call.pos
-        });
-      } else {
-        const localSymbols = (symbolByName.get(call.name) || []).filter((item) => item.file === analysis.relPath);
-        if (localSymbols.length) {
-          addEdge(edges, { from: call.caller || fileId, to: localSymbols[0].id, kind: "calls", confidence: "direct", line: call.pos });
         }
       }
     }
@@ -571,7 +541,7 @@ export function buildGraph({ workspaceRoot, project, maxFiles = 2000 }) {
       code_file_count: scan.files.filter((file) => file.kind === "code").length,
       text_file_count: scan.files.filter((file) => file.kind !== "code").length,
       folder_count: nodeList.filter((node) => node.kind === "folder").length,
-      symbol_count: nodeList.filter((node) => ["symbol", "component", "hook", "type"].includes(node.kind)).length,
+      symbol_count: nodeList.filter((node) => node.id.startsWith("symbol:")).length,
       import_edge_count: edgeList.filter((edge) => edge.kind === "imports").length,
       export_edge_count: edgeList.filter((edge) => edge.kind === "exports").length,
       call_edge_count: edgeList.filter((edge) => edge.kind === "calls").length,
@@ -591,7 +561,9 @@ export function buildGraph({ workspaceRoot, project, maxFiles = 2000 }) {
     excluded_files: scan.excluded,
     notes: [
       "This graph is a navigation aid, not a complete runtime model.",
-      "The code index uses TypeScript syntax AST parsing without type-checking.",
+      "The code index conservatively scans module references without compiler or package dependencies.",
+      "Only literal module specifiers are indexed; JSX and template text are ignored while embedded JavaScript expressions are scanned.",
+      "Compiler-grade symbol and call extraction is intentionally omitted; use import impact to find source candidates, then inspect the source.",
       "The generator records observed repository facts and does not assign subjective domains, layers, or owners."
     ]
   };
@@ -641,8 +613,6 @@ export function renderArtifacts(graph) {
   const routeNodes = graph.nodes.filter((node) => node.kind === "route");
   const configNodes = graph.nodes.filter((node) => node.kind === "config");
   const assetNodes = graph.nodes.filter((node) => node.kind === "asset");
-  const symbolNodes = graph.nodes.filter((node) => ["symbol", "component", "hook", "type"].includes(node.kind));
-  const callEdges = graph.edges.filter((edge) => edge.kind === "calls");
   const externalEdges = graph.edges.filter((edge) => edge.kind === "depends_on_external" || edge.kind === "reads_env");
   const testEdges = graph.edges.filter((edge) => edge.kind === "tests");
 
@@ -654,7 +624,7 @@ export function renderArtifacts(graph) {
     `- source commit: \`${graph.source_commit || "unknown"}\``,
     `- source dirty: ${graph.source_dirty ? `yes (${graph.source_status_count} paths)` : "no"}`,
     `- indexed files: ${graph.metrics.file_count} (code ${graph.metrics.code_file_count}, text/config ${graph.metrics.text_file_count})`,
-    `- folders: ${graph.metrics.folder_count}, symbols: ${graph.metrics.symbol_count}, imports: ${graph.metrics.import_edge_count}, calls: ${graph.metrics.call_edge_count}`,
+    `- folders: ${graph.metrics.folder_count}, imports: ${graph.metrics.import_edge_count}, tests: ${graph.metrics.test_edge_count}, routes: ${graph.metrics.route_count}`,
     "",
     "## 먼저 볼 곳",
     "",
@@ -671,8 +641,10 @@ export function renderArtifacts(graph) {
     "",
     "## 신뢰도 메모",
     "",
-    "- 코드는 TypeScript syntax AST로만 읽습니다. type-checker나 runtime data-flow는 실행하지 않습니다.",
-    "- 그래프는 관찰 가능한 파일, import/export, symbol, test, route, script, dependency, config, env, external reference를 기록합니다.",
+    "- 코드는 외부 parser 없이 보수적으로 module reference만 스캔합니다. type-checker나 runtime data-flow는 실행하지 않습니다.",
+    "- literal module specifier만 기록합니다. JSX/template 본문은 무시하고 그 안의 JavaScript expression은 다시 스캔합니다.",
+    "- 그래프는 관찰 가능한 파일, import/export, test, route, script, dependency, config, env, external reference를 기록합니다.",
+    "- symbol과 function call은 추정하지 않습니다. import impact로 후보 파일을 좁힌 뒤 원본 source를 확인합니다.",
     "- 프로젝트별 domain/layer/owner 같은 주관 분류는 생성하지 않습니다.",
     "- 동적 import, path alias, framework convention은 `quality-signals.md`와 원본 source를 함께 확인합니다."
   ].join("\n");
@@ -719,29 +691,15 @@ export function renderArtifacts(graph) {
   const symbols = [
     "# Symbol 지도",
     "",
-    "이 문서는 AST로 확인한 주요 symbol을 보여줍니다. 전체 목록은 `graph.json`을 봅니다.",
-    "",
-    markdownTable(
-      ["symbol", "kind", "file", "exported"],
-      symbolNodes
-        .filter((node) => node.file)
-        .sort((a, b) => a.file.localeCompare(b.file) || a.label.localeCompare(b.label))
-        .slice(0, 180)
-        .map((node) => [node.label, node.kind, node.file, node.exported ? "yes" : "no"])
-    )
+    "의존성 없는 탐색 인덱스는 compiler-grade symbol 분석을 생성하지 않습니다.",
+    "import 관계로 후보 파일을 좁힌 뒤 원본 source에서 symbol을 확인합니다."
   ].join("\n");
 
   const calls = [
     "# 대표 호출 지도",
     "",
-    "이 지도는 AST call expression과 import alias를 기반으로 한 rough caller/callee map입니다.",
-    "",
-    callEdges.length
-      ? markdownTable(
-          ["caller", "callee", "confidence"],
-          callEdges.slice(0, 220).map((edge) => [edge.from, edge.to, edge.confidence || "direct"])
-        )
-      : "정적으로 확인한 호출 관계가 없습니다.",
+    "의존성 없는 탐색 인덱스는 함수 호출 관계를 추정하지 않습니다.",
+    "호출 흐름은 import 관계로 후보 파일을 좁힌 뒤 원본 source에서 확인합니다.",
     "",
     "## 테스트 연결",
     "",
@@ -751,7 +709,7 @@ export function renderArtifacts(graph) {
     "",
     "## 한계",
     "",
-    "- Type checker를 사용하지 않으므로 overload, re-export alias, runtime DI/event bus는 완전하지 않습니다.",
+    "- 함수 호출, callback, re-export alias, runtime DI/event bus는 인덱싱하지 않습니다.",
     "- Browser event handler와 prose skill command flow는 원본 source와 함께 확인합니다."
   ].join("\n");
 
@@ -761,7 +719,7 @@ export function renderArtifacts(graph) {
   const impact = [
     "# 영향 범위 지도",
     "",
-    "Rough impact는 reverse import graph 기반입니다. call edge는 symbol 단위 context 보조로 사용합니다.",
+    "Rough impact는 reverse import graph 기반입니다. 실제 runtime 영향은 원본 source와 테스트에서 확인합니다.",
     "",
     markdownTable(["file", "reverse import impact", "examples"], impactRows.slice(0, 100)),
     "",
@@ -840,11 +798,11 @@ export function renderArtifacts(graph) {
       ? markdownTable(["file", "specifier"], graph.quality.unresolved_local_imports.map((item) => [item.file, item.specifier]).slice(0, 120))
       : "No unresolved local imports.",
     "",
-    "## Parse Diagnostics",
+    "## Parser Diagnostics",
     "",
     graph.quality.parse_diagnostics.length
       ? markdownTable(["file", "message"], graph.quality.parse_diagnostics.map((item) => [item.file, item.message]).slice(0, 80))
-      : "No parser diagnostics.",
+      : "No parser diagnostics. The dependency-free module scanner does not perform full syntax validation.",
     "",
     "## Excluded Files",
     "",
@@ -896,7 +854,7 @@ export function resolveGenerationContext({ workspaceRoot = REPO_ROOT, devWikiRoo
   if (!existsSync(configPath)) {
     const legacyConfigPath = path.join(root, ".codex", "dev-wiki", "config.json");
     if (!existsSync(legacyConfigPath)) {
-      throw new Error("Dev wiki config is missing. Run $dev-wiki setup before generating graph artifacts.");
+      throw new Error("Dev wiki config is missing. Run $workbench:dev-wiki setup before generating graph artifacts.");
     }
     wikiRoot = path.join(root, ".codex", "dev-wiki");
     configPath = legacyConfigPath;

@@ -1,11 +1,11 @@
 ---
 name: openapi
-description: Register, list, refresh, search, inspect, and test user-provided Swagger/OpenAPI services through the local openapi MCP server. Use when the user says "openapi", "swagger 등록", "스웨거 등록", "API 문서 등록", asks to add/remove/list OpenAPI services, find candidate APIs, inspect endpoint request/response fields, locate endpoints by schema field, get Swagger/spec/endpoint URLs, or test registered API endpoints. This skill may call API endpoints only when the user explicitly requests an API test or grants permission.
+description: Explicit-invocation-only registration, listing, refresh, search, inspection, and testing for user-provided Swagger/OpenAPI services through the local OpenAPI MCP server. Invoke only as `$workbench:openapi`. Call API endpoints only when the user explicitly requests an API test or grants permission.
 ---
 
 # OpenAPI
 
-Use this skill to manage the local OpenAPI service registry, search registered Swagger/OpenAPI documents, inspect endpoint details, and test registered API endpoints.
+Run this skill only when the user explicitly invokes `$workbench:openapi`. Manage the local OpenAPI service registry, search registered Swagger/OpenAPI documents, inspect endpoint details, and test registered API endpoints.
 
 The service registry is user-owned. Do not hardcode company Swagger URLs in this plugin or in skill instructions.
 
@@ -19,10 +19,12 @@ The service registry is user-owned. Do not hardcode company Swagger URLs in this
 - Register Swagger/OpenAPI services through the local registry before searching, inspecting, or testing.
 - Refresh the relevant service cache before searching when freshness matters.
 - If refresh fails but stale cache exists, continue with stale cache and mark the result as stale.
+- Treat the disk cache as derived Swagger/OpenAPI document data only. Never persist endpoint response bodies in it.
+- Return an explicitly requested endpoint response body without secret-field masking, subject to the configured response-size limit, so Codex can inspect or reuse it. Request credentials remain masked in the echoed request summary.
 - If no services are registered, tell the user to register a service with this skill instead of guessing service IDs.
 - Prefer `get_endpoint` before `call_endpoint` when the request shape is unclear.
 - Use the smallest valid request body and parameter set needed for an API test.
-- Do NOT print full sensitive values such as `Authorization`, `Cookie`, `X-API-Key`, tokens, passwords, or secrets. Rely on MCP masking and omit secrets from explanations.
+- Do NOT unnecessarily repeat `Authorization`, `Cookie`, `X-API-Key`, tokens, passwords, or secrets in explanatory prose or the final answer. The unmasked endpoint result may contain them because Codex is the authorized caller; request summaries must remain masked.
 
 ## Registry
 
@@ -80,6 +82,8 @@ Registry shape:
    - `swaggerUrl`: Swagger UI URL or OpenAPI discovery URL
    - `apiBaseUrl`: optional but recommended for endpoint candidate URLs
 5. After registering, run `list-services` and optionally `refresh-service --service <id>` to verify the service is usable.
+   - Re-registering the same id with a different Swagger URL or API base URL invalidates its document cache.
+   - Direct OpenAPI JSON or YAML document URLs are valid `swaggerUrl` values.
 6. For search requests, call or run endpoint search with Korean product terms, English identifiers, screen names, path fragments, and schema fields.
 7. Inspect endpoint details only for strong candidates.
 
@@ -102,7 +106,7 @@ Treat the MCP server as the executor and this skill as the policy layer.
    - `body`: JSON request body when required.
    - `timeoutSec`: optional timeout.
 5. For `POST`, `PUT`, `PATCH`, or `DELETE`, call only when the user explicitly requested that test or granted permission.
-6. Report status, duration, documented/validation state, important request inputs, and the relevant response fields.
+6. Report status, duration, documented/validation state, important request inputs, and the relevant response fields. Use the raw response for the requested work, but avoid copying credentials into narrative output when their exact value is not needed.
 
 ## Authorization
 

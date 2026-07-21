@@ -4,6 +4,10 @@
 
 The benchmark compares target behavior on two fixed fixture families. It does not assign an absolute quality score to written skill instructions and does not justify claims outside these scenarios.
 
+All target inputs use explicit Workbench invocation. Goal-dialogue turns begin with `$workbench:brainstorm`; implementation turns begin with `$workbench:executor`. A target without those canonical entrypoints is outside this benchmark contract.
+
+The target root does not control selector resolution by itself. `$workbench:*` must resolve to that exact target in the agent's installed plugin environment. Multiple versions sharing the `workbench` namespace require separately isolated installations; otherwise a cross-version result is invalid.
+
 | Mode | What it measures | PASS gate |
 | --- | --- | --- |
 | `full-loop` | Incomplete request → user dialogue → Goal Contract → same-thread implementation | Contract PASS and artifact PASS |
