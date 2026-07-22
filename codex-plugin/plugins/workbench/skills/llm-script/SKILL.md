@@ -1,6 +1,6 @@
 ---
 name: llm-script
-description: Explicit-invocation-only setup and status inspection for Workbench's collection-only script-source capture. Invoke only as `$workbench:llm-script`. Use setup to opt the current workspace into capture, or use status to inspect existing configuration. Do not analyze, aggregate, promote, or generate scripts, and do not sync the capture repository.
+description: Explicit-invocation-only setup and status inspection for Workbench's collection-only script-source capture. Invoke only as `$workbench:llm-script`. Use setup to opt the current workspace into capture, or use status to inspect existing configuration. Do not analyze, aggregate, promote, or generate scripts; setup and status do not sync Git.
 ---
 
 # LLM Script Capture
@@ -13,6 +13,8 @@ Run this skill only when the user explicitly invokes `$workbench:llm-script`. It
 This skill manages setup and status only. It does not inspect captured source for patterns, build summaries, choose automation candidates, promote code into scripts, or generate scripts.
 
 The plugin's `PostToolUse` hook runs independently after matching shell tool calls. That automatic runtime capture is not an implicit invocation of this skill. Until `setup` registers a workspace, the hook must silently do nothing for that workspace.
+
+The plugin also has an independent `SessionStart` hook. On `startup` and `resume`, it attempts `git pull --ff-only` only when the central LLM Script `source` clone already exists. A missing clone is a silent no-op. This hook does not create configuration, clone a repository, or opt in the current workspace.
 
 ## Common Paths
 
@@ -67,5 +69,5 @@ Setup must not pull, add, commit, push, merge, rebase, reset, clean, or stash th
 - Do not inspect imported dependencies recursively; capture only the detected entrypoint source.
 - Do not opt in a workspace implicitly. A missing or disabled mapping means capture remains off.
 - Do not edit or remove existing records as part of setup or status.
-- Do not perform automatic Git synchronization. Git operations require a separate explicit user request.
+- Setup and status must not synchronize Git. The independent `SessionStart` hook may fast-forward an already-existing source clone; it never clones, opts in, stashes, resets, commits, or pushes.
 - Treat hook capture as best-effort telemetry, not as a complete execution audit.

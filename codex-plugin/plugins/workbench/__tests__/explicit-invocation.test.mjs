@@ -4,7 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-const skillsRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const skillsRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "skills");
 
 function skillDirectories() {
   return fs.readdirSync(skillsRoot, { withFileTypes: true })

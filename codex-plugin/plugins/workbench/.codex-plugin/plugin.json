@@ -1,7 +1,7 @@
 {
   "name": "workbench",
-  "version": "0.1.0+codex.20260721072327",
-  "description": "Explicitly invoked Workbench skills for evidence briefs, decision dialogue, scoped execution, OpenAPI, visual grounding, dev wiki context, and opt-in script-source capture.",
+  "version": "0.1.0+codex.20260721234905",
+  "description": "Explicitly invoked Workbench skills plus session-start refresh for existing central Dev Wiki and LLM Script clones.",
   "author": {
     "name": "Local developer"
   },
@@ -10,7 +10,7 @@
   "interface": {
     "displayName": "Workbench",
     "shortDescription": "Shape, execute, and observe scoped work.",
-    "longDescription": "Workbench provides explicitly invoked skills for Codex: organize Jira/Figma/API/user evidence, clarify goals and completion conditions through dialogue, execute a Goal Contract with project dev wiki context, verify results, and explicitly set up opt-in collection of source snapshots for scripts Codex executes.",
+    "longDescription": "Workbench provides explicitly invoked skills for Codex: organize Jira/Figma/API/user evidence, clarify goals and completion conditions through dialogue, execute a Goal Contract with project dev wiki context, verify results, explicitly set up opt-in script-source capture, and fast-forward existing central Dev Wiki and LLM Script clones when a session starts or resumes.",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [
@@ -21,7 +21,8 @@
       "Scoped implementation",
       "Visual grounding",
       "OpenAPI registry",
-      "Script source capture"
+      "Script source capture",
+      "Session-start data refresh"
     ],
     "defaultPrompt": [
       "Use $workbench:brainstorm to clarify a goal and prepare a Goal Contract, then invoke $workbench:executor separately to execute it.",

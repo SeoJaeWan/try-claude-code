@@ -1,6 +1,19 @@
 {
-  "description": "Capture source snapshots for scripts executed in explicitly registered workspaces.",
+  "description": "Refresh existing Workbench data clones at session start and capture script source in explicitly registered workspaces.",
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "^(startup|resume)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/hooks/session-start-sync.mjs\"",
+            "commandWindows": "node \"%PLUGIN_ROOT%\\hooks\\session-start-sync.mjs\"",
+            "timeout": 45
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "^Bash$",

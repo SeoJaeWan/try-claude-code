@@ -73,4 +73,6 @@ Hook execution must stay silent on success, no-op, and recoverable failure so co
 
 ## Git Boundary
 
-Capture may leave new record files in the collection clone's working tree. Neither the hook nor setup/status may pull, add, commit, push, merge, rebase, reset, clean, or stash. The user owns all synchronization and history decisions.
+Capture may leave new record files in the collection clone's working tree. The plugin's independent `SessionStart` hook may attempt `git pull --ff-only` on `startup` and `resume` when the clone already exists. It does nothing when the clone is absent and never clones, stashes, resets, cleans, commits, or pushes. If Git cannot fast-forward safely, the hook reports a warning and preserves the working tree and local branch.
+
+The `PostToolUse` capture hook and the setup/status skill modes do not synchronize Git. The user continues to own record commits, pushes, and history decisions.
