@@ -19,7 +19,7 @@ Codex Workbench 플러그인을 개발·검증하는 저장소입니다. 현재 
 ├── docs/
 │   └── current-architecture.md     # 현재 구조의 canonical 문서
 ├── legacy/
-│   ├── old/                        # 과거 플러그인·planning stack·fable5
+│   ├── old/                        # 과거 플러그인·planning stack·제거된 Workbench 스킬
 │   └── v1/workbench/               # 현재 Workbench의 보존본
 ├── README.md
 ├── package.json
@@ -32,14 +32,15 @@ Codex Workbench 플러그인을 개발·검증하는 저장소입니다. 현재 
 |---|---|
 | `$workbench:issue-brief` | Jira·Figma·QA·API·사용자 입력을 근거 중심으로 정리 |
 | `$workbench:brainstorm` | 목표·완료 조건을 사용자와 토론하고 Goal Contract로 정리 |
-| `$workbench:test-brief` | 필요할 때 Goal Contract를 검증 계약으로 변환 |
 | `$workbench:executor` | 명시된 Goal Contract를 dev wiki와 함께 실행 |
 | `$workbench:visual-grounding` | Figma·원본 UI·스크린샷과 local 구현 비교 |
 | `$workbench:openapi` | Swagger/OpenAPI 서비스와 endpoint 탐색·검증 |
 | `$workbench:dev-wiki` | 중앙 Workbench dev wiki의 setup, audit, update, lint, graph 유지; brainstorm/executor의 자동 컨텍스트 |
 | `$workbench:llm-script` | 현재 workspace를 중앙 수집 저장소에 명시적으로 등록하고 script-source 수집 상태 확인 |
 
-모든 Workbench 스킬은 명시 호출 전용입니다. 일반 자연어 요청만으로 스킬을 자동 선택하거나 다른 Workbench 스킬로 자동 전환하지 않습니다. 사용자는 필요한 지점에 `$workbench:<skill>`을 지정하며, Goal Contract 뒤의 실행도 별도의 `$workbench:executor` 호출로 시작합니다. `$workbench:issue-brief`, `$workbench:test-brief` 같은 지원 기능은 각각 독립적으로 호출할 수 있습니다. brainstorm과 executor가 기존 dev wiki를 컨텍스트로 읽는 것은 `$workbench:dev-wiki` 유지보수 스킬의 자동 호출을 뜻하지 않습니다. `$workbench:llm-script`도 setup과 status에만 명시적으로 호출하며, setup으로 등록한 workspace에서는 이후 `PostToolUse` hook이 별도 스킬 호출 없이 실행된 script source를 자동 수집합니다.
+모든 Workbench 스킬은 명시 호출 전용입니다. 일반 자연어 요청만으로 스킬을 자동 선택하거나 다른 Workbench 스킬로 자동 전환하지 않습니다. 사용자는 필요한 지점에 `$workbench:<skill>`을 지정하며, Goal Contract 뒤의 실행도 별도의 `$workbench:executor` 호출로 시작합니다. 지원 기능도 각각 독립적으로 호출할 수 있습니다. brainstorm과 executor가 기존 dev wiki를 컨텍스트로 읽는 것은 `$workbench:dev-wiki` 유지보수 스킬의 자동 호출을 뜻하지 않습니다. `$workbench:llm-script`도 setup과 status에만 명시적으로 호출하며, setup으로 등록한 workspace에서는 이후 `PostToolUse` hook이 별도 스킬 호출 없이 실행된 script source를 자동 수집합니다.
+
+테스트 작성과 수정은 다른 코드·문서·스크립트와 동일한 작업 산출물입니다. 사용자가 Goal Contract나 직접 요청에 포함했을 때만 실행 범위가 되며, 기존 테스트를 실행하는 검증 행위 자체는 새로운 테스트 산출물을 만드는 권한이 아닙니다.
 
 ```text
 $workbench:issue-brief (선택) ─────┐
@@ -79,4 +80,4 @@ npm run codex-plugin:deploy
 
 ## Legacy 정책
 
-`legacy/`는 현재 runtime, marketplace, CI, 테스트의 입력이 아닙니다. `legacy/old/codex-planning-stack/dev-wiki/source/`와 `legacy/old/codex-planning-stack/plan-wiki/source/`는 각 원격 저장소를 유지하는 별도 Git clone이며 root repository에서는 ignore합니다.
+`legacy/`는 현재 runtime, marketplace, CI, 테스트의 입력이 아닙니다. 활성 Workbench에서 제거한 최신 `test-brief` 계약은 `legacy/old/workbench-skills/test-brief/`에 보존합니다. `legacy/old/codex-planning-stack/dev-wiki/source/`와 `legacy/old/codex-planning-stack/plan-wiki/source/`는 각 원격 저장소를 유지하는 별도 Git clone이며 root repository에서는 ignore합니다.

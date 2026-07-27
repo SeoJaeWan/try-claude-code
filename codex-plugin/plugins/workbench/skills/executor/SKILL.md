@@ -1,6 +1,6 @@
 ---
 name: executor
-description: Explicit-invocation-only execution of a Goal Contract or sufficiently specified user goal. Invoke only as `$workbench:executor`. Use repository evidence and existing project dev wiki context, choose the implementation method within the goal and completion conditions, and edit code, tests, generated files, or configuration only when directly required by the agreed scope.
+description: Explicit-invocation-only execution of a Goal Contract or sufficiently specified user goal. Invoke only as `$workbench:executor`. Use repository evidence and existing project dev wiki context, choose the implementation method within the goal and completion conditions, and edit only project artifacts directly required by the agreed scope.
 ---
 
 # Executor
@@ -26,7 +26,7 @@ Before editing, identify:
 - Decisions and constraints.
 - Execution Boundary: in scope and out of scope.
 - Verification Direction.
-- Any explicit Test Brief or diagnostic contract.
+- Any explicit diagnostic contract.
 
 If any of these are missing and cannot be safely inferred from the user's direct request, stop with a concise handback:
 
@@ -57,7 +57,8 @@ Read only relevant architecture, conventions, workflows, testing, and graph note
 - Choose files and implementation details that directly serve the Goal Contract.
 - Do not implement adjacent goals just because they are nearby or exposed by the same module.
 - Do not fix unrelated lint, type, formatting, generated, route, or dependency issues.
-- Do not rewrite tests or expected contracts to make implementation easier.
+- Do not weaken existing expected behavior or validation baselines to make implementation easier.
+- Verification may run existing checks and use temporary diagnostic probes within scope. Do not create or retain new project artifacts solely to strengthen verification unless the Goal Contract or direct user goal requires those artifacts.
 - If a required change expands into an unrelated domain, stop and report the expansion before continuing.
 - Prefer the smallest coherent change, not the smallest number of changed lines.
 
@@ -67,7 +68,6 @@ Use additional evidence only when it can affect implementation or verification. 
 
 - If the OpenAPI workflow is required for registered API contract inspection or an API test, ask the user to invoke `$workbench:openapi`. Never infer mutation permission from documentation.
 - If the visual workflow is required for a matching source frame, page, screenshot, or interaction state, ask the user to invoke `$workbench:visual-grounding`.
-- If a test or measurement contract is required, ask the user to invoke `$workbench:test-brief`. It is optional, not an automatic prerequisite.
 
 Continue with directly available repository and dev wiki evidence when it is sufficient. Otherwise pause for the required explicit invocation.
 
@@ -104,7 +104,7 @@ For normal, well-understood work, use normal implementation mode and do not infl
 
 Use the completion conditions as the primary check. Prefer, in order of usefulness:
 
-- focused regression or contract tests;
+- existing focused regression or contract tests;
 - existing project test/lint/type commands relevant to changed files;
 - API checks already provided by an explicit `$workbench:openapi` result;
 - source-to-target UI or interaction evidence already provided by an explicit `$workbench:visual-grounding` result;

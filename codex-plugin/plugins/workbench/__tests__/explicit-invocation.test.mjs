@@ -26,7 +26,6 @@ test("every Workbench skill requires an explicit namespaced invocation", () => {
     "issue-brief",
     "llm-script",
     "openapi",
-    "test-brief",
     "visual-grounding"
   ]);
 
@@ -45,4 +44,12 @@ test("every Workbench skill requires an explicit namespaced invocation", () => {
     assert.match(metadataText, /policy:\s*\n\s+allow_implicit_invocation:\s*false\b/);
     assert.doesNotMatch(metadataText, new RegExp(`\\$${skill}(?![A-Za-z0-9:-])`));
   }
+});
+
+test("executor keeps persistent verification artifacts inside the agreed goal", () => {
+  const executorText = fs.readFileSync(path.join(skillsRoot, "executor", "SKILL.md"), "utf8");
+
+  assert.doesNotMatch(executorText, /\$workbench:test-brief|Test Brief/);
+  assert.match(executorText, /Do not create or retain new project artifacts solely to strengthen verification/);
+  assert.match(executorText, /existing focused regression or contract tests/);
 });

@@ -1,6 +1,6 @@
 # Current Architecture — Codex Workbench
 
-> 기준일: 2026-07-21
+> 기준일: 2026-07-28
 
 이 문서는 저장소의 현재 기준점을 설명한다. 사용자-facing 제품은 Codex Workbench 플러그인에 두고, Workbench 성능 평가는 project-local `.codex` skill로 분리한다. Claude Code 플러그인과 과거 project-local Codex planning stack은 `legacy/`에 격리한다.
 
@@ -16,7 +16,7 @@
 | Codex 지침 경계 | `.codex/AGENTS.md` | evaluator 외 project-local stack이 다시 생기지 않도록 보호 |
 | 활성 CI | `.github/workflows/workbench-test.yml` | Workbench와 project-local evaluator 테스트 |
 | 현재 문서 | `docs/current-architecture.md` | 현재 구조의 canonical 문서 |
-| 역사 보관 | `legacy/old/` | Claude Code 플러그인, Codex planning stack, fable5, 과거 plan·CI·문서 |
+| 역사 보관 | `legacy/old/` | Claude Code 플러그인, Codex planning stack, 제거된 Workbench 스킬, 과거 plan·CI·문서 |
 | v1 보존본 | `legacy/v1/workbench/` | 현재 Workbench를 개선 전 상태로 보존한 snapshot |
 
 ## 루트 구조
@@ -39,7 +39,8 @@
 │   │   ├── claude-code/
 │   │   ├── codex-planning-stack/
 │   │   ├── docs/
-│   │   └── fable5/
+│   │   ├── fable5/
+│   │   └── workbench-skills/
 │   └── v1/workbench/
 ├── README.md
 ├── package.json
@@ -59,7 +60,6 @@ codex-plugin/
 │   ├── skills/
 │   │   ├── issue-brief/
 │   │   ├── brainstorm/
-│   │   ├── test-brief/
 │   │   ├── executor/
 │   │   ├── visual-grounding/
 │   │   ├── openapi/
@@ -86,7 +86,7 @@ $workbench:issue-brief (선택) ─────┐
               필요한 지원 스킬도 각각 명시 호출
 ```
 
-각 스킬은 사용자가 `$workbench:<skill>`을 지정할 때만 시작한다. `$workbench:issue-brief`는 정보 정리만으로 종료할 수 있고, `$workbench:brainstorm`은 Goal Contract를 만들되 다른 스킬이나 `$workbench:executor`를 자동 호출하지 않는다. 필요한 API·UI·테스트 근거 스킬도 사용자가 별도로 명시한다. brainstorm과 executor는 해당 프로젝트의 기존 dev wiki를 직접 컨텍스트로 읽을 수 있지만 `$workbench:dev-wiki` 유지보수 스킬을 자동 호출하지 않는다. `legacy/old/fable5/`는 더 이상 활성 plugin skill이 아닌 과거 운영 모드의 참고본이다.
+각 스킬은 사용자가 `$workbench:<skill>`을 지정할 때만 시작한다. `$workbench:issue-brief`는 정보 정리만으로 종료할 수 있고, `$workbench:brainstorm`은 Goal Contract를 만들되 다른 스킬이나 `$workbench:executor`를 자동 호출하지 않는다. 필요한 API·UI 근거 스킬도 사용자가 별도로 명시한다. brainstorm과 executor는 해당 프로젝트의 기존 dev wiki를 직접 컨텍스트로 읽을 수 있지만 `$workbench:dev-wiki` 유지보수 스킬을 자동 호출하지 않는다. 테스트 작성과 수정은 Goal Contract나 직접 요청에 포함될 때만 실행하는 일반 작업 산출물이며, 기존 검증 명령을 실행하는 것 자체는 새로운 테스트 산출물을 만들 권한이 아니다. `legacy/old/fable5/`와 `legacy/old/workbench-skills/`는 더 이상 활성 plugin skill이 아닌 과거 계약의 참고본이다.
 
 ## LLM script-source 수집
 
@@ -153,6 +153,7 @@ $workbench:issue-brief (선택) ─────┐
 | 역사 문서 | `legacy/old/docs/` |
 | 현재 Workbench snapshot | `legacy/v1/workbench/` |
 | 활성에서 제거한 fable5 | `legacy/old/fable5/` |
+| 활성에서 제거한 test-brief | `legacy/old/workbench-skills/test-brief/` |
 
 `legacy/old/codex-planning-stack/dev-wiki/source/`와 `legacy/old/codex-planning-stack/plan-wiki/source/`는 별도 Git 경계를 유지하고 root repository에서는 ignore한다.
 

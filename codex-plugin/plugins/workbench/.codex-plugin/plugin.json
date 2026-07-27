@@ -1,6 +1,6 @@
 {
   "name": "workbench",
-  "version": "0.1.0+codex.20260721234905",
+  "version": "0.1.0+codex.20260727235311",
   "description": "Explicitly invoked Workbench skills plus session-start refresh for existing central Dev Wiki and LLM Script clones.",
   "author": {
     "name": "Local developer"
