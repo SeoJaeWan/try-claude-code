@@ -35,6 +35,7 @@
 ## 작업 규칙
 
 - Preserve existing user changes and keep unrelated cleanup out of the current work unit.
+- Do NOT create or switch Git branches; keep all work on `main`.
 - Use focused validation for the touched surface, then run broader checks only when they are relevant and currently valid.
 - Use `npm test` for the active Workbench Node and Ruby test suite.
 - Do NOT commit, push, publish, or open a PR unless the user explicitly asks.
