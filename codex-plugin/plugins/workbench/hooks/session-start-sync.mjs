@@ -4,6 +4,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, lstatSync, realpathSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { DEV_WIKI_BRANCH } from "../skills/dev-wiki/scripts/lib/source-sync.mjs";
 
 const GIT_TIMEOUT_MS = 20_000;
 
@@ -44,7 +45,7 @@ function verifyRepository(sourceRoot) {
   }
 }
 
-function updateRepository(label, sourceRoot) {
+function updateRepository(label, sourceRoot, { expectedBranch = null } = {}) {
   if (!existsSync(sourceRoot)) return null;
 
   try {
@@ -59,7 +60,37 @@ function updateRepository(label, sourceRoot) {
     return `${label}: source 경로가 Git 저장소 루트가 아니어서 최신화를 건너뛰었습니다.`;
   }
 
-  const result = runGit(sourceRoot, [
+  if (expectedBranch) {
+    const branchResult = runGit(sourceRoot, ["branch", "--show-current"]);
+    const branch = branchResult.stdout.trim();
+    if (branchResult.error || branchResult.status !== 0 || branch !== expectedBranch) {
+      return (
+        `${label}: ${expectedBranch} 브랜치가 아니어서 최신화를 건너뛰었습니다` +
+        ` (${branch || "detached HEAD"}).`
+      );
+    }
+
+    const upstreamResult = runGit(sourceRoot, [
+      "rev-parse",
+      "--abbrev-ref",
+      "--symbolic-full-name",
+      "@{upstream}"
+    ]);
+    const upstream = upstreamResult.stdout.trim();
+    const expectedUpstream = `origin/${expectedBranch}`;
+    if (
+      upstreamResult.error ||
+      upstreamResult.status !== 0 ||
+      upstream !== expectedUpstream
+    ) {
+      return (
+        `${label}: upstream이 ${expectedUpstream}이 아니어서 최신화를 건너뛰었습니다` +
+        ` (${upstream || "missing"}).`
+      );
+    }
+  }
+
+  const pullArgs = [
     "-c",
     "credential.interactive=never",
     "-c",
@@ -67,7 +98,9 @@ function updateRepository(label, sourceRoot) {
     "pull",
     "--ff-only",
     "--quiet"
-  ]);
+  ];
+  if (expectedBranch) pullArgs.push("origin", expectedBranch);
+  const result = runGit(sourceRoot, pullArgs);
 
   if (!result.error && result.status === 0) return null;
   if (result.error?.code === "ETIMEDOUT") {
@@ -86,12 +119,16 @@ const llmScriptRoot = path.resolve(
   process.env.LLM_SCRIPT_ROOT || path.join(codexHome, "workbench", "llm-script")
 );
 const targets = [
-  ["LLM Script", path.join(llmScriptRoot, "source")],
-  ["Dev Wiki", path.join(codexHome, "workbench", "dev-wiki", "source")]
+  ["LLM Script", path.join(llmScriptRoot, "source"), {}],
+  [
+    "Dev Wiki",
+    path.join(codexHome, "workbench", "dev-wiki", "source"),
+    { expectedBranch: DEV_WIKI_BRANCH }
+  ]
 ];
 
 const warnings = targets
-  .map(([label, sourceRoot]) => updateRepository(label, sourceRoot))
+  .map(([label, sourceRoot, options]) => updateRepository(label, sourceRoot, options))
   .filter(Boolean);
 
 if (warnings.length > 0) {

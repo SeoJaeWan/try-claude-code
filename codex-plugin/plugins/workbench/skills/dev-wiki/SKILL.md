@@ -11,6 +11,15 @@ Dev wiki stores project-specific development conventions, architecture notes, wo
 
 By default, dev wiki data lives outside the project workspace at `${CODEX_HOME:-~/.codex}/workbench/dev-wiki`. Do not create a project-local `.codex/dev-wiki` for new setups unless the user explicitly asks for a legacy/local layout.
 
+## Source Policy
+
+- Use only the local `main` branch tracking `origin/main`. Do not inspect, check out, create, merge, or update another dev wiki branch.
+- Before the first operation that can change `{dev-wiki-root}/source`, run the freshness preflight once for the current invocation:
+  `node <skill-dir>/scripts/refresh-dev-wiki.mjs --dev-wiki-root "$DEV_WIKI_ROOT"`.
+- Treat generated index refreshes, lint cleanup, graph generation, and wiki prose edits as source changes that require the preflight.
+- In setup mode, `stage-dev-wiki.mjs` owns this preflight: it clones only `main` when source is missing and fast-forwards `main` before creating or repairing files when source exists.
+- If the source is dirty, the branch or upstream is not `main`/`origin/main`, the remote differs from config, the pull cannot fast-forward, or local commits remain after pull, stop and report the exact condition. Do not switch branches, stash, merge, rebase, reset, clean, or rewrite the remote automatically.
+
 ## Mode Routing
 
 Choose one primary mode:
@@ -33,15 +42,18 @@ If the user asks a broad question like "dev wiki 봐줘", start with lint plus a
 5. If config or workspace mapping is missing:
    - For explicit setup requests, run setup.
    - For other requests, stop and tell the user the project has not opted in yet.
-6. Resolve the project wiki root as `$DEV_WIKI_ROOT/source/{project}`.
-7. Use legacy `.codex/dev-wiki` only as a fallback for existing projects; do not create it for new setups.
-8. Do not edit `.codex/plan-wiki/**` or any plan wiki files.
-9. Do not commit, push, merge, rebase, reset, clean, or stash the dev wiki source repo unless the user explicitly asks.
+6. Require `config.json` to use `"branch": "main"`; route a missing or different branch to setup repair.
+7. Resolve and verify the project wiki root as `$DEV_WIKI_ROOT/source/{project}`.
+8. Before any source-changing command in a non-setup mode, run `refresh-dev-wiki.mjs`. Do not continue unless it succeeds.
+9. Use legacy `.codex/dev-wiki` only as a fallback for existing projects; do not create it for new setups.
+10. Do not edit `.codex/plan-wiki/**` or any plan wiki files.
+11. Do not commit, push, merge, rebase, reset, clean, or stash the dev wiki source repo unless the user explicitly asks.
 
 Run bundled scripts with an explicit workspace root so they work from an installed plugin cache:
 
 ```bash
 DEV_WIKI_ROOT="${CODEX_HOME:-$HOME/.codex}/workbench/dev-wiki"
+node <skill-dir>/scripts/refresh-dev-wiki.mjs --dev-wiki-root "$DEV_WIKI_ROOT"
 node <skill-dir>/scripts/stage-dev-wiki.mjs --workspace-root "$PWD" --dev-wiki-root "$DEV_WIKI_ROOT"
 node <skill-dir>/scripts/wiki-index.mjs --mode dev --root "$DEV_WIKI_ROOT/source/<project>"
 node <skill-dir>/scripts/generate-dev-wiki-graph.mjs --workspace-root "$PWD" --dev-wiki-root "$DEV_WIKI_ROOT"
@@ -61,7 +73,7 @@ Workflow:
 
 1. Run `node <skill-dir>/scripts/stage-dev-wiki.mjs --workspace-root "$PWD" --dev-wiki-root "$DEV_WIKI_ROOT"`.
 2. Pass `--project <name>` only when the user provides or confirms the project folder name.
-3. Use `--repo` and `--branch` only when overriding defaults intentionally.
+3. Use `--repo` only when overriding the configured remote intentionally. The branch is fixed to `main`; do not pass another branch.
 4. Verify `$DEV_WIKI_ROOT/source` and the configured project folder.
 5. Run `git -C "$DEV_WIKI_ROOT/source" status --short` and report dev wiki repo changes separately from the workspace repo.
 
@@ -72,12 +84,13 @@ Before comparing, read `references/audit-contract.md`.
 Workflow:
 
 1. Verify opt-in and project root.
-2. Refresh generated indexes:
+2. Run the source freshness preflight.
+3. Refresh generated indexes:
    `node <skill-dir>/scripts/wiki-index.mjs --mode dev --root "$DEV_WIKI_ROOT/source/<project>"`.
-3. Read `<project>/generated/wiki-health.md`.
-4. Inspect only repository evidence needed for the requested audit scope: package manifests, scripts, configs, CI, source roots, tests, env references, routes, API clients, and recent Git changes.
-5. Compare `project.json`, `conventions/`, `architecture/`, `workflows/`, and graph freshness.
-6. Report findings first. Apply corrections only when the user asked for the specific update or explicitly approves the correction.
+4. Read `<project>/generated/wiki-health.md`.
+5. Inspect only repository evidence needed for the requested audit scope: package manifests, scripts, configs, CI, source roots, tests, env references, routes, API clients, and recent Git changes.
+6. Compare `project.json`, `conventions/`, `architecture/`, `workflows/`, and graph freshness.
+7. Report findings first. Apply corrections only when the user asked for the specific update or explicitly approves the correction.
 
 ### update
 
@@ -89,14 +102,15 @@ Before editing wiki prose, read:
 Workflow:
 
 1. Verify opt-in and project root.
-2. Read the relevant existing documents under `conventions/`, `architecture/`, or `workflows/`.
-3. Inspect narrow repository evidence only when needed to place or reconcile the user-provided rule.
-4. Write Korean-first prose. Keep English for literal identifiers, paths, commands, packages, APIs, schema keys, and quoted terms.
-5. Integrate durable guidance: scope, rule, reason, examples, and exclusions when useful.
-6. Replace stale or conflicting text instead of stacking contradictory bullets.
-7. Refresh indexes with `wiki-index.mjs`.
-8. Read `generated/wiki-health.md` and `generated/normalize-proposals.md`; apply only safe mechanical cleanup.
-9. Run `git -C "$DEV_WIKI_ROOT/source" status --short` and summarize changed wiki files.
+2. Run the source freshness preflight before reading the documents to edit.
+3. Read the relevant existing documents under `conventions/`, `architecture/`, or `workflows/`.
+4. Inspect narrow repository evidence only when needed to place or reconcile the user-provided rule.
+5. Write Korean-first prose. Keep English for literal identifiers, paths, commands, packages, APIs, schema keys, and quoted terms.
+6. Integrate durable guidance: scope, rule, reason, examples, and exclusions when useful.
+7. Replace stale or conflicting text instead of stacking contradictory bullets.
+8. Refresh indexes with `wiki-index.mjs`.
+9. Read `generated/wiki-health.md` and `generated/normalize-proposals.md`; apply only safe mechanical cleanup.
+10. Run `git -C "$DEV_WIKI_ROOT/source" status --short` and summarize changed wiki files.
 
 ### lint
 
@@ -105,11 +119,12 @@ Before scanning, read `references/maintenance-pipeline.md`.
 Workflow:
 
 1. Verify opt-in and project root.
-2. Refresh generated indexes with `wiki-index.mjs`.
-3. Read `generated/wiki-health.md` and `generated/normalize-proposals.md`.
-4. Inspect source files only as needed to verify reported missing type, missing frontmatter, broken links, tag drift, one-off tags, or generated staleness.
-5. Apply only safe mechanical cleanup: generated refresh, duplicate frontmatter list entries, obvious whitespace around metadata values, and stale generated files.
-6. Ask before tag merges, term normalization, document moves/deletes, policy meaning changes, graph/prose conflict resolution, or convention changes.
+2. Run the source freshness preflight.
+3. Refresh generated indexes with `wiki-index.mjs`.
+4. Read `generated/wiki-health.md` and `generated/normalize-proposals.md`.
+5. Inspect source files only as needed to verify reported missing type, missing frontmatter, broken links, tag drift, one-off tags, or generated staleness.
+6. Apply only safe mechanical cleanup: generated refresh, duplicate frontmatter list entries, obvious whitespace around metadata values, and stale generated files.
+7. Ask before tag merges, term normalization, document moves/deletes, policy meaning changes, graph/prose conflict resolution, or convention changes.
 
 ### graph
 
@@ -121,12 +136,13 @@ Before generating graph artifacts, read:
 Workflow:
 
 1. Verify opt-in and project root.
-2. Run `node <skill-dir>/scripts/generate-dev-wiki-graph.mjs --workspace-root "$PWD" --dev-wiki-root "$DEV_WIKI_ROOT"`.
-3. Pass `--project <name>` only when intentionally overriding config.
-4. Read generated graph artifacts when needed and improve scanner logic only for factual extraction or noise reduction.
-5. Do not add project-specific domain, layer, owner, product, or business classifications to the generator.
-6. Refresh indexes with `wiki-index.mjs` after graph output changes.
-7. Run `git -C "$DEV_WIKI_ROOT/source" status --short`.
+2. Run the source freshness preflight.
+3. Run `node <skill-dir>/scripts/generate-dev-wiki-graph.mjs --workspace-root "$PWD" --dev-wiki-root "$DEV_WIKI_ROOT"`.
+4. Pass `--project <name>` only when intentionally overriding config.
+5. Read generated graph artifacts when needed and improve scanner logic only for factual extraction or noise reduction.
+6. Do not add project-specific domain, layer, owner, product, or business classifications to the generator.
+7. Refresh indexes with `wiki-index.mjs` after graph output changes.
+8. Run `git -C "$DEV_WIKI_ROOT/source" status --short`.
 
 ## Guardrails
 
@@ -139,3 +155,4 @@ Workflow:
 - Do not turn observed repository patterns into mandatory conventions without user confirmation.
 - Do not silently invent policy. Ask when the rule depends on a project decision that local evidence cannot prove.
 - Do not duplicate one rule across many files; choose one owner and link to it when useful.
+- Ignore non-`main` remote branches. Their existence does not authorize checkout, comparison, merge, deletion, or maintenance.

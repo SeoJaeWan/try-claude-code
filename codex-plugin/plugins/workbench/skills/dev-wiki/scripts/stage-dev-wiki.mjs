@@ -13,12 +13,16 @@ import os from "node:os";
 import { readFile, realpath, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  DEV_WIKI_BRANCH,
+  inspectDevWikiSource,
+  refreshDevWikiSource
+} from "./lib/source-sync.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..", "..", "..", "..");
 const argv = process.argv.slice(2);
 const DEFAULT_REPO = "https://github.com/SeoJaeWan/dev-wiki.git";
-const DEFAULT_BRANCH = "main";
 
 function takeFlag(name) {
   const idx = argv.indexOf(name);
@@ -33,9 +37,10 @@ function hasFlag(name) {
 }
 
 if (hasFlag("--help") || hasFlag("-h")) {
-  console.log("Usage: node <dev-wiki-skill-dir>/scripts/stage-dev-wiki.mjs --workspace-root <path> [--dev-wiki-root <path>] [--project <name>] [--repo <git-url>] [--branch <name>]");
+  console.log("Usage: node <dev-wiki-skill-dir>/scripts/stage-dev-wiki.mjs --workspace-root <path> [--dev-wiki-root <path>] [--project <name>] [--repo <git-url>] [--branch main]");
   console.log("");
   console.log("Prepares the Workbench-owned dev wiki clone, defaulting to ${CODEX_HOME:-~/.codex}/workbench/dev-wiki/source.");
+  console.log("The Dev Wiki source branch is fixed to main; --branch accepts main only.");
   console.log("Creates central config and workspace mapping files under the dev wiki root.");
   process.exit(0);
 }
@@ -103,15 +108,6 @@ function assertSafeProjectName(project) {
   if (project.includes("/") || project.includes("\\") || project === "." || project === "..") {
     throw new Error(`Unsafe dev wiki project name: ${project}`);
   }
-}
-
-function normalizeRemote(value) {
-  return String(value || "").trim().replace(/\/$/, "").replace(/\.git$/, "");
-}
-
-function ensureGitRepo(sourceRoot) {
-  ensureDirectory("Dev wiki source root", sourceRoot);
-  runGit(["rev-parse", "--is-inside-work-tree"], sourceRoot);
 }
 
 function writeTextIfMissing(filePath, content) {
@@ -368,13 +364,28 @@ async function main() {
   const legacyConfig = (await readJsonIfExists(path.join(workspaceRoot, ".codex", "dev-wiki", "config.json"))) || {};
   const project = takeFlag("--project") || existingWorkspace.project || legacyConfig.project || readPackageName(workspaceRoot) || path.basename(workspaceRoot);
   const repo = takeFlag("--repo") || existingConfig.repo || legacyConfig.repo || DEFAULT_REPO;
-  const branch = takeFlag("--branch") || existingConfig.branch || legacyConfig.branch || DEFAULT_BRANCH;
+  const requestedBranch = takeFlag("--branch");
   const sourceRoot = path.join(devWikiRoot, "source");
 
   assertSafeProjectName(project);
+  if (requestedBranch && requestedBranch !== DEV_WIKI_BRANCH) {
+    throw new Error(
+      `Dev wiki branch is fixed to ${DEV_WIKI_BRANCH}; received ${requestedBranch}.`
+    );
+  }
   mkdirSync(devWikiRoot, { recursive: true });
 
-  await upsertConfig(configPath, { repo, branch });
+  if (!existsSync(sourceRoot)) {
+    runGit(
+      ["clone", "--branch", DEV_WIKI_BRANCH, "--single-branch", "--", repo, sourceRoot],
+      devWikiRoot
+    );
+    inspectDevWikiSource({ sourceRoot, repo, requireClean: true });
+  } else {
+    refreshDevWikiSource({ sourceRoot, repo });
+  }
+
+  await upsertConfig(configPath, { repo, branch: DEV_WIKI_BRANCH });
   await upsertWorkspaceIndex(workspaceIndexPath, workspaceKey, project);
   writeTextIfMissing(
     path.join(devWikiRoot, "README.md"),
@@ -391,17 +402,6 @@ async function main() {
     ].join("\n")
   );
 
-  if (!existsSync(sourceRoot)) {
-    runGit(["clone", "--branch", branch, repo, sourceRoot], devWikiRoot);
-  }
-
-  ensureGitRepo(sourceRoot);
-
-  const remote = runGit(["remote", "get-url", "origin"], sourceRoot);
-  if (normalizeRemote(remote) !== normalizeRemote(repo)) {
-    throw new Error(`Dev wiki origin mismatch. Expected ${repo}, found ${remote}`);
-  }
-
   bootstrapObsidian(sourceRoot);
   bootstrapSourceRoot(sourceRoot);
   await upsertProjectsIndex(path.join(sourceRoot, "_meta", "projects.json"), project);
@@ -412,6 +412,7 @@ async function main() {
 
   console.log(`Dev wiki root: ${devWikiRoot}`);
   console.log(`Prepared dev wiki source at ${resolvedSourceRoot}`);
+  console.log(`Dev wiki branch: ${DEV_WIKI_BRANCH}`);
   console.log(`Project wiki root: ${path.join(resolvedSourceRoot, project)}`);
   console.log(`Workspace mapping: ${workspaceKey} -> ${project}`);
   console.log(`Nested repo status:${status ? `\n${status}` : " clean"}`);

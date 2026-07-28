@@ -22,6 +22,8 @@ Use this shape:
 }
 ```
 
+`branch` is a compatibility field with one valid value: `main`. It is not a user-selectable branch. Setup may normalize a stale config to `main` only after verifying that an existing source clone is already on clean `main`; it must never switch an existing clone automatically.
+
 Use this workspace mapping shape:
 
 ```json
@@ -44,7 +46,9 @@ Resolve in this order:
 1. Resolve `{dev-wiki-root}` from `--dev-wiki-root` or `${CODEX_HOME:-~/.codex}/workbench/dev-wiki`.
 2. Read `{dev-wiki-root}/config.json`.
 3. Read `{dev-wiki-root}/workspaces.json` and resolve the current workspace to `{project}`.
-4. Use `repo` and `branch` from config unless explicit CLI flags override them during setup.
+4. Use `repo` from config unless an explicit setup flag overrides it. Require `branch` to be `main`.
 5. Treat `{dev-wiki-root}/source/{project}` as the project wiki root.
+
+Before changing an existing source clone during setup, verify a clean worktree, matching `origin`, local `main`, and upstream `origin/main`, then run `git pull --ff-only origin main`. When cloning, use only `main`. Ignore all other local and remote branches.
 
 For legacy projects only, existing `./.codex/dev-wiki/config.json` may be used as a fallback. Do not create new project-local `.codex/dev-wiki` directories by default.

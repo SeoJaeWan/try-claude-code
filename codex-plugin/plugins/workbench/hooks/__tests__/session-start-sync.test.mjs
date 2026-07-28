@@ -39,7 +39,7 @@ function createBehindClone(testRoot, name, sourceRoot) {
   const remoteRoot = path.join(testRoot, `${name}.git`);
   const seedRoot = path.join(testRoot, `${name}-seed`);
 
-  git(["init", "--bare", remoteRoot], testRoot);
+  git(["init", "--bare", "--initial-branch=main", remoteRoot], testRoot);
   git(["clone", remoteRoot, seedRoot], testRoot);
   git(["config", "user.name", "Workbench Test"], seedRoot);
   git(["config", "user.email", "workbench@example.com"], seedRoot);
@@ -122,6 +122,42 @@ test("warns and preserves a conflicting dirty worktree", (t) => {
   assert.match(output.systemMessage, /Dev Wiki: fast-forward 최신화에 실패/);
   assert.equal(fs.readFileSync(path.join(wikiSource, "state.txt"), "utf8"), "local change\n");
   assert.equal(git(["rev-parse", "HEAD"], wikiSource), before);
+});
+
+test("warns and leaves a non-main Dev Wiki branch untouched", (t) => {
+  const root = temporaryRoot(t);
+  const codexHome = path.join(root, "codex-home");
+  const wikiSource = path.join(codexHome, "workbench", "dev-wiki", "source");
+  createBehindClone(root, "dev-wiki", wikiSource);
+  git(["switch", "-c", "topic"], wikiSource);
+  const before = git(["rev-parse", "HEAD"], wikiSource);
+
+  const result = runHook(codexHome);
+  const output = JSON.parse(result.stdout);
+
+  assert.equal(result.status, 0);
+  assert.match(output.systemMessage, /Dev Wiki: main 브랜치가 아니어서 최신화를 건너뛰었습니다/);
+  assert.equal(git(["branch", "--show-current"], wikiSource), "topic");
+  assert.equal(git(["rev-parse", "HEAD"], wikiSource), before);
+  assert.equal(fs.readFileSync(path.join(wikiSource, "state.txt"), "utf8"), "initial\n");
+});
+
+test("warns and leaves Dev Wiki main with a different upstream untouched", (t) => {
+  const root = temporaryRoot(t);
+  const codexHome = path.join(root, "codex-home");
+  const wikiSource = path.join(codexHome, "workbench", "dev-wiki", "source");
+  createBehindClone(root, "dev-wiki", wikiSource);
+  git(["branch", "--unset-upstream"], wikiSource);
+  const before = git(["rev-parse", "HEAD"], wikiSource);
+
+  const result = runHook(codexHome);
+  const output = JSON.parse(result.stdout);
+
+  assert.equal(result.status, 0);
+  assert.match(output.systemMessage, /Dev Wiki: upstream이 origin\/main이 아니어서 최신화를 건너뛰었습니다/);
+  assert.equal(git(["branch", "--show-current"], wikiSource), "main");
+  assert.equal(git(["rev-parse", "HEAD"], wikiSource), before);
+  assert.equal(fs.readFileSync(path.join(wikiSource, "state.txt"), "utf8"), "initial\n");
 });
 
 test("ignores non-SessionStart payloads", (t) => {
