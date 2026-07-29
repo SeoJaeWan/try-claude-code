@@ -9,13 +9,19 @@
 
 ## Mandatory Freshness Preflight
 
-Before the first command in an invocation that can change the source clone:
+For an explicit whole-bundle refresh:
+
+1. Read central config and verify it uses `"branch": "main"`.
+2. Verify the source is the repository root, `origin` matches config, the worktree is clean, the current branch is `main`, and upstream is `origin/main`.
+3. Run `node <skill-dir>/scripts/refresh-dev-wiki.mjs --dev-wiki-root "$DEV_WIKI_ROOT"`.
+4. Continue only when local `main` is identical to `origin/main`.
+
+Do not read or require `workspaces.json`, a project folder, or current-workspace opt-in for a whole-bundle refresh. The refresh target is the shared `{dev-wiki-root}/source` Git repository.
+
+Before the first command in a project-scoped invocation that can change the source clone:
 
 1. Verify config, workspace mapping, and project folder.
-2. Verify config uses `"branch": "main"`.
-3. Verify the source is the repository root, `origin` matches config, the worktree is clean, the current branch is `main`, and upstream is `origin/main`.
-4. Run `node <skill-dir>/scripts/refresh-dev-wiki.mjs --dev-wiki-root "$DEV_WIKI_ROOT"`.
-5. Continue only when local `main` is identical to `origin/main`.
+2. Apply the same central source checks and refresh steps above.
 
 Run this once before wiki prose edits, generated index refreshes, lint cleanup, or graph generation. Setup uses `stage-dev-wiki.mjs`, which performs the same refresh before creating or repairing files in an existing clone. A new setup clones `main` with single-branch scope.
 

@@ -37,11 +37,13 @@ Use this workspace mapping shape:
 }
 ```
 
-Missing config or missing workspace mapping means the workspace has not opted in to dev-wiki setup and maintenance. Only setup should create or register it. A downstream consumer may still read an existing exact `source/{workspace-basename}` project folder when its `project.json` is unambiguous; that read does not register the workspace or change dev-wiki state.
+Missing config or missing workspace mapping means the workspace has not opted in to project-scoped dev-wiki setup and maintenance. Only setup should create or register it. This does not block a whole-bundle refresh of the existing central `source` clone, which does not resolve a project. A downstream consumer may still read an existing exact `source/{workspace-basename}` project folder when its `project.json` is unambiguous; that read does not register the workspace or change dev-wiki state.
 
 ## Root Resolution
 
-Resolve in this order:
+For a whole-bundle refresh, resolve `{dev-wiki-root}`, read `config.json`, require `branch` to be `main`, and operate on `{dev-wiki-root}/source`. Do not read or require `workspaces.json`.
+
+For project-scoped work, resolve in this order:
 
 1. Resolve `{dev-wiki-root}` from `--dev-wiki-root` or `${CODEX_HOME:-~/.codex}/workbench/dev-wiki`.
 2. Read `{dev-wiki-root}/config.json`.

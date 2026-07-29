@@ -1,7 +1,7 @@
 interface:
   display_name: "Dev Wiki"
-  short_description: "Manage project dev wiki knowledge."
-  default_prompt: "Use $workbench:dev-wiki to inspect, update, or refresh this project's dev wiki."
+  short_description: "Refresh the bundle or maintain a project wiki."
+  default_prompt: "Use $workbench:dev-wiki to refresh the central Dev Wiki source bundle or maintain an explicitly scoped project wiki."
 
 policy:
   allow_implicit_invocation: false

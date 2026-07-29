@@ -53,3 +53,17 @@ test("executor keeps persistent verification artifacts inside the agreed goal", 
   assert.match(executorText, /Do not create or retain new project artifacts solely to strengthen verification/);
   assert.match(executorText, /existing focused regression or contract tests/);
 });
+
+test("dev-wiki treats an unqualified refresh as a whole-bundle operation", () => {
+  const devWikiRoot = path.join(skillsRoot, "dev-wiki");
+  const skillText = fs.readFileSync(path.join(devWikiRoot, "SKILL.md"), "utf8");
+  const syncPolicyText = fs.readFileSync(
+    path.join(devWikiRoot, "references", "sync-policy.md"),
+    "utf8"
+  );
+
+  assert.match(skillText, /Treat an unqualified reference to Dev Wiki itself as this whole bundle/);
+  assert.match(skillText, /"Dev Wiki 최신화해줘" means refresh the whole source bundle/);
+  assert.match(skillText, /Do not gate whole-bundle refresh on the current workspace mapping/);
+  assert.match(syncPolicyText, /Do not read or require `workspaces\.json`.*whole-bundle refresh/);
+});

@@ -1,19 +1,20 @@
 ---
 name: dev-wiki
-description: Explicit-invocation-only management for a project dev wiki. Invoke only as `$workbench:dev-wiki`, then route setup, audit, update, lint, graph, and maintenance work through this single skill in the Workbench-owned dev wiki root, defaulting to `${CODEX_HOME:-~/.codex}/workbench/dev-wiki/source/{project}`. Do not edit plan wiki files.
+description: Explicit-invocation-only management for the Workbench-owned Dev Wiki source bundle and its project folders. Invoke only as `$workbench:dev-wiki`; treat an unqualified request to refresh, sync, pull, or get the latest Dev Wiki as a whole-bundle source-repository refresh, and use setup, audit, content update, lint, or graph only for an explicit project scope. Default to `${CODEX_HOME:-~/.codex}/workbench/dev-wiki`. Do not edit plan wiki files.
 ---
 
 # Dev Wiki
 
-Run this skill only when the user explicitly invokes `$workbench:dev-wiki`. Use it as the single entry point for project-specific dev wiki work. After invocation, infer the setup, audit, update, lint, graph, or maintenance mode from the request and continue in small, reviewable steps.
+Run this skill only when the user explicitly invokes `$workbench:dev-wiki`. Use it as the single entry point for whole-bundle source freshness and project-specific dev wiki work. After invocation, infer the refresh, setup, audit, update, lint, graph, or maintenance mode from the request and continue in small, reviewable steps.
 
-Dev wiki stores project-specific development conventions, architecture notes, workflows, and graph artifacts. It is separate from plan wiki, which stores shared planning knowledge.
+Dev Wiki is one central Git/Obsidian source bundle at `${CODEX_HOME:-~/.codex}/workbench/dev-wiki/source`. It contains project folders that store project-specific development conventions, architecture notes, workflows, and graph artifacts. Treat an unqualified reference to Dev Wiki itself as this whole bundle, not as the current workspace's project folder. Dev Wiki is separate from plan wiki, which stores shared planning knowledge.
 
 By default, dev wiki data lives outside the project workspace at `${CODEX_HOME:-~/.codex}/workbench/dev-wiki`. Do not create a project-local `.codex/dev-wiki` for new setups unless the user explicitly asks for a legacy/local layout.
 
 ## Source Policy
 
 - Use only the local `main` branch tracking `origin/main`. Do not inspect, check out, create, merge, or update another dev wiki branch.
+- A bundle-level refresh operates on `{dev-wiki-root}/source` as one Git repository. It does not read or require `workspaces.json`, a current project mapping, or project opt-in.
 - Before the first operation that can change `{dev-wiki-root}/source`, run the freshness preflight once for the current invocation:
   `node <skill-dir>/scripts/refresh-dev-wiki.mjs --dev-wiki-root "$DEV_WIKI_ROOT"`.
 - Treat generated index refreshes, lint cleanup, graph generation, and wiki prose edits as source changes that require the preflight.
@@ -24,30 +25,36 @@ By default, dev wiki data lives outside the project workspace at `${CODEX_HOME:-
 
 Choose one primary mode:
 
+- **refresh**: the user asks to refresh, update, sync, pull, or get the latest Dev Wiki itself without naming a project document or repository comparison. This includes requests such as "Dev Wiki 최신화해줘", "저장소에서부터 받아와", and "Dev Wiki 전체를 갱신해줘". Refresh the central source bundle only; do not infer the current project, require opt-in, regenerate project artifacts, or edit wiki prose.
 - **setup**: the project should opt in to dev wiki, the Workbench dev wiki root is missing or stale, the source clone is missing, or the user asks to create, connect, bootstrap, verify, or repair dev wiki.
 - **audit**: the user asks whether the wiki matches the repository, wants stale or missing documentation found, or asks for a repo-vs-wiki consistency check.
 - **update**: the user gives an explicit rule, convention, architecture note, workflow, command, or development constraint and asks to record, change, or update dev wiki.
 - **lint**: the user asks for wiki health, generated indexes, frontmatter, links, tags, metadata, normalization proposals, or maintenance without comparing the whole repository.
 - **graph**: the user asks to build, refresh, inspect, or visualize the project graph, or asks for navigation maps from repository facts.
-- **sync**: deprecated wording. Route broad sync requests to audit first; apply updates only after explicit user approval or a direct update request.
 
-If the user asks a broad question like "dev wiki 봐줘", start with lint plus a brief opt-in check. If the user asks "현재 코드랑 비교해줘", use audit. If the user asks "이 규칙 기록해줘", use update.
+Route by the object the user names, not merely by the verb:
+
+- "Dev Wiki 최신화해줘" means refresh the whole source bundle.
+- "현재 코드랑 프로젝트 위키를 비교해줘" means audit the current project.
+- "이 규칙을 프로젝트 위키에 기록해줘" means update the explicitly targeted project.
+- A broad question such as "프로젝트 dev wiki 봐줘" means lint plus a brief project opt-in check.
 
 ## Common Setup
 
 1. Work from the current workspace root.
 2. Resolve this skill directory from the loaded `SKILL.md` path. Use bundled scripts from `scripts/`.
 3. Resolve `DEV_WIKI_ROOT="${CODEX_HOME:-$HOME/.codex}/workbench/dev-wiki"` unless the user provides a different root.
-4. Read `$DEV_WIKI_ROOT/config.json` and `$DEV_WIKI_ROOT/workspaces.json` before any non-setup mode.
-5. If config or workspace mapping is missing:
+4. For refresh mode, read `$DEV_WIKI_ROOT/config.json`, require `"branch": "main"`, and treat `$DEV_WIKI_ROOT/source` as the complete Dev Wiki bundle. Do not read or require `workspaces.json`.
+5. For project-scoped audit, update, lint, or graph mode, read `$DEV_WIKI_ROOT/config.json` and `$DEV_WIKI_ROOT/workspaces.json`.
+6. If config or workspace mapping is missing for a project-scoped mode:
    - For explicit setup requests, run setup.
    - For other requests, stop and tell the user the project has not opted in yet.
-6. Require `config.json` to use `"branch": "main"`; route a missing or different branch to setup repair.
-7. Resolve and verify the project wiki root as `$DEV_WIKI_ROOT/source/{project}`.
-8. Before any source-changing command in a non-setup mode, run `refresh-dev-wiki.mjs`. Do not continue unless it succeeds.
-9. Use legacy `.codex/dev-wiki` only as a fallback for existing projects; do not create it for new setups.
-10. Do not edit `.codex/plan-wiki/**` or any plan wiki files.
-11. Do not commit, push, merge, rebase, reset, clean, or stash the dev wiki source repo unless the user explicitly asks.
+7. Require `config.json` to use `"branch": "main"`; route a missing or different branch to setup repair.
+8. Resolve and verify the project wiki root as `$DEV_WIKI_ROOT/source/{project}` only for project-scoped modes.
+9. Before any source-changing command in a non-setup mode, run `refresh-dev-wiki.mjs`. Do not continue unless it succeeds.
+10. Use legacy `.codex/dev-wiki` only as a fallback for existing projects; do not create it for new setups.
+11. Do not edit `.codex/plan-wiki/**` or any plan wiki files.
+12. Do not commit, push, merge, rebase, reset, clean, or stash the dev wiki source repo unless the user explicitly asks.
 
 Run bundled scripts with an explicit workspace root so they work from an installed plugin cache:
 
@@ -60,6 +67,20 @@ node <skill-dir>/scripts/generate-dev-wiki-graph.mjs --workspace-root "$PWD" --d
 ```
 
 ## Mode Workflows
+
+### refresh
+
+Before refreshing, read `references/sync-policy.md`.
+
+Workflow:
+
+1. Resolve the central Dev Wiki root and read `config.json`.
+2. Require the configured branch to be `main`. Do not resolve the current workspace, read `workspaces.json`, or check project opt-in.
+3. Record the current source `HEAD`, then run:
+   `node <skill-dir>/scripts/refresh-dev-wiki.mjs --dev-wiki-root "$DEV_WIKI_ROOT"`.
+4. Verify `$DEV_WIKI_ROOT/source` is clean on local `main` tracking `origin/main` and that local `HEAD` equals `origin/main`.
+5. Report whether the whole source bundle advanced and show the before/after commit IDs. Do not refresh indexes, generate graphs, or edit project wiki files.
+6. If config or the source clone is missing, report that central setup is required. Do not create a workspace mapping unless the user explicitly asks to set up a project.
 
 ### setup
 
@@ -146,7 +167,9 @@ Workflow:
 
 ## Guardrails
 
-- Do not make a project use dev wiki implicitly. Missing central config or workspace mapping means not opted in unless the user asked to set it up.
+- Do not make a project use dev wiki implicitly. Missing central config or workspace mapping means not opted in for project-scoped setup and maintenance unless the user asked to set it up.
+- Do not gate whole-bundle refresh on the current workspace mapping. Project opt-in and central source freshness are independent.
+- Do not reinterpret an unqualified Dev Wiki refresh as a repository-vs-project-wiki audit or project content update.
 - This opt-in gate controls dev-wiki setup and maintenance. Explicitly invoked consumers such as `$workbench:brainstorm` and `$workbench:executor` may read an existing unambiguous `source/{workspace-basename}` project folder without changing opt-in state, according to the Workbench consumer contract.
 - Do not overwrite whole wiki documents with generated summaries.
 - Do not create `history/` directories; Git commits are the change history.
