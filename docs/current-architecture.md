@@ -8,7 +8,7 @@
 
 | 영역 | 경로 | 역할 |
 |---|---|---|
-| Codex 메인 플러그인 | `codex-plugin/plugins/workbench/` | 다섯 개의 explicit-only workflow skill, Local Work Memory·Context7 MCP 설정, 계약 테스트 |
+| Codex 메인 플러그인 | `codex-plugin/plugins/workbench/` | 다섯 개의 explicit-only workflow skill, Local Work Memory·Context7·Atlassian·Figma MCP 설정, 계약 테스트 |
 | Codex marketplace | `codex-plugin/.agents/plugins/marketplace.json` | 활성 Workbench 로컬 marketplace 등록 |
 | 배포 도구 | `codex-plugin/scripts/deploy-workbench-plugin.mjs` | manifest cachebuster와 로컬 plugin install |
 | 활성 CI | `.github/workflows/workbench-test.yml` | 현재 Workbench의 정적 계약과 Node 테스트 |
@@ -102,7 +102,7 @@ $workbench:finalize
 
 | Skill | 원래 단계 | 입력 | 핵심 책임 | 출력 |
 |---|---:|---|---|---|
-| `shape` | 0~4 | 사용자 목표와 대상 repository | memory 조회, repository 탐색, 요구사항 분석, invariant·acceptance criteria, 공식 근거 조사, architecture decision | 출처가 연결된 Shape Report와 Memory Change Set |
+| `shape` | 0~4 | 사용자 목표와 대상 repository | memory와 연결된 Jira/Figma 근거 조회, repository 탐색, 요구사항 분석, invariant·acceptance criteria, 공식 근거 조사, architecture decision | 출처가 연결된 Shape Report와 Memory Change Set |
 | `memory-update` | 5 | 승인 가능한 Shape Report와 Memory Change Set | 준비된 Local Work Memory 변경만 Shape가 확보한 revision으로 방어해 적용 | 적용·충돌·미적용 항목을 담은 Memory Update Result |
 | `prepare` | 6~7 | 동일 run의 READY Shape Report | task 분해, dependency DAG, baseline 실행, worktree topology와 검증 명령 확정 | 실행 가능한 Execution Plan과 Baseline Report |
 | `execute-task` | 8 | Execution Plan의 task 하나 | task plan, 성공 기준, 구현, focused verification, self-review, 승인된 경우 checkpoint commit | Task Result와 다음 integration 정보 |
@@ -114,9 +114,11 @@ $workbench:finalize
 
 Workbench Shape를 호출하기 전에 Codex UI에서 coordinator worktree를 시작하거나 이 task를 해당 worktree로 handoff해야 합니다. Shape는 현재 linked worktree를 coordinator로 채택한 뒤 다음 순서로 진행합니다.
 
-1. **Stage 0 — Local Work Memory 조회와 Repository Exploration**
+1. **Stage 0 — Local Work Memory·Jira·Figma 조회와 Repository Exploration**
    - 대상 repository와 project identity를 확인합니다.
    - Local Work Memory에서 관련 `dev_wiki`와 `note`를 검색합니다.
+   - 요청에 Jira issue/project가 연결되면 해당 issue 필드·설명·관련 comment만 읽고 canonical URL과 update/retrieval 시점을 남깁니다.
+   - 요청에 Figma URL/file/node가 연결되면 정확한 node와 필요한 component/token/screenshot 근거만 읽고 canonical URL과 식별자·retrieval 시점을 남깁니다.
    - update 또는 delete 후보는 `memory_get`으로 전체 본문과 `source_revision`까지 확보합니다.
    - 저장소 구조, manifest, lockfile, entrypoint, 기존 pattern, 테스트와 빌드 방식을 읽습니다.
 2. **Stage 1 — Requirements Analysis**
@@ -134,7 +136,7 @@ Workbench Shape를 호출하기 전에 Codex UI에서 coordinator worktree를 �
 
 Shape Report의 주요 문장은 다음 provenance를 구분합니다.
 
-- **Fact**: repository, Local Work Memory 또는 공식 문서에서 직접 확인
+- **Fact**: repository, Local Work Memory, 연결된 Jira/Figma artifact 또는 공식 문서에서 직접 확인
 - **Inference**: 여러 사실을 결합한 해석
 - **Decision**: 근거와 trade-off를 바탕으로 선택
 - **Assumption**: 아직 확인하지 못한 전제
@@ -164,6 +166,8 @@ Stage 0: memory_search / memory_get / memory_graph
 - 외부 시스템 mutation이나 repository 파일 수정은 Stage 5의 권한이 아닙니다.
 
 `allow_implicit_invocation: false`는 skill 선택 정책이지 MCP tool-level authorization이 아닙니다. 현재 Local Work Memory의 단일 endpoint는 `memory_search`, `memory_get`, `memory_graph`, `memory_write`를 함께 제공하므로 Workbench는 skill 계약과 테스트로 write 경계를 지키되, direct MCP 호출 자체를 plugin package에서 강제 차단할 수는 없습니다. 강제 격리가 필요하면 server 측 read/write endpoint 또는 OAuth scope 분리가 후속으로 필요합니다.
+
+같은 한계가 Atlassian과 Figma 연결에도 적용됩니다. Shape는 계약상 project evidence를 읽기만 하고 Jira issue/comment/transition 또는 Figma file/node를 변경하지 않습니다. provider가 write-capable tool을 노출하는 경우 hard read-only 보장은 provider OAuth scope나 host tool policy에서 추가로 제한해야 합니다.
 
 ## Worktree 실행 모델
 
@@ -238,6 +242,7 @@ Worker worktree는 다음 조건을 모두 만족하는 task에만 추가합니�
 - `codex-plugin/plugins/workbench/`는 현재 사용자-facing skill, manifest, MCP 연결과 계약 테스트를 소유합니다.
 - Local Work Memory server는 기억의 검색·조회·graph·write와 revision 비교를 소유합니다. Workbench는 이를 임의의 local wiki clone으로 복제하거나 원자적 compare-and-swap을 보장한다고 과장하지 않습니다.
 - Context7은 외부 라이브러리 자료 탐색을 돕지만, repository 사실이나 사용자 결정을 대신하지 않습니다.
+- Atlassian과 Figma는 요청에 연결된 project evidence를 제공하지만, Shape 밖의 mutation 권한이나 사용자 결정 권한을 부여하지 않습니다.
 - local checkout은 Workbench 구현 대상이 아니며 coordinator와 worker worktree가 repository 변경을 소유합니다.
 - `.codex/skills/evaluate-workbench/`는 legacy v2 evaluator로 격리합니다.
 - `.agent/`는 이 저장소의 프로젝트 작업 규칙 원본이고 `.claude/CLAUDE.md`는 Claude Code용 얇은 어댑터입니다.

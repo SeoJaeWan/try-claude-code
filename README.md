@@ -31,7 +31,7 @@ Codex Workbench 플러그인을 개발·검증하는 저장소입니다. 현재 
 
 | 스킬 | 단계 | 역할과 주요 산출물 |
 |---|---:|---|
-| `$workbench:shape` | 0~4 | Local Work Memory 조회, 저장소 탐색, 요구사항·불변조건·완료 기준, 출처 기반 조사, 설계 결정을 하나의 Shape Report로 정리 |
+| `$workbench:shape` | 0~4 | Local Work Memory와 연결된 Jira/Figma 근거 조회, 저장소 탐색, 요구사항·불변조건·완료 기준, 출처 기반 조사, 설계 결정을 하나의 Shape Report로 정리 |
 | `$workbench:memory-update` | 5 | Shape가 준비한 Memory Change Set만 Local Work Memory의 `dev_wiki`에 반영 |
 | `$workbench:prepare` | 6~7 | 작업 분해, 의존성 DAG, 실행 전 baseline, 단일 또는 복수 worktree 배치를 Execution Plan으로 확정 |
 | `$workbench:execute-task` | 8 | 지정된 worktree에서 task 하나의 계획 → 테스트 기준 → 구현 → 검증 → self-review를 수행 |
@@ -57,11 +57,12 @@ $workbench:shape
 
 ## 근거 기반 Shape
 
-`$workbench:shape`는 Stage 0에서 먼저 Local Work Memory를 조회한 뒤 현재 저장소의 코드, 설정, 테스트와 함께 해석합니다. 기존 문서를 갱신할 가능성이 있으면 `memory_get`으로 본문과 revision까지 확보해 Stage 5용 Memory Change Set에 담습니다. 이 단계는 기억을 읽기만 하며 쓰지 않습니다.
+`$workbench:shape`는 Stage 0에서 먼저 Local Work Memory를 조회한 뒤 현재 저장소의 코드, 설정, 테스트와 함께 해석합니다. 요청에 Jira issue나 Figma URL이 있으면 해당 artifact만 읽어 요구사항·acceptance·디자인 근거로 연결합니다. 기존 memory 문서를 갱신할 가능성이 있으면 `memory_get`으로 본문과 revision까지 확보해 Stage 5용 Memory Change Set에 담습니다. 이 단계는 Local Work Memory, Jira, Figma를 읽기만 하며 쓰지 않습니다.
 
 라이브러리·프레임워크·SDK의 버전, API, 호환성, 보안 또는 권장 패턴이 설계 판단에 영향을 주면 Context7을 사용할 수 있을 때 현재 버전에 맞는 자료를 조사하고 공식 원문을 확인합니다. Context7을 사용할 수 없거나 근거가 부족하면 공식 원문을 직접 조사합니다. 질문 수나 출처 수를 임의의 research mode로 제한하지 않습니다. Shape Report는 다음을 구분해 사람이 링크를 따라 판단할 수 있는 Markdown 문서로 반환합니다.
 
 - 저장소와 Local Work Memory에서 확인한 사실
+- 연결된 Jira issue와 Figma node에서 확인한 프로젝트 사실
 - 공식 문서로 확인한 기술적 사실과 출처 URL
 - 근거를 종합한 추론
 - 선택한 결정과 대안
@@ -69,6 +70,8 @@ $workbench:shape
 - acceptance criteria와 Memory Change Set
 
 Context7이나 공식 문서를 찾을 수 없다는 이유로 모델 기억을 사실처럼 채우지 않습니다. 근거가 부족한 항목은 명시적으로 미검증 상태로 남깁니다.
+
+Jira와 Figma MCP는 Shape의 project evidence retrieval 용도입니다. Shape 계약은 issue/comment/transition 생성과 Figma file/node 변경을 금지하지만, plugin-level MCP 연결 자체가 provider의 write-capable tool을 기술적으로 제거하지는 않습니다. 강제 read-only가 필요하면 provider OAuth scope 또는 host tool policy도 제한해야 합니다.
 
 ## Local Work Memory 갱신
 

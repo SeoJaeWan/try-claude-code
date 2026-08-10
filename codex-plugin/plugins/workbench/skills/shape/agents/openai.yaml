@@ -15,6 +15,16 @@ dependencies:
       description: "Retrieve current version-aware technical documentation"
       transport: "streamable_http"
       url: "https://mcp.context7.com/mcp"
+    - type: "mcp"
+      value: "atlassian"
+      description: "Read linked Jira issues and comments as project evidence"
+      transport: "streamable_http"
+      url: "https://mcp.atlassian.com/v1/mcp/authv2"
+    - type: "mcp"
+      value: "figma"
+      description: "Inspect linked Figma designs as project evidence"
+      transport: "streamable_http"
+      url: "https://mcp.figma.com/mcp"
 
 policy:
   allow_implicit_invocation: false

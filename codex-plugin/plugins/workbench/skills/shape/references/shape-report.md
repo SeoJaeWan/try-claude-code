@@ -15,6 +15,8 @@ Label material statements as one of:
 
 - `Fact / repository-fact`: directly observed in the current checkout;
 - `Fact / memory-fact`: read from Local Work Memory with `memory_get`;
+- `Fact / jira-fact`: read from the exact linked Jira artifact;
+- `Fact / figma-fact`: inspected from the exact linked Figma artifact;
 - `Fact / external-fact`: verified against a canonical official source;
 - `Inference`: reasoned from cited facts;
 - `Assumption`: required but not yet verified;
@@ -88,6 +90,12 @@ Do not add arbitrary source counts. Gather enough evidence to support every mate
 - documents used: source_type, source_id, title, source_revision
 - relevant prior decisions
 - unresolved retrievals
+
+## Stage 0 — Jira and Figma evidence
+- Jira records: evidence ID, issue key, canonical URL, fields/comments used, observed updated_at, retrieved_at, supported REQ/NFR/INV/AC/DEC IDs
+- Figma records: evidence ID, canonical URL, file key, node ID, component/token/screenshot evidence used, observed version or last_modified, retrieved_at, supported REQ/NFR/INV/AC/DEC IDs
+- unavailable or authorization-blocked artifacts
+- source conflicts and disposition
 
 ## Stage 0 — Repository exploration
 - structure and entrypoints

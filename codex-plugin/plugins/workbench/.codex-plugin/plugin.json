@@ -1,7 +1,7 @@
 {
   "name": "workbench",
-  "version": "0.2.0+codex.20260810013109",
-  "description": "Five explicit Workbench skills for evidence-backed shaping, guarded project memory updates, worktree execution, and integrated validation.",
+  "version": "0.2.0+codex.20260810013658",
+  "description": "Five explicit Workbench skills for repository, memory, Jira, Figma, and official-evidence shaping, guarded project memory updates, worktree execution, and integrated validation.",
   "author": {
     "name": "Local developer"
   },
@@ -10,13 +10,15 @@
   "interface": {
     "displayName": "Workbench",
     "shortDescription": "Shape and execute sourced work in isolated worktrees.",
-    "longDescription": "Workbench provides five independently invoked skills: shape a change from repository, Local Work Memory, and official evidence; apply its guarded Memory Change Set; prepare an exact task and worktree topology; execute one implementation or integration task; and finalize the clean integrated result with failure testing and independent review.",
+    "longDescription": "Workbench provides five independently invoked skills: shape a change from repository, Local Work Memory, linked Jira and Figma artifacts, and official evidence; apply its guarded Memory Change Set; prepare an exact task and worktree topology; execute one implementation or integration task; and finalize the clean integrated result with failure testing and independent review.",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [
       "Explicit-only skills",
       "Local Work Memory",
       "Context7 research",
+      "Jira project evidence",
+      "Figma design evidence",
       "Worktree task isolation",
       "Task-level verification",
       "Independent integrated review"

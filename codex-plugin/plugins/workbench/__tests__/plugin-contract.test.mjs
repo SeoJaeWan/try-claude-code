@@ -126,7 +126,7 @@ test("default plugin discovery cannot revive legacy hooks, tools, or apps", () =
   }
 });
 
-test("MCP companion registers only Local Work Memory and Context7 without credentials", () => {
+test("MCP companion registers the four evidence services without embedded credentials", () => {
   const mcp = readJson(mcpPath);
 
   assert.deepEqual(mcp, {
@@ -138,6 +138,15 @@ test("MCP companion registers only Local Work Memory and Context7 without creden
       context7: {
         type: "http",
         url: "https://mcp.context7.com/mcp",
+      },
+      atlassian: {
+        type: "http",
+        url: "https://mcp.atlassian.com/v1/mcp/authv2",
+      },
+      figma: {
+        type: "http",
+        url: "https://mcp.figma.com/mcp",
+        oauth_resource: "https://mcp.figma.com/mcp",
       },
     },
   });
@@ -168,8 +177,27 @@ test("skill metadata declares exact typed MCP dependencies", () => {
     transport: "streamable_http",
     url: "https://mcp.context7.com/mcp",
   };
+  const atlassian = {
+    type: "mcp",
+    value: "atlassian",
+    description: "Read linked Jira issues and comments as project evidence",
+    transport: "streamable_http",
+    url: "https://mcp.atlassian.com/v1/mcp/authv2",
+  };
+  const figma = {
+    type: "mcp",
+    value: "figma",
+    description: "Inspect linked Figma designs as project evidence",
+    transport: "streamable_http",
+    url: "https://mcp.figma.com/mcp",
+  };
 
-  assert.deepEqual(metadata("shape").dependencies?.tools, [memory, context7]);
+  assert.deepEqual(metadata("shape").dependencies?.tools, [
+    memory,
+    context7,
+    atlassian,
+    figma,
+  ]);
   assert.deepEqual(metadata("memory-update").dependencies?.tools, [
     {
       ...memory,

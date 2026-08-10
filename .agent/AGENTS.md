@@ -35,6 +35,7 @@
 - Keep the active Workbench limited to `shape`, `memory-update`, `prepare`, `execute-task`, and `finalize`.
 - Require `$workbench:<skill>` explicit invocation and `allow_implicit_invocation: false` for every active Workbench skill. Do NOT auto-chain one Workbench skill into another.
 - Require Stage 0 to read relevant Local Work Memory before shaping decisions. When an external library fact affects a decision, use Context7 when available and verify it with official source links; fall back to direct official sources when Context7 is unavailable or insufficient.
+- When a request links Jira or Figma, require Shape to retrieve only the referenced project evidence and remain read-only toward both systems. Do NOT create issues/comments/transitions or mutate Figma files/nodes from Shape.
 - Require repository work to run in a dedicated coordinator worktree; let Prepare assign worker worktrees only for dependency-safe parallel groups, and let Execute materialize only the exact assigned paths and branches.
 
 ## 작업 규칙
