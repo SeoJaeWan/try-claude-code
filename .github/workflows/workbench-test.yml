@@ -18,12 +18,5 @@ jobs:
         with:
           node-version: 22
 
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.3"
-
-      - name: Install Ruby test dependency
-        run: gem install webrick --no-document
-
       - name: Run Workbench tests
         run: npm test

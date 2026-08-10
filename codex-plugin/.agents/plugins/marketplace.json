@@ -1,0 +1,20 @@
+{
+  "name": "local-work",
+  "interface": {
+    "displayName": "Local Work Plugins"
+  },
+  "plugins": [
+    {
+      "name": "workbench",
+      "source": {
+        "source": "local",
+        "path": "./plugins/workbench"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

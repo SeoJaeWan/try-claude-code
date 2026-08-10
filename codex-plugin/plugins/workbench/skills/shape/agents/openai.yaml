@@ -1,0 +1,20 @@
+interface:
+  display_name: "Shape"
+  short_description: "Shape work with repository and official evidence"
+  default_prompt: "Use $workbench:shape to investigate this request and produce an evidence-backed Shape Report."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "local-work-memory"
+      description: "Search and read Local Work Memory project evidence"
+      transport: "streamable_http"
+      url: "https://mcp.seojaewan.com/mcp/memory"
+    - type: "mcp"
+      value: "context7"
+      description: "Retrieve current version-aware technical documentation"
+      transport: "streamable_http"
+      url: "https://mcp.context7.com/mcp"
+
+policy:
+  allow_implicit_invocation: false

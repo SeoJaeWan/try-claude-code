@@ -1,0 +1,7 @@
+interface:
+  display_name: "Prepare"
+  short_description: "Create verified worktree-ready task packets"
+  default_prompt: "Use $workbench:prepare to turn this Shape Report into a verified worktree Execution Plan."
+
+policy:
+  allow_implicit_invocation: false

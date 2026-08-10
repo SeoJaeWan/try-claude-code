@@ -1,0 +1,15 @@
+interface:
+  display_name: "Memory Update"
+  short_description: "Apply shaped knowledge to Local Work Memory"
+  default_prompt: "Use $workbench:memory-update to apply the completed Shape Report's Memory Change Set."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "local-work-memory"
+      description: "Apply guarded Dev Wiki or note mutations to Local Work Memory"
+      transport: "streamable_http"
+      url: "https://mcp.seojaewan.com/mcp/memory"
+
+policy:
+  allow_implicit_invocation: false
