@@ -201,16 +201,25 @@ test("skill metadata declares exact typed MCP dependencies", () => {
   assert.deepEqual(metadata("memory-update").dependencies?.tools, [
     {
       ...memory,
-      description: "Apply guarded Dev Wiki or note mutations to Local Work Memory",
+      description: "Apply guarded Dev Wiki artifact mutations to Local Work Memory",
     },
   ]);
   assert.deepEqual(metadata("execute-task").dependencies?.tools, [
+    {
+      ...memory,
+      description: "Verify current canonical Shape and Prepare artifacts before execution",
+    },
     {
       ...context7,
       description: "Verify version-aware library details discovered during implementation",
     },
   ]);
-  assert.equal(metadata("prepare").dependencies, undefined);
+  assert.deepEqual(metadata("prepare").dependencies?.tools, [
+    {
+      ...memory,
+      description: "Verify persisted Shape artifacts and read existing Prepare artifacts",
+    },
+  ]);
   assert.equal(metadata("finalize").dependencies, undefined);
 });
 

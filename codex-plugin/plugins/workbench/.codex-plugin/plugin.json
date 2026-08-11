@@ -1,7 +1,7 @@
 {
   "name": "workbench",
-  "version": "0.2.0+codex.20260811023600",
-  "description": "Five explicit Workbench skills for repository, memory, Jira, Figma, and official-evidence shaping, guarded project memory updates, worktree execution, and integrated validation.",
+  "version": "0.2.0+codex.20260811062107",
+  "description": "Five explicit Workbench skills for evidence-backed shaping, canonical Dev Wiki Shape and Prepare artifacts, task-scoped standard Git worktree execution, and integrated validation.",
   "author": {
     "name": "Local developer"
   },
@@ -9,8 +9,8 @@
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Workbench",
-    "shortDescription": "Shape and execute sourced work in isolated worktrees.",
-    "longDescription": "Workbench provides five independently invoked skills: shape a change from repository, Local Work Memory, linked Jira and Figma artifacts, and official evidence; apply its guarded Memory Change Set; prepare an exact task and worktree topology; execute one implementation or integration task; and finalize the clean integrated result with failure testing and independent review.",
+    "shortDescription": "Shape, persist, prepare, and execute isolated tasks.",
+    "longDescription": "Workbench provides five independently invoked skills: shape a change from repository, Local Work Memory, linked Jira and Figma artifacts, and official evidence; persist canonical Shape or Prepare artifacts to Dev Wiki; prepare an exact task DAG without creating worktrees; create one standard Git worktree per implementation or integration task; and finalize the clean integrated result with failure testing and independent review.",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [
@@ -19,14 +19,15 @@
       "Context7 research",
       "Jira project evidence",
       "Figma design evidence",
-      "Worktree task isolation",
+      "Canonical Dev Wiki artifacts",
+      "Task-scoped standard Git worktrees",
       "Task-level verification",
       "Independent integrated review"
     ],
     "defaultPrompt": [
       "Use $workbench:shape to create a sourced Shape Report for this change.",
-      "Use $workbench:prepare to turn this Shape Report into worktree task packets.",
-      "Use $workbench:execute-task to execute this prepared task in its assigned worktree."
+      "Use $workbench:prepare to turn a persisted Shape artifact into task worktree packets.",
+      "Use $workbench:execute-task to create and execute one persisted task worktree."
     ],
     "brandColor": "#2563EB"
   }

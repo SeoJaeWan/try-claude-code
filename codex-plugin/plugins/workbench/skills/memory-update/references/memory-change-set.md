@@ -1,98 +1,120 @@
-# Memory Change Set Application Contract
+# Dev Wiki Artifact Persistence Contract
 
-This stage applies an already shaped change. It performs no retrieval or design work.
+Persist one immutable Shape or Prepare artifact body to one canonical Dev Wiki page.
 
 ## Valid input
 
-Every mutation must come verbatim from one `shape_status: READY` Shape Report and contain:
+```yaml
+artifact_kind: shape | prepare
+artifact_id: <shape_report_id or execution_plan_id>
+artifact_digest: <lowercase SHA-256 of normalized full_body>
+run_id:
+git_common_dir:
+repository_id:
+work_item_key:
+change_id: WIKI-SHAPE-001 | WIKI-PREPARE-001
+action: create | update | skip
+source_type: dev_wiki
+slug: projects/<stable-project-key>/work-items/<stable-work-item-key>/<shape-or-prepare>
+source_id: <create omits; update/skip requires>
+title:
+full_body: |
+  <create/update only; complete canonical artifact>
+expected_revision: <update requires exact opaque value>
+reason:
+evidence_ids: []
+```
 
-- a unique `change_id` within the Change Set;
-- `depends_on` as an array, empty when independent;
-- the action-specific fields below.
-
-Before any write, require every dependency ID to name another entry in the same Change Set, reject self-dependencies and cycles, and require the listed order to be topological so every dependency precedes its dependent. A selected subset must include the full transitive dependency closure or prove each omitted dependency was already applied by this same Change Set result.
-
-| Action | Required fields |
-| --- | --- |
-| `create/dev_wiki` | `slug`, `title`, non-null `full_body` |
-| `create/note` | `title`, non-null `full_body` |
-| `update` | `source_type`, `source_id`, `title`, non-null `full_body`, `expected_revision` |
-| `delete` | `source_type`, `source_id`, `title`, `expected_revision`; same-invocation user confirmation is also required |
-
-Accept only `dev_wiki` or explicitly selected `note`. Do not pass `area`, `project`, or `repository`; they are not `memory_write` inputs.
-
-For Dev Wiki create, require a stable slug matching:
+Accept only one entry. Accept only `source_type: dev_wiki`. Require a stable slug matching:
 
 ```regex
 ^[a-z0-9][a-z0-9/-]{0,120}$
 ```
 
+Action requirements:
+
+| Action | Required fields | Forbidden behavior |
+| --- | --- | --- |
+| `create` | slug, title, full body | sending `source_id` or retrying an unknown result |
+| `update` | source ID, title, full body, expected revision | patches, synthesized revision, automatic conflict merge |
+| `skip` | source ID and prior canonical identity | calling `memory_write` |
+
+Normalize only CRLF/CR line endings in `full_body` to LF. SHA-256 the exact UTF-8 bytes and require a lowercase-hex match with `artifact_digest`. Do not trim whitespace or exclude fields. The digest must not appear inside the canonical body.
+
+Reject a body containing credentials, tokens, private keys, unapproved customer data, ignored secret-file contents, or machine-specific private paths that the producing contract forbids. A redacted body that changes the artifact meaning is not valid.
+
 ## Tool mapping
 
 ```text
-create -> memory_write(action=create, source_type, slug?, title, body=full_body)
-update -> memory_write(action=update, source_type, source_id, title,
-                       body=full_body, expected_revision)
-delete -> memory_write(action=delete, source_type, source_id,
+create -> memory_write(action=create, source_type=dev_wiki,
+                       slug, title, body=full_body)
+update -> memory_write(action=update, source_type=dev_wiki,
+                       source_id, title, body=full_body,
                        expected_revision)
+skip   -> no tool call
 ```
 
 Omit `source_id` on create. Preserve `expected_revision` byte-for-byte as an opaque string.
 
-The current service has no note-create idempotency key or note TTL. Treat note creation as durable, require explicit acknowledgment of duplicate-on-replay risk, and do not retry an unknown result.
-
 ## Result interpretation
 
-The MCP adapter returns service errors inside an ordinary tool payload. Always inspect both fields:
+The MCP adapter may return service errors inside an ordinary payload. Inspect both fields:
 
 ```text
 create/update success = status 200 AND outcome indexed
-delete success        = status 200 AND outcome deleted
 ```
 
 Handle all other results conservatively:
 
-- `400`: invalid Change Set or request; stop;
-- `403`: forbidden source type; stop;
-- `409`: return to Shape; never refresh the revision and retry here;
-- `5xx`: stop and preserve partial result evidence;
-- `200` with unexpected outcome: indeterminate; an earlier persistence step may have occurred;
-- timeout, disconnect, transport exception, or any result without a trustworthy service payload: indeterminate; persistence may already have occurred, so never retry automatically.
+- `400`: invalid artifact/change set; return `FAILED`;
+- `403`: forbidden source type or write; return `FAILED`;
+- `409`: return `RESHAPE_REQUIRED` for Shape or `REPREPARE_REQUIRED` for Prepare;
+- `5xx`: return `FAILED` only with a trustworthy determinate response;
+- `200` with another outcome: return `INDETERMINATE`;
+- timeout, disconnect, transport exception, or missing trustworthy payload: return `INDETERMINATE` and never retry automatically.
 
-Apply sequentially and stop on first failure. Do not assume a transaction spans multiple entries, and do not attempt rollback.
+No transaction spans multiple pages because one invocation writes one artifact page.
 
-By default select every non-`skip` entry. If the explicit invocation supplies `selected_change_ids`, select exactly those IDs and verify their transitive `depends_on` closure before any write. Report unselected entries separately from entries that are pending because execution stopped.
+## Dev Wiki reference
 
-## Current service limitations
+On success return:
 
-- A successful write may omit the new revision. Do not invent one; a later Shape retrieves it again.
-- Expected-revision validation is not a single atomic database compare-and-swap. Serializing this Change Set reduces Workbench self-races but cannot exclude external writers.
-- Therefore report guarded revision use, not guaranteed atomic optimistic concurrency.
+```yaml
+dev_wiki_ref:
+  source_type: dev_wiki
+  source_id: <exact returned or existing value>
+  slug:
+  source_revision: <exact returned value or null>
+  artifact_kind: shape | prepare
+  artifact_id:
+  artifact_digest:
+  status: indexed | unchanged
+```
+
+`artifact_digest` is the immutable content binding even when the service omits a new revision. A later stage that has read access must retrieve the body and verify this digest rather than trusting a search excerpt.
 
 ## Result template
 
 ```markdown
 # Memory Update Result
-- status: APPLIED | FAILED | PARTIAL | RESHAPE_REQUIRED | INDETERMINATE | BLOCKED
-- partial_applied: true | false
+- status: APPLIED | NOT_NEEDED | FAILED | RESHAPE_REQUIRED | REPREPARE_REQUIRED | INDETERMINATE | BLOCKED
 - run_id:
+- artifact_kind:
+- artifact_id:
+- artifact_digest:
+- action: create | update | skip
+- service_status:
+- service_outcome:
+- transport_or_error_evidence:
 
-## Applied
-- change_id, source_type, source_id/slug, status, outcome
-
-## Failed
-- change_id, status if present, outcome if present, transport/error evidence, current_revision if returned
-
-## Pending
-- unattempted change IDs
-
-## Skipped
-- Shape entries with action skip
-
-## Not selected
-- entries excluded by explicit selected_change_ids
+## Dev Wiki reference
+- source_type: dev_wiki
+- source_id:
+- slug:
+- source_revision:
+- status: indexed | unchanged | unavailable
 
 ## Next action
 ```
 
-Status precedence is `RESHAPE_REQUIRED` for every trustworthy 409 response, even when earlier entries succeeded; use `partial_applied: true` to preserve that fact. A missing or untrustworthy response after an attempted write, or `status: 200` with an unexpected outcome, is always `INDETERMINATE` because persistence may already have occurred; never retry it automatically. A determinate non-409 failure is `FAILED` before any success and `PARTIAL` after prior success. Gate failures use `BLOCKED` with a specific reason code.
+Do not claim a new revision unless the tool returned it. Do not claim failure is safe to retry when persistence is indeterminate.

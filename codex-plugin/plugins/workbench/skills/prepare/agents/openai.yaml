@@ -1,7 +1,15 @@
 interface:
   display_name: "Prepare"
-  short_description: "Create verified worktree-ready task packets"
-  default_prompt: "Use $workbench:prepare to turn this Shape Report into a verified worktree Execution Plan."
+  short_description: "Prepare persisted task-scoped execution"
+  default_prompt: "Use $workbench:prepare to turn this persisted Shape artifact into a verified task-scoped worktree plan and Dev Wiki artifact."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "local-work-memory"
+      description: "Verify persisted Shape artifacts and read existing Prepare artifacts"
+      transport: "streamable_http"
+      url: "https://mcp.seojaewan.com/mcp/memory"
 
 policy:
   allow_implicit_invocation: false

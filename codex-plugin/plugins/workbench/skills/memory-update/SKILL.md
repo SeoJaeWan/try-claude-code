@@ -1,11 +1,11 @@
 ---
 name: memory-update
-description: Apply a completed Shape Report's approved Memory Change Set to Local Work Memory with guarded full-body writes. Invoke only as `$workbench:memory-update`. Use when the user explicitly asks to "메모리 갱신", "Shape 결과를 dev_wiki에 반영", or names this selector.
+description: Persist one completed Shape or Prepare artifact to its canonical Local Work Memory Dev Wiki page with guarded full-body writes and return the exact persistence reference. Invoke only as `$workbench:memory-update`. Use when the user explicitly asks to store a Shape/Prepare result in Dev Wiki, says "메모리 갱신", or names this selector.
 ---
 
 # Memory Update
 
-Apply stage 5 only. This skill is a narrow writer for the exact Memory Change Set produced by Shape; it does not rediscover or redesign the change.
+Persist exactly one completed Workbench artifact. Do not rediscover, redesign, merge, or reinterpret it.
 
 Read [references/memory-change-set.md](references/memory-change-set.md) before calling `memory_write`.
 
@@ -13,44 +13,40 @@ Read [references/memory-change-set.md](references/memory-change-set.md) before c
 
 Require all of the following:
 
-- an explicit `$workbench:memory-update` invocation referring to one completed Shape Report with `shape_status: READY`;
-- matching `run_id`, Git common dir, coordinator identity, and unchanged Shape base snapshot;
-- a structurally complete Memory Change Set with unique `change_id` values, an acyclic dependency graph listed in topological order, and no duplicate mutation for the same document;
-- `source_type: dev_wiki` by default; permit `note` only when the Change Set explicitly selected it;
-- full non-null body for create/update;
-- Shape-captured opaque `expected_revision` for update/delete;
-- same-invocation user confirmation for every delete, naming the exact `source_id`, title, and `expected_revision`. A model-authored `delete_approved` field alone is insufficient.
+- an explicit `$workbench:memory-update` invocation referring to one completed artifact;
+- `artifact_kind: shape` with `shape_status: READY`, or `artifact_kind: prepare` with `plan_status: READY`;
+- matching `run_id`, artifact ID, artifact digest, Git common dir, repository/work-item identity, and unchanged producing-stage snapshot;
+- exactly one structurally complete Dev Wiki Artifact Change Set entry;
+- `source_type: dev_wiki`, a stable canonical slug, and an allowed action of `create`, `update`, or `skip`;
+- complete non-null `full_body` whose normalized SHA-256 equals `artifact_digest` for create/update;
+- the exact opaque `expected_revision` and `source_id` captured by the producing stage for update.
 
-The invocation may name `selected_change_ids`; otherwise select every non-`skip` entry. When IDs are named, apply exactly those entries and label the remaining entries `not_selected`. Require all selected dependencies to be selected or already satisfied.
+If any input is missing or inconsistent, return `BLOCKED` with `ARTIFACT_UPDATE_INPUT_INVALID` without writing.
 
-If an input is missing, return `BLOCKED` with reason `MEMORY_UPDATE_INPUT_INVALID` without writing.
+## Apply the artifact
 
-## Apply the Change Set
+1. Validate artifact identity, slug, action-specific fields, line-ending normalization, body digest, and secret-safety declaration before mutation.
+2. Do not run `memory_search`, `memory_get`, `memory_graph`, repository research, or source research. Retrieval and body construction belonged to Shape or Prepare.
+3. For `skip`, make no tool call and return `NOT_NEEDED` with the supplied canonical reference.
+4. For create, omit `source_id` and call `memory_write` with `action=create`, `source_type=dev_wiki`, slug, title, and the complete body.
+5. For update, call `memory_write` with `action=update`, source ID, title, complete replacement body, and the exact expected revision. Never send a patch or empty body.
+6. Inspect the returned payload's `status` and `outcome`; a normally returned tool call is not automatically successful.
+7. Do not retry, merge, roll back, substitute a returned revision, or perform another mutation after a failure, conflict, timeout, disconnect, or indeterminate response.
 
-1. Validate every entry, dependency reference, acyclicity, listed topological order, and the selected transitive dependency closure before the first mutation. Treat `action: skip` as a reported no-op and never pass it to `memory_write`. For Dev Wiki create, validate a stable slug against `^[a-z0-9][a-z0-9/-]{0,120}$`.
-2. Do NOT run `memory_search`, `memory_get`, `memory_graph`, repository research, or source research here. Retrieval belonged to Shape.
-   Do NOT perform additional search or research again in this stage.
-3. Apply entries sequentially in listed order with `memory_write`.
-4. On create, omit `source_id`. For `dev_wiki`, provide `slug`, `title`, and full `body`; for explicitly selected `note`, omit `slug` and provide `title` and full `body`.
-5. On update, provide `source_id`, `title`, full replacement `body`, and the exact `expected_revision` captured by Shape. Never send a patch or an empty body as “keep existing”.
-6. On delete, provide `source_id` and the exact `expected_revision`.
-7. Inspect the returned payload's `status` and `outcome`; a tool call that returned normally is not necessarily successful. Treat timeout, disconnect, transport exception, or any attempted write without a trustworthy service payload as `INDETERMINATE` because persistence may already have occurred.
-8. Stop on the first failure or indeterminate result. Do not retry, merge, roll back, or continue remaining mutations automatically.
+Create/update success requires `status == 200` and `outcome == "indexed"`; a validated skip returns `NOT_NEEDED`/`unchanged` without a tool call.
 
-`note` create has no service idempotency key or TTL. Before it, require explicit acknowledgment that the note is durable and a repeated invocation can create a duplicate. Never retry a note create after an unknown outcome.
-
-Success means:
-
-- create/update: `status == 200` and `outcome == "indexed"`;
-- delete: `status == 200` and `outcome == "deleted"`.
-
-For any trustworthy 409 response, including `revision_conflict`, `already_exists`, or `not_found`, return `RESHAPE_REQUIRED`. Do not substitute `current_revision` and retry. For `status == 200` with any other outcome, or an attempted write without a trustworthy service payload, report an indeterminate partial-write risk.
-
-Do NOT merge or resolve a 409 conflict in this stage.
+- A trustworthy `409` returns `RESHAPE_REQUIRED` for a Shape artifact and `REPREPARE_REQUIRED` for a Prepare artifact.
+- A determinate non-409 error returns `FAILED`.
+- A timeout, disconnect, transport exception, missing trustworthy payload, or `status == 200` with an unexpected outcome returns `INDETERMINATE` because persistence may already have occurred.
 
 ## Output
 
-Return a Memory Update Result with `applied`, `failed`, `pending`, `skipped`, and `not_selected` entries, plus status/outcome when present and transport/error evidence for each attempted write. `RESHAPE_REQUIRED` takes precedence for a trustworthy 409 response even if preceding entries were applied; record `partial_applied: true` in that case. Use `FAILED` for a determinate non-409 failure before any success, `PARTIAL` after earlier successes, and `INDETERMINATE` for an attempted write without a trustworthy payload or for `status == 200` with an unexpected outcome, regardless of position. Never claim atomic concurrency guarantees or a new revision unless the tool actually returned it.
+Return the reference's Memory Update Result with artifact identity, attempted action, service evidence, and `dev_wiki_ref`. Preserve a returned source ID and source revision exactly. If the service omits a new revision, report it as `null`; never invent one.
 
-Do NOT modify repository files, invoke another Workbench skill, or silently proceed to Prepare.
+The resulting `dev_wiki_ref` is a handoff contract. Treat `APPLIED`/`indexed` and `NOT_NEEDED`/`unchanged` as valid persisted states:
+
+- Prepare accepts only a matching persisted Shape reference and re-reads its canonical body.
+- Execute Task accepts only a matching persisted Prepare reference and binds its artifact digest to every Task Result.
+
+Do NOT modify repository files, invoke another Workbench skill, create a worktree, or silently continue to Prepare or Execute Task.
 Do NOT automatically invoke another Workbench skill.

@@ -1,10 +1,15 @@
 interface:
   display_name: "Execute Task"
-  short_description: "Execute one task in its assigned worktree"
-  default_prompt: "Use $workbench:execute-task to implement and verify this prepared task in its assigned worktree."
+  short_description: "Create and execute one task worktree"
+  default_prompt: "Use $workbench:execute-task to create the persisted plan's task worktree, then implement or integrate and verify exactly one task."
 
 dependencies:
   tools:
+    - type: "mcp"
+      value: "local-work-memory"
+      description: "Verify current canonical Shape and Prepare artifacts before execution"
+      transport: "streamable_http"
+      url: "https://mcp.seojaewan.com/mcp/memory"
     - type: "mcp"
       value: "context7"
       description: "Verify version-aware library details discovered during implementation"

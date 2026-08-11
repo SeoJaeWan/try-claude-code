@@ -1,59 +1,59 @@
 # Shape Report Contract
 
-Use this contract for the stages 0–4 deliverable. The report is a Markdown document returned in the conversation unless the user explicitly requests a file.
-
-## Native coordinator bootstrap contract
-
-Apply this only when the calling checkout is primary Local and the user explicitly invoked `$workbench:shape`.
-
-1. Call the Codex app's `list_projects` tool. Select exactly one Git project whose canonical local root equals the current repository root. Do not guess from repository name alone. If no exact match or multiple matches exist, return the Shape Gate Result.
-2. Call `create_thread` once with the selected `projectId`, omit model and thinking overrides, and use this target:
-
-   ```yaml
-   type: project
-   projectId: <exact list_projects result>
-   environment:
-     type: worktree
-     startingState:
-       type: working-tree
-   ```
-
-3. Set the initial prompt to invoke `$workbench:shape`, state that native coordinator bootstrap is complete, and reproduce only the user's task request. Exclude system/developer text, injected skill contents, tool output, credentials, and unrelated conversation history.
-4. Accept either `threadId` or a queued `clientThreadId` as success. Do not send a second message, poll, wait for completion, or duplicate stages 0–4 in the Local task; `create_thread` already starts the continuation with its initial prompt.
-5. Emit the Shape Bootstrap Result and the host's created-task directive when supported. The continuation task becomes user-owned and produces the Shape Report in its own conversation.
-
-Do not use `fork_thread`: a worktree fork does not copy the active unfinished turn, so it cannot reliably carry the current Shape request. Do not use `handoff_thread`: the calling task cannot hand itself off. Do not fall back to shell Git worktree creation.
+Use this contract for the stages 0–4 deliverable. Shape is a read-only analysis stage; it does not require or create a worktree.
 
 ## Identity and fingerprint construction
 
-- Create `run_id` once as `wb-<UTC YYYYMMDDTHHMMSSZ>-<HEAD first 12>-<six random lowercase hex>`. Preserve it across later Shape revisions for the same run.
-- Set `shape_report_id` to `<run_id>/shape/<positive revision number>` and increment the revision every time Shape refreshes the snapshot or decisions.
-- Adopt the current linked checkout as coordinator and set `coordinator_id` to the SHA-256 of the NUL-separated UTF-8 tuple `(run_id, absolute git_common_dir, absolute coordinator_root)`. Report the digest, never the tuple's sensitive contents beyond the separately listed paths.
-- Compute `status_fingerprint` locally from HEAD plus the bytes of `git status --porcelain=v1 -z --untracked-files=all`, staged and unstaged binary diffs, and path+SHA-256 for every untracked regular file. Hash symlink targets rather than following them. Do not print file contents. If a special/unreadable file prevents a complete hash, mark the fingerprint `incomplete` and block Prepare readiness.
+- Create `run_id` once as `wb-<UTC YYYYMMDDTHHMMSSZ>-<HEAD first 12>-<six random lowercase hex>`. Preserve it across revisions of the same work item.
+- Set `shape_report_id` to `<run_id>/shape/<positive revision number>` and increment the revision whenever the snapshot, requirements, or decisions change.
+- Set `repository_id` to the SHA-256 of the NUL-separated UTF-8 tuple `(stable repository slug, absolute git_common_dir)`. Report the digest; never embed machine-specific absolute paths in Dev Wiki content.
+- Classify `analysis_checkout` as `primary_local` or `linked_worktree` using the absolute Git dir, common dir, and `git worktree list --porcelain`.
+- Compute `status_fingerprint` with the deterministic byte-framed algorithm below. Do not print file contents. If a special or unreadable file prevents a complete hash, mark the fingerprint `incomplete` and block Prepare readiness.
+
+### Deterministic status fingerprint v1
+
+Run every command from `analysis_root`. Disable external diff and text-conversion drivers. Capture raw stdout bytes without newline normalization:
+
+1. `head`: `git rev-parse --verify HEAD`
+2. `status`: `git status --porcelain=v1 -z --untracked-files=all`
+3. `staged_diff`: `git diff --cached --binary --full-index --no-ext-diff --no-textconv`
+4. `unstaged_diff`: `git diff --binary --full-index --no-ext-diff --no-textconv`
+5. `untracked_manifest`: enumerate the NUL-delimited untracked paths from `status`, sort them by unsigned raw path-byte order, and encode each as described below. For a regular file use the SHA-256 of its raw content. For a symlink use the SHA-256 of its raw link-target bytes without following it. Mark the fingerprint incomplete for another file type or any unreadable path.
+
+Initialize a SHA-256 stream with ASCII bytes `workbench-status-fingerprint`, NUL, ASCII `v1`, NUL. Append each component in the exact order above using:
+
+```text
+ASCII component name
+NUL
+unsigned 64-bit big-endian byte length
+raw component bytes
+```
+
+Encode every untracked manifest record as unsigned 64-bit big-endian path-byte length, raw path bytes, one type byte (`f` or `l`), then the raw 32-byte SHA-256 digest. The manifest has no separators beyond these fixed frames. Lowercase-hex encode the final SHA-256 digest. Prepare must use the same version and exact commands; any algorithm-version mismatch returns `RESHAPE_REQUIRED`.
 
 ## Evidence rules
 
 Label material statements as one of:
 
-- `Fact / repository-fact`: directly observed in the current checkout;
-- `Fact / memory-fact`: read from Local Work Memory with `memory_get`;
+- `Fact / repository-fact`: observed in the current checkout;
+- `Fact / memory-fact`: read with `memory_get`;
 - `Fact / jira-fact`: read from the exact linked Jira artifact;
 - `Fact / figma-fact`: inspected from the exact linked Figma artifact;
 - `Fact / external-fact`: verified against a canonical official source;
 - `Inference`: reasoned from cited facts;
-- `Assumption`: required but not yet verified;
-- `Decision`: selected approach with rationale;
-- `unverified`: evidence was unavailable or ambiguous.
+- `Assumption`: required but not verified;
+- `Decision`: selected approach and rationale;
+- `unverified`: unavailable or ambiguous evidence.
 
-Local evidence uses an absolute clickable file link with one line number. External evidence uses a canonical clickable URL. Context7 is recorded as retrieval provenance; it is not the official source classification by itself.
+Local evidence uses an absolute clickable file link with one line number. External evidence uses a canonical clickable URL. Context7 is retrieval provenance, not official-source classification.
 
-For each external source, record:
+For each external source record:
 
 ```text
 S-### title
 classification: official-docs | primary-repository | context7-index | secondary
 source_url:
-canonical_official_url: # optional unless classification is official-docs/primary-repository
+canonical_official_url:
 library_version:
 source_version_or_ref:
 version_alignment: exact | documented-compatible | mismatch | unverified | not_applicable
@@ -64,16 +64,12 @@ query_summary:
 supports: REQ/NFR/INV/AC/DEC IDs
 ```
 
-Use `not_applicable` for library-specific fields when the source is a direct official policy, standard, regulation, or other non-library primary source. Never put a secondary or Context7 index URL in `canonical_official_url`.
-
-Do not add arbitrary source counts. Gather enough evidence to support every material decision, and avoid sources unrelated to a decision.
+Never put a secondary or Context7 index URL in `canonical_official_url`.
 
 ## Presentation language
 
-- Render all human-facing Markdown titles, headings, subheadings, and prose labels in the user's primary language.
-- For a Korean request, use the Korean structure shown below. This includes labels such as `예상 작업 경계`, `병렬 실행 후보`, and `공유 및 충돌 가능 영역`; do not leave them as English outline labels.
-- Keep machine-readable contract keys, enum/status values, contract IDs, code symbols, file names, APIs, and Git terms unchanged. Technical English may remain in explanatory body text when it improves precision.
-- Apply the same rule to bootstrap and gate result titles. Do not translate the structured fields inside those results.
+- Render human-facing Markdown titles, headings, subheadings, and prose labels in the user's primary language.
+- Keep machine-readable keys, enum/status values, contract IDs, code symbols, file names, APIs, and Git terms unchanged.
 
 ## Required report sections
 
@@ -86,13 +82,18 @@ Do not add arbitrary source counts. Gather enough evidence to support every mate
 - unresolved_questions: []
 - run_id:
 - shape_report_id:
-- worktree_required: true
+- repository_id:
+- work_item_key:
+- analysis_worktree_required: false
+- execution_worktree_policy: task_scoped
+- dev_wiki_artifact_state: proposed | blocked
 - generated_at:
 
-## 실행 식별자 및 기준 스냅샷
+## 분석 checkout 및 기준 스냅샷
 - git_common_dir:
-- coordinator_root:
-- coordinator_id: <run_id + git_common_dir + coordinator_root identity>
+- repository_root:
+- analysis_root:
+- analysis_checkout: primary_local | linked_worktree
 - head_sha:
 - branch:
 - detached:
@@ -102,8 +103,8 @@ Do not add arbitrary source counts. Gather enough evidence to support every mate
 - status_fingerprint:
 - dirty_policy: clean | adopted_dirty
 - primary_local_head:
-- primary_local_status_paths: # repo-relative and redacted when sensitive
-- local_divergence: none | unrelated | needs_input
+- primary_local_status_paths:
+- checkout_divergence: none | unrelated | needs_input
 
 ## 요청 정의
 - 문제 설명
@@ -117,12 +118,13 @@ Do not add arbitrary source counts. Gather enough evidence to support every mate
 ## 단계 0 — Local Work Memory
 - 실행한 질의
 - 사용한 문서: source_type, source_id, title, source_revision
+- 기존 Shape artifact: source_id, slug, source_revision, artifact_id
 - 관련 기존 결정
 - 해결되지 않은 검색
 
 ## 단계 0 — Jira 및 Figma 근거
-- Jira 기록: evidence ID, issue key, canonical URL, 사용한 fields/comments, observed updated_at, retrieved_at, 지원하는 REQ/NFR/INV/AC/DEC IDs
-- Figma 기록: evidence ID, canonical URL, file key, node ID, 사용한 component/token/screenshot 근거, observed version 또는 last_modified, retrieved_at, 지원하는 REQ/NFR/INV/AC/DEC IDs
+- Jira 기록
+- Figma 기록
 - 사용 불가 또는 권한으로 차단된 자료
 - 출처 충돌 및 처리 결과
 
@@ -147,111 +149,115 @@ Do not add arbitrary source counts. Gather enough evidence to support every mate
 
 ## 아키텍처 결정
 ### DEC-### <title>
-- 결정 상태
+- decision_status: proposed | accepted | superseded
 - 결정
 - 검토한 대안
-- 근거
+- 근거와 작업 이유
+- 가정과 confidence
 - 장단점 및 영향
+- 무효화 조건
 
 ## 위험 및 미해결 질문
 
-## 메모리 변경 집합
+## Dev Wiki Shape artifact
+- artifact_kind: shape
+- artifact_id: <shape_report_id>
+- artifact_digest: <full_body SHA-256>
+- canonical_slug:
+- supersedes:
+
+## Dev Wiki Artifact Change Set
 
 ## 실행 영향 및 고려사항
 - 예상 작업 경계
 - 병렬 실행 후보
 - 공유 및 충돌 가능 영역
-- worktree_required: true
+- execution_worktree_policy: task_scoped
 
 ## 다음 선택지
 ```
 
-## Memory Change Set
+## Canonical Shape artifact body
 
-The Change Set is proposed by Shape and applied only by explicit `$workbench:memory-update` invocation.
+The Dev Wiki `full_body` is the durable Shape decision record. Include:
 
-Use `source_type: dev_wiki` unless the user explicitly requested `note`. A default canonical project page may use `projects/<stable-project-key>/context`; derive and record the stable key rather than relying only on a machine-specific absolute path.
+1. `run_id`, `shape_report_id`, repository slug, work item identity, source issue/design links, base commit, and generated time;
+2. problem, desired outcome, scope, exclusions, constraints, and assumptions;
+3. evidence map and retrieval timestamps;
+4. requirements, invariants, and acceptance criteria;
+5. every architecture decision with status, alternatives, rationale, consequences, confidence, and invalidation conditions;
+6. risks, unresolved questions, likely task boundaries, and collision surfaces;
+7. `supersedes` when replacing an earlier Shape artifact.
 
-An update entry contains:
+Do not include absolute local paths, credentials, tokens, private keys, customer data, or unnecessary personal data. Use repository-relative paths and canonical URLs.
+
+Normalize only CRLF/CR line endings in `full_body` to LF, SHA-256 the exact UTF-8 bytes, and lowercase-hex encode the result as `artifact_digest`. Do not include `artifact_digest` inside `full_body`; this avoids a self-referential digest.
+
+## Dev Wiki Artifact Change Set
+
+Shape proposes exactly one entry and `$workbench:memory-update` applies it later:
 
 ```yaml
-- change_id: MEM-001
-  action: update
-  source_type: dev_wiki | note
-  source_id: <UUID from memory_get>
-  title: Project context
-  full_body: |
-    Complete replacement Markdown for create/update.
-  expected_revision: null # exact opaque memory_get value for update/delete
-  reason:
-  evidence_ids: []
-  depends_on: []
-  delete_requires_same_invocation_confirmation: true
+artifact_kind: shape
+artifact_id: <shape_report_id>
+artifact_digest: <sha256 of normalized full_body>
+run_id:
+git_common_dir:
+repository_id:
+work_item_key:
+change_id: WIKI-SHAPE-001
+action: create | update | skip
+source_type: dev_wiki
+slug: projects/<stable-project-key>/work-items/<stable-work-item-key>/shape
+source_id: <UUID from memory_get; update/skip only>
+title: <work item> — Shape
+full_body: |
+  <complete canonical Shape artifact body; create/update only>
+expected_revision: <exact opaque memory_get value; update only>
+reason:
+evidence_ids: []
 ```
 
 Rules:
 
-- Never include more than one mutation for the same source identity.
-- Give every entry a unique `change_id`. Require every `depends_on` ID to exist in the same Change Set, reject cycles, and list entries in topological order so dependencies precede dependents.
-- A create entry omits the `source_id` field entirely so the service generates it. A Dev Wiki create adds `slug`; a note create does not.
-- Update carries the complete merged body, never a patch.
-- Do not create an update when the current body is null or unresolved.
-- Treat `source_revision` as opaque; never synthesize it.
-- Mark no-op knowledge as `skip` rather than rewriting it.
-- If no durable knowledge changed, emit an empty mutation list plus `memory_update_state: not_needed`; do not manufacture a rewrite.
-- Deletion is exceptional and requires same-invocation confirmation of source ID, title, and revision during Memory Update; a Boolean written by Shape is not authorization.
+- Use a stable slug matching `^[a-z0-9][a-z0-9/-]{0,120}$`. Use a user-authorized work item key or a stable non-sensitive hash.
+- Omit `source_id` on create. Require `source_id` and exact opaque `expected_revision` on update.
+- Use `skip` only when the retrieved canonical body is byte-equivalent after line-ending normalization; omit `full_body` for skip.
+- Update carries the complete replacement body, never a patch.
+- Do not update when the current body or revision is unresolved.
+- Do not emit more than one Shape artifact mutation.
+- The artifact body is canonical; narrative memory summaries are not substitutes for it.
 
 ## Visibility and secret handling
 
-- Report repository-relative paths. Replace a path that itself reveals a secret or sensitive identifier with `<sensitive-path:sha256-prefix>`; the status fingerprint still detects drift.
-- Do not reproduce credentials, tokens, private keys, customer data, or unnecessary personal data in sources, excerpts, or the Change Set.
-- A create/update entry must contain the exact complete body that would be written. If that body contains material that cannot safely appear in the report, do not redact and then write the corrupted body; mark the mutation blocked and request a user-approved secure handoff mechanism.
-- Quote only the minimum memory excerpt needed for human judgment; keep the full current body out of narrative sections.
+- Report repository-relative paths in the artifact. Replace a path that itself reveals a secret with `<sensitive-path:sha256-prefix>`.
+- If the complete artifact cannot safely be written to Dev Wiki, mark the change blocked instead of writing a corrupted redacted body.
+- Quote only the minimum memory excerpt needed for human judgment.
 
 ## Status precedence
 
-- `BLOCKED`: any required gate, dependency, evidence, safety, or environment condition prevents a trustworthy result. This takes precedence over questions.
-- `NEEDS_INPUT`: no blocker exists, but a user decision would materially change requirements or architecture.
-- `READY`: all required evidence and decisions are sufficient for the stated scope.
-- Always list every blocker and unresolved question rather than hiding secondary conditions behind the top-level status.
+- `BLOCKED`: a required gate, evidence source, safety condition, or Dev Wiki snapshot dependency prevents a trustworthy result.
+- `NEEDS_INPUT`: no blocker exists, but a user decision materially changes requirements or architecture.
+- `READY`: evidence and decisions are sufficient and one valid Dev Wiki Artifact Change Set is ready for explicit persistence.
 
 ## Handoff semantics
 
-- Shape does not automatically apply memory or prepare execution.
-- `READY` means the report can be consumed by a later explicit skill or ordinary Codex.
-- Any base snapshot drift makes the report stale for Prepare.
-- A 409 from Memory Update requires a refreshed Shape because the saved body/revision may be stale.
-
-## Shape Bootstrap Result
-
-When Shape is invoked from the primary Local checkout and native worktree-task creation succeeds or is queued, stop the Local invocation before stages 0–4 and return only:
-
-```markdown
-# Shape 부트스트랩 결과
-- shape_status: CONTINUING_IN_WORKTREE
-- worktree_required: true
-- bootstrap_status: CREATED | QUEUED
-- source_root:
-- continuation_task_id: # threadId or clientThreadId returned by the host
-- starting_state: working-tree
-- required_action: None. Shape continues in the created Codex Worktree task.
-```
-
-Use the host's created-task directive when available so the continuation is visible and clickable. Do not claim that stages 0–4 ran in the Local task, and do not wait for or mirror the continuation's final report into the Local task.
+- Shape never creates a worktree and never writes memory.
+- A ready Shape is not Prepare-ready until `$workbench:memory-update` returns `APPLIED`/`indexed` or `NOT_NEEDED`/`unchanged` with a `dev_wiki_ref` for the same `artifact_id` and `artifact_digest`.
+- Any base snapshot drift makes the Shape stale for Prepare.
+- A 409 during Shape artifact persistence requires a refreshed Shape.
 
 ## Shape Gate Result
 
-When the current directory is not a Git repository, native Codex worktree-task creation is unavailable, the saved project cannot be resolved, creation fails, or a linked coordinator otherwise cannot be established, stop before stages 0–4 and return only:
+If the current directory is not a usable Git repository or the analysis checkout cannot be inspected safely, return only:
 
 ```markdown
 # Shape 게이트 결과
 - shape_status: BLOCKED
-- worktree_required: true
 - reason:
 - current_root:
+- analysis_worktree_required: false
 - required_action:
 ```
 
-Do not return this gate merely because the current checkout is primary Local. Attempt native coordinator bootstrap first. Never use `git worktree add` as a fallback because it does not move or rebind the calling Codex task.
-
-If the linked-worktree gate passes but Local Work Memory is unavailable, retain the established run identity and return the partial report with `shape_status: BLOCKED`, completed repository observations, the unresolved dependency, and no execution-ready Memory Change Set.
+Do not return this gate merely because the checkout is primary Local. Primary Local is a valid read-only Shape environment.

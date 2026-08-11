@@ -1,7 +1,7 @@
 interface:
   display_name: "Finalize"
-  short_description: "Test review and document the integrated result"
-  default_prompt: "Use $workbench:finalize to failure-test, independently review, and document this integrated result."
+  short_description: "Review the final integration task result"
+  default_prompt: "Use $workbench:finalize to failure-test, independently review, and document the final integration task worktree."
 
 policy:
   allow_implicit_invocation: false

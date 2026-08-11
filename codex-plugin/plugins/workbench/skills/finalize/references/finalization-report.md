@@ -1,6 +1,6 @@
 # Finalization Contract
 
-Finalize evaluates `base_snapshot..integrated_head_sha` as one product change.
+Finalize evaluates `base_commit..integrated_head_sha` as one product change in the final integration task's worktree.
 
 ## Risk-driven test matrix
 
@@ -61,10 +61,14 @@ When there is no integrated result, do not fabricate the full report. Return:
 
 ## Status
 - FINALIZED | CHANGES_REQUIRED | BLOCKED
-- base_sha:
+- base_commit:
 - integrated_head_sha:
 - final_head_sha:
 - final_branch:
+
+## Dev Wiki artifacts
+- Shape source ID, slug, revision, artifact ID, artifact digest
+- Prepare source ID, slug, revision, artifact ID, artifact digest
 
 ## Summary
 
@@ -98,7 +102,7 @@ When there is no integrated result, do not fabricate the full report. Return:
 
 ## Delivery state
 - Local drift observed
-- push/PR/handoff/cleanup not performed
+- push/PR/handoff/task-worktree cleanup not performed
 - user-selectable next actions
 ```
 

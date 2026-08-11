@@ -1,7 +1,7 @@
 interface:
   display_name: "Shape"
-  short_description: "Shape sourced work in a dedicated worktree"
-  default_prompt: "Use $workbench:shape to bootstrap a coordinator worktree when needed and produce an evidence-backed Shape Report."
+  short_description: "Shape work and draft its Dev Wiki record"
+  default_prompt: "Use $workbench:shape to produce an evidence-backed Shape Report and proposed Dev Wiki artifact without creating a worktree."
 
 dependencies:
   tools:
