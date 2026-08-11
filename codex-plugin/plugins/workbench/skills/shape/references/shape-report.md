@@ -2,6 +2,28 @@
 
 Use this contract for the stages 0–4 deliverable. The report is a Markdown document returned in the conversation unless the user explicitly requests a file.
 
+## Native coordinator bootstrap contract
+
+Apply this only when the calling checkout is primary Local and the user explicitly invoked `$workbench:shape`.
+
+1. Call the Codex app's `list_projects` tool. Select exactly one Git project whose canonical local root equals the current repository root. Do not guess from repository name alone. If no exact match or multiple matches exist, return the Shape Gate Result.
+2. Call `create_thread` once with the selected `projectId`, omit model and thinking overrides, and use this target:
+
+   ```yaml
+   type: project
+   projectId: <exact list_projects result>
+   environment:
+     type: worktree
+     startingState:
+       type: working-tree
+   ```
+
+3. Set the initial prompt to invoke `$workbench:shape`, state that native coordinator bootstrap is complete, and reproduce only the user's task request. Exclude system/developer text, injected skill contents, tool output, credentials, and unrelated conversation history.
+4. Accept either `threadId` or a queued `clientThreadId` as success. Do not send a second message, poll, wait for completion, or duplicate stages 0–4 in the Local task; `create_thread` already starts the continuation with its initial prompt.
+5. Emit the Shape Bootstrap Result and the host's created-task directive when supported. The continuation task becomes user-owned and produces the Shape Report in its own conversation.
+
+Do not use `fork_thread`: a worktree fork does not copy the active unfinished turn, so it cannot reliably carry the current Shape request. Do not use `handoff_thread`: the calling task cannot hand itself off. Do not fall back to shell Git worktree creation.
+
 ## Identity and fingerprint construction
 
 - Create `run_id` once as `wb-<UTC YYYYMMDDTHHMMSSZ>-<HEAD first 12>-<six random lowercase hex>`. Preserve it across later Shape revisions for the same run.
@@ -193,9 +215,26 @@ Rules:
 - Any base snapshot drift makes the report stale for Prepare.
 - A 409 from Memory Update requires a refreshed Shape because the saved body/revision may be stale.
 
+## Shape Bootstrap Result
+
+When Shape is invoked from the primary Local checkout and native worktree-task creation succeeds or is queued, stop the Local invocation before stages 0–4 and return only:
+
+```markdown
+# Shape Bootstrap Result
+- shape_status: CONTINUING_IN_WORKTREE
+- worktree_required: true
+- bootstrap_status: CREATED | QUEUED
+- source_root:
+- continuation_task_id: # threadId or clientThreadId returned by the host
+- starting_state: working-tree
+- required_action: None. Shape continues in the created Codex Worktree task.
+```
+
+Use the host's created-task directive when available so the continuation is visible and clickable. Do not claim that stages 0–4 ran in the Local task, and do not wait for or mirror the continuation's final report into the Local task.
+
 ## Shape Gate Result
 
-When the current checkout is primary Local, not a Git repository, or otherwise cannot establish a linked coordinator, stop before stages 0–4 and return only:
+When the current directory is not a Git repository, native Codex worktree-task creation is unavailable, the saved project cannot be resolved, creation fails, or a linked coordinator otherwise cannot be established, stop before stages 0–4 and return only:
 
 ```markdown
 # Shape Gate Result
@@ -203,7 +242,9 @@ When the current checkout is primary Local, not a Git repository, or otherwise c
 - worktree_required: true
 - reason:
 - current_root:
-- required_action: Start or hand off this task to a Codex Worktree, then invoke $workbench:shape again.
+- required_action:
 ```
+
+Do not return this gate merely because the current checkout is primary Local. Attempt native coordinator bootstrap first. Never use `git worktree add` as a fallback because it does not move or rebind the calling Codex task.
 
 If the linked-worktree gate passes but Local Work Memory is unavailable, retain the established run identity and return the partial report with `shape_status: BLOCKED`, completed repository observations, the unresolved dependency, and no execution-ready Memory Change Set.

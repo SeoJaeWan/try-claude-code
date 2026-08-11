@@ -112,7 +112,7 @@ $workbench:finalize
 
 ## Shape와 근거 모델
 
-Workbench Shape를 호출하기 전에 Codex UI에서 coordinator worktree를 시작하거나 이 task를 해당 worktree로 handoff해야 합니다. Shape는 현재 linked worktree를 coordinator로 채택한 뒤 다음 순서로 진행합니다.
+Workbench Shape는 Local checkout에서도 호출할 수 있습니다. 이 경우 Shape는 stages 0–4를 시작하기 전에 Codex-native project task를 현재 `working-tree` 상태의 worktree 환경으로 만들고 원래 요청을 그 continuation task에 전달합니다. 새 task가 현재 linked worktree를 coordinator로 채택한 뒤 다음 순서로 진행합니다. 이미 worktree에서 호출했다면 bootstrap 없이 현재 checkout을 coordinator로 사용합니다.
 
 1. **Stage 0 — Local Work Memory·Jira·Figma 조회와 Repository Exploration**
    - 대상 repository와 project identity를 확인합니다.
@@ -175,9 +175,10 @@ Workbench run 전체는 항상 하나 이상의 전용 Git worktree context에�
 
 ### Coordinator
 
-- Codex UI가 합의한 base에서 coordinator worktree를 시작하거나 task를 handoff합니다. 첫 Shape invocation은 이미 할당된 linked worktree만 coordinator로 채택하며 shell에서 worktree를 만들고 task가 이동한 것처럼 가장하지 않습니다.
+- Local에서 시작한 첫 Shape invocation은 Codex-native project-task 생성 기능으로 `startingState: working-tree`인 continuation task를 만들고 원래 Shape 요청을 전달합니다. Local invocation은 bootstrap 결과만 반환하고, stages 0–4와 Shape Report는 새 task가 소유합니다. 이미 linked worktree에서 시작했다면 현재 checkout을 coordinator로 채택합니다.
+- `git worktree add`만 실행해 calling task가 이동한 것처럼 처리하지 않습니다. native task 생성 기능이 없거나 실패하면 정확한 blocker를 보고합니다.
 - Shape Report, baseline, integration 상태와 Final Report의 기준은 coordinator가 소유합니다.
-- local checkout에 uncommitted 변경이 있고 그 내용이 목표에 필요하면 이를 조용히 제외하지 않고 사용자에게 기준 commit 또는 포함 방법을 확인합니다.
+- bootstrap은 Local의 staged, unstaged, untracked 상태를 `working-tree` snapshot에 포함합니다. 이후 Local에만 생긴 요청 관련 변경은 조용히 복사하지 않고 새 snapshot이 필요한지 확인합니다.
 
 ### Worker 배치
 

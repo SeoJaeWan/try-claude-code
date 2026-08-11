@@ -1,6 +1,6 @@
 ---
 name: shape
-description: Shape a software change through repository exploration, Local Work Memory retrieval, requirements and acceptance analysis, source-backed research, and architecture decisions. Invoke only as `$workbench:shape`. Use when the user explicitly asks to "shape", "요구사항을 정리해", "설계부터 검토해", or otherwise names this selector.
+description: Shape a software change through repository exploration, Local Work Memory retrieval, requirements and acceptance analysis, source-backed research, and architecture decisions. Invoke only through the explicit `$workbench:shape` selector; do not activate from an unnamespaced natural-language request.
 ---
 
 # Shape
@@ -9,14 +9,15 @@ Turn a request into an evidence-backed Shape Report covering stages 0–4. This 
 
 Read [references/shape-report.md](references/shape-report.md) before starting. Follow its evidence labels, report schema, and Memory Change Set contract.
 
-## Entry gate
+## Entry and coordinator bootstrap
 
 1. Confirm the current directory is a Git repository.
 2. Compare the absolute Git dir and common dir, and inspect `git worktree list --porcelain`.
-3. Require the current checkout to be a linked coordinator worktree, not the primary Local checkout.
-4. If running in Local, stop and tell the user to start or hand off this task to a Codex Worktree, then invoke `$workbench:shape` again. Do NOT create a shell worktree and pretend the current task moved into it.
-5. Adopt this linked checkout as the coordinator for the new run; “coordinator” is a frozen Workbench role, not a Git-native property. Record the deterministic identities and complete base snapshot defined by the reference: coordinator root, Git common dir, HEAD, branch or detached state, staged/unstaged/untracked paths, and a content-sensitive status fingerprint. Do not expose sensitive file contents.
-6. Inspect the primary Local worktree's HEAD and status paths read-only. The coordinator remains authoritative. If Local has request-relevant changes absent from the coordinator, report `local_divergence` and ask whether the run must be recreated with them; never copy or merge them automatically. Unrelated Local work does not block Shape.
+3. If the current checkout is the primary Local checkout, do not begin stages 0–4 there. Follow the reference's Native coordinator bootstrap contract to resolve the saved Git project and create one continuation task with `environment.type: worktree` and `startingState.type: working-tree`. The explicit `$workbench:shape` invocation authorizes this one coordinator bootstrap so the new task preserves the current HEAD and staged, unstaged, and untracked state without modifying Local.
+4. Give the continuation task the original user request, explicitly invoke `$workbench:shape`, and state that native coordinator bootstrap is already complete. Do not broaden or reinterpret the request in the handoff prompt. Return the reference's Shape Bootstrap Result from the Local task and stop; the continuation task owns the Shape Report.
+5. Do NOT run `git worktree add`, create a shell-only worktree, or claim that the calling task moved. If native worktree-task creation is unavailable, the saved project cannot be resolved, or creation fails, return only the reference's Shape Gate Result with the exact blocker.
+6. When already in a linked checkout, adopt it as the coordinator worktree for the new run; “coordinator” is a frozen Workbench role, not a Git-native property. Record the deterministic identities and complete base snapshot defined by the reference: coordinator root, Git common dir, HEAD, branch or detached state, staged/unstaged/untracked paths, and a content-sensitive status fingerprint. Do not expose sensitive file contents.
+7. Inspect the primary Local worktree's HEAD and status paths read-only. The coordinator remains authoritative. A coordinator created from `working-tree` may be dirty; record `adopted_dirty`. If Local later contains request-relevant changes absent from the coordinator, report `local_divergence` and ask whether the run must be recreated from a new snapshot; never copy or merge them automatically. Unrelated Local work does not block Shape.
 
 A dirty coordinator may be shaped, but mark it `adopted_dirty`. Prepare cannot declare execution ready until the execution base is clean and stable.
 
@@ -73,7 +74,7 @@ A dirty coordinator may be shaped, but mark it `adopted_dirty`. Prepare cannot d
 
 ## Output
 
-Return one self-contained Markdown Shape Report using the reference template. Include clickable local file links with line numbers and clickable official URLs. The report must include a proposed Memory Change Set and `worktree_required: true`, even when the user plans to stop after Shape and continue with ordinary Codex. If the worktree gate fails before shaping begins, return only the reference's Shape Gate Result; do not fabricate empty research sections.
+Return one self-contained Markdown Shape Report using the reference template. Include clickable local file links with line numbers and clickable official URLs. The report must include a proposed Memory Change Set and `worktree_required: true`, even when the user plans to stop after Shape and continue with ordinary Codex. A Local bootstrap invocation returns only the reference's Shape Bootstrap Result. If bootstrap or the worktree gate fails before shaping begins, return only the reference's Shape Gate Result; do not fabricate empty research sections.
 
 Do NOT:
 

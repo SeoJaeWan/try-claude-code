@@ -1,7 +1,7 @@
 interface:
   display_name: "Shape"
-  short_description: "Shape work with repository and official evidence"
-  default_prompt: "Use $workbench:shape to investigate this request and produce an evidence-backed Shape Report."
+  short_description: "Shape sourced work in a dedicated worktree"
+  default_prompt: "Use $workbench:shape to bootstrap a coordinator worktree when needed and produce an evidence-backed Shape Report."
 
 dependencies:
   tools:

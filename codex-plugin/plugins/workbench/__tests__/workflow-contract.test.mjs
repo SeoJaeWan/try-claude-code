@@ -84,6 +84,10 @@ test("Shape owns stages 0-4 and produces an evidence-backed read-only contract",
       ["Memory Change Set", /Memory Change Set/],
       ["revision snapshot", /source_revision/],
       ["coordinator worktree", /coordinator worktree/i],
+      ["native coordinator bootstrap", /Native coordinator bootstrap contract/i],
+      ["working-tree starting state", /startingState\.type: working-tree/],
+      ["Local bootstrap result", /Shape Bootstrap Result/],
+      ["shell worktree prohibition", /Do NOT run `git worktree add`/i],
       ["local checkout isolation", /local checkout/i],
       [
         "memory-write prohibition",
@@ -100,6 +104,25 @@ test("Shape owns stages 0-4 and produces an evidence-backed read-only contract",
     ],
     "shape",
   );
+});
+
+test("Shape bootstraps Local invocations into a native Codex worktree task", () => {
+  const skill = skillDocument("shape");
+  const contract = referenceDocument("shape");
+
+  assert.match(skill, /primary Local checkout[\s\S]{0,320}create one continuation task/i);
+  assert.match(skill, /original user request[\s\S]{0,180}\$workbench:shape/i);
+  assert.match(skill, /Return the reference's Shape Bootstrap Result[\s\S]{0,120}stop/i);
+  assert.match(contract, /shape_status: CONTINUING_IN_WORKTREE/);
+  assert.match(contract, /bootstrap_status: CREATED \| QUEUED/);
+  assert.match(contract, /continuation_task_id:/);
+  assert.match(contract, /Call the Codex app's `list_projects` tool/);
+  assert.match(contract, /Call `create_thread` once/);
+  assert.match(contract, /startingState:[\s\S]{0,80}type: working-tree/);
+  assert.match(contract, /Do not use `fork_thread`/);
+  assert.match(contract, /Do not use `handoff_thread`/);
+  assert.match(contract, /Do not return this gate merely because the current checkout is primary Local/i);
+  assert.match(contract, /Never use `git worktree add` as a fallback/i);
 });
 
 test("Memory Update applies only a prepared revision-guarded change set", () => {

@@ -83,9 +83,9 @@ Jira와 Figma MCP는 Shape의 project evidence retrieval 용도입니다. Shape 
 
 ## Worktree 실행 원칙
 
-Workbench 작업은 항상 하나 이상의 전용 Git worktree에서 진행합니다. 사용자의 local checkout은 기준 repository를 식별하고 worktree를 만들기 위한 읽기 전용 진입점이며, 구현 파일을 수정하지 않습니다.
+Workbench 작업은 항상 하나 이상의 전용 Git worktree에서 진행합니다. 사용자의 local checkout에서 `$workbench:shape`를 호출하면 Codex가 현재 working-tree 상태를 기준으로 coordinator worktree task를 만들고 원래 요청을 그 task에서 계속합니다. local checkout은 기준 repository와 시작 상태를 제공할 뿐 구현 파일을 수정하지 않습니다.
 
-- 먼저 coordinator worktree를 만들거나 이미 할당된 전용 worktree를 coordinator로 사용합니다.
+- Shape가 Codex-native coordinator worktree task를 자동 생성하거나 이미 할당된 전용 worktree를 coordinator로 사용합니다. shell의 `git worktree add`로 현재 task가 이동한 것처럼 처리하지 않습니다.
 - Shape는 변경 경계와 병렬화 후보를 기록합니다.
 - Prepare는 task dependency와 공유 파일·schema·lockfile·runtime 자원을 분석해 worker worktree가 필요한지 확정합니다.
 - 직렬 작업은 coordinator worktree 한 곳에서 순차 실행합니다.
