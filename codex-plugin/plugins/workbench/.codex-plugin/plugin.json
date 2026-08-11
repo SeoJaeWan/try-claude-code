@@ -1,6 +1,6 @@
 {
   "name": "workbench",
-  "version": "0.2.0+codex.20260811012714",
+  "version": "0.2.0+codex.20260811023600",
   "description": "Five explicit Workbench skills for repository, memory, Jira, Figma, and official-evidence shaping, guarded project memory updates, worktree execution, and integrated validation.",
   "author": {
     "name": "Local developer"

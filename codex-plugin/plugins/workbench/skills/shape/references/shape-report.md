@@ -68,12 +68,19 @@ Use `not_applicable` for library-specific fields when the source is a direct off
 
 Do not add arbitrary source counts. Gather enough evidence to support every material decision, and avoid sources unrelated to a decision.
 
+## Presentation language
+
+- Render all human-facing Markdown titles, headings, subheadings, and prose labels in the user's primary language.
+- For a Korean request, use the Korean structure shown below. This includes labels such as `예상 작업 경계`, `병렬 실행 후보`, and `공유 및 충돌 가능 영역`; do not leave them as English outline labels.
+- Keep machine-readable contract keys, enum/status values, contract IDs, code symbols, file names, APIs, and Git terms unchanged. Technical English may remain in explanatory body text when it improves precision.
+- Apply the same rule to bootstrap and gate result titles. Do not translate the structured fields inside those results.
+
 ## Required report sections
 
 ```markdown
-# Shape Report — <request>
+# Shape 보고서 — <request>
 
-## Status
+## 상태
 - shape_status: READY | BLOCKED | NEEDS_INPUT
 - blockers: []
 - unresolved_questions: []
@@ -82,7 +89,7 @@ Do not add arbitrary source counts. Gather enough evidence to support every mate
 - worktree_required: true
 - generated_at:
 
-## Run identity and base snapshot
+## 실행 식별자 및 기준 스냅샷
 - git_common_dir:
 - coordinator_root:
 - coordinator_id: <run_id + git_common_dir + coordinator_root identity>
@@ -98,65 +105,65 @@ Do not add arbitrary source counts. Gather enough evidence to support every mate
 - primary_local_status_paths: # repo-relative and redacted when sensitive
 - local_divergence: none | unrelated | needs_input
 
-## Request framing
-- problem statement
-- desired outcome
-- scope
-- out of scope
-- constraints
-- assumptions
-- unresolved questions
+## 요청 정의
+- 문제 설명
+- 원하는 결과
+- 범위
+- 범위 제외
+- 제약사항
+- 가정
+- 미해결 질문
 
-## Stage 0 — Local Work Memory
-- queries issued
-- documents used: source_type, source_id, title, source_revision
-- relevant prior decisions
-- unresolved retrievals
+## 단계 0 — Local Work Memory
+- 실행한 질의
+- 사용한 문서: source_type, source_id, title, source_revision
+- 관련 기존 결정
+- 해결되지 않은 검색
 
-## Stage 0 — Jira and Figma evidence
-- Jira records: evidence ID, issue key, canonical URL, fields/comments used, observed updated_at, retrieved_at, supported REQ/NFR/INV/AC/DEC IDs
-- Figma records: evidence ID, canonical URL, file key, node ID, component/token/screenshot evidence used, observed version or last_modified, retrieved_at, supported REQ/NFR/INV/AC/DEC IDs
-- unavailable or authorization-blocked artifacts
-- source conflicts and disposition
+## 단계 0 — Jira 및 Figma 근거
+- Jira 기록: evidence ID, issue key, canonical URL, 사용한 fields/comments, observed updated_at, retrieved_at, 지원하는 REQ/NFR/INV/AC/DEC IDs
+- Figma 기록: evidence ID, canonical URL, file key, node ID, 사용한 component/token/screenshot 근거, observed version 또는 last_modified, retrieved_at, 지원하는 REQ/NFR/INV/AC/DEC IDs
+- 사용 불가 또는 권한으로 차단된 자료
+- 출처 충돌 및 처리 결과
 
-## Stage 0 — Repository exploration
-- structure and entrypoints
-- existing patterns and dependencies
-- tests, build, CI, and error handling
-- relevant project instructions
+## 단계 0 — 저장소 탐색
+- 구조 및 진입점
+- 기존 패턴 및 의존성
+- 테스트, 빌드, CI 및 오류 처리
+- 관련 프로젝트 지침
 
-## Requirements
-- REQ-### functional requirement
-- NFR-### non-functional requirement
+## 요구사항
+- REQ-### 기능 요구사항
+- NFR-### 비기능 요구사항
 
-## Invariants
+## 불변 조건
 - INV-###
 
-## Acceptance criteria
-- AC-### observable outcome and failure behavior
+## 수락 기준
+- AC-### 관찰 가능한 결과 및 실패 동작
 
-## Research and sources
-- source records and claim mapping
+## 조사 및 출처
+- 출처 기록 및 주장 연결
 
-## Architecture decisions
+## 아키텍처 결정
 ### DEC-### <title>
-- status
-- decision
-- alternatives
-- evidence
-- trade-offs and consequences
+- 결정 상태
+- 결정
+- 검토한 대안
+- 근거
+- 장단점 및 영향
 
-## Risks and open questions
+## 위험 및 미해결 질문
 
-## Memory Change Set
+## 메모리 변경 집합
 
-## Execution implications
-- likely task boundaries
-- parallel candidates only
-- shared/collision surfaces
+## 실행 영향 및 고려사항
+- 예상 작업 경계
+- 병렬 실행 후보
+- 공유 및 충돌 가능 영역
 - worktree_required: true
 
-## Next choices
+## 다음 선택지
 ```
 
 ## Memory Change Set
@@ -220,7 +227,7 @@ Rules:
 When Shape is invoked from the primary Local checkout and native worktree-task creation succeeds or is queued, stop the Local invocation before stages 0–4 and return only:
 
 ```markdown
-# Shape Bootstrap Result
+# Shape 부트스트랩 결과
 - shape_status: CONTINUING_IN_WORKTREE
 - worktree_required: true
 - bootstrap_status: CREATED | QUEUED
@@ -237,7 +244,7 @@ Use the host's created-task directive when available so the continuation is visi
 When the current directory is not a Git repository, native Codex worktree-task creation is unavailable, the saved project cannot be resolved, creation fails, or a linked coordinator otherwise cannot be established, stop before stages 0–4 and return only:
 
 ```markdown
-# Shape Gate Result
+# Shape 게이트 결과
 - shape_status: BLOCKED
 - worktree_required: true
 - reason:

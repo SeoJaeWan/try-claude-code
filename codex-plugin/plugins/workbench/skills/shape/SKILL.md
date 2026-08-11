@@ -74,7 +74,9 @@ A dirty coordinator may be shaped, but mark it `adopted_dirty`. Prepare cannot d
 
 ## Output
 
-Return one self-contained Markdown Shape Report using the reference template. Include clickable local file links with line numbers and clickable official URLs. The report must include a proposed Memory Change Set and `worktree_required: true`, even when the user plans to stop after Shape and continue with ordinary Codex. A Local bootstrap invocation returns only the reference's Shape Bootstrap Result. If bootstrap or the worktree gate fails before shaping begins, return only the reference's Shape Gate Result; do not fabricate empty research sections.
+Return one self-contained Markdown Shape Report using the reference template. Render every human-facing Markdown heading, subheading, and prose label in the user's primary language. For a Korean request, use Korean for structural labels such as `아키텍처 결정`, `실행 영향 및 고려사항`, `예상 작업 경계`, `병렬 실행 후보`, and `공유 및 충돌 가능 영역`. Keep machine-readable contract keys, enum/status values, contract IDs, code symbols, file names, APIs, and Git terms unchanged; technical English may remain in the body when it improves precision.
+
+Include clickable local file links with line numbers and clickable official URLs. The report must include a proposed Memory Change Set and `worktree_required: true`, even when the user plans to stop after Shape and continue with ordinary Codex. A Local bootstrap invocation returns only the reference's Shape Bootstrap Result. If bootstrap or the worktree gate fails before shaping begins, return only the reference's Shape Gate Result; do not fabricate empty research sections.
 
 Do NOT:
 

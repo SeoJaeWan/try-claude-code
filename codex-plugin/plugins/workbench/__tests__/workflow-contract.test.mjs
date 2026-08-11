@@ -106,6 +106,76 @@ test("Shape owns stages 0-4 and produces an evidence-backed read-only contract",
   );
 });
 
+test("Shape renders Korean report structure while preserving contract fields", () => {
+  const skill = skillDocument("shape");
+  const contract = referenceDocument("shape");
+  const reportTemplate = markdownSection(
+    contract,
+    "## Required report sections",
+    "## Memory Change Set",
+  );
+
+  assert.match(
+    skill,
+    /human-facing Markdown heading, subheading, and prose label[\s\S]{0,220}user's primary language/i,
+  );
+
+  for (const heading of [
+    "# Shape 보고서",
+    "## 상태",
+    "## 실행 식별자 및 기준 스냅샷",
+    "## 요청 정의",
+    "## 단계 0 — Local Work Memory",
+    "## 단계 0 — Jira 및 Figma 근거",
+    "## 단계 0 — 저장소 탐색",
+    "## 요구사항",
+    "## 불변 조건",
+    "## 수락 기준",
+    "## 조사 및 출처",
+    "## 아키텍처 결정",
+    "## 위험 및 미해결 질문",
+    "## 메모리 변경 집합",
+    "## 실행 영향 및 고려사항",
+    "## 다음 선택지",
+  ]) {
+    assert.ok(reportTemplate.includes(heading), `Korean report template must include ${heading}`);
+  }
+
+  for (const label of [
+    "예상 작업 경계",
+    "병렬 실행 후보",
+    "공유 및 충돌 가능 영역",
+    "검토한 대안",
+    "장단점 및 영향",
+  ]) {
+    assert.ok(reportTemplate.includes(label), `Korean report template must include ${label}`);
+  }
+
+  for (const contractField of [
+    "shape_status:",
+    "run_id:",
+    "shape_report_id:",
+    "status_fingerprint:",
+    "worktree_required:",
+  ]) {
+    assert.ok(
+      reportTemplate.includes(contractField),
+      `localized report template must preserve ${contractField}`,
+    );
+  }
+
+  assert.doesNotMatch(
+    reportTemplate,
+    /^## (?:Status|Run identity and base snapshot|Request framing|Requirements|Invariants|Acceptance criteria|Research and sources|Architecture decisions|Risks and open questions|Memory Change Set|Execution implications|Next choices)$/m,
+  );
+  assert.doesNotMatch(
+    reportTemplate,
+    /^- (?:likely task boundaries|parallel candidates only|shared\/collision surfaces)$/m,
+  );
+  assert.match(contract, /^# Shape 부트스트랩 결과$/m);
+  assert.match(contract, /^# Shape 게이트 결과$/m);
+});
+
 test("Shape bootstraps Local invocations into a native Codex worktree task", () => {
   const skill = skillDocument("shape");
   const contract = referenceDocument("shape");
