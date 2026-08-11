@@ -30,14 +30,14 @@ If any input is missing or inconsistent, return `BLOCKED` with `ARTIFACT_UPDATE_
 3. For `skip`, make no tool call and return `NOT_NEEDED` with the supplied canonical reference.
 4. For create, omit `source_id` and call `memory_write` with `action=create`, `source_type=dev_wiki`, slug, title, and the complete body.
 5. For update, call `memory_write` with `action=update`, source ID, title, complete replacement body, and the exact expected revision. Never send a patch or empty body.
-6. Inspect the returned payload's `status` and `outcome`; a normally returned tool call is not automatically successful.
+6. Inspect the returned payload's `status`, `outcome`, and `source_id`; a normally returned tool call or an HTTP-success class alone is not proof of completed persistence.
 7. Do not retry, merge, roll back, substitute a returned revision, or perform another mutation after a failure, conflict, timeout, disconnect, or indeterminate response.
 
-Create/update success requires `status == 200` and `outcome == "indexed"`; a validated skip returns `NOT_NEEDED`/`unchanged` without a tool call.
+Create/update success requires a trustworthy result with `status` in `{200, 201}`, `outcome == "indexed"`, and a non-empty returned `source_id`; return `APPLIED`/`indexed`. A validated skip returns `NOT_NEEDED`/`unchanged` without a tool call. Do not treat another `2xx`, including `202`, as completed persistence.
 
 - A trustworthy `409` returns `RESHAPE_REQUIRED` for a Shape artifact and `REPREPARE_REQUIRED` for a Prepare artifact.
 - A determinate non-409 error returns `FAILED`.
-- A timeout, disconnect, transport exception, missing trustworthy payload, or `status == 200` with an unexpected outcome returns `INDETERMINATE` because persistence may already have occurred.
+- An unsupported `2xx`, an unexpected outcome, a missing required result field, a timeout, disconnect, transport exception, or other untrustworthy payload returns `INDETERMINATE` because persistence may already have occurred.
 
 ## Output
 

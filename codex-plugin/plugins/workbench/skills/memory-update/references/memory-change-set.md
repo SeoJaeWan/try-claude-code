@@ -58,20 +58,27 @@ Omit `source_id` on create. Preserve `expected_revision` byte-for-byte as an opa
 
 ## Result interpretation
 
-The MCP adapter may return service errors inside an ordinary payload. Inspect both fields:
+The MCP adapter may return service errors inside an ordinary payload. Inspect the service status, domain outcome, and returned source identity. An HTTP-success class alone does not prove that persistence and indexing completed:
 
 ```text
-create/update success = status 200 AND outcome indexed
+supported completion statuses = {200, 201}
+create/update success = supported status AND outcome indexed AND non-empty returned source_id
 ```
 
-Handle all other results conservatively:
+Use this result matrix:
 
-- `400`: invalid artifact/change set; return `FAILED`;
-- `403`: forbidden source type or write; return `FAILED`;
-- `409`: return `RESHAPE_REQUIRED` for Shape or `REPREPARE_REQUIRED` for Prepare;
-- `5xx`: return `FAILED` only with a trustworthy determinate response;
-- `200` with another outcome: return `INDETERMINATE`;
-- timeout, disconnect, transport exception, or missing trustworthy payload: return `INDETERMINATE` and never retry automatically.
+| Service evidence | Result |
+| --- | --- |
+| `200/indexed` with a non-empty returned `source_id` | `APPLIED`/`indexed` |
+| `201/indexed` with a non-empty returned `source_id` | `APPLIED`/`indexed` |
+| `202/indexed` | `INDETERMINATE` |
+| `200` or `201` with `outcome != indexed` (for example, `201/completed`) | `INDETERMINATE` |
+| Missing or untrustworthy `status`, `outcome`, or returned `source_id` | `INDETERMINATE` |
+| `409` | Shape: `RESHAPE_REQUIRED`; Prepare: `REPREPARE_REQUIRED` |
+| Trustworthy determinate non-409 `4xx` or `5xx` | `FAILED` |
+| Timeout, disconnect, or transport exception | `INDETERMINATE` |
+
+Never retry, merge, roll back, or issue another mutation after any non-success result. In particular, `202` acknowledges a request but is not proof of completed persistence.
 
 No transaction spans multiple pages because one invocation writes one artifact page.
 

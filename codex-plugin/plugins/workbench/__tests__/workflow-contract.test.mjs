@@ -50,6 +50,14 @@ function assertContract(text, checks, skill) {
   }
 }
 
+function markdownTableRows(text, heading, nextHeading) {
+  return markdownSection(text, heading, nextHeading)
+    .split("\n")
+    .filter((line) => /^\|.*\|$/.test(line))
+    .map((line) => line.slice(1, -1).split("|").map((cell) => cell.trim()))
+    .filter((row) => row.length === 2 && row[0] !== "Service evidence" && row[0] !== "---");
+}
+
 test("all workflow stages remain independently and explicitly invoked", () => {
   for (const skill of ["shape", "memory-update", "prepare", "execute-task", "finalize"]) {
     assert.match(
@@ -182,11 +190,13 @@ test("Memory Update persists exactly one guarded Shape or Prepare artifact", () 
       ["create mapping", /create -> memory_write/],
       ["update mapping", /update -> memory_write/],
       ["skip no-op", /skip\s+-> no tool call/],
-      ["indexed success", /status 200 AND outcome indexed/],
-      ["Shape conflict", /RESHAPE_REQUIRED` for Shape/i],
-      ["Prepare conflict", /REPREPARE_REQUIRED` for Prepare/i],
+      ["supported completion statuses", /supported completion statuses = \{200, 201\}/],
+      ["indexed success with identity", /supported status AND outcome indexed AND non-empty returned source_id/],
+      ["HTTP class is insufficient", /HTTP-success class alone does not prove/i],
+      ["Shape conflict", /Shape: `RESHAPE_REQUIRED`/i],
+      ["Prepare conflict", /Prepare: `REPREPARE_REQUIRED`/i],
       ["unknown result safety", /INDETERMINATE/],
-      ["no automatic retry", /never retry automatically/i],
+      ["no automatic retry", /Never (?:automatically )?retry/i],
       ["canonical handoff", /dev_wiki_ref/],
       ["two valid persisted states", /`APPLIED`\/`indexed` and `NOT_NEEDED`\/`unchanged`/i],
     ],
@@ -196,6 +206,47 @@ test("Memory Update persists exactly one guarded Shape or Prepare artifact", () 
   const skill = skillDocument("memory-update");
   assert.match(skill, /Do not run `memory_search`, `memory_get`, `memory_graph`/i);
   assert.match(skill, /Do NOT modify repository files/i);
+});
+
+test("Memory Update distinguishes completed writes from other HTTP-success responses", () => {
+  const rows = new Map(
+    markdownTableRows(
+      referenceDocument("memory-update"),
+      "Use this result matrix:",
+      "## Dev Wiki reference",
+    ),
+  );
+
+  assert.equal(
+    rows.get("`200/indexed` with a non-empty returned `source_id`"),
+    "`APPLIED`/`indexed`",
+  );
+  assert.equal(
+    rows.get("`201/indexed` with a non-empty returned `source_id`"),
+    "`APPLIED`/`indexed`",
+  );
+  assert.equal(rows.get("`202/indexed`"), "`INDETERMINATE`");
+  assert.equal(
+    rows.get("`200` or `201` with `outcome != indexed` (for example, `201/completed`)"),
+    "`INDETERMINATE`",
+  );
+  assert.equal(
+    rows.get("Missing or untrustworthy `status`, `outcome`, or returned `source_id`"),
+    "`INDETERMINATE`",
+  );
+  assert.equal(
+    rows.get("`409`"),
+    "Shape: `RESHAPE_REQUIRED`; Prepare: `REPREPARE_REQUIRED`",
+  );
+  assert.equal(
+    rows.get("Timeout, disconnect, or transport exception"),
+    "`INDETERMINATE`",
+  );
+  assert.equal(
+    rows.get("Trustworthy determinate non-409 `4xx` or `5xx`"),
+    "`FAILED`",
+  );
+  assert.equal(rows.size, 8, "memory-update result matrix must stay explicit and complete");
 });
 
 test("Prepare verifies persisted Shape and plans one worktree per task", () => {
