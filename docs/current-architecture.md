@@ -1,84 +1,21 @@
 # Current Architecture — Codex Workbench
 
-> 기준일: 2026-08-10
+> 기준일: 2026-08-13
 
-이 문서는 현재 사용자-facing Codex Workbench의 canonical 구조와 책임 경계를 설명합니다. 활성 제품은 `codex-plugin/`에 두고, 이전 구현은 `legacy/`에 보존합니다. 새 Workbench는 근거를 먼저 확인하고, 기억 갱신과 구현 권한을 분리하며, 모든 repository 작업을 전용 worktree에 격리하는 다섯 개의 명시 호출 스킬로 구성됩니다.
+현재 사용자-facing Workbench는 `codex-plugin/plugins/workbench/`의 다섯 explicit-only 스킬입니다. 핵심 원칙은 스킬 독립성, 선택적 persistence, MCP-backed project evidence, task별 Git worktree 격리입니다.
 
 ## 현재 기준점
 
 | 영역 | 경로 | 역할 |
 |---|---|---|
-| Codex 메인 플러그인 | `codex-plugin/plugins/workbench/` | 다섯 개의 explicit-only workflow skill, Local Work Memory·Context7·Atlassian·Figma MCP 설정, 계약 테스트 |
-| Codex marketplace | `codex-plugin/.agents/plugins/marketplace.json` | 활성 Workbench 로컬 marketplace 등록 |
-| 배포 도구 | `codex-plugin/scripts/deploy-workbench-plugin.mjs` | manifest cachebuster와 로컬 plugin install |
-| 활성 CI | `.github/workflows/workbench-test.yml` | 현재 Workbench의 정적 계약과 Node 테스트 |
-| 현재 문서 | `docs/current-architecture.md` | 현재 구조와 책임 경계의 canonical 문서 |
-| Project-local evaluator | `.codex/skills/evaluate-workbench/` | legacy v2의 `brainstorm`/`executor` 계약 회귀 검사; 현재 다섯 스킬의 평가기는 아님 |
-| Project-local Codex 설정 | `.codex/config.toml` | evaluator용 agent thread 설정; 활성 plugin 배포 대상이 아님 |
-| 역사 보관 | `legacy/old/` | Claude Code 플러그인, 과거 planning stack, 제거된 skill과 문서 |
-| v1 보존본 | `legacy/v1/workbench/` | Workbench v1 snapshot |
-| v2 보존본 | `legacy/v2/` | 직전 활성 Workbench의 plugin, marketplace, hook, tools와 배포 구성 전체 |
+| 플러그인 | `codex-plugin/plugins/workbench/` | 다섯 workflow skill, MCP 설정, 계약 테스트 |
+| marketplace | `codex-plugin/.agents/plugins/marketplace.json` | 로컬 Workbench 등록 |
+| 배포 도구 | `codex-plugin/scripts/deploy-workbench-plugin.mjs` | cachebuster와 로컬 install |
+| 활성 CI | `.github/workflows/workbench-test.yml` | Node 계약 테스트 |
+| legacy evaluator | `.codex/skills/evaluate-workbench/` | 이전 brainstorm/executor 회귀 검사 |
+| 역사 보관 | `legacy/` | 이전 구현과 문서 |
 
-## 루트 구조
-
-```text
-.
-├── .agent/
-├── .claude/
-├── .codex/
-│   ├── AGENTS.md
-│   ├── config.toml
-│   └── skills/evaluate-workbench/
-├── .github/workflows/workbench-test.yml
-├── codex-plugin/
-├── docs/current-architecture.md
-├── legacy/
-│   ├── old/
-│   ├── v1/workbench/
-│   └── v2/
-├── README.md
-├── package.json
-└── .gitignore
-```
-
-## 활성 Workbench 구조
-
-```text
-codex-plugin/
-├── .agents/plugins/marketplace.json
-├── plugins/workbench/
-│   ├── .codex-plugin/plugin.json
-│   ├── .mcp.json
-│   ├── __tests__/
-│   └── skills/
-│       ├── shape/
-│       │   ├── SKILL.md
-│       │   ├── agents/openai.yaml
-│       │   └── references/
-│       ├── memory-update/
-│       │   ├── SKILL.md
-│       │   ├── agents/openai.yaml
-│       │   └── references/
-│       ├── prepare/
-│       │   ├── SKILL.md
-│       │   ├── agents/openai.yaml
-│       │   └── references/
-│       ├── execute-task/
-│       │   ├── SKILL.md
-│       │   ├── agents/openai.yaml
-│       │   └── references/
-│       └── finalize/
-│           ├── SKILL.md
-│           ├── agents/openai.yaml
-│           └── references/
-└── scripts/deploy-workbench-plugin.mjs
-```
-
-`SKILL.md`에는 해당 단계의 핵심 절차와 금지 조건만 두고, 상세 schema와 handoff 계약은 바로 연결된 `references/`에 둡니다. 플러그인 manifest와 각 `agents/openai.yaml`은 활성 skill selector와 설명을 동일하게 유지합니다.
-
-## 명시 호출 경계
-
-활성 skill은 정확히 다음 다섯 개입니다.
+## 활성 스킬
 
 ```text
 $workbench:shape
@@ -88,191 +25,121 @@ $workbench:execute-task
 $workbench:finalize
 ```
 
-모든 `agents/openai.yaml`은 implicit invocation을 비활성화합니다. 일반 자연어가 skill description과 일치하더라도 자동 호출하지 않으며, 한 skill이 다른 Workbench skill을 자동 호출해서도 안 됩니다. 각 결과는 가능한 다음 handoff를 안내할 수 있지만 다음 단계 시작에는 새로운 명시 selector가 필요합니다.
+모든 `agents/openai.yaml`은 `allow_implicit_invocation: false`입니다. 스킬은 다른 Workbench 스킬을 자동 호출하거나 특정 후속 스킬을 필수로 만들지 않습니다.
 
-이 분리는 사용자가 다음처럼 일부 단계만 사용할 수 있게 합니다.
+| Skill | 책임 | 독립 산출물 |
+|---|---|---|
+| `shape` | 읽기 전용 근거 수집, 요구사항·수락 기준·결정 | 완전한 Shape Report |
+| `memory-update` | 사용자가 선택한 Shape/Prepare 결과를 MCP로 저장 | Artifact reference 또는 실패 결과 |
+| `prepare` | Shape를 실행 가능한 DAG와 packet으로 변환 | Execution Plan과 Task Packets |
+| `execute-task` | packet 하나를 전용 worktree에서 실행 | Task Result와 선택적 integration head |
+| `finalize` | 최종 통합 결과 검증·독립 리뷰·보고 | Final Report |
 
-- Shape Report만 받은 뒤 종료
-- Shape Report를 일반 Codex 구현 요청의 근거로 사용
-- 기억 갱신을 생략하고 Prepare부터 진행
-- 이미 승인된 Execution Plan의 특정 task만 실행
-- 같은 Workbench run에서 이미 통합된 결과에 Finalize만 적용
+## 독립 handoff와 선택적 persistence
 
-## 다섯 단계 계약
-
-| Skill | 원래 단계 | 입력 | 핵심 책임 | 출력 |
-|---|---:|---|---|---|
-| `shape` | 0~4 | 사용자 목표와 대상 repository | memory와 연결된 Jira/Figma 근거 조회, repository 탐색, 요구사항 분석, invariant·acceptance criteria, 공식 근거 조사, architecture decision | 출처가 연결된 Shape Report와 Memory Change Set |
-| `memory-update` | 5 | 승인 가능한 Shape Report와 Memory Change Set | 준비된 Local Work Memory 변경만 Shape가 확보한 revision으로 방어해 적용 | 적용·충돌·미적용 항목을 담은 Memory Update Result |
-| `prepare` | 6~7 | 동일 run의 READY Shape Report | task 분해, dependency DAG, baseline 실행, worktree topology와 검증 명령 확정 | 실행 가능한 Execution Plan과 Baseline Report |
-| `execute-task` | 8 | Execution Plan의 task 하나 | task plan, 성공 기준, 구현, focused verification, self-review, 승인된 경우 checkpoint commit | Task Result와 다음 integration 정보 |
-| `finalize` | 9~11 | coordinator worktree의 통합 결과 | concurrency·load·failure 검사, 독립 리뷰, 문서·최종 보고 | Final Report와 알려진 한계 |
-
-어떤 skill도 입력 계약이 없는 상태에서 앞 단계의 결과를 추측해 만들지 않습니다. 입력이 불충분하면 가능한 읽기 전용 검사를 끝낸 뒤 부족한 항목을 보고합니다.
-
-## Shape와 근거 모델
-
-Workbench Shape는 Local checkout에서도 호출할 수 있습니다. 이 경우 Shape는 stages 0–4를 시작하기 전에 Codex-native project task를 현재 `working-tree` 상태의 worktree 환경으로 만들고 원래 요청을 그 continuation task에 전달합니다. 새 task가 현재 linked worktree를 coordinator로 채택한 뒤 다음 순서로 진행합니다. 이미 worktree에서 호출했다면 bootstrap 없이 현재 checkout을 coordinator로 사용합니다.
-
-1. **Stage 0 — Local Work Memory·Jira·Figma 조회와 Repository Exploration**
-   - 대상 repository와 project identity를 확인합니다.
-   - Local Work Memory에서 관련 `dev_wiki`와 `note`를 검색합니다.
-   - 요청에 Jira issue/project가 연결되면 해당 issue 필드·설명·관련 comment만 읽고 canonical URL과 update/retrieval 시점을 남깁니다.
-   - 요청에 Figma URL/file/node가 연결되면 정확한 node와 필요한 component/token/screenshot 근거만 읽고 canonical URL과 식별자·retrieval 시점을 남깁니다.
-   - update 또는 delete 후보는 `memory_get`으로 전체 본문과 `source_revision`까지 확보합니다.
-   - 저장소 구조, manifest, lockfile, entrypoint, 기존 pattern, 테스트와 빌드 방식을 읽습니다.
-2. **Stage 1 — Requirements Analysis**
-   - 사용자 요청을 기능 요구사항, 비기능 요구사항, 제약과 예외 상황으로 분해합니다.
-3. **Stage 2 — Invariants와 Acceptance Criteria**
-   - 구현 중 유지할 조건과 완료 판정 기준을 분리해 명시합니다.
-4. **Stage 3 — Research**
-   - 현재 코드만으로 판단할 수 없는 라이브러리·프레임워크·SDK 사실이 결정에 영향을 주면 Context7을 사용할 수 있을 때 사용하고, 사용할 수 없거나 부족하면 공식 원문을 직접 조사합니다.
-   - manifest와 lockfile에서 실제 버전을 먼저 확인하고, 그 버전과 구체적인 기술 질문에 맞는 자료를 찾습니다.
-   - 공식 원문을 우선하고 Shape Report에 사람이 열 수 있는 링크를 남깁니다.
-   - 질문 수나 출처 수를 research mode로 제한하지 않습니다. 관련 기술 사실이 충분히 검증될 때까지 필요한 근거를 사용합니다.
-5. **Stage 4 — Architecture와 Decision Log**
-   - 확인된 사실, 가능한 대안, 선택 이유와 trade-off를 연결합니다.
-   - 설계 선택 자체를 공식 문서가 증명한다고 표현하지 않고, 문서는 선택의 기술적 전제를 뒷받침하는 근거로 사용합니다.
-
-Shape Report의 주요 문장은 다음 provenance를 구분합니다.
-
-- **Fact**: repository, Local Work Memory, 연결된 Jira/Figma artifact 또는 공식 문서에서 직접 확인
-- **Inference**: 여러 사실을 결합한 해석
-- **Decision**: 근거와 trade-off를 바탕으로 선택
-- **Assumption**: 아직 확인하지 못한 전제
-
-공식 근거가 없거나 Context7 결과의 버전·원문을 확인할 수 없으면 이를 `unverified`로 표시합니다. 모델 기억만으로 사실을 보완하지 않습니다. Context7 질의에는 필요한 library, version, topic만 보내고 repository secret이나 내부 코드를 포함하지 않습니다.
-
-## Local Work Memory 상태 전이
-
-Shape와 Memory Update의 책임은 의도적으로 분리합니다.
+Shape와 Prepare 결과는 현재 대화나 사용자 입력에 완전한 본문으로 존재하면 다음 스킬이 직접 사용할 수 있습니다.
 
 ```text
-Stage 0: memory_search / memory_get / memory_graph
-                  │
-                  └── Shape Report + Memory Change Set
-                                      │
-                     별도 명시 호출: $workbench:memory-update
-                                      │
-                                      └── memory_write
+Shape Report ──────────────────────────────→ Prepare
+     └─ 선택: Memory Update → Artifact ref ─┘
+
+Execution Plan + Task Packet ─────────────→ Execute Task
+     └─ 선택: Memory Update → Artifact ref ─┘
 ```
 
-- Stage 0은 읽기 전용입니다.
-- Memory Change Set은 create, update, delete 의도와 대상 type, 식별자, 완성된 본문, 근거를 포함합니다.
-- 기본 durable 대상은 Local Work Memory의 `dev_wiki`입니다. `note`도 TTL 없는 durable record이므로 사용자가 그 지속성과 중복 생성 위험을 명시적으로 선택한 경우만 사용합니다.
-- `memory-update`는 조사, 검색, 자동 병합 또는 문서 재작성 결정을 새로 하지 않습니다.
-- update와 delete는 Shape가 확보한 `expected_revision`을 사용합니다.
-- 서비스가 revision conflict를 반환하면 최신 문서를 덮어쓰지 않고 Shape로 돌아가 새 snapshot과 변경안을 만듭니다. 현재 비교와 write는 원자적 CAS가 아니므로 외부 동시 writer까지 차단한다고 보장하지 않습니다.
-- 외부 시스템 mutation이나 repository 파일 수정은 Stage 5의 권한이 아닙니다.
+Memory Update는 저장 기능이며 승인 단계나 workflow database가 아닙니다.
 
-`allow_implicit_invocation: false`는 skill 선택 정책이지 MCP tool-level authorization이 아닙니다. 현재 Local Work Memory의 단일 endpoint는 `memory_search`, `memory_get`, `memory_graph`, `memory_write`를 함께 제공하므로 Workbench는 skill 계약과 테스트로 write 경계를 지키되, direct MCP 호출 자체를 plugin package에서 강제 차단할 수는 없습니다. 강제 격리가 필요하면 server 측 read/write endpoint 또는 OAuth scope 분리가 후속으로 필요합니다.
+- `shape → prepare`에 Memory Update가 필요하지 않습니다.
+- `prepare → execute-task`에 Memory Update가 필요하지 않습니다.
+- `finalize`도 완전한 inline workflow 결과를 받을 수 있습니다.
+- 다른 task나 나중 대화에서 본문이 없으면 사용자가 MCP Artifact reference를 제공할 수 있습니다.
+- 입력이 부족하면 “저장하지 않음”이 아니라 “완전한 계약을 읽을 수 없음”을 이유로 차단합니다.
 
-같은 한계가 Atlassian과 Figma 연결에도 적용됩니다. Shape는 계약상 project evidence를 읽기만 하고 Jira issue/comment/transition 또는 Figma file/node를 변경하지 않습니다. provider가 write-capable tool을 노출하는 경우 hard read-only 보장은 provider OAuth scope나 host tool policy에서 추가로 제한해야 합니다.
+Inline과 MCP-referenced 결과는 동일한 semantic authority를 가집니다. Persistence는 durable retrieval을 제공하지만 사용자 승인이나 다음 단계 실행 권한을 부여하지 않습니다.
 
-## Worktree 실행 모델
+## Local Work Memory MCP 경계
 
-Workbench run 전체는 항상 하나 이상의 전용 Git worktree context에서 실행합니다. local checkout은 사용자 작업을 위해 유지하며 Workbench가 repository 파일을 수정하지 않습니다.
+Workbench 스킬에는 MCP를 사용하는 목적과 시점만 둡니다. 구체적인 도구 schema, Typed Reference, 목록 탐색, 본문 분할 읽기, artifact transfer, idempotency와 성공 판정은 MCP tool contract가 소유합니다.
 
-### Coordinator
+- 개발 작업 시작 시 현재 project Convention을 참고합니다.
+- 관련 Wiki·Work Item·Workbench Artifact가 필요하면 MCP로 canonical 본문을 읽습니다.
+- 사용자가 Artifact reference를 입력하면 MCP로 정확한 결과를 해소합니다.
+- Memory Update는 Shape 또는 Prepare 결과를 immutable Workbench Artifact로 commit합니다.
 
-- Local에서 시작한 첫 Shape invocation은 Codex-native project-task 생성 기능으로 `startingState: working-tree`인 continuation task를 만들고 원래 Shape 요청을 전달합니다. Local invocation은 bootstrap 결과만 반환하고, stages 0–4와 Shape Report는 새 task가 소유합니다. 이미 linked worktree에서 시작했다면 현재 checkout을 coordinator로 채택합니다.
-- `git worktree add`만 실행해 calling task가 이동한 것처럼 처리하지 않습니다. native task 생성 기능이 없거나 실패하면 정확한 blocker를 보고합니다.
-- Shape Report, baseline, integration 상태와 Final Report의 기준은 coordinator가 소유합니다.
-- bootstrap은 Local의 staged, unstaged, untracked 상태를 `working-tree` snapshot에 포함합니다. 이후 Local에만 생긴 요청 관련 변경은 조용히 복사하지 않고 새 snapshot이 필요한지 확인합니다.
+Shape와 Prepare 결과는 Dev Wiki knowledge가 아닙니다. Dev Wiki는 현재 프로젝트 지식을 소유하고, Workbench Artifact는 특정 Work Item과 repository snapshot의 실행 기록입니다.
 
-### Worker 배치
+MCP read/write capability의 hard authorization은 provider scope와 host policy가 소유합니다. 스킬의 `Do NOT` 계약은 실행 정책이지 보안 경계 그 자체가 아닙니다.
 
-Shape는 변경 경계와 병렬화 후보를 기록하지만 정확한 topology는 Prepare가 task dependency DAG를 만든 뒤 확정합니다.
+## Shape
+
+Shape는 primary Local 또는 linked worktree인 현재 checkout을 읽기 전용으로 분석합니다. Codex task나 coordinator worktree를 만들지 않습니다.
+
+1. Git identity와 content-sensitive snapshot을 기록합니다.
+2. Local Work Memory MCP에서 현재 Convention과 관련 프로젝트 문서를 참고합니다.
+3. 연결된 Jira/Figma 근거가 있으면 필요한 범위만 읽습니다.
+4. repository, 공식 문서, 외부 근거를 연결해 요구사항·불변조건·수락 기준을 만듭니다.
+5. 아키텍처 결정과 예상 작업 경계를 기록합니다.
+6. 완전한 Shape Report를 반환하고 종료합니다.
+
+Shape는 Memory Update용 Change Set을 만들지 않으며, 결과 저장을 다음 단계의 조건으로 두지 않습니다.
+
+## Prepare
+
+Prepare는 완전한 `READY` Shape Report를 입력으로 받습니다. 입력은 inline 본문 또는 MCP Artifact reference일 수 있습니다.
+
+- repository identity와 Shape snapshot을 검증합니다.
+- clean baseline을 확인합니다.
+- acceptance와 결정을 task DAG로 분해합니다.
+- direct/indirect write surface와 runtime resource 충돌을 분석합니다.
+- implementation 및 integration packet마다 고유 branch와 worktree path를 계획합니다.
+- 모든 plan에 final integration-seal packet을 둡니다.
+- worktree는 만들지 않고 완전한 Execution Plan과 Task Packets를 반환합니다.
+
+Prepare 역시 persistence를 수행하거나 요구하지 않습니다.
+
+## Task-scoped worktree 모델
+
+현재 Workbench에는 coordinator worktree가 없습니다.
 
 ```text
-local checkout (Workbench 변경 없음)
-        │
-        └── coordinator worktree
-               ├── 직렬 task를 순차 실행
-               ├── worker worktree A ─┐
-               ├── worker worktree B ─┼── coordinator integration task
-               └── worker worktree C ─┘
-                                      └── finalize
+Local checkout (읽기 기준, 구현 변경 없음)
+  ├── TASK-001 worktree / codex/<run>/TASK-001
+  ├── TASK-002 worktree / codex/<run>/TASK-002
+  ├── INT-001 worktree  / codex/<run>/INT-001
+  └── final seal worktree
 ```
 
-Worker worktree는 다음 조건을 모두 만족하는 task에만 추가합니다.
+- Execute Task invocation 하나가 Task Packet 하나를 소유합니다.
+- 직렬 task는 이전 Task Result SHA를 다음 task의 base로 사용합니다.
+- 병렬 task는 같은 immutable base에서 시작하고 integration packet이 pinned result SHA를 통합합니다.
+- integration도 별도 task이자 별도 worktree입니다.
+- successful mutating task는 task-local commit과 clean status로 끝납니다.
+- 실패한 task worktree는 진단 근거로 보존할 수 있습니다.
 
-- 동일한 합의 base commit에서 시작할 수 있음
-- 선행 task 결과가 필요하지 않음
-- owned path와 public contract가 겹치지 않음
-- schema migration, generated artifact, lockfile, snapshot, 공용 fixture가 충돌하지 않음
-- port, database, queue와 같은 mutable runtime resource를 분리할 수 있음
+Push, PR, Local merge/rebase, handoff, worktree 및 branch 정리는 별도 사용자 권한입니다.
 
-하나라도 충족하지 못하면 coordinator에서 직렬 실행합니다. Task 수가 아니라 실제 독립적인 parallel group 수가 worker 수를 결정합니다.
+## Finalize
 
-### Task와 통합
+Finalize는 final integration packet의 정확한 clean worktree와 integrated head를 검증합니다.
 
-- `execute-task` invocation 하나는 Execution Plan의 task 하나만 소유합니다.
-- task는 지정된 worktree와 owned path 밖을 임의로 변경하지 않습니다.
-- 관련 focused test를 먼저 실행하고 필요할 때 broader verification을 수행합니다.
-- checkpoint commit은 사용자가 명시했거나 승인된 Execution Plan에 commit 권한이 있을 때만 만듭니다.
-- 별도의 여섯 번째 integration skill을 만들지 않습니다. Prepare가 `kind: integration` task를 만들고 `$workbench:execute-task`로 coordinator에서 실행합니다.
-- push, local branch merge, worktree 삭제와 원격 PR 생성은 자동 후속 동작이 아니며 각각 명시적 권한이 필요합니다.
-- Finalize는 worker의 고립된 결과가 아니라 coordinator의 `integrated_head`를 검증합니다.
-
-## Handoff 불변조건
-
-각 skill 결과에는 다음 단계가 판단에 필요한 최소 상태를 남깁니다.
-
-- repository identity, coordinator path, base commit과 현재 head
-- 사용자 목표, 범위 밖 항목과 미해결 질문
-- 근거 출처와 확인 시점 또는 revision
-- acceptance criteria와 verification command
-- task dependency, owned paths, parallel group와 integration order
-- 수행한 mutation, commit 여부, 실패와 알려진 한계
-- `recommended_next`와 그 이유
-
-`recommended_next`는 자동 실행 명령이 아닙니다. 사용자는 결과를 검토하고 다음 skill 호출 여부를 결정합니다.
+- Shape/Plan/Task Result의 run, plan digest, packet, dependency와 result SHA를 교차 검증합니다.
+- acceptance-critical 검사가 실패하거나 수행되지 않았으면 `FINALIZED`를 반환하지 않습니다.
+- failure, concurrency, load 시나리오를 실제 위험에 맞춰 수행합니다.
+- 독립 reviewer에게 raw diff와 계약·검증 근거를 제공합니다.
+- 문서 변경은 plan에 선언된 안전한 repository-relative path와 명시적 commit 권한이 있을 때만 수행합니다.
+- 최종 branch, HEAD, diff, clean status를 다시 확인합니다.
 
 ## Project-local evaluator 경계
 
-`.codex/skills/evaluate-workbench/`는 `$workbench:brainstorm`, Goal Contract와 `$workbench:executor`를 전제로 합니다. 따라서 새 다섯 skill entrypoint를 가진 활성 plugin을 평가 대상으로 받을 수 없습니다.
-
-- evaluator 파일은 이번 Workbench 재구성의 수정 대상이 아닙니다.
-- evaluator test가 `npm test`에 포함되더라도 이는 legacy v2 evaluator 자체의 regression test입니다.
-- evaluator 성공을 새 `shape → prepare → execute-task` 흐름의 acceptance evidence로 사용하지 않습니다.
-- 새 Workbench benchmark는 `.codex/` 변경 승인을 받은 별도 작업에서 설계해야 합니다.
-
-## 책임 경계
-
-- `codex-plugin/plugins/workbench/`는 현재 사용자-facing skill, manifest, MCP 연결과 계약 테스트를 소유합니다.
-- Local Work Memory server는 기억의 검색·조회·graph·write와 revision 비교를 소유합니다. Workbench는 이를 임의의 local wiki clone으로 복제하거나 원자적 compare-and-swap을 보장한다고 과장하지 않습니다.
-- Context7은 외부 라이브러리 자료 탐색을 돕지만, repository 사실이나 사용자 결정을 대신하지 않습니다.
-- Atlassian과 Figma는 요청에 연결된 project evidence를 제공하지만, Shape 밖의 mutation 권한이나 사용자 결정 권한을 부여하지 않습니다.
-- local checkout은 Workbench 구현 대상이 아니며 coordinator와 worker worktree가 repository 변경을 소유합니다.
-- `.codex/skills/evaluate-workbench/`는 legacy v2 evaluator로 격리합니다.
-- `.agent/`는 이 저장소의 프로젝트 작업 규칙 원본이고 `.claude/CLAUDE.md`는 Claude Code용 얇은 어댑터입니다.
-- `.github/`에는 활성 Workbench CI만 둡니다.
-- `docs/`에는 현재 기준 문서만 둡니다.
-- `legacy/`는 보관 영역이며 활성 manifest, marketplace, CI, test 또는 workflow contract의 입력으로 사용하지 않습니다.
-
-## Legacy 매핑
-
-| 이전 영역 | 보관 경로 |
-|---|---|
-| Claude Code plugin | `legacy/old/claude-code/plugin/` |
-| Claude marketplace | `legacy/old/claude-code/marketplace.json` |
-| 과거 plans와 CI | `legacy/old/claude-code/` |
-| 과거 project-local Codex planning stack | `legacy/old/codex-planning-stack/` |
-| 과거 역사 문서와 제거된 skill | `legacy/old/docs/`, `legacy/old/workbench-skills/` |
-| Workbench v1 snapshot | `legacy/v1/workbench/` |
-| 직전 활성 Workbench v2 전체 | `legacy/v2/` |
-
-`legacy/v2/`의 issue-brief, brainstorm, executor, visual-grounding, openapi, dev-wiki, llm-script, hook, tool, marketplace와 deploy script는 참고용 보존본입니다. 활성 plugin entrypoint나 현재 workflow contract로 취급하지 않습니다.
-
-`legacy/old/codex-planning-stack/dev-wiki/source/`와 `legacy/old/codex-planning-stack/plan-wiki/source/`는 별도 Git 경계를 유지하고 root repository에서는 ignore합니다.
+`.codex/skills/evaluate-workbench/`는 `$workbench:brainstorm`과 `$workbench:executor`를 전제로 하는 legacy v2 evaluator입니다. 현재 다섯 스킬의 acceptance evidence가 아니며 별도 승인 없이 수정하지 않습니다.
 
 ## 검증 기준
 
-- 활성 skill directory는 `shape`, `memory-update`, `prepare`, `execute-task`, `finalize` 다섯 개뿐이어야 합니다.
-- 모든 skill은 namespaced selector와 `allow_implicit_invocation: false` metadata를 제공해야 합니다.
-- manifest와 marketplace는 활성 `codex-plugin/` 경로만 참조해야 합니다.
-- active tests와 CI는 `legacy/` 파일을 runtime 또는 fixture로 불러오지 않아야 합니다.
-- OpenAPI Ruby tool, LLM script hook, 중앙 dev-wiki clone은 활성 Workbench test 경계에 포함하지 않습니다.
-- `npm test`는 활성 plugin 계약을 검증해야 하며 legacy evaluator 결과를 새 Workbench 품질 증거로 집계하지 않아야 합니다.
+- 활성 skill directory는 다섯 개뿐이어야 합니다.
+- 모든 skill은 namespaced selector와 `allow_implicit_invocation: false`를 유지해야 합니다.
+- Shape와 Prepare는 독립적인 완전한 결과를 반환해야 합니다.
+- Memory Update는 optional Artifact persistence여야 합니다.
+- Prepare와 Execute는 Memory Update Result를 entry gate로 요구하지 않아야 합니다.
+- 모든 implementation/integration packet은 고유 worktree와 branch를 가져야 합니다.
+- active tests와 CI는 `legacy/`를 runtime 또는 fixture로 사용하지 않아야 합니다.
 - `.codex/`는 별도 승인 없이 수정하지 않습니다.

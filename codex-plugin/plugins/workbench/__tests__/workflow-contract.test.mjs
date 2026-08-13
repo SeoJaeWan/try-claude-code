@@ -28,9 +28,10 @@ function referenceDocument(name) {
 function skillBundle(name) {
   const skill = skillDocument(name);
   const reference = referenceDocument(name);
+  const escaped = referenceFiles[name].replaceAll(".", "\\.");
   assert.match(
     skill,
-    new RegExp(`\\[references/${referenceFiles[name].replaceAll(".", "\\.")}\\]\\(references/${referenceFiles[name].replaceAll(".", "\\.")}\\)`),
+    new RegExp(`\\[references/${escaped}\\]\\(references/${escaped}\\)`),
     `${name} must link its tested reference directly`,
   );
   return `${skill}\n\n${reference}`;
@@ -39,23 +40,17 @@ function skillBundle(name) {
 function markdownSection(text, heading, nextHeading) {
   const start = text.indexOf(heading);
   assert.notEqual(start, -1, `missing section ${heading}`);
-  const end = nextHeading === undefined ? text.length : text.indexOf(nextHeading, start + heading.length);
+  const end = nextHeading === undefined
+    ? text.length
+    : text.indexOf(nextHeading, start + heading.length);
   assert.notEqual(end, -1, `missing section boundary ${nextHeading}`);
   return text.slice(start, end);
 }
 
-function assertContract(text, checks, skill) {
-  for (const [label, pattern] of checks) {
-    assert.match(text, pattern, `${skill} must define ${label}`);
+function assertContract(text, checks, label) {
+  for (const [name, pattern] of checks) {
+    assert.match(text, pattern, `${label} must define ${name}`);
   }
-}
-
-function markdownTableRows(text, heading, nextHeading) {
-  return markdownSection(text, heading, nextHeading)
-    .split("\n")
-    .filter((line) => /^\|.*\|$/.test(line))
-    .map((line) => line.slice(1, -1).split("|").map((cell) => cell.trim()))
-    .filter((row) => row.length === 2 && row[0] !== "Service evidence" && row[0] !== "---");
 }
 
 test("all workflow stages remain independently and explicitly invoked", () => {
@@ -68,14 +63,16 @@ test("all workflow stages remain independently and explicitly invoked", () => {
   }
 });
 
-test("Shape performs stages 0-4 read-only in Local or a linked checkout", () => {
+test("Shape is a standalone read-only result with MCP-backed project evidence", () => {
   const text = skillBundle("shape");
   assertContract(
     text,
     [
       ["stages 0-4", /stages?\s+0\s*[–-]\s*4/i],
-      ["Local Work Memory search", /memory_search/],
-      ["canonical memory snapshots", /memory_get/],
+      ["Local Work Memory MCP", /Local Work Memory MCP/i],
+      ["project conventions", /project conventions/i],
+      ["Work Items", /Work Items/i],
+      ["Workbench artifacts", /Workbench artifacts/i],
       ["Context7 research", /Context7/i],
       ["Jira evidence", /Jira[\s\S]{0,180}(?:issue|project)/i],
       ["Figma evidence", /Figma[\s\S]{0,180}(?:node|design)/i],
@@ -83,32 +80,24 @@ test("Shape performs stages 0-4 read-only in Local or a linked checkout", () => 
       ["inference labeling", /Inference/],
       ["decision labeling", /Decision/],
       ["assumption labeling", /Assumption/],
-      ["primary Local support", /primary Local is a valid read-only Shape environment/i],
-      ["linked checkout support", /linked worktree/i],
+      ["primary Local support", /Primary Local is a valid read-only Shape environment/i],
       ["task-scoped execution policy", /execution_worktree_policy: task_scoped/],
-      ["Dev Wiki artifact", /Dev Wiki Artifact Change Set/],
-      ["memory write prohibition", /Do NOT[\s\S]{0,100}(?:call )?`memory_write`/i],
-      ["implementation prohibition", /Do NOT modify repository code or implement application code/i],
+      ["direct Prepare handoff", /passed directly to `?\$workbench:prepare`?/i],
+      ["optional persistence", /optionally persisted/i],
+      ["write prohibition", /Do NOT call a Local Work Memory write tool/i],
     ],
     "shape",
   );
 
-  assert.match(text, /does not require or create a worktree/i);
+  assert.match(text, /creates no worktree/i);
   assert.match(text, /Do not create a Codex task/i);
-  assert.match(text, /do not.*run `git worktree add` during Shape/i);
-  assert.doesNotMatch(text, /Call `create_thread`|Call the Codex app's `list_projects`/i);
+  assert.doesNotMatch(text, /Dev Wiki Artifact Change Set|must be persisted|not Prepare-ready/i);
 });
 
-test("Shape renders the durable decision record and Korean report contract", () => {
-  const skill = skillDocument("shape");
+test("Shape report carries a complete direct handoff contract", () => {
   const contract = referenceDocument("shape");
-  const report = markdownSection(
-    contract,
-    "## Required report sections",
-    "## Canonical Shape artifact body",
-  );
+  const report = markdownSection(contract, "## Required report sections", "## Direct handoff");
 
-  assert.match(skill, /human-facing headings and prose labels in the user's primary language/i);
   for (const heading of [
     "# Shape 보고서",
     "## 상태",
@@ -123,8 +112,6 @@ test("Shape renders the durable decision record and Korean report contract", () 
     "## 조사 및 출처",
     "## 아키텍처 결정",
     "## 위험 및 미해결 질문",
-    "## Dev Wiki Shape artifact",
-    "## Dev Wiki Artifact Change Set",
     "## 실행 영향 및 고려사항",
     "## 다음 선택지",
   ]) {
@@ -136,273 +123,183 @@ test("Shape renders the durable decision record and Korean report contract", () 
     "run_id:",
     "shape_report_id:",
     "repository_id:",
-    "work_item_key:",
     "analysis_worktree_required: false",
     "execution_worktree_policy: task_scoped",
-    "status_fingerprint:",
+    "status_fingerprint_version: v1",
+    "status_fingerprint_complete: true | false",
     "decision_status: proposed | accepted | superseded",
-    "근거와 작업 이유",
-    "무효화 조건",
   ]) {
     assert.ok(report.includes(field), `Shape report must preserve ${field}`);
   }
+
+  assert.match(contract, /complete `READY` Shape Report is the Prepare input contract/i);
+  assert.match(contract, /without a Memory Update Result/i);
+  assert.match(contract, /persistence provides durable retrieval, not workflow approval/i);
 });
 
-test("Shape fixes content-sensitive identity and one canonical Wiki artifact", () => {
+test("Shape preserves content-sensitive snapshot evidence", () => {
   const contract = referenceDocument("shape");
   assertContract(
     contract,
     [
-      ["revisioned Shape identity", /shape_report_id`? to `<run_id>\/shape\/<positive revision number>`/i],
-      ["repository identity", /Set `repository_id` to the SHA-256/i],
       ["porcelain status bytes", /git status --porcelain=v1 -z --untracked-files=all/],
       ["raw byte capture", /Capture raw stdout bytes without newline normalization/i],
       ["staged and unstaged content", /`staged_diff`:[\s\S]{0,250}`unstaged_diff`:/i],
-      ["untracked content hashes", /For a regular file use the SHA-256 of its raw content/i],
-      ["symlink target hashing", /For a symlink use the SHA-256 of its raw link-target bytes without following it/i],
-      ["versioned fingerprint domain", /workbench-status-fingerprint`?, NUL, ASCII `v1/i],
+      ["untracked hashes", /hash regular file bytes or raw symlink-target bytes/i],
+      ["versioned fingerprint", /workbench-status-fingerprint/],
       ["length framing", /unsigned 64-bit big-endian byte length/i],
-      ["fingerprint version mismatch", /algorithm-version mismatch returns `RESHAPE_REQUIRED`/i],
-      ["incomplete fingerprint blocking", /fingerprint `incomplete` and block Prepare readiness/i],
-      ["one artifact mutation", /proposes exactly one entry/i],
-      ["stable shape slug", /work-items\/<stable-work-item-key>\/shape/],
-      ["full body digest", /SHA-256 the exact UTF-8 bytes/i],
-      ["self-reference prevention", /Do not include `artifact_digest` inside `full_body`/i],
-      ["full replacement", /complete replacement body, never a patch/i],
-      ["secret handling", /credentials, tokens, private keys/i],
-      ["persistence gate", /not Prepare-ready until `\$workbench:memory-update`/i],
-      ["unchanged persistence acceptance", /`APPLIED`\/`indexed` or `NOT_NEEDED`\/`unchanged`/i],
+      ["coherent state check", /state that changes while the snapshot is being captured/i],
     ],
     "shape report",
   );
 });
 
-test("Memory Update persists exactly one guarded Shape or Prepare artifact", () => {
+test("Memory Update is optional MCP-backed Workbench Artifact persistence", () => {
   const text = skillBundle("memory-update");
   assertContract(
     text,
     [
-      ["Shape and Prepare input", /artifact_kind: shape \| prepare/],
-      ["single artifact", /Accept only one entry/i],
-      ["Dev Wiki only", /Accept only `source_type: dev_wiki`/i],
-      ["full-body digest", /artifact_digest/],
-      ["expected revision", /expected_revision/],
-      ["create mapping", /create -> memory_write/],
-      ["update mapping", /update -> memory_write/],
-      ["skip no-op", /skip\s+-> no tool call/],
-      ["supported completion statuses", /supported completion statuses = \{200, 201\}/],
-      ["indexed success with identity", /supported status AND outcome indexed AND non-empty returned source_id/],
-      ["HTTP class is insufficient", /HTTP-success class alone does not prove/i],
-      ["Shape conflict", /Shape: `RESHAPE_REQUIRED`/i],
-      ["Prepare conflict", /Prepare: `REPREPARE_REQUIRED`/i],
-      ["unknown result safety", /INDETERMINATE/],
-      ["no automatic retry", /Never (?:automatically )?retry/i],
-      ["canonical handoff", /dev_wiki_ref/],
-      ["two valid persisted states", /`APPLIED`\/`indexed` and `NOT_NEEDED`\/`unchanged`/i],
+      ["optional persistence", /optional artifact storage/i],
+      ["single selected result", /exactly one user-selected completed Shape or Prepare result/i],
+      ["Local Work Memory MCP", /Local Work Memory MCP/i],
+      ["artifact commit", /artifact commit capability/i],
+      ["immutable artifact", /immutable Workbench Artifact/i],
+      ["stable folders", /`shape` for a Shape Report and `prepare` for an Execution Plan/i],
+      ["no Dev Wiki mutation", /not current project knowledge/i],
+      ["MCP-owned mechanics", /Follow the MCP tool schema and result contract/i],
+      ["exact reference", /exact MCP Typed Reference/i],
+      ["no workflow permission", /never approves, starts, or blocks another Workbench skill/i],
     ],
     "memory-update",
   );
 
-  const skill = skillDocument("memory-update");
-  assert.match(skill, /Do not run `memory_search`, `memory_get`, `memory_graph`/i);
-  assert.match(skill, /Do NOT modify repository files/i);
+  assert.match(text, /persistence_required_for_prepare: false/);
+  assert.match(text, /persistence_required_for_execute: false/);
+  assert.match(text, /persistence_required_for_finalize: false/);
+  assert.doesNotMatch(text, /memory_write|Dev Wiki reference|APPLIED\/indexed/);
 });
 
-test("Memory Update distinguishes completed writes from other HTTP-success responses", () => {
-  const rows = new Map(
-    markdownTableRows(
-      referenceDocument("memory-update"),
-      "Use this result matrix:",
-      "## Dev Wiki reference",
-    ),
-  );
-
-  assert.equal(
-    rows.get("`200/indexed` with a non-empty returned `source_id`"),
-    "`APPLIED`/`indexed`",
-  );
-  assert.equal(
-    rows.get("`201/indexed` with a non-empty returned `source_id`"),
-    "`APPLIED`/`indexed`",
-  );
-  assert.equal(rows.get("`202/indexed`"), "`INDETERMINATE`");
-  assert.equal(
-    rows.get("`200` or `201` with `outcome != indexed` (for example, `201/completed`)"),
-    "`INDETERMINATE`",
-  );
-  assert.equal(
-    rows.get("Missing or untrustworthy `status`, `outcome`, or returned `source_id`"),
-    "`INDETERMINATE`",
-  );
-  assert.equal(
-    rows.get("`409`"),
-    "Shape: `RESHAPE_REQUIRED`; Prepare: `REPREPARE_REQUIRED`",
-  );
-  assert.equal(
-    rows.get("Timeout, disconnect, or transport exception"),
-    "`INDETERMINATE`",
-  );
-  assert.equal(
-    rows.get("Trustworthy determinate non-409 `4xx` or `5xx`"),
-    "`FAILED`",
-  );
-  assert.equal(rows.size, 8, "memory-update result matrix must stay explicit and complete");
-});
-
-test("Prepare verifies persisted Shape and plans one worktree per task", () => {
+test("Prepare accepts inline or referenced Shape without a persistence gate", () => {
   const text = skillBundle("prepare");
   assertContract(
     text,
     [
       ["stages 6-7", /stages?\s+6\s*[–-]\s*7/i],
-      ["persisted Shape gate", /Memory Update Result with `status: APPLIED` or `NOT_NEEDED`/i],
-      ["canonical Shape reread", /Use `memory_get`/i],
-      ["Execution Plan", /Execution Plan/],
-      ["baseline validation", /baseline/i],
+      ["complete Shape", /Require one complete `READY` Shape Report/i],
+      ["inline input", /current task context or user input/i],
+      ["artifact reference input", /Local Work Memory Artifact reference/i],
+      ["MCP resolution", /Local Work Memory MCP/i],
+      ["no persistence gate", /Do not require a persistence result/i],
+      ["direct execution", /passed directly to `?\$workbench:execute-task`?/i],
       ["dependency DAG", /dependency DAG/i],
-      ["task-scoped policy", /worktree_policy: task_scoped/],
-      ["one path and branch per task", /Every implementation and integration Task Packet gets one unique path/i],
-      ["no coordinator reuse", /Do not reserve or reuse a coordinator worktree/i],
+      ["one worktree per task", /Every implementation and integration Task Packet gets one unique path/i],
+      ["no coordinator", /Do not reserve or reuse a coordinator worktree/i],
       ["no materialization", /worktrees_materialized: false/],
-      ["base commit", /base_commit/],
-      ["owned paths", /owned_paths/],
-      ["integration order", /integration_order/],
-      ["Prepare Wiki artifact", /Dev Wiki Prepare artifact/i],
-      ["persistence before execution", /not executable until an explicit `\$workbench:memory-update`/i],
     ],
     "prepare",
   );
-  assert.match(text, /Do NOT implement tasks, create or delete worktrees/i);
+  assert.doesNotMatch(text, /Shape Wiki|Prepare Wiki|not executable until|must be persisted/i);
 });
 
-test("Prepare freezes symbolic waves, unique branches, final sealing, and Wiki persistence", () => {
+test("Prepare freezes task-scoped execution independently of storage", () => {
   const contract = referenceDocument("prepare");
   const plan = markdownSection(contract, "## Required Execution Plan", "## Required Task Packet");
 
   for (const field of [
-    "shape_artifact_digest:",
-    "repository_id:",
-    "work_item_key:",
-    "shape_wiki_ref:",
+    "shape_input:",
+    "kind: inline | memory_artifact",
+    "artifact_ref: null",
     "execution_plan_digest:",
     "worktree_policy: task_scoped",
     "topology: serial_task_worktrees | parallel_task_worktrees",
     "planned_worktree_count:",
     "worktrees_materialized: false",
     "task_worktree_reuse_policy: none",
-    "shape_wiki_state: applied | unchanged",
-    "prepare_wiki_state: proposed",
     "baseline_failures:",
   ]) {
     assert.ok(plan.includes(field), `Execution Plan must include ${field}`);
   }
 
   assert.match(contract, /There is no coordinator worktree/i);
-  assert.match(contract, /Every implementation and integration packet uses a unique task-scoped branch/i);
-  assert.match(contract, /For the first task or wave, use `kind: exact_sha` with `base_commit`/i);
-  assert.match(contract, /For a later serial task, use `kind: task_output`/i);
-  assert.match(contract, /For a wave after integration, use `kind: integration_output`/i);
   assert.match(contract, /Every plan includes a final integration-seal packet/i);
-  assert.match(contract, /proposes exactly one change/i);
-  assert.match(contract, /work-items\/<stable-work-item-key>\/prepare/);
-  assert.match(contract, /ready plan is not executable until `\$workbench:memory-update`/i);
-  assert.match(contract, /`APPLIED`\/`indexed` or `NOT_NEEDED`\/`unchanged`/i);
-  assert.match(contract, /same-task partial diff may be adopted only when a new packet names `resume_from_result_id`/i);
-
-  const blocked = markdownSection(contract, "## Blocked result");
-  for (const field of [
-    "plan_status: BLOCKED | RESHAPE_REQUIRED",
-    "task_packets_emitted: false",
-    "dev_wiki_artifact_state: blocked",
-  ]) {
-    assert.ok(blocked.includes(field), `blocked plan must include ${field}`);
-  }
+  assert.match(contract, /complete `READY` Execution Plan and Task Packet are immediately valid inputs/i);
+  assert.match(contract, /Memory Update is optional/i);
+  assert.match(contract, /same-task partial diff may be adopted only/i);
 });
 
-test("Execute Task materializes and executes exactly one persisted task worktree", () => {
+test("Execute Task accepts inline or referenced plans without persistence", () => {
   const text = skillBundle("execute-task");
   assertContract(
     text,
     [
       ["stage 8", /stage\s+8/i],
-      ["Shape and Prepare persistence gate", /successful Shape and Prepare Memory Update Results/i],
-      ["canonical Prepare reread", /Use `memory_get` on both exact source IDs/i],
-      ["canonical Shape reread", /memory_get` on both exact source IDs/i],
-      ["Shape digest binding", /shape_artifact_digest/],
-      ["Prepare digest binding", /prepare_artifact_digest/],
+      ["complete plan", /one complete `READY` Execution Plan/i],
+      ["inline plan", /current task context or user input/i],
+      ["artifact reference", /Local Work Memory Artifact reference/i],
+      ["no persistence gate", /Do not require Shape or Prepare to have been persisted/i],
       ["task-scoped worktree", /task-scoped standard Git worktree/i],
       ["Local checkout prohibition", /never modify there/i],
       ["worktree materialization", /git worktree add -b/],
-      ["exact path and branch validation", /canonical assigned path[\s\S]{0,500}planned branch/i],
       ["task planning", /Plan and fact preflight/i],
       ["test", /\*\*Test:\*\*/],
       ["implementation", /\*\*Implement:\*\*/],
       ["verification", /\*\*Verify:\*\*/],
       ["self-review", /\*\*Self-review:\*\*/],
       ["task-local commit", /task-local commit/i],
-      ["integration worktree", /integration task has its own unique worktree/i],
-      ["invalidated quarantine", /quarantined evidence/i],
-      ["explicit same-task dirty resume", /resume_from_result_id[\s\S]{0,350}user explicitly approves/i],
+      ["quarantine", /quarantined evidence/i],
     ],
     "execute-task",
   );
+  assert.doesNotMatch(text, /successful Shape and Prepare Memory Update Results|source_id values/);
 });
 
-test("Execute Task binds immutable plan, packet, Wiki artifact, and dependency heads", () => {
+test("Execute Task binds plan, packet, source mode, and dependency heads", () => {
   const contract = referenceDocument("execute-task");
   assert.match(contract, /exactly one corresponding digest field/i);
   assert.match(contract, /Replace only the relevant digest scalar value with the empty string/i);
-  assert.match(contract, /exclude no lines and trim no whitespace/i);
-  assert.match(
-    contract,
-    /"execution_plan_digest"[\s\S]{0,300}"task_packet_digest"[\s\S]{0,300}"shape_artifact_digest"[\s\S]{0,300}"prepare_artifact_digest"[\s\S]{0,300}"resolved_base_sha"/i,
-  );
   assert.match(contract, /RFC 8785 JSON Canonicalization Scheme/i);
   assert.match(contract, /git worktree list --porcelain/i);
-  assert.match(contract, /Retrieve both exact `source_id` values with `memory_get`/i);
   assert.match(contract, /integration_allowed: false when not COMPLETE/i);
 
-  const taskResult = markdownSection(contract, "## Task Result");
+  const result = markdownSection(contract, "## Task Result");
   for (const field of [
-    "shape_artifact_digest:",
-    "shape_wiki_source_id:",
-    "prepare_artifact_digest:",
-    "prepare_wiki_source_id:",
+    "plan_input_kind: inline | memory_artifact",
+    "plan_artifact_ref:",
+    "execution_plan_digest:",
+    "task_packet_digest:",
     "worktree_created: true | false",
     "execution_binding_digest:",
     "integrated_head_sha:",
   ]) {
-    assert.ok(taskResult.includes(field), `Task Result must include ${field}`);
+    assert.ok(result.includes(field), `Task Result must include ${field}`);
   }
 });
 
-test("Finalize validates the final integration task worktree and preserves Wiki provenance", () => {
+test("Finalize accepts inline or referenced workflow results and closes validation gaps", () => {
   const text = skillBundle("finalize");
   assertContract(
     text,
     [
       ["stages 9-11", /stages?\s+9\s*[–-]\s*11/i],
       ["integrated head", /integrated_head_sha/],
-      ["final integration worktree", /final integration task's[\s\S]{0,80}worktree/i],
-      ["Shape Wiki reference", /Shape Dev Wiki reference/i],
-      ["Prepare Wiki reference", /Prepare Dev Wiki reference/i],
+      ["inline inputs", /current context or user input/i],
+      ["artifact references", /Local Work Memory Artifact references/i],
+      ["MCP resolution", /Local Work Memory MCP/i],
+      ["no persistence gate", /Do not require any workflow result to have been persisted/i],
       ["failure validation", /failure/i],
       ["concurrency validation", /concurren/i],
       ["load validation", /\bload\b/i],
       ["independent review", /independent review/i],
-      ["unperformed checks", /unperformed_checks|unperformed checks/i],
-      ["canonical base commit", /base_commit/],
+      ["required-check gate", /required or acceptance-critical unperformed check blocks `FINALIZED`/i],
+      ["final clean state", /Recheck the final branch, HEAD, diff, and clean status/i],
     ],
     "finalize",
   );
-  assert.doesNotMatch(referenceDocument("finalize"), /base_snapshot|base_sha:/);
-  assert.doesNotMatch(text, /recorded linked coordinator worktree/i);
 
   const contract = referenceDocument("finalize");
-  const gate = markdownSection(contract, "## Entry-gate failure", "## Final report");
-  assert.match(gate, /status: INTEGRATION_REQUIRED \| BLOCKED/);
-  assert.match(gate, /integrated_head_sha: unavailable/);
-  assert.match(gate, /do not fabricate the full report/i);
-  assert.match(contract, /## Dev Wiki artifacts/);
+  assert.match(contract, /## Input artifacts/);
+  assert.match(contract, /task packet and Execution Binding digests/i);
+  assert.match(contract, /required unverified check/i);
   assert.match(contract, /task-worktree cleanup not performed/);
+  assert.doesNotMatch(contract, /## Dev Wiki artifacts/);
 });

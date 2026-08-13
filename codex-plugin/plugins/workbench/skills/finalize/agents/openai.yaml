@@ -3,5 +3,13 @@ interface:
   short_description: "Review the final integration task result"
   default_prompt: "Use $workbench:finalize to failure-test, independently review, and document the final integration task worktree."
 
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "local-work-memory"
+      description: "Resolve supplied workflow artifact references and read project documents"
+      transport: "streamable_http"
+      url: "https://mcp.seojaewan.com/mcp/memory"
+
 policy:
   allow_implicit_invocation: false

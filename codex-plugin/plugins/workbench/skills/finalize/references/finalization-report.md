@@ -1,10 +1,20 @@
 # Finalization Contract
 
-Finalize evaluates `base_commit..integrated_head_sha` as one product change in the final integration task's worktree.
+Finalize evaluates `base_commit..integrated_head_sha` as one product change in the final integration task's worktree. Workflow inputs may be inline or resolved from user-supplied Local Work Memory Artifact references.
+
+## Input binding
+
+Require exact agreement on:
+
+- `run_id`, `repository_id`, Git common dir, base commit, and integrated head;
+- `shape_report_id`, `execution_plan_id`, and execution plan digest;
+- the complete expected task inventory and selected successful Task Result attempt for every packet;
+- task packet and Execution Binding digests;
+- dependency and integrated result SHAs.
+
+Persistence is optional. If an Artifact reference is supplied, resolve it through the Local Work Memory MCP. Do not require a persistence result or Artifact reference.
 
 ## Risk-driven test matrix
-
-Map each relevant risk to a concrete scenario:
 
 | Risk | Candidate checks |
 | --- | --- |
@@ -15,7 +25,7 @@ Map each relevant risk to a concrete scenario:
 | lifecycle interruption | cancel, page/process exit, restart, recovery |
 | data consistency | partial failure, rollback/compensation, replay |
 
-Run only applicable checks. State the environment, parameters, bounds, and why omitted risks are not applicable or could not be tested.
+Run only applicable checks. State environment, parameters, bounds, and why omitted risks are not applicable or could not be tested. A required or acceptance-critical check that is failed or not verified prevents `FINALIZED`.
 
 ## Independent review packet
 
@@ -27,18 +37,18 @@ Give a fresh reviewer:
 - task and integration verification evidence;
 - relevant repository instructions.
 
-Do not include the implementer's persuasive narrative. Ask for findings first, ordered by severity, with file/line evidence. Require explicit coverage of correctness, security, concurrency, performance, failure handling, maintainability, architecture consistency, and tests.
+Do not include the implementer's persuasive narrative. Ask for findings first, ordered by severity, with file/line evidence.
 
 Disposition values:
 
-- `must_fix`: cannot finalize; create new shaped/prepared work;
-- `accepted_risk`: user-approved with rationale;
-- `false_positive`: disproved with evidence;
-- `follow_up`: valid but outside current acceptance boundary.
+- `must_fix`
+- `accepted_risk` only with explicit user approval
+- `false_positive`
+- `follow_up`
 
 ## Entry-gate failure
 
-When there is no integrated result, do not fabricate the full report. Return:
+When there is no valid integrated result, do not fabricate the full report. Return:
 
 ```markdown
 # Finalization Gate Result
@@ -60,33 +70,35 @@ When there is no integrated result, do not fabricate the full report. Return:
 # Workbench Final Report — <run_id>
 
 ## Status
-- FINALIZED | CHANGES_REQUIRED | BLOCKED
+- status: FINALIZED | CHANGES_REQUIRED | BLOCKED
 - base_commit:
 - integrated_head_sha:
 - final_head_sha:
 - final_branch:
+- final_worktree_clean:
 
-## Dev Wiki artifacts
-- Shape source ID, slug, revision, artifact ID, artifact digest
-- Prepare source ID, slug, revision, artifact ID, artifact digest
+## Input artifacts
+- Shape report ID and optional Local Work Memory Artifact reference
+- Execution plan ID, digest, and optional Local Work Memory Artifact reference
+- Task Result IDs, task packet digests, and Execution Binding digests
 
 ## Summary
 
-## Requirements and acceptance result
-- REQ/NFR/AC ID -> pass/fail/not verified + evidence
+## Requirements, invariants, and acceptance result
+- REQ/NFR/INV/AC ID -> pass/fail/not verified + evidence
 
 ## Architecture decisions
 - DEC ID -> implementation result + source links
 
 ## Sources
-- source ID -> claim/REQ/NFR/INV/AC/DEC mapping, source URL, canonical official URL if verified, version/ref alignment, retrieval provenance and ISO-8601 retrieval timestamp
+- source ID -> claim and contract mapping, canonical URL, version/ref alignment, retrieval provenance and time
 
 ## Changed components
 
 ## Task and integration commits
 
 ## Verification
-### Baseline
+### Baseline comparison
 ### Functional and regression checks
 ### Failure, concurrency, and load checks
 ### Unperformed checks
@@ -106,6 +118,6 @@ When there is no integrated result, do not fabricate the full report. Return:
 - user-selectable next actions
 ```
 
-If repository docs are changed during Finalize, rerun relevant checks and create only the authorized finalization commit. Preserve both `integrated_head_sha` and `final_head_sha`.
+If repository docs are changed during Finalize, require validated repository-relative paths, explicit commit authorization, a documentation-only diff from `integrated_head_sha`, relevant checks, and a final clean status. Preserve both `integrated_head_sha` and `final_head_sha`.
 
-Do not declare success while a `must_fix` finding or required failed check remains.
+Do not declare success while a `must_fix` finding, required failed check, required unverified check, plan/result binding mismatch, or dirty final worktree remains.

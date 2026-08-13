@@ -1,13 +1,13 @@
 interface:
   display_name: "Memory Update"
-  short_description: "Persist one Shape or Prepare Wiki artifact"
-  default_prompt: "Use $workbench:memory-update to persist this completed Shape or Prepare artifact to its canonical Dev Wiki page."
+  short_description: "Optionally persist one Workbench artifact"
+  default_prompt: "Use $workbench:memory-update to persist this completed Shape or Prepare result as an immutable Workbench artifact."
 
 dependencies:
   tools:
     - type: "mcp"
       value: "local-work-memory"
-      description: "Apply guarded Dev Wiki artifact mutations to Local Work Memory"
+      description: "Commit a selected Shape or Prepare result as an immutable Workbench artifact"
       transport: "streamable_http"
       url: "https://mcp.seojaewan.com/mcp/memory"
 

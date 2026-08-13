@@ -36,13 +36,15 @@
 - Require `$workbench:<skill>` explicit invocation and `allow_implicit_invocation: false` for every active Workbench skill. Do NOT auto-chain one Workbench skill into another.
 - Require Stage 0 to read relevant Local Work Memory before shaping decisions. When an external library fact affects a decision, use Context7 when available and verify it with official source links; fall back to direct official sources when Context7 is unavailable or insufficient.
 - When a request links Jira or Figma, require Shape to retrieve only the referenced project evidence and remain read-only toward both systems. Do NOT create issues/comments/transitions or mutate Figma files/nodes from Shape.
-- Require repository work to run in a dedicated coordinator worktree; let Prepare assign worker worktrees only for dependency-safe parallel groups, and let Execute materialize only the exact assigned paths and branches.
+- Let Shape and Prepare inspect the current checkout read-only. Require Execute to materialize only the exact task-scoped path and branch assigned to each implementation or integration packet.
+- Treat Local Work Memory persistence as optional. A complete inline Shape Report may enter Prepare directly, and a complete inline Execution Plan and Task Packet may enter Execute Task directly.
+- Use the Local Work Memory MCP for current project documents and user-supplied Artifact references; use Memory Update only when the user explicitly chooses to persist a completed Shape or Prepare result.
 
 ## 작업 규칙
 
 - Preserve existing user changes and keep unrelated cleanup out of the current work unit.
 - Do NOT modify repository files in the user's local checkout. Create or use a dedicated Git worktree and task branch before writing any repository change, and keep the local checkout available for the user's other work.
-- Use one coordinator worktree for every Workbench run. Add worker worktrees only when the prepared dependency graph, owned paths, generated artifacts, and mutable runtime resources are independent.
+- Use one unique worktree and branch per prepared implementation or integration Task Packet. Do not create or reserve a coordinator worktree.
 - Do NOT silently omit uncommitted local changes that the requested work depends on. Stop and establish an explicit base commit or inclusion strategy with the user.
 - Use focused validation for the touched surface, then run broader checks only when they are relevant and currently valid.
 - Use `npm test` for the active Workbench Node contract suite. Treat any `.codex/skills/evaluate-workbench` test as legacy evaluator regression only.

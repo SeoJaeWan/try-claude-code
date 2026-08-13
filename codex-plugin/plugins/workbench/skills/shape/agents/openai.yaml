@@ -1,13 +1,13 @@
 interface:
   display_name: "Shape"
-  short_description: "Shape work and draft its Dev Wiki record"
-  default_prompt: "Use $workbench:shape to produce an evidence-backed Shape Report and proposed Dev Wiki artifact without creating a worktree."
+  short_description: "Shape work into a standalone evidence-backed report"
+  default_prompt: "Use $workbench:shape to produce a standalone evidence-backed Shape Report without creating a worktree or persisting it."
 
 dependencies:
   tools:
     - type: "mcp"
       value: "local-work-memory"
-      description: "Search and read Local Work Memory project evidence"
+      description: "Read project conventions, documents, Work Items, and Workbench artifacts"
       transport: "streamable_http"
       url: "https://mcp.seojaewan.com/mcp/memory"
     - type: "mcp"

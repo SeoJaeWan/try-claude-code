@@ -166,7 +166,7 @@ test("skill metadata declares exact typed MCP dependencies", () => {
   const memory = {
     type: "mcp",
     value: "local-work-memory",
-    description: "Search and read Local Work Memory project evidence",
+    description: "Read project conventions, documents, Work Items, and Workbench artifacts",
     transport: "streamable_http",
     url: "https://mcp.seojaewan.com/mcp/memory",
   };
@@ -201,13 +201,13 @@ test("skill metadata declares exact typed MCP dependencies", () => {
   assert.deepEqual(metadata("memory-update").dependencies?.tools, [
     {
       ...memory,
-      description: "Apply guarded Dev Wiki artifact mutations to Local Work Memory",
+      description: "Commit a selected Shape or Prepare result as an immutable Workbench artifact",
     },
   ]);
   assert.deepEqual(metadata("execute-task").dependencies?.tools, [
     {
       ...memory,
-      description: "Verify current canonical Shape and Prepare artifacts before execution",
+      description: "Read project documents and resolve supplied Prepare artifact references",
     },
     {
       ...context7,
@@ -217,10 +217,15 @@ test("skill metadata declares exact typed MCP dependencies", () => {
   assert.deepEqual(metadata("prepare").dependencies?.tools, [
     {
       ...memory,
-      description: "Verify persisted Shape artifacts and read existing Prepare artifacts",
+      description: "Read project documents and resolve supplied Workbench artifact references",
     },
   ]);
-  assert.equal(metadata("finalize").dependencies, undefined);
+  assert.deepEqual(metadata("finalize").dependencies?.tools, [
+    {
+      ...memory,
+      description: "Resolve supplied workflow artifact references and read project documents",
+    },
+  ]);
 });
 
 test("repo-local marketplace installs Workbench with install-time authentication", () => {

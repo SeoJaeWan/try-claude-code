@@ -1,127 +1,73 @@
-# Dev Wiki Artifact Persistence Contract
+# Optional Workbench Artifact Persistence Contract
 
-Persist one immutable Shape or Prepare artifact body to one canonical Dev Wiki page.
+Persist one completed Shape or Prepare result through the Local Work Memory MCP. Persistence is a user-selected side effect and never a workflow gate.
 
 ## Valid input
 
+Require one complete result and the identity needed by the MCP artifact commit contract:
+
 ```yaml
-artifact_kind: shape | prepare
-artifact_id: <shape_report_id or execution_plan_id>
-artifact_digest: <lowercase SHA-256 of normalized full_body>
+producer: shape | prepare
 run_id:
-git_common_dir:
-repository_id:
+project_id:
+work_item_id:
 work_item_key:
-change_id: WIKI-SHAPE-001 | WIKI-PREPARE-001
-action: create | update | skip
-source_type: dev_wiki
-slug: projects/<stable-project-key>/work-items/<stable-work-item-key>/<shape-or-prepare>
-source_id: <create omits; update/skip requires>
+repository_snapshot:
+  repository_id:
+  base_commit:
+  status_fingerprint:
 title:
-full_body: |
-  <create/update only; complete canonical artifact>
-expected_revision: <update requires exact opaque value>
-reason:
-evidence_ids: []
+content: <complete Shape Report or complete Execution Plan with Task Packets>
 ```
 
-Accept only one entry. Accept only `source_type: dev_wiki`. Require a stable slug matching:
+- Accept `shape_status: READY` for Shape.
+- Accept `plan_status: READY` for Prepare.
+- Map the producer to the stable artifact folder `shape` or `prepare`.
+- Require an existing canonical Work Item accepted by the MCP. Do not invent or register one from Memory Update.
+- Reject incomplete summaries, metadata-only input, identity mismatches, or unauthorized sensitive content.
 
-```regex
-^[a-z0-9][a-z0-9/-]{0,120}$
-```
+## MCP use
 
-Action requirements:
+Use the Local Work Memory MCP artifact commit capability. Follow the MCP tool schema and result contract for operation identity, inline or staged transfer, idempotent retry, canonical success, and error interpretation.
 
-| Action | Required fields | Forbidden behavior |
-| --- | --- | --- |
-| `create` | slug, title, full body | sending `source_id` or retrying an unknown result |
-| `update` | source ID, title, full body, expected revision | patches, synthesized revision, automatic conflict merge |
-| `skip` | source ID and prior canonical identity | calling `memory_write` |
+Do not copy MCP transport, staging, or response mechanics into this skill. Do not use Dev Wiki mutation for Shape or Prepare results: they are immutable Workbench Artifacts, not current project knowledge.
 
-Normalize only CRLF/CR line endings in `full_body` to LF. SHA-256 the exact UTF-8 bytes and require a lowercase-hex match with `artifact_digest`. Do not trim whitespace or exclude fields. The digest must not appear inside the canonical body.
+Do not alter the artifact body during transfer. If safe persistence requires meaning-changing redaction, return `BLOCKED` instead.
 
-Reject a body containing credentials, tokens, private keys, unapproved customer data, ignored secret-file contents, or machine-specific private paths that the producing contract forbids. A redacted body that changes the artifact meaning is not valid.
+## Result status
 
-## Tool mapping
+Return one of:
 
-```text
-create -> memory_write(action=create, source_type=dev_wiki,
-                       slug, title, body=full_body)
-update -> memory_write(action=update, source_type=dev_wiki,
-                       source_id, title, body=full_body,
-                       expected_revision)
-skip   -> no tool call
-```
+- `COMMITTED`: the MCP reports canonical Artifact commit success and returns an exact Artifact reference;
+- `ALREADY_COMMITTED`: an idempotent call returns the previously committed exact Artifact reference;
+- `BLOCKED`: input, identity, authorization, or safety validation failed before a trustworthy commit;
+- `FAILED`: the MCP reports a determinate failure;
+- `INDETERMINATE`: transport or response evidence cannot establish whether canonical commit occurred.
 
-Omit `source_id` on create. Preserve `expected_revision` byte-for-byte as an opaque string.
+Preserve the exact MCP Typed Reference. Do not synthesize a path, artifact ID, revision, or digest.
 
-## Result interpretation
-
-The MCP adapter may return service errors inside an ordinary payload. Inspect the service status, domain outcome, and returned source identity. An HTTP-success class alone does not prove that persistence and indexing completed:
-
-```text
-supported completion statuses = {200, 201}
-create/update success = supported status AND outcome indexed AND non-empty returned source_id
-```
-
-Use this result matrix:
-
-| Service evidence | Result |
-| --- | --- |
-| `200/indexed` with a non-empty returned `source_id` | `APPLIED`/`indexed` |
-| `201/indexed` with a non-empty returned `source_id` | `APPLIED`/`indexed` |
-| `202/indexed` | `INDETERMINATE` |
-| `200` or `201` with `outcome != indexed` (for example, `201/completed`) | `INDETERMINATE` |
-| Missing or untrustworthy `status`, `outcome`, or returned `source_id` | `INDETERMINATE` |
-| `409` | Shape: `RESHAPE_REQUIRED`; Prepare: `REPREPARE_REQUIRED` |
-| Trustworthy determinate non-409 `4xx` or `5xx` | `FAILED` |
-| Timeout, disconnect, or transport exception | `INDETERMINATE` |
-
-Never retry, merge, roll back, or issue another mutation after any non-success result. In particular, `202` acknowledges a request but is not proof of completed persistence.
-
-No transaction spans multiple pages because one invocation writes one artifact page.
-
-## Dev Wiki reference
-
-On success return:
-
-```yaml
-dev_wiki_ref:
-  source_type: dev_wiki
-  source_id: <exact returned or existing value>
-  slug:
-  source_revision: <exact returned value or null>
-  artifact_kind: shape | prepare
-  artifact_id:
-  artifact_digest:
-  status: indexed | unchanged
-```
-
-`artifact_digest` is the immutable content binding even when the service omits a new revision. A later stage that has read access must retrieve the body and verify this digest rather than trusting a search excerpt.
-
-## Result template
+## Memory Update Result
 
 ```markdown
 # Memory Update Result
-- status: APPLIED | NOT_NEEDED | FAILED | RESHAPE_REQUIRED | REPREPARE_REQUIRED | INDETERMINATE | BLOCKED
+- status: COMMITTED | ALREADY_COMMITTED | BLOCKED | FAILED | INDETERMINATE
+- producer: shape | prepare
 - run_id:
-- artifact_kind:
-- artifact_id:
-- artifact_digest:
-- action: create | update | skip
-- service_status:
-- service_outcome:
+- project_id:
+- work_item_id:
+- work_item_key:
+- folder: shape | prepare
+- operation_id:
 - transport_or_error_evidence:
 
-## Dev Wiki reference
-- source_type: dev_wiki
-- source_id:
-- slug:
-- source_revision:
-- status: indexed | unchanged | unavailable
+## Artifact reference
+- ref: <exact Local Work Memory MCP Typed Reference or unavailable>
+- current: true | false | unavailable
 
-## Next action
+## Workflow effect
+- persistence_required_for_prepare: false
+- persistence_required_for_execute: false
+- persistence_required_for_finalize: false
 ```
 
-Do not claim a new revision unless the tool returned it. Do not claim failure is safe to retry when persistence is indeterminate.
+Memory Update returns after persistence. It never approves, starts, or blocks another Workbench skill solely because storage was or was not performed.

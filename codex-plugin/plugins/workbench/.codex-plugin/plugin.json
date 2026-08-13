@@ -1,7 +1,7 @@
 {
   "name": "workbench",
-  "version": "0.2.0+codex.20260811062107",
-  "description": "Five explicit Workbench skills for evidence-backed shaping, canonical Dev Wiki Shape and Prepare artifacts, task-scoped standard Git worktree execution, and integrated validation.",
+  "version": "0.2.0+codex.20260813022817",
+  "description": "Five explicit Workbench skills for standalone evidence-backed shaping and planning, optional Local Work Memory artifact persistence, task-scoped Git worktree execution, and integrated validation.",
   "author": {
     "name": "Local developer"
   },
@@ -9,8 +9,8 @@
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Workbench",
-    "shortDescription": "Shape, persist, prepare, and execute isolated tasks.",
-    "longDescription": "Workbench provides five independently invoked skills: shape a change from repository, Local Work Memory, linked Jira and Figma artifacts, and official evidence; persist canonical Shape or Prepare artifacts to Dev Wiki; prepare an exact task DAG without creating worktrees; create one standard Git worktree per implementation or integration task; and finalize the clean integrated result with failure testing and independent review.",
+    "shortDescription": "Shape, prepare, optionally persist, and execute isolated tasks.",
+    "longDescription": "Workbench provides five independently invoked skills: shape a standalone change contract from repository and project evidence; prepare a standalone task DAG without creating worktrees; optionally persist selected Shape or Prepare results as immutable Local Work Memory artifacts; create one standard Git worktree per implementation or integration task; and finalize the clean integrated result with failure testing and independent review. Persistence is never required between workflow skills.",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [
@@ -19,15 +19,16 @@
       "Context7 research",
       "Jira project evidence",
       "Figma design evidence",
-      "Canonical Dev Wiki artifacts",
+      "Optional immutable Workbench artifacts",
+      "Direct inline skill handoff",
       "Task-scoped standard Git worktrees",
       "Task-level verification",
       "Independent integrated review"
     ],
     "defaultPrompt": [
-      "Use $workbench:shape to create a sourced Shape Report for this change.",
-      "Use $workbench:prepare to turn a persisted Shape artifact into task worktree packets.",
-      "Use $workbench:execute-task to create and execute one persisted task worktree."
+      "Use $workbench:shape to create a standalone sourced Shape Report for this change.",
+      "Use $workbench:prepare to turn this complete Shape Report into task worktree packets.",
+      "Use $workbench:execute-task to create and execute one ready task worktree."
     ],
     "brandColor": "#2563EB"
   }

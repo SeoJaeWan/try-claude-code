@@ -1,6 +1,15 @@
 # Task Execution Contract
 
-One invocation executes exactly one persisted Task Packet in one task-scoped standard Git worktree.
+One invocation executes exactly one ready Task Packet in one task-scoped standard Git worktree. The plan may be supplied inline or resolved from a Local Work Memory Artifact reference.
+
+## Plan input
+
+Accept either:
+
+- `inline`: the complete Execution Plan and selected Task Packet are present in the current task context or user input;
+- `memory_artifact`: the user supplies a Local Work Memory Artifact reference and Execute Task resolves the complete Prepare artifact through the MCP.
+
+Do not require Memory Update. Reject summaries, metadata-only references, incomplete packets, digest mismatches, stale plans, and plans for a different repository or run.
 
 ## Preflight record
 
@@ -14,14 +23,8 @@ shape_report_id:
 execution_plan_id:
 execution_plan_digest:
 task_packet_digest:
-shape_artifact_digest:
-shape_wiki_source_id:
-shape_wiki_slug:
-shape_wiki_revision:
-prepare_artifact_digest:
-prepare_wiki_source_id:
-prepare_wiki_slug:
-prepare_wiki_revision:
+plan_input_kind: inline | memory_artifact
+plan_artifact_ref: null
 git_common_dir:
 invocation_root:
 assigned_worktree:
@@ -35,9 +38,9 @@ dependencies:
 commit_policy:
 ```
 
-Require the supplied Shape and Prepare Memory Update Results to report `status: APPLIED` or `NOT_NEEDED`, the corresponding `artifact_kind`, and exact matches for the plan's Shape/Prepare artifact IDs and digests. Retrieve both exact `source_id` values with `memory_get`, normalize each canonical body line ending, recompute both digests, and compare every returned opaque revision with its supplied reference. Reject a search excerpt, missing body, unavailable memory service, stale revision, digest mismatch, indeterminate result, or superseded Shape or Prepare persistence state.
+For inline input, keep `plan_artifact_ref: null`. For referenced input, preserve the exact MCP Typed Reference.
 
-## Artifact and binding digests
+## Plan, packet, and binding digests
 
 The Execution Plan and every Task Packet must be immutable YAML artifacts with exactly one corresponding digest field and no generated timestamp field.
 
@@ -59,13 +62,13 @@ Create this logical Execution Binding:
   "version": 1,
   "run_id": "<run_id>",
   "task_id": "<task_id>",
+  "shape_report_id": "<shape_report_id>",
+  "execution_plan_id": "<execution_plan_id>",
   "execution_plan_digest": "<verified plan digest>",
   "task_packet_digest": "<verified packet digest>",
-  "shape_artifact_digest": "<verified persisted Shape artifact digest>",
-  "prepare_artifact_digest": "<verified persisted Prepare artifact digest>",
   "resolved_base_sha": "<40-hex commit>",
   "dependencies": [
-    { "task_id": "<dependency ID>", "head_sha": "<immutable result or integrated head SHA>" }
+    { "task_id": "<dependency ID>", "head_sha": "<immutable result SHA>" }
   ],
   "assigned_worktree": "<canonical absolute path>",
   "branch": "<exact planned branch>",
@@ -73,7 +76,7 @@ Create this logical Execution Binding:
 }
 ```
 
-Sort dependencies by `task_id` in ascending Unicode code-point order. Serialize with [RFC 8785 JSON Canonicalization Scheme](https://www.rfc-editor.org/rfc/rfc8785), keeping `execution_binding_digest` empty, then SHA-256 the exact UTF-8 bytes and lowercase-hex encode it.
+Sort dependencies by `task_id` in ascending Unicode code-point order. Serialize with RFC 8785 JSON Canonicalization Scheme, keep `execution_binding_digest` empty, then SHA-256 the exact UTF-8 bytes.
 
 ## Standard Git worktree materialization
 
@@ -83,18 +86,13 @@ If the assigned path is absent:
 2. Confirm the canonical assigned path is a direct child of the dedicated `worktree_parent`, has no `..` or symlink component, lies outside repository/Git/home-configuration/system paths, and is unoccupied.
 3. Confirm `resolved_base_sha` is an existing commit.
 4. Confirm the exact planned branch is valid, absent, and not checked out in `git worktree list --porcelain`.
-5. Create exactly one worktree and branch equivalent to:
+5. Create exactly one worktree and branch equivalent to `git worktree add -b <planned-branch> <assigned-worktree> <resolved-base-sha>`.
+6. Re-read worktree metadata, branch, HEAD, and status. Require exact matches and a clean status.
+7. Run subsequent commands only inside the assigned worktree.
 
-   ```text
-   git worktree add -b <planned-branch> <assigned-worktree> <resolved-base-sha>
-   ```
+Do not share `node_modules`, build output, or test caches through symlinks. A package-download cache may be shared only when Prepare authorized it.
 
-6. Re-read `git worktree list --porcelain`, the new worktree's common dir, branch, HEAD, and status. Require exact matches and a clean status before continuing.
-7. Run subsequent commands with the assigned path as working directory. Install task-local dependencies using the recorded immutable command.
-
-Do not share `node_modules`, build output, or test caches through symlinks. A package-download cache may be shared when Prepare authorized it.
-
-If the assigned path already exists and is clean, adopt it only for an exact clean pre-created packet worktree whose path, common dir, branch, task identity, and HEAD match the binding. A dirty path is an exact documented same-task resume only when the packet names the prior `resume_from_result_id`, copies its `resume_status_fingerprint`, sets `adopt_partial_diff: true`, and the user explicitly approves. Before adoption, compare the prior Task Result with the current path, common dir, branch, base HEAD, staged/unstaged/untracked paths, and deterministic status fingerprint; every value must match. Never switch its branch, reset it, clean it, or repurpose it. Any mismatch blocks execution.
+If the assigned path already exists and is clean, adopt it only when path, common dir, branch, task identity, and HEAD match the binding. A dirty path is an exact documented same-task resume only when the packet and prior Task Result satisfy the resume contract and the user explicitly approves.
 
 ## Scope and staging
 
@@ -104,18 +102,14 @@ If the assigned path already exists and is clean, adopt it only for an exact cle
 - Review the staged patch before commit.
 - A successful mutating task ends at one immutable task-local commit with a clean status.
 
-For `RESHAPE_REQUIRED`, `REPREPARE_REQUIRED`, `FAILED`, or `BLOCKED`, stop mutation, do not stage or commit invalidated work, and preserve the task worktree as quarantined evidence. Never stash, reset, clean, or discard it automatically.
-
-Reject a mutating task unless `commit_policy: task_local_required`. Permit `no_commit_needed` only for a read-only integration seal with an empty diff.
+For `RESHAPE_REQUIRED`, `REPREPARE_REQUIRED`, `FAILED`, or `BLOCKED`, stop mutation, do not stage or commit invalidated work, and preserve the task worktree as quarantined evidence.
 
 ## Source use and contract invalidation
 
-Use Context7 only for generalized library/version questions and verify decision-relevant claims against canonical official sources or upstream repositories.
+Use the Local Work Memory MCP for current project conventions and canonical project documents when needed. Use Context7 only for generalized library/version questions and verify decision-relevant claims against official sources.
 
-Continue when evidence clarifies an implementation detail within existing decisions. Stop when it changes requirements, invariants, acceptance, public contract, architecture, task ownership, or ordering.
-
-- Decision change: return `RESHAPE_REQUIRED` and mark Shape, Prepare, and downstream tasks stale.
-- Ownership, dependency, or ordering change: return `REPREPARE_REQUIRED` and mark affected tasks/waves stale.
+- Decision or acceptance change: return `RESHAPE_REQUIRED`.
+- Ownership, dependency, worktree, or ordering change: return `REPREPARE_REQUIRED`.
 
 Do not invoke either skill automatically.
 
@@ -129,7 +123,6 @@ Every integration task has its own unique worktree and consumes immutable result
 - Return `RESHAPE_REQUIRED` for product/public-contract conflict.
 - Return `REPREPARE_REQUIRED` for dependency, ownership, or ordering flaws.
 - Run the plan's cross-task checks after combining pinned results.
-- For `verify_existing_head`, require declared serial results to be ancestors of the resolved base/head chain, inspect the combined diff, and emit the seal worktree's clean HEAD as `integrated_head_sha`.
 
 ## Task Result
 
@@ -143,14 +136,8 @@ Every integration task has its own unique worktree and consumes immutable result
 - execution_plan_id:
 - execution_plan_digest:
 - task_packet_digest:
-- shape_artifact_digest:
-- shape_wiki_source_id:
-- shape_wiki_slug:
-- shape_wiki_revision:
-- prepare_artifact_digest:
-- prepare_wiki_source_id:
-- prepare_wiki_slug:
-- prepare_wiki_revision:
+- plan_input_kind: inline | memory_artifact
+- plan_artifact_ref:
 - execution_binding_digest:
 - worktree:
 - worktree_created: true | false
@@ -181,13 +168,10 @@ Every integration task has its own unique worktree and consumes immutable result
 - canonical source, version/ref alignment, retrieval provenance/date, claim, affected contract IDs
 
 ## Execution Binding
-- version: 1
-- run_id, task_id, execution_plan_digest, task_packet_digest, shape_artifact_digest, prepare_artifact_digest
-- resolved_base_sha, dependencies ordered by task_id
-- assigned_worktree, branch, execution_binding_digest
+- version, run/task/Shape/plan identity, plan/packet digests, resolved base, ordered dependencies, worktree, branch, binding digest
 
 ## Contract invalidation
-- stale artifacts
+- stale inputs
 - affected downstream task IDs/waves
 - integration_allowed: false when not COMPLETE
 
@@ -197,7 +181,7 @@ Every integration task has its own unique worktree and consumes immutable result
 - check and reason
 
 ## Recommended next
-- explicit selector and reason; never auto-invoked
+- user-selectable action; never auto-invoked
 
 ## Integration output
 - integrated_head_sha: # integration task only

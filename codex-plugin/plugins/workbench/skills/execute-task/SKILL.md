@@ -1,6 +1,6 @@
 ---
 name: execute-task
-description: Execute exactly one persisted Prepare task by materializing its unique standard Git worktree, then plan, test, implement or integrate, verify, review, and create a task-local commit. Invoke only as `$workbench:execute-task`. Use when the user explicitly supplies a prepared run/task ID and names this selector.
+description: Execute exactly one ready Prepare task, supplied inline or by Local Work Memory Artifact reference, by materializing its unique standard Git worktree, then plan, test, implement or integrate, verify, review, and create a task-local commit. Invoke only as `$workbench:execute-task`. Use when the user explicitly supplies a run/task ID and names this selector.
 ---
 
 # Execute Task
@@ -11,21 +11,21 @@ Read [references/task-execution.md](references/task-execution.md) before creatin
 
 ## Entry gate
 
-- Require `run_id`, `task_id`, a ready Execution Plan, the exact Task Packet, and successful Shape and Prepare Memory Update Results.
-- Require the Shape and Prepare `dev_wiki_ref` values to match the plan's artifact IDs and digests. Use `memory_get` on both exact source IDs and verify each current canonical body digest and returned revision when available. Bind both artifact digests into preflight and the Task Result. Do not execute an unpersisted or superseded Shape or Prepare contract.
+- Require `run_id`, `task_id`, one complete `READY` Execution Plan, and the exact Task Packet. Accept the plan directly from the current task context or user input. When the user supplies a Local Work Memory Artifact reference instead, use the Local Work Memory MCP to resolve its canonical content.
+- Do not require Shape or Prepare to have been persisted. A persistence result or Artifact reference is never an execution prerequisite.
+- Use the Local Work Memory MCP to reference current project conventions or other canonical project documents when needed. Follow the MCP tool contract rather than duplicating its usage details here.
 - Verify Git common dir, repository identity, plan/packet digests, assigned path, unique branch, resolvable base selector, successful dependency results, immutable Execution Binding, and commit policy.
 - Permit invocation from primary Local or another checkout, but never modify there. All task commands and mutations run only inside the assigned task worktree.
 - If the assigned task worktree is absent, materialize exactly the planned path and branch from the resolved immutable base using standard Git worktree commands after every safety check in the reference.
-- If it exists and is clean, adopt it only when canonical path, common dir, branch, task identity, status, and HEAD exactly match the plan and resolved base. A dirty worktree may be adopted only for the exact same task when the packet names `resume_from_result_id`, records the prior `resume_status_fingerprint`, sets `adopt_partial_diff: true`, the path/branch/base/changed paths/fingerprint all match that Task Result, and the user explicitly approves this resume. Do not reuse a sibling or unplanned worktree.
-- Stop on any other dirty state, base drift, branch collision, missing dependency, stale Shape or Prepare Dev Wiki binding, or repository-policy conflict. Do not stash, reset, clean, overwrite, or force checkout.
+- Stop on dirty or mismatched worktree state, base drift, branch collision, missing dependency, invalid plan binding, or repository-policy conflict. Do not stash, reset, clean, overwrite, or force checkout.
 
 ## Implementation task loop
 
-1. **Plan and fact preflight:** restate task boundary, acceptance criteria, owned paths, shared surfaces, checks, base, and Prepare Wiki binding.
+1. **Plan and fact preflight:** restate task boundary, acceptance criteria, owned paths, shared surfaces, checks, base, and Execution Plan binding.
 2. **Research if needed:** resolve version-sensitive implementation facts through Context7 and canonical official sources. Stop with `RESHAPE_REQUIRED` before mutation if evidence changes requirements, invariants, acceptance, public contract, or architecture.
 3. **Test:** define concrete success checks. When practical, add or run a focused failing test and record the expected failure.
 4. **Implement:** make the smallest change satisfying this packet. Do not absorb sibling work.
-5. **Verify:** run focused checks then required broader checks. Inspect final diff and Git status. Stop mutation on decision-changing evidence.
+5. **Verify:** run focused checks then required broader checks. Inspect final diff and Git status.
 6. **Self-review:** inspect correctness, security, failure handling, scope, tests, generated changes, and repository conventions.
 7. **Commit:** stage only declared paths, verify the staged diff, create exactly one task-local commit when required, and confirm the successful task worktree is clean.
 
@@ -44,9 +44,10 @@ For `verify_existing_head`, create the seal packet's unique worktree from the fi
 
 ## Output
 
-Return the Task Result from the reference: contract and wiki digests, base/observed/result SHAs, worktree materialization evidence, changed paths, commit, checks, sources, deviations, invalidation scope, and status.
+Return the Task Result from the reference: plan and packet identity, base/observed/result SHAs, worktree materialization evidence, changed paths, commit, checks, sources, deviations, invalidation scope, and status.
 
 A non-`COMPLETE` task preserves its worktree and evidence without committing invalidated work. Clean-worktree and result-SHA requirements apply only to successful results.
 
 Do NOT execute sibling tasks, change Shape or Prepare contracts, modify the user's Local checkout, merge into the user's Local branch, push, open a PR, hand off, delete a worktree/branch, or invoke another Workbench skill automatically.
+
 Do NOT automatically invoke another Workbench skill.
