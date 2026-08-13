@@ -1,39 +1,21 @@
 ---
 name: memory-update
-description: Optionally persist one completed Shape or Prepare result as an immutable Workbench Artifact through the Local Work Memory MCP. Invoke only as `$workbench:memory-update`. Use when the user explicitly asks to store a completed Workbench result or says "메모리 갱신".
+description: Persist one user-selected completed work artifact through the Local Work Memory MCP without changing its meaning. Invoke only as `$workbench:memory-update`; use when the user explicitly asks to store a report, plan, task result, final report, or other completed artifact, including "메모리 갱신" requests.
 ---
 
 # Memory Update
 
-Persist exactly one user-selected completed Shape or Prepare result. This is optional artifact storage, not a workflow transition or prerequisite.
+Persist exactly one completed artifact. Storage is an optional side effect, not approval or permission for additional work.
 
-Read [references/memory-change-set.md](references/memory-change-set.md) before committing an artifact.
+Read [references/memory-change-set.md](references/memory-change-set.md) before writing.
 
-## Entry gate
+## Procedure
 
-Require all of the following:
+1. Require an explicit user-selected complete artifact body and stable project, Work Item, repository, and producing snapshot identity.
+2. Accept any completed artifact kind supported by the Local Work Memory MCP. Do not require a particular producer.
+3. Reject incomplete summaries, metadata-only inputs, identity mismatches, or content that cannot be transferred without unauthorized secrets or private data.
+4. Use the MCP artifact commit capability and its schema for artifact kinds, folders, identity, transfer, idempotency, and result interpretation. Do not invent unsupported paths or references.
+5. Transfer the body without reinterpretation, redesign, merging, summarization, or meaning-changing redaction.
+6. Return the exact persistence result and stop.
 
-- an explicit `$workbench:memory-update` invocation referring to one completed Shape or Prepare result;
-- a complete result body with `shape_status: READY` or `plan_status: READY`;
-- stable project, Work Item, run, repository, and producing snapshot identity required by the Local Work Memory MCP;
-- a user-selected result whose body can be transferred without exposing unauthorized secrets or private data.
-
-If any required identity or complete body is missing, return `BLOCKED` without writing.
-
-## Persist the result
-
-- Use the Local Work Memory MCP artifact commit capability to store the selected result as an immutable Workbench Artifact. Follow the MCP tool contract for identity, transfer, idempotency, staging, and result interpretation; do not duplicate those mechanics in this skill.
-- Use the stable artifact folder matching the producer: `shape` for a Shape Report and `prepare` for an Execution Plan with its Task Packets.
-- Do not reinterpret, redesign, merge, summarize, or repair the artifact body during persistence.
-- Do not search for additional evidence, rerun repository analysis, or modify project files.
-- Treat a returned Artifact reference as the persistence result. Do not turn persistence success into permission to invoke another Workbench skill.
-
-## Output
-
-Return the Memory Update Result from the reference with the producing skill, run identity, persistence status, and exact Local Work Memory Artifact reference when available.
-
-Persistence is optional. Prepare accepts a complete inline Shape Report, Execute Task accepts a complete inline Execution Plan and Task Packet, and Finalize accepts complete inline workflow results regardless of whether Memory Update was used.
-
-Do NOT modify repository files, create or mutate a Git worktree, invoke another Workbench skill, or silently continue to Prepare, Execute Task, or Finalize.
-
-Do NOT automatically invoke another Workbench skill.
+Do NOT search for additional evidence, rerun repository analysis, modify project files, mutate a Git worktree, continue the stored workflow, or perform work outside this persistence request.

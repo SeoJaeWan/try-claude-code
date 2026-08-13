@@ -1,7 +1,7 @@
 {
   "name": "workbench",
-  "version": "0.2.0+codex.20260813022817",
-  "description": "Five explicit Workbench skills for standalone evidence-backed shaping and planning, optional Local Work Memory artifact persistence, task-scoped Git worktree execution, and integrated validation.",
+  "version": "0.3.0+codex.20260813045821",
+  "description": "Five independent explicit Workbench skills for evidence-backed analysis, task planning, isolated execution, artifact persistence, and integrated-change validation.",
   "author": {
     "name": "Local developer"
   },
@@ -9,8 +9,8 @@
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Workbench",
-    "shortDescription": "Shape, prepare, optionally persist, and execute isolated tasks.",
-    "longDescription": "Workbench provides five independently invoked skills: shape a standalone change contract from repository and project evidence; prepare a standalone task DAG without creating worktrees; optionally persist selected Shape or Prepare results as immutable Local Work Memory artifacts; create one standard Git worktree per implementation or integration task; and finalize the clean integrated result with failure testing and independent review. Persistence is never required between workflow skills.",
+    "shortDescription": "Independent tools for software change analysis and execution.",
+    "longDescription": "Workbench provides five independently useful, explicitly invoked skills. Analyze a change, create a task plan from any sufficient definition, execute one bounded task in an isolated Git worktree, persist one selected completed artifact, or review one immutable integrated Git change. No skill requires or advertises another Workbench skill.",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [
@@ -19,16 +19,16 @@
       "Context7 research",
       "Jira project evidence",
       "Figma design evidence",
-      "Optional immutable Workbench artifacts",
-      "Direct inline skill handoff",
+      "General completed-artifact persistence",
+      "Producer-neutral inputs",
       "Task-scoped standard Git worktrees",
       "Task-level verification",
       "Independent integrated review"
     ],
     "defaultPrompt": [
-      "Use $workbench:shape to create a standalone sourced Shape Report for this change.",
-      "Use $workbench:prepare to turn this complete Shape Report into task worktree packets.",
-      "Use $workbench:execute-task to create and execute one ready task worktree."
+      "Use $workbench:shape to investigate this software change and return a standalone report.",
+      "Use $workbench:prepare to create an isolated execution plan from this change definition.",
+      "Use $workbench:execute-task to execute this bounded task in a dedicated Git worktree."
     ],
     "brandColor": "#2563EB"
   }

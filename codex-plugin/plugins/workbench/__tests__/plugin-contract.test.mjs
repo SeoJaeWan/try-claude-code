@@ -29,7 +29,7 @@ function assertNonEmptyString(value, label) {
   assert.notEqual(value.trim(), "", `${label} must not be empty`);
 }
 
-test("plugin manifest exposes only the active Workbench v2 contract", () => {
+test("plugin manifest exposes only the independent Workbench contract", () => {
   const manifest = readJson(manifestPath);
 
   assert.deepEqual(Object.keys(manifest).sort(), [
@@ -107,6 +107,13 @@ test("plugin manifest exposes only the active Workbench v2 contract", () => {
     /session-start|script.source|openapi registry|swagger registry/i,
     "manifest must not describe removed legacy runtime features",
   );
+  assert.match(manifest.interface.longDescription, /independently useful/i);
+  assert.match(manifest.interface.longDescription, /No skill requires or advertises another/i);
+  assert.doesNotMatch(
+    manifest.interface.longDescription,
+    /shape.+prepare|prepare.+execute|execute.+finalize/i,
+    "manifest must not present the skills as a pipeline",
+  );
 });
 
 test("default plugin discovery cannot revive legacy hooks, tools, or apps", () => {
@@ -166,7 +173,7 @@ test("skill metadata declares exact typed MCP dependencies", () => {
   const memory = {
     type: "mcp",
     value: "local-work-memory",
-    description: "Read project conventions, documents, Work Items, and Workbench artifacts",
+    description: "Read project conventions and canonical project documents",
     transport: "streamable_http",
     url: "https://mcp.seojaewan.com/mcp/memory",
   };
@@ -180,14 +187,14 @@ test("skill metadata declares exact typed MCP dependencies", () => {
   const atlassian = {
     type: "mcp",
     value: "atlassian",
-    description: "Read linked Jira issues and comments as project evidence",
+    description: "Read linked Jira evidence",
     transport: "streamable_http",
     url: "https://mcp.atlassian.com/v1/mcp/authv2",
   };
   const figma = {
     type: "mcp",
     value: "figma",
-    description: "Inspect linked Figma designs as project evidence",
+    description: "Inspect linked Figma evidence",
     transport: "streamable_http",
     url: "https://mcp.figma.com/mcp",
   };
@@ -201,29 +208,29 @@ test("skill metadata declares exact typed MCP dependencies", () => {
   assert.deepEqual(metadata("memory-update").dependencies?.tools, [
     {
       ...memory,
-      description: "Commit a selected Shape or Prepare result as an immutable Workbench artifact",
+      description: "Commit one selected completed work artifact",
     },
   ]);
   assert.deepEqual(metadata("execute-task").dependencies?.tools, [
     {
       ...memory,
-      description: "Read project documents and resolve supplied Prepare artifact references",
+      description: "Read project documents and resolve user-provided artifact references",
     },
     {
       ...context7,
-      description: "Verify version-aware library details discovered during implementation",
+      description: "Verify version-aware implementation details",
     },
   ]);
   assert.deepEqual(metadata("prepare").dependencies?.tools, [
     {
       ...memory,
-      description: "Read project documents and resolve supplied Workbench artifact references",
+      description: "Read project documents and resolve user-provided artifact references",
     },
   ]);
   assert.deepEqual(metadata("finalize").dependencies?.tools, [
     {
       ...memory,
-      description: "Resolve supplied workflow artifact references and read project documents",
+      description: "Resolve user-provided supporting artifact references",
     },
   ]);
 });

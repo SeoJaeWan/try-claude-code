@@ -34,11 +34,12 @@
 - Keep skill entrypoints concise and move detailed procedures, schemas, and tool guidance to directly linked `references/` files.
 - Keep the active Workbench limited to `shape`, `memory-update`, `prepare`, `execute-task`, and `finalize`.
 - Require `$workbench:<skill>` explicit invocation and `allow_implicit_invocation: false` for every active Workbench skill. Do NOT auto-chain one Workbench skill into another.
-- Require Stage 0 to read relevant Local Work Memory before shaping decisions. When an external library fact affects a decision, use Context7 when available and verify it with official source links; fall back to direct official sources when Context7 is unavailable or insufficient.
+- Require Shape to read relevant Local Work Memory before decision-making. When an external library fact affects a decision, use Context7 when available and verify it with official source links; fall back to direct official sources when Context7 is unavailable or insufficient.
 - When a request links Jira or Figma, require Shape to retrieve only the referenced project evidence and remain read-only toward both systems. Do NOT create issues/comments/transitions or mutate Figma files/nodes from Shape.
-- Let Shape and Prepare inspect the current checkout read-only. Require Execute to materialize only the exact task-scoped path and branch assigned to each implementation or integration packet.
-- Treat Local Work Memory persistence as optional. A complete inline Shape Report may enter Prepare directly, and a complete inline Execution Plan and Task Packet may enter Execute Task directly.
-- Use the Local Work Memory MCP for current project documents and user-supplied Artifact references; use Memory Update only when the user explicitly chooses to persist a completed Shape or Prepare result.
+- Keep every Workbench skill self-contained. Do NOT name, require, recommend, or advertise another Workbench skill inside a skill body or reference contract.
+- Accept producer-neutral inputs: Prepare accepts any sufficient change definition, Execute Task accepts a bounded objective or complete packet, Memory Update accepts any completed MCP-supported artifact, and Finalize accepts any exact immutable Git change.
+- Let Shape and Prepare inspect the current checkout read-only. Require Execute Task to materialize only its validated task-scoped path and branch.
+- Use the Local Work Memory MCP for current project documents and user-supplied Artifact references; use Memory Update only when the user explicitly chooses to persist one completed artifact.
 
 ## 작업 규칙
 

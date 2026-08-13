@@ -40,11 +40,11 @@ function scalarField(yaml, field, skill) {
   return match[1].replace(/^["']|["']$/g, "").trim();
 }
 
-test("exposes exactly the five Workbench v2 skills", () => {
+test("exposes exactly the five independent Workbench skills", () => {
   assert.deepEqual(skillDirectories(), expectedSkills);
 });
 
-test("every Workbench v2 skill requires its explicit namespaced selector", () => {
+test("every Workbench skill requires its own explicit namespaced selector", () => {
   for (const skill of expectedSkills) {
     const skillFile = path.join(skillsRoot, skill, "SKILL.md");
     const metadataFile = path.join(skillsRoot, skill, "agents", "openai.yaml");

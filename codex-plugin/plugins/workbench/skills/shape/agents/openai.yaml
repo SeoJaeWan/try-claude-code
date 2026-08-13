@@ -1,13 +1,13 @@
 interface:
   display_name: "Shape"
-  short_description: "Shape work into a standalone evidence-backed report"
-  default_prompt: "Use $workbench:shape to produce a standalone evidence-backed Shape Report without creating a worktree or persisting it."
+  short_description: "Investigate a change with sourced evidence"
+  default_prompt: "Use $workbench:shape to investigate this software change and return a standalone evidence-backed report."
 
 dependencies:
   tools:
     - type: "mcp"
       value: "local-work-memory"
-      description: "Read project conventions, documents, Work Items, and Workbench artifacts"
+      description: "Read project conventions and canonical project documents"
       transport: "streamable_http"
       url: "https://mcp.seojaewan.com/mcp/memory"
     - type: "mcp"
@@ -17,12 +17,12 @@ dependencies:
       url: "https://mcp.context7.com/mcp"
     - type: "mcp"
       value: "atlassian"
-      description: "Read linked Jira issues and comments as project evidence"
+      description: "Read linked Jira evidence"
       transport: "streamable_http"
       url: "https://mcp.atlassian.com/v1/mcp/authv2"
     - type: "mcp"
       value: "figma"
-      description: "Inspect linked Figma designs as project evidence"
+      description: "Inspect linked Figma evidence"
       transport: "streamable_http"
       url: "https://mcp.figma.com/mcp"
 

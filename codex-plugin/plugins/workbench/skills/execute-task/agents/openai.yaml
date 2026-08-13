@@ -1,18 +1,18 @@
 interface:
   display_name: "Execute Task"
-  short_description: "Create and execute one task worktree"
-  default_prompt: "Use $workbench:execute-task to create this ready plan's task worktree, then implement or integrate and verify exactly one task."
+  short_description: "Execute one bounded task in a Git worktree"
+  default_prompt: "Use $workbench:execute-task to execute this bounded task in an isolated Git worktree."
 
 dependencies:
   tools:
     - type: "mcp"
       value: "local-work-memory"
-      description: "Read project documents and resolve supplied Prepare artifact references"
+      description: "Read project documents and resolve user-provided artifact references"
       transport: "streamable_http"
       url: "https://mcp.seojaewan.com/mcp/memory"
     - type: "mcp"
       value: "context7"
-      description: "Verify version-aware library details discovered during implementation"
+      description: "Verify version-aware implementation details"
       transport: "streamable_http"
       url: "https://mcp.context7.com/mcp"
 

@@ -1,13 +1,13 @@
 interface:
   display_name: "Memory Update"
-  short_description: "Optionally persist one Workbench artifact"
-  default_prompt: "Use $workbench:memory-update to persist this completed Shape or Prepare result as an immutable Workbench artifact."
+  short_description: "Persist one completed work artifact safely"
+  default_prompt: "Use $workbench:memory-update to persist this selected completed work artifact."
 
 dependencies:
   tools:
     - type: "mcp"
       value: "local-work-memory"
-      description: "Commit a selected Shape or Prepare result as an immutable Workbench artifact"
+      description: "Commit one selected completed work artifact"
       transport: "streamable_http"
       url: "https://mcp.seojaewan.com/mcp/memory"
 

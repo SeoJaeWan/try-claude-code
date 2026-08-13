@@ -1,13 +1,13 @@
 interface:
   display_name: "Finalize"
-  short_description: "Review the final integration task result"
-  default_prompt: "Use $workbench:finalize to failure-test, independently review, and document the final integration task worktree."
+  short_description: "Review and validate one integrated Git change"
+  default_prompt: "Use $workbench:finalize to validate this selected integrated Git change and report the result."
 
 dependencies:
   tools:
     - type: "mcp"
       value: "local-work-memory"
-      description: "Resolve supplied workflow artifact references and read project documents"
+      description: "Resolve user-provided supporting artifact references"
       transport: "streamable_http"
       url: "https://mcp.seojaewan.com/mcp/memory"
 
