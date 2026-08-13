@@ -1,6 +1,6 @@
 {
   "name": "workbench",
-  "version": "0.3.0+codex.20260813045821",
+  "version": "0.3.0+codex.20260813050845",
   "description": "Five independent explicit Workbench skills for evidence-backed analysis, task planning, isolated execution, artifact persistence, and integrated-change validation.",
   "author": {
     "name": "Local developer"
