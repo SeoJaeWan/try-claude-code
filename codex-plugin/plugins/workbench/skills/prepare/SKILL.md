@@ -11,9 +11,9 @@ Read [references/execution-plan.md](references/execution-plan.md) before produci
 
 ## Procedure
 
-1. Accept any sufficiently complete change definition supplied inline or through a user-provided Local Work Memory Artifact reference. Do not require a particular producer or document type.
+1. Accept any sufficiently complete change definition supplied inline or through a user-provided Local Work Memory Artifact reference. Resolve a supplied reference through the MCP according to the guidance and contract it currently exposes. Do not require a particular producer or document type.
 2. Resolve the repository root, checkout root, Git common dir, HEAD, branch, status, and worktree inventory.
-3. Inspect project conventions and repository evidence needed to make the plan self-contained. Ask only for material decisions that cannot be discovered.
+3. Use the Local Work Memory MCP for relevant project conventions, and inspect repository evidence needed to make the plan self-contained. Ask only for material decisions that cannot be discovered.
 4. Require a clean, stable execution base. Do not stash, reset, clean, copy, or checkpoint user changes.
 5. Convert requirements and acceptance conditions into independently verifiable tasks with an explicit dependency DAG and execution waves.
 6. Define each task's inputs, owned and forbidden paths, indirect collision surfaces, runtime resources, checks, completion contract, worktree path, branch, and immutable base selector.

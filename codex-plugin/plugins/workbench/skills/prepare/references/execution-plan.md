@@ -11,7 +11,7 @@ source_input:
   source_digest:
 ```
 
-For inline input, keep `artifact_ref: null`. For referenced input, preserve the exact MCP Typed Reference and resolve its canonical body. Reject summaries, metadata-only references, identity mismatches, or inputs too incomplete to determine task scope and acceptance.
+For inline input, keep `artifact_ref: null`. For referenced input, preserve the supplied MCP reference exactly and use the Local Work Memory MCP to resolve its complete current body. Follow the MCP guidance and contract exposed at invocation time. Reject summaries, metadata-only references, identity mismatches, or inputs too incomplete to determine task scope and acceptance.
 
 ## Parallel safety
 

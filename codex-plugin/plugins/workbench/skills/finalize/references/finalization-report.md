@@ -9,7 +9,7 @@ Require exact agreement on:
 - immutable `base_commit` and `head_sha`;
 - branch, ancestry, and complete base-to-head diff.
 
-Optional supporting evidence may include requirements, invariants, acceptance criteria, architecture decisions, execution plans, task results, test logs, and user-provided Local Work Memory Artifact references. Resolve supplied references through the MCP and preserve their provenance. Do not require a particular producer or workflow history.
+Optional supporting evidence may include requirements, invariants, acceptance criteria, architecture decisions, execution plans, task results, test logs, and user-provided Local Work Memory Artifact references. Resolve supplied references according to the MCP guidance and contract exposed at invocation time, preserve the returned content and provenance, and do not require a particular producer or workflow history.
 
 When expected behavior is incomplete, reconstruct only what repository evidence and the user request support. Mark material uncertainty as `not_verified`; a missing acceptance-critical fact prevents `FINALIZED`.
 

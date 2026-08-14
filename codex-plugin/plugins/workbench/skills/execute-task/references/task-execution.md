@@ -5,7 +5,7 @@
 Accept exactly one of:
 
 - `standalone`: a bounded task objective with sufficient acceptance and repository context;
-- `task_packet`: an immutable execution packet supplied inline or resolved from a user-provided Local Work Memory Artifact reference.
+- `task_packet`: an immutable execution packet supplied inline or resolved from a user-provided Local Work Memory Artifact reference according to the MCP guidance and contract exposed at invocation time.
 
 Reject summaries, metadata-only references, ambiguous ownership, stale packets, digest mismatches, or objectives that require a material product decision.
 

@@ -11,11 +11,11 @@ Read [references/memory-change-set.md](references/memory-change-set.md) before w
 
 ## Procedure
 
-1. Require an explicit user-selected complete artifact body and stable project, Work Item, repository, and producing snapshot identity.
-2. Accept any completed artifact kind supported by the Local Work Memory MCP. Do not require a particular producer.
+1. Require an explicit user-selected complete artifact body and the provenance needed to identify what is being persisted.
+2. Accept any completed artifact supported by the Local Work Memory MCP. Do not require a particular producer.
 3. Reject incomplete summaries, metadata-only inputs, identity mismatches, or content that cannot be transferred without unauthorized secrets or private data.
-4. Use the MCP artifact commit capability and its schema for artifact kinds, folders, identity, transfer, idempotency, and result interpretation. Do not invent unsupported paths or references.
+4. Use the Local Work Memory MCP to persist the artifact according to the guidance and contract it exposes at invocation time. Treat the MCP as authoritative for required inputs, supported artifacts, transfer, identity, idempotency, and result interpretation. Do not invent MCP-owned values or references.
 5. Transfer the body without reinterpretation, redesign, merging, summarization, or meaning-changing redaction.
-6. Return the exact persistence result and stop.
+6. Return the persistence outcome and any exact reference supplied by the MCP, then stop.
 
 Do NOT search for additional evidence, rerun repository analysis, modify project files, mutate a Git worktree, continue the stored workflow, or perform work outside this persistence request.

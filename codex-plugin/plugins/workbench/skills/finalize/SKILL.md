@@ -11,7 +11,7 @@ Read [references/finalization-report.md](references/finalization-report.md) befo
 
 ## Procedure
 
-1. Require an exact `base_commit`, `head_sha`, repository identity, Git common dir, target worktree, and clean status. Accept optional requirements, acceptance criteria, decisions, test evidence, task results, and user-provided Artifact references as supporting evidence.
+1. Require an exact `base_commit`, `head_sha`, repository identity, Git common dir, target worktree, and clean status. Accept optional requirements, acceptance criteria, decisions, test evidence, task results, and user-provided Artifact references as supporting evidence. Resolve a supplied Local Work Memory reference through the MCP according to the guidance and contract it currently exposes.
 2. Verify the target worktree, branch, HEAD, ancestry, and complete `base_commit..head_sha` diff. Block on ambiguous or moving inputs.
 3. Reconstruct missing product expectations from the user request, repository instructions, tests, and changed interfaces. Label material gaps and do not treat absent evidence as a pass.
 4. Derive applicable failure, concurrency, lifecycle, consistency, and load scenarios from the actual risk model. Use bounded local or repository-approved environments and record unperformed checks.

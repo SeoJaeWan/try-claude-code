@@ -113,16 +113,17 @@ test("Execute Task supports standalone and packet execution without a named plan
   assert.ok(skillDocument("execute-task").split(/\r?\n/).length < 80, "Execute entrypoint must stay concise");
 });
 
-test("Memory Update persists any completed supported artifact without workflow authority", () => {
+test("Memory Update delegates MCP mechanics while preserving Workbench boundaries", () => {
   const text = skillBundle("memory-update");
   assertContract(text, [
-    ["single artifact", /exactly one completed artifact/i],
+    ["single artifact", /exactly one complete artifact/i],
     ["producer neutrality", /Do not require a particular producer/i],
-    ["MCP-owned kinds", /artifact kind[s]?[\s\S]{0,120}supported[\s\S]{0,120}MCP/i],
+    ["MCP authority", /MCP as authoritative/i],
+    ["invocation-time contract", /contract it exposes at invocation time/i],
     ["no meaning change", /without reinterpretation/i],
-    ["exact reference", /exact MCP Typed Reference/i],
-    ["no approval", /approval_granted: false/],
-    ["no continuation", /additional_work_started: false/],
+    ["no invented MCP values", /Do not invent values or references owned by the MCP/i],
+    ["no approval", /approval was granted \(`false`\)/i],
+    ["no continuation", /additional work was started \(`false`\)/i],
   ], "memory-update");
   assert.doesNotMatch(text, /shape_status|plan_status|Shape or Prepare|persistence_required_for_/);
   assert.ok(skillDocument("memory-update").split(/\r?\n/).length < 70, "Memory entrypoint must stay concise");

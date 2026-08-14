@@ -11,7 +11,7 @@ Read [references/task-execution.md](references/task-execution.md) before creatin
 
 ## Procedure
 
-1. Accept either a standalone task objective or a complete execution packet. Do not require a particular planning tool or producer.
+1. Accept either a standalone task objective or a complete execution packet. Resolve a user-provided Local Work Memory Artifact reference through the MCP according to the guidance and contract it currently exposes. Do not require a particular planning tool or producer.
 2. Resolve repository identity, Git common dir, immutable base SHA, task scope, acceptance conditions, owned paths, checks, and dependency result SHAs. Ask for input only when a material boundary cannot be discovered safely.
 3. For a supplied packet, verify its digest and exact binding. For a standalone objective, create the minimal execution contract defined by the reference.
 4. Validate the assigned or derived worktree path and branch. Materialize one standard Git worktree from the immutable base, or adopt an exact clean same-task worktree.
