@@ -1,6 +1,0 @@
-interface:
-  display_name: "Evaluate Workbench"
-  short_description: "Benchmark Workbench dialogue-to-code outcomes"
-  default_prompt: "Use $evaluate-workbench to compare selected Workbench targets through controlled goal dialogue and implementation."
-policy:
-  allow_implicit_invocation: false

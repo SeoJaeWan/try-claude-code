@@ -1,17 +1,5 @@
 {
   "mcpServers": {
-    "local-work-memory": {
-      "type": "http",
-      "url": "https://mcp.seojaewan.com/mcp/memory"
-    },
-    "context7": {
-      "type": "http",
-      "url": "https://mcp.context7.com/mcp"
-    },
-    "atlassian": {
-      "type": "http",
-      "url": "https://mcp.atlassian.com/v1/mcp/authv2"
-    },
     "figma": {
       "type": "http",
       "url": "https://mcp.figma.com/mcp",

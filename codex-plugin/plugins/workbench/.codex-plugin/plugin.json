@@ -1,7 +1,7 @@
 {
   "name": "workbench",
-  "version": "0.3.0+codex.20260814072739",
-  "description": "Five independent explicit Workbench skills for evidence-backed analysis, task planning, isolated execution, artifact persistence, and integrated-change validation.",
+  "version": "0.3.0+codex.20260824065722",
+  "description": "Five independent explicit Workbench skills for evidence-backed analysis, task planning, Sol/high multi-agent execution, artifact persistence, and integrated-change validation.",
   "author": {
     "name": "Local developer"
   },
@@ -10,25 +10,24 @@
   "interface": {
     "displayName": "Workbench",
     "shortDescription": "Independent tools for software change analysis and execution.",
-    "longDescription": "Workbench provides five independently useful, explicitly invoked skills. Analyze a change, create a task plan from any sufficient definition, execute one bounded task in an isolated Git worktree, persist one selected completed artifact, or review one immutable integrated Git change. No skill requires or advertises another Workbench skill.",
+    "longDescription": "Workbench provides five independently useful, explicitly invoked skills. Analyze a change, create a task plan, coordinate task packets through parallel GPT-5.6 Sol/high workers in isolated Git worktrees, persist one selected completed artifact, or review one exact integrated Git change. No skill requires another Workbench skill.",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [
       "Explicit-only skills",
-      "Local Work Memory",
-      "Context7 research",
-      "Jira project evidence",
       "Figma design evidence",
       "General completed-artifact persistence",
       "Producer-neutral inputs",
-      "Task-scoped standard Git worktrees",
-      "Task-level verification",
+      "GPT-5.6 Sol/high task workers",
+      "DAG-aware parallel execution",
+      "Task-scoped Git worktrees",
+      "Dependency-aware failure propagation",
       "Independent integrated review"
     ],
     "defaultPrompt": [
       "Use $workbench:shape to investigate this software change and return a standalone report.",
       "Use $workbench:prepare to create an isolated execution plan from this change definition.",
-      "Use $workbench:execute-task to execute this bounded task in a dedicated Git worktree."
+      "Use $workbench:execute-task to run this plan through parallel GPT-5.6 Sol/high workers."
     ],
     "brandColor": "#2563EB"
   }

@@ -1,20 +1,7 @@
 interface:
   display_name: "Execute Task"
-  short_description: "Execute one bounded task in a Git worktree"
-  default_prompt: "Use $workbench:execute-task to execute this bounded task in an isolated Git worktree."
-
-dependencies:
-  tools:
-    - type: "mcp"
-      value: "local-work-memory"
-      description: "Read project documents and resolve user-provided artifact references"
-      transport: "streamable_http"
-      url: "https://mcp.seojaewan.com/mcp/memory"
-    - type: "mcp"
-      value: "context7"
-      description: "Verify version-aware implementation details"
-      transport: "streamable_http"
-      url: "https://mcp.context7.com/mcp"
+  short_description: "Run a task plan with Sol/high workers"
+  default_prompt: "Use $workbench:execute-task to run this task plan through parallel GPT-5.6 Sol/high workers."
 
 policy:
   allow_implicit_invocation: false

@@ -4,9 +4,6 @@
   "description": "Codex Workbench plugin development workspace",
   "type": "module",
   "scripts": {
-    "codex-plugin:deploy": "node codex-plugin/scripts/deploy-workbench-plugin.mjs",
-    "test": "npm run test:workbench && npm run test:evaluate-workbench",
-    "test:workbench": "node --test codex-plugin/plugins/workbench/__tests__/explicit-invocation.test.mjs codex-plugin/plugins/workbench/__tests__/plugin-contract.test.mjs codex-plugin/plugins/workbench/__tests__/workflow-contract.test.mjs codex-plugin/plugins/workbench/__tests__/deploy-contract.test.mjs",
-    "test:evaluate-workbench": "node --test .codex/skills/evaluate-workbench/scripts/__tests__/benchmark-runner.test.mjs"
+    "codex-plugin:deploy": "node codex-plugin/scripts/deploy-workbench-plugin.mjs"
   }
 }

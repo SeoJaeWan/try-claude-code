@@ -13,6 +13,8 @@ source_input:
 
 For inline input, keep `artifact_ref: null`. For referenced input, preserve the supplied MCP reference exactly and use the Local Work Memory MCP to resolve its complete current body. Follow the MCP guidance and contract exposed at invocation time. Reject summaries, metadata-only references, identity mismatches, or inputs too incomplete to determine task scope and acceptance.
 
+Every emitted task packet must be self-contained for a worker that receives no conversation history. Do not put model or reasoning-effort choices in the plan; the executor owns its worker runtime policy.
+
 ## Parallel safety
 
 Place tasks in the same parallel wave only when all are true:
@@ -93,7 +95,7 @@ parallel_group:
 assigned_worktree:
 branch:
 base_selector:
-  kind: exact_sha | task_output | integration_output
+  kind: exact_commit | task_result | integration_result
   value:
 inputs: []
 requirement_ids: []
@@ -123,9 +125,9 @@ Integration packets additionally declare `required_task_ids`, `integration_order
 
 ## Selectors and worktrees
 
-- The first task or wave uses `exact_sha` with `base_commit`.
-- A later serial task uses `task_output` with the preceding successful result SHA.
-- A wave after integration uses `integration_output` with the preceding integrated head SHA.
+- The first task or wave uses `exact_commit` with `base_commit`.
+- A later serial task uses `task_result` with the preceding successful result commit ID.
+- A wave after integration uses `integration_result` with the preceding integrated head commit ID.
 - Resolve selectors only after dependencies succeed.
 - Every packet owns one unique valid branch, normally `codex/<run-id>/<task-id>`.
 - `worktree_parent` must be outside the repository, Git metadata, home configuration, and system paths.

@@ -3,13 +3,5 @@ interface:
   short_description: "Create an isolated executable task plan"
   default_prompt: "Use $workbench:prepare to turn this change definition into a standalone task and worktree plan."
 
-dependencies:
-  tools:
-    - type: "mcp"
-      value: "local-work-memory"
-      description: "Read project documents and resolve user-provided artifact references"
-      transport: "streamable_http"
-      url: "https://mcp.seojaewan.com/mcp/memory"
-
 policy:
   allow_implicit_invocation: false
