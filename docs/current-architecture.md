@@ -1,6 +1,6 @@
 # Current Architecture — Codex Workbench
 
-> 기준일: 2026-08-24
+> 기준일: 2026-08-25
 
 현재 Workbench는 `codex-plugin/plugins/workbench/`에 있는 다섯 개의 독립적인 explicit-only 스킬입니다. 스킬 집합은 고정 파이프라인을 정의하지 않으며, 각 스킬은 자기 입력·동작·산출물·안전 경계만 소유합니다.
 
@@ -20,7 +20,7 @@
 | `shape` | 소프트웨어 변경 요청과 프로젝트 근거 | 독립적인 변경 분석 보고서 |
 | `prepare` | 충분한 변경 정의 | 실행 DAG와 self-contained task/worktree packet |
 | `execute-task` | execution plan, packet 묶음 또는 bounded objective | Sol/high worker들의 task 결과와 통합 실행 결과 |
-| `memory-update` | MCP가 지원하는 완료 artifact 하나 | 정확한 Artifact reference 또는 실패 결과 |
+| `memory-update` | 하나 이상의 bounded project-knowledge 주제 | 모든 안전한 주제의 순차 Wiki 큐레이션 결과와 정확한 reference |
 | `finalize` | 정확한 Git `base..head` | 위험 기반 검증·독립 리뷰·최종 보고 |
 
 모든 `agents/openai.yaml`은 `allow_implicit_invocation: false`입니다. 각 스킬은 자신의 `$workbench:<skill>` selector로만 명시 호출됩니다.
@@ -30,7 +30,7 @@
 - 선행 스킬의 실행 여부를 entry gate로 사용하지 않습니다.
 - 생산 스킬 이름이 아니라 입력 내용의 완전성과 식별자·digest·Git 상태를 검증합니다.
 - Execute Task는 Prepare가 아닌 다른 생산자가 만든 호환 가능한 plan도 실행합니다.
-- persistence는 저장 기능이며 승인, 단계 전환, 실행 권한이 아닙니다.
+- Wiki 큐레이션은 요청 범위의 모든 bounded 주제를 처리하지만 승인, 단계 전환 또는 범위 밖 실행 권한은 부여하지 않습니다.
 - 사용자가 여러 스킬을 조합할 수 있지만 그 조합은 다른 스킬의 강제 선행 조건이 아닙니다.
 
 ## Shape
@@ -62,7 +62,9 @@ Coordinator는 worktree를 만들거나 파일을 수정·stage·commit하지 �
 
 ## Memory Update
 
-Memory Update는 MCP가 지원하는 완료 artifact 하나를 의미 변경 없이 저장합니다. Producer는 provenance일 뿐 eligibility를 결정하지 않습니다. MCP tool contract가 기존 Work Item, artifact folder, repository snapshot, transfer, idempotency와 Typed Reference를 소유합니다.
+Memory Update는 요청에 포함된 모든 bounded project-knowledge 주제를 기존 Wiki 구조와 대조해 dependency-aware queue로 정규화하고 순차 처리합니다. 같은 canonical 경계의 주제는 하나로 합치며, 각 queue unit마다 기존 Wiki 갱신·새 Wiki 생성·변경 없음·쓰기 전 차단 중 하나를 결정합니다. 확정적 실패나 주제 단위 차단 뒤에도 안전한 독립 주제는 계속 처리하고, 공유 identity·concurrency·current-state 불확실성이 후속 결정을 위험하게 만들 때만 관련 remainder를 중단합니다.
+
+Local Work Memory MCP는 discovery, identity, revision, reference, persistence, concurrency와 relationship 표현을 소유합니다. Memory Update는 각 write 뒤 결과를 검증하고 후속 판단에 필요한 상태를 갱신하며, 첫 Wiki가 아니라 전체 queue의 주제별 결과를 반환합니다.
 
 ## Finalize
 

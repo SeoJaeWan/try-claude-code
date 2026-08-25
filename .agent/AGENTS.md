@@ -37,9 +37,9 @@
 - Require Shape to read relevant Local Work Memory before decision-making. When an external library fact affects a decision, use Context7 when available and verify it with official source links; fall back to direct official sources when Context7 is unavailable or insufficient.
 - When a request links Jira or Figma, require Shape to retrieve only the referenced project evidence and remain read-only toward both systems. Do NOT create issues/comments/transitions or mutate Figma files/nodes from Shape.
 - Keep every Workbench skill self-contained. Do NOT name, require, recommend, or advertise another Workbench skill inside a skill body or reference contract.
-- Accept producer-neutral inputs: Prepare accepts any sufficient change definition, Execute Task accepts a bounded objective or complete packet, Memory Update accepts any completed MCP-supported artifact, and Finalize accepts any exact immutable Git change.
+- Accept producer-neutral inputs: Prepare accepts any sufficient change definition, Execute Task accepts a bounded objective or complete packet, Memory Update accepts one or more bounded project-knowledge topics, and Finalize accepts any exact immutable Git change.
 - Let Shape and Prepare inspect the current checkout read-only. Require Execute Task to materialize only its validated task-scoped path and branch.
-- Use the Local Work Memory MCP for current project documents and user-supplied Artifact references; use Memory Update only when the user explicitly chooses to persist one completed artifact.
+- Use the Local Work Memory MCP for current project documents and user-supplied Artifact references; use Memory Update only when the user explicitly requests Wiki curation, then process every bounded in-scope topic sequentially rather than imposing a one-Wiki invocation limit.
 
 ## 작업 규칙
 

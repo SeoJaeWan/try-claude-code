@@ -1,7 +1,7 @@
 interface:
   display_name: "Memory Update"
-  short_description: "Persist one completed work artifact safely"
-  default_prompt: "Use $workbench:memory-update to persist this selected completed work artifact."
+  short_description: "Curate all scoped project Wiki topics in sequence"
+  default_prompt: "Use $workbench:memory-update to integrate every bounded knowledge topic in this request into the existing project Wiki."
 
 policy:
   allow_implicit_invocation: false

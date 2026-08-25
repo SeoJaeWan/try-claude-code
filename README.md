@@ -24,7 +24,7 @@ Workbench는 순서가 정해진 workflow가 아니라 다섯 개의 독립 도�
 | `$workbench:shape` | 변경 요청을 읽기 전용으로 조사하고 standalone 분석 보고서 생성 |
 | `$workbench:prepare` | 어떤 충분한 변경 정의든 task DAG와 격리 실행 계획으로 변환 |
 | `$workbench:execute-task` | 실행 계획을 task별 Sol/high 서브에이전트와 전용 Git worktree로 실행 |
-| `$workbench:memory-update` | MCP가 지원하는 완료 artifact 하나를 선택 저장 |
+| `$workbench:memory-update` | 요청에 포함된 모든 bounded 지식 주제를 기존 Wiki 구조에 순차 큐레이션 |
 | `$workbench:finalize` | 정확한 Git `base..head` 변경을 위험 기반으로 검증하고 독립 리뷰 |
 
 각 스킬은 `$workbench:<skill>`로 명시 호출해야 하며 자신의 동작만 수행하고 종료합니다. 다른 Workbench 스킬을 이름으로 참조하거나 선행 조건으로 요구하지 않습니다. 사용자는 필요에 따라 단독으로 사용하거나 자유롭게 조합할 수 있습니다.
@@ -35,7 +35,7 @@ Workbench는 순서가 정해진 workflow가 아니라 다섯 개의 독립 도�
 - Shape와 Prepare는 현재 checkout을 읽기 전용으로 사용합니다.
 - Execute Task의 coordinator는 읽기 전용이며, 각 task를 `gpt-5.6-sol`/`high` worker에게 배정합니다.
 - 각 worker는 자기 standard Git worktree에서 task 하나만 변경하고 성공 시 task 결과 commit을 만듭니다.
-- Memory Update는 저장 기능일 뿐 승인이나 workflow transition이 아닙니다.
+- Memory Update는 요청 범위의 모든 Wiki 주제를 dependency-aware queue로 순차 처리합니다. 각 주제는 중복·관계·충돌을 독립 판단하며, 한 주제의 확정적 실패는 안전한 후속 독립 주제를 막지 않습니다.
 - Finalize는 구현 이력과 무관하게 선택된 `base..head` 전체 변경을 검증합니다.
 - push, PR, 사용자 branch merge, handoff와 cleanup은 자동 수행하지 않습니다.
 
