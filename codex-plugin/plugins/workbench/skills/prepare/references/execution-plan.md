@@ -126,9 +126,9 @@ Integration packets additionally declare `required_task_ids`, `integration_order
 ## Selectors and worktrees
 
 - The first task or wave uses `exact_commit` with `base_commit`.
-- A later serial task uses `task_result` with the preceding successful result commit ID.
-- A wave after integration uses `integration_result` with the preceding integrated head commit ID.
-- Resolve selectors only after dependencies succeed.
+- A later serial task uses `task_result` with the preceding task identity. The executor binds it to an exact verified result or an exact provisional candidate allowed by its continuation policy.
+- A wave after integration uses `integration_result` with the preceding integration identity. The executor binds it to an exact verified or explicitly usable provisional integrated head.
+- Resolve selectors only after dependencies return an exact consumable commit. Planning does not predict verification success or authorize unsafe continuation.
 - Every packet owns one unique valid branch, normally `codex/<run-id>/<task-id>`.
 - `worktree_parent` must be outside the repository, Git metadata, home configuration, and system paths.
 - Every assigned path must be a unique direct child of that parent without `..` or symlink components.
@@ -138,6 +138,8 @@ Integration packets additionally declare `required_task_ids`, `integration_order
 Emit the plan and each packet as immutable YAML with exactly one corresponding digest field and no generated timestamp. Normalize CRLF/CR to LF, replace only the relevant digest value with an empty string, preserve every other byte, then SHA-256 the UTF-8 bytes.
 
 Record pre-existing failures by stable identity, normalized fingerprint, and count. `no_new_failures` succeeds only when they match and no additional failure appears. Missing acceptance-critical checks or unexpected tracked changes block readiness.
+
+`completion_contract.result_sha_required` requires an immutable task commit when the executor determines that the implementation is consumable. The executor may classify that commit as a verified result or a provisional candidate; a provisional candidate does not satisfy acceptance or alter this immutable plan.
 
 ## Blocked result
 

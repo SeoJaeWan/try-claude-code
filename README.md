@@ -34,7 +34,7 @@ Workbench는 순서가 정해진 workflow가 아니라 다섯 개의 독립 도�
 - 입력의 producer보다 완전성, repository identity, digest와 정확한 기준 commit ID를 검증합니다.
 - Shape와 Prepare는 현재 checkout을 읽기 전용으로 사용합니다.
 - Execute Task의 coordinator는 읽기 전용이며, 각 task를 `gpt-5.6-sol`/`high` worker에게 배정합니다.
-- 각 worker는 자기 standard Git worktree에서 task 하나만 변경하고 성공 시 task 결과 commit을 만듭니다.
+- 각 worker는 자기 standard Git worktree에서 task 하나만 변경하고 검증 성공 시 result commit, 검증 실패가 남아도 후속 작업이 소비 가능한 구현이면 provisional candidate commit을 만듭니다.
 - Memory Update는 요청 범위의 모든 Wiki 주제를 dependency-aware queue로 순차 처리합니다. 각 주제는 중복·관계·충돌을 독립 판단하며, 한 주제의 확정적 실패는 안전한 후속 독립 주제를 막지 않습니다.
 - Finalize는 구현 이력과 무관하게 선택된 `base..head` 전체 변경을 검증합니다.
 - push, PR, 사용자 branch merge, handoff와 cleanup은 자동 수행하지 않습니다.
@@ -47,7 +47,7 @@ Workbench 플러그인은 Figma MCP만 직접 등록합니다. Context7, Local W
 
 Execute Task는 완전한 execution plan, task packet 묶음 또는 하나의 bounded objective를 받습니다. Dependency DAG에서 실행 가능한 task를 찾고, write surface와 runtime resource가 격리된 task를 병렬로 실행합니다. 각 worker는 대화 이력 없이 자기 packet만 받고 `gpt-5.6-sol` 모델과 `high` reasoning effort로 실행됩니다.
 
-실패한 task의 downstream은 실행하지 않지만 독립 task는 계속 진행합니다. coordinator와 worker 모두 원본 checkout, push, PR, 사용자 branch merge, handoff와 cleanup을 수행하지 않습니다.
+구현 중 충돌이나 검증 실패는 즉시 전체 실행을 중단하지 않습니다. 정확한 provisional candidate와 `continuation: ALLOWED`가 있으면 downstream과 integration도 계속 실행하며, 물질적 선행 산출물이 없을 때만 영향을 받는 task를 실행하지 않습니다. 최종 결과는 최초 계획, 실행 중 발견, 시도한 복구, 미해결 조치와 verified/provisional commit을 구분해 보고합니다. coordinator와 worker 모두 원본 checkout, push, PR, 사용자 branch merge, handoff와 cleanup을 수행하지 않습니다.
 
 ## 배포
 

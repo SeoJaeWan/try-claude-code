@@ -56,7 +56,9 @@ reasoning_effort: high
 context: complete_task_packet_only
 ```
 
-Write surface와 runtime resource가 격리된 runnable task는 host capacity 안에서 병렬 실행합니다. 각 worker는 자기 packet 하나와 자기 standard Git worktree만 소유하고, 검증된 task 결과 commit과 clean worktree를 반환합니다. 실패한 task의 downstream은 실행하지 않지만 독립된 DAG branch는 계속 진행합니다. Integration packet도 dependency 결과 commit이 확정된 뒤 같은 worker contract로 실행합니다.
+Write surface와 runtime resource가 격리된 runnable task는 host capacity 안에서 병렬 실행합니다. 각 worker는 자기 packet 하나와 자기 standard Git worktree만 소유합니다. 검증을 통과하면 verified result commit을 반환하고, 구현은 소비 가능하지만 검증 실패가 남으면 provisional candidate commit과 명시적인 continuation 판단을 반환합니다.
+
+구현 중 충돌, 실패한 검사 또는 계획 당시의 부정확한 가정은 자동 중단 사유가 아닙니다. Coordinator는 정확한 candidate commit과 `continuation: ALLOWED`가 있는 downstream 및 integration packet을 계속 실행하고, 물질적 선행 산출물이 없을 때만 영향을 받는 descendants를 실행하지 않습니다. Integration은 권한 범위 안에서 기계적으로 결정 가능한 호환성 문제를 복구하고 의미 있는 검사를 끝까지 수행합니다. 최종 결과는 계획 대비 발견, 복구 시도, verified/provisional commit, 미해결 조치와 실행하지 못한 task를 구분합니다.
 
 Coordinator는 worktree를 만들거나 파일을 수정·stage·commit하지 않습니다. Worker profile을 사용할 수 없으면 다른 모델이나 effort로 fallback하지 않고 `BLOCKED`를 반환합니다.
 

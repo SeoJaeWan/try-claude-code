@@ -1,7 +1,7 @@
 interface:
   display_name: "Execute Task"
-  short_description: "Run a task plan with Sol/high workers"
-  default_prompt: "Use $workbench:execute-task to run this task plan through parallel GPT-5.6 Sol/high workers."
+  short_description: "Run resilient task DAGs with Sol/high workers"
+  default_prompt: "Use $workbench:execute-task to exhaust this task plan's safely runnable work and report implementation-time findings."
 
 policy:
   allow_implicit_invocation: false
