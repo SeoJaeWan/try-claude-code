@@ -52,13 +52,13 @@ Execute Task는 완전한 execution plan, task packet 묶음 또는 하나의 bo
 ## 배포
 
 ```bash
-npm run codex-plugin:deploy
+npm run codex-deploy
 ```
 
-배포는 `local-work` marketplace가 현재 checkout의 `codex-plugin/`을 가리키는지 먼저 검사합니다. 변경 검증만 하려면 다음을 사용합니다.
+배포는 `local-work` marketplace가 현재 checkout의 `codex-plugin/`을 가리키는지 먼저 검사합니다. 설치할 때만 임시 cachebuster 버전을 적용하고 완료 후 source manifest를 원래 상태로 복원하므로, 배포가 추가한 version 변경은 Git에 남지 않습니다. 변경 검증만 하려면 다음을 사용합니다.
 
 ```bash
-npm run codex-plugin:deploy -- --dry-run --skip-install
+npm run codex-deploy -- --dry-run --skip-install
 ```
 
 ## Legacy 정책

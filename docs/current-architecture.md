@@ -10,7 +10,7 @@
 |---|---|---|
 | 플러그인 | `codex-plugin/plugins/workbench/` | 독립 스킬과 Figma MCP 설정 |
 | marketplace | `codex-plugin/.agents/plugins/marketplace.json` | 로컬 Workbench 등록 |
-| 배포 도구 | `codex-plugin/scripts/deploy-workbench-plugin.mjs` | cachebuster와 로컬 install |
+| 배포 도구 | `codex-plugin/scripts/deploy-workbench-plugin.mjs` | 임시 cachebuster와 로컬 install |
 | 역사 보관 | `legacy/` | 이전 구현과 문서 |
 
 ## 독립 스킬
@@ -86,4 +86,4 @@ Finalize는 어떤 도구나 사람이 만든 결과인지와 무관하게 정�
 
 ## 배포
 
-`codex-plugin/scripts/deploy-workbench-plugin.mjs`는 `local-work` marketplace가 현재 checkout의 `codex-plugin/`을 가리키는지 확인하고 cachebuster를 갱신한 뒤 플러그인을 재설치합니다.
+`npm run codex-deploy`가 실행하는 `codex-plugin/scripts/deploy-workbench-plugin.mjs`는 `local-work` marketplace가 현재 checkout의 `codex-plugin/`을 가리키는지 확인합니다. 설치 직전에 cachebuster 버전을 임시 적용하고 설치가 성공하거나 실패하면 source manifest의 원본 바이트를 복원하므로 배포가 추가한 version 변경은 Git에 남지 않습니다.

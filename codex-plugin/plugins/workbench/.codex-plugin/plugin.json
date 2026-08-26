@@ -1,6 +1,6 @@
 {
   "name": "workbench",
-  "version": "0.3.0+codex.20260825104155",
+  "version": "0.3.0",
   "description": "Five independent explicit Workbench skills for evidence-backed analysis, task planning, Sol/high multi-agent execution, sequential connected Wiki curation, and integrated-change validation.",
   "author": {
     "name": "Local developer"

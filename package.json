@@ -4,6 +4,6 @@
   "description": "Codex Workbench plugin development workspace",
   "type": "module",
   "scripts": {
-    "codex-plugin:deploy": "node codex-plugin/scripts/deploy-workbench-plugin.mjs"
+    "codex-deploy": "node codex-plugin/scripts/deploy-workbench-plugin.mjs"
   }
 }

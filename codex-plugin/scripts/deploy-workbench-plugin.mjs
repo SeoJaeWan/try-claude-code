@@ -5,6 +5,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { withTemporaryManifest } from "./lib/temporary-manifest.mjs";
+
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "../..");
 const pluginName = "workbench";
@@ -29,22 +31,21 @@ const codexExecutable = process.platform === "win32" ? "codex.cmd" : "codex";
 
 function utcStamp(date = new Date()) {
   const pad = (value) => String(value).padStart(2, "0");
-  return [
+  const datePart = [
     date.getUTCFullYear(),
     pad(date.getUTCMonth() + 1),
     pad(date.getUTCDate()),
+  ].join("");
+  const timePart = [
     pad(date.getUTCHours()),
     pad(date.getUTCMinutes()),
     pad(date.getUTCSeconds()),
   ].join("");
+  return `${datePart}-${timePart}`;
 }
 
 function readManifest() {
   return JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-}
-
-function writeManifest(manifest) {
-  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
 function collectStrings(value, output = []) {
@@ -135,16 +136,20 @@ if (!dryRun && !skipInstall) {
 
 const manifest = readManifest();
 const previousVersion = manifest.version;
+let deploymentVersion = previousVersion;
 
 if (!skipCachebuster) {
   const baseVersion = previousVersion.split("+")[0];
-  manifest.version = `${baseVersion}+codex.${utcStamp()}`;
+  deploymentVersion = `${baseVersion}+codex.local-${utcStamp()}`;
+  manifest.version = deploymentVersion;
 
   if (dryRun) {
-    console.log(`[dry-run] ${previousVersion} -> ${manifest.version}`);
-  } else {
-    writeManifest(manifest);
-    console.log(`Updated plugin version: ${previousVersion} -> ${manifest.version}`);
+    console.log(`[dry-run] ${previousVersion} -> ${deploymentVersion}`);
+  } else if (skipInstall) {
+    console.log(
+      `Skipping temporary plugin version: ${previousVersion} -> ${deploymentVersion} ` +
+        "because installation was skipped; source manifest is unchanged.",
+    );
   }
 } else {
   console.log(`Keeping plugin version: ${previousVersion}`);
@@ -157,18 +162,36 @@ if (!skipInstall) {
   if (dryRun) {
     console.log(`[dry-run] ${command.join(" ")}`);
   } else {
-    const result = spawnSync(codexExecutable, command.slice(1), {
-      cwd: repoRoot,
-      stdio: "inherit",
-      shell: process.platform === "win32",
-    });
+    const install = () => {
+      const result = spawnSync(codexExecutable, command.slice(1), {
+        cwd: repoRoot,
+        stdio: "inherit",
+        shell: process.platform === "win32",
+      });
 
-    if (result.error) {
-      throw result.error;
+      if (result.error) {
+        throw result.error;
+      }
+
+      return result.status ?? 1;
+    };
+
+    let installStatus;
+    if (skipCachebuster) {
+      installStatus = install();
+    } else {
+      console.log(
+        `Using temporary plugin version: ${previousVersion} -> ${deploymentVersion}`,
+      );
+      try {
+        installStatus = withTemporaryManifest(manifestPath, manifest, install);
+      } finally {
+        console.log(`Restored source plugin version: ${previousVersion}`);
+      }
     }
 
-    if (result.status !== 0) {
-      process.exit(result.status ?? 1);
+    if (installStatus !== 0) {
+      process.exit(installStatus);
     }
   }
 }
