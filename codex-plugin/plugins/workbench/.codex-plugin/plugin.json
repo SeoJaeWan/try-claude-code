@@ -1,7 +1,7 @@
 {
   "name": "workbench",
   "version": "0.3.0",
-  "description": "Five independent explicit Workbench skills for evidence-backed analysis, task planning, Sol/high multi-agent execution, sequential connected Wiki curation, and integrated-change validation.",
+  "description": "Five independent explicit Workbench skills for evidence-backed analysis, task planning, Sol/high multi-agent execution, connected Wiki curation, and integrated-change validation.",
   "author": {
     "name": "Local developer"
   },
@@ -10,13 +10,13 @@
   "interface": {
     "displayName": "Workbench",
     "shortDescription": "Independent tools for software change analysis and execution.",
-    "longDescription": "Workbench provides five independently useful, explicitly invoked skills. Analyze a change, create a task plan, coordinate task packets through parallel GPT-5.6 Sol/high workers in isolated Git worktrees, curate every bounded canonical Wiki topic in sequence, or review one exact integrated Git change. No skill requires another Workbench skill.",
+    "longDescription": "Workbench provides five independently useful, explicitly invoked skills. Analyze a change, create a task plan, coordinate task packets through parallel GPT-5.6 Sol/high workers in isolated Git worktrees, curate one canonical Wiki within existing project knowledge, or review one exact integrated Git change. No skill requires another Workbench skill.",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [
       "Explicit-only skills",
       "Figma design evidence",
-      "Sequential connection-aware Wiki curation",
+      "Connection-aware Wiki curation",
       "Producer-neutral inputs",
       "GPT-5.6 Sol/high task workers",
       "DAG-aware parallel execution",
