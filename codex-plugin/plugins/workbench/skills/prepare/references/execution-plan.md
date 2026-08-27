@@ -141,6 +141,35 @@ Record pre-existing failures by stable identity, normalized fingerprint, and cou
 
 `completion_contract.result_sha_required` requires an immutable task commit when the executor determines that the implementation is consumable. The executor may classify that commit as a verified result or a provisional candidate; a provisional candidate does not satisfy acceptance or alter this immutable plan.
 
+## Human-readable walkthrough
+
+For a `READY` result, preserve the complete canonical plan YAML and every digest exactly as produced. After the closing YAML fence, always append `## 작업 단계 설명` for a Korean response or an equivalent heading in the user's language. This walkthrough is presentation only: it is not part of the immutable plan or any plan or packet digest.
+
+Explain the execution flow in wave order:
+
+1. State the overall implementation outcome in one or two sentences.
+2. For each wave, name its task IDs and titles, explain what they accomplish, and state which prior result unlocks the wave.
+3. When tasks share a parallel group, group them under the same numbered stage and explain that they run independently rather than presenting them as sequential work.
+4. Explain the integration task, its declared ordering or strategy, and the final cross-task verification.
+5. End with baseline caveats and the manual delivery boundary, including that worktrees, merge, push, pull request, handoff, or cleanup were not performed when the plan says so.
+
+Keep the walkthrough substantially shorter than the YAML. Do not repeat digests, complete path lists, command lists, or every contract ID unless one is necessary to understand a risk. Derive every statement from the emitted plan; do not introduce new tasks, ordering, guarantees, or authority.
+
+Use this shape, adapting the number of stages to the actual waves:
+
+```markdown
+## 작업 단계 설명
+
+1. **Wave 1 — 기반 준비**
+   - `TASK-001`: 무엇을 준비하고 다음 wave가 왜 이 결과를 기다리는지 설명합니다.
+2. **Wave 2 — 병렬 구현**
+   - `TASK-002`, `TASK-003`: 서로 독립적으로 구현되는 작업을 각각 한 줄로 설명합니다.
+3. **Wave 3 — 통합 및 최종 검증**
+   - `INT-001`: 결과를 어떤 순서와 전략으로 통합하고 무엇을 확인하는지 설명합니다.
+
+기존 baseline 문제와 수동으로 남겨 둔 전달 작업을 짧게 설명합니다.
+```
+
 ## Blocked result
 
 ```yaml

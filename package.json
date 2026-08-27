@@ -4,6 +4,7 @@
   "description": "Codex Workbench plugin development workspace",
   "type": "module",
   "scripts": {
-    "codex-deploy": "node codex-plugin/scripts/deploy-workbench-plugin.mjs"
+    "codex-deploy": "node codex-plugin/scripts/deploy-workbench-plugin.mjs",
+    "test": "node --test codex-plugin/plugins/workbench/__tests__/planning-boundary.test.mjs codex-plugin/scripts/__tests__/temporary-manifest.test.mjs"
   }
 }

@@ -4,11 +4,13 @@
 
 Accept exactly one of:
 
-- `execution_plan`: a complete plan with a dependency DAG and self-contained task packets;
-- `task_packet_set`: one or more complete packets with explicit dependencies;
-- `standalone`: one bounded objective with sufficient repository context, acceptance conditions, ownership, and verification commands.
+- `execution_plan`: a plan with enough repository identity, intent, acceptance, ownership, dependency, and verification material to normalize its tasks;
+- `task_packet_set`: one or more bounded packets whose explicit or inferable dependencies can be normalized;
+- `standalone`: one bounded objective whose missing mechanical execution details can be discovered from the current repository.
 
-Reject summaries, metadata-only references, ambiguous ownership, stale inputs, digest mismatches, moving branch names used in place of commit IDs, or objectives that require a material product decision.
+Compatibility is semantic rather than producer- or field-name-specific. Accept equivalent representations such as plan-level repository identity inherited by tasks and `acceptance_contract` used as observable acceptance conditions. Do not require a source to duplicate plan-level values into every task.
+
+Reject summaries, metadata-only references, ambiguous objectives or ownership, stale immutable identities, supplied digest mismatches, moving branch names used in place of commit IDs after binding, or inputs that require a material product decision. Missing mechanical values such as a unique branch, worktree path, exact repository command, or runtime resource name may be derived only when repository evidence determines them without changing product intent.
 
 For a standalone objective, create a one-task plan before spawning a worker. Do not implement it in the coordinator.
 
@@ -17,11 +19,13 @@ For a standalone objective, create a one-task plan before spawning a worker. Do 
 The coordinator owns scheduling and evidence only.
 
 - Resolve repository identity, Git common dir, invocation root, exact base commit ID, current worktree inventory, and every task dependency.
-- Verify plan and packet digests when provided.
+- Preserve source bytes and verify plan and packet digests when provided. A producer-neutral input without a supplied digest receives an execution binding rather than a fabricated source digest.
 - Treat `base_commit` as the exact Git commit from which a task starts. Do not substitute a moving branch name after binding.
+- Normalize compatible source material into the runtime packet contract below. Record every inherited value, semantic mapping, and mechanically derived value in the execution binding.
+- Allocate unique branches and worktree paths when they are absent and can be derived safely. Allocation does not create or adopt the worktree.
 - Inspect only what is needed to validate scheduling and returned results.
 - Do not create or adopt worktrees, install dependencies, run implementation commands, edit files, stage, or commit.
-- Do not require a particular plan producer. A complete compatible plan is sufficient.
+- Do not require a particular plan producer, source schema, or field vocabulary.
 
 ## Worker runtime
 
@@ -31,14 +35,26 @@ Every implementation or integration task runs in a fresh worker with this fixed 
 fork_turns: none
 model: gpt-5.6-sol
 reasoning_effort: high
-context: complete_task_packet_only
+context: complete_normalized_runtime_packet_only
 ```
 
-The coordinator must pass the worker a complete packet rather than relying on conversation history. If the exact model or effort cannot be requested, return `BLOCKED`; do not inherit or silently fall back.
+The coordinator must pass the worker a complete normalized runtime packet rather than relying on conversation history. If the exact model or effort cannot be requested, return `BLOCKED`; do not inherit or silently fall back.
 
 The host's available agent capacity bounds concurrency. Queue excess runnable tasks instead of changing their execution profile.
 
-## Minimum self-contained task packet
+## Normalization and execution binding
+
+Keep the source plan or packet immutable. Normalize only after validating its available identity and digest evidence.
+
+- Inherit `repository_id`, `git_common_dir`, exact base identity, environment, and delivery policy from plan-level fields when task-local copies are absent.
+- Map requirement statements to `requirements`, acceptance statements such as `acceptance_conditions` or `acceptance_contract` to `acceptance_conditions`, invariants to `invariants`, and governing decisions to `decisions`. Preserve source IDs for traceability when present. A proposed or unresolved decision is not governing unless the source or user has accepted it; when it materially affects implementation, return `NEEDS_INPUT`.
+- Preserve explicit dependencies, selectors, ownership, forbidden paths, runtime isolation, checks, and commit authority. Do not weaken a prohibition during normalization.
+- Derive a branch, assigned worktree, runtime resource label, or repository verification command only when the derivation is deterministic and does not invent product behavior.
+- Return `NEEDS_INPUT` when objective, observable acceptance, ownership, a material dependency, or a product decision remains ambiguous. Return `BLOCKED` when exact repository or base identity cannot be established safely.
+
+Serialize each normalized runtime packet as immutable YAML. Set `execution_binding_digest` to an empty string while hashing its normalized LF UTF-8 bytes with SHA-256, then insert the resulting digest. `task_packet_digest` preserves a supplied source packet digest and is `null` when none exists. The binding digest identifies the exact packet given to the worker; it does not replace or rewrite a source digest.
+
+## Minimum normalized runtime packet
 
 ```yaml
 task_id:
@@ -54,7 +70,11 @@ base_selector:
 depends_on: []
 assigned_worktree:
 branch:
+requirements: []
 acceptance_conditions: []
+invariants: []
+decisions: []
+source_contract_ids: []
 owned_paths: []
 forbidden_paths: []
 shared_surfaces: []
@@ -64,7 +84,8 @@ focused_checks: []
 broader_checks: []
 verification_commands: []
 commit_policy: task_local_required | no_commit_needed
-task_packet_digest:
+task_packet_digest: null
+execution_binding_digest:
 ```
 
 An integration packet also declares required task IDs, integration order, strategy, cross-task checks, and the expected `integrated_head_sha` output. The coordinator binds each required task ID to an exact verified result commit or an exact provisional candidate at runtime.
@@ -96,7 +117,7 @@ Preserve the approved plan as the immutable statement of intent. Treat implement
 
 Each worker performs exactly one packet:
 
-1. Re-resolve the Git common dir and exact base commit ID from the packet.
+1. Re-resolve the Git common dir and exact base commit ID from the normalized runtime packet, and verify its execution binding digest plus any supplied source packet digest.
 2. Validate the assigned path as a unique direct child of a dedicated parent outside the repository, Git metadata, home configuration, and system paths, with no `..` or symlink component.
 3. Require the exact branch to be valid, absent, and not checked out elsewhere. Create the equivalent of `git worktree add -b <branch> <worktree> <base-commit>` when the path is absent.
 4. Adopt an existing path only when its path, common dir, branch, task identity, HEAD, and clean status match the packet. A dirty same-task resume requires explicit user approval.
@@ -124,7 +145,8 @@ For integration packets, consume the coordinator-bound exact verified results an
 - kind:
 - worker_model: gpt-5.6-sol
 - worker_reasoning_effort: high
-- task_packet_digest:
+- task_packet_digest: # supplied source digest or null
+- execution_binding_digest:
 - worktree:
 - worktree_created: true | false
 - branch:

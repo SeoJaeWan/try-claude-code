@@ -20,6 +20,6 @@ Read [references/execution-plan.md](references/execution-plan.md) before produci
 7. Parallelize only tasks with the same immutable base, no dependency path, disjoint write surfaces, and isolated runtime resources. Add integration tasks after parallel waves and a final integration-seal task.
 8. Discover and run only safe commands needed to establish the baseline. Record stable evidence for pre-existing failures and stop if a command changes tracked files unexpectedly.
 9. Validate IDs, acyclicity, dependencies, branches, paths, selectors, worktree count, and packet digests.
-10. Return the complete plan and stop.
+10. Return the complete immutable plan, then append a concise human-readable walkthrough of the planned waves, task purposes, dependencies, parallel work, integration, and delivery boundary. Do not make the user ask separately for an explanation. Then stop.
 
 Do NOT implement tasks, create or delete worktrees, integrate commits, persist the plan, modify repository files, push, publish, or perform work outside this skill's planning scope.

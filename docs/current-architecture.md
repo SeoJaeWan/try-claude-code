@@ -43,9 +43,13 @@ Prepare는 요청, 이슈, 요구사항 문서, 설계 노트, 분석 보고서 
 
 각 task packet은 대화 이력이 없는 worker가 단독 실행할 수 있을 만큼 self-contained해야 합니다. Worker 모델과 reasoning effort는 계획에 넣지 않고 Execute Task의 runtime policy가 소유합니다.
 
+Prepare는 canonical plan YAML과 digest를 그대로 반환한 뒤, digest 밖에 wave 순서, task 목적, 병렬 구간, 통합과 전달 경계를 짧은 사용자용 작업 단계로 설명합니다. 이 설명은 실행 계약을 바꾸지 않으며 계획에 없는 작업이나 권한을 추가하지 않습니다.
+
 ## Execute Task
 
-Execute Task는 읽기 전용 coordinator입니다. Execution plan, self-contained packet 묶음 또는 하나의 bounded objective를 받아 dependency DAG에서 runnable task를 계산합니다. Standalone objective는 내부적으로 task 하나짜리 plan으로 정규화합니다.
+Execute Task는 읽기 전용 coordinator입니다. Execution plan, packet 묶음 또는 하나의 bounded objective를 producer나 정확한 source field 이름에 결합하지 않고 받아 strict normalized runtime packet으로 변환한 뒤 dependency DAG에서 runnable task를 계산합니다. Plan-level identity는 task에 상속할 수 있고, 의미가 같은 acceptance·requirement·invariant·decision 표현은 내부 표준 필드로 매핑합니다. Standalone objective도 같은 경계를 통해 task 하나짜리 plan으로 정규화합니다.
+
+원본 plan과 packet은 수정하지 않습니다. 공급된 digest는 원본 그대로 검증하고, worker에게 전달되는 정규화 결과에는 별도의 `execution_binding_digest`를 부여합니다. Objective, observable acceptance, ownership 또는 material dependency가 모호하면 추측하지 않고 입력을 요청하며, branch·worktree path 같은 기계적 값만 저장소 근거로 안전하게 파생합니다.
 
 모든 implementation과 integration task는 다음 profile의 별도 worker에 배정합니다.
 
@@ -53,7 +57,7 @@ Execute Task는 읽기 전용 coordinator입니다. Execution plan, self-contain
 fork_turns: none
 model: gpt-5.6-sol
 reasoning_effort: high
-context: complete_task_packet_only
+context: complete_normalized_runtime_packet_only
 ```
 
 Write surface와 runtime resource가 격리된 runnable task는 host capacity 안에서 병렬 실행합니다. 각 worker는 자기 packet 하나와 자기 standard Git worktree만 소유합니다. 검증을 통과하면 verified result commit을 반환하고, 구현은 소비 가능하지만 검증 실패가 남으면 provisional candidate commit과 명시적인 continuation 판단을 반환합니다.
