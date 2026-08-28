@@ -1,7 +1,7 @@
 interface:
   display_name: "Memory Update"
-  short_description: "Curate all scoped project Wiki topics in sequence"
-  default_prompt: "Use $workbench:memory-update to integrate every bounded knowledge topic in this request into the existing project Wiki."
+  short_description: "Curate canonical Wiki topics and relationships"
+  default_prompt: "Use $workbench:memory-update to organize these bounded project-knowledge topics into focused canonical Wikis and navigable relationships."
 
 policy:
   allow_implicit_invocation: false
