@@ -1,6 +1,6 @@
 # Current Architecture — Codex Workbench
 
-> 기준일: 2026-08-25
+> 기준일: 2026-09-16
 
 현재 Workbench는 `codex-plugin/plugins/workbench/`에 있는 다섯 개의 독립적인 explicit-only 스킬입니다. 스킬 집합은 고정 파이프라인을 정의하지 않으며, 각 스킬은 자기 입력·동작·산출물·안전 경계만 소유합니다.
 
@@ -20,7 +20,7 @@
 | `shape` | 소프트웨어 변경 요청과 프로젝트 근거 | 독립적인 변경 분석 보고서 |
 | `prepare` | 충분한 변경 정의 | 실행 DAG와 self-contained task/worktree packet |
 | `execute-task` | execution plan, packet 묶음 또는 bounded objective | Sol/high worker들의 task 결과와 통합 실행 결과 |
-| `memory-update` | 하나 이상의 bounded project-knowledge 주제 | 모든 안전한 주제의 순차 Wiki 큐레이션 결과와 정확한 reference |
+| `memory-update` | 하나 이상의 bounded project-knowledge 주제 | 로컬 `.codocs` 큐레이션 결과와 문서 경로 |
 | `finalize` | 정확한 Git `base..head` | 위험 기반 검증·독립 리뷰·최종 보고 |
 
 모든 `agents/openai.yaml`은 `allow_implicit_invocation: false`입니다. 각 스킬은 자신의 `$workbench:<skill>` selector로만 명시 호출됩니다.
@@ -30,16 +30,16 @@
 - 선행 스킬의 실행 여부를 entry gate로 사용하지 않습니다.
 - 생산 스킬 이름이 아니라 입력 내용의 완전성과 식별자·digest·Git 상태를 검증합니다.
 - Execute Task는 Prepare가 아닌 다른 생산자가 만든 호환 가능한 plan도 실행합니다.
-- Wiki 큐레이션은 요청 범위의 모든 bounded 주제를 처리하지만 승인, 단계 전환 또는 범위 밖 실행 권한은 부여하지 않습니다.
+- 로컬 지식 큐레이션은 요청 범위의 모든 bounded 주제를 처리하지만 승인, 단계 전환 또는 범위 밖 실행 권한은 부여하지 않습니다.
 - 사용자가 여러 스킬을 조합할 수 있지만 그 조합은 다른 스킬의 강제 선행 조건이 아닙니다.
 
 ## Shape
 
-Shape는 현재 checkout을 읽기 전용으로 조사합니다. Git content-sensitive snapshot, Local Work Memory, 연결된 Jira/Figma 근거, 저장소 코드·CI와 공식 자료를 사용해 요구사항·불변조건·수락 기준·결정을 작성합니다. 구현, 저장, worktree 생성, 외부 시스템 mutation은 하지 않습니다.
+Shape는 현재 checkout을 읽기 전용으로 조사합니다. Git content-sensitive snapshot, 입력으로 제공된 Wiki Artifact, 프로젝트 지식 기준인 로컬 `.codocs`, 연결된 Figma 근거, 저장소 코드·CI와 공식 자료를 사용해 요구사항·불변조건·수락 기준·결정을 작성합니다. Jira 조회, 구현, 저장, worktree 생성, 외부 시스템 mutation은 하지 않습니다.
 
 ## Prepare
 
-Prepare는 요청, 이슈, 요구사항 문서, 설계 노트, 분석 보고서 등 충분한 변경 정의를 입력으로 받습니다. Clean base를 검증하고 task DAG, collision surface, runtime resource, 고유 worktree/branch, baseline과 integration packet을 계획하지만 worktree를 만들거나 파일을 수정하지 않습니다.
+Prepare는 요청, 이슈, 요구사항 문서, 설계 노트, 분석 보고서 등 충분한 변경 정의를 입력으로 받습니다. Wiki Artifact는 작업 입력으로 읽고 관련 `.codocs`의 개념·정책·계약을 계획 기준으로 사용합니다. Jira는 조회하지 않습니다. Clean base를 검증하고 task DAG, collision surface, runtime resource, 고유 worktree/branch, baseline과 integration packet을 계획하지만 worktree를 만들거나 파일을 수정하지 않습니다.
 
 각 task packet은 대화 이력이 없는 worker가 단독 실행할 수 있을 만큼 self-contained해야 합니다. Worker 모델과 reasoning effort는 계획에 넣지 않고 Execute Task의 runtime policy가 소유합니다.
 
@@ -48,6 +48,8 @@ Prepare는 canonical plan YAML과 digest를 그대로 반환한 뒤, digest 밖�
 ## Execute Task
 
 Execute Task는 읽기 전용 coordinator입니다. Execution plan, packet 묶음 또는 하나의 bounded objective를 producer나 정확한 source field 이름에 결합하지 않고 받아 strict normalized runtime packet으로 변환한 뒤 dependency DAG에서 runnable task를 계산합니다. Plan-level identity는 task에 상속할 수 있고, 의미가 같은 acceptance·requirement·invariant·decision 표현은 내부 표준 필드로 매핑합니다. Standalone objective도 같은 경계를 통해 task 하나짜리 plan으로 정규화합니다.
+
+Coordinator는 제공된 Wiki Artifact를 작업 입력으로 읽고 `.codocs`의 관련 경로·내용 digest·제약을 runtime packet에 전달합니다. Worker는 자신의 정확한 task base에 있는 `.codocs`를 다시 읽고 구현하며, 계획과 충돌하면 임의로 덮어쓰지 않고 finding으로 처리합니다. Wiki 지식과 Jira는 조회하지 않습니다.
 
 원본 plan과 packet은 수정하지 않습니다. 공급된 digest는 원본 그대로 검증하고, worker에게 전달되는 정규화 결과에는 별도의 `execution_binding_digest`를 부여합니다. Objective, observable acceptance, ownership 또는 material dependency가 모호하면 추측하지 않고 입력을 요청하며, branch·worktree path 같은 기계적 값만 저장소 근거로 안전하게 파생합니다.
 
@@ -68,9 +70,11 @@ Coordinator는 worktree를 만들거나 파일을 수정·stage·commit하지 �
 
 ## Memory Update
 
-Memory Update는 요청에 포함된 모든 bounded project-knowledge 주제를 기존 Wiki 구조와 대조해 dependency-aware queue로 정규화하고 순차 처리합니다. 같은 canonical 경계의 주제는 하나로 합치며, 각 queue unit마다 기존 Wiki 갱신·새 Wiki 생성·변경 없음·쓰기 전 차단 중 하나를 결정합니다. 확정적 실패나 주제 단위 차단 뒤에도 안전한 독립 주제는 계속 처리하고, 공유 identity·concurrency·current-state 불확실성이 후속 결정을 위험하게 만들 때만 관련 remainder를 중단합니다.
+Memory Update는 로컬 `.codocs`만 조회·수정합니다. 요청 범위의 모든 지식 주제를 기존 원문과 대조해 소유 문서를 찾고, 같은 문서에 속한 변경은 합쳐 순차 처리합니다. 프로젝트의 작성·분리·배치·참조 지침을 적용하고 개념·정책·조건·근거를 남기며, 개발 진행 기록이나 작업 산출물을 옮기지 않습니다.
 
-Local Work Memory MCP는 discovery, identity, revision, reference, persistence, concurrency와 relationship 표현을 소유합니다. Memory Update는 각 write 뒤 결과를 검증하고 후속 판단에 필요한 상태를 갱신하며, 첫 Wiki가 아니라 전체 queue의 주제별 결과를 반환합니다.
+각 문서를 저장한 뒤 검증하고 YAML 형식·ID와 이름 충돌·참조 연결·목차 도달성을 확인합니다. 이미 같은 내용은 변경하지 않습니다. 확정적 실패 이후에도 안전한 독립 주제를 처리하고, 불확실성이 있는 의존 작업만 중단합니다. 실제 worktree·문서 경로, 주제별 결과, 검증 한계와 남은 작업을 보고합니다.
+
+Wiki 조회·갱신과 양쪽 동기화는 이 스킬 범위에 없습니다. 과거 프로젝트 지침에 양쪽 갱신 절차가 있더라도 로컬 전용 범위를 확장하지 않습니다. `.codocs`가 없다는 이유만으로 새 지식 저장소를 만들지는 않습니다.
 
 ## Finalize
 

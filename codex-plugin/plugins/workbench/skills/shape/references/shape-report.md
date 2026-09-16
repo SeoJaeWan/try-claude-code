@@ -28,7 +28,7 @@ Label material statements as one of:
 
 - `Fact / repository-fact`
 - `Fact / memory-fact`
-- `Fact / jira-fact`
+- `Fact / codocs-fact`
 - `Fact / figma-fact`
 - `Fact / external-fact`
 - `Inference`
@@ -75,8 +75,9 @@ For each external source record its canonical URL, library version, source ref, 
 - 제약, 가정, 미해결 질문
 
 ## 프로젝트 및 외부 근거
-- Local Work Memory
-- Jira와 Figma
+- 입력으로 제공된 Wiki Artifact와 출처
+- 로컬 .codocs 원문 경로와 읽은 내용의 digest
+- 연결된 Figma
 - 저장소 탐색
 - 공식 자료와 버전 정합성
 - 조회 실패 및 출처 충돌
@@ -100,6 +101,8 @@ For each external source record its canonical URL, library version, source ref, 
 
 ## 조사 및 출처
 ```
+
+`work_item_key` may be null; do not discover one through Jira. Record supplied Artifact references separately from local project knowledge. For `.codocs`, record the selected checkout, original paths and content digests. If `.codocs` is absent, report the gap and use explicit project instructions and repository evidence without creating documents or falling back to Wiki/Jira lookup. Missing material policy or unresolved decision-critical conflicts prevent `READY`; unavailable Wiki architecture is not a blocker.
 
 ## Visibility and status
 

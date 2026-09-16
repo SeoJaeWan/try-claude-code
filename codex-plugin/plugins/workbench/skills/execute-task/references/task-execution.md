@@ -14,6 +14,14 @@ Reject summaries, metadata-only references, ambiguous objectives or ownership, s
 
 For a standalone objective, create a one-task plan before spawning a worker. Do not implement it in the coordinator.
 
+## Project knowledge
+
+Use local `.codocs` concepts, architecture, policies, conventions, and contracts as the implementation basis. Resolve supplied Wiki Artifact references as read-only task inputs under the provider’s current contract; do not query canonical Wikis or Jira for project rules. During normalization, carry relevant document paths, content digests, and constraints in `implementation_notes` so workers do not depend on conversation history.
+
+Each worker rereads relevant `.codocs` from its own exact task base before implementation. If these differ materially from the packet’s evidence or conflict with approved intent, report the conflict and resolve only what is within the packet’s authority; do not silently change the immutable plan. If `.codocs` is absent, report the gap and use explicit repository instructions and code evidence, asking only for missing material policy. Do not create a knowledge store or fetch Wiki rules as a fallback.
+
+When `.codocs` changes are required by project policy, they must fit the packet’s owned or declared shared paths. Include their navigation/reference surfaces in collision checks; report missing ownership instead of widening the write surface. Do not write Wiki knowledge or persist work artifacts as implementation documentation.
+
 ## Coordinator boundary
 
 The coordinator owns scheduling and evidence only.
@@ -121,7 +129,7 @@ Each worker performs exactly one packet:
 2. Validate the assigned path as a unique direct child of a dedicated parent outside the repository, Git metadata, home configuration, and system paths, with no `..` or symlink component.
 3. Require the exact branch to be valid, absent, and not checked out elsewhere. Create the equivalent of `git worktree add -b <branch> <worktree> <base-commit>` when the path is absent.
 4. Adopt an existing path only when its path, common dir, branch, task identity, HEAD, and clean status match the packet. A dirty same-task resume requires explicit user approval.
-5. Run all task commands and mutations only inside the assigned worktree.
+5. Run all task commands and mutations only inside the assigned worktree. Read its relevant `.codocs` and reconcile the packet evidence according to the project-knowledge rules above before implementing.
 6. Implement the smallest change satisfying the packet. When implementation exposes a conflict or failed assumption, attempt the smallest repair inside the same objective and authorized surfaces. Compare staged and unstaged changes with owned and declared shared/generated surfaces; stop mutation on unexplained files without deleting or absorbing them.
 7. Run focused checks before broader checks. After a failure, continue every later check that remains safe, executable, and diagnostically meaningful. Record commands, duration, result, and concise evidence.
 8. Inspect the final diff and perform a correctness, security, failure-handling, scope, and verification self-review. Classify every finding as `resolved_in_task`, `carried_to_integration`, `action_required`, or `hard_blocker`.

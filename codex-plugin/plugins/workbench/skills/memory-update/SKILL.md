@@ -1,27 +1,23 @@
 ---
 name: memory-update
-description: Curate bounded Local Work Memory topics into focused canonical Wikis, navigable hubs, and evidence-backed relationships while processing safe writes sequentially. Invoke only as `$workbench:memory-update`; use when the user explicitly asks to register, revise, split, organize, connect, or deduplicate project knowledge. Do not use for simple completed-artifact persistence.
+description: Curate bounded project knowledge in local `.codocs` YAML documents using the project's authoring rules and verified sequential edits. Invoke only as `$workbench:memory-update`; use for "메모리를 갱신해", "프로젝트 지식을 정리해", or "문서의 중복과 참조를 정리해" requests. Do not use for completed-artifact persistence or Wiki updates.
 ---
 
 # Memory Update
 
-Integrate every bounded Wiki topic in the request into a project knowledge graph with one canonical owner per concept or contract. Treat Wikis as curated memory, not an artifact archive or permission for work outside this curation request.
+Update only the target project's local `.codocs` knowledge. Keep one owner per topic and preserve useful navigation. Do NOT read or write Wiki knowledge, synchronize stores, or require a memory provider.
 
-Before writing, read both:
-
-- [references/wiki-ontology.md](references/wiki-ontology.md) for document roles, canonical ownership, hub behavior, splitting, and navigation relationships.
-- [references/memory-change-set.md](references/memory-change-set.md) for queueing, sequential persistence, failure handling, and result reporting.
+Read [references/codocs-local.md](references/codocs-local.md) for project discovery, authoring, references, and validation, and [references/memory-change-set.md](references/memory-change-set.md) for sequential curation and reporting.
 
 ## Procedure
 
-1. Require an explicit user-selected knowledge body or bounded Wiki change request and enough provenance to identify its project scope.
-2. Use the Local Work Memory MCP according to the guidance and contract it exposes at invocation time. Treat the MCP as authoritative for discovery, retrieval, identity, references, revisions, persistence, concurrency, and result interpretation. Do not name, assume, or invent MCP-owned tools, fields, values, or reference formats.
-3. Inspect the catalog before writing. Partition the request into concepts, contracts, conventions, decisions, evidence, guides, and hubs; locate each unit's existing canonical owner before honoring a requested destination page.
-4. Coalesce units with the same owner and order the queue so an existing or newly verified anchor precedes dependent navigation. A broad-page request may update a focused owner instead; update the hub only when its overview or navigation actually changes.
-5. Process one unit at a time. Retrieve only plausible duplicate, conflict, owner, and relationship candidates, then update the owner, create one justified focused Wiki, leave it unchanged, or block only that unit.
-6. Preserve factual meaning while removing duplicated ownership. Keep hubs navigational, keep current contracts separate from decision history and revision-pinned evidence, and use only verified relationship targets.
-7. Persist and verify one selected Wiki per write. When splitting existing content, verify the destination owner before narrowing the source. Do not rewrite related pages merely for reciprocal links.
-8. Continue after determinate unit outcomes when later units remain safe. Stop only the dependent remainder when identity, concurrency, safety, or write-outcome uncertainty prevents reliable continuation.
-9. Re-read the affected catalog and bodies. Check stale names after renames, broken navigation targets, duplicate canonical claims, accidental orphaning, and role leakage before reporting every unit's terminal outcome.
+1. Resolve the user-selected project and bounded knowledge request. Inspect repository instructions, existing changes, and `.codocs` authoring and placement rules. This skill's local-only scope takes precedence over older paired Wiki/local update procedures; do not rewrite those procedures unless requested.
+2. Inventory existing documents and read relevant owners, duplicates, conflicts, and reference targets. Identify an existing owner before creating a new document.
+3. Group units by owner and order dependent updates. Use the project's explanation-separation guidance; do not split a coherent subject by length or impose Wiki document roles.
+4. Process each unit sequentially: reread current content, update its owner or create one justified document, leave equivalent content unchanged, or block only that unit. Preserve user changes and factual meaning.
+5. Verify every saved document before dependent edits. For splits, establish the destination before narrowing the source. Repair necessary in-scope navigation after renames.
+6. Check YAML/schema, ID and name collisions, references, and navigation reachability with available project tooling. Distinguish semantic validation from generic YAML parsing and report any limitations.
+7. Continue independent safe units after a determinate failure. Stop affected dependents when current-state or write-outcome uncertainty prevents a reliable decision.
+8. Return every unit's outcome with actual worktree paths, validation evidence, and remaining conflicts or unprocessed work.
 
-Treat every queued unit derived from the bounded request as authorized Wiki curation, not as unapproved additional work. Do NOT persist completed work artifacts through this skill, search unrelated external sources, modify project files, mutate a Git worktree, update provider-owned records, continue another workflow, or perform work outside this Wiki curation request.
+Treat all bounded units as authorized curation. Modify only their `.codocs` owners and necessary index/reference documents. Do NOT modify application code, update Wiki/provider records, archive task progress, run unrelated workflows, or commit, push, merge, or deploy without applicable authorization. Follow repository worktree rules for local edits.

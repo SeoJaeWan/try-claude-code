@@ -34,12 +34,12 @@
 - Keep skill entrypoints concise and move detailed procedures, schemas, and tool guidance to directly linked `references/` files.
 - Keep the active Workbench limited to `shape`, `memory-update`, `prepare`, `execute-task`, and `finalize`.
 - Require `$workbench:<skill>` explicit invocation and `allow_implicit_invocation: false` for every active Workbench skill. Do NOT auto-chain one Workbench skill into another.
-- Require Shape to read relevant Local Work Memory before decision-making. When an external library fact affects a decision, use Context7 when available and verify it with official source links; fall back to direct official sources when Context7 is unavailable or insufficient.
-- When a request links Jira or Figma, require Shape to retrieve only the referenced project evidence and remain read-only toward both systems. Do NOT create issues/comments/transitions or mutate Figma files/nodes from Shape.
+- Use local `.codocs` as the project knowledge and implementation-rule basis for Shape, Prepare, and Execute Task. When an external library fact affects a decision, use Context7 when available and verify it with official source links; fall back to direct official sources when Context7 is unavailable or insufficient.
+- Shape, Prepare, and Execute Task may read user-supplied Wiki Artifacts as task inputs, but do not query canonical Wikis or Jira for project rules. When a request links Figma, Shape retrieves relevant evidence read-only. Do NOT create issues/comments/transitions or mutate Figma files/nodes from Shape.
 - Keep every Workbench skill self-contained. Do NOT name, require, recommend, or advertise another Workbench skill inside a skill body or reference contract.
 - Accept producer-neutral inputs: Prepare accepts any sufficient change definition, Execute Task accepts a bounded objective or complete packet, Memory Update accepts one or more bounded project-knowledge topics, and Finalize accepts any exact immutable Git change.
 - Let Shape and Prepare inspect the current checkout read-only. Require Execute Task to materialize only its validated task-scoped path and branch.
-- Use the Local Work Memory MCP for current project documents and user-supplied Artifact references; use Memory Update only when the user explicitly requests Wiki curation, then process every bounded in-scope topic sequentially rather than imposing a one-Wiki invocation limit.
+- Use Local Work Memory only to resolve supplied Artifact references in the applicable workflow. Memory Update curates only local `.codocs` documents and necessary navigation, following project authoring rules and processing every bounded topic sequentially. Do NOT read or update Wiki knowledge or synchronize stores through Memory Update, even when older project procedures describe paired updates.
 
 ## 작업 규칙
 

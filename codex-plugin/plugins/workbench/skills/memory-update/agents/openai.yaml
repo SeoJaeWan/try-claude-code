@@ -1,7 +1,7 @@
 interface:
   display_name: "Memory Update"
-  short_description: "Curate canonical Wiki topics and relationships"
-  default_prompt: "Use $workbench:memory-update to organize these bounded project-knowledge topics into focused canonical Wikis and navigable relationships."
+  short_description: "Curate local .codocs knowledge and references"
+  default_prompt: "Use $workbench:memory-update to update these bounded project-knowledge topics only in local .codocs documents, following their authoring rules and verifying references."
 
 policy:
   allow_implicit_invocation: false

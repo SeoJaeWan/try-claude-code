@@ -13,6 +13,8 @@ source_input:
 
 For inline input, keep `artifact_ref: null`. For referenced input, preserve the supplied MCP reference exactly and use the Local Work Memory MCP to resolve its complete current body. Follow the MCP guidance and contract exposed at invocation time. Reject summaries, metadata-only references, identity mismatches, or inputs too incomplete to determine task scope and acceptance.
 
+An issue key or URL is optional provenance, not an instruction to retrieve Jira. `work_item_key` may be null. Use relevant `.codocs` documents as the architecture and implementation planning basis, and supplied Wiki Artifacts as task inputs only. Record local document paths/content digests and their constraints in task inputs. If `.codocs` is absent, report the gap and use explicit project instructions and repository evidence; do not create documents or fall back to Wiki/Jira lookup. Missing material policy or unresolved decision-critical conflicts block readiness; Wiki architecture access is not required. When project policy requires implementation knowledge changes in `.codocs`, declare those documentation paths and their shared navigation surfaces in task ownership; planning itself remains read-only.
+
 Every emitted task packet must be self-contained for a worker that receives no conversation history. Do not put model or reasoning-effort choices in the plan; the executor owns its worker runtime policy.
 
 ## Parallel safety
