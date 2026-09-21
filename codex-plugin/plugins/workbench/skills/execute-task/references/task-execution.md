@@ -43,8 +43,8 @@ Every implementation or integration task runs in a fresh worker with this fixed 
 
 ```yaml
 fork_turns: none
-model: gpt-5.6-luna
-reasoning_effort: xhigh
+model: gpt-5.6-sol
+reasoning_effort: high
 context: complete_normalized_runtime_packet_only
 ```
 
@@ -153,8 +153,8 @@ For integration packets, consume the coordinator-bound exact verified results an
 - run_id:
 - task_id:
 - kind:
-- worker_model: gpt-5.6-luna
-- worker_reasoning_effort: xhigh
+- worker_model: gpt-5.6-sol
+- worker_reasoning_effort: high
 - task_packet_digest: # supplied source digest or null
 - execution_binding_digest:
 - worktree:
@@ -204,8 +204,8 @@ For integration packets, consume the coordinator-bound exact verified results an
 - base_commit:
 - coordinator_model: # actual model or unknown
 - coordinator_reasoning_effort: # actual effort or unknown
-- worker_model: gpt-5.6-luna
-- worker_reasoning_effort: xhigh
+- worker_model: gpt-5.6-sol
+- worker_reasoning_effort: high
 - task_count:
 - attempted_tasks: []
 - complete_tasks: []

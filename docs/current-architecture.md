@@ -19,7 +19,7 @@
 |---|---|---|
 | `shape` | 소프트웨어 변경 요청과 프로젝트 근거 | 독립적인 변경 분석 보고서 |
 | `prepare` | 충분한 변경 정의 | 실행 DAG와 self-contained task/worktree packet |
-| `execute-task` | execution plan, packet 묶음 또는 bounded objective | Luna/xhigh worker들의 task 결과와 통합 실행 결과 |
+| `execute-task` | execution plan, packet 묶음 또는 bounded objective | Sol/high worker들의 task 결과와 통합 실행 결과 |
 | `memory-update` | 하나 이상의 bounded project-knowledge 주제 | 로컬 `.codocs` 큐레이션 결과와 문서 경로 |
 | `finalize` | 정확한 Git `base..head` | 위험 기반 검증·독립 리뷰·최종 보고 |
 
@@ -59,8 +59,8 @@ Coordinator는 제공된 Wiki Artifact를 작업 입력으로 읽고 `.codocs`�
 
 ```yaml
 fork_turns: none
-model: gpt-5.6-luna
-reasoning_effort: xhigh
+model: gpt-5.6-sol
+reasoning_effort: high
 context: complete_normalized_runtime_packet_only
 ```
 
