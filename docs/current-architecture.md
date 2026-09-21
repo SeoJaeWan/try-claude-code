@@ -1,6 +1,6 @@
 # Current Architecture — Codex Workbench
 
-> 기준일: 2026-09-16
+> 기준일: 2026-09-21
 
 현재 Workbench는 `codex-plugin/plugins/workbench/`에 있는 다섯 개의 독립적인 explicit-only 스킬입니다. 스킬 집합은 고정 파이프라인을 정의하지 않으며, 각 스킬은 자기 입력·동작·산출물·안전 경계만 소유합니다.
 
@@ -19,11 +19,13 @@
 |---|---|---|
 | `shape` | 소프트웨어 변경 요청과 프로젝트 근거 | 독립적인 변경 분석 보고서 |
 | `prepare` | 충분한 변경 정의 | 실행 DAG와 self-contained task/worktree packet |
-| `execute-task` | execution plan, packet 묶음 또는 bounded objective | Sol/high worker들의 task 결과와 통합 실행 결과 |
+| `execute-task` | execution plan, packet 묶음 또는 bounded objective | Luna/xhigh worker들의 task 결과와 통합 실행 결과 |
 | `memory-update` | 하나 이상의 bounded project-knowledge 주제 | 로컬 `.codocs` 큐레이션 결과와 문서 경로 |
 | `finalize` | 정확한 Git `base..head` | 위험 기반 검증·독립 리뷰·최종 보고 |
 
 모든 `agents/openai.yaml`은 `allow_implicit_invocation: false`입니다. 각 스킬은 자신의 `$workbench:<skill>` selector로만 명시 호출됩니다.
+
+Shape와 Prepare의 권장 모델은 GPT-6 Astra 또는 GPT-5.6 Sol이고, Execute Task의 권장 coordinator는 GPT-5.6 Sol/high입니다. 호출하는 작업에서 모델을 선택하며 스킬 자체는 현재 모델을 전환하지 않습니다. Worker 모델과 effort는 아래의 고정 runtime profile로 별도 지정합니다.
 
 ## 결합 제거 원칙
 
@@ -57,8 +59,8 @@ Coordinator는 제공된 Wiki Artifact를 작업 입력으로 읽고 `.codocs`�
 
 ```yaml
 fork_turns: none
-model: gpt-5.6-sol
-reasoning_effort: high
+model: gpt-5.6-luna
+reasoning_effort: xhigh
 context: complete_normalized_runtime_packet_only
 ```
 
@@ -67,6 +69,8 @@ Write surface와 runtime resource가 격리된 runnable task는 host capacity �
 구현 중 충돌, 실패한 검사 또는 계획 당시의 부정확한 가정은 자동 중단 사유가 아닙니다. Coordinator는 정확한 candidate commit과 `continuation: ALLOWED`가 있는 downstream 및 integration packet을 계속 실행하고, 물질적 선행 산출물이 없을 때만 영향을 받는 descendants를 실행하지 않습니다. Integration은 권한 범위 안에서 기계적으로 결정 가능한 호환성 문제를 복구하고 의미 있는 검사를 끝까지 수행합니다. 최종 결과는 계획 대비 발견, 복구 시도, verified/provisional commit, 미해결 조치와 실행하지 못한 task를 구분합니다.
 
 Coordinator는 worktree를 만들거나 파일을 수정·stage·commit하지 않습니다. Worker profile을 사용할 수 없으면 다른 모델이나 effort로 fallback하지 않고 `BLOCKED`를 반환합니다.
+
+Execution Result에는 host가 제공하는 실제 `coordinator_model`과 `coordinator_reasoning_effort`를 기록합니다. 확인할 수 없으면 `unknown`을 쓰며 권장 profile을 실제 실행값으로 간주하지 않습니다.
 
 ## Memory Update
 

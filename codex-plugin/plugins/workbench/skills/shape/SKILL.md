@@ -7,6 +7,8 @@ description: Investigate a software change through read-only repository explorat
 
 Produce a standalone evidence-backed change analysis without implementing or persisting it.
 
+Use GPT-6 Astra or GPT-5.6 Sol as the recommended analysis model. Select the model in the calling task; this skill does not switch the current task's model.
+
 Read [references/shape-report.md](references/shape-report.md) before starting. Follow its snapshot, evidence, identity, and report requirements.
 
 ## Procedure

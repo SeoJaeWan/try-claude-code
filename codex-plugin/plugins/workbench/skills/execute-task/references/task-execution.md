@@ -26,6 +26,8 @@ When `.codocs` changes are required by project policy, they must fit the packetâ
 
 The coordinator owns scheduling and evidence only.
 
+Recommended coordinator profile: `gpt-5.6-sol` with `high` reasoning effort. The caller selects this profile in the task that invokes the skill; loading the skill does not change the active model or create a replacement coordinator. Record the actual coordinator model and effort when exposed by the host, otherwise `unknown`; do not report the recommendation as an observed runtime setting.
+
 - Resolve repository identity, Git common dir, invocation root, exact base commit ID, current worktree inventory, and every task dependency.
 - Preserve source bytes and verify plan and packet digests when provided. A producer-neutral input without a supplied digest receives an execution binding rather than a fabricated source digest.
 - Treat `base_commit` as the exact Git commit from which a task starts. Do not substitute a moving branch name after binding.
@@ -41,8 +43,8 @@ Every implementation or integration task runs in a fresh worker with this fixed 
 
 ```yaml
 fork_turns: none
-model: gpt-5.6-sol
-reasoning_effort: high
+model: gpt-5.6-luna
+reasoning_effort: xhigh
 context: complete_normalized_runtime_packet_only
 ```
 
@@ -151,8 +153,8 @@ For integration packets, consume the coordinator-bound exact verified results an
 - run_id:
 - task_id:
 - kind:
-- worker_model: gpt-5.6-sol
-- worker_reasoning_effort: high
+- worker_model: gpt-5.6-luna
+- worker_reasoning_effort: xhigh
 - task_packet_digest: # supplied source digest or null
 - execution_binding_digest:
 - worktree:
@@ -200,8 +202,10 @@ For integration packets, consume the coordinator-bound exact verified results an
 - status: COMPLETE | ACTION_REQUIRED | PARTIAL | NEEDS_INPUT | BLOCKED
 - repository_id:
 - base_commit:
-- worker_model: gpt-5.6-sol
-- worker_reasoning_effort: high
+- coordinator_model: # actual model or unknown
+- coordinator_reasoning_effort: # actual effort or unknown
+- worker_model: gpt-5.6-luna
+- worker_reasoning_effort: xhigh
 - task_count:
 - attempted_tasks: []
 - complete_tasks: []

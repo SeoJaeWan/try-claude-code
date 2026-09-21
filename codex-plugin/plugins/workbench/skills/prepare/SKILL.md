@@ -7,6 +7,8 @@ description: Create an executable task DAG and isolated Git worktree plan from a
 
 Produce a standalone execution plan without implementing, persisting, or creating worktrees.
 
+Use GPT-6 Astra or GPT-5.6 Sol as the recommended planning model. Select the model in the calling task; this skill does not switch the current task's model. Keep worker model and reasoning-effort choices out of the plan.
+
 Read [references/execution-plan.md](references/execution-plan.md) before producing the plan.
 
 ## Procedure
