@@ -1,7 +1,7 @@
 interface:
   display_name: "Execute Task"
-  short_description: "Run resilient task DAGs with Sol/high workers"
-  default_prompt: "Use $workbench:execute-task with Sol/high workers to exhaust this task plan's safely runnable work and report implementation-time findings; Sol/high is the recommended coordinator."
+  short_description: "Run resilient task DAGs with Astra/Light workers"
+  default_prompt: "Use $workbench:execute-task with Astra/Light workers to exhaust this task plan's safely runnable work and report implementation-time findings; Sol/high is the recommended coordinator."
 
 policy:
   allow_implicit_invocation: false

@@ -1,13 +1,13 @@
 ---
 name: execute-task
-description: Coordinate a complete software task plan through parallel GPT-5.6 Sol/high worker agents, each operating in its own standard Git worktree, while exhausting safely runnable work and reporting implementation-time findings. Invoke only as `$workbench:execute-task`; use when the user asks to execute a prepared plan, a set of task packets, or one bounded implementation objective.
+description: Coordinate a complete software task plan through parallel GPT-6 Astra/Light worker agents, each operating in its own standard Git worktree, while exhausting safely runnable work and reporting implementation-time findings. Invoke only as `$workbench:execute-task`; use when the user asks to execute a prepared plan, a set of task packets, or one bounded implementation objective.
 ---
 
 # Execute Task
 
 Coordinate an executable task plan without modifying files in the coordinator checkout.
 
-Use GPT-5.6 Sol with `high` reasoning effort as the recommended coordinator. Select it in the calling task; this skill does not switch the current task's model. Implementation and integration workers use the fixed Sol/high profile below.
+Use GPT-5.6 Sol with `high` reasoning effort as the recommended coordinator. Select it in the calling task; this skill does not switch the current task's model. Implementation and integration workers use the fixed Astra/Light (`low`) profile below.
 
 Read [references/task-execution.md](references/task-execution.md) before spawning workers or creating worktrees.
 
@@ -17,10 +17,10 @@ Read [references/task-execution.md](references/task-execution.md) before spawnin
 2. Preserve and validate the source input, then normalize its material intent into strict self-contained runtime packets. Read relevant `.codocs` project rules and record their paths, content digests, and constraints in packet implementation notes. Supplied Wiki Artifacts remain task inputs; do NOT query canonical Wikis or Jira for implementation rules. Inherit plan-level identity where appropriate, map equivalent semantic fields, derive only mechanical runtime values that repository evidence determines, and record an immutable execution binding.
 3. Keep the coordinator read-only. It may inspect Git and repository evidence but must not create worktrees, edit files, stage changes, or commit.
 4. Determine runnable tasks from the dependency DAG. Parallelize only packets whose write surfaces and runtime resources are isolated.
-5. Spawn one worker per runnable task with no conversation history, the complete normalized runtime packet, model `gpt-5.6-sol`, and reasoning effort `high`. Do not silently fall back to another model or effort.
+5. Spawn one worker per runnable task with no conversation history, the complete normalized runtime packet, model `gpt-6-astra`, and reasoning effort `low`. Do not silently fall back to another model or effort.
 6. Each worker reads the relevant `.codocs` in its assigned standard Git worktree before implementing exactly one packet to the maximum safe extent. It attempts in-scope repairs, verifies every meaningful planned check, and returns either a verified result commit or a clearly labeled provisional candidate when authorized work is usable but verification still has findings.
 7. Validate returned task identity, source packet digest when supplied, execution binding digest, base and commit IDs, implementation and verification states, continuation decision, evidence, and clean worktree. Treat an implementation-time conflict or failed check as a finding rather than an automatic run-wide stop.
-8. Continue independent tasks and descendants whose material prerequisites are available through an exact verified result or an exact provisional candidate with `continuation: ALLOWED`. Resolve later selectors from that immutable commit and run integration packets through the same Sol/high worker contract.
+8. Continue independent tasks and descendants whose material prerequisites are available through an exact verified result or an exact provisional candidate with `continuation: ALLOWED`. Resolve later selectors from that immutable commit and run integration packets through the same Astra/Light worker contract.
 9. Stop only affected descendants whose prerequisites are materially unavailable. Exhaust every other safely runnable packet before asking for input or returning.
 10. Return one complete Execution Result that distinguishes verified results from provisional candidates and reports planned assumptions, observed conflicts, attempted repairs, unresolved findings, and actions required before delivery.
 
