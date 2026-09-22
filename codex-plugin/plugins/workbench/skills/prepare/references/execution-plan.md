@@ -15,7 +15,7 @@ For inline input, keep `artifact_ref: null`. For referenced input, preserve the 
 
 An issue key or URL is optional provenance, not an instruction to retrieve Jira. `work_item_key` may be null. Use relevant `.codocs` documents as the architecture and implementation planning basis, and supplied Wiki Artifacts as task inputs only. Record local document paths/content digests and their constraints in task inputs. If `.codocs` is absent, report the gap and use explicit project instructions and repository evidence; do not create documents or fall back to Wiki/Jira lookup. Missing material policy or unresolved decision-critical conflicts block readiness; Wiki architecture access is not required. When project policy requires implementation knowledge changes in `.codocs`, declare those documentation paths and their shared navigation surfaces in task ownership; planning itself remains read-only.
 
-Every emitted task packet must be self-contained for a worker that receives no conversation history. Do not put model or reasoning-effort choices in the plan; the executor owns its worker runtime policy.
+Every emitted task packet must be self-contained for a worker that receives no conversation history. Do not use YAML anchors/aliases, merge keys, or cross-packet references for required contract content; duplicate the necessary values so each extracted packet parses and means the same thing alone. Include the selected `execution_profile` (model, reasoning effort, rationale, and optional bounded diagnosis) using [model-selection.md](model-selection.md). Distinguish research helpers used while planning from these future execution workers.
 
 ## Parallel safety
 
@@ -24,12 +24,14 @@ Place tasks in the same parallel wave only when all are true:
 - same immutable base SHA;
 - no dependency path;
 - disjoint direct and indirect write surfaces;
-- no producer/consumer API, schema, type, or generated-code relationship;
+- all required contracts, types, schemas, and generated artifacts are available at an exact identified revision; a producer/consumer relationship alone is not a barrier after these prerequisites exist;
 - isolated ports, databases, queues, accounts, and fixtures;
 - formatters and generators cannot rewrite sibling surfaces;
 - repository instructions permit task branches, worktrees, and task-local commits.
 
-Otherwise serialize.
+Otherwise add a dependency or isolate the conflicting surface. For example, establish an API/type contract first, then plan server and client implementation on that exact base in parallel with separate writes and fixtures, followed by actual integration checks. Mock-based checks alone do not verify the combined product.
+
+Waves are explanatory groups, not global barriers. A task may start once its own prerequisites and resource constraints are satisfied even while unrelated tasks from an earlier wave run. Keep small work as one task; an integration packet is needed only for combining separate results or cross-task verification. Do not manufacture an extra final gate.
 
 ## Required plan
 
@@ -79,7 +81,7 @@ delivery_policy:
   handoff: manual
 ```
 
-`planned_worktree_count` equals the number of packets, including integration packets. There is no coordinator worktree and no path or branch reuse.
+`planned_worktree_count` equals the number of implementation/integration packets. Read-only research or diagnostic helpers do not allocate worktrees. There is no coordinator worktree and no path or branch reuse across tasks. A one-task plan may use `integration.strategy: verify_existing_head` with empty integration order and cross-task checks; its task result is the final head. Preserve base, scope, acceptance, profile, ownership, authority, and checks even in a compact plan; omit inapplicable optional metadata instead of producing empty boilerplate.
 
 ## Required task packet
 
@@ -91,6 +93,11 @@ task_packet_digest: <sha256 with this field blank>
 kind: implementation | integration
 title:
 objective:
+execution_profile:
+  model: # selected supported model ID
+  reasoning_effort: # selected supported effort
+  rationale:
+  escalation: none
 depends_on: []
 wave:
 parallel_group:
@@ -123,13 +130,13 @@ completion_contract:
   result_sha_required: true
 ```
 
-Integration packets additionally declare `required_task_ids`, `integration_order`, `strategy`, `cross_task_checks`, and `output: integrated_head_sha`.
+Integration packets additionally declare `required_task_ids`, `integration_order`, `strategy`, `cross_task_checks`, and `output: integrated_head_sha`. Declare dependency-imported paths separately from paths authorized for new integration edits; neither imports nor conflict repair may silently bypass forbidden paths. Ensure the intended integration strategy and ownership permit all dependency changes it consumes.
 
 ## Selectors and worktrees
 
 - The first task or wave uses `exact_commit` with `base_commit`.
-- A later serial task uses `task_result` with the preceding task identity. The executor binds it to an exact verified result or an exact provisional candidate allowed by its continuation policy.
-- A wave after integration uses `integration_result` with the preceding integration identity. The executor binds it to an exact verified or explicitly usable provisional integrated head.
+- A dependent task uses `task_result` with the identity of its required predecessor, not an unrelated task merely listed in an earlier wave. The executor binds it to an exact verified result or an exact provisional candidate allowed by its continuation policy.
+- A task requiring a combined result uses `integration_result` with that integration identity. The executor binds it to an exact verified or explicitly usable provisional integrated head.
 - Resolve selectors only after dependencies return an exact consumable commit. Planning does not predict verification success or authorize unsafe continuation.
 - Every packet owns one unique valid branch, normally `codex/<run-id>/<task-id>`.
 - `worktree_parent` must be outside the repository, Git metadata, home configuration, and system paths.
@@ -137,7 +144,7 @@ Integration packets additionally declare `required_task_ids`, `integration_order
 
 ## Digests and baseline
 
-Emit the plan and each packet as immutable YAML with exactly one corresponding digest field and no generated timestamp. Normalize CRLF/CR to LF, replace only the relevant digest value with an empty string, preserve every other byte, then SHA-256 the UTF-8 bytes.
+Emit the plan and each packet as immutable YAML with exactly one corresponding digest field and no generated timestamp. For packet hashing, extract its complete YAML mapping as a standalone document (remove only the common enclosing indentation and list marker, if embedded), normalize CRLF/CR to LF, replace only its digest value with an empty string, preserve all remaining bytes, then SHA-256 the UTF-8 bytes. Fill packet digests before hashing the whole plan using the same LF/blank-own-digest rule; plan hashing retains the populated packet digests. Validate isolated packet parsing as well as whole-plan parsing. Do not reserialize YAML between hashing and delivery.
 
 Record pre-existing failures by stable identity, normalized fingerprint, and count. `no_new_failures` succeeds only when they match and no additional failure appears. Missing acceptance-critical checks or unexpected tracked changes block readiness.
 
@@ -152,10 +159,10 @@ Explain the execution flow in wave order:
 1. State the overall implementation outcome in one or two sentences.
 2. For each wave, name its task IDs and titles, explain what they accomplish, and state which prior result unlocks the wave.
 3. When tasks share a parallel group, group them under the same numbered stage and explain that they run independently rather than presenting them as sequential work.
-4. Explain the integration task, its declared ordering or strategy, and the final cross-task verification.
+4. Explain integration and cross-task verification when present. Include a compact task/model/effort/rationale table; label unverified future-host availability and optional diagnostic limits.
 5. End with baseline caveats and the manual delivery boundary, including that worktrees, merge, push, pull request, handoff, or cleanup were not performed when the plan says so.
 
-Keep the walkthrough substantially shorter than the YAML. Do not repeat digests, complete path lists, command lists, or every contract ID unless one is necessary to understand a risk. Derive every statement from the emitted plan; do not introduce new tasks, ordering, guarantees, or authority.
+Keep the walkthrough substantially shorter than the YAML. Do not repeat digests, complete path lists, command lists, or every contract ID unless one is necessary to understand a risk. A small plan may use a short task explanation instead of empty wave/integration sections. Derive every statement from the emitted plan; do not introduce new tasks, ordering, guarantees, or authority.
 
 Use this shape, adapting the number of stages to the actual waves:
 
@@ -171,6 +178,10 @@ Use this shape, adapting the number of stages to the actual waves:
 
 기존 baseline 문제와 수동으로 남겨 둔 전달 작업을 짧게 설명합니다.
 ```
+
+## Questions and changed requirements
+
+Ask material questions when discovered, and continue independent research while answers are pending. Keep unresolved tasks provisional rather than declaring a complete plan `READY`. A missing behavior that changes acceptance (for example ordering direction or invalid-input behavior) is a proposed decision until user intent or repository evidence resolves it; labeling it an assumption does not make affected work `READY`. Do not encode an unaccepted proposal as a governing decision. If the user changes material intent, preserve the prior plan and issue a new plan revision with updated packets/digests and a short explanation of changed tasks. A clear user instruction supplies the requested change; ask only for additional unresolved decisions or authority.
 
 ## Blocked result
 

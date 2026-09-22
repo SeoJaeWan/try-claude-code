@@ -5,56 +5,85 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const pluginRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const skillRoot = path.join(pluginRoot, "skills");
+const activeSkills = ["execute-task", "memory-update", "prepare", "shape"];
 
 function read(relativePath) {
   return fs.readFileSync(path.join(pluginRoot, relativePath), "utf8");
 }
 
-function fencedYamlAfter(text, heading) {
-  const start = text.indexOf(heading);
-  assert.notEqual(start, -1, `missing section ${heading}`);
-  const match = text.slice(start).match(/```yaml\n([\s\S]*?)\n```/);
-  assert.notEqual(match, null, `missing YAML contract after ${heading}`);
-  return match[1];
+function yamlTemplateWith(text, key) {
+  const blocks = [...text.matchAll(/```yaml\n([\s\S]*?)\n```/g)].map((m) => m[1]);
+  const matches = blocks.filter((block) => block.split("\n").some((line) => line.startsWith(`${key}:`)));
+  assert.equal(matches.length, 1, `expected one template containing ${key}`);
+  return matches[0];
 }
 
-test("Prepare keeps the immutable plan canonical and appends a derived reader walkthrough", () => {
-  const skill = read("skills/prepare/SKILL.md");
-  const contract = read("skills/prepare/references/execution-plan.md");
+test("the plugin exposes only the four complete explicit skills", () => {
+  const manifest = JSON.parse(read(".codex-plugin/plugin.json"));
+  assert.equal(path.resolve(pluginRoot, manifest.skills), skillRoot);
+  const actual = fs.readdirSync(skillRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
+  assert.deepEqual(actual, activeSkills);
 
-  assert.match(skill, /append a concise human-readable walkthrough/i);
-  assert.match(contract, /always append `## 작업 단계 설명` for a Korean response or an equivalent heading/i);
-  assert.match(contract, /not part of the immutable plan or any plan or packet digest/i);
-  assert.match(contract, /derive every statement from the emitted plan/i);
+  for (const name of activeSkills) {
+    const skill = read(`skills/${name}/SKILL.md`);
+    const frontmatter = skill.match(/^---\n([\s\S]*?)\n---/);
+    assert.ok(frontmatter, `${name} needs frontmatter`);
+    assert.match(frontmatter[1], new RegExp(`^name: ${name}$`, "m"));
+    const metadata = read(`skills/${name}/agents/openai.yaml`);
+    assert.match(metadata, /^  allow_implicit_invocation: false$/m);
+    assert.ok(metadata.includes(`$workbench:${name}`));
+  }
+  for (const prompt of manifest.interface.defaultPrompt) {
+    const name = prompt.match(/\$workbench:([a-z-]+)/)?.[1];
+    assert.ok(activeSkills.includes(name), `undiscoverable prompt target: ${prompt}`);
+  }
 });
 
-test("Execute Task accepts the Prepare packet semantically and normalizes a strict worker binding", () => {
+test("skill resources are reachable and stay inside their self-contained skill", () => {
+  for (const name of activeSkills) {
+    const root = path.join(skillRoot, name);
+    const visited = new Set();
+    function visit(file) {
+      if (visited.has(file)) return;
+      visited.add(file);
+      const text = fs.readFileSync(file, "utf8");
+      for (const match of text.matchAll(/\[[^\]]*\]\(([^)]+\.md)(?:#[^)]*)?\)/g)) {
+        const target = match[1];
+        if (/^https?:/.test(target)) continue;
+        const resolved = path.resolve(path.dirname(file), target);
+        assert.ok(resolved.startsWith(`${root}${path.sep}`), `${name} escapes its skill: ${target}`);
+        assert.ok(fs.statSync(resolved).isFile(), `missing resource: ${resolved}`);
+        visit(resolved);
+      }
+    }
+    visit(path.join(root, "SKILL.md"));
+    const refs = path.join(root, "references");
+    for (const entry of fs.readdirSync(refs)) {
+      if (entry.endsWith(".md")) assert.ok(visited.has(path.join(refs, entry)), `unreachable reference: ${name}/${entry}`);
+    }
+  }
+});
+
+test("plan and execution packet templates carry dispatch and identity fields", () => {
   const prepare = read("skills/prepare/references/execution-plan.md");
-  const executeSkill = read("skills/execute-task/SKILL.md");
   const execute = read("skills/execute-task/references/task-execution.md");
-  const preparePlan = fencedYamlAfter(prepare, "## Required plan");
-  const preparePacket = fencedYamlAfter(prepare, "## Required task packet");
-  const runtimePacket = fencedYamlAfter(execute, "## Minimum normalized runtime packet");
-
-  assert.match(preparePlan, /^repository_id:/m);
-  assert.match(preparePlan, /^git_common_dir:/m);
-  assert.match(preparePacket, /^acceptance_contract:/m);
-
-  assert.match(executeSkill, /Do not require a particular producer or exact source field vocabulary/i);
-  assert.match(execute, /plan-level repository identity inherited by tasks/i);
-  assert.match(execute, /`acceptance_contract` used as observable acceptance conditions/i);
-  assert.match(execute, /Inherit `repository_id`, `git_common_dir`/i);
-
-  for (const field of [
-    "repository_id",
-    "git_common_dir",
-    "requirements",
-    "acceptance_conditions",
-    "invariants",
-    "decisions",
-    "task_packet_digest",
-    "execution_binding_digest",
-  ]) {
-    assert.match(runtimePacket, new RegExp(`^${field}:`, "m"), `runtime packet must bind ${field}`);
+  const plan = yamlTemplateWith(prepare, "planned_worktree_count");
+  const packet = yamlTemplateWith(prepare, "task_id");
+  const runtime = yamlTemplateWith(execute, "task_id");
+  for (const field of ["repository_id", "git_common_dir", "base_commit"]) {
+    assert.match(plan, new RegExp(`^${field}:`, "m"));
+  }
+  for (const body of [packet, runtime]) {
+    for (const field of ["task_id", "execution_profile", "depends_on", "owned_paths", "forbidden_paths", "commit_policy", "task_packet_digest"]) {
+      assert.match(body, new RegExp(`^${field}:`, "m"));
+    }
+    for (const field of ["model", "reasoning_effort", "rationale", "escalation"]) {
+      assert.match(body, new RegExp(`^  ${field}:`, "m"));
+    }
+  }
+  for (const field of ["repository_id", "git_common_dir", "requirements", "acceptance_conditions", "invariants", "decisions", "execution_binding_digest", "intent_revision", "resume_state"]) {
+    assert.match(runtime, new RegExp(`^${field}:`, "m"));
   }
 });

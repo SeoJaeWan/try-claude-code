@@ -10,9 +10,9 @@ Accept exactly one of:
 
 Compatibility is semantic rather than producer- or field-name-specific. Accept equivalent representations such as plan-level repository identity inherited by tasks and `acceptance_contract` used as observable acceptance conditions. Do not require a source to duplicate plan-level values into every task.
 
-Reject summaries, metadata-only references, ambiguous objectives or ownership, stale immutable identities, supplied digest mismatches, moving branch names used in place of commit IDs after binding, or inputs that require a material product decision. Missing mechanical values such as a unique branch, worktree path, exact repository command, or runtime resource name may be derived only when repository evidence determines them without changing product intent.
+Reject metadata-only or insufficient inputs, stale immutable identities, supplied digest mismatches, and moving branch names used in place of commit IDs after binding. For material ambiguity in objective, ownership, or product decisions, ask promptly and hold affected tasks while continuing independently specified work; do not invent decisions. Missing mechanical values such as a unique branch, worktree path, exact repository command, or runtime resource name may be derived only when repository evidence determines them without changing product intent.
 
-For a standalone objective, create a one-task plan before spawning a worker. Do not implement it in the coordinator.
+For a standalone objective, normalize one task when sufficient; split only when independent deliverables and verification justify it. Create integration tasks only when separate results need combining or cross-task verification. Do not implement in the coordinator.
 
 ## Project knowledge
 
@@ -26,7 +26,7 @@ When `.codocs` changes are required by project policy, they must fit the packetâ
 
 The coordinator owns scheduling and evidence only.
 
-Recommended coordinator profile: `gpt-5.6-sol` with `high` reasoning effort. The caller selects this profile in the task that invokes the skill; loading the skill does not change the active model or create a replacement coordinator. Record the actual coordinator model and effort when exposed by the host, otherwise `unknown`; do not report the recommendation as an observed runtime setting.
+The caller selects the coordinator model; loading the skill does not switch it or create a replacement coordinator. Record the actual coordinator model and effort when exposed by the host, otherwise `unknown`. Worker settings are selected per packet, not inherited from this coordinator.
 
 - Resolve repository identity, Git common dir, invocation root, exact base commit ID, current worktree inventory, and every task dependency.
 - Preserve source bytes and verify plan and packet digests when provided. A producer-neutral input without a supplied digest receives an execution binding rather than a fabricated source digest.
@@ -39,39 +39,36 @@ Recommended coordinator profile: `gpt-5.6-sol` with `high` reasoning effort. The
 
 ## Worker runtime
 
-Every implementation or integration task runs in a fresh worker with this fixed profile. The UI label Light corresponds to reasoning effort `low`:
-
-```yaml
-fork_turns: none
-model: gpt-6-astra
-reasoning_effort: low
-context: complete_normalized_runtime_packet_only
-```
-
-The coordinator must pass the worker a complete normalized runtime packet rather than relying on conversation history. If the exact model or effort cannot be requested, return `BLOCKED`; do not inherit or silently fall back.
-
-The host's available agent capacity bounds concurrency. Queue excess runnable tasks instead of changing their execution profile.
+Read [worker-profiles.md](worker-profiles.md) before dispatch. Pass both selected model and effort explicitly with a fresh context and the complete normalized packet. Validate current host capabilities, preserve user limits, and block only affected tasks when a specified profile is unsupported. Do not silently inherit or substitute. Available agent capacity bounds concurrency; queue excess work.
 
 ## Normalization and execution binding
 
 Keep the source plan or packet immutable. Normalize only after validating its available identity and digest evidence.
 
 - Inherit `repository_id`, `git_common_dir`, exact base identity, environment, and delivery policy from plan-level fields when task-local copies are absent.
-- Map requirement statements to `requirements`, acceptance statements such as `acceptance_conditions` or `acceptance_contract` to `acceptance_conditions`, invariants to `invariants`, and governing decisions to `decisions`. Preserve source IDs for traceability when present. A proposed or unresolved decision is not governing unless the source or user has accepted it; when it materially affects implementation, return `NEEDS_INPUT`.
-- Preserve explicit dependencies, selectors, ownership, forbidden paths, runtime isolation, checks, and commit authority. Do not weaken a prohibition during normalization.
+- Map requirement statements to `requirements`, acceptance statements such as `acceptance_conditions` or `acceptance_contract` to `acceptance_conditions`, invariants to `invariants`, and governing decisions to `decisions`. Preserve source IDs for traceability when present. A proposed or unresolved decision is not governing unless the source or user has accepted it; ask when it materially affects implementation and hold only the affected work.
+- Preserve explicit dependencies, selectors, ownership, forbidden paths, runtime isolation, checks, commit authority, and supplied execution profiles. Select a missing profile using the worker-profile criteria and record it as a runtime selection rather than fabricating a source choice. Do not weaken a prohibition during normalization.
 - Derive a branch, assigned worktree, runtime resource label, or repository verification command only when the derivation is deterministic and does not invent product behavior.
-- Return `NEEDS_INPUT` when objective, observable acceptance, ownership, a material dependency, or a product decision remains ambiguous. Return `BLOCKED` when exact repository or base identity cannot be established safely.
+- Ask when objective, observable acceptance, ownership, a material dependency, or a product decision remains ambiguous; hold affected tasks and continue independent work. Return `NEEDS_INPUT` when no remaining safe work can proceed without that decision. Return `BLOCKED` for affected work whose exact repository or base identity cannot be established safely.
 
-Serialize each normalized runtime packet as immutable YAML. Set `execution_binding_digest` to an empty string while hashing its normalized LF UTF-8 bytes with SHA-256, then insert the resulting digest. `task_packet_digest` preserves a supplied source packet digest and is `null` when none exists. The binding digest identifies the exact packet given to the worker; it does not replace or rewrite a source digest.
+Set the initial `intent_revision` from a supplied revision identity, or derive `<run-id>/intent/1` for input without one.
+
+Serialize each normalized runtime packet as standalone immutable YAML without anchors, aliases, or merge keys; required content must not depend on another packet's YAML context. Set `execution_binding_digest` to an empty string while hashing its normalized LF UTF-8 bytes with SHA-256, then insert the resulting digest. `task_packet_digest` preserves a supplied source packet digest and is `null` when none exists. The binding digest identifies the exact packet given to the worker; it does not replace or rewrite a source digest.
 
 ## Minimum normalized runtime packet
 
 ```yaml
 task_id:
 run_id:
+intent_revision:
 kind: implementation | integration
 title:
 objective:
+execution_profile:
+  model: # selected supported model ID
+  reasoning_effort: # selected supported effort
+  rationale:
+  escalation: none
 repository_id:
 git_common_dir:
 base_selector:
@@ -96,32 +93,33 @@ verification_commands: []
 commit_policy: task_local_required | no_commit_needed
 task_packet_digest: null
 execution_binding_digest:
+resume_state: null # optional observed_head_commit, owned_change_digests, worker_id, quiescence_evidence
 ```
 
-An integration packet also declares required task IDs, integration order, strategy, cross-task checks, and the expected `integrated_head_sha` output. The coordinator binds each required task ID to an exact verified result commit or an exact provisional candidate at runtime.
+An integration packet also declares required task IDs, integration order, strategy, cross-task checks, dependency-imported paths, separately owned integration-edit paths, and the expected `integrated_head_sha` output. Validate imports and repairs against forbidden paths; do not treat integration as unrestricted write authority. The coordinator binds each required task ID to an exact verified result commit or an exact provisional candidate at runtime.
 
 ## Execution principle
 
-Preserve the approved plan as the immutable statement of intent. Treat implementation-time conflicts, failed checks, and inaccurate planning assumptions as execution findings, not automatic reasons to replace the plan or stop the run.
+Preserve each approved plan revision as an immutable record of intent. A later explicit user instruction may supersede it through the [update protocol](execution-updates.md); immutability does not override user steering. Treat implementation-time conflicts, failed checks, and inaccurate planning assumptions as execution findings, not automatic reasons to replace the plan or stop the run.
 
 - Attempt the smallest repair that remains inside the packet's objective, contracts, owned or declared shared surfaces, and authority.
 - When a finding remains, finish every later implementation step and check that is still safe, executable, and meaningful.
 - Create a provisional candidate commit when authorized implementation is structurally usable by downstream work even though verification has not passed.
 - Continue downstream work from a provisional candidate only when the worker explicitly returns `continuation: ALLOWED` with evidence that the required material interface exists.
 - Never treat continuation as acceptance. Only passing verification produces a verified result, and only passing final integration checks produces a final integration commit.
-- Exhaust all independent and materially runnable work before returning `NEEDS_INPUT`, `ACTION_REQUIRED`, or `BLOCKED` to the user.
+- Ask material questions as soon as discovered, without ending independent work. Exhaust all independent and materially runnable work before the final `NEEDS_INPUT`, `ACTION_REQUIRED`, or `BLOCKED` result, unless the user cancels or pauses.
 
 ## Scheduling
 
-1. Mark a task runnable when every dependency has either an exact verified result commit or an exact provisional candidate with `continuation: ALLOWED` and the material prerequisite needed by the task exists.
+1. Mark a task runnable when each dependency provides an exact verified result or allowed provisional candidate, all needed contracts/artifacts exist, and the result remains applicable to the current intent revision. Waves do not impose extra barriers.
 2. Tasks may run in parallel only when they have no dependency path, use the same resolved base commit where required, have disjoint direct and indirect write surfaces, and isolate ports, databases, queues, accounts, fixtures, formatters, generators, and build outputs.
-3. Spawn one worker for each runnable task up to available capacity. Queue the rest.
-4. Wait for terminal Task Results. Validate result identity and evidence before releasing descendants.
+3. Spawn one worker per runnable task with its explicit execution profile up to capacity. Queue the rest. API/type relationships are not a barrier once their exact prerequisites exist and sibling writes/resources are isolated.
+4. Process completions, material questions, and user updates as they arrive. Validate terminal Task Results before releasing descendants; do not wait for unrelated tasks. Apply the update protocol before accepting results from affected workers.
 5. Continue independent branches after any unrelated finding or blocker. Continue dependent branches from usable provisional candidates and record that scheduling decision.
 6. Stop only the affected descendants when `continuation: NOT_POSSIBLE`, no exact commit exists, or the required material interface is absent. A failed check alone is not a scheduling barrier.
 7. Resolve selectors only from exact immutable commits. Prefer a verified result; otherwise use an explicitly allowed provisional candidate without changing the original plan or packet digest.
 8. Run each materially runnable integration packet in its declared order. Carry unresolved findings into integration so it can expose or mechanically repair cross-task incompatibilities.
-9. Do not interrupt the run solely to report an implementation conflict. Execute everything that does not require new authority or an unavailable prerequisite, then report once in the Execution Result.
+9. Do not stop unrelated execution solely for a conflict. Ask necessary decisions promptly, continue independent work, and consolidate findings and revision history in the Execution Result.
 
 ## Worker procedure
 
@@ -129,13 +127,13 @@ Each worker performs exactly one packet:
 
 1. Re-resolve the Git common dir and exact base commit ID from the normalized runtime packet, and verify its execution binding digest plus any supplied source packet digest.
 2. Validate the assigned path as a unique direct child of a dedicated parent outside the repository, Git metadata, home configuration, and system paths, with no `..` or symlink component.
-3. Require the exact branch to be valid, absent, and not checked out elsewhere. Create the equivalent of `git worktree add -b <branch> <worktree> <base-commit>` when the path is absent.
-4. Adopt an existing path only when its path, common dir, branch, task identity, HEAD, and clean status match the packet. A dirty same-task resume requires explicit user approval.
+3. For a new worktree, require the assigned path and branch to be absent and the branch name valid; create the equivalent of `git worktree add -b <branch> <worktree> <base-commit>`. An existing path/branch follows the adoption or resume check below instead; do not recreate or rewind it.
+4. Adopt an existing clean path only when its path, common dir, branch, task identity, and HEAD match the packet; no other task may own that worktree. For an interrupted same-task resume, follow the update protocol: prove ownership of known run-produced edits and bind the resumed state explicitly. Unknown or unrelated dirty changes require user resolution; do not silently adopt them.
 5. Run all task commands and mutations only inside the assigned worktree. Read its relevant `.codocs` and reconcile the packet evidence according to the project-knowledge rules above before implementing.
 6. Implement the smallest change satisfying the packet. When implementation exposes a conflict or failed assumption, attempt the smallest repair inside the same objective and authorized surfaces. Compare staged and unstaged changes with owned and declared shared/generated surfaces; stop mutation on unexplained files without deleting or absorbing them.
-7. Run focused checks before broader checks. After a failure, continue every later check that remains safe, executable, and diagnostically meaningful. Record commands, duration, result, and concise evidence.
+7. Run focused checks before relevant broader checks. Reuse evidence only for the same relevant code state and valid environment; changes to the checked surface invalidate it. After a failure, continue meaningful independent checks and record commands, duration, result, and evidence. Do not add blanket load testing or mandatory separate review to routine changes.
 8. Inspect the final diff and perform a correctness, security, failure-handling, scope, and verification self-review. Classify every finding as `resolved_in_task`, `carried_to_integration`, `action_required`, or `hard_blocker`.
-9. Stage only authorized paths and inspect the staged patch. For `task_local_required`, create at most one commit: a `verified_result` when verification passes, or a `provisional_candidate` when the implementation is structurally usable but findings remain. Require a clean worktree after either commit and never label the provisional commit as verified.
+9. Stage only authorized paths and inspect the staged patch. For `task_local_required`, create at most one task-authored result commit in addition to dependency commits applied by a declared integration strategy: a `verified_result` when verification passes, or a `provisional_candidate` when the implementation is structurally usable but findings remain. Require a clean worktree after either commit and never label the provisional commit as verified.
 10. Set `continuation: ALLOWED` only when an exact commit exists and downstream work can consume the required material interface without inventing a product decision or expanding authority. Otherwise set `continuation: NOT_POSSIBLE` and state the missing prerequisite.
 11. Preserve any unsuccessful uncommitted worktree as diagnostic evidence. Cleanup is a separate explicit user action.
 
@@ -153,8 +151,10 @@ For integration packets, consume the coordinator-bound exact verified results an
 - run_id:
 - task_id:
 - kind:
-- worker_model: gpt-6-astra
-- worker_reasoning_effort: low
+- intent_revision:
+- planned_profile: # model and effort, or null if absent from source
+- requested_profile: # actual spawn arguments
+- effective_profile: # host-observed model/effort or unknown
 - task_packet_digest: # supplied source digest or null
 - execution_binding_digest:
 - worktree:
@@ -204,14 +204,17 @@ For integration packets, consume the coordinator-bound exact verified results an
 - base_commit:
 - coordinator_model: # actual model or unknown
 - coordinator_reasoning_effort: # actual effort or unknown
-- worker_model: gpt-6-astra
-- worker_reasoning_effort: low
+- worker_profiles: # per task: planned, requested, host-observed effective (or unknown)
+- intent_revision:
+- revision_history: []
+- diagnostic_agents: []
 - task_count:
 - attempted_tasks: []
 - complete_tasks: []
 - provisional_tasks: []
 - unattempted_tasks: []
-- final_integration_commit: # verified only
+- final_result_commit: # verified single-task result or integrated result
+- final_integration_commit: # verified integration only, null when unnecessary
 - candidate_integration_commit: # provisional only
 
 ## Task results
@@ -233,4 +236,4 @@ For integration packets, consume the coordinator-bound exact verified results an
 - push, PR, user-branch merge, handoff, and cleanup not performed
 ```
 
-Return `COMPLETE` only when all required implementation and final verification pass. Return `ACTION_REQUIRED` when all safely runnable work was attempted but unresolved findings still prevent acceptance. Return `PARTIAL` when material prerequisites made some planned work impossible to attempt, `NEEDS_INPUT` when a user decision or new authority is required, and `BLOCKED` when execution could not make meaningful progress. Do not replace the original plan automatically; report the execution evidence so the user can decide any follow-up.
+Return `COMPLETE` only when all required implementation and applicable verification pass for the latest authorized scope. A single-task result can be the final head without an extra integration packet. Do not add a mandatory independent review or approval gate. Return `ACTION_REQUIRED` when all safely runnable work was attempted but unresolved findings still prevent acceptance. Return `PARTIAL` when material prerequisites made some planned work impossible to attempt, `NEEDS_INPUT` when a user decision or new authority is required, and `BLOCKED` when execution could not make meaningful progress. Preserve original plans and report execution findings; incorporate explicit user changes through traceable revisions rather than silently replacing intent.

@@ -1,27 +1,25 @@
 ---
 name: execute-task
-description: Coordinate a complete software task plan through parallel GPT-6 Astra/Light worker agents, each operating in its own standard Git worktree, while exhausting safely runnable work and reporting implementation-time findings. Invoke only as `$workbench:execute-task`; use when the user asks to execute a prepared plan, a set of task packets, or one bounded implementation objective.
+description: Execute software plans or bounded objectives with per-task worker profiles and isolated Git worktrees. Invoke only as `$workbench:execute-task` for "계획을 실행해", "작업을 구현해", or "task를 실행해".
 ---
 
 # Execute Task
 
-Coordinate an executable task plan without modifying files in the coordinator checkout.
+Coordinate execution while keeping the coordinator checkout read-only. Keep the caller's model unchanged; pass explicit per-task model and effort settings to workers.
 
-Use GPT-5.6 Sol with `high` reasoning effort as the recommended coordinator. Select it in the calling task; this skill does not switch the current task's model. Implementation and integration workers use the fixed Astra/Light (`low`) profile below.
-
-Read [references/task-execution.md](references/task-execution.md) before spawning workers or creating worktrees.
+Read [task-execution.md](references/task-execution.md) for identity, normalization, scheduling, worktrees, and results, and [worker-profiles.md](references/worker-profiles.md) before spawning. Read [execution-updates.md](references/execution-updates.md) when a question, changed instruction, cancellation, or interrupted worker requires it.
 
 ## Procedure
 
-1. Accept any sufficiently specified execution plan, task-packet set, or bounded standalone objective. Resolve a user-provided Local Work Memory Artifact reference through the MCP contract exposed at invocation time. Do not require a particular producer or exact source field vocabulary.
-2. Preserve and validate the source input, then normalize its material intent into strict self-contained runtime packets. Read relevant `.codocs` project rules and record their paths, content digests, and constraints in packet implementation notes. Supplied Wiki Artifacts remain task inputs; do NOT query canonical Wikis or Jira for implementation rules. Inherit plan-level identity where appropriate, map equivalent semantic fields, derive only mechanical runtime values that repository evidence determines, and record an immutable execution binding.
-3. Keep the coordinator read-only. It may inspect Git and repository evidence but must not create worktrees, edit files, stage changes, or commit.
-4. Determine runnable tasks from the dependency DAG. Parallelize only packets whose write surfaces and runtime resources are isolated.
-5. Spawn one worker per runnable task with no conversation history, the complete normalized runtime packet, model `gpt-6-astra`, and reasoning effort `low`. Do not silently fall back to another model or effort.
-6. Each worker reads the relevant `.codocs` in its assigned standard Git worktree before implementing exactly one packet to the maximum safe extent. It attempts in-scope repairs, verifies every meaningful planned check, and returns either a verified result commit or a clearly labeled provisional candidate when authorized work is usable but verification still has findings.
-7. Validate returned task identity, source packet digest when supplied, execution binding digest, base and commit IDs, implementation and verification states, continuation decision, evidence, and clean worktree. Treat an implementation-time conflict or failed check as a finding rather than an automatic run-wide stop.
-8. Continue independent tasks and descendants whose material prerequisites are available through an exact verified result or an exact provisional candidate with `continuation: ALLOWED`. Resolve later selectors from that immutable commit and run integration packets through the same Astra/Light worker contract.
-9. Stop only affected descendants whose prerequisites are materially unavailable. Exhaust every other safely runnable packet before asking for input or returning.
-10. Return one complete Execution Result that distinguishes verified results from provisional candidates and reports planned assumptions, observed conflicts, attempted repairs, unresolved findings, and actions required before delivery.
+1. Accept a sufficient plan, packet set, or bounded objective. Resolve user-provided Artifact references using the Local Work Memory MCP's current contract. Do not require a particular producer or exact source field vocabulary.
+2. Preserve source inputs and normalize self-contained runtime packets with exact repository/base identity, ownership, dependencies, checks, and execution profiles. Read relevant `.codocs` rules and carry source paths/content digests and constraints in implementation notes. Supplied Wiki Artifacts remain task inputs; do NOT query canonical Wikis or Jira for project rules.
+3. Keep the coordinator read-only. It may inspect evidence and schedule but must not create worktrees, edit, stage, or commit.
+4. Start each runnable task up to capacity using its explicit model and effort, a fresh context, and its complete packet. Preflight unsupported settings per task; continue independent supported tasks. Schedule by dependencies and isolated resources, not a global wave barrier.
+5. Each worker owns one packet and its standard Git worktree. It implements authorized changes, attempts in-scope repairs, performs meaningful planned checks and self-review, and returns a verified commit or clearly labeled provisional candidate with findings.
+6. Validate result identity, source/binding digests, exact commits, current intent revision, verification, continuation evidence, and worktree state. Continue from verified results or exact provisional candidates with `continuation: ALLOWED` when their material prerequisites suffice.
+7. Ask material questions when discovered and keep independent work running. Apply clear user steering to affected workers and issue traceable revisions; preserve unaffected results and never treat silence as a required decision.
+8. Exhaust safely runnable work, then report implementation, verification, profiles, revisions, remaining findings, and required actions in one Execution Result.
 
-Do NOT implement directly in the coordinator, modify the source plan to fit the runtime schema, invent missing product decisions, modify the user's original checkout, reuse a worktree across tasks, substitute another worker model or effort, represent a provisional candidate as verified, push, publish, open a PR, merge into a user branch, delete worktrees or branches, or perform work outside the normalized execution intent.
+Keep task checks, self-review, integration checks, and verified/provisional distinctions. Do NOT add a mandatory independent review, blanket load/failure testing, or an extra approval/report gate. Add special checks or review only when requested or justified by the actual change.
+
+Do NOT implement in the coordinator, overwrite source plans, invent product decisions, edit the user's original checkout, share write ownership, silently substitute a planned profile, represent provisional results as verified, push, publish, open a PR, merge into a user branch, or delete worktrees/branches.

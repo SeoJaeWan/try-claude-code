@@ -1,7 +1,7 @@
 {
   "name": "workbench",
   "version": "0.3.0",
-  "description": "Five independent explicit Workbench skills for evidence-backed analysis, task planning, Astra/Light multi-agent execution with recommended Sol/high coordination, sequential connected Wiki curation, and integrated-change validation.",
+  "description": "Four independent explicit skills for change analysis, per-task model planning, isolated execution, and local project-knowledge curation.",
   "author": {
     "name": "Local developer"
   },
@@ -10,25 +10,25 @@
   "interface": {
     "displayName": "Workbench",
     "shortDescription": "Independent tools for software change analysis and execution.",
-    "longDescription": "Workbench provides five independently useful, explicitly invoked skills. Analyze a change or create a task plan with recommended GPT-6 Astra or GPT-5.6 Sol. Coordinate parallel GPT-6 Astra/Light workers in isolated Git worktrees with recommended GPT-5.6 Sol/high coordination, curate every bounded canonical Wiki topic in sequence, or review one exact integrated Git change. No skill requires another Workbench skill.",
+    "longDescription": "Workbench provides four independently useful, explicitly invoked skills. Investigate changes with selective research delegation, plan task-specific Astra/Sol/Luna models and reasoning efforts, execute isolated task DAGs with verification and user steering, or curate local .codocs knowledge with sequential writes.",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [
       "Explicit-only skills",
       "Figma design evidence",
-      "Sequential connection-aware Wiki curation",
       "Producer-neutral inputs",
-      "GPT-5.6 Sol/high recommended coordinator",
-      "GPT-6 Astra/Light task workers",
-      "DAG-aware parallel execution",
+      "Per-task model and effort selection",
+      "Conditional research delegation",
+      "Dependency-aware parallel execution",
       "Task-scoped Git worktrees",
-      "Dependency-aware failure propagation",
-      "Independent integrated review"
+      "Traceable requirement updates",
+      "Local .codocs curation"
     ],
     "defaultPrompt": [
-      "Use $workbench:shape to investigate this software change and return a standalone report.",
-      "Use $workbench:prepare to create an isolated execution plan from this change definition.",
-      "Use $workbench:execute-task to run this plan through parallel GPT-6 Astra/Light workers with recommended GPT-5.6 Sol/high coordination."
+      "Use $workbench:shape to investigate this software change.",
+      "Use $workbench:prepare to plan tasks, worker profiles, isolation, and verification.",
+      "Use $workbench:execute-task to execute this plan using its task profiles.",
+      "Use $workbench:memory-update to curate these local project-knowledge topics."
     ],
     "brandColor": "#2563EB"
   }

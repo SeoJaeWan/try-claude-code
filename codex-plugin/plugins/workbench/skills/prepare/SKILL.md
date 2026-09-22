@@ -1,27 +1,22 @@
 ---
 name: prepare
-description: Create an executable task DAG and isolated Git worktree plan from a software change request, issue, requirements document, or existing analysis artifact. Invoke only as `$workbench:prepare`; use when the user explicitly asks to "작업을 분해해", "실행 계획을 만들어", or "워크트리 계획을 확정해".
+description: Plan software tasks, dependencies, isolated worktrees, checks, and per-task models. Invoke only as `$workbench:prepare` for "작업을 분해해", "실행 계획을 만들어", or "워크트리 계획을 확정해".
 ---
 
 # Prepare
 
-Produce a standalone execution plan without implementing, persisting, or creating worktrees.
+Return an executable plan without implementing, persisting it, or creating worktrees. Keep the caller's model unchanged.
 
-Use GPT-6 Astra or GPT-5.6 Sol as the recommended planning model. Select the model in the calling task; this skill does not switch the current task's model. Keep worker model and reasoning-effort choices out of the plan.
-
-Read [references/execution-plan.md](references/execution-plan.md) before producing the plan.
+Read [execution-plan.md](references/execution-plan.md) for the packet contract and [model-selection.md](references/model-selection.md) when choosing task or research profiles.
 
 ## Procedure
 
-1. Accept any sufficiently complete change definition supplied inline or through a user-provided Local Work Memory Artifact reference. Resolve a supplied reference through the MCP according to the guidance and contract it currently exposes. Do not require a particular producer or document type.
-2. Resolve the repository root, checkout root, Git common dir, HEAD, branch, status, and worktree inventory.
-3. Read relevant local `.codocs` concepts, architecture, policies, conventions, and contracts as the planning basis, starting from its index when present. Keep supplied Wiki Artifacts as task input, not the source of current project rules. Include necessary constraints and local source paths/content digests in self-contained task packets. Do NOT query Jira or require Wiki architecture access. Record missing local knowledge and material conflicts; ask only for material decisions that cannot be discovered.
-4. Require a clean, stable execution base. Do not stash, reset, clean, copy, or checkpoint user changes.
-5. Convert requirements and acceptance conditions into independently verifiable tasks with an explicit dependency DAG and execution waves.
-6. Define each task's inputs, owned and forbidden paths, indirect collision surfaces, runtime resources, checks, completion contract, worktree path, branch, and immutable base selector.
-7. Parallelize only tasks with the same immutable base, no dependency path, disjoint write surfaces, and isolated runtime resources. Add integration tasks after parallel waves and a final integration-seal task.
-8. Discover and run only safe commands needed to establish the baseline. Record stable evidence for pre-existing failures and stop if a command changes tracked files unexpectedly.
-9. Validate IDs, acyclicity, dependencies, branches, paths, selectors, worktree count, and packet digests.
-10. Return the complete immutable plan, then append a concise human-readable walkthrough of the planned waves, task purposes, dependencies, parallel work, integration, and delivery boundary. Do not make the user ask separately for an explanation. Then stop.
+1. Accept any sufficient change definition inline or through a user-provided Local Work Memory Artifact. Resolve supplied references using the MCP's current contract; do not require a particular producer.
+2. Resolve repository identity, checkout, Git common dir, exact HEAD, status, and worktree inventory. Establish a clean, stable execution base without stashing, resetting, copying, or checkpointing user changes. If requested work depends on dirty changes, establish their inclusion or base with the user.
+3. Read relevant local `.codocs` and repository instructions. Keep supplied Wiki Artifacts as task inputs. Do NOT query Jira or canonical Wikis for project rules. Record material constraints and source paths/content digests in packets; use explicit instructions and repository evidence when `.codocs` is absent.
+4. Delegate independent ownership/collision or prerequisite/risk investigations when useful, selecting explicit helper profiles. The main agent reconciles findings and owns the final plan. Ask undiscoverable material questions early while continuing independent planning; do not declare affected tasks ready without the answer.
+5. Define independently verifiable tasks, dependencies, owned/forbidden paths, indirect collisions, runtime resources, checks, immutable base selectors, and unique worktree/branch assignments. Keep a small change as one task; add integration only when separate results need combining or cross-task verification.
+6. Select and explain each task's model and effort. Parallelize work whose required contracts/artifacts are already available and whose write surfaces/resources are isolated. Waves explain the DAG; they are not whole-run scheduling barriers.
+7. Run only safe commands needed for the baseline. Record pre-existing failures, validate packets and digests, then return the immutable plan and append a concise human-readable walkthrough including task profiles and their reasons. Stop after planning.
 
-Do NOT implement tasks, create or delete worktrees, integrate commits, persist the plan, modify repository files, push, publish, or perform work outside this skill's planning scope.
+Do NOT implement, create/delete worktrees, integrate commits, persist the plan, modify repository files, push, or publish. A plan describes actions and does not itself grant commit or external-action authority.

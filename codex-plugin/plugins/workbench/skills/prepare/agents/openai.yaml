@@ -1,7 +1,7 @@
 interface:
   display_name: "Prepare"
-  short_description: "Create an isolated executable task plan"
-  default_prompt: "Use $workbench:prepare to turn this change definition into a standalone task and worktree plan."
+  short_description: "Plan tasks, dependencies, checks, and worker profiles"
+  default_prompt: "Use $workbench:prepare to plan this change with task-specific models, efforts, isolated worktrees, and verification."
 
 policy:
   allow_implicit_invocation: false

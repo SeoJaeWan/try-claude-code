@@ -1,7 +1,0 @@
-interface:
-  display_name: "Finalize"
-  short_description: "Review and validate one integrated Git change"
-  default_prompt: "Use $workbench:finalize to validate this selected integrated Git change and report the result."
-
-policy:
-  allow_implicit_invocation: false

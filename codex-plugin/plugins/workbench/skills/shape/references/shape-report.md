@@ -1,12 +1,18 @@
 # Shape Report Contract
 
+## Report depth
+
+Use `report_mode: focused` for a bounded analysis question. Report the repository/checkout, exact HEAD, dirty status, inspected paths/content identities, findings and evidence, decisions, acceptance where applicable, and material gaps. Omit irrelevant template sections. A focused `READY` means the bounded analysis is sufficient; it does not certify a whole-checkout snapshot.
+
+Use `report_mode: snapshot_bound` for a requested reproducible handoff or analysis depending on broad dirty changes. Use the full identity/snapshot contract below and the relevant report sections. Do not impose whole-checkout hashing on a small question whose claims can be bound to inspected sources. In both modes, reread changing relevant evidence or mark affected claims unverified.
+
 ## Identity and snapshot
 
 - Create `analysis_id` as `wb-shape-<UTC YYYYMMDDTHHMMSSZ>-<HEAD first 12>-<six random lowercase hex>`.
 - Set `report_revision` to a positive integer and increment it whenever the snapshot, requirements, or decisions change.
 - Record stable repository identity separately from machine-bound paths.
 - Classify the checkout as `primary_local` or `linked_worktree` using the Git dir, common dir, and `git worktree list --porcelain`.
-- A complete content-sensitive fingerprint is required for `READY`.
+- In `snapshot_bound` mode a complete content-sensitive fingerprint is required for `READY`; never imply this guarantee for a focused report.
 
 ### Status fingerprint v1
 
@@ -44,6 +50,7 @@ For each external source record its canonical URL, library version, source ref, 
 # Shape 보고서 — <request>
 
 ## 상태
+- report_mode: focused | snapshot_bound
 - status: READY | BLOCKED | NEEDS_INPUT
 - blockers: []
 - unresolved_questions: []
@@ -100,6 +107,7 @@ For each external source record its canonical URL, library version, source ref, 
 ## 위험 및 구현 고려사항
 
 ## 조사 및 출처
+- delegated questions, requested profiles, host-observed settings when available, and reconciled findings (when delegation was useful)
 ```
 
 `work_item_key` may be null; do not discover one through Jira. Record supplied Artifact references separately from local project knowledge. For `.codocs`, record the selected checkout, original paths and content digests. If `.codocs` is absent, report the gap and use explicit project instructions and repository evidence without creating documents or falling back to Wiki/Jira lookup. Missing material policy or unresolved decision-critical conflicts prevent `READY`; unavailable Wiki architecture is not a blocker.

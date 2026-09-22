@@ -10,7 +10,9 @@ Read and edit local YAML directly. Wiki access, Wiki writes, and paired synchron
 
 Build a compact inventory of actual `.yaml`/`.yml` documents under the selected `.codocs` root, including path, `id`, `name`, and `domains`. Do not confuse examples or another checkout's documents with the selected project. Respect filesystem boundaries and project discovery rules; incomplete discovery cannot establish uniqueness or absence. Read relevant owner bodies, duplicates, conflicts, and reference targets before deciding to create or split a document.
 
-Follow the project's current schema and authoring policy. The current Codocs format has one YAML mapping per file:
+Use the target project's explicit schema/version, authoring rules, and validator as the governing format. The baseline below applies only where consistent with that project; it is not permission to migrate files or override a newer schema. If the project has no contrary rule, use this baseline with repository evidence. If a material schema conflict cannot be resolved from local rules/tooling, hold affected writes and ask while continuing independent work.
+
+The bundled baseline has one YAML mapping per file:
 
 ```yaml
 id: example-policy
@@ -29,9 +31,9 @@ definition: |
 
 ## References and validation
 
-Codocs body references use exact document names: `[[이름]]` or `[[도메인:이름]]`, not Wiki slugs or MCP references. Unqualified names resolve across all domains; the source document's domain has no priority. Use a qualified name when necessary. Follow the project's escaping rules for colons and literal brackets. References are interpreted in `definition` and string `examples`, not arbitrary metadata. Apply Codocs reference parsing rules even inside Markdown code fences; do not invent a fenced-code exclusion.
+Under the bundled baseline, Codocs body references use exact document names: `[[이름]]` or `[[도메인:이름]]`, not Wiki slugs or MCP references. Unqualified names resolve across all domains; the source document's domain has no priority. Use a qualified name when necessary. Follow the project's escaping rules for colons and literal brackets. References are interpreted in `definition` and string `examples`, not arbitrary metadata. Apply Codocs reference parsing rules even inside Markdown code fences; do not invent a fenced-code exclusion.
 
-Before and after edits, use the project's available Codocs parser/validator and catalog/reference checks when callable, discovered from repository documentation or package scripts. Do not invent a CLI or treat a generic YAML parser as complete Codocs validation. If semantic tooling is unavailable, inspect required fields, allowed values, duplicate IDs, same-domain name collisions, exact reference targets, and index reachability; report the checks performed and any unresolved limitations. Generic YAML validity alone does not establish Codocs validity. Codocs excludes duplicate mapping keys, anchors/aliases, merge keys, custom tags, and multiple YAML documents per file.
+Discover the project's parser/validator and catalog/reference checks. Establish an initial inventory, validate changed documents and affected incoming/outgoing references before dependent edits, and run final project-wide uniqueness and reference/navigation checks. Reuse unchanged inventory/check evidence; rescan affected surfaces when concurrent edits invalidate it. Avoid a complete scan after every unrelated edit unless the tooling requires one. Do not invent a CLI or treat a generic YAML parser as complete Codocs validation. If semantic tooling is unavailable, inspect required fields, allowed values, duplicate IDs, same-domain name collisions, exact reference targets, and index reachability; report the checks performed and any unresolved limitations. Generic YAML validity alone does not establish Codocs validity. The bundled baseline excludes duplicate mapping keys, anchors/aliases, merge keys, custom tags, and multiple YAML documents per file; apply the governing project format when different.
 
 For renames, check all affected incoming references and preserve their intended targets, including domain ambiguity. Do not claim a complete rename while affected references remain unresolved or out of scope. For splits, verify the destination before narrowing the source. Keep useful overview/navigation documents and avoid reciprocal-link-only rewrites.
 

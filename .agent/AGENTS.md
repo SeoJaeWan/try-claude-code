@@ -9,7 +9,7 @@
 
 ## 영역별 소유권
 
-- `codex-plugin/plugins/workbench/` — Workbench manifest, 다섯 개의 명시 호출 skill, MCP 설정, 계약 테스트
+- `codex-plugin/plugins/workbench/` — Workbench manifest, 네 개의 명시 호출 skill, MCP 설정, 계약 테스트
 - `codex-plugin/.agents/plugins/marketplace.json` — 현재 Codex marketplace 등록
 - `.codex/AGENTS.md`, `.codex/config.toml`, `.codex/skills/evaluate-workbench/` — 보호 경계와 legacy v2 계약 회귀 벤치마크
 - `.claude/CLAUDE.md` — 이 파일을 import하는 Claude Code 전용 어댑터
@@ -24,7 +24,7 @@
 - Treat `legacy/old/codex-planning-stack/dev-wiki/source/` and `legacy/old/codex-planning-stack/plan-wiki/source/` as repositories with Git boundaries separate from the root repository.
 - Do NOT mix `codex-plugin/` implementation changes with `.codex/` maintenance unless the requested work explicitly requires both, including moving or updating the Workbench evaluator.
 - Do NOT treat files under `legacy/` as active product entrypoints or current workflow contracts.
-- Do NOT treat `.codex/skills/evaluate-workbench/` as an evaluator for the active five-skill Workbench. It retains the legacy v2 `brainstorm` and `executor` regression contract until a separately approved migration.
+- Do NOT treat `.codex/skills/evaluate-workbench/` as an evaluator for the active four-skill Workbench. It retains the legacy v2 `brainstorm` and `executor` regression contract until a separately approved migration.
 
 ## 스킬 컨벤션
 
@@ -32,12 +32,14 @@
 - `SKILL.md` frontmatter requires `name` and `description`; `model` and `allowed-tools` are optional.
 - Include Korean trigger phrases for skills intended for Korean users.
 - Keep skill entrypoints concise and move detailed procedures, schemas, and tool guidance to directly linked `references/` files.
-- Keep the active Workbench limited to `shape`, `memory-update`, `prepare`, `execute-task`, and `finalize`.
+- Keep the active Workbench limited to `shape`, `memory-update`, `prepare`, and `execute-task`.
 - Require `$workbench:<skill>` explicit invocation and `allow_implicit_invocation: false` for every active Workbench skill. Do NOT auto-chain one Workbench skill into another.
 - Use local `.codocs` as the project knowledge and implementation-rule basis for Shape, Prepare, and Execute Task. When an external library fact affects a decision, use Context7 when available and verify it with official source links; fall back to direct official sources when Context7 is unavailable or insufficient.
 - Shape, Prepare, and Execute Task may read user-supplied Wiki Artifacts as task inputs, but do not query canonical Wikis or Jira for project rules. When a request links Figma, Shape retrieves relevant evidence read-only. Do NOT create issues/comments/transitions or mutate Figma files/nodes from Shape.
 - Keep every Workbench skill self-contained. Do NOT name, require, recommend, or advertise another Workbench skill inside a skill body or reference contract.
-- Accept producer-neutral inputs: Prepare accepts any sufficient change definition, Execute Task accepts a bounded objective or complete packet, Memory Update accepts one or more bounded project-knowledge topics, and Finalize accepts any exact immutable Git change.
+- Accept producer-neutral inputs: Prepare accepts any sufficient change definition, Execute Task accepts a bounded objective or complete packet, and Memory Update accepts one or more bounded project-knowledge topics.
+- Select explicit task/helper model and reasoning-effort profiles from current host capabilities, considering Astra, Sol, and Luna according to the task rather than inheriting the host. Keep model choices and reasons in implementation plans. Allow bounded independent read-only research delegation when useful.
+- Keep execution checks and self-review proportional to the change; do not introduce a mandatory separate final review stage.
 - Let Shape and Prepare inspect the current checkout read-only. Require Execute Task to materialize only its validated task-scoped path and branch.
 - Use Local Work Memory only to resolve supplied Artifact references in the applicable workflow. Memory Update curates only local `.codocs` documents and necessary navigation, following project authoring rules and processing every bounded topic sequentially. Do NOT read or update Wiki knowledge or synchronize stores through Memory Update, even when older project procedures describe paired updates.
 

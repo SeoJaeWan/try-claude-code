@@ -1,7 +1,7 @@
 interface:
   display_name: "Shape"
-  short_description: "Investigate a change with sourced evidence"
-  default_prompt: "Use $workbench:shape to investigate this software change and return a standalone evidence-backed report."
+  short_description: "Investigate changes with focused parallel research"
+  default_prompt: "Use $workbench:shape to investigate this change, delegate useful independent research with selected profiles, and return the analysis."
 
 dependencies:
   tools:
