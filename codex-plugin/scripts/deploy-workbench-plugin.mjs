@@ -27,7 +27,7 @@ const args = new Set(rawArgs);
 const dryRun = args.has("--dry-run");
 const skipCachebuster = args.has("--skip-cachebuster");
 const skipInstall = args.has("--skip-install");
-const codexExecutable = process.platform === "win32" ? "codex.cmd" : "codex";
+const codexExecutable = "codex";
 
 function utcStamp(date = new Date()) {
   const pad = (value) => String(value).padStart(2, "0");
