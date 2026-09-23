@@ -4,7 +4,17 @@
 
 Honor each packet's `execution_profile.model`, `reasoning_effort`, and user limits. Model choice is not automatically Astra, nor effort automatically low or inherited. Keep the active coordinator model unchanged.
 
-For producer-neutral input without a profile, select one during normalization and record the choice and rationale in the execution binding. Bounded extraction or repetitive edits may use Luna/low or medium; ordinary implementation/debugging may use Sol/low or medium; uncertain cross-module reasoning may warrant Astra/medium or high. These are heuristics, not fixed rankings or price guarantees. Check current host availability and use supported IDs such as `gpt-5.6-luna`, `gpt-5.6-sol`, and `gpt-6-astra` only when exposed. Respect any explicit source/user profile instead of reclassifying it silently.
+For producer-neutral input without a profile, select one during normalization and record the choice and rationale in the execution binding. Prefer supported GPT-6 candidates for new choices:
+
+| Work characteristic | Candidate profile |
+| --- | --- |
+| Bounded extraction, repetitive edits, focused implementation with clear checks | `gpt-6-luna` / `high`; `low` or `medium` may suffice for simple, easily checked work |
+| Ordinary or complex implementation/debugging, including understood cross-module changes | `gpt-6-sol` / `medium`; consider `high` for harder analysis or design judgment |
+| Hardest multi-step work with sustained uncertainty and coupled design/integration decisions | `gpt-6-astra` / `low`; increase to `medium` or `high` when justified |
+
+These are adjustable starting points, not fixed rankings or price guarantees. Multiple modules alone do not require Astra. Effort labels are not equivalent capability or usage levels across models. The baseline follows [official model guidance](https://learn.chatgpt.com/docs/models#choosing-sol-terra-and-luna), checked 2026-09-23; actual host-supported combinations govern dispatch.
+
+When selecting a new profile, an unavailable preferred candidate may be replaced with another permitted supported choice, recording the reason. Do NOT silently upgrade or reclassify an explicit source/user profile, including GPT-5.6 settings. Apply an authorized profile change through a traceable execution-binding revision while preserving the original source/digest. For a requested model comparison, initially preserve the supported effort and compare representative outcomes, retries, time, and usage before adjusting it; this is not an extra gate for ordinary execution.
 
 ## Dispatch
 

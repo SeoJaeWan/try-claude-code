@@ -28,7 +28,7 @@ Workbench는 순서가 정해진 workflow가 아니라 네 개의 독립 도구�
 
 각 스킬은 `$workbench:<skill>`로 명시 호출해야 하며 자신의 동작만 수행하고 종료합니다. 다른 Workbench 스킬을 이름으로 참조하거나 선행 조건으로 요구하지 않습니다. 사용자는 필요에 따라 단독으로 사용하거나 자유롭게 조합할 수 있습니다.
 
-호출하는 작업의 모델은 유지합니다. 조사와 구현 worker는 작업의 명확성·난도·위험에 따라 현재 지원되는 Astra·Sol·Luna와 effort를 명시적으로 선택합니다. Prepare는 task별 profile과 이유를 계획에 포함하고 Execute Task는 실제 생성 인자로 전달합니다. 부모가 high라고 모든 worker가 high를 상속하지 않습니다.
+호출하는 작업의 모델은 유지합니다. 조사와 구현 worker는 작업의 명확성·난도·위험에 따라 현재 지원되는 Astra·Sol·Luna와 effort를 명시적으로 선택합니다. Prepare는 task별 profile과 이유를 계획에 포함하고 Execute Task는 실제 생성 인자로 전달합니다. 부모가 high라고 모든 worker가 high를 상속하지 않습니다. 새 프로필은 지원되는 GPT-6 Luna/high·Sol/medium·Astra/low를 시작점으로 작업에 맞게 조정합니다. Sol은 복잡한 여러 모듈의 구현도 후보이며, 명시된 기존 모델·effort는 자동으로 업그레이드하지 않습니다.
 
 ## 설계 원칙
 
