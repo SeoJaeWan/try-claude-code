@@ -52,4 +52,5 @@
 - Use focused validation for the touched surface, then run broader checks only when they are relevant and currently valid.
 - Use `npm test` for the active Workbench Node contract suite. Treat any `.codex/skills/evaluate-workbench` test as legacy evaluator regression only.
 - Do NOT commit, push, publish, or open a PR unless the user explicitly asks. For Workbench execution, an explicitly approved Execution Plan with `commit_policy: task_local_required` counts as task-local commit authorization only.
+- An explicit Execute Task request using its review-delivery workflow with a resolved PR source/head target authorizes integrating verified task results into that head history and pushing that exact delivery commit. Preserve an explicit local-only/no-push policy. This does not authorize PR creation, a merge into the PR base, deployment, or cleanup; the coordinator stays read-only and a publisher worker uses an isolated worktree.
 - Do NOT merge task branches into the local checkout or delete worktrees without explicit user authorization.

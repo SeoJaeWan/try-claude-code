@@ -18,7 +18,7 @@
 |---|---|---|
 | `shape` | 소프트웨어 변경 요청과 근거 | 범위에 맞춘 변경 분석 |
 | `prepare` | 충분한 변경 정의 | task DAG, worktree, 검증, 모델·effort 계획 |
-| `execute-task` | execution plan, packet 묶음 또는 bounded objective | 작업별 실행·검증 결과와 미해결 사항 |
+| `execute-task` | execution plan, packet 묶음 또는 bounded objective | 작업별 검증 결과, PR head 전달 상태, 사용자 리뷰 checkpoint |
 | `memory-update` | bounded project-knowledge 주제 | 로컬 `.codocs` 갱신·참조 검증 결과 |
 
 모든 `agents/openai.yaml`은 `allow_implicit_invocation: false`를 유지합니다. 입력 생산자가 아니라 입력의 의미·정확한 Git identity·제공된 digest를 검증합니다. 메인 모델은 호출자가 선택하며 스킬이 전환하지 않습니다.
@@ -63,7 +63,11 @@ Worker는 실제 자기 worktree에 연결된 Codocs MCP를 우선 사용하거�
 
 모든 완료 판정은 최신 승인 범위에 적용합니다. 계획한 진단 정책 안에서는 coordinator가 읽기 전용 helper를 추가할 수 있지만 수정 주체는 한 명입니다. 기록에는 task별 planned/requested/effective profile과 revision·diagnosis 결과를 구분합니다.
 
-기존 작업별 검사·자기 검토·통합 검사·verified/provisional 구분을 유지합니다. **필수 독립 리뷰, 일괄 부하/실패 검사, 별도 최종 승인·보고 단계를 추가하지 않습니다.** 특별 검증이나 리뷰는 사용자 요청이나 실제 변경의 위험에 맞게 포함합니다. 기존 `finalize` 진입점은 제거하고 그 절차를 이 스킬의 필수 단계로 흡수하지 않습니다.
+기존 작업별 검사·자기 검토·통합 검사·verified/provisional 구분을 유지합니다. **필수 독립 agent 리뷰, 일괄 부하/실패 검사, 전달 전 별도 승인 gate를 추가하지 않습니다.** 특별 검증이나 리뷰는 사용자 요청이나 실제 변경의 위험에 맞게 포함합니다. 기존 `finalize` 진입점은 제거하고 별도 스킬로 요구하지 않습니다.
+
+명시 호출한 review-delivery 흐름은 검증된 최종 결과를 확인된 PR source/head 이력에 통합하고 정확한 commit을 푸시합니다. 대상 repository/remote/head와 현재 원격 commit을 전달 binding으로 기록하며 explicit no-push/local-only 정책을 보존합니다. Coordinator는 계속 읽기 전용이고 publisher worker가 자기 격리 worktree에서 전달을 수행합니다. 기존 final worker를 이어 사용할 수 있으며 새로운 결합 검증이 필요할 때만 별도 integration worker를 둡니다. provisional continuation은 리뷰 전달 권한이나 검증 성공을 의미하지 않습니다.
+
+원격 반영을 확인하면 `AWAITING_REVIEW`로 응답을 마치고 같은 대화의 다음 사용자 메시지를 기다립니다. 예약·heartbeat·리뷰 polling·sleep loop를 만들지 않으며 계속 실행 중이라고 표현하지 않습니다. 다음 질문에는 답하고, 리뷰 수정은 현재 head/작업 상태를 확인해 revision과 필요한 검증·재전달로 처리합니다. 승인만으로 PR base merge·배포·cleanup을 수행하지 않습니다.
 
 ## Memory Update
 
@@ -79,7 +83,7 @@ Wiki 조회/갱신·동기화와 실행 로그 저장은 하지 않습니다. �
 
 ## 공통 경계와 배포
 
-사용자 checkout과 무관한 변경을 보존합니다. Push, PR, 사용자 branch merge, handoff, cleanup은 별도 사용자 권한입니다. `.codex/` 설정은 이 변경의 대상이 아닙니다. 프로젝트 설정의 agent 한도는 20입니다.
+사용자 checkout과 무관한 변경을 보존합니다. 리뷰 전달의 PR head 통합·push는 명시 호출한 해당 흐름과 확인된 대상 범위에서 수행합니다. PR 생성, base merge, 배포, cleanup은 별도 사용자 권한입니다. `.codex/` 설정은 이 변경의 대상이 아닙니다. 프로젝트 설정의 agent 한도는 20입니다.
 
 Figma MCP만 플러그인이 직접 등록합니다. Context7, Local Work Memory, Atlassian은 설치·인증 의존성에 포함하지 않습니다.
 

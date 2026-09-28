@@ -1,7 +1,7 @@
 interface:
   display_name: "Execute Task"
-  short_description: "Execute task DAGs with selected worker profiles"
-  default_prompt: "Use $workbench:execute-task to run this plan with its task profiles, continue independent work, and handle findings and requirement updates."
+  short_description: "Execute tasks, deliver to the PR head, and await review"
+  default_prompt: "Use $workbench:execute-task to run this plan with its task profiles, deliver verified results to the resolved PR head branch, and await my review in this conversation."
 
 policy:
   allow_implicit_invocation: false

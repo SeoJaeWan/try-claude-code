@@ -22,4 +22,8 @@ Send the replacement packet or follow-up to the affected worker and require ackn
 
 Record each material update with: source instruction, previous/current revision, affected tasks, stopped or acknowledged workers, reused/invalidated results, and checks to repeat. Tag each returned result with its intent revision and execution binding. Late results from superseded packets are evidence only until explicitly reconciled.
 
-Completion applies to the latest authorized scope. Do not claim completion while a required decision, failed acceptance-critical check, or unreconciled affected result remains. Keep implementation and integration verification; no extra universal review stage is introduced. For a small one-task run, include only the applicable identity, profile, result, verification, and findings fields rather than empty revision machinery.
+Completion applies to the latest authorized scope. Do not claim completion while a required decision, failed acceptance-critical check, or unreconciled affected result remains. Keep implementation and integration verification; no extra independent agent review gate is introduced. For a small one-task run, include only applicable identity, profile, result, verification, findings, and delivery/review fields rather than empty revision machinery.
+
+## Messages after review delivery
+
+After the verified result is pushed to the resolved PR head, follow [review-delivery.md](review-delivery.md) and yield with `AWAITING_REVIEW`. The next user message resumes this conversation; no automation, polling, or live wait loop is needed. Preserve the delivery checkpoint and distinguish questions, requested fixes, approval, and cancellation. Apply material review fixes through this revision protocol, recheck actual remote/worktree state, and deliver only the newly verified result before yielding again. Acknowledging approval does not itself merge the PR into its base or deploy it.

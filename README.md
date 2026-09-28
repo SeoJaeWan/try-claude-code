@@ -23,7 +23,7 @@ Workbench는 순서가 정해진 workflow가 아니라 네 개의 독립 도구�
 |---|---|
 | `$workbench:shape` | 변경 요청을 읽기 전용으로 조사하고 standalone 분석 보고서 생성 |
 | `$workbench:prepare` | task DAG, 격리, 검증, 작업별 모델·effort 계획 |
-| `$workbench:execute-task` | task별 모델·effort와 전용 worktree로 실행하고 검증·질문·변경 지시 처리 |
+| `$workbench:execute-task` | task별 실행·검증 후 PR head에 결과 반영·푸시하고 사용자 리뷰 대기 |
 | `$workbench:memory-update` | 로컬 `.codocs` 지식과 참조를 순차 큐레이션 |
 
 각 스킬은 `$workbench:<skill>`로 명시 호출해야 하며 자신의 동작만 수행하고 종료합니다. 다른 Workbench 스킬을 이름으로 참조하거나 선행 조건으로 요구하지 않습니다. 사용자는 필요에 따라 단독으로 사용하거나 자유롭게 조합할 수 있습니다.
@@ -43,7 +43,7 @@ Workbench는 순서가 정해진 workflow가 아니라 네 개의 독립 도구�
 - Memory Update는 요청 범위의 모든 `.codocs` 지식 주제를 dependency-aware queue로 순차 처리합니다. 각 주제는 중복·관계·충돌을 독립 판단하며, 한 주제의 확정적 실패는 안전한 후속 독립 주제를 막지 않습니다.
 - Memory Update는 실제 작업 checkout에 연결된 Codocs MCP를 우선 사용해 로컬 `.codocs`를 조회·수정·검증합니다. 해당 checkout에 사용할 MCP가 없으면 로컬 파일 방식으로 진행하며, 실제 문서 경로·저장/색인 결과·검증 한계를 보고합니다. Wiki 갱신이나 동기화는 하지 않습니다.
 - 기존 작업별·통합 검증을 유지하며 필수 독립 리뷰나 별도 최종 gate는 추가하지 않습니다.
-- push, PR, 사용자 branch merge, handoff와 cleanup은 자동 수행하지 않습니다.
+- Execute Task의 리뷰 전달 흐름은 검증된 결과를 확인된 PR source/head에 반영·푸시합니다. 명시적인 로컬 전용/no-push 정책은 유지하며, PR 생성·base merge·배포·cleanup은 별도 권한입니다.
 
 ## MCP 등록
 
@@ -58,6 +58,8 @@ Execute Task는 충분한 execution plan, packet 묶음 또는 bounded objective
 공유 계약·선행 산출물이 확보되고 쓰기와 실행 자원이 격리된 작업은 병렬 실행합니다. Wave 전체가 아니라 각 task의 의존성을 기준으로 시작합니다. 작은 작업은 하나의 task로 끝낼 수 있습니다. 정확한 provisional candidate와 `continuation: ALLOWED`가 있으면 실제 필요한 interface를 확인한 후 downstream도 진행합니다.
 
 질문은 발견 시 보내고 독립 작업은 계속합니다. 사용자가 요구사항을 바꾸면 영향받는 worker만 전달/중단하고 원본 plan을 보존한 새 revision으로 결과 재사용·무효화와 필요한 검증을 기록합니다. 현재 범위에 대한 검사 실패나 미해결 결정을 성공으로 표현하지 않습니다.
+
+검증된 최종 결과는 publisher worker가 격리된 worktree에서 확인된 PR source/head 이력에 통합하고 정확한 commit을 푸시합니다. Coordinator는 계속 읽기 전용이며 사용자의 원래 checkout을 수정하지 않습니다. 푸시 확인 후 `AWAITING_REVIEW`로 응답을 마치고 같은 대화의 다음 메시지에 이어서 반응합니다. 예약·자동화·주기적 PR 확인·대기 루프는 만들지 않습니다. 리뷰 수정 요청에는 현재 원격 head와 작업 상태를 다시 확인하고 수정·검증·재전달하며, 승인만으로 base merge나 배포를 수행하지 않습니다.
 
 Memory Update도 독립적인 조사에는 적절한 모델을 선택할 수 있지만 실제 `.codocs` 수정은 한 writer가 순차 처리합니다. 최종 구성에는 별도의 Finalize 스킬이 없으며 그 절차를 실행의 필수 단계로 옮기지 않았습니다.
 

@@ -75,11 +75,18 @@ integration:
   order: []
   cross_task_checks: []
 delivery_policy:
+  mode: review_branch # use local_only for an explicit no-delivery request
+  target_repository: null # resolved PR-head repository, including fork when applicable
+  remote: null
+  head_branch: null # PR source/head, not the base branch
+  pr_url: null
   merge_local: false
-  push: false
+  push: true
   pull_request: false
-  handoff: manual
+  handoff: wait_for_user_review
 ```
+
+The default delivery policy describes integrating verified results into the resolved PR source/head branch and pushing it for user review. Resolve the head repository/remote/branch from supplied intent or unambiguous PR evidence; do not invent a branch or substitute the base. The publisher can integrate in its isolated worktree and push the exact commit without changing the user's original checkout, so `merge_local` remains false. Planning performs none of these actions and grants no publication authority by itself; explicit execution of the review-delivery workflow activates its allowed delivery scope under repository rules. Preserve user-supplied local-only/no-push policies and older source policies rather than silently upgrading them. Missing delivery identity does not prevent independent implementation planning, but record the unresolved delivery and do not claim it ready.
 
 `planned_worktree_count` equals the number of implementation/integration packets. Read-only research or diagnostic helpers do not allocate worktrees. There is no coordinator worktree and no path or branch reuse across tasks. A one-task plan may use `integration.strategy: verify_existing_head` with empty integration order and cross-task checks; its task result is the final head. Preserve base, scope, acceptance, profile, ownership, authority, and checks even in a compact plan; omit inapplicable optional metadata instead of producing empty boilerplate.
 
@@ -160,7 +167,7 @@ Explain the execution flow in wave order:
 2. For each wave, name its task IDs and titles, explain what they accomplish, and state which prior result unlocks the wave.
 3. When tasks share a parallel group, group them under the same numbered stage and explain that they run independently rather than presenting them as sequential work.
 4. Explain integration and cross-task verification when present. Include a compact task/model/effort/rationale table; label unverified future-host availability and optional diagnostic limits.
-5. End with baseline caveats and the manual delivery boundary, including that worktrees, merge, push, pull request, handoff, or cleanup were not performed when the plan says so.
+5. End with baseline caveats and the actual delivery policy: intended PR head/remote, unresolved target or authority, and whether review delivery or local-only execution is planned. State that planning itself did not create worktrees, merge, push, open a PR, or perform cleanup. Do not describe enabled review delivery as permanently manual.
 
 Keep the walkthrough substantially shorter than the YAML. Do not repeat digests, complete path lists, command lists, or every contract ID unless one is necessary to understand a risk. A small plan may use a short task explanation instead of empty wave/integration sections. Derive every statement from the emitted plan; do not introduce new tasks, ordering, guarantees, or authority.
 
@@ -176,7 +183,7 @@ Use this shape, adapting the number of stages to the actual waves:
 3. **Wave 3 — 통합 및 최종 검증**
    - `INT-001`: 결과를 어떤 순서와 전략으로 통합하고 무엇을 확인하는지 설명합니다.
 
-기존 baseline 문제와 수동으로 남겨 둔 전달 작업을 짧게 설명합니다.
+기존 baseline 문제와 PR head 전달·리뷰 handoff 정책, 미해결 전달 사항을 짧게 설명합니다.
 ```
 
 ## Questions and changed requirements

@@ -197,9 +197,11 @@ For integration packets, consume the coordinator-bound exact verified results an
 
 ## Execution Result
 
+Apply [review-delivery.md](review-delivery.md) after implementation verification when the request enables review delivery. The coordinator schedules a publisher; it does not perform Git mutations itself. Preserve the original verified-result identity separately from any newly verified delivery merge.
+
 ```markdown
 # Workbench Execution Result — <run-id>
-- status: COMPLETE | ACTION_REQUIRED | PARTIAL | NEEDS_INPUT | BLOCKED
+- status: AWAITING_REVIEW | COMPLETE | ACTION_REQUIRED | PARTIAL | NEEDS_INPUT | BLOCKED
 - repository_id:
 - base_commit:
 - coordinator_model: # actual model or unknown
@@ -216,6 +218,7 @@ For integration packets, consume the coordinator-bound exact verified results an
 - final_result_commit: # verified single-task result or integrated result
 - final_integration_commit: # verified integration only, null when unnecessary
 - candidate_integration_commit: # provisional only
+- delivery: # review binding, delivered/confirmed commits, delivery and review status when applicable
 
 ## Task results
 - task ID -> status, implementation status, verification status, continuation, commit kind, exact commit, worktree, evidence
@@ -232,8 +235,13 @@ For integration packets, consume the coordinator-bound exact verified results an
 - final disposition
 - exact action required before delivery
 
-## Remaining risks and manual actions
-- push, PR, user-branch merge, handoff, and cleanup not performed
+## Delivery and review
+- resolved head repository/remote/branch and existing PR URL when available
+- verified result, delivered commit, confirmed remote head, checks, and actual delivery outcome
+- review status and continuation checkpoint
+
+## Remaining risks and actions
+- unresolved delivery, pending checks, separately authorized base merge/deployment, and preserved worktrees
 ```
 
-Return `COMPLETE` only when all required implementation and applicable verification pass for the latest authorized scope. A single-task result can be the final head without an extra integration packet. Do not add a mandatory independent review or approval gate. Return `ACTION_REQUIRED` when all safely runnable work was attempted but unresolved findings still prevent acceptance. Return `PARTIAL` when material prerequisites made some planned work impossible to attempt, `NEEDS_INPUT` when a user decision or new authority is required, and `BLOCKED` when execution could not make meaningful progress. Preserve original plans and report execution findings; incorporate explicit user changes through traceable revisions rather than silently replacing intent.
+Return `AWAITING_REVIEW` after verified implementation and confirmed authorized delivery when user review remains pending. End the turn; resume on the next user message without scheduling or polling. `COMPLETE` requires required implementation and applicable verification for the latest authorized scope, plus no pending requested review/delivery. A single-task result can be the final head without an extra integration packet. Do not add a mandatory independent agent review or extra approval gate before authorized delivery. Return `ACTION_REQUIRED` when all safely runnable work was attempted but unresolved findings prevent acceptance/delivery. Return `PARTIAL` when material prerequisites made some planned work impossible to attempt, `NEEDS_INPUT` when a user decision or new authority is required, and `BLOCKED` when execution could not make meaningful progress. Preserve original plans and report execution findings; incorporate explicit user changes through traceable revisions rather than silently replacing intent.
