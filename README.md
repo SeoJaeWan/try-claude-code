@@ -33,12 +33,13 @@ Workbench는 순서가 정해진 workflow가 아니라 네 개의 독립 도구�
 ## 설계 원칙
 
 - 입력의 producer보다 완전성, repository identity, digest와 정확한 기준 commit ID를 검증합니다.
-- Shape와 Prepare는 현재 checkout을 읽기 전용으로 사용합니다. Shape·Prepare·Execute Task는 제공된 Wiki Artifact를 작업 입력으로 읽고, 계획·구현의 지식과 규칙은 `.codocs`에서 확인합니다. Jira는 조회하지 않습니다.
+- Shape와 Prepare는 현재 checkout을 읽기 전용으로 사용합니다. Shape·Prepare·Execute Task는 해당 checkout에 연결된 Codocs MCP를 우선 사용해 `.codocs` 지식을 확인하고, 연결이 없으면 로컬 파일을 읽습니다. 원문 digest와 MCP revision을 구분해 근거를 기록하며, 제공된 Wiki Artifact는 작업 입력으로 사용합니다. Jira는 조회하지 않습니다.
 - Prepare는 immutable plan YAML 뒤에 같은 DAG에서 파생한 짧은 작업 단계 설명을 항상 덧붙입니다.
 - Shape와 Prepare는 이득이 있는 독립적인 조사만 읽기 전용으로 위임합니다. 단순 작업에는 추가 agent가 필요하지 않습니다.
 - Execute Task의 coordinator는 읽기 전용이며 각 task의 모델·effort를 명시적으로 적용합니다.
 - Execute Task는 특정 planner나 source field 이름을 요구하지 않고 호환 가능한 입력을 strict runtime packet으로 정규화하며, 원본 digest와 별도의 execution binding을 유지합니다.
 - 각 worker는 자기 standard Git worktree에서 task 하나만 변경하고 검증 성공 시 result commit, 검증 실패가 남아도 후속 작업이 소비 가능한 구현이면 provisional candidate commit을 만듭니다.
+- Execute Task의 worker는 실제 자기 worktree에 대한 Codocs 연결을 다시 확인합니다. `.codocs` 수정은 승인된 task 소유 경로 안에서 수행하고 revision 충돌·저장/색인 결과를 검토합니다. Coordinator는 MCP로도 문서를 쓰지 않습니다.
 - Memory Update는 요청 범위의 모든 `.codocs` 지식 주제를 dependency-aware queue로 순차 처리합니다. 각 주제는 중복·관계·충돌을 독립 판단하며, 한 주제의 확정적 실패는 안전한 후속 독립 주제를 막지 않습니다.
 - Memory Update는 실제 작업 checkout에 연결된 Codocs MCP를 우선 사용해 로컬 `.codocs`를 조회·수정·검증합니다. 해당 checkout에 사용할 MCP가 없으면 로컬 파일 방식으로 진행하며, 실제 문서 경로·저장/색인 결과·검증 한계를 보고합니다. Wiki 갱신이나 동기화는 하지 않습니다.
 - 기존 작업별·통합 검증을 유지하며 필수 독립 리뷰나 별도 최종 gate는 추가하지 않습니다.
@@ -48,7 +49,7 @@ Workbench는 순서가 정해진 workflow가 아니라 네 개의 독립 도구�
 
 Workbench 플러그인은 Figma MCP만 직접 등록합니다. Context7, Local Work Memory, Atlassian MCP는 플러그인 설치·인증 의존성에 포함하지 않습니다.
 
-Memory Update는 사용 환경에 이미 연결된 Codocs MCP를 사용할 수 있습니다. Codocs는 시작 시 지정한 프로젝트에 연결되므로 별도 worktree에서 갱신할 때는 그 worktree에 대한 연결인지 확인합니다. 플러그인이 Codocs를 자동 설치하거나 MCP 설정을 변경하지 않으며, 연결이 없어도 로컬 파일 방식으로 사용할 수 있습니다.
+네 스킬 모두 사용 환경에 이미 연결된 Codocs MCP를 우선 사용할 수 있습니다. Codocs는 시작 시 지정한 프로젝트에 연결되므로 조회·수정 대상 checkout과 연결의 프로젝트를 확인합니다. 계획 때 사용한 연결을 실행 worker의 별도 worktree에 그대로 적용하지 않습니다. 플러그인이 Codocs를 자동 설치하거나 MCP 설정을 변경하지 않으며, 연결이 없어도 로컬 파일 방식으로 사용할 수 있습니다.
 
 ## Execute Task 실행
 

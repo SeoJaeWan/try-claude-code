@@ -37,13 +37,13 @@ Shape의 초기 조사 예시는 코드 위치·호출 관계 GPT-6 Luna/high, �
 
 ## Shape
 
-현재 checkout을 읽기 전용으로 조사합니다. 관련 `.codocs`와 프로젝트 규칙, 코드·테스트·CI, 제공된 Wiki Artifact와 연결된 Figma, 버전에 맞는 공식 자료를 근거로 사용합니다. canonical Wiki/Jira 조회나 외부 mutation은 하지 않습니다.
+현재 checkout을 읽기 전용으로 조사합니다. 해당 analysis checkout으로 확인된 Codocs MCP의 list/get/guide를 우선 사용하고, 연결이 없으면 로컬 `.codocs`를 읽습니다. 원문 digest와 별도로 MCP revision·탐색/확인 상태를 기록합니다. partial 결과의 확인된 사실은 제한된 분석에 쓸 수 있지만 부재·유일성·미확인 정책을 확정하지 않습니다. 프로젝트 규칙, 코드·테스트·CI, 제공된 Wiki Artifact와 연결된 Figma, 버전에 맞는 공식 자료도 근거로 사용합니다. 문서 쓰기와 canonical Wiki/Jira 조회는 하지 않습니다.
 
 작은 질문은 HEAD·dirty 상태·조사한 소스 identity와 관련 결론을 담은 `focused` 보고서로 충분합니다. 재현 가능한 인계나 넓은 dirty 변경에 의존하는 분석은 `snapshot_bound`로 전체 content-sensitive fingerprint를 계산합니다. focused 결과를 전체 checkout이 고정됐다는 보증으로 표현하지 않습니다.
 
 ## Prepare
 
-현재 checkout은 읽기 전용이며 clean/stable execution base를 정합니다. 필요한 dirty 변경을 누락하거나 임의로 checkpoint하지 않습니다. `.codocs`의 관련 제약과 source identity를 self-contained packet에 담습니다.
+현재 checkout은 읽기 전용이며 clean/stable execution base를 정합니다. planning checkout에 연결된 Codocs MCP를 우선 사용하거나 로컬 `.codocs`를 읽고, 관련 제약·원문 digest·조회 방식을 self-contained packet에 담습니다. MCP revision은 Git base나 원문 digest를 대신하지 않습니다. 실제 실행 base에 해당 지식이 있는지 확인하고 필요한 dirty 변경을 누락하거나 임의로 checkpoint하지 않습니다. 미래 worker가 자기 worktree의 연결을 확인하도록 전달하며 planning 연결의 재사용을 전제하지 않습니다.
 
 각 task의 목표·수락 조건·소유 파일·금지 범위·실행 자원·검증·고유 branch/worktree·정확한 base selector와 `execution_profile`을 계획합니다. 프로필은 model, reasoning_effort, rationale, 기본 `escalation: none`을 포함합니다. 필요한 작업에만 명시한 조건·모델·effort·추가 agent 수 한도를 갖는 읽기 전용 diagnosis를 계획합니다. 환경 장애나 사용자 결정 누락은 effort 상향으로 해결하지 않습니다. 미래 실행 host를 확인하지 못하면 가용성 미확인으로 표시하고 실행 시 preflight하도록 합니다.
 
@@ -57,7 +57,7 @@ Coordinator는 읽기 전용으로 입력을 정규화하고 실행을 조정합
 
 각 implementation/integration worker는 완전한 packet, 명시된 model/effort, 고유 standard Git worktree를 사용합니다. Coordinator는 파일을 수정하거나 worktree를 만들지 않습니다. 독립적이고 자원이 격리된 runnable task를 host capacity까지 실행하고 나머지는 대기시킵니다. 특정 profile을 요청할 수 없으면 해당 task를 막고 설명하며 독립 작업은 계속합니다. 조용한 profile 대체나 coordinator 직접 구현으로 우회하지 않습니다.
 
-Worker는 자기 worktree의 `.codocs`와 규칙을 확인하고 구현·작업별 검사·self-review를 수행합니다. 정확한 verified result 또는 소비 가능한 provisional candidate와 명시적인 continuation 판단을 반환합니다. 검사 실패만으로 전체 실행을 멈추지 않으며, 실제 필요한 interface가 없는 descendants만 보류합니다. 한 task로 끝나는 작업은 추가 integration packet 없이 그 결과가 최종 head가 될 수 있습니다.
+Worker는 실제 자기 worktree에 연결된 Codocs MCP를 우선 사용하거나 그 worktree의 로컬 `.codocs`를 읽어 규칙과 packet 근거를 다시 확인합니다. 승인된 task가 문서 수정을 요구하면 소유/공유 경로 안에서 최신 revision으로 수정하고 충돌·저장/색인 결과·진단을 검토합니다. Coordinator는 MCP로도 문서를 쓰지 않습니다. Worker는 구현·작업별 검사·self-review를 수행하고 정확한 verified result 또는 소비 가능한 provisional candidate와 명시적인 continuation 판단을 반환합니다. 검사 실패만으로 전체 실행을 멈추지 않으며, 실제 필요한 interface가 없는 descendants만 보류합니다. 한 task로 끝나는 작업은 추가 integration packet 없이 그 결과가 최종 head가 될 수 있습니다.
 
 필요한 질문은 발견 시 비동기로 보내고 답변이 필요한 작업만 보류합니다. 사용자 지시가 바뀌면 영향받는 worker를 전달/중단하고 진행 중 도구까지 멈췄는지 확인한 뒤 새 intent/binding revision을 발행합니다. 원본 plan은 보존하고 결과 재사용·무효화와 재검증 범위를 기록합니다. 기존 task의 알려진 미커밋 변경은 소유권과 상태를 확인해 명시적으로 재바인딩하여 재개할 수 있지만, 다른 task와 worktree를 공유하지 않습니다. 알 수 없는 사용자 변경을 임의로 흡수하지 않습니다. 전체 취소 지시에는 전체 실행을 멈춥니다.
 
