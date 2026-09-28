@@ -1,10 +1,11 @@
 {
   "name": "try-claude-code",
   "version": "2.4.0",
-  "description": "Codex Workbench plugin development workspace",
+  "description": "Workbench plugin workspace for Codex and Claude Code",
   "type": "module",
   "scripts": {
-    "codex-deploy": "node codex-plugin/scripts/deploy-workbench-plugin.mjs",
-    "test": "node --test codex-plugin/plugins/workbench/__tests__/planning-boundary.test.mjs codex-plugin/scripts/__tests__/temporary-manifest.test.mjs"
+    "deploy": "node plugin/scripts/deploy-workbench-plugin.mjs",
+    "deploy:codex": "node plugin/scripts/deploy-workbench-plugin.mjs --host codex",
+    "deploy:claude": "node plugin/scripts/deploy-workbench-plugin.mjs --host claude"
   }
 }

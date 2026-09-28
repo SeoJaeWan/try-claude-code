@@ -1,15 +1,16 @@
-# try-Codex
+# Workbench
 
-Codex Workbench 플러그인을 개발·검증하는 저장소입니다. 현재 사용자-facing 제품은 [`codex-plugin/plugins/workbench/`](./codex-plugin/plugins/workbench/)이며, 이전 구현은 [`legacy/`](./legacy/)에 보존합니다. 현재 구조는 [`docs/current-architecture.md`](./docs/current-architecture.md)를 기준으로 합니다.
+Codex와 Claude Code에서 함께 쓰는 Workbench 플러그인을 개발·검증하는 저장소입니다. 현재 사용자-facing 제품은 [`plugin/plugins/workbench/`](./plugin/plugins/workbench/)이며, 이전 구현은 [`legacy/`](./legacy/)에 보존합니다. 현재 구조는 [`docs/current-architecture.md`](./docs/current-architecture.md), 설치와 MCP 설정은 [`docs/host-setup.md`](./docs/host-setup.md)를 기준으로 합니다.
 
 ## 저장소 구조
 
 ```text
 .
-├── .agent/                         # 프로젝트 작업 규칙 원본
+├── AGENTS.md                       # Codex·Claude Code 공용 작업 규칙
+├── .agent/                         # 장기 참고자료
 ├── .codex/                         # project-local Codex 실행 설정
-├── codex-plugin/                   # 현재 Workbench 플러그인
-├── docs/current-architecture.md    # 현재 구조 문서
+├── plugin/                         # Workbench marketplace와 플러그인
+├── docs/                           # 현재 구조·설치 문서
 ├── legacy/                         # 이전 구현 보관
 ├── README.md
 └── package.json
@@ -21,14 +22,14 @@ Workbench는 순서가 정해진 workflow가 아니라 네 개의 독립 도구�
 
 | 스킬 | 역할 |
 |---|---|
-| `$workbench:shape` | 변경 요청을 읽기 전용으로 조사하고 standalone 분석 보고서 생성 |
-| `$workbench:prepare` | task DAG, 격리, 검증, 작업별 모델·effort 계획 |
-| `$workbench:execute-task` | task별 실행·검증 후 PR head에 결과 반영·푸시하고 사용자 리뷰 대기 |
-| `$workbench:memory-update` | 로컬 `.codocs` 지식과 참조를 순차 큐레이션 |
+| `shape` | 변경 요청을 읽기 전용으로 조사하고 standalone 분석 보고서 생성 |
+| `prepare` | task DAG, 격리, 검증, 작업별 모델·effort 계획 |
+| `execute-task` | task별 실행·검증 후 PR head에 결과 반영·푸시하고 사용자 리뷰 대기 |
+| `memory-update` | 로컬 `.codocs` 지식과 참조를 순차 큐레이션 |
 
-각 스킬은 `$workbench:<skill>`로 명시 호출해야 하며 자신의 동작만 수행하고 종료합니다. 다른 Workbench 스킬을 이름으로 참조하거나 선행 조건으로 요구하지 않습니다. 사용자는 필요에 따라 단독으로 사용하거나 자유롭게 조합할 수 있습니다.
+각 스킬은 Codex에서는 `$workbench:<skill>`, Claude Code에서는 `/workbench:<skill>`로 명시 호출해야 하며 일상 대화로는 실행되지 않습니다. 자신의 동작만 수행하고 종료합니다. 다른 Workbench 스킬을 이름으로 참조하거나 선행 조건으로 요구하지 않습니다. 사용자는 필요에 따라 단독으로 사용하거나 자유롭게 조합할 수 있습니다.
 
-호출하는 작업의 모델은 유지합니다. 조사와 구현 worker는 작업의 명확성·난도·위험에 따라 현재 지원되는 Astra·Sol·Luna와 effort를 명시적으로 선택합니다. Prepare는 task별 profile과 이유를 계획에 포함하고 Execute Task는 실제 생성 인자로 전달합니다. 부모가 high라고 모든 worker가 high를 상속하지 않습니다. 새 프로필은 지원되는 GPT-6 Luna/high·Sol/medium·Astra/low를 시작점으로 작업에 맞게 조정합니다. Sol은 복잡한 여러 모듈의 구현도 후보이며, 명시된 기존 모델·effort는 자동으로 업그레이드하지 않습니다.
+호출하는 작업의 모델은 유지합니다. 조사와 구현 worker는 작업의 명확성·난도·위험에 따라 도구 중립 등급(`focused`·`standard`·`deep`)과 effort를 명시적으로 선택합니다. 실행하는 도구가 등급을 자기 모델로 바꿉니다: Codex는 GPT-6 Luna·Sol·Astra, Claude Code는 `haiku`·`sonnet`·`opus`입니다. Claude Code는 보조 AI마다 effort를 지정할 수 없어 세션 effort를 따릅니다. Prepare는 task별 profile과 이유를 계획에 포함하고 Execute Task는 실제 생성 인자로 전달합니다. 명시된 기존 모델은 자동으로 바꾸지 않습니다.
 
 ## 설계 원칙
 
@@ -47,13 +48,13 @@ Workbench는 순서가 정해진 workflow가 아니라 네 개의 독립 도구�
 
 ## MCP 등록
 
-Workbench 플러그인은 Figma MCP만 직접 등록합니다. Context7, Local Work Memory, Atlassian MCP는 플러그인 설치·인증 의존성에 포함하지 않습니다.
+Workbench 플러그인은 MCP를 직접 번들하지 않습니다. Figma, Codocs, Local Work Memory·Context7(`gateway-public`)은 각 도구에 사용자 설정으로 등록하며 등록·확인 방법은 [`docs/host-setup.md`](./docs/host-setup.md)에 있습니다.
 
 네 스킬 모두 사용 환경에 이미 연결된 Codocs MCP를 우선 사용할 수 있습니다. Codocs는 시작 시 지정한 프로젝트에 연결되므로 조회·수정 대상 checkout과 연결의 프로젝트를 확인합니다. 계획 때 사용한 연결을 실행 worker의 별도 worktree에 그대로 적용하지 않습니다. 플러그인이 Codocs를 자동 설치하거나 MCP 설정을 변경하지 않으며, 연결이 없어도 로컬 파일 방식으로 사용할 수 있습니다.
 
 ## Execute Task 실행
 
-Execute Task는 충분한 execution plan, packet 묶음 또는 bounded objective를 받아 producer-neutral runtime packet으로 정규화합니다. Profile 없는 입력은 작업에 맞는 설정을 선택해 기록하며, 공급된 profile은 조용히 변경하지 않습니다. 현재 host의 모델·effort 선택지와 생성 인자를 확인하고, fresh-context worker에 완전한 packet과 두 설정을 전달합니다. 계획값·요청값·host가 노출한 실제값을 구분하고 실제값을 확인할 수 없으면 `unknown`으로 표시합니다.
+Execute Task는 충분한 execution plan, packet 묶음 또는 bounded objective를 받아 producer-neutral runtime packet으로 정규화합니다. Profile 없는 입력은 작업에 맞는 설정을 선택해 기록하며, 공급된 profile은 조용히 변경하지 않습니다. 현재 host의 모델·effort 선택지와 생성 인자를 확인하고, fresh-context worker에 완전한 packet과 등급에 해당하는 모델(지원하는 host에서는 effort도)을 전달합니다. 계획값·요청값·host가 노출한 실제값을 구분하고 실제값을 확인할 수 없으면 `unknown`, Claude Code effort는 `session`으로 표시합니다.
 
 공유 계약·선행 산출물이 확보되고 쓰기와 실행 자원이 격리된 작업은 병렬 실행합니다. Wave 전체가 아니라 각 task의 의존성을 기준으로 시작합니다. 작은 작업은 하나의 task로 끝낼 수 있습니다. 정확한 provisional candidate와 `continuation: ALLOWED`가 있으면 실제 필요한 interface를 확인한 후 downstream도 진행합니다.
 
@@ -66,15 +67,17 @@ Memory Update도 독립적인 조사에는 적절한 모델을 선택할 수 있
 ## 배포
 
 ```bash
-npm run codex-deploy
+npm run deploy          # Codex와 Claude Code 모두
+npm run deploy:codex
+npm run deploy:claude
 ```
 
-배포는 `local-work` marketplace가 현재 checkout의 `codex-plugin/`을 가리키는지 먼저 검사합니다. 설치할 때만 임시 cachebuster 버전을 적용하고 완료 후 source manifest를 원래 상태로 복원하므로, 배포가 추가한 version 변경은 Git에 남지 않습니다. 변경 검증만 하려면 다음을 사용합니다.
+배포는 각 도구의 `workbench` marketplace가 현재 checkout의 `plugin/`을 가리키는지 먼저 검사하고, 등록되지 않았으면 등록 명령을 안내한 뒤 중단합니다. 설치할 때만 임시 cachebuster 버전을 적용하고 완료 후 source manifest를 원래 상태로 복원하므로, 배포가 추가한 version 변경은 Git에 남지 않습니다. 실행 명령만 확인하려면 다음을 사용합니다.
 
 ```bash
-npm run codex-deploy -- --dry-run --skip-install
+npm run deploy -- --dry-run
 ```
 
 ## Legacy 정책
 
-`legacy/`는 현재 runtime, marketplace, CI와 active skill contract의 입력이 아닙니다.
+`legacy/`는 현재 runtime, marketplace와 active skill contract의 입력이 아닙니다.
