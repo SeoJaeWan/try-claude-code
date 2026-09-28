@@ -40,13 +40,15 @@ Workbench는 순서가 정해진 workflow가 아니라 네 개의 독립 도구�
 - Execute Task는 특정 planner나 source field 이름을 요구하지 않고 호환 가능한 입력을 strict runtime packet으로 정규화하며, 원본 digest와 별도의 execution binding을 유지합니다.
 - 각 worker는 자기 standard Git worktree에서 task 하나만 변경하고 검증 성공 시 result commit, 검증 실패가 남아도 후속 작업이 소비 가능한 구현이면 provisional candidate commit을 만듭니다.
 - Memory Update는 요청 범위의 모든 `.codocs` 지식 주제를 dependency-aware queue로 순차 처리합니다. 각 주제는 중복·관계·충돌을 독립 판단하며, 한 주제의 확정적 실패는 안전한 후속 독립 주제를 막지 않습니다.
-- Memory Update는 `.codocs`만 로컬 파일로 조회·수정합니다. Wiki 갱신이나 동기화는 하지 않으며, 실제 문서 경로와 검증 결과를 보고합니다.
+- Memory Update는 실제 작업 checkout에 연결된 Codocs MCP를 우선 사용해 로컬 `.codocs`를 조회·수정·검증합니다. 해당 checkout에 사용할 MCP가 없으면 로컬 파일 방식으로 진행하며, 실제 문서 경로·저장/색인 결과·검증 한계를 보고합니다. Wiki 갱신이나 동기화는 하지 않습니다.
 - 기존 작업별·통합 검증을 유지하며 필수 독립 리뷰나 별도 최종 gate는 추가하지 않습니다.
 - push, PR, 사용자 branch merge, handoff와 cleanup은 자동 수행하지 않습니다.
 
 ## MCP 등록
 
 Workbench 플러그인은 Figma MCP만 직접 등록합니다. Context7, Local Work Memory, Atlassian MCP는 플러그인 설치·인증 의존성에 포함하지 않습니다.
+
+Memory Update는 사용 환경에 이미 연결된 Codocs MCP를 사용할 수 있습니다. Codocs는 시작 시 지정한 프로젝트에 연결되므로 별도 worktree에서 갱신할 때는 그 worktree에 대한 연결인지 확인합니다. 플러그인이 Codocs를 자동 설치하거나 MCP 설정을 변경하지 않으며, 연결이 없어도 로컬 파일 방식으로 사용할 수 있습니다.
 
 ## Execute Task 실행
 

@@ -1,7 +1,7 @@
 interface:
   display_name: "Memory Update"
-  short_description: "Curate local knowledge with research and safe edits"
-  default_prompt: "Use $workbench:memory-update to investigate these knowledge topics and update local .codocs with one writer and verified references."
+  short_description: "Curate .codocs with MCP writes and verified references"
+  default_prompt: "Use $workbench:memory-update to curate these project-knowledge topics, preferring Codocs MCP verified for the write checkout, with one writer and validated references."
 
 policy:
   allow_implicit_invocation: false

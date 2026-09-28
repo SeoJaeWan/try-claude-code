@@ -20,12 +20,13 @@ Policy decisions stay with the user when evidence cannot settle them. Ask prompt
 
 ## Sequential edits
 
-- Read current contents and existing user changes before each write; reconcile concurrent edits or block the affected unit.
-- Use the local format and reference rules in [codocs-local.md](codocs-local.md). Verify each saved result before dependent edits.
+- Read current contents and existing user changes before each write; reconcile concurrent edits or block the affected unit. With MCP, re-get the current owner and use its reviewed revision as described in [codocs-mcp.md](codocs-mcp.md).
+- Use the project format and reference rules in [codocs-local.md](codocs-local.md). Verify each saved result and index visibility before dependent edits; recover the index without replaying a completed save.
 - Preserve meaning and distinguish proposed policy from confirmed policy. Do not silently resolve substantive contradictions.
 - A rename must preserve intended incoming reference targets and resolve ambiguity. Report out-of-scope references or incomplete scans rather than claiming completion.
 - Already equivalent content remains unchanged. A determinate failure does not prevent safe independent units from proceeding.
 - If a write outcome or shared identity is uncertain, inspect current state before retrying and stop only dependent work that cannot proceed reliably.
+- Use one access method for each write. A partial scan, conflict, or uncertain MCP result is not permission to bypass the condition through direct filesystem editing.
 
 ## Result
 
@@ -33,6 +34,7 @@ Report a summary and an ordered outcome for every unit:
 
 - created, updated, unchanged, blocked before writing, failed, or uncertain;
 - actual project/worktree and local document paths;
+- access method (verified Codocs MCP or local-file fallback), with relevant revisions and any save/index recovery distinction;
 - why the existing owner was reused or a new owner was justified;
 - factual and structural changes, preserved or repaired references;
 - checks performed, results, and validation limitations;

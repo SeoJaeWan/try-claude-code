@@ -1,6 +1,6 @@
 # Current Architecture — Codex Workbench
 
-> 기준일: 2026-09-22
+> 기준일: 2026-09-28
 
 현재 Workbench는 `codex-plugin/plugins/workbench/`에 있는 네 개의 독립적인 explicit-only 스킬입니다. 사용자가 필요한 스킬을 선택하며, 스킬끼리 자동 연결하거나 다른 스킬을 선행 조건으로 요구하지 않습니다.
 
@@ -67,11 +67,15 @@ Worker는 자기 worktree의 `.codocs`와 규칙을 확인하고 구현·작업�
 
 ## Memory Update
 
-프로젝트 `.codocs`의 bounded 지식 주제를 다룹니다. parser/script로 목록·ID·참조를 수집하고, 큰 요청의 독립적인 사실 확인·중복 분석만 명시적 profile로 읽기 전용 위임할 수 있습니다. 메인이 의미·문서 소유권·충돌을 종합하고 한 명의 writer가 의존 순서대로 문서를 수정합니다.
+프로젝트 `.codocs`의 bounded 지식 주제를 다룹니다. 실제 작업 checkout에 연결된 Codocs MCP를 우선 사용하고, 해당 checkout에 사용할 연결이 없으면 로컬 파일 방식으로 진행합니다. 서버의 시작 프로젝트가 실제 write worktree와 같은지 설정/세션 근거로 확인하며, 같은 repository나 문서 내용만으로 연결을 재사용하지 않습니다. MCP 설치·설정 변경은 이 흐름에 자동 포함하지 않습니다.
 
-프로젝트의 명시적 schema/version, authoring rule, validator가 기준이며 bundled baseline은 이에 부합할 때 사용합니다. 불명확한 중요한 충돌은 질문하고 해당 쓰기만 보류합니다. 문서 갱신 후 영향받는 참조를 검사하고 마지막에 전체 ID/이름 중복과 참조·navigation 정합성을 확인합니다. 변경 없는 전체 scan은 매 문서마다 반복하지 않습니다.
+MCP 사용 시 필요한 `codocs_guide` 주제를 읽고 `codocs_list`의 페이지를 따라 목록을 수집합니다. `codocs_get`으로 담당 원문·참조·revision을 읽고, 최신 검토 revision으로 `codocs_write`를 실행합니다. 큰 요청의 독립적인 사실 확인·중복 분석만 명시적 profile로 읽기 전용 위임할 수 있습니다. 메인이 의미·문서 소유권·충돌을 종합하고 한 명의 writer가 의존 순서대로 문서를 수정합니다.
 
-Wiki 조회/갱신·동기화와 실행 로그 저장은 하지 않습니다. 이미 같은 내용은 그대로 두고, 모든 주제의 실제 경로·결과·검증 한계와 미처리 사유를 보고합니다.
+프로젝트의 명시적 schema/version, authoring rule과 연결된 버전의 계약을 확인하며 bundled baseline은 이에 부합할 때 사용합니다. revision 충돌은 최신 원문을 재검토한 뒤 해결하고, 저장 완료 후 색인 갱신만 실패하면 재저장하지 않고 refresh로 복구합니다. partial scan이나 불확실한 저장 결과를 직접 파일 쓰기로 우회하지 않습니다. 불명확한 중요한 충돌은 질문하고 해당 쓰기만 보류합니다.
+
+문서 갱신 후 `codocs_validate` 또는 로컬 도구로 영향받는 참조를 검사하고 마지막에 전체 ID/이름 중복과 참조·navigation 정합성을 확인합니다. validate 요청 성공과 문서 오류 유무를 구분하고 경고도 검토합니다. 변경 없는 전체 scan은 매 문서마다 반복하지 않습니다. MCP revision 검사도 다중 파일 트랜잭션이나 프로세스 간 잠금을 보장하지 않습니다.
+
+Wiki 조회/갱신·동기화와 실행 로그 저장은 하지 않습니다. 이미 같은 내용은 그대로 두고, 모든 주제의 실제 경로·접근 방식·저장/색인 결과·검증 한계와 미처리 사유를 보고합니다.
 
 ## 공통 경계와 배포
 
