@@ -35,7 +35,7 @@ marketplace 이름은 두 도구 모두 `workbench`, 설치 ID는 `workbench@wor
 | Codocs | 로컬 `.codocs` 조회·수정·검증 | 네 스킬 모두 (없으면 로컬 파일 방식) |
 | `gateway-public` | Local Work Memory Artifact 조회, Context7 공식 문서 조회 | Shape, Prepare, Execute Task |
 
-`gateway-public`은 Local Work Memory(`memory_*`), Context7(`context7_*`), Atlassian(`atlassian_*`) 도구를 함께 제공합니다. Workbench는 Jira를 프로젝트 규칙 근거로 조회하지 않습니다. 직접 연결용 `local-work-memory`(`https://mcp.seojaewan.com/mcp/memory`) 항목은 Workbench가 사용하지 않습니다.
+`gateway-public`은 Local Work Memory(`memory_*`), Context7(`context7_*`), Atlassian(`atlassian_*`) 도구를 함께 제공합니다. Workbench는 Jira를 프로젝트 규칙 근거로 조회하지 않습니다.
 
 ### Codex (`~/.codex/config.toml`)
 
