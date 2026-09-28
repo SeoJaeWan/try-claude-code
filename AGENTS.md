@@ -12,19 +12,13 @@
 - `plugin/plugins/workbench/` — 두 도구의 manifest(`.codex-plugin/`, `.claude-plugin/`)와 네 개의 명시 호출 skill
 - `plugin/.agents/plugins/marketplace.json`, `plugin/.claude-plugin/marketplace.json` — 도구별 `workbench` marketplace 등록
 - `plugin/scripts/` — 두 도구 배포 스크립트
-- `.codex/config.toml`, `.codex/skills/evaluate-workbench/` — 이 저장소 전용 Codex runtime 설정과 legacy v2 계약 회귀 벤치마크
 - `docs/` — 현재 구조와 사용 중인 문서만 유지
 - `legacy/` — Claude Code 플러그인, 과거 Codex planning stack, Workbench v1·v2, Fable 5 운영 참고자료(`legacy/fable5/`)의 보관 영역
 
 ## 보호 영역
 
-- Do NOT create, edit, move, or delete files under `.codex/` without explicit user approval.
-- Keep `.codex/` limited to `config.toml` and `skills/evaluate-workbench/`; do not add other project-local skills, tools, artifacts, config, or wiki clones there without explicit user approval.
-- `.codex/config.toml` owns Codex runtime settings that apply only to this repository, including the agent thread limit of 20 for parallel Workbench tasks.
 - Treat `legacy/old/codex-planning-stack/dev-wiki/source/` and `legacy/old/codex-planning-stack/plan-wiki/source/` as repositories with Git boundaries separate from the root repository.
-- Do NOT mix `plugin/` implementation changes with `.codex/` maintenance unless the requested work explicitly requires both, including moving or updating the Workbench evaluator.
 - Do NOT treat files under `legacy/` as active product entrypoints or current workflow contracts.
-- Do NOT treat `.codex/skills/evaluate-workbench/` as an evaluator for the active four-skill Workbench. It retains the legacy v2 `brainstorm` and `executor` regression contract until a separately approved migration.
 
 ## 스킬 컨벤션
 

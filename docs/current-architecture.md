@@ -97,7 +97,7 @@ Wiki 조회/갱신·동기화와 실행 로그 저장은 하지 않습니다. �
 
 ## 공통 경계와 배포
 
-사용자 checkout과 무관한 변경을 보존합니다. 리뷰 전달의 PR head 통합·push는 명시 호출한 해당 흐름과 확인된 대상 범위에서 수행합니다. PR 생성, base merge, 배포, cleanup은 별도 사용자 권한입니다. `.codex/` 설정은 이 변경의 대상이 아닙니다. 프로젝트 설정의 Codex agent 한도는 20입니다.
+사용자 checkout과 무관한 변경을 보존합니다. 리뷰 전달의 PR head 통합·push는 명시 호출한 해당 흐름과 확인된 대상 범위에서 수행합니다. PR 생성, base merge, 배포, cleanup은 별도 사용자 권한입니다.
 
 플러그인은 MCP를 번들하지 않습니다. Figma, Codocs, `gateway-public`(Local Work Memory·Context7)은 각 도구의 사용자 설정으로 등록하며 [`host-setup.md`](host-setup.md)를 따릅니다.
 
