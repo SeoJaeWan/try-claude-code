@@ -6,7 +6,6 @@
 - 메인 사용자-facing 제품은 `plugin/plugins/workbench/`다.
 - 이 루트 `AGENTS.md`가 두 도구 공용 지침 진입점이다. Codex와 Claude Code 모두 자동으로 읽는다.
 - 현재 구조와 책임 경계의 기준 문서는 `docs/current-architecture.md`, 설치·MCP 설정은 `docs/host-setup.md`다.
-- `.agent/`는 장기 참고자료만 보관하며 지침 진입점이 아니다.
 
 ## 영역별 소유권
 
@@ -15,7 +14,7 @@
 - `plugin/scripts/` — 두 도구 배포 스크립트
 - `.codex/config.toml`, `.codex/skills/evaluate-workbench/` — 이 저장소 전용 Codex runtime 설정과 legacy v2 계약 회귀 벤치마크
 - `docs/` — 현재 구조와 사용 중인 문서만 유지
-- `legacy/` — Claude Code 플러그인, 과거 Codex planning stack과 Workbench v1·v2의 보관 영역
+- `legacy/` — Claude Code 플러그인, 과거 Codex planning stack, Workbench v1·v2, Fable 5 운영 참고자료(`legacy/fable5/`)의 보관 영역
 
 ## 보호 영역
 

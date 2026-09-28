@@ -7,11 +7,10 @@ Codex와 Claude Code에서 함께 쓰는 Workbench 플러그인을 개발·검�
 ```text
 .
 ├── AGENTS.md                       # Codex·Claude Code 공용 작업 규칙
-├── .agent/                         # 장기 참고자료
 ├── .codex/                         # project-local Codex 실행 설정
 ├── plugin/                         # Workbench marketplace와 플러그인
 ├── docs/                           # 현재 구조·설치 문서
-├── legacy/                         # 이전 구현 보관
+├── legacy/                         # 이전 구현·참고자료 보관
 ├── README.md
 └── package.json
 ```
