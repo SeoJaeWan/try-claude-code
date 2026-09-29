@@ -50,4 +50,4 @@ Follow repository checkout/worktree instructions. Preserve existing changes and 
 
 If direct edits are necessary for an operation unsupported by an otherwise verified connection, check the connected guide and scope first. Afterwards refresh that connection and re-get affected documents before any dependent MCP writes; old revisions and cursors are no longer evidence of current state.
 
-The authorized local write surface is the bounded `.codocs` owners and necessary index/reference documents. Do NOT modify application code, generated indexes, provider records, or Git history as part of curation. Report the chosen access method, actual worktree and paths, checks, limitations, and remaining work using [memory-change-set.md](memory-change-set.md).
+The authorized local write surface is the bounded `.codocs` owners and necessary index/reference documents. Do NOT modify application code, generated indexes, or provider records as part of curation. Report the chosen access method, actual worktree and paths, checks, limitations, and remaining work using [memory-change-set.md](memory-change-set.md).
