@@ -16,10 +16,11 @@ Codex와 Claude Code에서 함께 쓰는 Workbench 플러그인을 개발·검�
 
 ## Workbench skills
 
-Workbench는 순서가 정해진 workflow가 아니라 다섯 개의 독립 도구를 제공합니다.
+Workbench는 순서가 정해진 workflow가 아니라 여섯 개의 독립 도구를 제공합니다.
 
 | 스킬 | 역할 |
 |---|---|
+| `kickoff` | 주어진 정보로 작업에 필요한 결정 사항을 정리하고 사용자와 1번부터 하나씩 검토해 결정 기록 생성 |
 | `shape` | 변경 요청을 읽기 전용으로 조사하고 standalone 분석 보고서 생성 |
 | `prepare` | task DAG, 격리, 검증, 작업별 모델·effort 계획 |
 | `execute-task` | task별 실행·검증 후 로컬 PR source 통합·안전한 task worktree 정리; push 없음 |
@@ -33,6 +34,7 @@ Workbench는 순서가 정해진 workflow가 아니라 다섯 개의 독립 도�
 ## 설계 원칙
 
 - 입력의 producer보다 완전성, repository identity, digest와 정확한 기준 commit ID를 검증합니다.
+- Kickoff는 특정 리소스 종류나 도구를 전제하지 않고 주어진 정보를 읽기 전용으로 검토해, 에이전트가 정할 수 있는 것과 사용자가 정해야 하는 것을 구분합니다. 결정을 대신하거나 설계하지 않습니다.
 - Shape와 Prepare는 현재 checkout을 읽기 전용으로 사용합니다. Shape·Prepare·Execute Task는 해당 checkout에 연결된 Codocs MCP를 우선 사용해 `.codocs` 지식을 확인하고, 연결이 없으면 로컬 파일을 읽습니다. 원문 digest와 MCP revision을 구분해 근거를 기록하며, 제공된 Wiki Artifact는 작업 입력으로 사용합니다. Jira는 조회하지 않습니다.
 - Prepare는 immutable plan YAML 뒤에 같은 DAG에서 파생한 짧은 작업 단계 설명을 항상 덧붙입니다.
 - Shape와 Prepare는 이득이 있는 독립적인 조사만 읽기 전용으로 위임합니다. 단순 작업에는 추가 agent가 필요하지 않습니다.

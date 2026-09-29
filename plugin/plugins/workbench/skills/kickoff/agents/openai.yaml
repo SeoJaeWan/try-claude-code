@@ -1,0 +1,7 @@
+interface:
+  display_name: "Kickoff"
+  short_description: "Settle open decisions with the user before design"
+  default_prompt: "Use $workbench:kickoff to organize what I must decide for this work and review the items with me one at a time."
+
+policy:
+  allow_implicit_invocation: false

@@ -1,8 +1,8 @@
 # Current Architecture — Workbench
 
-> 기준일: 2026-09-29
+> 기준일: 2026-09-30
 
-현재 Workbench는 `plugin/plugins/workbench/`에 있는 다섯 개의 독립적인 explicit-only 스킬이며, 같은 스킬 폴더를 Codex와 Claude Code가 함께 사용합니다. 사용자가 필요한 스킬을 선택하며, 스킬끼리 자동 연결하거나 다른 스킬을 선행 조건으로 요구하지 않습니다.
+현재 Workbench는 `plugin/plugins/workbench/`에 있는 여섯 개의 독립적인 explicit-only 스킬이며, 같은 스킬 폴더를 Codex와 Claude Code가 함께 사용합니다. 사용자가 필요한 스킬을 선택하며, 스킬끼리 자동 연결하거나 다른 스킬을 선행 조건으로 요구하지 않습니다.
 
 ## 소유권과 진입점
 
@@ -17,6 +17,7 @@
 
 | 스킬 | 입력 | 결과 |
 |---|---|---|
+| `kickoff` | 작업에 대해 주어진 정보 | 사용자와 1번부터 합의한 결정 기록 |
 | `shape` | 소프트웨어 변경 요청과 근거 | 범위에 맞춘 변경 분석 |
 | `prepare` | 충분한 변경 정의 | task DAG, worktree, 검증, 모델·effort 계획 |
 | `execute-task` | execution plan, packet 묶음 또는 bounded objective | 검증된 로컬 PR head, durable checkpoint, 안전한 task worktree 정리 결과 |
@@ -49,6 +50,12 @@ Shape의 초기 조사 예시는 코드 위치·호출 관계 `focused`/high, �
 계획값·요청값·host가 알려준 실제값을 구분하고, 실제값이 노출되지 않으면 `unknown`, Claude Code effort는 `session`으로 보고합니다. 모델 자신의 진술은 실행 설정의 증거가 아닙니다.
 
 신규 선택의 후보가 없으면 사용자 한도 안에서 지원되는 대안을 선택하고 이유를 남깁니다. 명시된 기존 모델 프로필(`model`, `reasoning_effort`만 있는 이전 형식 포함)은 보존하며 릴리스만으로 업그레이드하지 않습니다. 실행 프로필 변경을 승인받으면 원본과 digest를 유지한 채 binding revision으로 추적합니다. 모델 비교가 필요한 경우 기존 지원 effort를 유지해 대표 작업의 결과·재시도·시간·사용량을 비교한 후 조정합니다. 이는 매 작업에 추가되는 검증 gate가 아닙니다. 선택 기준은 Codex [공식 모델 가이드](https://learn.chatgpt.com/docs/models#choosing-sol-terra-and-luna)(2026-09-23 확인)와 Claude [models overview](https://platform.claude.com/docs/en/models/overview)(2026-09-28 확인)이며 실행 가능 여부는 실제 host가 제공하는 조합으로 판단합니다.
+
+## Kickoff
+
+특정 리소스 종류·도구·대조 대상을 고정하지 않습니다. 작업에 대해 주어진 정보를 읽기 전용으로 이해하고, 필요한 만큼 확인해 작업 진행에 정해야 할 것을 찾습니다. 발견한 내용은 `verified`(확인됨), `self-resolvable`(주어진 정보·문서화된 규칙·관례로 답이 정해지고 범위·동작·의도를 바꾸지 않음), `needs-decision`(사용자 판단 필요)으로 나누며, 애매하면 `needs-decision`으로 분류합니다.
+
+첫 응답은 작업 이해, 확인한 정보, 확인됨·정리 예정 요약, 다른 항목에 영향을 주는 결정을 앞에 둔 번호 목록으로 구성하고 바로 1번 논의를 시작합니다. 항목마다 배경·근거, 2~4개 선택지와 trade-off, 추천, 질문 하나를 제시하고 답을 기다립니다. 답을 한 줄 결정으로 확인하고 영향받는 뒤 항목을 갱신한 뒤 다음으로 넘어갑니다. 끝나면 이후 작업의 입력으로 단독 사용할 수 있는 결정 기록·보류 항목·가정을 반환하고 종료합니다. 결정을 대신하거나 설계하지 않고, 결정의 틀을 잡는 데 필요한 이상으로 조사하지 않으며, 아무것도 변경하거나 저장하지 않습니다.
 
 ## Shape
 

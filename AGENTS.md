@@ -9,7 +9,7 @@
 
 ## 영역별 소유권
 
-- `plugin/plugins/workbench/` — 두 도구의 manifest(`.codex-plugin/`, `.claude-plugin/`)와 다섯 개의 명시 호출 skill
+- `plugin/plugins/workbench/` — 두 도구의 manifest(`.codex-plugin/`, `.claude-plugin/`)와 여섯 개의 명시 호출 skill
 - `plugin/.agents/plugins/marketplace.json`, `plugin/.claude-plugin/marketplace.json` — 도구별 `workbench` marketplace 등록
 - `plugin/scripts/` — 두 도구 배포 스크립트
 - `docs/` — 현재 구조와 사용 중인 문서만 유지
@@ -26,16 +26,17 @@
 - `SKILL.md` frontmatter requires `name`, `description`, and `disable-model-invocation: true`. Do NOT add Claude Code-only frontmatter such as `model`, `context`, `agent`, or `allowed-tools`.
 - Include Korean trigger phrases for skills intended for Korean users. Keep host-specific invocation syntax out of `description`.
 - Keep skill entrypoints concise and move detailed procedures, schemas, and tool guidance to directly linked `references/` files.
-- Keep the active Workbench limited to `shape`, `memory-update`, `prepare`, `execute-task`, and `pr-push`.
+- Keep the active Workbench limited to `kickoff`, `shape`, `memory-update`, `prepare`, `execute-task`, and `pr-push`.
 - Require explicit invocation for every active Workbench skill: `$workbench:<skill>` in Codex and `/workbench:<skill>` in Claude Code. Keep both `allow_implicit_invocation: false` in `agents/openai.yaml` and `disable-model-invocation: true` in `SKILL.md`. Do NOT auto-chain one Workbench skill into another.
 - Keep skill bodies host-neutral. Put host-specific delegation differences in the relevant reference (`shape/references/analysis-delegation.md`, `prepare/references/model-selection.md`, `execute-task/references/worker-profiles.md`, `memory-update/references/memory-change-set.md`); delivery/cleanup uses available host capabilities without assuming a particular host.
 - Use local `.codocs` as the project knowledge and implementation-rule basis for Shape, Prepare, and Execute Task. When an external library fact affects a decision, use Context7 when available and verify it with official source links; fall back to direct official sources when Context7 is unavailable or insufficient.
 - Shape, Prepare, and Execute Task may read user-supplied Wiki Artifacts as task inputs, but do not query canonical Wikis or Jira for project rules. When a request links Figma, Shape retrieves relevant evidence read-only. Do NOT create issues/comments/transitions or mutate Figma files/nodes from Shape.
+- Keep Kickoff independent of particular resource types, tools, or sources: it reads whatever is supplied, read-only, organizes the decisions the work needs, and reviews them with the user one at a time. It does NOT decide for the user, design the change, or mutate anything.
 - Keep every Workbench skill self-contained. Do NOT name, require, recommend, or advertise another Workbench skill inside a skill body or reference contract.
 - Accept producer-neutral inputs: Prepare accepts any sufficient change definition, Execute Task accepts a bounded objective or complete packet, and Memory Update accepts one or more bounded project-knowledge topics.
 - Select explicit task/helper profiles as a host-neutral tier (`focused`, `standard`, `deep`) and effort rather than inheriting the host. Map tiers per host: Codex `gpt-6-luna`/`gpt-6-sol`/`gpt-6-astra`, Claude Code `haiku`/`sonnet`/`opus`. Claude Code subagents follow the session effort. Keep profile choices and reasons in implementation plans. Allow bounded independent read-only research delegation when useful.
 - Keep execution checks and self-review proportional to the change; do not introduce a mandatory separate final review stage.
-- Let Shape and Prepare inspect the current checkout read-only. Require Execute Task to materialize only its validated task-scoped path and branch.
+- Let Kickoff, Shape, and Prepare inspect the current checkout read-only. Require Execute Task to materialize only its validated task-scoped path and branch.
 - Use Local Work Memory only to resolve supplied Artifact references in the applicable workflow. Memory Update curates only local `.codocs` documents and necessary navigation, following project authoring rules and processing every bounded topic sequentially. Do NOT read or update Wiki knowledge or synchronize stores through Memory Update, even when older project procedures describe paired updates.
 
 ## 작업 규칙
