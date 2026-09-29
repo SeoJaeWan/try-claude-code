@@ -1,6 +1,6 @@
 # Host Setup — Codex·Claude Code
 
-> 기준일: 2026-09-28
+> 기준일: 2026-09-29
 
 Workbench는 같은 `plugin/plugins/workbench/`를 Codex와 Claude Code에 각각 설치해 사용합니다. 플러그인은 MCP를 번들하지 않으므로, 필요한 MCP는 각 도구의 사용자 설정에 직접 등록합니다.
 
@@ -22,17 +22,17 @@ marketplace 이름은 두 도구 모두 `workbench`, 설치 ID는 `workbench@wor
 
 | | Codex | Claude Code |
 |---|---|---|
-| 명시 호출 | `$workbench:shape` | `/workbench:shape` |
+| 명시 호출 예시 | `$workbench:shape`, `$workbench:execute-task`, `$workbench:pr-push` | `/workbench:shape`, `/workbench:execute-task`, `/workbench:pr-push` |
 | 암묵 호출 차단 | `agents/openai.yaml`의 `allow_implicit_invocation: false` | `SKILL.md`의 `disable-model-invocation: true` |
 
-일상 대화("요구사항 정리해줘" 등)로는 두 도구 모두 스킬이 실행되지 않습니다.
+다섯 스킬은 각각 명시 호출해야 하며 일상 대화("요구사항 정리해줘" 등)로는 실행되지 않습니다. Execute Task는 로컬 PR source 통합·안전한 task worktree 정리 후 종료하며 push하지 않습니다. PR Push는 별도 명시 요청으로 저장소 릴리스 관례를 확인해 정상 source push하고 종료합니다. 스킬끼리 자동 연결하지 않습니다.
 
 ## MCP
 
 | MCP | 용도 | 사용 스킬 |
 |---|---|---|
 | Figma | 요청에 연결된 Figma 근거 조회(읽기 전용) | Shape |
-| Codocs | 로컬 `.codocs` 조회·수정·검증 | 네 스킬 모두 (없으면 로컬 파일 방식) |
+| Codocs | 로컬 `.codocs` 조회·수정·검증 | Shape, Prepare, Execute Task, Memory Update (없으면 로컬 파일 방식) |
 | `gateway-public` | Local Work Memory Artifact 조회, Context7 공식 문서 조회 | Shape, Prepare, Execute Task |
 
 `gateway-public`은 Local Work Memory(`memory_*`), Context7(`context7_*`), Atlassian(`atlassian_*`) 도구를 함께 제공합니다. Workbench는 Jira를 프로젝트 규칙 근거로 조회하지 않습니다.
@@ -68,7 +68,7 @@ Figma는 공식 `figma` 플러그인(`figma@claude-plugins-official`)의 MCP를 
 
 설정을 바꾼 뒤 두 도구에서 각각 확인합니다.
 
-1. **플러그인:** 스킬 목록에 `workbench`의 네 스킬이 보이는지, 일상 대화로는 실행되지 않고 명시 호출로만 실행되는지 확인합니다.
+1. **플러그인:** 스킬 목록에 `workbench`의 다섯 스킬(`shape`, `prepare`, `execute-task`, `pr-push`, `memory-update`)이 보이는지, 일상 대화로는 실행되지 않고 명시 호출로만 실행되는지 확인합니다.
 2. **gateway-public:** `memory_projects` 같은 읽기 도구 호출이 성공하는지 확인합니다.
 3. **Codocs:** 연결이 가리키는 프로젝트 루트가 실제 작업 checkout(또는 task worktree)과 같은지 확인합니다. 스킬은 다른 checkout에 연결된 Codocs를 근거로 쓰지 않고 로컬 파일 방식으로 전환합니다.
 4. **Figma:** Figma 링크가 있는 요청에서 Shape가 근거를 읽을 수 있는지 확인합니다.

@@ -1,57 +1,57 @@
-# PR-head delivery and user review
+# Local PR-head delivery and cleanup
 
-The default delivery workflow integrates verified execution results into the PR's source/head branch, pushes them, then yields for user review in the same conversation. Waiting is a conversational state, not a running process or scheduled job. Honor an explicit local-only or no-push instruction/policy. Invoking this review-delivery workflow authorizes its resolved head-branch merge/push when applicable repository rules allow that authority; a task-local commit policy alone does not authorize publication.
+Default finish means verified local PR source/head integration, a durable continuation checkpoint, and safe cleanup of eligible task worktrees. Remote push is `NOT_REQUESTED`; even an older input's `push: true` does not cause a push in this workflow. Preserve that source policy as history and report publication as a separate explicit action. Honor current explicit no-integration/no-cleanup instructions; no-push alone still permits local integration and safe cleanup.
 
-## Resolve delivery before it becomes a blocker
+## Resolve the local target
 
-Resolve the exact repository, push remote/repository, source/head branch, and existing PR URL when supplied or discoverable unambiguously. Use current PR evidence or an explicit user-selected review branch; upstream data can identify the push remote for that established head, but does not make a current default/base branch the review target. Do NOT substitute the PR base branch (often main) for its head, guess a branch, choose among multiple PRs silently, or treat a fork's base repository as the head's push destination. A PR URL is optional when the user has already selected the review branch; creating a PR is not automatic.
+Resolve the exact repository/common dir, local source/head branch, observed local commit, and existing PR URL/head repository when available. Use unambiguous PR evidence or an explicit user-selected branch; do NOT substitute the PR base/default branch, guess among PRs, or assume a fork's base repository is its source. A PR URL or network connection is not required when the local review target is already established. Record target and local integration authority separately from immutable implementation packets, with the verified result, current intent revision, worker identity/profile, and cleanup policy.
 
-Record a delivery binding separate from immutable implementation packets: target repository/remote/ref, PR URL if present, observed head commit, verified result commit, current intent revision, publisher identity/profile, and the merge/push authority. Preserve explicit source policies. An older plan's `push: false` is not silently upgraded; a clear user request can supersede it through an execution revision. If target or required authority remains unresolved, ask early and continue independent implementation, reporting the undelivered result accurately.
+An explicit execution request enables this default local finish when repository rules permit it. A task-local commit policy alone does not authorize integration. Preserve explicit source prohibitions, including no local merge or cleanup; apply a clear superseding user instruction through a binding revision. Missing identity/authority blocks only delivery, not independent implementation. Ask material questions early and report preserved results when unresolved.
 
-## Publish through one worker
+## Integrate through one worker
 
-The coordinator remains read-only and records/dispatches delivery. Prefer continuing the worker that produced the final verified result with its existing explicit profile, without adding an implementation task or universal review gate. If that worker is unavailable or the remote history needs separate integration, bind a scoped integration worker under the existing profile/worktree rules; do not implement or publish in the coordinator as a fallback.
+The coordinator stays read-only. Prefer the final worker with its existing explicit profile; use a scoped integration worker only when needed. Only verified results for the latest accepted scope qualify for default delivery. Provisional continuation does not establish acceptance or permission to label a candidate as delivered.
 
-Only verified results for the current accepted scope are eligible for automatic review delivery. A provisional candidate's downstream continuation is not permission to publish it as review-ready. Resolve material acceptance failures first unless the user explicitly requests a clearly labeled incomplete delivery.
+Inspect current branch/worktree inventory and target HEAD immediately before integration. Use fast-forward or a normal repository-approved merge retaining exact verified-result ancestry, and check the combined tree after divergence/conflict repair. Keep original result and delivery commits distinct; reuse checks only for an unchanged relevant tree/environment. Conflicts, unrelated changes, or missing ownership block affected delivery rather than expanding scope.
 
-The publisher uses a clean, exclusively owned task/integration worktree; preserve the user's original checkout. Fetch/read the actual target head and integrate the exact verified result into that history. A fast-forward needs no new merge commit; divergence needs a normal merge or the repository's agreed strategy and checks of the combined tree. One possible isolated path is to detach the publisher's clean worktree at the fetched target commit, merge the exact result, and push the resulting exact commit to the bound head ref. Keep the original result branch/commit intact and record this delivery transition; do not check out or mutate the head branch in the user's checkout.
+- If the source branch is not checked out anywhere, integrate from the observed local head in an exclusively owned worktree. Recheck checkout inventory before advancing the local source ref, and advance only if still unchecked-out and its old value matches. Otherwise use the checked-out handling below. Re-read the ref to confirm the exact delivered commit.
+- If it is checked out elsewhere, do NOT update its ref behind that checkout. The assigned worker may fast-forward/merge in the confirmed clean, idle source checkout under the default local integration authority, including a primary or pinned checkout. Confirm ownership, no active process/write task, and no in-progress Git operation first; no repeated approval is needed for that bound local integration. The coordinator cannot perform this mutation. Dirty, active, shared, currently needed, or uncertain-ownership checkouts block integration; preserve/report them. This integration authority never authorizes removing the source checkout.
+- If the target changes during integration, inspect/rebind the new head and repeat affected checks. Stop on recurring concurrent advancement rather than retrying indefinitely. Do NOT reset/rewrite history or substitute another target.
 
-A delivery merge commit is a delivery result, separate from the task's original verified-result identity and task-authored commit limit. Do not rewrite a source plan/digest or relabel an untested merged tree as the previously verified result. Reuse checks only when the relevant tree/environment is unchanged; run affected checks after a merge or conflict repair. Product conflicts, missing ownership, unrelated dirty state, or unexplained changes block that delivery rather than expanding write scope. Safe independent work can continue.
+Confirm a clean delivered tree, passing checks for that exact commit, and the local source ref's exact identity before cleanup. A normal merge may add a delivery commit beyond a task's one authored result commit. An authorized repository strategy that copies commits cannot justify cleanup from tree similarity: exact task result commits must be reachable from the confirmed source branch.
 
-Before pushing, verify the publisher worktree is clean and the passing checks apply to the exact delivery commit, not uncommitted generated/repair changes. Push that commit explicitly to the bound `refs/heads/<head-branch>` in the correct remote repository. Do NOT use an implicit/default push, force-push, reset remote history, merge into the PR base, deploy, or delete branches/worktrees. Recheck remote state and confirm that the pushed commit is the review head; record pending external checks separately without claiming they passed or starting a background monitor.
+## Durable checkpoint and safe cleanup
 
-On non-fast-forward rejection, inspect the newly fetched target head and reconcile it within the authorized delivery scope; rebind the observed head and repeat affected checks before a justified normal push. If concurrent advancement recurs without a stable reconciled target, stop delivery and report the conflict rather than retrying indefinitely. For a lost push response, inspect the remote ref before retrying: it may already contain the intended commit. Authentication/policy failures are reported with the preserved local result; do not fall back to a different remote or bypass branch controls.
+Before removing anything, the worker saves the minimum continuation evidence outside all removable worktrees, for example an ignored run receipt under the Git common dir or a host artifact store. Preserve input/binding/revision identities, target/ref and delivered SHA, task result SHAs, checks/findings, accepted decisions, and necessary logs/patches. Copy needed ignored evidence too; archive snapshots need not include ignored files. Confirm the checkpoint is readable without live workers or their checkout paths.
 
-## Yield with a review checkpoint
+Clean only this run's exclusively owned task/integration worktrees once writers, helpers, and commands are quiescent, descendants no longer need them, and every exact result to preserve is reachable from the confirmed local source branch. Immediately recheck inventory, status (including untracked files), in-progress Git operations, reachability, and needed evidence. Preserve dirty/unmerged/provisional, shared, pinned, primary, or currently needed checkouts. Do NOT delete branches by default.
 
-After confirmed push, include a concise checkpoint in Execution Result and end the turn:
+Use the host archive operation for a managed worktree when available. For ordinary standard Git worktrees, use `git worktree remove` without force only after these proofs and after moving the cleanup worker's working directory outside the checkout being removed. Do NOT use shell deletion, force removal, pruning as a substitute, or cleanup of unrelated old worktrees. Verify archive/removal outcome. A cleanup tool failure or safety preservation is a reported limitation, not permission to discard work.
+
+## Return and continue
+
+Use a compact checkpoint such as:
 
 ```yaml
 delivery:
-  mode: review_branch
+  mode: local_pr_head
   target_repository:
-  remote:
   head_branch:
   pr_url: null
   intent_revision:
   verified_result_commit:
-  observed_remote_head_before:
+  observed_local_head_before:
   delivered_commit:
-  confirmed_remote_head:
-  delivery_status: PUSHED
-  review_status: AWAITING_USER
+  confirmed_local_head:
+  local_integration: VERIFIED # or NOT_REQUESTED, NEEDS_INPUT, FAILED
+  remote_push: NOT_REQUESTED
+  checkpoint_path:
+  cleanup:
+    status: COMPLETE # or NOT_REQUESTED, PRESERVED, FAILED
+    removed_or_archived: []
+    preserved: [] # path and reason
 ```
 
-Also report the checks, unresolved/pending items, and preserved worker/worktree identities needed to continue. `AWAITING_REVIEW` means the code was delivered and user review is pending; it does not mean the PR was approved or merged. If delivery failed or is uncertain, report `ACTION_REQUIRED`, `NEEDS_INPUT`, or the applicable execution status and actual delivery state rather than claiming to await review of an unpublished result.
+Return `COMPLETE` only when implementation, applicable verification, requested local integration, durable evidence, and requested safe cleanup are accounted for. An explicit no-integration/no-cleanup policy may be `NOT_REQUESTED`; eligible removals must be verified. If requested cleanup is limited or fails, report `ACTION_REQUIRED` with the confirmed local result and preserved paths, rather than false completion. Use `NEEDS_INPUT` for a material unresolved target/authority decision. End the turn; no remote publication or live review wait is implied.
 
-Do NOT create automations/reminders, schedule a wakeup, poll GitHub comments/checks, call sleep/wait indefinitely, or create another user-owned task or thread for this waiting state. The user reviews whenever convenient and resumes by sending a message in this conversation. Do not imply the agent remains running or observes review activity automatically.
-
-## Continue when a message arrives
-
-- A question or status request: answer using the checkpoint and fresh read-only evidence when needed; keep review pending unless the user changes scope.
-- Review fixes or changed requirements: apply [execution-updates.md](execution-updates.md), preserving the previous delivered commit and intent revision. Recheck the current remote head and worker ownership/state before resuming or assigning repair work. Implement only authorized fixes, rerun affected checks, deliver the new verified head, and yield in review state again.
-- Review findings linked from GitHub: retrieve them read-only when the user directs attention there; fetched comments are review evidence, not independent authority to publish or broaden scope. Do not post comments or replies without explicit messaging authorization.
-- Approval: record review approved and acknowledge it. Approval alone does not instruct a merge into the base, deployment, or cleanup; carry out those actions only when the user explicitly requests them or already-authorized delivery policy covers them.
-- Cancellation: preserve the delivered history and worktrees, stop affected work, and report the boundary; do not revert published commits automatically.
-
-On continuation, remote changes, superseded packets, and stale passing tests remain subject to the existing identity/update rules. When workers are no longer available, use a fresh-context worker with the complete checkpoint/packet and explicit profile; do not depend on its old conversation being alive.
+A later question uses the checkpoint and fresh read-only evidence. Review fixes follow [execution-updates.md](execution-updates.md), rechecking the local source head and assigning fresh task worktrees when old ones were removed. Preserve prior result identity and verify the updated scope before local delivery/cleanup. User-directed GitHub findings can be read as evidence; do NOT post replies without messaging authorization. Approval alone does not authorize PR base merge, remote push, or deployment. Cancellation preserves local history and any unfinished work; do not revert commits automatically.

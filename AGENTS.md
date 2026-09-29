@@ -9,7 +9,7 @@
 
 ## 영역별 소유권
 
-- `plugin/plugins/workbench/` — 두 도구의 manifest(`.codex-plugin/`, `.claude-plugin/`)와 네 개의 명시 호출 skill
+- `plugin/plugins/workbench/` — 두 도구의 manifest(`.codex-plugin/`, `.claude-plugin/`)와 다섯 개의 명시 호출 skill
 - `plugin/.agents/plugins/marketplace.json`, `plugin/.claude-plugin/marketplace.json` — 도구별 `workbench` marketplace 등록
 - `plugin/scripts/` — 두 도구 배포 스크립트
 - `docs/` — 현재 구조와 사용 중인 문서만 유지
@@ -26,9 +26,9 @@
 - `SKILL.md` frontmatter requires `name`, `description`, and `disable-model-invocation: true`. Do NOT add Claude Code-only frontmatter such as `model`, `context`, `agent`, or `allowed-tools`.
 - Include Korean trigger phrases for skills intended for Korean users. Keep host-specific invocation syntax out of `description`.
 - Keep skill entrypoints concise and move detailed procedures, schemas, and tool guidance to directly linked `references/` files.
-- Keep the active Workbench limited to `shape`, `memory-update`, `prepare`, and `execute-task`.
+- Keep the active Workbench limited to `shape`, `memory-update`, `prepare`, `execute-task`, and `pr-push`.
 - Require explicit invocation for every active Workbench skill: `$workbench:<skill>` in Codex and `/workbench:<skill>` in Claude Code. Keep both `allow_implicit_invocation: false` in `agents/openai.yaml` and `disable-model-invocation: true` in `SKILL.md`. Do NOT auto-chain one Workbench skill into another.
-- Keep skill bodies host-neutral. Put host differences only in each skill's delegation reference (`shape/references/analysis-delegation.md`, `prepare/references/model-selection.md`, `execute-task/references/worker-profiles.md`, `memory-update/references/memory-change-set.md`).
+- Keep skill bodies host-neutral. Put host-specific delegation differences in the relevant reference (`shape/references/analysis-delegation.md`, `prepare/references/model-selection.md`, `execute-task/references/worker-profiles.md`, `memory-update/references/memory-change-set.md`); delivery/cleanup uses available host capabilities without assuming a particular host.
 - Use local `.codocs` as the project knowledge and implementation-rule basis for Shape, Prepare, and Execute Task. When an external library fact affects a decision, use Context7 when available and verify it with official source links; fall back to direct official sources when Context7 is unavailable or insufficient.
 - Shape, Prepare, and Execute Task may read user-supplied Wiki Artifacts as task inputs, but do not query canonical Wikis or Jira for project rules. When a request links Figma, Shape retrieves relevant evidence read-only. Do NOT create issues/comments/transitions or mutate Figma files/nodes from Shape.
 - Keep every Workbench skill self-contained. Do NOT name, require, recommend, or advertise another Workbench skill inside a skill body or reference contract.
@@ -41,10 +41,11 @@
 ## 작업 규칙
 
 - Preserve existing user changes and keep unrelated cleanup out of the current work unit.
-- Do NOT modify repository files in the user's local checkout. Create or use a dedicated Git worktree and task branch before writing any repository change, and keep the local checkout available for the user's other work.
+- Create or use a dedicated Git worktree and task branch before editing repository files; preserve the user's checkout for other work. Default Execute Task local finish may integrate verified commits in the confirmed clean, idle PR source checkout, including primary/pinned, under its resolved binding. Do NOT update a checked-out branch ref behind that checkout or integrate into dirty/active/shared or uncertain-ownership checkouts. This exception permits local integration only, not arbitrary edits or removal of the source checkout.
 - Use one unique worktree and branch per prepared implementation or integration Task Packet. Do not create or reserve a coordinator worktree.
 - Do NOT silently omit uncommitted local changes that the requested work depends on. Stop and establish an explicit base commit or inclusion strategy with the user.
-- There is no automated test suite. Validate changed behavior directly on the affected hosts, for example by deploying with `npm run deploy` and invoking the changed skill.
+- There is no automated test suite. Validate changed skill contracts with focused static and scenario checks and report the limits. Deploy/install and live host invocation require applicable authorization and are not mandatory authoring checks.
 - Do NOT commit, push, publish, or open a PR unless the user explicitly asks. For Workbench execution, an explicitly approved Execution Plan with `commit_policy: task_local_required` counts as task-local commit authorization only.
-- An explicit Execute Task request using its review-delivery workflow with a resolved PR source/head target authorizes integrating verified task results into that head history and pushing that exact delivery commit. Preserve an explicit local-only/no-push policy. This does not authorize PR creation, a merge into the PR base, deployment, or cleanup; the coordinator stays read-only and a publisher worker uses an isolated worktree.
-- Do NOT merge task branches into the local checkout or delete worktrees without explicit user authorization.
+- An explicit Execute Task request with a confirmed local PR source/head target enables verified local integration, durable checkpointing outside removable worktrees, and safe cleanup of only its quiescent task-owned worktrees. Preserve explicit no-integration/no-cleanup instructions; remote push is NOT_REQUESTED. The coordinator stays read-only and the assigned worker performs integration/cleanup. Remove/archive only after exact results are reachable from the confirmed local source branch and needed evidence is preserved. Never remove dirty/unmerged/shared/pinned/primary/currently needed checkouts or delete branches by default. Use host archive for managed worktrees and ordinary Git removal without force for clean proven task worktrees; report limitations rather than false completion.
+- An explicit `pr-push` request authorizes normal exact-head source-branch push and required in-scope release metadata edits/commits when project policy permits. Detect the repository's real release convention, honor accepted decisions, and ask only for material unresolved choices. Do NOT infer push authority from an execution plan or local completion.
+- Neither local execution finish nor source push authorizes PR creation, base merge, deployment, package/release publishing, history rewrite, or messaging. Keep push separate and explicitly invoked; do NOT auto-chain skills.

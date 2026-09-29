@@ -130,13 +130,13 @@ Each worker performs exactly one packet:
 2. Validate the assigned path as a unique direct child of a dedicated parent outside the repository, Git metadata, home configuration, and system paths, with no `..` or symlink component.
 3. For a new worktree, require the assigned path and branch to be absent and the branch name valid; create the equivalent of `git worktree add -b <branch> <worktree> <base-commit>`. An existing path/branch follows the adoption or resume check below instead; do not recreate or rewind it.
 4. Adopt an existing clean path only when its path, common dir, branch, task identity, and HEAD match the packet; no other task may own that worktree. For an interrupted same-task resume, follow the update protocol: prove ownership of known run-produced edits and bind the resumed state explicitly. Unknown or unrelated dirty changes require user resolution; do not silently adopt them.
-5. Run all task commands and mutations only inside the assigned worktree. Read its relevant `.codocs` and reconcile the packet evidence according to the project-knowledge rules above before implementing.
+5. Run implementation commands and mutations only inside the assigned worktree. Read its relevant `.codocs` and reconcile the packet evidence according to the project-knowledge rules above before implementing. The separately bound local finish may integrate in the confirmed clean, idle source checkout and run cleanup from outside removal targets under [review-delivery.md](review-delivery.md); this is not general write authority outside the task.
 6. Implement the smallest change satisfying the packet. When implementation exposes a conflict or failed assumption, attempt the smallest repair inside the same objective and authorized surfaces. Compare staged and unstaged changes with owned and declared shared/generated surfaces; stop mutation on unexplained files without deleting or absorbing them.
 7. Run focused checks before relevant broader checks. Reuse evidence only for the same relevant code state and valid environment; changes to the checked surface invalidate it. After a failure, continue meaningful independent checks and record commands, duration, result, and evidence. Do not add blanket load testing or mandatory separate review to routine changes.
 8. Inspect the final diff and perform a correctness, security, failure-handling, scope, and verification self-review. Classify every finding as `resolved_in_task`, `carried_to_integration`, `action_required`, or `hard_blocker`.
 9. Stage only authorized paths and inspect the staged patch. For `task_local_required`, create at most one task-authored result commit in addition to dependency commits applied by a declared integration strategy: a `verified_result` when verification passes, or a `provisional_candidate` when the implementation is structurally usable but findings remain. Require a clean worktree after either commit and never label the provisional commit as verified.
 10. Set `continuation: ALLOWED` only when an exact commit exists and downstream work can consume the required material interface without inventing a product decision or expanding authority. Otherwise set `continuation: NOT_POSSIBLE` and state the missing prerequisite.
-11. Preserve any unsuccessful uncommitted worktree as diagnostic evidence. Cleanup is a separate explicit user action.
+11. Preserve unsuccessful uncommitted/provisional worktrees as diagnostic evidence. Successful task worktrees are eligible for the local finish cleanup only after the delivery contract proves reachability, quiescence, and durable evidence; workers do not remove them early.
 
 For integration packets, consume the coordinator-bound exact verified results and allowed provisional candidates. Attempt every declared integration and cross-task check that remains meaningful. Resolve incompatibilities only when the correct result is mechanically determined and stays inside authorized integration surfaces. If final verification passes, return a verified `integrated_head_sha`; otherwise return a clearly labeled `candidate_integrated_head_sha` when a usable integrated candidate exists. Preserve product or public-contract conflicts as `action_required`, execute unrelated remaining work, and report them after the run instead of silently changing the approved plan.
 
@@ -198,11 +198,11 @@ For integration packets, consume the coordinator-bound exact verified results an
 
 ## Execution Result
 
-Apply [review-delivery.md](review-delivery.md) after implementation verification when the request enables review delivery. The coordinator schedules a publisher; it does not perform Git mutations itself. Preserve the original verified-result identity separately from any newly verified delivery merge.
+Apply [review-delivery.md](review-delivery.md) after implementation verification for the default local finish, honoring explicit no-integration/no-cleanup policies. The coordinator schedules the final/integration worker; it performs no Git mutations or cleanup itself. Preserve original verified-result identities separately from any newly verified local delivery merge. Save continuation evidence outside removable worktrees before safe task cleanup; remote push stays `NOT_REQUESTED`. A source plan requesting push is preserved as history, not executed as publication authority here.
 
 ```markdown
 # Workbench Execution Result — <run-id>
-- status: AWAITING_REVIEW | COMPLETE | ACTION_REQUIRED | PARTIAL | NEEDS_INPUT | BLOCKED
+- status: COMPLETE | ACTION_REQUIRED | PARTIAL | NEEDS_INPUT | BLOCKED
 - repository_id:
 - base_commit:
 - coordinator_model: # actual model or unknown
@@ -219,7 +219,9 @@ Apply [review-delivery.md](review-delivery.md) after implementation verification
 - final_result_commit: # verified single-task result or integrated result
 - final_integration_commit: # verified integration only, null when unnecessary
 - candidate_integration_commit: # provisional only
-- delivery: # review binding, delivered/confirmed commits, delivery and review status when applicable
+- delivery: # local target binding, delivered/confirmed local commits, remote_push: NOT_REQUESTED
+- checkpoint_path: # durable evidence outside removable worktrees
+- cleanup: # removed/archived and preserved worktrees with reasons and actual outcome
 
 ## Task results
 - task ID -> status, implementation status, verification status, continuation, commit kind, exact commit, worktree, evidence
@@ -236,13 +238,13 @@ Apply [review-delivery.md](review-delivery.md) after implementation verification
 - final disposition
 - exact action required before delivery
 
-## Delivery and review
-- resolved head repository/remote/branch and existing PR URL when available
-- verified result, delivered commit, confirmed remote head, checks, and actual delivery outcome
-- review status and continuation checkpoint
+## Local delivery and cleanup
+- resolved local source repository/branch and existing PR URL when available
+- verified results, delivered commit, confirmed local head, checks, and actual integration outcome
+- durable continuation checkpoint, cleanup outcome and preserved paths; remote_push: NOT_REQUESTED
 
 ## Remaining risks and actions
-- unresolved delivery, pending checks, separately authorized base merge/deployment, and preserved worktrees
+- unresolved local integration/cleanup, pending checks, and preserved worktrees with reasons
 ```
 
-Return `AWAITING_REVIEW` after verified implementation and confirmed authorized delivery when user review remains pending. End the turn; resume on the next user message without scheduling or polling. `COMPLETE` requires required implementation and applicable verification for the latest authorized scope, plus no pending requested review/delivery. A single-task result can be the final head without an extra integration packet. Do not add a mandatory independent agent review or extra approval gate before authorized delivery. Return `ACTION_REQUIRED` when all safely runnable work was attempted but unresolved findings prevent acceptance/delivery. Return `PARTIAL` when material prerequisites made some planned work impossible to attempt, `NEEDS_INPUT` when a user decision or new authority is required, and `BLOCKED` when execution could not make meaningful progress. Preserve original plans and report execution findings; incorporate explicit user changes through traceable revisions rather than silently replacing intent.
+Return `COMPLETE` after required implementation and applicable verification for the latest authorized scope, confirmed requested local integration, a durable checkpoint, and verified requested safe cleanup. Explicit no-integration/no-cleanup choices are `NOT_REQUESTED`; requested cleanup limitations/failures are `ACTION_REQUIRED`, with the confirmed local result preserved. Remote push is `NOT_REQUESTED`. End the turn and resume on the next user message without scheduling or polling. A single-task result can be the final head without an extra integration packet. Do not add a mandatory independent agent review or extra approval gate before authorized delivery. Return `ACTION_REQUIRED` when all safely runnable work was attempted but unresolved findings prevent acceptance/delivery. Return `PARTIAL` when material prerequisites made some planned work impossible to attempt, `NEEDS_INPUT` when a user decision or new authority is required, and `BLOCKED` when execution could not make meaningful progress. Preserve original plans and report execution findings; incorporate explicit user changes through traceable revisions rather than silently replacing intent.

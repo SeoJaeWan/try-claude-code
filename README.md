@@ -16,13 +16,14 @@ Codex와 Claude Code에서 함께 쓰는 Workbench 플러그인을 개발·검�
 
 ## Workbench skills
 
-Workbench는 순서가 정해진 workflow가 아니라 네 개의 독립 도구를 제공합니다.
+Workbench는 순서가 정해진 workflow가 아니라 다섯 개의 독립 도구를 제공합니다.
 
 | 스킬 | 역할 |
 |---|---|
 | `shape` | 변경 요청을 읽기 전용으로 조사하고 standalone 분석 보고서 생성 |
 | `prepare` | task DAG, 격리, 검증, 작업별 모델·effort 계획 |
-| `execute-task` | task별 실행·검증 후 PR head에 결과 반영·푸시하고 사용자 리뷰 대기 |
+| `execute-task` | task별 실행·검증 후 로컬 PR source 통합·안전한 task worktree 정리; push 없음 |
+| `pr-push` | 저장소 릴리스 관례·필요한 메타데이터 확인 후 명시 요청한 PR source push |
 | `memory-update` | 로컬 `.codocs` 지식과 참조를 순차 큐레이션 |
 
 각 스킬은 Codex에서는 `$workbench:<skill>`, Claude Code에서는 `/workbench:<skill>`로 명시 호출해야 하며 일상 대화로는 실행되지 않습니다. 자신의 동작만 수행하고 종료합니다. 다른 Workbench 스킬을 이름으로 참조하거나 선행 조건으로 요구하지 않습니다. 사용자는 필요에 따라 단독으로 사용하거나 자유롭게 조합할 수 있습니다.
@@ -42,13 +43,14 @@ Workbench는 순서가 정해진 workflow가 아니라 네 개의 독립 도구�
 - Memory Update는 요청 범위의 모든 `.codocs` 지식 주제를 dependency-aware queue로 순차 처리합니다. 각 주제는 중복·관계·충돌을 독립 판단하며, 한 주제의 확정적 실패는 안전한 후속 독립 주제를 막지 않습니다.
 - Memory Update는 실제 작업 checkout에 연결된 Codocs MCP를 우선 사용해 로컬 `.codocs`를 조회·수정·검증합니다. 해당 checkout에 사용할 MCP가 없으면 로컬 파일 방식으로 진행하며, 실제 문서 경로·저장/색인 결과·검증 한계를 보고합니다. Wiki 갱신이나 동기화는 하지 않습니다.
 - 기존 작업별·통합 검증을 유지하며 필수 독립 리뷰나 별도 최종 gate는 추가하지 않습니다.
-- Execute Task의 리뷰 전달 흐름은 검증된 결과를 확인된 PR source/head에 반영·푸시합니다. 명시적인 로컬 전용/no-push 정책은 유지하며, PR 생성·base merge·배포·cleanup은 별도 권한입니다.
+- Execute Task는 검증된 결과를 확인된 로컬 PR source/head에 통합하고, worktree 밖에 증거를 보존한 뒤 안전한 task 소유 worktree만 정리합니다. no-integration/no-cleanup 지시를 우선하며 원격 push는 하지 않습니다.
+- PR Push는 독립적인 명시 요청으로 실제 릴리스 관례와 전체 PR diff를 확인하고 필요한 메타데이터만 준비해 정상 push합니다. PR 생성·base merge·배포·릴리스 publish는 포함하지 않습니다.
 
 ## MCP 등록
 
 Workbench 플러그인은 MCP를 직접 번들하지 않습니다. Figma, Codocs, Local Work Memory·Context7(`gateway-public`)은 각 도구에 사용자 설정으로 등록하며 등록·확인 방법은 [`docs/host-setup.md`](./docs/host-setup.md)에 있습니다.
 
-네 스킬 모두 사용 환경에 이미 연결된 Codocs MCP를 우선 사용할 수 있습니다. Codocs는 시작 시 지정한 프로젝트에 연결되므로 조회·수정 대상 checkout과 연결의 프로젝트를 확인합니다. 계획 때 사용한 연결을 실행 worker의 별도 worktree에 그대로 적용하지 않습니다. 플러그인이 Codocs를 자동 설치하거나 MCP 설정을 변경하지 않으며, 연결이 없어도 로컬 파일 방식으로 사용할 수 있습니다.
+Shape·Prepare·Execute Task·Memory Update는 사용 환경에 이미 연결된 Codocs MCP를 우선 사용할 수 있습니다. PR Push는 관련 로컬 프로젝트 규칙과 릴리스 설정을 확인하며 MCP를 필수로 요구하지 않습니다. Codocs는 시작 시 지정한 프로젝트에 연결되므로 조회·수정 대상 checkout과 연결의 프로젝트를 확인합니다. 계획 때 사용한 연결을 실행 worker의 별도 worktree에 그대로 적용하지 않습니다. 플러그인이 Codocs를 자동 설치하거나 MCP 설정을 변경하지 않으며, 연결이 없어도 로컬 파일 방식으로 사용할 수 있습니다.
 
 ## Execute Task 실행
 
@@ -58,7 +60,15 @@ Execute Task는 충분한 execution plan, packet 묶음 또는 bounded objective
 
 질문은 발견 시 보내고 독립 작업은 계속합니다. 사용자가 요구사항을 바꾸면 영향받는 worker만 전달/중단하고 원본 plan을 보존한 새 revision으로 결과 재사용·무효화와 필요한 검증을 기록합니다. 현재 범위에 대한 검사 실패나 미해결 결정을 성공으로 표현하지 않습니다.
 
-검증된 최종 결과는 publisher worker가 격리된 worktree에서 확인된 PR source/head 이력에 통합하고 정확한 commit을 푸시합니다. Coordinator는 계속 읽기 전용이며 사용자의 원래 checkout을 수정하지 않습니다. 푸시 확인 후 `AWAITING_REVIEW`로 응답을 마치고 같은 대화의 다음 메시지에 이어서 반응합니다. 예약·자동화·주기적 PR 확인·대기 루프는 만들지 않습니다. 리뷰 수정 요청에는 현재 원격 head와 작업 상태를 다시 확인하고 수정·검증·재전달하며, 승인만으로 base merge나 배포를 수행하지 않습니다.
+검증된 최종 결과는 assigned worker가 확인된 로컬 PR source/head에 통합합니다. Coordinator는 읽기 전용입니다. Source branch가 이미 checkout되어 있으면 ref만 뒤에서 바꾸지 않고, 확인된 clean·idle source checkout에서 통합합니다. 기본 로컬 통합 권한은 그 checkout이 primary/pinned여도 적용되지만 dirty·active·shared 또는 소유권 불명 상태에서는 보존하고 제한을 보고합니다.
+
+Worker는 제거할 worktree 밖에 결과 SHA·검증·revision 등 재개 증거를 저장한 뒤, 정확한 결과가 로컬 source에 도달 가능하고 더 이상 쓰이지 않는 clean task 소유 worktree만 정리합니다. Dirty/unmerged·shared·pinned·primary·계속 필요한 checkout은 보존하고 branch는 삭제하지 않습니다. 요청한 정리를 완료하지 못하면 성공으로 감추지 않습니다. 원격 push는 `NOT_REQUESTED`로 결과를 반환하고 종료합니다. 수정 요청은 현재 로컬 source와 checkpoint를 확인해 새 worktree에서 재개할 수 있으며 살아 있는 worker나 삭제된 경로에 의존하지 않습니다. 예약·자동화·주기적 확인·대기 루프는 만들지 않습니다.
+
+## PR Push
+
+`$workbench:pr-push` 또는 `/workbench:pr-push`는 별도 명시 요청으로 source repository/remote/ref, 전체 PR diff, 프로젝트 정책·실제 도구·script·CI·기존 릴리스 기록을 확인합니다. Changesets는 관련 미소비 entry를 추가/갱신하고 실제 manifest version은 바꾸지 않습니다. Commit/PR 기반 자동 릴리스, custom script, 수동 버전 정책은 그 저장소 규칙을 따르며, 릴리스 관례가 없으면 메타데이터 없이 정상 push할 수 있습니다.
+
+미해결 결정이 있을 때만 실제 영향 target과 적절한 선택·no-release 대안을 이유와 함께 묶어 묻습니다. 이미 수락한 결정과 pending 기록을 재사용해 반복 push에 중복 메타데이터를 만들지 않습니다. 필요한 메타데이터·검증·허용된 commit을 준비한 뒤 로컬 source와 정확한 commit을 맞추고 정상 push해 원격 반영을 확인한 다음 응답을 마칩니다. PR 생성·base merge·배포·release publish·force-push·댓글·CI 모니터링은 포함하지 않습니다.
 
 Memory Update도 독립적인 조사에는 적절한 모델을 선택할 수 있지만 실제 `.codocs` 수정은 한 writer가 순차 처리합니다. 최종 구성에는 별도의 Finalize 스킬이 없으며 그 절차를 실행의 필수 단계로 옮기지 않았습니다.
 

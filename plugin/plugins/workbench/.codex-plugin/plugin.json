@@ -1,7 +1,7 @@
 {
   "name": "workbench",
   "version": "0.4.0",
-  "description": "Four independent explicit skills for change analysis, per-task model planning, isolated execution, and local project-knowledge curation.",
+  "description": "Five independent explicit skills for change analysis, task planning, verified local execution, repository-aware PR source push, and local project-knowledge curation.",
   "author": {
     "name": "Local developer"
   },
@@ -9,7 +9,7 @@
   "interface": {
     "displayName": "Workbench",
     "shortDescription": "Independent tools for software change analysis and execution.",
-    "longDescription": "Workbench provides four independently useful, explicitly invoked skills. Investigate changes with selective research delegation, plan task-specific model tiers and efforts, execute isolated task DAGs with verification and user steering, or curate local .codocs knowledge with sequential writes.",
+    "longDescription": "Workbench provides five independently useful, explicitly invoked skills. Investigate changes, plan task profiles, execute isolated tasks with verified local PR-source integration and safe cleanup, prepare repository-appropriate release metadata and push on explicit request, or curate local .codocs knowledge.",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [
@@ -21,12 +21,15 @@
       "Dependency-aware parallel execution",
       "Task-scoped Git worktrees",
       "Traceable requirement updates",
+      "Verified local PR-source integration and safe task cleanup",
+      "Repository-aware release metadata and explicit source push",
       "Local .codocs curation"
     ],
     "defaultPrompt": [
       "Use $workbench:shape to investigate this software change.",
       "Use $workbench:prepare to plan tasks, worker profiles, isolation, and verification.",
-      "Use $workbench:execute-task to execute this plan using its task profiles.",
+      "Use $workbench:execute-task to verify this plan, integrate locally, and safely clean task worktrees without pushing.",
+      "Use $workbench:pr-push to inspect release conventions, prepare required metadata, and push the confirmed PR source branch.",
       "Use $workbench:memory-update to curate these local project-knowledge topics."
     ],
     "brandColor": "#2563EB"

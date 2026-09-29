@@ -2,7 +2,7 @@
   "name": "workbench",
   "displayName": "Workbench",
   "version": "0.4.0",
-  "description": "Four independent explicit skills for change analysis, per-task model planning, isolated execution, and local project-knowledge curation.",
+  "description": "Five independent explicit skills for change analysis, task planning, verified local execution, repository-aware PR source push, and local project-knowledge curation.",
   "author": {
     "name": "Local developer"
   }

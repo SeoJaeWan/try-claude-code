@@ -1,0 +1,7 @@
+interface:
+  display_name: "PR Push"
+  short_description: "Prepare project release metadata and push the PR source"
+  default_prompt: "Use $workbench:pr-push to inspect this repository's release convention, prepare any needed release metadata, and push the confirmed PR source branch."
+
+policy:
+  allow_implicit_invocation: false

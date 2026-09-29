@@ -1,8 +1,8 @@
 # Current Architecture — Workbench
 
-> 기준일: 2026-09-28
+> 기준일: 2026-09-29
 
-현재 Workbench는 `plugin/plugins/workbench/`에 있는 네 개의 독립적인 explicit-only 스킬이며, 같은 스킬 폴더를 Codex와 Claude Code가 함께 사용합니다. 사용자가 필요한 스킬을 선택하며, 스킬끼리 자동 연결하거나 다른 스킬을 선행 조건으로 요구하지 않습니다.
+현재 Workbench는 `plugin/plugins/workbench/`에 있는 다섯 개의 독립적인 explicit-only 스킬이며, 같은 스킬 폴더를 Codex와 Claude Code가 함께 사용합니다. 사용자가 필요한 스킬을 선택하며, 스킬끼리 자동 연결하거나 다른 스킬을 선행 조건으로 요구하지 않습니다.
 
 ## 소유권과 진입점
 
@@ -19,7 +19,8 @@
 |---|---|---|
 | `shape` | 소프트웨어 변경 요청과 근거 | 범위에 맞춘 변경 분석 |
 | `prepare` | 충분한 변경 정의 | task DAG, worktree, 검증, 모델·effort 계획 |
-| `execute-task` | execution plan, packet 묶음 또는 bounded objective | 작업별 검증 결과, PR head 전달 상태, 사용자 리뷰 checkpoint |
+| `execute-task` | execution plan, packet 묶음 또는 bounded objective | 검증된 로컬 PR head, durable checkpoint, 안전한 task worktree 정리 결과 |
+| `pr-push` | 명시적인 source push 요청과 저장소 상태 | 프로젝트 릴리스 메타데이터·검증·정상 push 확인 |
 | `memory-update` | bounded project-knowledge 주제 | 로컬 `.codocs` 갱신·참조 검증 결과 |
 
 명시 호출은 Codex `$workbench:<skill>`, Claude Code `/workbench:<skill>`입니다. 모든 `agents/openai.yaml`은 `allow_implicit_invocation: false`, 모든 `SKILL.md`는 `disable-model-invocation: true`를 유지해 일상 대화로는 실행되지 않습니다. 스킬 description에는 도구별 호출 문법을 넣지 않습니다. 입력 생산자가 아니라 입력의 의미·정확한 Git identity·제공된 digest를 검증합니다. 메인 모델은 호출자가 선택하며 스킬이 전환하지 않습니다.
@@ -79,9 +80,19 @@ Worker는 실제 자기 worktree에 연결된 Codocs MCP를 우선 사용하거�
 
 기존 작업별 검사·자기 검토·통합 검사·verified/provisional 구분을 유지합니다. **필수 독립 agent 리뷰, 일괄 부하/실패 검사, 전달 전 별도 승인 gate를 추가하지 않습니다.** 특별 검증이나 리뷰는 사용자 요청이나 실제 변경의 위험에 맞게 포함합니다. 기존 `finalize` 진입점은 제거하고 별도 스킬로 요구하지 않습니다.
 
-명시 호출한 review-delivery 흐름은 검증된 최종 결과를 확인된 PR source/head 이력에 통합하고 정확한 commit을 푸시합니다. 대상 repository/remote/head와 현재 원격 commit을 전달 binding으로 기록하며 explicit no-push/local-only 정책을 보존합니다. Coordinator는 계속 읽기 전용이고 publisher worker가 자기 격리 worktree에서 전달을 수행합니다. 기존 final worker를 이어 사용할 수 있으며 새로운 결합 검증이 필요할 때만 별도 integration worker를 둡니다. provisional continuation은 리뷰 전달 권한이나 검증 성공을 의미하지 않습니다.
+기본 finish는 검증된 최종 결과의 로컬 PR source/head 통합, 제거할 worktree 밖의 durable checkpoint, 안전한 task 소유 worktree 정리이며 원격 push는 `NOT_REQUESTED`입니다. 확인된 local repository/branch/head·결과 SHA·revision과 권한을 전달 binding에 기록하고 no-integration/no-cleanup 지시를 우선합니다. Coordinator는 읽기 전용이며 final worker가 통합/정리를 수행하고 새로운 결합 검증이 필요할 때만 별도 integration worker를 둡니다. provisional continuation은 acceptance나 전달 성공을 뜻하지 않습니다.
 
-원격 반영을 확인하면 `AWAITING_REVIEW`로 응답을 마치고 같은 대화의 다음 사용자 메시지를 기다립니다. 예약·heartbeat·리뷰 polling·sleep loop를 만들지 않으며 계속 실행 중이라고 표현하지 않습니다. 다음 질문에는 답하고, 리뷰 수정은 현재 head/작업 상태를 확인해 revision과 필요한 검증·재전달로 처리합니다. 승인만으로 PR base merge·배포·cleanup을 수행하지 않습니다.
+Source branch가 다른 checkout에 있으면 ref를 뒤에서 갱신하지 않습니다. 확인된 clean·idle source checkout에서는 기본 통합 권한으로 worker가 통합할 수 있으며 primary/pinned 여부만으로 재승인을 요구하지 않습니다. Dirty·active·shared 또는 소유권 불명 checkout은 보존하고 제한을 보고합니다. Source checkout의 통합 권한은 제거 권한이 아닙니다.
+
+Worker는 필요한 입력/binding/revision·SHA·검증·로그를 제거 대상 밖에 보존하고, 모든 writer/tool의 정지와 정확한 결과의 로컬 source 도달 가능성을 확인합니다. Clean·더 이상 필요 없는 task 소유 worktree만 host archive(관리형) 또는 force 없는 Git removal(일반형)로 정리합니다. Dirty/unmerged/provisional·shared·pinned·primary·계속 필요한 checkout과 branch는 보존합니다. 정리 실패/제한은 `ACTION_REQUIRED`로 보고하고 false `COMPLETE`를 반환하지 않습니다. 명시적인 정리 제외는 `NOT_REQUESTED`입니다.
+
+로컬 완료 결과를 반환하고 종료합니다. 다음 수정 요청은 checkpoint와 현재 로컬 head를 확인해 새 task worktree로 재개할 수 있습니다. 예약·heartbeat·리뷰 polling·sleep loop를 만들지 않으며 살아 있는 worker나 제거된 checkout에 의존하지 않습니다. 승인만으로 원격 push·PR base merge·배포를 수행하지 않습니다.
+
+## PR Push
+
+다른 실행 이력 없이도 명시 요청과 현재 저장소 상태로 동작합니다. 실제 project policy·tool/config·script·CI·전체 PR diff·기존 릴리스 기록에서 release target과 관례를 확인합니다. Changesets는 관련 미소비 entry만 준비하고 실제 version은 bump하지 않으며, 반복 요청은 entry를 재사용/갱신합니다. Semantic-release/release-please 등 commit/PR 기반 정책, custom script, 수동 version 정책, 관례 없음도 실제 규칙을 따르고 도구를 자동 설치하지 않습니다.
+
+결정이 필요할 때만 실제 영향 target·적절한 bump/분류·no-release 대안을 근거와 함께 묶어 묻고 수락한 결정을 유지합니다. 관례가 없는 저장소의 정상 push를 릴리스 설정 부재만으로 막지 않습니다. 프로젝트 격리 정책에 맞는 clean·authorized checkout에서 필요한 metadata·검증·허용된 commit을 준비한 뒤 confirmed local source에 결과를 보존하고 remote/ref에 exact SHA를 정상 push해 원격 결과를 확인합니다. 필요하고 승인된 기존 PR metadata 수정만 허용하며 PR 생성·base merge·배포·publish·history rewrite·댓글·CI 모니터링은 하지 않습니다.
 
 ## Memory Update
 
@@ -97,8 +108,8 @@ Wiki 조회/갱신·동기화와 실행 로그 저장은 하지 않습니다. �
 
 ## 공통 경계와 배포
 
-사용자 checkout과 무관한 변경을 보존합니다. 리뷰 전달의 PR head 통합·push는 명시 호출한 해당 흐름과 확인된 대상 범위에서 수행합니다. PR 생성, base merge, 배포, cleanup은 별도 사용자 권한입니다.
+사용자 checkout과 무관한 변경을 보존합니다. Execute Task의 기본 권한은 confirmed local PR head 통합과 증거를 보존한 safe task cleanup까지입니다. 원격 source push는 별도 명시 요청이며 PR 생성·base merge·배포·release publish·unrelated cleanup 권한을 포함하지 않습니다. 스킬끼리 자동 연결하지 않습니다.
 
 플러그인은 MCP를 번들하지 않습니다. Figma, Codocs, `gateway-public`(Local Work Memory·Context7)은 각 도구의 사용자 설정으로 등록하며 [`host-setup.md`](host-setup.md)를 따릅니다.
 
-`npm run deploy`(또는 `deploy:codex`, `deploy:claude`)는 각 도구의 `workbench` marketplace가 실행 checkout의 `plugin/`을 가리키는지 검사합니다. 임시 cachebuster로 install한 뒤 source manifest를 복원합니다. 격리 worktree의 소스 수정과 기존 설치본 갱신은 별개이며, marketplace 경로를 몰래 변경하거나 설치 캐시를 직접 수정하지 않습니다. 자동 테스트는 없으며 변경한 동작은 대상 도구에서 직접 확인합니다.
+`npm run deploy`(또는 `deploy:codex`, `deploy:claude`)는 각 도구의 `workbench` marketplace가 실행 checkout의 `plugin/`을 가리키는지 검사합니다. 임시 cachebuster로 install한 뒤 source manifest를 복원합니다. 격리 worktree의 소스 수정과 기존 설치본 갱신은 별개이며, marketplace 경로를 몰래 변경하거나 설치 캐시를 직접 수정하지 않습니다. 자동 테스트는 없으며 authoring 단계에서는 focused static/scenario 검증과 한계를 보고합니다. 설치·실제 도구 호출은 별도 승인된 범위에서 확인합니다.
