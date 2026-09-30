@@ -10,11 +10,13 @@ For producer-neutral input without a profile, select one during normalization an
 | --- | --- | --- |
 | `focused` | Bounded extraction, repetitive edits, focused implementation with clear checks | `high`; `low` or `medium` may suffice for simple, easily checked work |
 | `standard` | Ordinary or complex implementation/debugging, including understood cross-module changes | `medium`; consider `high` for harder analysis or design judgment |
-| `deep` | Hardest multi-step work with sustained uncertainty and coupled design/integration decisions | `low`; increase to `medium` or `high` when justified |
+| `deep` | Hardest multi-step work with sustained uncertainty and coupled design/integration decisions | `xhigh`; adjust only for a justified task-specific or explicit user choice |
 
 These are adjustable starting points, not fixed rankings or price guarantees. Multiple modules alone do not require `deep`. Effort labels are not equivalent capability or usage levels across tiers or models.
 
 When selecting a new profile, an unavailable preferred candidate may be replaced with another permitted supported choice, recording the reason. Do NOT silently upgrade or reclassify an explicit source/user profile, including older explicit models. Apply an authorized profile change through a traceable execution-binding revision while preserving the original source. For a requested model comparison, initially preserve the supported effort and compare representative outcomes, retries, time, and usage before adjusting it; this is not an extra gate for ordinary execution.
+
+Use `standard` / `high` when scope and solution direction are established but analysis is difficult; use `deep` / `xhigh` when the solution direction remains uncertain and design or integration decisions are coupled. On Codex both tiers use GPT-6.1 Sol; tier alone does not imply a stronger model. Preserve explicit model choices, including GPT-6 Astra, and explicit effort choices.
 
 ## Host models
 
@@ -24,7 +26,7 @@ Resolve the tier to the executing host's model. An explicit `model` overrides th
 | --- | --- | --- |
 | `focused` | `gpt-6-luna` | `sonnet` |
 | `standard` | `gpt-6.1-sol` | `sonnet` |
-| `deep` | `gpt-6-astra` | `opus` |
+| `deep` | `gpt-6.1-sol` | `opus` |
 
 - Codex: the starting efforts remain Workbench defaults; see the [official model guidance](https://developers.openai.com/api/docs/guides/latest-model) (checked 2026-09-30); actual host-supported combinations govern dispatch.
 - Claude Code: use the model alias; see the [models overview](https://platform.claude.com/docs/en/models/overview) (checked 2026-09-28). Use `fable` only when the user explicitly chooses it. Claude Code applies only the model, so `focused` and `standard` both use `sonnet`. Do not pass or report effort there; an unapplied planned effort is not a profile mismatch.

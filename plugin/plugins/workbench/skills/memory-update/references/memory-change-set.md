@@ -10,17 +10,17 @@ Order by supported dependency, otherwise preserve input order. When splitting, c
 
 For a small topic, inspect and edit directly. For a larger request, use existing parsers/scripts for inventory, IDs, and links; delegate only independent semantic investigations whose results justify the overhead. The main agent reconciles meaning/ownership and remains the single writer.
 
-Select an explicit tier and effort for each helper rather than inheriting the host. Prefer `focused` / `high` for bounded fact extraction, `standard` / `medium` for cross-document duplication, and `deep` / `medium` or `high` for difficult unresolved policy contradictions. Simple, easily checked extraction may use `focused` / `low` or `medium`. These are adjustable candidates, not capability or usage rankings; multiple documents alone do not require `deep`. Preserve explicit user profiles, including older models.
+Select an explicit tier and effort for each helper rather than inheriting the host. Prefer `focused` / `high` for bounded fact extraction, `standard` / `medium` for cross-document duplication, and `deep` / `xhigh` for difficult unresolved policy contradictions. Simple, easily checked extraction may use `focused` / `low` or `medium`. These are adjustable candidates, not capability or usage rankings; multiple documents alone do not require `deep`. Preserve explicit user profiles, including older models.
 
 | Tier | Codex | Claude Code |
 | --- | --- | --- |
 | `focused` | `gpt-6-luna` | `sonnet` |
 | `standard` | `gpt-6.1-sol` | `sonnet` |
-| `deep` | `gpt-6-astra` | `opus` |
+| `deep` | `gpt-6.1-sol` | `opus` |
 
 Identify the host from its subagent tool, check its supported choices, respect user limits, and start each helper in a fresh context:
 
-- Codex: pass both `model` and `reasoning_effort`, with `fork_turns: none` when available. The Workbench starting efforts, consistent with [official model guidance](https://developers.openai.com/api/docs/guides/latest-model) (checked 2026-09-30) are Luna/high, Sol 6.1/medium, and Astra/low.
+- Codex: pass both `model` and `reasoning_effort`, with `fork_turns: none` when available. The Workbench starting efforts, consistent with [official model guidance](https://developers.openai.com/api/docs/guides/latest-model) (checked 2026-09-30) are focused Luna/high, standard Sol 6.1/medium, and deep Sol 6.1/xhigh.
 - Claude Code: start a non-fork subagent with the `model` alias; see the [models overview](https://platform.claude.com/docs/en/models/overview) (checked 2026-09-28). Claude Code applies only the model; do not pass or report effort there. Use `fable` only when the user explicitly chooses it.
 
 If delegation is unavailable, continue locally. Disclose any permitted alternative profile instead of claiming the preferred one ran.
@@ -28,6 +28,8 @@ If delegation is unavailable, continue locally. Disclose any permitted alternati
 Give helpers bounded topics, source paths/content identities, relevant schema/rules, and a read-only boundary. Request findings, exact evidence, conflicts, and suggested ownership; do not let helpers edit files, create worktrees, or recursively delegate. Keep the main agent doing independent work. Before writing, recheck any source changed since research; results from a prior document state are not automatically applicable. Record requested profiles and host-observed effective settings when available, otherwise `unknown`; on Claude Code, record the model only.
 
 Policy decisions stay with the user when evidence cannot settle them. Ask promptly and continue unaffected units. Do not write model assignments, task logs, or execution plans into project knowledge.
+
+Use `standard` / `high` when scope and solution direction are established but analysis is difficult; use `deep` / `xhigh` when the solution direction remains uncertain and design or integration decisions are coupled. On Codex both tiers use GPT-6.1 Sol; tier alone does not imply a stronger model. Preserve explicit model choices, including GPT-6 Astra, and explicit effort choices.
 
 ## Sequential edits
 

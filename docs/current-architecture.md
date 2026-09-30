@@ -34,11 +34,11 @@
 |---|---|---|---|---|
 | `focused` | bounded 탐색·반복 수정·명확한 소규모 구현 | high | `gpt-6-luna` | `sonnet` |
 | `standard` | 일반 및 복잡한 구현·디버깅 | medium | `gpt-6.1-sol` | `sonnet` |
-| `deep` | 가장 어려운 다단계 설계·통합 판단 | low | `gpt-6-astra` | `opus` |
+| `deep` | 가장 어려운 다단계 설계·통합 판단 | xhigh | `gpt-6.1-sol` | `opus` |
 
-단순하고 검증이 쉬우면 `focused`/low 또는 medium, 더 깊은 분석이 필요하면 `standard`/high나 `deep`/medium 또는 high로 조정할 수 있습니다. 여러 모듈에 걸친 작업이라는 이유만으로 `deep`을 선택하지 않습니다. 등급 간 동일 effort 이름은 동일한 능력·사용량을 뜻하지 않습니다. 이는 고정 성능·가격 순위가 아니며 사용자 선택과 한도를 우선합니다. Claude Code의 `fable`은 사용자가 명시적으로 선택할 때만 사용합니다.
+단순하고 검증이 쉬우면 `focused`/low 또는 medium, 더 깊은 분석이 필요하면 `standard`/high나 `deep`/xhigh로 조정할 수 있습니다. 여러 모듈에 걸친 작업이라는 이유만으로 `deep`을 선택하지 않습니다. `standard`/high는 범위와 해결 방향이 정해진 어려운 작업, `deep`/xhigh는 해결 방향이 불확실하고 설계·통합 판단이 얽힌 작업에 사용합니다. Codex의 두 등급은 같은 모델이므로 등급 이름만으로 능력이 높아지지 않습니다. 사용자가 명시한 Astra 등 모델과 effort는 보존합니다. 등급 간 동일 effort 이름은 동일한 능력·사용량을 뜻하지 않습니다. 이는 고정 성능·가격 순위가 아니며 사용자 선택과 한도를 우선합니다. Claude Code의 `fable`은 사용자가 명시적으로 선택할 때만 사용합니다.
 
-Shape의 초기 조사 예시는 코드 위치·호출 관계 `focused`/high, 여러 모듈의 영향 `standard`/medium, 어려운 설계 대안·실패 조건 `deep`/medium 또는 high입니다. Prepare의 조사 예시는 파일 소유권·충돌 `standard`/medium, 선행 조건·통합 위험은 확립된 계약이면 `standard`/medium, 어려운 미확정 상호작용이면 `deep`/medium 또는 high입니다. 필요성 없이 에이전트를 만들지 않으며 작은 조회는 직접 처리하거나 도구 호출을 묶습니다.
+Shape의 초기 조사 예시는 코드 위치·호출 관계 `focused`/high, 여러 모듈의 영향 `standard`/medium, 어려운 설계 대안·실패 조건 `deep`/xhigh입니다. Prepare의 조사 예시는 파일 소유권·충돌 `standard`/medium, 선행 조건·통합 위험은 확립된 계약이면 `standard`/medium, 어려운 미확정 상호작용이면 `deep`/xhigh입니다. 필요성 없이 에이전트를 만들지 않으며 작은 조회는 직접 처리하거나 도구 호출을 묶습니다.
 
 독립적인 입력·결과와 시간 또는 품질 이득이 있는 읽기 전용 조사만 위임하고, 메인은 독립 작업과 최종 통합을 담당합니다. 각 helper는 근거·불확실성을 반환하고 파일을 수정하지 않습니다. 내부 위임은 subagent 도구를 사용하며 사용자 소유의 별도 task나 thread를 만들지 않습니다.
 

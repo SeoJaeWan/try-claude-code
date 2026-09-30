@@ -10,9 +10,9 @@ Plans record a host-neutral tier and effort so any supported host can execute th
 | --- | --- | --- |
 | `focused` | Bounded extraction, repetitive edits, focused implementation with clear acceptance checks | `high`; consider `low`/`medium` for simple, easily checked work |
 | `standard` | Ordinary or complex implementation, tests, debugging, including understood cross-module changes | `medium`; consider `high` for harder analysis or design judgment |
-| `deep` | Hardest multi-step work with sustained uncertainty and coupled design/integration decisions | `low`; increase to `medium`/`high` when deeper reasoning is justified |
+| `deep` | Hardest multi-step work with sustained uncertainty and coupled design/integration decisions | `xhigh`; adjust only for a justified task-specific or explicit user choice |
 
-These are adjustable starting points, not fixed rankings or price guarantees. Multiple modules alone do not require `deep`. Tier and effort are separate choices: `focused`/`high` is not equivalent in capability or usage to `standard`/`high` or `deep`/`high`. When comparing a model migration, keep the existing supported effort initially and use representative outcomes, retries, time, and usage to decide adjustments; do not require a benchmark for each ordinary task.
+These are adjustable starting points, not fixed rankings or price guarantees. Multiple modules alone do not require `deep`. Tier and effort are separate choices; identical model/effort combinations do not gain capability from a different tier label. When comparing a model migration, keep the existing supported effort initially and use representative outcomes, retries, time, and usage to decide adjustments; do not require a benchmark for each ordinary task.
 
 Each implementation/integration packet includes:
 
@@ -31,12 +31,14 @@ Only when justified, replace `escalation: none` with a bounded read-only diagnos
 escalation:
   mode: diagnostic_agent
   tier: deep
-  effort: high
+  effort: xhigh
   trigger: A reproducible failure crosses modules and remains unexplained after focused diagnosis.
   max_additional_agents: 1
 ```
 
 This permits extra diagnosis within authorized execution, not broader implementation authority or live model switching. Installation failures, missing permissions, and unresolved product choices require their actual remedy, not a stronger model. Any hard user cost/profile limits still apply. Do not add escalation to every task.
+
+Use `standard` / `high` when scope and solution direction are established but analysis is difficult; use `deep` / `xhigh` when the solution direction remains uncertain and design or integration decisions are coupled. On Codex both tiers use GPT-6.1 Sol; tier alone does not imply a stronger model. Preserve explicit model choices, including GPT-6 Astra, and explicit effort choices.
 
 ## Host models
 
@@ -44,7 +46,7 @@ This permits extra diagnosis within authorized execution, not broader implementa
 | --- | --- | --- |
 | `focused` | `gpt-6-luna` | `sonnet` |
 | `standard` | `gpt-6.1-sol` | `sonnet` |
-| `deep` | `gpt-6-astra` | `opus` |
+| `deep` | `gpt-6.1-sol` | `opus` |
 
 - Codex: the starting efforts remain Workbench defaults; see the [official model guidance](https://developers.openai.com/api/docs/guides/latest-model) (checked 2026-09-30). Requests carry both model and effort.
 - Claude Code: use the model alias; see the [models overview](https://platform.claude.com/docs/en/models/overview) (checked 2026-09-28). Use `fable` only when the user explicitly chooses it. Claude Code applies only the model, so `focused` and `standard` both use `sonnet`. Do not pass or report effort there; the planned effort still records intent for hosts that apply it.
@@ -58,7 +60,7 @@ This is separate from the future task profiles. Delegate independent read-only i
 | Planning investigation | Candidate profile |
 | --- | --- |
 | File ownership and task collision review | `standard` / `medium` |
-| Missing prerequisites and integration risks | `standard` / `medium` for established contracts; `deep` / `medium` or `high` for difficult unresolved interactions |
+| Missing prerequisites and integration risks | `standard` / `medium` for established contracts; `deep` / `xhigh` for difficult unresolved interactions |
 
 For each helper, explicitly select the tier's host model, start a fresh context, and pass the relevant intent, repository evidence, constraints, read-only boundary, and expected findings with sources. Identify the host from its subagent tool:
 
