@@ -17,12 +17,12 @@ Preserve explicit user profiles, including older models. Adjust for scope, uncer
 | Tier | Codex | Claude Code |
 | --- | --- | --- |
 | `focused` | `gpt-6-luna` | `sonnet` |
-| `standard` | `gpt-6-sol` | `sonnet` |
+| `standard` | `gpt-6.1-sol` | `sonnet` |
 | `deep` | `gpt-6-astra` | `opus` |
 
 Identify the host from its subagent tool and check its supported choices before spawning. Start each helper in a fresh context:
 
-- Codex: pass both `model` and `reasoning_effort`, with `fork_turns: none` when exposed. Full-history forks may not allow overrides. The [official starting efforts](https://learn.chatgpt.com/docs/models#choosing-sol-terra-and-luna) (checked 2026-09-23) are Luna/high, Sol/medium, and Astra/low; the harder review above can justify more effort. Do not inherit a high host effort merely because it is the host setting.
+- Codex: pass both `model` and `reasoning_effort`, with `fork_turns: none` when exposed. Full-history forks may not allow overrides. The Workbench starting efforts, consistent with [official model guidance](https://developers.openai.com/api/docs/guides/latest-model) (checked 2026-09-30) are Luna/high, Sol 6.1/medium, and Astra/low; the harder review above can justify more effort. Do not inherit a high host effort merely because it is the host setting.
 - Claude Code: start a non-fork subagent with the `model` alias; see the [models overview](https://platform.claude.com/docs/en/models/overview) (checked 2026-09-28). Claude Code applies only the model; do not pass or report effort there. Use `fable` only when the user explicitly chooses it.
 
 If a preferred profile or delegation is unavailable, use an allowed supported choice or do the research locally, disclose the limitation, and preserve explicit user constraints.

@@ -33,7 +33,7 @@
 | 등급 | 용도 | 시작 effort | Codex | Claude Code |
 |---|---|---|---|---|
 | `focused` | bounded 탐색·반복 수정·명확한 소규모 구현 | high | `gpt-6-luna` | `sonnet` |
-| `standard` | 일반 및 복잡한 구현·디버깅 | medium | `gpt-6-sol` | `sonnet` |
+| `standard` | 일반 및 복잡한 구현·디버깅 | medium | `gpt-6.1-sol` | `sonnet` |
 | `deep` | 가장 어려운 다단계 설계·통합 판단 | low | `gpt-6-astra` | `opus` |
 
 단순하고 검증이 쉬우면 `focused`/low 또는 medium, 더 깊은 분석이 필요하면 `standard`/high나 `deep`/medium 또는 high로 조정할 수 있습니다. 여러 모듈에 걸친 작업이라는 이유만으로 `deep`을 선택하지 않습니다. 등급 간 동일 effort 이름은 동일한 능력·사용량을 뜻하지 않습니다. 이는 고정 성능·가격 순위가 아니며 사용자 선택과 한도를 우선합니다. Claude Code의 `fable`은 사용자가 명시적으로 선택할 때만 사용합니다.
@@ -49,7 +49,7 @@ Shape의 초기 조사 예시는 코드 위치·호출 관계 `focused`/high, �
 
 계획값·요청값·host가 알려준 실제값을 구분하고, 실제값이 노출되지 않으면 `unknown`으로 보고하고, Claude Code에서는 model만 보고합니다. 모델 자신의 진술은 실행 설정의 증거가 아닙니다.
 
-신규 선택의 후보가 없으면 사용자 한도 안에서 지원되는 대안을 선택하고 이유를 남깁니다. 명시된 기존 모델 프로필(`model`, `reasoning_effort`만 있는 이전 형식 포함)은 보존하며 릴리스만으로 업그레이드하지 않습니다. 실행 프로필 변경을 승인받으면 원본을 유지한 채 binding revision으로 추적합니다. 모델 비교가 필요한 경우 기존 지원 effort를 유지해 대표 작업의 결과·재시도·시간·사용량을 비교한 후 조정합니다. 이는 매 작업에 추가되는 검증 gate가 아닙니다. 선택 기준은 Codex [공식 모델 가이드](https://learn.chatgpt.com/docs/models#choosing-sol-terra-and-luna)(2026-09-23 확인)와 Claude [models overview](https://platform.claude.com/docs/en/models/overview)(2026-09-28 확인)이며 실행 가능 여부는 실제 host가 제공하는 조합으로 판단합니다.
+신규 선택의 후보가 없으면 사용자 한도 안에서 지원되는 대안을 선택하고 이유를 남깁니다. 명시된 기존 모델 프로필(`model`, `reasoning_effort`만 있는 이전 형식 포함)은 보존하며 릴리스만으로 업그레이드하지 않습니다. 실행 프로필 변경을 승인받으면 원본을 유지한 채 binding revision으로 추적합니다. 모델 비교가 필요한 경우 기존 지원 effort를 유지해 대표 작업의 결과·재시도·시간·사용량을 비교한 후 조정합니다. 이는 매 작업에 추가되는 검증 gate가 아닙니다. 선택 기준은 Codex [공식 모델 가이드](https://developers.openai.com/api/docs/guides/latest-model)(2026-09-30 확인)와 Claude [models overview](https://platform.claude.com/docs/en/models/overview)(2026-09-28 확인)이며 실행 가능 여부는 실제 host가 제공하는 조합으로 판단합니다.
 
 ## Kickoff
 

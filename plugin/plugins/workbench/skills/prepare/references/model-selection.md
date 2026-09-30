@@ -43,10 +43,10 @@ This permits extra diagnosis within authorized execution, not broader implementa
 | Tier | Codex | Claude Code |
 | --- | --- | --- |
 | `focused` | `gpt-6-luna` | `sonnet` |
-| `standard` | `gpt-6-sol` | `sonnet` |
+| `standard` | `gpt-6.1-sol` | `sonnet` |
 | `deep` | `gpt-6-astra` | `opus` |
 
-- Codex: the starting efforts follow the [official model guidance](https://learn.chatgpt.com/docs/models#choosing-sol-terra-and-luna) (checked 2026-09-23). Requests carry both model and effort.
+- Codex: the starting efforts remain Workbench defaults; see the [official model guidance](https://developers.openai.com/api/docs/guides/latest-model) (checked 2026-09-30). Requests carry both model and effort.
 - Claude Code: use the model alias; see the [models overview](https://platform.claude.com/docs/en/models/overview) (checked 2026-09-28). Use `fable` only when the user explicitly chooses it. Claude Code applies only the model, so `focused` and `standard` both use `sonnet`. Do not pass or report effort there; the planned effort still records intent for hosts that apply it.
 
 Use the target host's advertised model/effort combinations, not API support alone. When the future execution host cannot be inspected, label availability as unverified for execution-time preflight; do not claim a successful launch or guarantee a token bill.
