@@ -83,7 +83,7 @@ For each external source record its canonical URL, library version, source ref, 
 
 ## 프로젝트 및 외부 근거
 - 입력으로 제공된 Wiki Artifact와 출처
-- .codocs의 실제 checkout·원문 경로·읽은 원문의 digest·조회 방식, MCP 사용 시 revision과 탐색/확인 상태
+- .codocs의 실제 checkout·원문 경로·읽은 원문의 Git blob ID·조회 방식, MCP 사용 시 revision과 탐색/확인 상태
 - 연결된 Figma
 - 저장소 탐색
 - 공식 자료와 버전 정합성
@@ -110,7 +110,7 @@ For each external source record its canonical URL, library version, source ref, 
 - delegated questions, requested profiles, host-observed settings when available, and reconciled findings (when delegation was useful)
 ```
 
-`work_item_key` may be null; do not discover one through Jira. Record supplied Artifact references separately from local project knowledge. For `.codocs`, follow [codocs-knowledge.md](codocs-knowledge.md) and record the selected checkout, original paths, raw-content digests, and access evidence. MCP revision supplements the source digest and does not replace it or the checkout snapshot. If `.codocs` is absent, report the gap and use explicit project instructions and repository evidence without creating documents or falling back to Wiki/Jira lookup. Missing material policy or unresolved decision-critical conflicts prevent `READY`; unavailable Wiki architecture is not a blocker.
+`work_item_key` may be null; do not discover one through Jira. Record supplied Artifact references separately from local project knowledge. For `.codocs`, follow [codocs-knowledge.md](codocs-knowledge.md) and record the selected checkout, original paths, Git blob IDs, and access evidence. MCP revision supplements the Git blob ID and does not replace it or the checkout snapshot. If `.codocs` is absent, report the gap and use explicit project instructions and repository evidence without creating documents or falling back to Wiki/Jira lookup. Missing material policy or unresolved decision-critical conflicts prevent `READY`; unavailable Wiki architecture is not a blocker.
 
 ## Visibility and status
 

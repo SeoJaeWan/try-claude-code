@@ -42,12 +42,12 @@ This permits extra diagnosis within authorized execution, not broader implementa
 
 | Tier | Codex | Claude Code |
 | --- | --- | --- |
-| `focused` | `gpt-6-luna` | `haiku` |
+| `focused` | `gpt-6-luna` | `sonnet` |
 | `standard` | `gpt-6-sol` | `sonnet` |
 | `deep` | `gpt-6-astra` | `opus` |
 
 - Codex: the starting efforts follow the [official model guidance](https://learn.chatgpt.com/docs/models#choosing-sol-terra-and-luna) (checked 2026-09-23). Requests carry both model and effort.
-- Claude Code: use the model alias; see the [models overview](https://platform.claude.com/docs/en/models/overview) (checked 2026-09-28). Use `fable` only when the user explicitly chooses it. Claude Code cannot set effort per subagent, so helpers and workers run at the session effort; the planned effort still records intent for hosts that apply it.
+- Claude Code: use the model alias; see the [models overview](https://platform.claude.com/docs/en/models/overview) (checked 2026-09-28). Use `fable` only when the user explicitly chooses it. Claude Code applies only the model, so `focused` and `standard` both use `sonnet`. Do not pass or report effort there; the planned effort still records intent for hosts that apply it.
 
 Use the target host's advertised model/effort combinations, not API support alone. When the future execution host cannot be inspected, label availability as unverified for execution-time preflight; do not claim a successful launch or guarantee a token bill.
 
@@ -63,8 +63,8 @@ This is separate from the future task profiles. Delegate independent read-only i
 For each helper, explicitly select the tier's host model, start a fresh context, and pass the relevant intent, repository evidence, constraints, read-only boundary, and expected findings with sources. Identify the host from its subagent tool:
 
 - Codex: pass `model`, `reasoning_effort`, and `fork_turns: none` when available. Full-history forks may not accept overrides.
-- Claude Code: start a non-fork subagent with the `model` alias; effort follows the session.
+- Claude Code: start a non-fork subagent with the `model` alias only.
 
 Use internal subagent tools, not separate user-owned tasks or threads. Do not give researchers implementation authority. Keep useful work on the main agent while they run; merge their evidence into a single consistent DAG.
 
-If delegation is unavailable, continue locally. If a preferred profile is unavailable, choose another permitted supported research profile and disclose it, preserving explicit user limits. Report requested profiles and only host-observed effective settings; unexposed settings are `unknown`, and Claude Code effort is `session`.
+If delegation is unavailable, continue locally. If a preferred profile is unavailable, choose another permitted supported research profile and disclose it, preserving explicit user limits. Report requested profiles and only host-observed effective settings; unexposed settings are `unknown`. On Claude Code, report the model only.

@@ -24,7 +24,7 @@
 | `pr-push` | 명시적인 source push 요청과 저장소 상태 | 프로젝트 릴리스 메타데이터·검증·정상 push 확인 |
 | `memory-update` | bounded project-knowledge 주제 | 로컬 `.codocs` 갱신·참조 검증 결과 |
 
-명시 호출은 Codex `$workbench:<skill>`, Claude Code `/workbench:<skill>`입니다. 모든 `agents/openai.yaml`은 `allow_implicit_invocation: false`, 모든 `SKILL.md`는 `disable-model-invocation: true`를 유지해 일상 대화로는 실행되지 않습니다. 스킬 description에는 도구별 호출 문법을 넣지 않습니다. 입력 생산자가 아니라 입력의 의미·정확한 Git identity·제공된 digest를 검증합니다. 메인 모델은 호출자가 선택하며 스킬이 전환하지 않습니다.
+명시 호출은 Codex `$workbench:<skill>`, Claude Code `/workbench:<skill>`입니다. 모든 `agents/openai.yaml`은 `allow_implicit_invocation: false`, 모든 `SKILL.md`는 `disable-model-invocation: true`를 유지해 일상 대화로는 실행되지 않습니다. 스킬 description에는 도구별 호출 문법을 넣지 않습니다. 입력 생산자가 아니라 입력의 의미와 정확한 Git identity를 검증하고, 계획 digest는 제공된 경우에만 확인합니다. 메인 모델은 호출자가 선택하며 스킬이 전환하지 않습니다.
 
 ## 모델 선택과 위임
 
@@ -32,7 +32,7 @@
 
 | 등급 | 용도 | 시작 effort | Codex | Claude Code |
 |---|---|---|---|---|
-| `focused` | bounded 탐색·반복 수정·명확한 소규모 구현 | high | `gpt-6-luna` | `haiku` |
+| `focused` | bounded 탐색·반복 수정·명확한 소규모 구현 | high | `gpt-6-luna` | `sonnet` |
 | `standard` | 일반 및 복잡한 구현·디버깅 | medium | `gpt-6-sol` | `sonnet` |
 | `deep` | 가장 어려운 다단계 설계·통합 판단 | low | `gpt-6-astra` | `opus` |
 
@@ -45,11 +45,11 @@ Shape의 초기 조사 예시는 코드 위치·호출 관계 `focused`/high, �
 실행 프로필은 YAML만으로 적용되지 않습니다. 사용 가능한 subagent 도구로 현재 host를 판별하고, 새 context에 완전한 packet과 함께 생성 인자를 전달합니다.
 
 - Codex: `model`과 `reasoning_effort`를 함께 전달하고, `fork_turns: none`을 지원하면 사용합니다. 전체 이력 fork의 override 제한과 custom agent 설정 우선순위를 고려합니다.
-- Claude Code: non-fork subagent에 `model` 별칭만 전달합니다. subagent별 effort를 지정할 수 없어 세션 effort를 따르며, 이는 profile 불일치가 아닙니다.
+- Claude Code: non-fork subagent에 `model` 별칭만 전달합니다. Claude Code에서는 model만 적용하므로 effort는 전달·보고하지 않고, `focused`와 `standard`는 모두 `sonnet`을 씁니다. 적용되지 않은 계획 effort는 profile 불일치가 아닙니다.
 
-계획값·요청값·host가 알려준 실제값을 구분하고, 실제값이 노출되지 않으면 `unknown`, Claude Code effort는 `session`으로 보고합니다. 모델 자신의 진술은 실행 설정의 증거가 아닙니다.
+계획값·요청값·host가 알려준 실제값을 구분하고, 실제값이 노출되지 않으면 `unknown`으로 보고하고, Claude Code에서는 model만 보고합니다. 모델 자신의 진술은 실행 설정의 증거가 아닙니다.
 
-신규 선택의 후보가 없으면 사용자 한도 안에서 지원되는 대안을 선택하고 이유를 남깁니다. 명시된 기존 모델 프로필(`model`, `reasoning_effort`만 있는 이전 형식 포함)은 보존하며 릴리스만으로 업그레이드하지 않습니다. 실행 프로필 변경을 승인받으면 원본과 digest를 유지한 채 binding revision으로 추적합니다. 모델 비교가 필요한 경우 기존 지원 effort를 유지해 대표 작업의 결과·재시도·시간·사용량을 비교한 후 조정합니다. 이는 매 작업에 추가되는 검증 gate가 아닙니다. 선택 기준은 Codex [공식 모델 가이드](https://learn.chatgpt.com/docs/models#choosing-sol-terra-and-luna)(2026-09-23 확인)와 Claude [models overview](https://platform.claude.com/docs/en/models/overview)(2026-09-28 확인)이며 실행 가능 여부는 실제 host가 제공하는 조합으로 판단합니다.
+신규 선택의 후보가 없으면 사용자 한도 안에서 지원되는 대안을 선택하고 이유를 남깁니다. 명시된 기존 모델 프로필(`model`, `reasoning_effort`만 있는 이전 형식 포함)은 보존하며 릴리스만으로 업그레이드하지 않습니다. 실행 프로필 변경을 승인받으면 원본을 유지한 채 binding revision으로 추적합니다. 모델 비교가 필요한 경우 기존 지원 effort를 유지해 대표 작업의 결과·재시도·시간·사용량을 비교한 후 조정합니다. 이는 매 작업에 추가되는 검증 gate가 아닙니다. 선택 기준은 Codex [공식 모델 가이드](https://learn.chatgpt.com/docs/models#choosing-sol-terra-and-luna)(2026-09-23 확인)와 Claude [models overview](https://platform.claude.com/docs/en/models/overview)(2026-09-28 확인)이며 실행 가능 여부는 실제 host가 제공하는 조합으로 판단합니다.
 
 ## Kickoff
 
@@ -59,23 +59,23 @@ Shape의 초기 조사 예시는 코드 위치·호출 관계 `focused`/high, �
 
 ## Shape
 
-현재 checkout을 읽기 전용으로 조사합니다. 해당 analysis checkout으로 확인된 Codocs MCP의 list/get/guide를 우선 사용하고, 연결이 없으면 로컬 `.codocs`를 읽습니다. 원문 digest와 별도로 MCP revision·탐색/확인 상태를 기록합니다. partial 결과의 확인된 사실은 제한된 분석에 쓸 수 있지만 부재·유일성·미확인 정책을 확정하지 않습니다. 프로젝트 규칙, 코드·테스트·CI, 제공된 Wiki Artifact와 연결된 Figma, 버전에 맞는 공식 자료도 근거로 사용합니다. 문서 쓰기와 canonical Wiki/Jira 조회는 하지 않습니다.
+현재 checkout을 읽기 전용으로 조사합니다. 해당 analysis checkout으로 확인된 Codocs MCP의 list/get/guide를 우선 사용하고, 연결이 없으면 로컬 `.codocs`를 읽습니다. 읽은 원문의 Git blob ID와 별도로 MCP revision·탐색/확인 상태를 기록합니다. partial 결과의 확인된 사실은 제한된 분석에 쓸 수 있지만 부재·유일성·미확인 정책을 확정하지 않습니다. 프로젝트 규칙, 코드·테스트·CI, 제공된 Wiki Artifact와 연결된 Figma, 버전에 맞는 공식 자료도 근거로 사용합니다. 문서 쓰기와 canonical Wiki/Jira 조회는 하지 않습니다.
 
 작은 질문은 HEAD·dirty 상태·조사한 소스 identity와 관련 결론을 담은 `focused` 보고서로 충분합니다. 재현 가능한 인계나 넓은 dirty 변경에 의존하는 분석은 `snapshot_bound`로 전체 content-sensitive fingerprint를 계산합니다. focused 결과를 전체 checkout이 고정됐다는 보증으로 표현하지 않습니다.
 
 ## Prepare
 
-현재 checkout은 읽기 전용이며 clean/stable execution base를 정합니다. planning checkout에 연결된 Codocs MCP를 우선 사용하거나 로컬 `.codocs`를 읽고, 관련 제약·원문 digest·조회 방식을 self-contained packet에 담습니다. MCP revision은 Git base나 원문 digest를 대신하지 않습니다. 실제 실행 base에 해당 지식이 있는지 확인하고 필요한 dirty 변경을 누락하거나 임의로 checkpoint하지 않습니다. 미래 worker가 자기 worktree의 연결을 확인하도록 전달하며 planning 연결의 재사용을 전제하지 않습니다.
+현재 checkout은 읽기 전용이며 clean/stable execution base를 정합니다. planning checkout에 연결된 Codocs MCP를 우선 사용하거나 로컬 `.codocs`를 읽고, 관련 제약·원문 Git blob ID·조회 방식을 self-contained packet에 담습니다. MCP revision은 Git base나 blob ID를 대신하지 않습니다. 실제 실행 base에 해당 지식이 있는지 확인하고 필요한 dirty 변경을 누락하거나 임의로 checkpoint하지 않습니다. 미래 worker가 자기 worktree의 연결을 확인하도록 전달하며 planning 연결의 재사용을 전제하지 않습니다.
 
 각 task의 목표·수락 조건·소유 파일·금지 범위·실행 자원·검증·고유 branch/worktree·정확한 base selector와 `execution_profile`을 계획합니다. 프로필은 tier, effort, 사용자가 명시한 경우의 model, rationale, 기본 `escalation: none`을 포함합니다. 작업 branch는 `<PR head branch>--<run-id>-<task-id>`이며, PR head branch가 정해지지 않으면 이름 기준을 사용자에게 묻습니다. 필요한 작업에만 명시한 조건·등급·effort·추가 agent 수 한도를 갖는 읽기 전용 diagnosis를 계획합니다. 환경 장애나 사용자 결정 누락은 effort 상향으로 해결하지 않습니다. 미래 실행 host를 확인하지 못하면 가용성 미확인으로 표시하고 실행 시 preflight하도록 합니다.
 
 API/type producer-consumer 관계 자체를 직렬화 사유로 삼지 않습니다. 정확한 공유 계약·타입을 먼저 확정한 뒤 쓰기와 자원이 분리된 서버·클라이언트를 병렬 구현하고 실제 통합을 검사할 수 있습니다. 계약이 아직 없다면 선행 dependency가 필요합니다. Wave는 설명용이며 각 task의 의존성 충족이 실제 실행 기준입니다.
 
-작은 작업은 하나의 packet으로 유지할 수 있습니다. 별도 결과를 합치거나 cross-task 검증이 필요할 때만 integration packet을 추가합니다. 원본 YAML/digest와 별도로 짧은 단계 설명 및 task/model/effort/선정 이유 표를 제공합니다. 실행 계획은 그 자체로 commit이나 외부 작업 권한을 부여하지 않습니다.
+작은 작업은 하나의 packet으로 유지할 수 있습니다. 별도 결과를 합치거나 cross-task 검증이 필요할 때만 integration packet을 추가합니다. 계획·packet digest는 기본으로 만들지 않고, 계획을 저장해 다른 세션·도구로 넘길 때만 YAML 밖에 계획 digest 하나를 기록합니다. 원본 YAML과 별도로 짧은 단계 설명 및 task/model/effort/선정 이유 표를 제공합니다. 실행 계획은 그 자체로 commit이나 외부 작업 권한을 부여하지 않습니다.
 
 ## Execute Task
 
-Coordinator는 읽기 전용으로 입력을 정규화하고 실행을 조정합니다. 공급된 profile은 보존하며, profile 없는 호환 입력은 동일한 판단 기준으로 선택해 execution binding에 이유를 기록합니다. 원본 byte/digest는 보존하고 정규화된 packet에는 별도 binding digest를 부여합니다.
+Coordinator는 읽기 전용으로 입력을 정규화하고 실행을 조정합니다. 공급된 profile은 보존하며, profile 없는 호환 입력은 동일한 판단 기준으로 선택해 execution binding에 이유를 기록합니다. 원본 입력은 보존하고 제공된 계획 digest가 있을 때만 한 번 확인하며, 정규화된 packet은 `task_id`와 intent revision으로 식별합니다.
 
 각 implementation/integration worker는 완전한 packet, 명시된 model/effort, 고유 standard Git worktree를 사용합니다. Coordinator는 파일을 수정하거나 worktree를 만들지 않습니다. 독립적이고 자원이 격리된 runnable task를 host capacity까지 실행하고 나머지는 대기시킵니다. 특정 profile을 요청할 수 없으면 해당 task를 막고 설명하며 독립 작업은 계속합니다. 조용한 profile 대체나 coordinator 직접 구현으로 우회하지 않습니다.
 

@@ -8,12 +8,11 @@ Accept a software change request, issue, requirements document, design note, ana
 source_input:
   kind: inline | memory_artifact
   artifact_ref: null
-  source_digest:
 ```
 
 For inline input, keep `artifact_ref: null`. For referenced input, preserve the supplied MCP reference exactly and use the Local Work Memory MCP to resolve its complete current body. Follow the MCP guidance and contract exposed at invocation time. Reject summaries, metadata-only references, identity mismatches, or inputs too incomplete to determine task scope and acceptance.
 
-An issue key or URL is optional provenance, not an instruction to retrieve Jira. `work_item_key` may be null. Use relevant `.codocs` documents as the architecture and implementation planning basis through [codocs-knowledge.md](codocs-knowledge.md), and supplied Wiki Artifacts as task inputs only. Record original paths, raw-content digests, constraints, and access evidence in task inputs; MCP revision does not replace source/base identity. If `.codocs` is absent, report the gap and use explicit project instructions and repository evidence; do not create documents or fall back to Wiki/Jira lookup. Missing material policy or unresolved decision-critical conflicts block readiness; Wiki architecture access is not required. When project policy requires implementation knowledge changes in `.codocs`, declare those documentation paths and their shared navigation surfaces in task ownership; planning itself remains read-only.
+An issue key or URL is optional provenance, not an instruction to retrieve Jira. `work_item_key` may be null. Use relevant `.codocs` documents as the architecture and implementation planning basis through [codocs-knowledge.md](codocs-knowledge.md), and supplied Wiki Artifacts as task inputs only. Record original paths, Git blob IDs, constraints, and access evidence in task inputs; MCP revision does not replace source/base identity. If `.codocs` is absent, report the gap and use explicit project instructions and repository evidence; do not create documents or fall back to Wiki/Jira lookup. Missing material policy or unresolved decision-critical conflicts block readiness; Wiki architecture access is not required. When project policy requires implementation knowledge changes in `.codocs`, declare those documentation paths and their shared navigation surfaces in task ownership; planning itself remains read-only.
 
 Every emitted task packet must be self-contained for a worker that receives no conversation history. Do not use YAML anchors/aliases, merge keys, or cross-packet references for required contract content; duplicate the necessary values so each extracted packet parses and means the same thing alone. Include the selected `execution_profile` (model, reasoning effort, rationale, and optional bounded diagnosis) using [model-selection.md](model-selection.md). Distinguish research helpers used while planning from these future execution workers.
 
@@ -43,9 +42,7 @@ work_item_key:
 source_input:
   kind: inline | memory_artifact
   artifact_ref: null
-  source_digest:
 execution_plan_id: <run-id>/plan/<positive revision>
-execution_plan_digest: <sha256 with this field blank>
 git_common_dir:
 repository_root:
 prepared_from_root:
@@ -98,7 +95,6 @@ The default delivery policy describes verified integration into the confirmed lo
 task_id: TASK-001 | INT-001
 run_id:
 execution_plan_id:
-task_packet_digest: <sha256 with this field blank>
 kind: implementation | integration
 title:
 objective:
@@ -152,9 +148,11 @@ Integration packets additionally declare `required_task_ids`, `integration_order
 - `worktree_parent` must be outside the repository, Git metadata, home configuration, and system paths.
 - Every assigned path must be a unique direct child of that parent without `..` or symlink components.
 
-## Digests and baseline
+## Identity and baseline
 
-Emit the plan and each packet as immutable YAML with exactly one corresponding digest field and no generated timestamp. For packet hashing, extract its complete YAML mapping as a standalone document (remove only the common enclosing indentation and list marker, if embedded), normalize CRLF/CR to LF, replace only its digest value with an empty string, preserve all remaining bytes, then SHA-256 the UTF-8 bytes. Fill packet digests before hashing the whole plan using the same LF/blank-own-digest rule; plan hashing retains the populated packet digests. Validate isolated packet parsing as well as whole-plan parsing. Do not reserialize YAML between hashing and delivery.
+Emit the plan and each packet as immutable YAML with no generated timestamp. Validate isolated packet parsing as well as whole-plan parsing. Do not compute plan or packet digests by default: within one conversation the plan is already in context, and exact commit IDs bind the code a task starts from.
+
+Only when the plan is persisted (for example as a Local Work Memory Artifact) or handed to another session or host, record one `execution_plan_digest` next to the plan, outside the YAML block: the SHA-256 of the exact emitted plan YAML bytes (for example `shasum -a 256` over the saved block). Keeping it outside the YAML avoids self-referential hashing; do not reserialize the YAML after computing it.
 
 Record pre-existing failures by stable identity, normalized fingerprint, and count. `no_new_failures` succeeds only when they match and no additional failure appears. Missing acceptance-critical checks or unexpected tracked changes block readiness.
 
@@ -162,7 +160,7 @@ Record pre-existing failures by stable identity, normalized fingerprint, and cou
 
 ## Human-readable walkthrough
 
-For a `READY` result, preserve the complete canonical plan YAML and every digest exactly as produced. After the closing YAML fence, always append `## 작업 단계 설명` for a Korean response or an equivalent heading in the user's language. This walkthrough is presentation only: it is not part of the immutable plan or any plan or packet digest.
+For a `READY` result, preserve the complete canonical plan YAML exactly as produced. After the closing YAML fence, always append `## 작업 단계 설명` for a Korean response or an equivalent heading in the user's language. This walkthrough is presentation only: it is not part of the immutable plan.
 
 Explain the execution flow in wave order:
 
@@ -172,7 +170,7 @@ Explain the execution flow in wave order:
 4. Explain integration and cross-task verification when present. Include a compact task/tier/effort/rationale table; label unverified future-host availability and optional diagnostic limits.
 5. End with baseline caveats and the actual delivery policy: intended PR head/remote, unresolved target or authority, and whether local integration/safe cleanup or an explicit local-only exception is planned; remote push is disabled. State that planning itself did not create worktrees, merge, push, open a PR, or perform cleanup. Describe enabled local integration/cleanup as the execution default; a later push remains separate.
 
-Keep the walkthrough substantially shorter than the YAML. Do not repeat digests, complete path lists, command lists, or every contract ID unless one is necessary to understand a risk. A small plan may use a short task explanation instead of empty wave/integration sections. Derive every statement from the emitted plan; do not introduce new tasks, ordering, guarantees, or authority.
+Keep the walkthrough substantially shorter than the YAML. Do not repeat complete path lists, command lists, or every contract ID unless one is necessary to understand a risk. A small plan may use a short task explanation instead of empty wave/integration sections. Derive every statement from the emitted plan; do not introduce new tasks, ordering, guarantees, or authority.
 
 Use this shape, adapting the number of stages to the actual waves:
 
@@ -191,7 +189,7 @@ Use this shape, adapting the number of stages to the actual waves:
 
 ## Questions and changed requirements
 
-Ask material questions when discovered, and continue independent research while answers are pending. Keep unresolved tasks provisional rather than declaring a complete plan `READY`. A missing behavior that changes acceptance (for example ordering direction or invalid-input behavior) is a proposed decision until user intent or repository evidence resolves it; labeling it an assumption does not make affected work `READY`. Do not encode an unaccepted proposal as a governing decision. If the user changes material intent, preserve the prior plan and issue a new plan revision with updated packets/digests and a short explanation of changed tasks. A clear user instruction supplies the requested change; ask only for additional unresolved decisions or authority.
+Ask material questions when discovered, and continue independent research while answers are pending. Keep unresolved tasks provisional rather than declaring a complete plan `READY`. A missing behavior that changes acceptance (for example ordering direction or invalid-input behavior) is a proposed decision until user intent or repository evidence resolves it; labeling it an assumption does not make affected work `READY`. Do not encode an unaccepted proposal as a governing decision. If the user changes material intent, preserve the prior plan and issue a new plan revision with updated packets and a short explanation of changed tasks. A clear user instruction supplies the requested change; ask only for additional unresolved decisions or authority.
 
 ## Blocked result
 

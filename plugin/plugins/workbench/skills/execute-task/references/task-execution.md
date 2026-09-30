@@ -10,13 +10,13 @@ Accept exactly one of:
 
 Compatibility is semantic rather than producer- or field-name-specific. Accept equivalent representations such as plan-level repository identity inherited by tasks and `acceptance_contract` used as observable acceptance conditions. Do not require a source to duplicate plan-level values into every task.
 
-Reject metadata-only or insufficient inputs, stale immutable identities, supplied digest mismatches, and moving branch names used in place of commit IDs after binding. For material ambiguity in objective, ownership, or product decisions, ask promptly and hold affected tasks while continuing independently specified work; do not invent decisions. Missing mechanical values such as a unique branch, worktree path, exact repository command, or runtime resource name may be derived only when repository evidence determines them without changing product intent.
+Reject metadata-only or insufficient inputs, stale immutable identities, a supplied `execution_plan_digest` that does not match the received plan, and moving branch names used in place of commit IDs after binding. For material ambiguity in objective, ownership, or product decisions, ask promptly and hold affected tasks while continuing independently specified work; do not invent decisions. Missing mechanical values such as a unique branch, worktree path, exact repository command, or runtime resource name may be derived only when repository evidence determines them without changing product intent.
 
 For a standalone objective, normalize one task when sufficient; split only when independent deliverables and verification justify it. Create integration tasks only when separate results need combining or cross-task verification. Do not implement in the coordinator.
 
 ## Project knowledge
 
-Use local `.codocs` concepts, architecture, policies, conventions, and contracts as the implementation basis through [codocs-access.md](codocs-access.md), preferring MCP verified for the inspected checkout. Resolve supplied Wiki Artifact references as read-only task inputs under the provider’s current contract; do not query canonical Wikis or Jira for project rules. During normalization, carry original document paths, raw-content digests, constraints, and access evidence in `implementation_notes` so workers do not depend on conversation history. MCP revisions supplement that evidence; they do not replace Git base or binding identities.
+Use local `.codocs` concepts, architecture, policies, conventions, and contracts as the implementation basis through [codocs-access.md](codocs-access.md), preferring MCP verified for the inspected checkout. Resolve supplied Wiki Artifact references as read-only task inputs under the provider’s current contract; do not query canonical Wikis or Jira for project rules. During normalization, carry original document paths, Git blob IDs, constraints, and access evidence in `implementation_notes` so workers do not depend on conversation history. MCP revisions supplement that evidence; they do not replace Git base or binding identities.
 
 Each worker rereads relevant `.codocs` from its own exact task base before implementation and verifies any MCP binding against that actual worktree. The planning/coordinator connection is not automatically usable there; use that worktree's local files when no verified connection exists. If sources differ materially from packet evidence or conflict with approved intent, report the conflict and resolve only what is within the packet’s authority; do not silently change the immutable plan. If `.codocs` is absent, report the gap and use explicit repository instructions and code evidence, asking only for missing material policy. Do not create a knowledge store or fetch Wiki rules as a fallback.
 
@@ -29,7 +29,7 @@ The coordinator owns scheduling and evidence only.
 The caller selects the coordinator model; loading the skill does not switch it or create a replacement coordinator. Record the actual coordinator model and effort when exposed by the host, otherwise `unknown`. Worker settings are selected per packet, not inherited from this coordinator.
 
 - Resolve repository identity, Git common dir, invocation root, exact base commit ID, current worktree inventory, and every task dependency.
-- Preserve source bytes and verify plan and packet digests when provided. A producer-neutral input without a supplied digest receives an execution binding rather than a fabricated source digest.
+- Preserve the source input unchanged. Verify an `execution_plan_digest` supplied next to the plan once at intake; do not compute digests for inputs without one. Treat digest fields embedded in older plan YAML as provenance, not as a check to recompute.
 - Treat `base_commit` as the exact Git commit from which a task starts. Do not substitute a moving branch name after binding.
 - Normalize compatible source material into the runtime packet contract below. Record every inherited value, semantic mapping, and mechanically derived value in the execution binding.
 - Allocate unique branches and worktree paths when they are absent and can be derived safely. Name branches `<head-branch>--<run-id>-<task-id>` from the resolved PR source/head branch; ask the user when no head branch is resolved. Allocation does not create or adopt the worktree.
@@ -43,7 +43,7 @@ Read [worker-profiles.md](worker-profiles.md) before dispatch. Resolve each prof
 
 ## Normalization and execution binding
 
-Keep the source plan or packet immutable. Normalize only after validating its available identity and digest evidence.
+Keep the source plan or packet immutable. Normalize only after validating its available repository and base identity evidence.
 
 - Inherit `repository_id`, `git_common_dir`, exact base identity, environment, and delivery policy from plan-level fields when task-local copies are absent.
 - Map requirement statements to `requirements`, acceptance statements such as `acceptance_conditions` or `acceptance_contract` to `acceptance_conditions`, invariants to `invariants`, and governing decisions to `decisions`. Preserve source IDs for traceability when present. A proposed or unresolved decision is not governing unless the source or user has accepted it; ask when it materially affects implementation and hold only the affected work.
@@ -53,7 +53,7 @@ Keep the source plan or packet immutable. Normalize only after validating its av
 
 Set the initial `intent_revision` from a supplied revision identity, or derive `<run-id>/intent/1` for input without one.
 
-Serialize each normalized runtime packet as standalone immutable YAML without anchors, aliases, or merge keys; required content must not depend on another packet's YAML context. Set `execution_binding_digest` to an empty string while hashing its normalized LF UTF-8 bytes with SHA-256, then insert the resulting digest. `task_packet_digest` preserves a supplied source packet digest and is `null` when none exists. The binding digest identifies the exact packet given to the worker; it does not replace or rewrite a source digest.
+Serialize each normalized runtime packet as standalone immutable YAML without anchors, aliases, or merge keys; required content must not depend on another packet's YAML context. Identify it by `task_id` and `intent_revision`; do not compute packet or binding digests.
 
 ## Minimum normalized runtime packet
 
@@ -92,9 +92,7 @@ focused_checks: []
 broader_checks: []
 verification_commands: []
 commit_policy: task_local_required | no_commit_needed
-task_packet_digest: null
-execution_binding_digest:
-resume_state: null # optional observed_head_commit, owned_change_digests, worker_id, quiescence_evidence
+resume_state: null # optional observed_head_commit, owned_changes, worker_id, quiescence_evidence
 ```
 
 An integration packet also declares required task IDs, integration order, strategy, cross-task checks, dependency-imported paths, separately owned integration-edit paths, and the expected `integrated_head_sha` output. Validate imports and repairs against forbidden paths; do not treat integration as unrestricted write authority. The coordinator binds each required task ID to an exact verified result commit or an exact provisional candidate at runtime.
@@ -115,10 +113,10 @@ Preserve each approved plan revision as an immutable record of intent. A later e
 1. Mark a task runnable when each dependency provides an exact verified result or allowed provisional candidate, all needed contracts/artifacts exist, and the result remains applicable to the current intent revision. Waves do not impose extra barriers.
 2. Tasks may run in parallel only when they have no dependency path, use the same resolved base commit where required, have disjoint direct and indirect write surfaces, and isolate ports, databases, queues, accounts, fixtures, formatters, generators, and build outputs.
 3. Spawn one worker per runnable task with its explicit execution profile up to capacity. Queue the rest. API/type relationships are not a barrier once their exact prerequisites exist and sibling writes/resources are isolated.
-4. Process completions, material questions, and user updates as they arrive. Validate terminal Task Results before releasing descendants; do not wait for unrelated tasks. Apply the update protocol before accepting results from affected workers.
+4. Process completions, material questions, and user updates as they arrive. Validate terminal Task Results before releasing descendants; do not wait for unrelated tasks. Apply the update protocol before accepting results from affected workers. A worker reply without a Task Result is a progress report, not completion: wait while its commands or helpers are still running; otherwise send it the named open items and ask it to continue or state its blocker. After two or three such continuations on the same task, stop continuing it and record the task as `PARTIAL` with its current evidence.
 5. Continue independent branches after any unrelated finding or blocker. Continue dependent branches from usable provisional candidates and record that scheduling decision.
 6. Stop only the affected descendants when `continuation: NOT_POSSIBLE`, no exact commit exists, or the required material interface is absent. A failed check alone is not a scheduling barrier.
-7. Resolve selectors only from exact immutable commits. Prefer a verified result; otherwise use an explicitly allowed provisional candidate without changing the original plan or packet digest.
+7. Resolve selectors only from exact immutable commits. Prefer a verified result; otherwise use an explicitly allowed provisional candidate without changing the original plan or packet.
 8. Run each materially runnable integration packet in its declared order. Carry unresolved findings into integration so it can expose or mechanically repair cross-task incompatibilities.
 9. Do not stop unrelated execution solely for a conflict. Ask necessary decisions promptly, continue independent work, and consolidate findings and revision history in the Execution Result.
 
@@ -126,7 +124,7 @@ Preserve each approved plan revision as an immutable record of intent. A later e
 
 Each worker performs exactly one packet:
 
-1. Re-resolve the Git common dir and exact base commit ID from the normalized runtime packet, and verify its execution binding digest plus any supplied source packet digest.
+1. Re-resolve the Git common dir and exact base commit ID from the normalized runtime packet, and confirm its `task_id` and `intent_revision` match the current binding.
 2. Validate the assigned path as a unique direct child of a dedicated parent outside the repository, Git metadata, home configuration, and system paths, with no `..` or symlink component.
 3. For a new worktree, require the assigned path and branch to be absent and the branch name valid; create the equivalent of `git worktree add -b <branch> <worktree> <base-commit>`. An existing path/branch follows the adoption or resume check below instead; do not recreate or rewind it.
 4. Adopt an existing clean path only when its path, common dir, branch, task identity, and HEAD match the packet; no other task may own that worktree. For an interrupted same-task resume, follow the update protocol: prove ownership of known run-produced edits and bind the resumed state explicitly. Unknown or unrelated dirty changes require user resolution; do not silently adopt them.
@@ -155,9 +153,7 @@ For integration packets, consume the coordinator-bound exact verified results an
 - intent_revision:
 - planned_profile: # tier, effort, and explicit model, or null if absent from source
 - requested_profile: # host and actual spawn arguments
-- effective_profile: # host-observed model/effort, unknown, or session effort on Claude Code
-- task_packet_digest: # supplied source digest or null
-- execution_binding_digest:
+- effective_profile: # host-observed model/effort or unknown; model only on Claude Code
 - worktree:
 - worktree_created: true | false
 - branch:

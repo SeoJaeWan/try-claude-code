@@ -22,7 +22,7 @@ Wait for initialization/refresh completion. On `cursor_expired`, restart the aff
 
 ## Carry evidence into executable packets
 
-Use the existing `inputs`/`implementation_notes` surfaces in [execution-plan.md](execution-plan.md); do not require a new source vocabulary or rewrite supplied artifacts. Include the knowledge source checkout, original paths, current IDs, exact raw-content digests, constraints and applicable checks. For MCP reads, also retain access method, revision, and relevant discovery/confirmation state. Compute source digests from the actual raw content, preserving whitespace/newlines, rather than replacing them with revision tokens or reserialized YAML hashes.
+Use the existing `inputs`/`implementation_notes` surfaces in [execution-plan.md](execution-plan.md); do not require a new source vocabulary or rewrite supplied artifacts. Include the knowledge source checkout, original paths, current IDs, Git blob IDs, constraints and applicable checks. For MCP reads, also retain access method, revision, and relevant discovery/confirmation state. Ask Git for each blob ID — `git rev-parse <base_commit>:<path>`, or `git hash-object <path>` for working-tree content — rather than hashing content yourself or substituting revision tokens.
 
 Check that knowledge used by each task is available at its exact execution base. A verified connection to today's planning checkout does not prove that dirty `.codocs` edits, a different commit, or a future dependency result contains the same policy. Compare relevant source identities with the chosen exact base; use its available evidence or establish the required inclusion/dependency under the existing base rules. Do NOT silently include dirty knowledge in a clean-base plan or rewrite the approved source.
 

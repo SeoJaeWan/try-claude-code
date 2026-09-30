@@ -14,18 +14,18 @@ Select an explicit tier and effort for each helper rather than inheriting the ho
 
 | Tier | Codex | Claude Code |
 | --- | --- | --- |
-| `focused` | `gpt-6-luna` | `haiku` |
+| `focused` | `gpt-6-luna` | `sonnet` |
 | `standard` | `gpt-6-sol` | `sonnet` |
 | `deep` | `gpt-6-astra` | `opus` |
 
 Identify the host from its subagent tool, check its supported choices, respect user limits, and start each helper in a fresh context:
 
 - Codex: pass both `model` and `reasoning_effort`, with `fork_turns: none` when available. The [official starting efforts](https://learn.chatgpt.com/docs/models#choosing-sol-terra-and-luna) (checked 2026-09-23) are Luna/high, Sol/medium, and Astra/low.
-- Claude Code: start a non-fork subagent with the `model` alias; see the [models overview](https://platform.claude.com/docs/en/models/overview) (checked 2026-09-28). Effort follows the session. Use `fable` only when the user explicitly chooses it.
+- Claude Code: start a non-fork subagent with the `model` alias; see the [models overview](https://platform.claude.com/docs/en/models/overview) (checked 2026-09-28). Claude Code applies only the model; do not pass or report effort there. Use `fable` only when the user explicitly chooses it.
 
 If delegation is unavailable, continue locally. Disclose any permitted alternative profile instead of claiming the preferred one ran.
 
-Give helpers bounded topics, source paths/content identities, relevant schema/rules, and a read-only boundary. Request findings, exact evidence, conflicts, and suggested ownership; do not let helpers edit files, create worktrees, or recursively delegate. Keep the main agent doing independent work. Before writing, recheck any source changed since research; results from a prior document state are not automatically applicable. Record requested profiles and host-observed effective settings when available, otherwise `unknown`; Claude Code effort is `session`.
+Give helpers bounded topics, source paths/content identities, relevant schema/rules, and a read-only boundary. Request findings, exact evidence, conflicts, and suggested ownership; do not let helpers edit files, create worktrees, or recursively delegate. Keep the main agent doing independent work. Before writing, recheck any source changed since research; results from a prior document state are not automatically applicable. Record requested profiles and host-observed effective settings when available, otherwise `unknown`; on Claude Code, record the model only.
 
 Policy decisions stay with the user when evidence cannot settle them. Ask promptly and continue unaffected units. Do not write model assignments, task logs, or execution plans into project knowledge.
 
