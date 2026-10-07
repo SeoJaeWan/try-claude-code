@@ -15,6 +15,16 @@
 
 A finding that looks self-resolvable but hides a judgment call is `needs-decision`.
 
+## External facts
+
+When a finding, option, trade-off, or recommendation depends on how an external library, tool, framework, or service behaves, verify that behavior from official documentation before presenting the item.
+
+- Use Context7 when available, then the official documentation site or the primary repository's documentation, matched to the version in use. Context7 may need to be discovered or loaded before use; do NOT conclude it is unavailable without checking.
+- Treat installed package READMEs or source as supporting evidence only. Do NOT count a README search as the documentation check when per-feature documentation exists.
+- Do NOT write or run probe code to learn behavior the documentation covers. When the documentation is silent, say so and keep the behavior unverified.
+- A question the documentation answers is `verified` or `self-resolvable`. Ask the user only about the judgment that remains once the documented facts are known.
+- Mark an external fact unverified only after a lookup was attempted; name the sources tried and why they fell short. Do NOT present an option whose viability rests on an unchecked capability.
+
 ## Overview format
 
 ```markdown
@@ -23,6 +33,7 @@ A finding that looks self-resolvable but hides a judgment call is `needs-decisio
 
 ## 확인한 정보
 - <what was read> (읽지 못한 것과 이유)
+- 공식 문서: <title> — <URL> (<version>)
 
 ## 확인됨 / 에이전트가 정리할 것
 - 확인됨: <item> — <evidence>
@@ -63,7 +74,7 @@ When the user answers, reply with `결정: <one line>`. Name the later items the
 - <self-resolvable item and resolution>
 
 ## 가정과 미확인 사실
-- <assumption or fact to verify later>
+- <assumption or fact to verify later; for an external fact, the sources tried>
 ```
 
 The log must stand alone as input for later work without this conversation. Do NOT name or recommend a particular follow-up skill.

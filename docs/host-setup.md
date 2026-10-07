@@ -29,13 +29,13 @@ marketplace 이름은 두 도구 모두 `workbench`, 설치 ID는 `workbench@wor
 
 ## MCP
 
-Kickoff는 특정 MCP를 요구하지 않고, 주어진 정보를 읽는 데 필요한 연결된 도구를 읽기 전용으로 사용합니다.
+Kickoff는 특정 MCP를 요구하지 않고, 주어진 정보를 읽는 데 필요한 연결된 도구를 읽기 전용으로 사용합니다. 선택지가 외부 라이브러리·도구 동작에 기대면 Context7(가능할 때)과 공식 문서로 먼저 확인합니다.
 
 | MCP | 용도 | 사용 스킬 |
 |---|---|---|
 | Figma | 요청에 연결된 Figma 근거 조회(읽기 전용) | Shape |
 | Codocs | 로컬 `.codocs` 조회·수정·검증 | Shape, Prepare, Execute Task, Memory Update (없으면 로컬 파일 방식) |
-| `gateway-public` | Local Work Memory Artifact 조회, Context7 공식 문서 조회 | Shape, Prepare, Execute Task |
+| `gateway-public` | Local Work Memory Artifact 조회, Context7 공식 문서 조회 | Kickoff(Context7만), Shape, Prepare, Execute Task |
 
 `gateway-public`은 Local Work Memory(`memory_*`), Context7(`context7_*`), Atlassian(`atlassian_*`) 도구를 함께 제공합니다. Workbench는 Jira를 프로젝트 규칙 근거로 조회하지 않습니다.
 

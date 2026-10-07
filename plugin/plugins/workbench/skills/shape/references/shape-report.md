@@ -44,6 +44,14 @@ Label material statements as one of:
 
 For each external source record its canonical URL, library version, source ref, version alignment, retrieval method and time, supported contract IDs, and whether it is official documentation, a primary repository, Context7 index material, or a secondary source.
 
+### External evidence
+
+- Look up external behavior in Context7 when available, then the official documentation site or the primary repository's documentation for the version in use. Context7 may need to be discovered or loaded before use; do NOT conclude it is unavailable without checking.
+- Treat installed package READMEs or source as supporting evidence only. Do NOT count a README search as the documentation check when per-feature documentation exists.
+- Do NOT write or run probe code to learn behavior the documentation covers. When the documentation is silent, record that and keep the behavior `unverified` or name it as a later check.
+- Use `unverified` for an external claim only after a lookup was attempted; record the sources tried and why they fell short.
+- A recommended decision or alternative whose viability rests on an `unverified` external fact prevents `READY`; list the gap under `blockers` or `unresolved_questions`.
+
 ## Required report
 
 ```markdown
