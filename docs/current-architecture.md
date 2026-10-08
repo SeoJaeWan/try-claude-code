@@ -32,24 +32,24 @@
 
 | 등급 | 용도 | 시작 effort | Codex | Claude Code |
 |---|---|---|---|---|
-| `focused` | bounded 탐색·반복 수정·명확한 소규모 구현 | high | `gpt-6-luna` | `sonnet` |
+| `focused` | bounded 탐색·반복 수정·명확한 소규모 구현 | high | `gpt-6-luna` | `haiku` |
 | `standard` | 일반 및 복잡한 구현·디버깅 | medium | `gpt-6.1-sol` | `sonnet` |
 | `deep` | 가장 어려운 다단계 설계·통합 판단 | xhigh | `gpt-6.1-sol` | `opus` |
 
 단순하고 검증이 쉬우면 `focused`/low 또는 medium, 더 깊은 분석이 필요하면 `standard`/high나 `deep`/xhigh로 조정할 수 있습니다. 여러 모듈에 걸친 작업이라는 이유만으로 `deep`을 선택하지 않습니다. `standard`/high는 범위와 해결 방향이 정해진 어려운 작업, `deep`/xhigh는 해결 방향이 불확실하고 설계·통합 판단이 얽힌 작업에 사용합니다. Codex의 두 등급은 같은 모델이므로 등급 이름만으로 능력이 높아지지 않습니다. 사용자가 명시한 Astra 등 모델과 effort는 보존합니다. 등급 간 동일 effort 이름은 동일한 능력·사용량을 뜻하지 않습니다. 이는 고정 성능·가격 순위가 아니며 사용자 선택과 한도를 우선합니다. Claude Code의 `fable`은 사용자가 명시적으로 선택할 때만 사용합니다.
 
-Shape의 초기 조사 예시는 코드 위치·호출 관계 `focused`/high, 여러 모듈의 영향 `standard`/medium, 어려운 설계 대안·실패 조건 `deep`/xhigh입니다. Prepare의 조사 예시는 파일 소유권·충돌 `standard`/medium, 선행 조건·통합 위험은 확립된 계약이면 `standard`/medium, 어려운 미확정 상호작용이면 `deep`/xhigh입니다. 필요성 없이 에이전트를 만들지 않으며 작은 조회는 직접 처리하거나 도구 호출을 묶습니다.
+Shape의 초기 조사 예시는 코드 위치·호출 관계 `focused`/high, 여러 모듈의 영향 `standard`/medium, 어려운 설계 대안·실패 조건 `deep`/xhigh입니다. Prepare의 조사 예시는 계획이 의존하는 기존 파일·심볼·설정·규칙 수집 `focused`/high(단순 조회는 low/medium), 파일 소유권·충돌 `standard`/medium, 선행 조건·통합 위험은 확립된 계약이면 `standard`/medium, 어려운 미확정 상호작용이면 `deep`/xhigh입니다. 필요성 없이 에이전트를 만들지 않으며 작은 조회는 직접 처리하거나 도구 호출을 묶습니다.
 
 독립적인 입력·결과와 시간 또는 품질 이득이 있는 읽기 전용 조사만 위임하고, 메인은 독립 작업과 최종 통합을 담당합니다. 각 helper는 근거·불확실성을 반환하고 파일을 수정하지 않습니다. 내부 위임은 subagent 도구를 사용하며 사용자 소유의 별도 task나 thread를 만들지 않습니다.
 
 실행 프로필은 YAML만으로 적용되지 않습니다. 사용 가능한 subagent 도구로 현재 host를 판별하고, 새 context에 완전한 packet과 함께 생성 인자를 전달합니다.
 
 - Codex: `model`과 `reasoning_effort`를 함께 전달하고, `fork_turns: none`을 지원하면 사용합니다. 전체 이력 fork의 override 제한과 custom agent 설정 우선순위를 고려합니다.
-- Claude Code: non-fork subagent에 `model` 별칭만 전달합니다. Claude Code에서는 model만 적용하므로 effort는 전달·보고하지 않고, `focused`와 `standard`는 모두 `sonnet`을 씁니다. 적용되지 않은 계획 effort는 profile 불일치가 아닙니다.
+- Claude Code: non-fork subagent에 `model` 별칭만 전달합니다. Claude Code에서는 model만 적용하므로 effort는 전달·보고하지 않고, 등급만으로 `haiku`·`sonnet`·`opus`가 정해집니다. 적용되지 않은 계획 effort는 profile 불일치가 아닙니다.
 
 계획값·요청값·host가 알려준 실제값을 구분하고, 실제값이 노출되지 않으면 `unknown`으로 보고하고, Claude Code에서는 model만 보고합니다. 모델 자신의 진술은 실행 설정의 증거가 아닙니다.
 
-신규 선택의 후보가 없으면 사용자 한도 안에서 지원되는 대안을 선택하고 이유를 남깁니다. 명시된 기존 모델 프로필(`model`, `reasoning_effort`만 있는 이전 형식 포함)은 보존하며 릴리스만으로 업그레이드하지 않습니다. 실행 프로필 변경을 승인받으면 원본을 유지한 채 binding revision으로 추적합니다. 모델 비교가 필요한 경우 기존 지원 effort를 유지해 대표 작업의 결과·재시도·시간·사용량을 비교한 후 조정합니다. 이는 매 작업에 추가되는 검증 gate가 아닙니다. 선택 기준은 Codex [공식 모델 가이드](https://developers.openai.com/api/docs/guides/latest-model)(2026-09-30 확인)와 Claude [models overview](https://platform.claude.com/docs/en/models/overview)(2026-09-28 확인)이며 실행 가능 여부는 실제 host가 제공하는 조합으로 판단합니다.
+신규 선택의 후보가 없으면 사용자 한도 안에서 지원되는 대안을 선택하고 이유를 남깁니다. 명시된 기존 모델 프로필(`model`, `reasoning_effort`만 있는 이전 형식 포함)은 보존하며 릴리스만으로 업그레이드하지 않습니다. 실행 프로필 변경을 승인받으면 원본을 유지한 채 binding revision으로 추적합니다. 모델 비교가 필요한 경우 기존 지원 effort를 유지해 대표 작업의 결과·재시도·시간·사용량을 비교한 후 조정합니다. 이는 매 작업에 추가되는 검증 gate가 아닙니다. 선택 기준은 Codex [공식 모델 가이드](https://developers.openai.com/api/docs/guides/latest-model)(2026-09-30 확인)와 Claude [models overview](https://platform.claude.com/docs/en/models/overview)(2026-10-08 확인)이며 실행 가능 여부는 실제 host가 제공하는 조합으로 판단합니다.
 
 ## Kickoff
 

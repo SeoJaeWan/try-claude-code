@@ -44,12 +44,12 @@ Use `standard` / `high` when scope and solution direction are established but an
 
 | Tier | Codex | Claude Code |
 | --- | --- | --- |
-| `focused` | `gpt-6-luna` | `sonnet` |
+| `focused` | `gpt-6-luna` | `haiku` |
 | `standard` | `gpt-6.1-sol` | `sonnet` |
 | `deep` | `gpt-6.1-sol` | `opus` |
 
 - Codex: the starting efforts remain Workbench defaults; see the [official model guidance](https://developers.openai.com/api/docs/guides/latest-model) (checked 2026-09-30). Requests carry both model and effort.
-- Claude Code: use the model alias; see the [models overview](https://platform.claude.com/docs/en/models/overview) (checked 2026-09-28). Use `fable` only when the user explicitly chooses it. Claude Code applies only the model, so `focused` and `standard` both use `sonnet`. Do not pass or report effort there; the planned effort still records intent for hosts that apply it.
+- Claude Code: use the model alias; see the [models overview](https://platform.claude.com/docs/en/models/overview) (checked 2026-10-08). Use `fable` only when the user explicitly chooses it. Claude Code applies only the model, so the tier alone selects `haiku`, `sonnet`, or `opus`. Do not pass or report effort there; the planned effort still records intent for hosts that apply it.
 
 Use the target host's advertised model/effort combinations, not API support alone. When the future execution host cannot be inspected, label availability as unverified for execution-time preflight; do not claim a successful launch or guarantee a token bill.
 
@@ -59,6 +59,7 @@ This is separate from the future task profiles. Delegate independent read-only i
 
 | Planning investigation | Candidate profile |
 | --- | --- |
+| Existing files, symbols, configuration, and conventions the plan depends on | `focused` / `high`; `low`/`medium` for simple lookups |
 | File ownership and task collision review | `standard` / `medium` |
 | Missing prerequisites and integration risks | `standard` / `medium` for established contracts; `deep` / `xhigh` for difficult unresolved interactions |
 

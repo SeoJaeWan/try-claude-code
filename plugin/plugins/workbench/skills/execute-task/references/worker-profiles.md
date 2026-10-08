@@ -24,12 +24,12 @@ Resolve the tier to the executing host's model. An explicit `model` overrides th
 
 | Tier | Codex | Claude Code |
 | --- | --- | --- |
-| `focused` | `gpt-6-luna` | `sonnet` |
+| `focused` | `gpt-6-luna` | `haiku` |
 | `standard` | `gpt-6.1-sol` | `sonnet` |
 | `deep` | `gpt-6.1-sol` | `opus` |
 
 - Codex: the starting efforts remain Workbench defaults; see the [official model guidance](https://developers.openai.com/api/docs/guides/latest-model) (checked 2026-09-30); actual host-supported combinations govern dispatch.
-- Claude Code: use the model alias; see the [models overview](https://platform.claude.com/docs/en/models/overview) (checked 2026-09-28). Use `fable` only when the user explicitly chooses it. Claude Code applies only the model, so `focused` and `standard` both use `sonnet`. Do not pass or report effort there; an unapplied planned effort is not a profile mismatch.
+- Claude Code: use the model alias; see the [models overview](https://platform.claude.com/docs/en/models/overview) (checked 2026-10-08). Use `fable` only when the user explicitly chooses it. Claude Code applies only the model, so the tier alone selects `haiku`, `sonnet`, or `opus`. Do not pass or report effort there; an unapplied planned effort is not a profile mismatch.
 
 ## Dispatch
 
