@@ -52,6 +52,14 @@ For each external source record its canonical URL, library version, source ref, 
 - Use `unverified` for an external claim only after a lookup was attempted; record the sources tried and why they fell short.
 - A recommended decision or alternative whose viability rests on an `unverified` external fact prevents `READY`; list the gap under `blockers` or `unresolved_questions`.
 
+### Established solutions
+
+- Before proposing an alternative or decision for a problem in a platform, tool, or ecosystem the change uses, search in this order: repository precedent that already solves it; built-in or official features of the platform or tool in use, such as official GitHub Actions or Node.js APIs; the approach its official documentation recommends; widely adopted libraries, conventions, and practice in prominent projects.
+- Verify official features and recommendations with the external-evidence rules. Practice from other projects is a secondary source: it can show that a solution exists and is common, but do NOT treat it as proof of documented behavior.
+- Include a fitting existing solution among the alternatives and prefer it. Do NOT make a new script, workaround, or custom implementation the recommended decision unless the report states why the existing solutions do not fit.
+- A repository precedent or settled standard that resolves a question without changing scope, behavior, commitment, or intent is not an unresolved question.
+- Record what was searched and found, including searches that found nothing applicable. Skip the search for purely internal logic where no decision depends on it.
+
 ## Required report
 
 ```markdown
@@ -95,6 +103,7 @@ For each external source record its canonical URL, library version, source ref, 
 - 연결된 Figma
 - 저장소 탐색
 - 공식 자료와 버전 정합성
+- 기존 해법 조사: 저장소 선례, 공식·내장 기능, 공식 권장 방식, 널리 쓰이는 관행과 각 출처 등급
 - 조회 실패 및 출처 충돌
 
 ## 요구사항
@@ -110,7 +119,7 @@ For each external source record its canonical URL, library version, source ref, 
 ## 아키텍처 결정
 ### DEC-### <title>
 - decision_status: proposed | accepted | superseded
-- 결정, 대안, 근거, trade-off, confidence, 무효화 조건
+- 결정, 대안(적용 가능한 기존 해법 포함), 근거, trade-off, confidence, 무효화 조건
 
 ## 위험 및 구현 고려사항
 

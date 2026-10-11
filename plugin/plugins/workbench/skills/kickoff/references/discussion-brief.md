@@ -25,6 +25,16 @@ When a finding, option, trade-off, or recommendation depends on how an external 
 - A question the documentation answers is `verified` or `self-resolvable`. Ask the user only about the judgment that remains once the documented facts are known.
 - Mark an external fact unverified only after a lookup was attempted; name the sources tried and why they fell short. Do NOT present an option whose viability rests on an unchecked capability.
 
+## Established solutions
+
+When a finding asks how to solve a problem in a platform, tool, or ecosystem the work uses, look for an existing solution before framing options. Do NOT make a new script, workaround, or custom implementation the default option without this check.
+
+- Search in this order: (1) repository precedent that already solves the same problem; (2) built-in or official features of the platform or tool in use, such as official GitHub Actions or Node.js APIs; (3) the approach its official documentation recommends; (4) widely adopted libraries, conventions, and practice in prominent projects.
+- Verify (2) and (3) with the external-facts rules. Evidence for (4) is secondary: use it to show that a solution exists and is common, label it secondary, and do NOT treat it as proof of documented behavior.
+- When an existing solution fits, include it as an option and recommend it by default. Offer a custom implementation only as an alternative, with the concrete reason the existing solutions do not fit.
+- A repository precedent or settled standard that answers the question without changing scope, behavior, commitment, or intent makes the finding `self-resolvable`.
+- Report what was searched and what was found, including when nothing applicable was found. Keep the search proportional: skip it for purely internal logic and for findings where no option depends on it.
+
 ## Overview format
 
 ```markdown
@@ -34,6 +44,7 @@ When a finding, option, trade-off, or recommendation depends on how an external 
 ## 확인한 정보
 - <what was read> (읽지 못한 것과 이유)
 - 공식 문서: <title> — <URL> (<version>)
+- 기존 해법: <repository precedent, official feature, or common practice> — <source> (<official | primary | secondary>)
 
 ## 확인됨 / 에이전트가 정리할 것
 - 확인됨: <item> — <evidence>
@@ -51,6 +62,7 @@ Keep the overview short. Evidence detail belongs in the discussion of each item.
 ```markdown
 ### <n>. <title>
 - 배경: <what is ambiguous or conflicting, with evidence>
+- 기존 해법: <what already exists and where, or 찾지 못함 with what was searched>
 - 선택지:
   - A. <option> — <trade-off>
   - B. <option> — <trade-off>
