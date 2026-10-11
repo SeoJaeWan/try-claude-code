@@ -1,6 +1,6 @@
 ---
 name: pr-push
-description: Prepare repository-appropriate release metadata and push the confirmed PR source branch on explicit request. Use for "PR 브랜치 푸시해", "릴리스 정보 확인하고 푸시해", or "PR push 해줘". Does not publish a release or deploy.
+description: Prepare repository-appropriate release metadata and push the confirmed PR source branch on explicit request. Explicit invocation only; use for "PR 브랜치 푸시해", "릴리스 정보 확인하고 푸시해", or "PR push 해줘". Does not publish a release or deploy.
 disable-model-invocation: true
 ---
 

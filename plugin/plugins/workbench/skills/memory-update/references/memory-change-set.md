@@ -18,6 +18,8 @@ Select an explicit tier and effort for each helper rather than inheriting the ho
 | `standard` | `gpt-6.1-sol` | `sonnet` |
 | `deep` | `gpt-6.1-sol` | `opus` |
 
+On Codex `standard` and `deep` both use GPT-6.1 Sol and differ by effort; tier alone does not imply a stronger model. Preserve explicit model choices, including GPT-6 Astra, and explicit effort choices.
+
 Identify the host from its subagent tool, check its supported choices, respect user limits, and start each helper in a fresh context:
 
 - Codex: pass both `model` and `reasoning_effort`, with `fork_turns: none` when available. The Workbench starting efforts, consistent with [official model guidance](https://developers.openai.com/api/docs/guides/latest-model) (checked 2026-09-30) are focused Luna/high, standard Sol 6.1/medium, and deep Sol 6.1/xhigh.
@@ -28,8 +30,6 @@ If delegation is unavailable, continue locally. Disclose any permitted alternati
 Give helpers bounded topics, source paths/content identities, relevant schema/rules, and a read-only boundary. Request findings, exact evidence, conflicts, and suggested ownership; do not let helpers edit files, create worktrees, or recursively delegate. Keep the main agent doing independent work. Before writing, recheck any source changed since research; results from a prior document state are not automatically applicable. Record requested profiles and host-observed effective settings when available, otherwise `unknown`; on Claude Code, record the model only.
 
 Policy decisions stay with the user when evidence cannot settle them. Ask promptly and continue unaffected units. Do not write model assignments, task logs, or execution plans into project knowledge.
-
-Use `standard` / `high` when scope and solution direction are established but analysis is difficult; use `deep` / `xhigh` when the solution direction remains uncertain and design or integration decisions are coupled. On Codex both tiers use GPT-6.1 Sol; tier alone does not imply a stronger model. Preserve explicit model choices, including GPT-6 Astra, and explicit effort choices.
 
 ## Sequential edits
 
